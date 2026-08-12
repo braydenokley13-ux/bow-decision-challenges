@@ -119,7 +119,7 @@ p { color: var(--ink-2); }
 .setup-card > .button { margin-top: auto; }
 .given-total { display: flex; flex-direction: column; justify-content: space-between; min-height: 126px; gap: var(--s-3); padding: var(--s-4); background: var(--surface-sunken); }
 .given-total span { color: var(--ink-3); font: var(--t-micro); }
-.given-total strong { font: var(--m-lg); font-feature-settings: var(--num); }
+.given-total .money { margin-top: auto; font: var(--m-lg); font-feature-settings: var(--num); }
 .stage-action { display: flex; align-items: center; justify-content: space-between; gap: var(--s-6); margin-top: var(--s-6); padding: var(--s-5) 0; border-top: 1px solid var(--border-default); }
 .stage-action p { max-width: 650px; margin: 0; font: var(--t-ui); }
 
@@ -177,12 +177,14 @@ p { color: var(--ink-2); }
 .rail__band[data-tone="locked"] { color: var(--fin-locked-ink); background: var(--fin-locked); }
 .rail__band[data-tone="assigned"] { background: var(--fin-adjustable); }
 .rail__band--open { color: var(--fin-adjustable-ink); background: var(--surface-sunken); border: 1px dashed var(--fin-adjustable); }
-.rail__band--over { color: var(--fin-over-ink); background: var(--pat-over); border: 1px solid var(--fin-over); }
+.rail__band--over { color: var(--fin-over-ink); background: var(--fin-over-soft); border: 2px solid var(--fin-over); }
+.rail__band--over::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--pat-over); opacity: 0.35; }
+.rail__band--over, .rail__band--open { position: relative; isolation: isolate; }
 .rail__marker { width: 0; height: calc(100% + 10px); position: absolute; top: -5px; border-left: 2px dashed var(--ink-2); pointer-events: none; }
 
 /* Plan Board */
 .plan-board { background: var(--surface); border: 1px solid var(--border-default); }
-.plan-board__header { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-5); padding: var(--s-4) var(--s-5); border-bottom: 1px solid var(--border-default); }
+.plan-board__header { min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3) var(--s-5); padding: var(--s-4) var(--s-5); border-bottom: 1px solid var(--border-default); }
 .plan-board__header .eyebrow { margin-bottom: 2px; }
 .plan-board__header h2 { margin: 0; font: var(--t-title2); }
 .plan-board__intro { max-width: 720px; margin: var(--s-2) 0 0; color: var(--ink-3); font: var(--t-ui); }
@@ -211,7 +213,7 @@ p { color: var(--ink-2); }
 .allocation-card__share { height: 4px; overflow: hidden; background: var(--surface-sunken); }
 .allocation-card__share span { height: 100%; display: block; background: var(--fin-adjustable); transition: width var(--dur-state) var(--ease-standard); }
 .allocation-card__reference { align-self: flex-start; padding: 0; color: var(--fin-adjustable-ink); background: transparent; border: 0; border-bottom: 1px dashed currentColor; cursor: pointer; font: var(--t-micro); }
-.exposure-summary { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 var(--s-5) var(--s-4); border: 1px solid var(--border-default); }
+.exposure-summary { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin: 0 var(--s-5) var(--s-4); border: 1px solid var(--border-default); }
 .exposure-summary > div { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-3) var(--s-4); }
 .exposure-summary > div + div { border-left: 1px solid var(--border-default); }
 .exposure-summary span { color: var(--ink-3); font: var(--t-micro); }

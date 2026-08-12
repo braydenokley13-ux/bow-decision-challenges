@@ -49,7 +49,7 @@ const RETEACH_SCRIPT = "Remove one uncertain $800 source from two sample plans. 
 function AlignmentBlock() {
   return (
     <section className="alignment-block">
-      <div className="section-heading"><p className="eyebrow">Verified NYSED connection</p><h2>One evidence engine. Two useful views.</h2></div>
+      <div className="section-heading"><p className="eyebrow">Standards alignment</p><h2>Mapped to NYSED objectives, not scored against them.</h2></div>
       <div className="alignment-grid">
         {["1.2", "1.3", "5.1", "1.1", "4.1"].map((id) => {
           const item = objective(id);

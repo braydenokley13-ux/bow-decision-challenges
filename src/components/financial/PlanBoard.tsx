@@ -94,8 +94,7 @@ export function PlanBoard({ input, setupTitle, baseline, reference, attempts, on
         {mode.baseline && (
           <div className="exposure-summary" aria-live="polite">
             {input.mode === "fallback" && <div><span>Bonus cash removed</span><strong className="money">{formatDollars(exposureFor(input, SCENARIO_NUMBERS))}</strong></div>}
-            <div><span>Cut from your earlier plan</span><strong className="money">{freed === undefined ? "—" : formatDollars(freed)}</strong></div>
-            <div><span>{mode.residualLabel === "gapRemaining" ? "Still needed" : "Still missing"}</span><strong className="money">{formatDollars(residual)}</strong></div>
+            <div><span>Cut from your earlier plan</span><strong className="money">{formatDollars(freed ?? 0)}</strong></div>
           </div>
         )}
         {attempts >= 2 && balance !== 0 && (
