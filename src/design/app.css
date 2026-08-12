@@ -449,8 +449,9 @@ p { color: var(--ink-2); }
 .status-badge[data-status="not_demonstrated"] { color: var(--fin-over-ink); background: var(--fin-over-soft); }
 .evidence-detail-grid { display: grid; grid-template-columns: 1fr 360px; gap: var(--s-6); padding: var(--s-7); }
 .evidence-timeline { margin: 0; padding: 0; list-style: none; }
-.evidence-timeline li { display: grid; grid-template-columns: 20px 1fr; gap: var(--s-4); padding-bottom: var(--s-5); }
-.evidence-timeline li > span { width: 12px; height: 12px; margin-top: 5px; background: var(--surface); border: 3px solid var(--fin-adjustable); border-radius: 50%; box-shadow: 0 24px 0 1px var(--border-default); }
+.evidence-timeline li { position: relative; display: grid; grid-template-columns: 20px 1fr; gap: var(--s-4); padding-bottom: var(--s-6); }
+.evidence-timeline li > span { width: 12px; height: 12px; margin-top: 5px; background: var(--surface); border: 3px solid var(--fin-adjustable); border-radius: 50%; }
+.evidence-timeline li:not(:last-child) > span::after { content: ""; width: 2px; position: absolute; top: 22px; bottom: 4px; left: 5px; background: var(--border-default); }
 .evidence-timeline b { font: var(--t-title3); }
 .evidence-timeline p { margin: var(--s-2) 0; }
 .evidence-timeline small { color: var(--ink-3); }

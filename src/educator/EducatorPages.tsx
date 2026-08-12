@@ -181,6 +181,7 @@ export function StudentEvidence() {
           ["Working Plan", "Saved $6,800 funds with $1,200 goal, $900 reserve, and $2,100 flexible cash.", "C3 · 15/15"],
           ["Opening fallback", "Freed $900 and explicitly acknowledged $900 still exposed.", "C4 · 17/20"],
           ["Week 5 change", "Entered $1,950, then corrected to $2,050 without a scaffold.", "C5.1 · 4/5"],
+          ["First response", "Freed the full $1,150 from adjustable money before the clinic was offered.", "C5.6 · 5/5"],
           ["Final repair", "Accepted the $500 clinic and balanced at $0 with $6,300 in working funds.", "C5.4 · 5/5"],
           ["Remaining-risk preview", "Removed the conditional $800 and built a second balanced state.", "Current C4 status updated"],
         ].map(([label, body, result]) => <li key={label}><span /><div><b>{label}</b><p>{body}</p><small>{result}</small></div></li>) : <li><span /><div><b>Recorded evidence</b><p>{student.evidenceLine}</p><small>{student.primaryNeed}</small></div></li>}</ol></div>
