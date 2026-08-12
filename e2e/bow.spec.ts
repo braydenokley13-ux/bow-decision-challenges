@@ -442,6 +442,35 @@ test("key screens have no serious or critical accessibility violations", async (
   await page.getByRole("button", { name: "Play Week 5" }).click();
   await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
   await noSeriousAxeViolations(page);
+
+  // The season review is the last screen a student types on, so it is scanned too.
+  await passWeek5Calculation(page, "1050");
+  await fillPlan(page, "450", "400", "500");
+  await page.getByRole("button", { name: "Save this version" }).click();
+  await decideOpportunity(page, { clinics: false, countBonus: false });
+  await fillPlan(page, "700", "400", "250");
+  await page.getByRole("button", { name: "Save final plan" }).click();
+  await expect(page.getByRole("heading", { name: "Why does your plan hold up?" })).toBeVisible();
+  await noSeriousAxeViolations(page);
+});
+
+// ---------------------------------------------------------------------------
+// 18. Avery's week-by-week voice follows the housing the student chose, so the
+//     same four weeks read differently depending on where Avery was put.
+// ---------------------------------------------------------------------------
+
+test("the weeks Avery plays are narrated differently for each housing choice", async ({ page }) => {
+  // Spendable money differs by setup: $5,000 less the setup and the $1,600 essentials.
+  for (const [index, flexible, line] of [[0, "0", /first one in the building/i], [2, "800", /5:40/]] as const) {
+    await gotoFreshChallenge(page);
+    await enterChallenge(page);
+    await completeSetupStage(page, index);
+    await completeWorkingCalcs(page);
+    await fillPlan(page, "1200", "400", flexible);
+    await page.getByRole("button", { name: "Save this version" }).click();
+    await expect(page.getByRole("heading", { name: "The season starts." })).toBeVisible();
+    await expect(page.locator(".feed")).toContainText(line);
+  }
 });
 
 // ---------------------------------------------------------------------------
