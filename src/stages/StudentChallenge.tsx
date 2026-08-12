@@ -525,7 +525,7 @@ function SubmittedStage() {
     { week: 5, tone: "shock", text: "Showcase off · brace" },
     { week: 6, tone: clinics ? "work" : "played", text: clinics ? "Clinic Saturday" : "Rest Saturday" },
     { week: 7, tone: clinics ? "work" : "played", text: clinics ? "Clinic Saturday" : "Rest Saturday" },
-    { week: 8, tone: "end", text: "Season closes" },
+    { week: 8, tone: "end", text: clinics ? "Last clinic · season closes" : "Season closes" },
   ];
   return (
     <StageShell stage="submitted" kicker="Turned in" title="Avery’s eight weeks, your version.">
