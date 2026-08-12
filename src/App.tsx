@@ -12,11 +12,11 @@ function Home() {
         <div className="home-page__copy">
           <p className="eyebrow">Plan Under Pressure · Basketball</p>
           <h1>Eight weeks to the showcase.</h1>
-          <p className="home-page__deck">Avery has $5,000 that is certain, $1,800 that is not, and bills either way. You make the money calls. In Week 5 the season changes and your plan has to survive it.</p>
+          <p className="home-page__deck">Avery Reyes, 18, just got the last roster spot with the Harbor City Flight. Some of the money is promised, some of it has to be earned, and the bills arrive either way. Avery plays. You handle the money.</p>
           <ol className="home-page__beats">
-            <li><span>01</span>Build a plan that works</li>
-            <li><span>02</span>Week 5 breaks it</li>
-            <li><span>03</span>Repair it and defend it</li>
+            <li><span>01</span>Avery Reyes · guard · 18</li>
+            <li><span>02</span>8 weeks with the Flight</li>
+            <li><span>03</span>One shot at the sports-media course</li>
           </ol>
           <div className="home-page__actions">
             <Link className="button button--primary" to="/challenge">Start the challenge</Link>
@@ -26,7 +26,7 @@ function Home() {
         <aside className="home-page__mark" aria-hidden="true">
           <span className="home-page__weeks">08</span>
           <b>weeks</b>
-          <i>Week 5 changes everything</i>
+          <i>Harbor City Flight</i>
         </aside>
       </section>
       <footer>

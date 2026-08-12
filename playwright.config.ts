@@ -1,5 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// This config runs in Node, but the app ships no @types/node, so the single
+// environment variable it reads is declared here rather than pulling in the package.
+declare const process: { env: Record<string, string | undefined> };
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -9,6 +13,8 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:4173",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    // CI images that ship their own Chromium can point at it instead of downloading one.
+    ...(process.env.CHROMIUM_PATH ? { launchOptions: { executablePath: process.env.CHROMIUM_PATH } } : {}),
   },
   projects: [
     {

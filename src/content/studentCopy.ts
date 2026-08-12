@@ -5,9 +5,9 @@
  */
 export const STUDENT_COPY = {
   join: {
-    eyebrow: "Player check-in",
-    title: "Take the seat.",
-    body: "Use the two codes your teacher gave you. No names, no real money details.",
+    eyebrow: "Harbor City Flight · Check in",
+    title: "Two codes and you're in.",
+    body: "Your teacher gave you both. That is all BOW ever asks for — no name, no email, nothing about your real money.",
     privacy: "These codes stay on this computer.",
   },
   working: {
