@@ -1,12 +1,12 @@
 [data-world="basketball"] {
-  --world-accent: #c0501c;
-  --world-accent-strong: #9e3f14;
-  --world-accent-soft: #f7e5da;
+  --world-accent: #b64e24;
+  --world-accent-strong: #8f3c1a;
+  --world-accent-soft: #f4e2d8;
   --world-accent-ink: #ffffff;
-  --world-hero-bg: #0b1b33;
+  --world-hero-bg: #10243b;
   --world-hero-ink: #f4f1ea;
-  --world-hero-second: #e0672e;
-  --font-display: Archivo, Impact, var(--font-ui);
+  --world-hero-second: #e07843;
+  --font-display: "Arial Narrow", "Avenir Next Condensed", "Roboto Condensed", var(--font-ui);
 }
 
 [data-world="fashion"] {

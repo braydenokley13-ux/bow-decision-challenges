@@ -1,14 +1,13 @@
 import type { PropsWithChildren } from "react";
-import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import type { StageId } from "../domain/evidence/types";
 import { AppMark } from "../components/primitives/AppMark";
 
 const PROGRESS: Array<{ label: string; stages: StageId[] }> = [
-  { label: "Setup", stages: ["role-contract", "setup-comparison"] },
-  { label: "First Plan", stages: ["working-plan"] },
-  { label: "Backup Check", stages: ["fallback-version", "income-check", "week5-transition"] },
+  { label: "Opportunity", stages: ["role-contract", "setup-comparison"] },
+  { label: "First plan", stages: ["working-plan"] },
+  { label: "Backup plan", stages: ["fallback-version", "income-check", "week5-transition"] },
   { label: "Week 5", stages: ["week5-event", "first-response", "opportunity-final-repair", "remaining-risk-preview"] },
-  { label: "Explain It", stages: ["defense", "submitted"] },
+  { label: "Final word", stages: ["defense", "submitted"] },
 ];
 
 export function StageShell({ stage, title, kicker, children }: PropsWithChildren<{ stage: StageId; title: string; kicker?: string }>) {
@@ -30,17 +29,16 @@ export function StageShell({ stage, title, kicker, children }: PropsWithChildren
           </nav>
         )}
         <details className="contract-drawer">
-          <summary>Money cheat sheet</summary>
+          <summary>The deal</summary>
           <div>
-            <h2>Avery’s money</h2>
-            <p><strong>Safe cash</strong> is guaranteed. <strong>Maybe money</strong> only shows up when its rule is completed.</p>
+            <h2>Avery’s eight-week money</h2>
             <dl>
-              <div><dt>Money already saved · safe</dt><dd>$500</dd></div>
-              <div><dt>Base pay · safe</dt><dd>$4,500</dd></div>
-              <div><dt>Perfect Attendance Bonus · maybe</dt><dd>$800</dd></div>
-              <div><dt>Making the Cut Bonus · maybe</dt><dd>$1,000</dd></div>
+              <div><dt>Already saved · count on it</dt><dd>$500</dd></div>
+              <div><dt>Base pay · count on it</dt><dd>$4,500</dd></div>
+              <div><dt>Every practice and game · might earn</dt><dd>$800</dd></div>
+              <div><dt>Flight reaches showcase · might earn</dt><dd>$1,000</dd></div>
             </dl>
-            <p>{BASKETBALL_SCENARIO.role.description}</p>
+            <p>Goal: save up to $1,200 for a sports-media course.</p>
           </div>
         </details>
       </header>

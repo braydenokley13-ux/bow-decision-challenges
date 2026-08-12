@@ -1,50 +1,46 @@
-/**
- * Student-facing words live here so every future world can use the same clear voice.
- * Keep sentences short. Explain unfamiliar money ideas the first time they appear.
- */
+/** Student-facing words shared across the basketball challenge. */
 export const STUDENT_COPY = {
   join: {
-    eyebrow: "PLAYER CHECK-IN",
-    title: "Let’s get you into the game.",
-    body: "Your teacher will give you two short codes. Use those codes only. Do not type your name or any real money information.",
+    eyebrow: "HARBOR CITY FLIGHT · CHECK-IN",
+    title: "Avery’s eight weeks start here.",
+    body: "Enter the two codes from your teacher. Do not use your name or any real money information.",
   },
   world: {
-    eyebrow: "PICK YOUR STORY",
-    title: "Which world do you want to play?",
-    body: "Your choice is not graded. Right now, the full Basketball story is ready. Fashion is the next world we are building.",
+    eyebrow: "BASKETBALL · EIGHT WEEKS",
+    title: "Avery’s opportunity is ready.",
+    body: "Open the Harbor City Flight story and manage the next eight weeks.",
   },
   working: {
-    kicker: "YOUR FIRST MONEY PLAN · CHOICES 2–3",
-    title: "Let’s figure out your cash flow.",
+    kicker: "THE FIRST PLAN · WEEK 1",
+    title: "Avery has a place. Now the first plan takes shape.",
     safeMoney: {
-      title: "SAFE MONEY",
-      prompt: "Your $500 savings + $4,500 guaranteed base pay.",
-      body: "This is money you will definitely have, no matter what!",
+      title: "MONEY THAT WILL BE THERE",
+      prompt: "$500 already saved + $4,500 base pay",
+      body: "Find the total without adding either bonus.",
     },
     mustPay: {
-      title: "THINGS YOU HAVE TO PAY FOR",
-      prompt: "$200 a week for 8 weeks.",
-      body: "This pays for your absolute needs like food, your phone, and laundry.",
+      title: "EIGHT WEEKS OF ESSENTIALS",
+      prompt: "$200 each week × 8 weeks",
+      body: "This covers food, phone service, laundry, and other basic needs.",
     },
     maybeMoney: {
-      title: "MAYBE MONEY",
-      body: "Do you want to count these extra cash bonuses in your plan right now? Tap a bonus to turn it on or off.",
+      title: "$1,800 IS STILL UNCERTAIN",
+      body: "Choose which bonuses, if any, belong in the first plan.",
       attendance: {
-        title: "Perfect Attendance Bonus",
-        body: "You only get this $800 if you show up to every single practice and game. No skipping!",
+        title: "Attendance payment",
+        body: "$800 arrives only if Avery makes every practice and game.",
       },
       showcase: {
-        title: "Making the Cut Bonus",
-        body: "You only get this $1,000 if the Flight actually qualifies for the big show.",
+        title: "Showcase payment",
+        body: "$1,000 arrives only if the Flight reaches the showcase.",
       },
     },
-    locked: "🔒 Finish the two math boxes above to unlock the rest of your dashboard.",
+    locked: "Finish the two totals above. Then the money Avery can plan with will appear here.",
   },
   dashboard: {
-    safeCash: "Money you can use in this plan",
-    mustPay: "Money already promised",
-    yourChoices: "Money you get to choose",
-    balanced: "Perfect! Every dollar has a job.",
+    safeCash: "Money in this version",
+    mustPay: "Costs already committed",
+    yourChoices: "Amounts Avery can still change",
+    balanced: "The plan balances.",
   },
 } as const;
-

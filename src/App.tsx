@@ -7,12 +7,12 @@ import { ClassOverview, ConceptDrilldown, EducatorGuide, ReasoningReview, Standa
 function Home() {
   return (
     <main className="home-page">
-      <header><AppMark /><Link to="/educator/guide">Educator brief</Link></header>
+      <header><AppMark /><Link to="/educator/guide">For educators</Link></header>
       <section>
-        <div><p className="eyebrow">BOW DECISION CHALLENGES · BASKETBALL</p><h1>Can you keep Avery’s money plan alive?</h1><p>You have 8 weeks. Pick a place to stay. Decide which cash to count. Then fix the plan when the season goes sideways.</p><div><Link className="button button--primary" to="/challenge">Start the Basketball Story</Link><Link className="button button--secondary" to="/educator/class">See the Teacher View</Link></div></div>
-        <aside><span>PLAN</span><strong>UNDER</strong><b>PRESSURE</b><i>08 WEEKS</i></aside>
+        <div><p className="eyebrow">BOW DECISION CHALLENGES · GRADES 6–8</p><h1>Eight weeks can change a plan.</h1><p>Avery Reyes has a place with the Harbor City Flight and one chance to save for a sports-media course. The first plan looks manageable. Week 5 changes the math.</p><div><Link className="button button--primary" to="/challenge">Start Avery’s story</Link><Link className="button button--secondary" to="/educator/class">View class evidence</Link></div></div>
+        <aside aria-label="Eight Weeks to the Showcase"><span>HARBOR CITY FLIGHT</span><strong>08</strong><b>WEEKS</b><i>AVERY REYES · AGE 18</i></aside>
       </section>
-      <footer><span>Grades 6–8</span><span>Real money choices</span><span>Basketball ready · Fashion coming soon</span></footer>
+      <footer><span>Post-instruction application assessment</span><span>Six assessed concepts</span><span>Basketball</span></footer>
     </main>
   );
 }
