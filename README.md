@@ -64,9 +64,10 @@ resulting plan holds together is observed.
 ## Main areas
 
 - `src/stages/StudentChallenge.tsx` — the complete Basketball flow, beat by beat.
-- `src/components/story/SeasonStrip.tsx` — the eight-week header indicator.
+- `src/components/story/` — season strip, Avery's roster card, court backdrop.
+- `src/design/scenes.css` — the arena scenes and the money split.
 - `src/domain/machine/stages.ts` — where each stage sits in season time.
-- `src/components/financial/` — Money Rail, Plan Board, and allocation controls.
+- `src/components/financial/` — Money Split, Plan Board, and the three choice rows.
 - `src/domain/` — world-neutral finance, evidence, scoring, and state machine.
 - `src/domain/scenario/worlds/basketball.ts` — Basketball story details and amounts.
 - `src/educator/` — challenge brief, class evidence, student ledger, reasoning review, NYSED view.

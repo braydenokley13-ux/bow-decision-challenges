@@ -37,6 +37,9 @@ export function MoneySplit({ input, onLockedMoveAttempt }: { input: SnapshotInpu
   // One scale for both towers, tall enough that an overspend visibly clears the line.
   const scale = Math.max(available, locked + assignedTotal, 1);
   const height = (amount: number) => `${Math.max(0, (amount / scale) * 100)}%`;
+  // A slice too short to hold its own words drops them rather than spilling into the
+  // slice below: name first, then the amount, then nothing but the colour.
+  const density = (amount: number) => (amount / scale < 0.05 ? "bare" : amount / scale < 0.11 ? "tight" : "full");
 
   const supply: Segment[] = [
     { key: "certain", label: "Certain", amount: certain, tone: "reliable" },
@@ -74,7 +77,7 @@ export function MoneySplit({ input, onLockedMoveAttempt }: { input: SnapshotInpu
         <div className="split__tower" aria-hidden="true">
           <div className="split__stack">
             {supply.slice().reverse().map((segment) => (
-              <span key={segment.key} className="split__seg" data-tone={segment.tone} style={{ height: height(segment.amount) }}>
+              <span key={segment.key} className="split__seg" data-tone={segment.tone} data-density={density(segment.amount)} style={{ height: height(segment.amount) }}>
                 <i>{segment.label}</i><b className="money">{formatDollars(segment.amount)}</b>
               </span>
             ))}
@@ -84,7 +87,7 @@ export function MoneySplit({ input, onLockedMoveAttempt }: { input: SnapshotInpu
         <div className="split__tower">
           <div className="split__stack">
             {spare > 0 && (
-              <span className="split__seg split__seg--open" style={{ height: height(spare) }} aria-hidden="true">
+              <span className="split__seg split__seg--open" data-density={density(spare)} style={{ height: height(spare) }} aria-hidden="true">
                 <i>Still to assign</i><b className="money">{formatDollars(spare)}</b>
               </span>
             )}
@@ -95,6 +98,7 @@ export function MoneySplit({ input, onLockedMoveAttempt }: { input: SnapshotInpu
                   type="button"
                   className="split__seg"
                   data-tone={segment.tone}
+                  data-density={density(segment.amount)}
                   style={{ height: height(segment.amount) }}
                   aria-disabled="true"
                   aria-label={`${segment.label}, ${formatDollars(segment.amount)}. Already promised — this cannot move.`}
@@ -103,7 +107,7 @@ export function MoneySplit({ input, onLockedMoveAttempt }: { input: SnapshotInpu
                   <i>{segment.label}</i><b className="money">{formatDollars(segment.amount)}</b>
                 </button>
               ) : (
-                <span key={segment.key} className="split__seg" data-tone={segment.tone} style={{ height: height(segment.amount) }} aria-hidden="true">
+                <span key={segment.key} className="split__seg" data-tone={segment.tone} data-density={density(segment.amount)} style={{ height: height(segment.amount) }} aria-hidden="true">
                   <i>{segment.label}</i><b className="money">{formatDollars(segment.amount)}</b>
                 </span>
               )
