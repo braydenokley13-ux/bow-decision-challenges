@@ -21,9 +21,10 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
   offer: {
     team: "Harbor City Flight",
     position: "Guard",
+    jersey: "07",
     kicker: "Harbor City Flight · Roster spot",
     headline: "Avery got the call.",
-    body: "The Flight lost a guard to a transfer and needed a body who could handle the ball. Avery Reyes, 18, gets the last roster spot for the eight-week run to the regional showcase. Practice starts Monday.",
+    body: "The Flight lost a guard to a transfer. Avery Reyes, 18, gets the last roster spot for the eight-week run to the regional showcase. Practice starts Monday.",
     want: "Sports-media course",
     wantDetail: "Avery wants to call games one day. The course runs right after the season ends, and nobody else is paying for it.",
     facts: [
@@ -39,14 +40,17 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
     { week: "Week 4", note: "Most minutes on the roster. Two weeks of practice left before the showcase bracket is set." },
   ],
   setups: [
-    { id: "stable-1800", title: "Gym District Sublet", terms: "One price for all 8 weeks", total: SCENARIO_NUMBERS.setupCosts["stable-1800"], commute: "5 min to the gym", tradeoff: "The most expensive room, and the one that asks the least of Avery's day. Walk to practice, walk home.", eventCost: SCENARIO_NUMBERS.setupEventCosts["stable-1800"], eventCostLabel: "No added rehab travel" },
-    { id: "shared-1400", title: "Teammate Share", terms: "$150 a week × 8 weeks + $200 for travel", total: SCENARIO_NUMBERS.setupCosts["shared-1400"], commute: "30 min by bus", tradeoff: "A room split with a teammate who keeps the same schedule. The bus pass is a single up-front charge.", eventCost: SCENARIO_NUMBERS.setupEventCosts["shared-1400"], eventCostLabel: "Added travel to rehab" },
-    { id: "flexible-1000", title: "Cousin Commute", terms: "$125 a week × 8 weeks", total: SCENARIO_NUMBERS.setupCosts["flexible-1000"], commute: "70 min each way", tradeoff: "Avery’s cousin has a spare room across the city. It costs the least and takes the most out of the day.", eventCost: SCENARIO_NUMBERS.setupEventCosts["flexible-1000"], eventCostLabel: "Late rides to required rehab" },
+    { id: "stable-1800", title: "Gym District Sublet", terms: "One price for all 8 weeks", total: SCENARIO_NUMBERS.setupCosts["stable-1800"], commute: "5 min to the gym", commuteMinutes: 5, tradeoff: "Walk to practice, walk home. Costs the most, asks the least of Avery's day.", eventCost: SCENARIO_NUMBERS.setupEventCosts["stable-1800"], eventCostLabel: "No added rehab travel" },
+    { id: "shared-1400", title: "Teammate Share", terms: "$150 a week × 8 weeks + $200 for travel", total: SCENARIO_NUMBERS.setupCosts["shared-1400"], commute: "30 min by bus", commuteMinutes: 30, tradeoff: "A room split with a teammate on the same schedule. The bus pass is one up-front charge.", eventCost: SCENARIO_NUMBERS.setupEventCosts["shared-1400"], eventCostLabel: "Added travel to rehab" },
+    { id: "flexible-1000", title: "Cousin Commute", terms: "$125 a week × 8 weeks", total: SCENARIO_NUMBERS.setupCosts["flexible-1000"], commute: "70 min each way", commuteMinutes: 70, tradeoff: "Avery’s cousin has a spare room across the city. Costs the least, takes the most out of the day.", eventCost: SCENARIO_NUMBERS.setupEventCosts["flexible-1000"], eventCostLabel: "Late rides to required rehab" },
   ],
   disruption: {
     source: "Harbor City Flight · Team update",
     title: "The showcase is off.",
-    body: "Storm damage closed the arena and the regional showcase is cancelled, so the Flight never qualifies and the $1,000 payment is gone. In the same week Avery lands hard on a loose ball: a wrist brace and off-site rehab, twice a week, until the season ends.",
+    beats: [
+      { marker: "MON", tag: "Week 5 · Team update", text: "Storm damage closed the arena. The regional showcase is cancelled, so the Flight never qualifies for it." },
+      { marker: "THU", tag: "Week 5 · Same week", text: "Avery lands hard on a loose ball. A wrist brace and off-site rehab, twice a week, until the season ends." },
+    ],
     requiredCostLabel: "Required brace and off-site rehab",
   },
   opportunity: {

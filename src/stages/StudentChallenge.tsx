@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChallenge } from "../app/ChallengeContext";
 import { StageShell } from "../app/StageShell";
@@ -27,58 +27,63 @@ function calculationSupport(dispatch: ReturnType<typeof useChallenge>["dispatch"
   };
 }
 
-function JoinStage() {
+/** Brings a section that has just appeared into view without yanking the page around. */
+function useRevealOnce(active: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  const done = useRef(false);
+  useEffect(() => {
+    if (!active || done.current || !ref.current) return;
+    done.current = true;
+    ref.current.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+  }, [active]);
+  return ref;
+}
+
+/**
+ * Beat 1. The story and the check-in are the same screen: a student reads what happened
+ * to Avery while entering the two codes, so nothing stands between the URL and the story.
+ */
+function OpeningStage() {
   const { dispatch } = useChallenge();
+  const { offer, numbers } = BASKETBALL_SCENARIO;
   const [classCode, setClassCode] = useState("BOW301");
   const [seatCode, setSeatCode] = useState("14");
   const valid = /^[A-Z0-9]{4,8}$/i.test(classCode) && /^\d{1,2}$/.test(seatCode);
   return (
-    <div className="entry-page" data-world="basketball">
-      <div className="entry-page__panel">
-        <p className="eyebrow">{STUDENT_COPY.join.eyebrow}</p>
-        <h1>{STUDENT_COPY.join.title}</h1>
-        <p>{STUDENT_COPY.join.body}</p>
-        <div className="entry-page__codes">
-          <label>Class code<input value={classCode} onChange={(event) => setClassCode(event.target.value.toUpperCase())} maxLength={8} /></label>
-          <label>Seat<input value={seatCode} onChange={(event) => setSeatCode(event.target.value.replace(/\D/g, ""))} inputMode="numeric" maxLength={2} /></label>
-        </div>
-        <Button type="button" aria-disabled={!valid} onClick={() => valid && dispatch({ type: "SESSION_STARTED", sessionId: crypto.randomUUID(), classCode, seatCode })}>Enter the challenge</Button>
-        <p className="privacy-note">{STUDENT_COPY.join.privacy}</p>
-      </div>
-      <aside className="entry-page__stage" aria-hidden="true">
-        <span>{BASKETBALL_SCENARIO.offer.team}</span>
-        <strong>Avery<br />Reyes</strong>
-        <b>Guard · 18 · eight weeks with the team</b>
-      </aside>
-    </div>
-  );
-}
-
-/** Beat 1. What just happened to Avery, and what Avery wants out of it. */
-function OfferStage() {
-  const { dispatch } = useChallenge();
-  const { offer, numbers } = BASKETBALL_SCENARIO;
-  return (
-    <StageShell stage="the-offer" kicker={offer.kicker} title={offer.headline}>
-      <div className="offer-layout">
-        <section className="offer-story">
-          <p className="offer-story__lede">{offer.body}</p>
-          <dl className="offer-story__facts">
-            {offer.facts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}
-          </dl>
-        </section>
-        <aside className="offer-want">
-          <p className="eyebrow">What Avery wants out of it</p>
+    <div className="opening" data-world="basketball">
+      <section className="opening__story">
+        <p className="eyebrow">{offer.kicker}</p>
+        <h1>{offer.headline}</h1>
+        <p className="opening__lede">{offer.body}</p>
+        <dl className="opening__facts">
+          {offer.facts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}
+        </dl>
+      </section>
+      <aside className="opening__side">
+        <article className="player-card">
+          <span className="player-card__jersey" aria-hidden="true">{offer.jersey}</span>
+          <div>
+            <b>{BASKETBALL_SCENARIO.role.name}</b>
+            <span>{offer.position} · {BASKETBALL_SCENARIO.role.age} · {offer.team}</span>
+          </div>
+        </article>
+        <article className="goal-card">
+          <p className="field-label">What Avery is playing for</p>
           <strong className="money">{formatDollars(numbers.goalCap)}</strong>
           <b>{offer.want}</b>
           <p>{offer.wantDetail}</p>
-        </aside>
-      </div>
-      <div className="stage-action">
-        <p><strong>Avery plays. You handle the money.</strong> Every call about what the money does for the next eight weeks is yours.</p>
-        <Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "role-contract" })}>See what it pays</Button>
-      </div>
-    </StageShell>
+        </article>
+        <div className="opening__job">
+          <p><strong>Avery plays. You handle the money.</strong> Eight weeks of decisions are yours.</p>
+          <div className="opening__codes">
+            <label>Class code<input value={classCode} onChange={(event) => setClassCode(event.target.value.toUpperCase())} maxLength={8} /></label>
+            <label>Seat<input value={seatCode} onChange={(event) => setSeatCode(event.target.value.replace(/\D/g, ""))} inputMode="numeric" maxLength={2} /></label>
+          </div>
+          <Button type="button" aria-disabled={!valid} onClick={() => valid && dispatch({ type: "SESSION_STARTED", sessionId: crypto.randomUUID(), classCode, seatCode })}>Start the eight weeks</Button>
+          <p className="privacy-note">{STUDENT_COPY.join.privacy}</p>
+        </div>
+      </aside>
+    </div>
   );
 }
 
@@ -87,7 +92,7 @@ function DealStage() {
   const { dispatch } = useChallenge();
   return (
     <StageShell stage="role-contract" kicker="The terms" title="What the eight weeks pay.">
-      <p className="stage-deck">Two of these arrive on schedule. Two depend on something happening first. All four are in the same contract.</p>
+      <p className="stage-deck">Two of these arrive on schedule. Two depend on something happening first.</p>
       <div className="deal-sheet">
         <section className="deal-column" data-tone="safe">
           <p className="field-label">Avery will have this</p>
@@ -112,19 +117,25 @@ function DealStage() {
   );
 }
 
+/** Beat 3. Three places, three versions of Avery's day. The money is only half of it. */
 function SetupStage() {
   const { state, dispatch } = useChallenge();
   const middleCorrect = state.calculations["setup-middle-total"]?.correct === true;
   const lowCorrect = state.calculations["setup-lowest-total"]?.correct === true;
   const ready = middleCorrect && lowCorrect && state.setupId !== null;
+  const chosen = BASKETBALL_SCENARIO.setups.find((setup) => setup.id === state.setupId);
+  const longest = Math.max(...BASKETBALL_SCENARIO.setups.map((setup) => setup.commuteMinutes));
   return (
-    <StageShell stage="setup-comparison" kicker="Choice 1 · Where Avery stays" title="Cheaper rent costs something else.">
-      <p className="stage-deck">Work out the true 8-week price of each place, then pick one. No option scores better than another — you are choosing what Avery pays <em>and</em> what Avery travels.</p>
+    <StageShell stage="setup-comparison" kicker="Where Avery stays" title="Cheaper rent costs something else.">
+      <p className="stage-deck">Work out what each place really costs for all eight weeks, then pick one.</p>
       <div className="setup-grid">
         {BASKETBALL_SCENARIO.setups.map((setup, index) => (
           <article key={setup.id} className={`setup-card ${state.setupId === setup.id ? "is-selected" : ""}`}>
             <div className="setup-card__head"><span>Option {String.fromCharCode(65 + index)}</span><b>{setup.title}</b></div>
-            <p className="setup-card__commute"><i aria-hidden="true" />{setup.commute}</p>
+            <div className="commute-meter">
+              <span className="commute-meter__bar" aria-hidden="true"><i style={{ width: `${(setup.commuteMinutes / longest) * 100}%` }} /></span>
+              <span className="commute-meter__read">{setup.commute} · <b>{setup.commuteMinutes * 2} min a day</b></span>
+            </div>
             <p className="setup-card__tradeoff">{setup.tradeoff}</p>
             {index === 0 ? (
               <div className="given-total"><span>Full 8-week price · already worked out</span><MoneyAmount value={setup.total} /></div>
@@ -146,7 +157,9 @@ function SetupStage() {
         ))}
       </div>
       <div className="stage-action">
-        <p><strong>Your choice is not graded.</strong> Making the plan work with the place you picked is.</p>
+        {chosen
+          ? <p aria-live="polite"><strong>{chosen.title}.</strong> {formatDollars(chosen.total)} of Avery's money is now spoken for, and {chosen.commuteMinutes * 2} minutes of every day belong to the trip.</p>
+          : <p>No option scores better than another. Making the plan work with the place you pick is what counts.</p>}
         <Button aria-disabled={!ready} onClick={() => ready && dispatch({ type: "GO_TO_STAGE", stage: "working-plan" })}>{ready ? "Build the plan" : middleCorrect && lowCorrect ? "Pick a place to continue" : "Finish both prices to continue"}</Button>
       </div>
     </StageShell>
@@ -217,44 +230,59 @@ function PlanBoardForMode({ mode }: { mode: PlanMode }) {
   );
 }
 
-function PlanStage({ mode, title, kicker }: { mode: PlanMode; title: string; kicker: string }) {
+function PlanStage({ mode, title, kicker, deck }: { mode: PlanMode; title: string; kicker: string; deck?: string }) {
   const { state } = useChallenge();
-  return <StageShell stage={state.stage} kicker={kicker} title={title}><PlanBoardForMode mode={mode} /></StageShell>;
-}
-
-function WorkingStage() {
-  const { state, dispatch } = useChallenge();
-  const essentialsReady = state.calculations["essentials-total"]?.correct === true;
-  const floorReady = state.calculations["reliable-floor"]?.correct === true;
-  const input = snapshotForMode(state, "working");
-  if (!input || !state.setupId) return null;
   return (
-    <StageShell stage="working-plan" kicker={STUDENT_COPY.working.kicker} title={STUDENT_COPY.working.title}>
-      <p className="stage-deck">{STUDENT_COPY.working.deck}</p>
-      <div className="working-setup">
-        <CalculationInput calcId="reliable-floor" label={STUDENT_COPY.working.safeMoney.title} prompt={STUDENT_COPY.working.safeMoney.prompt} terms={STUDENT_COPY.working.safeMoney.body} expected={5000} priorAttempts={state.calculations["reliable-floor"]?.attempts} onSubmit={(raw, value, correct) => submitCalculation(dispatch, "reliable-floor", raw, value, correct)} scaffold="Add the two safe amounts: $500 + $4,500. Do not add either bonus yet." {...calculationSupport(dispatch, "reliable-floor")} />
-        <CalculationInput calcId="essentials-total" label={STUDENT_COPY.working.mustPay.title} prompt={STUDENT_COPY.working.mustPay.prompt} terms={STUDENT_COPY.working.mustPay.body} expected={1600} priorAttempts={state.calculations["essentials-total"]?.attempts} onSubmit={(raw, value, correct) => submitCalculation(dispatch, "essentials-total", raw, value, correct)} scaffold="Multiply $200 by 8 weeks. Think: $200 + $200 + $200 + $200 + $200 + $200 + $200 + $200." {...calculationSupport(dispatch, "essentials-total")} />
-        <section className="income-switches" aria-labelledby="maybe-money-heading">
-          <div><p className="field-label">{STUDENT_COPY.working.maybeMoney.title}</p><h2 id="maybe-money-heading">{STUDENT_COPY.working.maybeMoney.body}</h2></div>
-          <button type="button" aria-pressed={state.income.includeCompletion} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId: "completion-800", included: !state.income.includeCompletion })}>
-            <span><b>{STUDENT_COPY.working.maybeMoney.attendance.title}</b><small>{STUDENT_COPY.working.maybeMoney.attendance.body}</small><em>{state.income.includeCompletion ? "Counting it" : "Not counting it"}</em></span><MoneyAmount value={800} />
-          </button>
-          <button type="button" aria-pressed={state.income.includeOutcome} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId: "outcome-1000", included: !state.income.includeOutcome })}>
-            <span><b>{STUDENT_COPY.working.maybeMoney.showcase.title}</b><small>{STUDENT_COPY.working.maybeMoney.showcase.body}</small><em>{state.income.includeOutcome ? "Counting it" : "Not counting it"}</em></span><MoneyAmount value={1000} />
-          </button>
-        </section>
-      </div>
-      {essentialsReady && floorReady ? <PlanBoardForMode mode="working" /> : <p className="board-gate">{STUDENT_COPY.working.locked}</p>}
+    <StageShell stage={state.stage} kicker={kicker} title={title}>
+      {deck && <p className="stage-deck">{deck}</p>}
+      <PlanBoardForMode mode={mode} />
     </StageShell>
   );
 }
 
-function IncomeCheckStage() {
-  const { dispatch } = useChallenge();
+/**
+ * Beat 4. Read the money, decide what to count, then split what is left. Each part
+ * only appears once the one before it is settled, so the screen never shows every
+ * number at once.
+ */
+function WorkingStage() {
+  const { state, dispatch } = useChallenge();
+  const floorReady = state.calculations["reliable-floor"]?.correct === true;
+  const essentialsReady = state.calculations["essentials-total"]?.correct === true;
+  const counted = floorReady && essentialsReady;
+  const revealRef = useRevealOnce(counted);
+  const input = snapshotForMode(state, "working");
+  if (!input || !state.setupId) return null;
   return (
-    <StageShell stage="income-check" kicker="Backup check" title="Your plan already survives a lost bonus.">
-      <section className="state-message state-message--resolved"><span aria-hidden="true">✓</span><div><h2>You counted no maybe money.</h2><p>Nothing in this plan disappears if a bonus falls through, so there is no backup version to build.</p><p>Counting a bonus or leaving it out are both reasonable. Only whether the plan works is scored.</p></div></section>
-      <div className="stage-action"><p>Avery reports Monday. The plan you just saved is what the next eight weeks run on.</p><Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "week5-transition" })}>Start the season</Button></div>
+    <StageShell stage="working-plan" kicker="Build the plan" title={STUDENT_COPY.working.title}>
+      {counted ? (
+        <div className="counted-strip" aria-label="What you worked out">
+          <div><span>Safe cash</span><strong className="money">{formatDollars(SCENARIO_NUMBERS.reliableFloor)}</strong></div>
+          <div><span>8-week essentials</span><strong className="money">{formatDollars(SCENARIO_NUMBERS.essentialsTotal)}</strong></div>
+        </div>
+      ) : (
+        <>
+          <p className="stage-deck">{STUDENT_COPY.working.deck}</p>
+          <div className="working-setup">
+            <CalculationInput calcId="reliable-floor" label={STUDENT_COPY.working.safeMoney.title} prompt={STUDENT_COPY.working.safeMoney.prompt} terms={STUDENT_COPY.working.safeMoney.body} expected={5000} priorAttempts={state.calculations["reliable-floor"]?.attempts} onSubmit={(raw, value, correct) => submitCalculation(dispatch, "reliable-floor", raw, value, correct)} scaffold="Add the two safe amounts: $500 + $4,500. Do not add either bonus yet." {...calculationSupport(dispatch, "reliable-floor")} />
+            <CalculationInput calcId="essentials-total" label={STUDENT_COPY.working.mustPay.title} prompt={STUDENT_COPY.working.mustPay.prompt} terms={STUDENT_COPY.working.mustPay.body} expected={1600} priorAttempts={state.calculations["essentials-total"]?.attempts} onSubmit={(raw, value, correct) => submitCalculation(dispatch, "essentials-total", raw, value, correct)} scaffold="Multiply $200 by 8 weeks. Think: $200 + $200 + $200 + $200 + $200 + $200 + $200 + $200." {...calculationSupport(dispatch, "essentials-total")} />
+          </div>
+        </>
+      )}
+      {counted && (
+        <div ref={revealRef} className="staged-reveal">
+          <section className="income-switches" aria-labelledby="maybe-money-heading">
+            <div><p className="field-label">{STUDENT_COPY.working.maybeMoney.title}</p><h2 id="maybe-money-heading">{STUDENT_COPY.working.maybeMoney.body}</h2></div>
+            <button type="button" aria-pressed={state.income.includeCompletion} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId: "completion-800", included: !state.income.includeCompletion })}>
+              <span><b>{STUDENT_COPY.working.maybeMoney.attendance.title}</b><small>{STUDENT_COPY.working.maybeMoney.attendance.body}</small><em>{state.income.includeCompletion ? "Counting it" : "Not counting it"}</em></span><MoneyAmount value={800} />
+            </button>
+            <button type="button" aria-pressed={state.income.includeOutcome} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId: "outcome-1000", included: !state.income.includeOutcome })}>
+              <span><b>{STUDENT_COPY.working.maybeMoney.showcase.title}</b><small>{STUDENT_COPY.working.maybeMoney.showcase.body}</small><em>{state.income.includeOutcome ? "Counting it" : "Not counting it"}</em></span><MoneyAmount value={1000} />
+            </button>
+          </section>
+          <PlanBoardForMode mode="working" />
+        </div>
+      )}
     </StageShell>
   );
 }
@@ -276,9 +304,11 @@ function PlanEcho({ mode, label, note }: { mode: PlanMode; label: string; note?:
   );
 }
 
+/** Beat 6. Four weeks pass on screen so Week 5 lands on a season the student watched. */
 function Week5TransitionStage() {
   const { state, dispatch } = useChallenge();
   const savedMode: PlanMode = state.saved.fallback ? "fallback" : "working";
+  const noConditional = !state.income.includeCompletion && !state.income.includeOutcome;
   return (
     <StageShell stage="week5-transition" kicker="Weeks 1 to 4" title="The season starts.">
       <div className="season-layout">
@@ -288,7 +318,13 @@ function Week5TransitionStage() {
           ))}
           <li data-state="next"><b>Week 5</b><p>Not played yet.</p></li>
         </ol>
-        <PlanEcho mode={savedMode} label="What Avery has been living on" note="Four weeks in, the plan you built is holding. Rent is paid. The bonuses are still open." />
+        <PlanEcho
+          mode={savedMode}
+          label="What Avery has been living on"
+          note={noConditional
+            ? "Your plan counts on no bonus money, so there was no backup version to build. Four weeks in, it is holding."
+            : "Four weeks in, the plan you built is holding. Rent is paid. The bonuses are still open."}
+        />
       </div>
       <div className="stage-action">
         <p>Nothing you saved changes from here. Whatever Week 5 brings, it lands on the plan you already built.</p>
@@ -298,6 +334,7 @@ function Week5TransitionStage() {
   );
 }
 
+/** Beat 7. Two pieces of news, then the student works out what they cost. */
 function Week5EventStage() {
   const { state, dispatch } = useChallenge();
   if (!state.setupId) return null;
@@ -319,13 +356,17 @@ function Week5EventStage() {
     .reduce((sum, change) => sum + change.amount, 0);
   return (
     <StageShell stage="week5-event" kicker="Week 5" title={BASKETBALL_SCENARIO.disruption.title}>
-      <section className="disruption-card">
-        <span className="disruption-card__week" aria-hidden="true">W5</span>
-        <div>
-          <p className="disruption-card__source">{BASKETBALL_SCENARIO.disruption.source}</p>
-          <p className="disruption-card__lede">{BASKETBALL_SCENARIO.disruption.body}</p>
-        </div>
-      </section>
+      <div className="disruption-stack">
+        {BASKETBALL_SCENARIO.disruption.beats.map((beat, index) => (
+          <section key={beat.tag} className="disruption-card" style={{ animationDelay: `${index * 320}ms` }}>
+            <span className="disruption-card__week" aria-hidden="true">{beat.marker}</span>
+            <div>
+              <p className="disruption-card__source">{beat.tag}</p>
+              <p className="disruption-card__lede">{beat.text}</p>
+            </div>
+          </section>
+        ))}
+      </div>
       <PlanEcho mode={state.saved.fallback ? "fallback" : "working"} label="The plan Avery walked into this week with" note="It was built for a season that still had a showcase in it." />
       <section className="gap-builder">
         <div className="gap-builder__intro">
@@ -355,11 +396,27 @@ function Week5EventStage() {
   );
 }
 
+/** The last four Saturdays of the season, drawn, so the tradeoff is not only a sentence. */
+function SaturdayBlocks({ decision }: { decision: boolean | null }) {
+  return (
+    <ol className="saturdays" aria-label="Avery's last four Saturdays">
+      {[5, 6, 7, 8].map((week) => (
+        <li key={week} data-state={decision === null ? "open" : decision ? "clinic" : "rest"}>
+          <span>Sat · wk {week}</span>
+          <b>{decision === null ? "Open" : decision ? "Clinic" : "Avery’s"}</b>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** Beat 9 and 10. Two calls that change what there is to work with, then the last repair. */
 function FinalRepairStage() {
   const { state, dispatch } = useChallenge();
   const { opportunity } = BASKETBALL_SCENARIO;
   const completionDecided = state.log.some((event) => event.type === "COMPLETION_INCOME_DECIDED");
   const ready = state.income.includeOptionalWork !== null && completionDecided;
+  const revealRef = useRevealOnce(ready);
   return (
     <StageShell stage="opportunity-final-repair" kicker="Week 5 · Two calls" title="Two calls, then land the plan.">
       <div className="decision-row">
@@ -367,6 +424,7 @@ function FinalRepairStage() {
           <p className="eyebrow">Message · {opportunity.from}</p>
           <h2>{opportunity.title}</h2>
           <p>{opportunity.body}</p>
+          <SaturdayBlocks decision={state.income.includeOptionalWork} />
           <dl className="tradeoff-pair">
             <div><dt>Avery gains</dt><dd className="money">$500</dd></div>
             <div><dt>Avery gives up</dt><dd>{opportunity.timeCost}</dd></div>
@@ -381,6 +439,9 @@ function FinalRepairStage() {
           <p className="eyebrow">Your call · The $800 bonus</p>
           <h2>Is it still in the plan?</h2>
           <p>Avery has made every practice and every game so far. Three weeks left, and the brace does not change the rule: miss one and the bonus is gone.</p>
+          <ol className="saturdays" aria-label="Weeks left to keep the attendance bonus">
+            {[6, 7, 8].map((week) => <li key={week} data-state="pending"><span>Week {week}</span><b>Every session</b></li>)}
+          </ol>
           <dl className="tradeoff-pair">
             <div><dt>Count it</dt><dd>More to work with, and one more thing that has to go right</dd></div>
             <div><dt>Leave it out</dt><dd>Less to work with, nothing left to lose</dd></div>
@@ -392,11 +453,12 @@ function FinalRepairStage() {
           <p className="decision-note">Counting it means testing the plan once more without it.</p>
         </section>
       </div>
-      {ready ? <PlanBoardForMode mode="final" /> : <p className="board-gate">Make both calls above to open the final board. Neither call is graded — only whether the money works afterward.</p>}
+      {ready ? <div ref={revealRef}><PlanBoardForMode mode="final" /></div> : <p className="board-gate">Make both calls above to open the final board. Neither call is graded — only whether the money works afterward.</p>}
     </StageShell>
   );
 }
 
+/** Beat 11. The student's own numbers, put to work as evidence for their own argument. */
 function DefenseStage() {
   const { state, dispatch } = useChallenge();
   const [selected, setSelected] = useState<string[]>(state.defense.tileIds);
@@ -417,7 +479,7 @@ function DefenseStage() {
   const canSubmit = selected.length >= 2 && selected.length <= 3 && text.trim().length >= 40;
   const toggle = (id: string) => setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length < 3 ? [...current, id] : current);
   return (
-    <StageShell stage="defense" kicker="Final step" title="Make the case for your plan.">
+    <StageShell stage="defense" kicker="Week 8" title="Make the case for your plan.">
       <div className="defense-layout">
         <section className="evidence-picker">
           <p className="field-label">1 · Your evidence</p>
@@ -444,31 +506,64 @@ function DefenseStage() {
   );
 }
 
+/**
+ * Beat 12. The student's own version of the eight weeks, replayed. Two students who both
+ * finished with a working plan should still see two different stories here.
+ */
 function SubmittedStage() {
   const { state, reset } = useChallenge();
   const navigate = useNavigate();
   const final = amountsFor(state, "final");
-  const setupTitle = BASKETBALL_SCENARIO.setups.find((setup) => setup.id === state.setupId)?.title;
+  const setup = BASKETBALL_SCENARIO.setups.find((item) => item.id === state.setupId);
+  const goalShare = Math.round((final.goal / SCENARIO_NUMBERS.goalCap) * 100);
+  const clinics = state.income.includeOptionalWork === true;
+  const weeks = [
+    { week: 1, tone: "played", text: "Avery moves in" },
+    { week: 2, tone: "played", text: "First start" },
+    { week: 3, tone: "played", text: "Bills clear" },
+    { week: 4, tone: "played", text: "Most minutes" },
+    { week: 5, tone: "shock", text: "Showcase off · brace" },
+    { week: 6, tone: clinics ? "work" : "played", text: clinics ? "Clinic Saturday" : "Rest Saturday" },
+    { week: 7, tone: clinics ? "work" : "played", text: clinics ? "Clinic Saturday" : "Rest Saturday" },
+    { week: 8, tone: "end", text: "Season closes" },
+  ];
   return (
-    <StageShell stage="submitted" kicker="Week 8 · Turned in" title="Avery got through it.">
-      <section className="submitted-card">
-        <p className="submitted-card__lede">The showcase never happened, the brace was not optional, and the eight weeks still closed on a plan that works. Here is where Avery landed.</p>
-        <dl className="submitted-card__record">
-          <div><dt>Course fund</dt><dd><b className="money">{formatDollars(final.goal)}</b><span>of {formatDollars(SCENARIO_NUMBERS.goalCap)}</span></dd></div>
-          <div><dt>Backup money</dt><dd><b className="money">{formatDollars(final.reserve)}</b><span>kept for a surprise</span></dd></div>
-          <div><dt>Anything else</dt><dd><b className="money">{formatDollars(final.flexibleCash)}</b><span>Avery's to spend</span></dd></div>
-        </dl>
-        <ul className="submitted-card__ledger">
-          {setupTitle && <li>Home for eight weeks: {setupTitle}.</li>}
-          <li>{state.income.includeOptionalWork ? "Four Saturdays went to the clinics instead of rest." : "The Saturdays stayed Avery's."}</li>
-          <li>{state.income.includeCompletionFinal ? "The plan still counts on the $800 attendance bonus, and you showed it works without it." : "Nothing in the plan depends on a bonus arriving."}</li>
-        </ul>
+    <StageShell stage="submitted" kicker="Turned in" title="Avery’s eight weeks, your version.">
+      <section className="recap">
+        <ol className="recap__timeline">
+          {weeks.map((entry) => (
+            <li key={entry.week} data-tone={entry.tone}>
+              <b>W{entry.week}</b>
+              <span>{entry.text}</span>
+            </li>
+          ))}
+        </ol>
+        <div className="recap__body">
+          <div className="recap__goal">
+            <p className="field-label">Sports-media course</p>
+            <strong className="money">{formatDollars(final.goal)}</strong>
+            <span>of {formatDollars(SCENARIO_NUMBERS.goalCap)}</span>
+            <span className="recap__meter" aria-hidden="true"><i style={{ width: `${Math.min(100, goalShare)}%` }} /></span>
+            <p>{goalShare >= 100 ? "Fully covered." : `${goalShare}% covered by the end of the season.`}</p>
+          </div>
+          <dl className="recap__numbers">
+            <div><dt>Backup money</dt><dd className="money">{formatDollars(final.reserve)}</dd></div>
+            <div><dt>Anything else</dt><dd className="money">{formatDollars(final.flexibleCash)}</dd></div>
+          </dl>
+          <ul className="recap__decisions">
+            {setup && <li><span>Lived</span>{setup.title} · {setup.commuteMinutes * 2} min a day</li>}
+            <li><span>Saturdays</span>{clinics ? "Four clinics, +$500" : "Kept for rest and rehab"}</li>
+            <li><span>$800 bonus</span>{state.income.includeCompletionFinal ? "Still counted, and shown to work without it" : "Left out of the plan"}</li>
+          </ul>
+        </div>
+      </section>
+      <div className="stage-action">
         <p>Your explanation goes to a person, not a computer. Software can check whether the money works. It should not decide whether your thinking makes sense.</p>
-        <div className="submitted-card__actions">
+        <div className="stage-action__pair">
           <Button onClick={() => navigate("/educator/class/students/14")}>See what your teacher sees</Button>
           <Button variant="quiet" onClick={reset}>Start over</Button>
         </div>
-      </section>
+      </div>
     </StageShell>
   );
 }
@@ -477,20 +572,22 @@ export function StudentChallenge() {
   const { state } = useChallenge();
   return useMemo(() => {
     switch (state.stage) {
-      case "entry": case "join": return <JoinStage />;
+      case "entry": case "join": return <OpeningStage />;
       // Restored only when a second world ships; the reducer routes past it today.
-      case "choose-world": return <OfferStage />;
-      case "the-offer": return <OfferStage />;
+      case "choose-world": return <OpeningStage />;
+      // Retired as its own screen — resumed sessions saved on it land on the deal.
+      case "the-offer": return <DealStage />;
       case "role-contract": return <DealStage />;
       case "setup-comparison": return <SetupStage />;
       case "working-plan": return <WorkingStage />;
-      case "fallback-version": return <PlanStage mode="fallback" kicker="Backup check" title="What if the bonus never shows up?" />;
-      case "income-check": return <IncomeCheckStage />;
+      case "fallback-version": return <PlanStage mode="fallback" kicker="Before the season" title="What if the bonus never shows up?" deck="Your plan counts on money Avery does not have yet. Build the version that works without it." />;
+      // Retired as its own screen — a plan with no bonus money now starts the season directly.
+      case "income-check": return <Week5TransitionStage />;
       case "week5-transition": return <Week5TransitionStage />;
       case "week5-event": return <Week5EventStage />;
-      case "first-response": return <PlanStage mode="week5-first-response" kicker="Week 5 · First response" title="Fix what you can with what Avery has." />;
+      case "first-response": return <PlanStage mode="week5-first-response" kicker="Week 5 · First response" title="Fix what you can with what Avery has." deck="No new money. Move your own numbers as far as they go." />;
       case "opportunity-final-repair": return <FinalRepairStage />;
-      case "remaining-risk-preview": return <PlanStage mode="remaining-risk" kicker="Week 5 · Last check" title="Test the plan without the $800." />;
+      case "remaining-risk-preview": return <PlanStage mode="remaining-risk" kicker="Week 5 · Last check" title="Test the plan without the $800." deck="Same plan, bonus removed. If it never arrives, this is what Avery is living on." />;
       case "defense": return <DefenseStage />;
       case "submitted": return <SubmittedStage />;
     }

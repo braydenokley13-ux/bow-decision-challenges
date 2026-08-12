@@ -43,11 +43,9 @@ async function walk(browser, size) {
   await page.goto(`${BASE}/challenge`);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
-  await shoot(page, size, "02-join");
-  await page.getByRole("button", { name: "Enter the challenge" }).click();
-  await shoot(page, size, "03-offer");
-  await page.getByRole("button", { name: "See what it pays" }).click();
-  await shoot(page, size, "04-deal");
+  await shoot(page, size, "02-opening");
+  await page.getByRole("button", { name: "Start the eight weeks" }).click();
+  await shoot(page, size, "03-deal");
 
   await page.getByRole("button", { name: "Find Avery a place" }).click();
   await page.getByLabel("Full eight-week cost").first().fill("1400");
@@ -60,7 +58,7 @@ async function walk(browser, size) {
   await page.getByRole("button", { name: "Build the plan" }).click();
   await page.getByLabel("Safe cash").fill("5000");
   await page.locator(".working-setup .calculation").first().getByRole("button", { name: "Check" }).click();
-  await page.getByLabel("Must-pay costs").fill("1600");
+  await page.getByLabel("8-week essentials").fill("1600");
   await page.locator(".working-setup .calculation").nth(1).getByRole("button", { name: "Check" }).click();
   await page.getByRole("button", { name: /Perfect Attendance Bonus/ }).click();
   await page.getByRole("button", { name: /Making the Cut Bonus/ }).click();

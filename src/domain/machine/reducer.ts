@@ -62,13 +62,15 @@ export function challengeReducer(state: ChallengeState, action: ChallengeAction)
     case "SESSION_STARTED": {
       // With one finished world there is no choice to present, so the session opens
       // straight into it. Restoring the picker means routing to "choose-world" here.
+      // The opening screen already told the story, so checking in lands on the deal
+      // rather than on a second orientation screen.
       const next = { ...state, meta: { ...state.meta, sessionId: action.sessionId, classCode: action.classCode, seatCode: action.seatCode, worldId: DEFAULT_WORLD_ID } };
       const started = append(next, action.type, action);
-      return goTo(PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? started : append(started, "WORLD_CONFIRMED", { worldId: DEFAULT_WORLD_ID }), PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? "choose-world" : "the-offer");
+      return goTo(PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? started : append(started, "WORLD_CONFIRMED", { worldId: DEFAULT_WORLD_ID }), PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? "choose-world" : "role-contract");
     }
     case "WORLD_CONFIRMED": {
       const next = { ...state, meta: { ...state.meta, worldId: action.worldId } };
-      return goTo(append(next, action.type, action), "the-offer");
+      return goTo(append(next, action.type, action), "role-contract");
     }
     case "CALCULATION_SUBMITTED": {
       const previous = state.calculations[action.calcId];
@@ -103,7 +105,9 @@ export function challengeReducer(state: ChallengeState, action: ChallengeAction)
       const snapshot = { id: `snapshot-${sequence}`, sequence, inputs, ...(action.acknowledgedResidual !== undefined ? { acknowledgedResidual: action.acknowledgedResidual } : {}) };
       next = { ...next, snapshots: [...next.snapshots, snapshot], saved: { ...next.saved, [action.mode]: snapshot.id } };
       next = append(next, "PLAN_SAVED", { mode: action.mode, snapshot, balance }, supportFor(state, action.mode));
-      if (action.mode === "working") return goTo(next, state.income.includeCompletion || state.income.includeOutcome ? "fallback-version" : "income-check");
+      // A plan built on no conditional income has no lower-resource version to build,
+      // so the season starts instead of a screen that only says there is nothing to do.
+      if (action.mode === "working") return goTo(next, state.income.includeCompletion || state.income.includeOutcome ? "fallback-version" : "week5-transition");
       if (action.mode === "fallback") return goTo(next, "week5-transition");
       if (action.mode === "week5-first-response") return goTo(next, "opportunity-final-repair");
       if (action.mode === "final") return goTo(next, state.income.includeCompletionFinal ? "remaining-risk-preview" : "defense");

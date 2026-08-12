@@ -10,12 +10,10 @@ interface AllocationControlProps {
   step: 50 | 100;
   max: number;
   originalValue?: number | undefined;
-  referenceValue?: number | undefined;
   onChange: (value: ReturnType<typeof dollars>) => void;
-  onApplyReference?: () => void;
 }
 
-export function AllocationControl({ id, label, description, value, step, max, originalValue, referenceValue, onChange, onApplyReference }: AllocationControlProps) {
+export function AllocationControl({ id, label, description, value, step, max, originalValue, onChange }: AllocationControlProps) {
   const inputId = useId();
   const [raw, setRaw] = useState<string | null>(null);
   const commit = (candidate: string) => {
@@ -64,9 +62,6 @@ export function AllocationControl({ id, label, description, value, step, max, or
         <button type="button" aria-label={`Increase ${label} by $${step}`} onClick={() => changeBy(step)}>+</button>
       </div>
       <div className="allocation-card__share" aria-hidden="true"><span style={{ width: `${max > 0 ? Math.min(100, (value / max) * 100) : 0}%` }} /></div>
-      {referenceValue !== undefined && referenceValue !== value && onApplyReference && (
-        <button type="button" className="allocation-card__reference" onClick={onApplyReference}>Use saved {formatDollars(referenceValue)}</button>
-      )}
     </section>
   );
 }

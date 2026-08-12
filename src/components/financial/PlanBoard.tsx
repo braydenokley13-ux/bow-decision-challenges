@@ -15,12 +15,16 @@ const CATEGORIES: Record<CategoryId, { label: string; description: string }> = {
   flexibleCash: { label: "Money for anything else", description: "Money Avery can use for fun, small needs, or another goal." },
 };
 
+/**
+ * One short line per board. The stage above already set the scene, so the board itself
+ * only says what is different about this pass — it never repeats the headline.
+ */
 const MODE_COPY = {
-  working: { eyebrow: "First plan", title: "Split what is left", body: "The costs on the left are already promised. You decide what happens to the rest." },
-  fallback: { eyebrow: "Backup plan", title: "Now assume the bonus never arrives", body: "Same costs, less money. Change your three choices so the plan still holds." },
-  "week5-first-response": { eyebrow: "First response", title: "Fix it with what Avery already has", body: "No new money yet. Move your own numbers as far as they go, then save what is left." },
-  final: { eyebrow: "Final plan", title: "Land the plan", body: "Your two Week 5 decisions are in. Move the money until every dollar has a job." },
-  "remaining-risk": { eyebrow: "Last check", title: "And if the $800 never comes?", body: "A copy of your final plan with the bonus removed. Make it work without that money." },
+  working: { eyebrow: "First plan", title: "Split what is left" },
+  fallback: { eyebrow: "Backup plan", title: "Same costs, less money" },
+  "week5-first-response": { eyebrow: "First response", title: "No new money yet" },
+  final: { eyebrow: "Final plan", title: "Both calls are in" },
+  "remaining-risk": { eyebrow: "Last check", title: "Bonus removed" },
 } as const;
 
 interface PlanBoardProps {
@@ -54,7 +58,6 @@ export function PlanBoard({ input, setupTitle, baseline, reference, attempts, on
           <div>
             <span className="eyebrow">{copy.eyebrow}</span>
             <h2 id="plan-board-title">{copy.title}</h2>
-            <p className="plan-board__intro">{copy.body}</p>
           </div>
           {/* Only offered once the board differs from what the student saved; otherwise
               the control does nothing and reads as a step they have missed. */}
@@ -87,9 +90,7 @@ export function PlanBoard({ input, setupTitle, baseline, reference, attempts, on
                 step={mode.increment}
                 max={category === "goal" ? SCENARIO_NUMBERS.goalCap : max}
                 originalValue={baseline?.[category]}
-                referenceValue={reference?.[category]}
                 onChange={(amount) => onAmountChange(category, amount)}
-                {...(reference && onApplyReference ? { onApplyReference: () => onApplyReference(category) } : {})}
               />
             ))}
           </div>

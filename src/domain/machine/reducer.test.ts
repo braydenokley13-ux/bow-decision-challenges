@@ -18,14 +18,16 @@ describe("challenge state machine", () => {
     expect(state.drafts.working?.goal).toBe(500);
   });
 
-  it("routes a confirmed-only Working Plan to Income Check", () => {
+  it("starts the season straight from a confirmed-only Working Plan", () => {
     let state = createInitialState();
     state = challengeReducer(state, { type: "SETUP_SELECTED", setupId: "stable-1800" });
     state = challengeReducer(state, { type: "PLAN_AMOUNT_CHANGED", mode: "working", category: "goal", amount: dollars(900) });
     state = challengeReducer(state, { type: "PLAN_AMOUNT_CHANGED", mode: "working", category: "reserve", amount: dollars(300) });
     state = challengeReducer(state, { type: "PLAN_AMOUNT_CHANGED", mode: "working", category: "flexibleCash", amount: dollars(400) });
     state = challengeReducer(state, { type: "PLAN_SAVE_REQUESTED", mode: "working" });
-    expect(state.stage).toBe("income-check");
+    // No conditional income means no lower-resource version to build, so there is no
+    // screen in between whose only message is that there is nothing to do.
+    expect(state.stage).toBe("week5-transition");
     expect(state.saved.working).toBeDefined();
   });
 
