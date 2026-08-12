@@ -35,6 +35,10 @@ The browser suite covers both income routes through submission, accepting and de
 optional work, both `$800` branches, the support and answer-supplied paths, refresh and
 resume, educator deep links, keyboard-only operation, an axe scan, and two Chromebook widths.
 
+To review the rendered product, `node scripts/walkthrough.mjs <outDir>` drives the whole
+Basketball flow and screenshots every stage at 1366×768, 1024×600, and 640px wide, reporting
+any horizontal overflow or console error it encounters along the way.
+
 ## How the assessment works
 
 90 structured points across 18 micro-skill observations, plus 10 points of written reasoning
