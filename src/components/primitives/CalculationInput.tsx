@@ -68,11 +68,11 @@ export function CalculationInput({ label, prompt, terms, expected, onSubmit, onC
         <Button type="button" variant="secondary" onClick={submit}>Check</Button>
       </div>
       <p id={`${id}-feedback`} className={`inline-feedback inline-feedback--${verdict}`} aria-live="polite">
-        {verdict === "correct" && "That total checks out."}
-        {verdict === "low" && "That total is too low. Check the weeks and any one-time cost."}
-        {verdict === "high" && "That total is too high. Check whether anything was counted twice."}
-        {verdict === "invalid" && "Type a whole dollar amount, like 1400. You do not need to type the dollar sign."}
-        {verdict === "idle" && priorAttempts >= 2 && "A step-by-step hint is available below."}
+        {verdict === "correct" && "That's the full amount."}
+        {verdict === "low" && "Too low. Check that you counted every week and every extra cost."}
+        {verdict === "high" && "Too high. Check whether something got counted twice."}
+        {verdict === "invalid" && "Enter a whole dollar amount, like 1400. No dollar sign needed."}
+        {verdict === "idle" && priorAttempts >= 2 && "Stuck? Open the step-by-step hint below."}
       </p>
       {priorAttempts >= 2 && verdict !== "correct" && (
         <div className="calculation-help">

@@ -6,13 +6,35 @@ import { ClassOverview, ConceptDrilldown, EducatorGuide, ReasoningReview, Standa
 
 function Home() {
   return (
-    <main className="home-page">
+    <main className="home-page" data-world="basketball">
       <header><AppMark /><Link to="/educator/guide">For educators</Link></header>
-      <section>
-        <div><p className="eyebrow">BOW DECISION CHALLENGES · GRADES 6–8</p><h1>Eight weeks can change a plan.</h1><p>Avery Reyes has a place with the Harbor City Flight and one chance to save for a sports-media course. The first plan looks manageable. Week 5 changes the math.</p><div><Link className="button button--primary" to="/challenge">Start Avery’s story</Link><Link className="button button--secondary" to="/educator/class">View class evidence</Link></div></div>
-        <aside aria-label="Eight Weeks to the Showcase"><span>HARBOR CITY FLIGHT</span><strong>08</strong><b>WEEKS</b><i>AVERY REYES · AGE 18</i></aside>
+      <section className="home-page__stage">
+        <div className="home-page__copy">
+          <p className="eyebrow">Plan Under Pressure · Basketball</p>
+          <h1>Eight weeks to the showcase.</h1>
+          <p className="home-page__deck">Avery has $5,000 that is certain, $1,800 that is not, and bills either way. You make the money calls. In Week 5 the season changes and your plan has to survive it.</p>
+          <ol className="home-page__beats">
+            <li><span>01</span>Build a plan that works</li>
+            <li><span>02</span>Week 5 breaks it</li>
+            <li><span>03</span>Repair it and defend it</li>
+          </ol>
+          <div className="home-page__actions">
+            <Link className="button button--primary" to="/challenge">Start the challenge</Link>
+            <Link className="button button--secondary" to="/educator/class">See the evidence a teacher gets</Link>
+          </div>
+        </div>
+        <aside className="home-page__mark" aria-hidden="true">
+          <span className="home-page__weeks">08</span>
+          <b>weeks</b>
+          <i>Week 5 changes everything</i>
+        </aside>
       </section>
-      <footer><span>Post-instruction application assessment</span><span>Six assessed concepts</span><span>Basketball</span></footer>
+      <footer>
+        <span>Grades 6–8</span>
+        <span>12–15 minutes</span>
+        <span>Applied after instruction</span>
+        <span>Adaptive budgeting under uncertainty</span>
+      </footer>
     </main>
   );
 }

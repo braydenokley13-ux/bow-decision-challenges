@@ -17,4 +17,23 @@ describe("NYSED mapping", () => {
     expect(NYSED_OBJECTIVES.map((objective) => objective.objectiveId)).toEqual(["1.1", "1.2", "1.3", "4.1", "5.1"]);
     expect(NYSED_OBJECTIVES.every((objective) => objective.verifiedOn === "2026-08-11")).toBe(true);
   });
+
+  it("never displays an objective the evidence does not actually reach", () => {
+    // An objective shown in the educator views with no micro-skill behind it would be an
+    // alignment claim with nothing supporting it.
+    for (const objective of NYSED_OBJECTIVES) {
+      const rows = STANDARDS_ROWS.filter((row) => row.objectiveId === objective.objectiveId);
+      expect(rows.length, `${objective.objectiveId} has no supporting micro-skill`).toBeGreaterThan(0);
+    }
+  });
+
+  it("only maps micro-skills that exist", () => {
+    const ids = new Set(STRUCTURED_MICRO_SKILLS.map((skill) => skill.id));
+    for (const row of STANDARDS_ROWS) expect(ids.has(row.microSkillId), row.microSkillId).toBe(true);
+  });
+
+  it("reserves primary alignment for the two budgeting objectives", () => {
+    const primary = new Set(STANDARDS_ROWS.filter((row) => row.strength === "primary").map((row) => row.objectiveId));
+    expect([...primary].sort()).toEqual(["1.2", "1.3"]);
+  });
 });

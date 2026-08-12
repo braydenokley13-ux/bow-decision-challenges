@@ -1,21 +1,15 @@
+/* Each world themes the shared components through these variables only. Adding a world
+   means adding a block here — no component needs to know which story it is rendering. */
 [data-world="basketball"] {
-  --world-accent: #b64e24;
-  --world-accent-strong: #8f3c1a;
-  --world-accent-soft: #f4e2d8;
+  --world-accent: #b8431a;
+  --world-accent-strong: #93330f;
+  --world-accent-soft: #f7e5da;
   --world-accent-ink: #ffffff;
-  --world-hero-bg: #10243b;
+  --world-hero-bg: #0b1b33;
   --world-hero-ink: #f4f1ea;
-  --world-hero-second: #e07843;
-  --font-display: "Arial Narrow", "Avenir Next Condensed", "Roboto Condensed", var(--font-ui);
-}
-
-[data-world="fashion"] {
-  --world-accent: #c42a5b;
-  --world-accent-strong: #9e1f49;
-  --world-accent-soft: #fbe3ea;
-  --world-accent-ink: #ffffff;
-  --world-hero-bg: #17161a;
-  --world-hero-ink: #f5f2ee;
-  --world-hero-second: #2440c8;
-  --font-display: "Instrument Serif", Georgia, serif;
+  --world-hero-second: #e0672e;
+  --world-hero-line: #1d3355;
+  --world-hero-body: #c8cedb;
+  --world-hero-muted: #8f9bb0;
+  --world-hero-edge: #46587a;
 }

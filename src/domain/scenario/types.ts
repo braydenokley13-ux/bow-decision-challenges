@@ -47,6 +47,6 @@ export interface WorldRegistryEntry {
   id: WorldId;
   title: string;
   subtitle: string;
-  availability: "available" | "coming-soon";
-  scenario?: WorldScenario;
+  availability: "available";
+  scenario: WorldScenario;
 }
