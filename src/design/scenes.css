@@ -265,7 +265,8 @@
 .recap__numbers > div { padding: var(--s-4); background: var(--world-panel); border: 1px solid var(--world-panel-edge); }
 .recap__numbers dt { color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
 .recap__numbers dd { margin: var(--s-2) 0 0; color: var(--world-hero-ink); font: var(--m-md); font-feature-settings: var(--num); }
-.recap__decisions { display: grid; gap: var(--s-3); margin: var(--s-5) 0 0; padding: 0; list-style: none; }
+.recap__closing { margin: var(--s-4) 0 0; }
+.recap__decisions { display: grid; gap: var(--s-3); margin: var(--s-4) 0 0; padding: 0; list-style: none; }
 .recap__decisions li { display: grid; gap: var(--s-1); padding-bottom: var(--s-3); border-bottom: 1px solid var(--world-hero-line); color: var(--world-hero-ink); font: var(--t-ui); }
 .recap__decisions span { color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.08em; text-transform: uppercase; }
 

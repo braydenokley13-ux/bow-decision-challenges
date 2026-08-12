@@ -602,6 +602,13 @@ function SubmittedStage() {
   const setup = BASKETBALL_SCENARIO.setups.find((item) => item.id === state.setupId);
   const goalShare = Math.min(100, Math.round((final.goal / SCENARIO_NUMBERS.goalCap) * 100));
   const clinics = state.income.includeOptionalWork === true;
+  // Avery signs off with facts from the student's own run, in Avery's own voice. It
+  // states what happened and never says whether it was the right way to play it.
+  const closing = [
+    setup ? `Eight weeks at the ${setup.title}, ${setup.commuteMinutes * 2} minutes of travel a day.` : null,
+    clinics ? "Four Saturdays coaching instead of resting." : "I kept my Saturdays.",
+    final.goal > 0 ? `${formatDollars(final.goal)} put away for the course.` : "Nothing left over for the course this time.",
+  ].filter(Boolean).join(" ");
   const weeks = [
     { week: 1, tone: "played", text: setup ? `Avery moves into the ${setup.title}` : "Avery moves in" },
     { week: 2, tone: "played", text: "First start" },
@@ -636,6 +643,10 @@ function SubmittedStage() {
             <ol className="recap__timeline">
               {weeks.map((entry) => <li key={entry.week} data-tone={entry.tone}><b>Week {entry.week}</b><span>{entry.text}</span></li>)}
             </ol>
+            <blockquote className="post__voice post__voice--scene recap__closing">
+              <span className="post__who" aria-hidden="true">{BASKETBALL_SCENARIO.offer.jersey}</span>
+              <p>{closing}</p>
+            </blockquote>
             <ul className="recap__decisions">
               <li><span>Saturdays</span>{clinics ? "Four clinics, +$500" : "Kept for rest and rehab"}</li>
               <li><span>$800 bonus</span>{state.income.includeCompletionFinal ? "Still counted, and shown to work without it" : "Left out of the plan"}</li>
