@@ -422,6 +422,27 @@ p { color: var(--ink-2); }
 .matrix-bar span[data-status="not_observed"], .matrix-counts i[data-status="not_observed"] { background: var(--pat-ghost); }
 .matrix-counts { display: flex; gap: var(--s-4); margin-top: var(--s-2); color: var(--ink-3); font: var(--t-micro); }
 .matrix-counts i { width: 8px; height: 8px; display: inline-block; margin-right: var(--s-1); }
+
+/* A key, so the matrix can be read without hovering a bar segment. */
+.status-key { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-5); margin: 0 0 var(--s-4); padding: 0; list-style: none; }
+.status-key li { display: flex; align-items: center; gap: var(--s-2); color: var(--ink-3); font: var(--t-micro); }
+.status-key i { width: 12px; height: 12px; }
+.status-key i[data-status="demonstrated_independently"] { background: var(--fin-balanced); }
+.status-key i[data-status="demonstrated_with_support"] { background: var(--fin-reliable); }
+.status-key i[data-status="developing"] { background: var(--fin-conditional); }
+.status-key i[data-status="not_demonstrated"] { background: var(--fin-over); }
+.status-key i[data-status="not_observed"] { background: var(--pat-ghost); }
+
+/* Counts a teacher can turn into names. */
+.route-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; padding: 1px; background: var(--ink-2); }
+.route-grid article { display: flex; flex-direction: column; padding: var(--s-5); background: var(--ink-1); }
+.route-grid b { font: var(--m-hero); font-feature-settings: var(--num); }
+.route-grid article[data-route="still_open"] b { color: var(--fin-conditional); }
+.route-grid h3 { margin: var(--s-2) 0 var(--s-3); font: var(--t-title3); }
+.route-grid p { margin: 0 0 var(--s-4); color: var(--ink-4); font: var(--t-micro); }
+.seat-chips { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: auto; }
+.seat-chips a { min-width: 30px; padding: var(--s-2); color: var(--ink-invert); text-align: center; text-decoration: none; background: rgb(255 255 255 / 12%); border-radius: var(--r-xs); font: var(--t-micro); font-feature-settings: var(--num); }
+.seat-chips a:hover { background: rgb(255 255 255 / 26%); }
 .trajectory-panel { display: grid; grid-template-columns: 0.35fr 1fr; gap: var(--s-6); margin: 0 var(--s-7); padding: var(--s-6); color: var(--ink-invert); background: var(--ink-1); }
 .trajectory-panel h2 { font: var(--t-title1); }
 .trajectory-panel p { color: var(--ink-4); }
@@ -489,6 +510,8 @@ p { color: var(--ink-2); }
 .student-response blockquote { margin: var(--s-7) 0; font: 500 1.65rem/1.45 var(--font-ui); letter-spacing: -0.02em; }
 .selected-evidence { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .selected-evidence span { padding: var(--s-3); background: var(--fin-adjustable-soft); font: var(--t-micro); }
+.response-note { margin: var(--s-5) 0 0; color: var(--ink-3); font: var(--t-micro); }
+.student-worklist p { font-family: var(--font-mono); }
 .rubric-row { display: grid; grid-template-columns: 1fr auto; gap: var(--s-5); padding: var(--s-4) 0; border-bottom: 1px solid var(--border-default); }
 .rubric-row b, .rubric-row span { display: block; }
 .rubric-row span { margin-top: var(--s-2); color: var(--ink-3); font: var(--t-micro); }
@@ -522,6 +545,7 @@ p { color: var(--ink-2); }
   .alignment-grid { grid-template-columns: repeat(3, 1fr); }
   .process-line, .launch-guide ol { grid-template-columns: repeat(3, 1fr); }
   .concept-matrix tbody th { width: 220px; }
+  .route-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-height: 650px) and (min-width: 900px) {
@@ -575,6 +599,7 @@ p { color: var(--ink-2); }
   .process-line, .launch-guide ol, .alignment-grid { grid-template-columns: 1fr; }
   .trajectory-panel { grid-template-columns: 1fr; margin: 0 var(--s-4); }
   .trajectory-strip { grid-template-columns: 1fr 1fr; }
+  .route-grid { grid-template-columns: 1fr; }
   .concept-matrix { display: block; overflow-x: auto; }
   .educator-topbar { grid-template-columns: 1fr auto; padding: var(--s-3); }
   .educator-topbar nav { grid-column: 1 / -1; flex-wrap: wrap; justify-content: start; }
