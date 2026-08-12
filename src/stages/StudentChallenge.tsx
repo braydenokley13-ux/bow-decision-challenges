@@ -10,9 +10,9 @@ import { dollars, formatDollars, type Dollars } from "../domain/core/money";
 import type { CalcId, CategoryId } from "../domain/core/ids";
 import type { PlanMode } from "../domain/finance/types";
 import { availableFor, lockedFor, week5Change } from "../domain/finance/formulas";
+import { PLAN_MODES } from "../domain/finance/modes";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
-import { WORLD_REGISTRY } from "../domain/scenario/registry";
 import { amountsFor, meaningfulAttempts, snapshotForMode } from "../domain/machine/selectors";
 import { STUDENT_COPY } from "../content/studentCopy";
 
@@ -33,37 +33,23 @@ function JoinStage() {
   const [seatCode, setSeatCode] = useState("14");
   const valid = /^[A-Z0-9]{4,8}$/i.test(classCode) && /^\d{1,2}$/.test(seatCode);
   return (
-    <div className="entry-page">
+    <div className="entry-page" data-world="basketball">
       <div className="entry-page__panel">
         <p className="eyebrow">{STUDENT_COPY.join.eyebrow}</p>
         <h1>{STUDENT_COPY.join.title}</h1>
         <p>{STUDENT_COPY.join.body}</p>
-        <label>Class code<input value={classCode} onChange={(event) => setClassCode(event.target.value.toUpperCase())} maxLength={8} /></label>
-        <label>Seat code<input value={seatCode} onChange={(event) => setSeatCode(event.target.value.replace(/\D/g, ""))} inputMode="numeric" maxLength={2} /></label>
-        <Button type="button" aria-disabled={!valid} onClick={() => valid && dispatch({ type: "SESSION_STARTED", sessionId: crypto.randomUUID(), classCode, seatCode })}>Continue</Button>
-        <p className="privacy-note"><strong>What happens to these codes?</strong> They stay on this computer for this demo.</p>
+        <div className="entry-page__codes">
+          <label>Class code<input value={classCode} onChange={(event) => setClassCode(event.target.value.toUpperCase())} maxLength={8} /></label>
+          <label>Seat<input value={seatCode} onChange={(event) => setSeatCode(event.target.value.replace(/\D/g, ""))} inputMode="numeric" maxLength={2} /></label>
+        </div>
+        <Button type="button" aria-disabled={!valid} onClick={() => valid && dispatch({ type: "SESSION_STARTED", sessionId: crypto.randomUUID(), classCode, seatCode })}>Enter the challenge</Button>
+        <p className="privacy-note">{STUDENT_COPY.join.privacy}</p>
       </div>
-    </div>
-  );
-}
-
-function ChooseWorldStage() {
-  const { dispatch } = useChallenge();
-  return (
-    <div className="world-page">
-      <header><p className="eyebrow">{STUDENT_COPY.world.eyebrow}</p><h1>{STUDENT_COPY.world.title}</h1><p>{STUDENT_COPY.world.body}</p></header>
-      <div className="world-grid">
-        <article className="world-card world-card--basketball" data-world="basketball">
-          <span className="world-card__number">01</span>
-          <div><p className="eyebrow">Basketball · Available now</p><h2>{WORLD_REGISTRY.basketball.title}</h2><p>{WORLD_REGISTRY.basketball.subtitle}</p></div>
-          <Button onClick={() => dispatch({ type: "WORLD_CONFIRMED", worldId: "basketball" })}>Play Basketball</Button>
-        </article>
-        <article className="world-card world-card--fashion" data-world="fashion" aria-label="Fashion world coming soon">
-          <span className="world-card__number">02</span>
-          <div><p className="eyebrow">Fashion · Coming soon</p><h2>{WORLD_REGISTRY.fashion.title}</h2><p>{WORLD_REGISTRY.fashion.subtitle}</p></div>
-          <button type="button" aria-disabled="true" className="button button--secondary" onClick={(event) => event.currentTarget.blur()}>Coming soon</button>
-        </article>
-      </div>
+      <aside className="entry-page__stage" aria-hidden="true">
+        <span>Plan Under Pressure</span>
+        <strong>08</strong>
+        <b>weeks to the showcase</b>
+      </aside>
     </div>
   );
 }
@@ -71,26 +57,30 @@ function ChooseWorldStage() {
 function RoleStage() {
   const { dispatch } = useChallenge();
   return (
-    <StageShell stage="role-contract" kicker="YOUR PLAYER · AVERY REYES" title="You have 8 weeks to make this work.">
+    <StageShell stage="role-contract" kicker="Your player · Avery Reyes" title="Eight weeks. One plan. No do-overs.">
       <div className="role-layout">
         <section className="role-hero">
           <span className="role-hero__number">08</span>
-          <p>Avery is an 18-year-old guard joining the Harbor City Flight for an 8-week run.</p>
-          <h2><strong>Your job:</strong> Make a money plan for Avery. Then keep it working when the season goes sideways.</h2>
-          <p>You will choose where Avery stays, decide what money to count, react to a surprise, and explain your final move.</p>
-          <Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "setup-comparison" })}>I’m ready. Show me the choices.</Button>
+          <p className="role-hero__lede">Avery, 18, guard. Eight weeks with the Harbor City Flight.</p>
+          <h2>You handle the money.</h2>
+          <p>Pick where Avery stays. Decide which cash to count on. Then hold the plan together when Week 5 changes it.</p>
+          <Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "setup-comparison" })}>Show me the money</Button>
         </section>
         <section className="contract-sheet">
-          <header><p className="eyebrow">AVERY’S 8-WEEK MONEY</p><span>Future goal · save up to $1,200</span></header>
+          <header><p className="eyebrow">Avery’s 8-week money</p></header>
           <div className="income-list">
+            <p className="income-list__group">Safe — Avery will have this</p>
             {[
-              ["Money already saved", "$500", "Safe cash. Avery already has it."],
-              ["Base pay after taxes", "$4,500", "Safe cash. Avery gets it no matter how the team plays."],
-              ["Perfect Attendance Bonus", "$800", "Maybe money. Avery must show up to every practice and game."],
-              ["Making the Cut Bonus", "$1,000", "Maybe money. The team must qualify for the big show."],
-            ].map(([label, amount, condition]) => <div key={label}><span>{label}<small>{condition}</small></span><strong className="money">{amount}</strong></div>)}
+              ["Already saved", "$500", "Sitting in the account now."],
+              ["Base pay after taxes", "$4,500", "Paid no matter how the team plays."],
+            ].map(([label, amount, condition]) => <div key={label} data-tone="safe"><span>{label}<small>{condition}</small></span><strong className="money">{amount}</strong></div>)}
+            <p className="income-list__group">Maybe — only if a rule is met</p>
+            {[
+              ["Perfect Attendance Bonus", "$800", "Every practice. Every game."],
+              ["Making the Cut Bonus", "$1,000", "Only if the Flight qualifies."],
+            ].map(([label, amount, condition]) => <div key={label} data-tone="maybe"><span>{label}<small>{condition}</small></span><strong className="money">{amount}</strong></div>)}
           </div>
-          <p className="course-goal"><span>WHAT AVERY WANTS TO SAVE FOR</span><b>A sports-media course after the season</b><strong className="money">up to $1,200</strong></p>
+          <p className="course-goal"><span>Saving toward</span><b>A sports-media course after the season</b><strong className="money">up to $1,200</strong></p>
         </section>
       </div>
     </StageShell>
@@ -103,15 +93,15 @@ function SetupStage() {
   const lowCorrect = state.calculations["setup-lowest-total"]?.correct === true;
   const ready = middleCorrect && lowCorrect && state.setupId !== null;
   return (
-    <StageShell stage="setup-comparison" kicker="CHOICE 1 · PICK A PLACE TO STAY" title="Where should Avery live for 8 weeks?">
-      <p className="stage-deck"><strong>First, find the true 8-week price.</strong> Then pick any option you think works. There is no secret “best” choice. A cheaper place takes more travel time, and your choice can change a cost later in the story.</p>
+    <StageShell stage="setup-comparison" kicker="Choice 1 · Where Avery stays" title="Cheaper rent costs something else.">
+      <p className="stage-deck">Work out the true 8-week price of each place, then pick one. No option scores better than another — you are choosing what Avery pays <em>and</em> what Avery travels.</p>
       <div className="setup-grid">
         {BASKETBALL_SCENARIO.setups.map((setup, index) => (
           <article key={setup.id} className={`setup-card ${state.setupId === setup.id ? "is-selected" : ""}`}>
             <div className="setup-card__head"><span>Option {String.fromCharCode(65 + index)}</span><b>{setup.title}</b></div>
-            <p>{setup.tradeoff} <strong>You are choosing both the price and the travel time.</strong></p>
+            <p className="setup-card__tradeoff">{setup.tradeoff}</p>
             {index === 0 ? (
-              <div className="given-total"><span>Full 8-week price. The math is already done for you.</span><MoneyAmount value={setup.total} /></div>
+              <div className="given-total"><span>Full 8-week price · already worked out</span><MoneyAmount value={setup.total} /></div>
             ) : (
               <CalculationInput
                 calcId={index === 1 ? "setup-middle-total" : "setup-lowest-total"}
@@ -130,8 +120,8 @@ function SetupStage() {
         ))}
       </div>
       <div className="stage-action">
-        <p><strong>Your choice is not graded.</strong> Your job is to make the money plan work with whichever place you pick.</p>
-        <Button aria-disabled={!ready} onClick={() => ready && dispatch({ type: "GO_TO_STAGE", stage: "working-plan" })}>Next: Build Avery’s Money Plan</Button>
+        <p><strong>Your choice is not graded.</strong> Making the plan work with the place you picked is.</p>
+        <Button aria-disabled={!ready} onClick={() => ready && dispatch({ type: "GO_TO_STAGE", stage: "working-plan" })}>{ready ? "Build the plan" : middleCorrect && lowCorrect ? "Pick a place to continue" : "Finish both prices to continue"}</Button>
       </div>
     </StageShell>
   );
@@ -148,15 +138,34 @@ function PlanBoardForMode({ mode }: { mode: PlanMode }) {
     if (!reference) return;
     for (const key of category ? [category] : (["goal", "reserve", "flexibleCash"] as const)) dispatch({ type: "PLAN_AMOUNT_CHANGED", mode, category: key, amount: reference[key] });
   };
-  const buildOneAnswer = () => {
-    const moneyLeftAfterBills = Math.max(0, availableFor(input, SCENARIO_NUMBERS) - lockedFor(input, SCENARIO_NUMBERS));
-    const goal = dollars(Math.min(SCENARIO_NUMBERS.goalCap, moneyLeftAfterBills));
-    const reserve = dollars(Math.min(400, Math.max(0, moneyLeftAfterBills - goal)));
-    const flexibleCash = dollars(Math.max(0, moneyLeftAfterBills - goal - reserve));
+  /**
+   * Supplies one balanced plan without expressing a preference between the three
+   * categories: the money is split as evenly as the step size allows, and only the
+   * course goal's own cap redirects anything. The student receives no credit for this
+   * board, so the plan must not model a "correct" set of priorities.
+   */
+  const supplyOneBalancedPlan = () => {
+    const step = PLAN_MODES[mode].increment;
+    const spendable = Math.max(0, availableFor(input, SCENARIO_NUMBERS) - lockedFor(input, SCENARIO_NUMBERS));
+    const caps: Record<CategoryId, number> = { goal: SCENARIO_NUMBERS.goalCap, reserve: Infinity, flexibleCash: Infinity };
+    const amounts: Record<CategoryId, number> = { goal: 0, reserve: 0, flexibleCash: 0 };
+
+    // Deal the money out one step at a time, always to whichever category currently
+    // holds the least, so no category is favoured by the order of the loop.
+    for (let left = spendable; left >= step; left -= step) {
+      const target = (["goal", "reserve", "flexibleCash"] as const)
+        .filter((category) => amounts[category] + step <= caps[category])
+        .sort((a, b) => amounts[a] - amounts[b])[0];
+      if (!target) break;
+      amounts[target] += step;
+    }
+    const remainder = spendable - (amounts.goal + amounts.reserve + amounts.flexibleCash);
+    if (remainder > 0) amounts.flexibleCash += remainder;
+
     dispatch({ type: "SHOW_AND_CONTINUE_USED", interactionId: mode });
-    dispatch({ type: "PLAN_AMOUNT_CHANGED", mode, category: "goal", amount: goal });
-    dispatch({ type: "PLAN_AMOUNT_CHANGED", mode, category: "reserve", amount: reserve });
-    dispatch({ type: "PLAN_AMOUNT_CHANGED", mode, category: "flexibleCash", amount: flexibleCash });
+    for (const category of ["goal", "reserve", "flexibleCash"] as const) {
+      dispatch({ type: "PLAN_AMOUNT_CHANGED", mode, category, amount: dollars(amounts[category]) });
+    }
     dispatch({ type: "PLAN_SAVE_REQUESTED", mode });
   };
   return (
@@ -170,7 +179,7 @@ function PlanBoardForMode({ mode }: { mode: PlanMode }) {
         onLockedMoveAttempt={(lockedCardId) => dispatch({ type: "LOCKED_MOVE_ATTEMPTED", mode, lockedCardId })}
         onCommit={(acknowledgedResidual) => dispatch({ type: "PLAN_SAVE_REQUESTED", mode, ...(acknowledgedResidual !== undefined ? { acknowledgedResidual } : {}) })}
         onScaffold={() => dispatch({ type: "SCAFFOLD_OPENED", interactionId: mode })}
-        onShowAndContinue={buildOneAnswer}
+        onShowAndContinue={supplyOneBalancedPlan}
         {...(reference ? { onApplyReference: applyReference } : {})}
       />
   );
@@ -189,21 +198,21 @@ function WorkingStage() {
   if (!input || !state.setupId) return null;
   return (
     <StageShell stage="working-plan" kicker={STUDENT_COPY.working.kicker} title={STUDENT_COPY.working.title}>
-      <p className="stage-deck"><strong>Cash flow</strong> means money coming in and money going out. Start by finding Avery’s safe cash and must-pay costs. Then choose whether to count any bonus cash.</p>
+      <p className="stage-deck">{STUDENT_COPY.working.deck}</p>
       <div className="working-setup">
         <CalculationInput calcId="reliable-floor" label={STUDENT_COPY.working.safeMoney.title} prompt={STUDENT_COPY.working.safeMoney.prompt} terms={STUDENT_COPY.working.safeMoney.body} expected={5000} priorAttempts={state.calculations["reliable-floor"]?.attempts} onSubmit={(raw, value, correct) => submitCalculation(dispatch, "reliable-floor", raw, value, correct)} scaffold="Add the two safe amounts: $500 + $4,500. Do not add either bonus yet." {...calculationSupport(dispatch, "reliable-floor")} />
         <CalculationInput calcId="essentials-total" label={STUDENT_COPY.working.mustPay.title} prompt={STUDENT_COPY.working.mustPay.prompt} terms={STUDENT_COPY.working.mustPay.body} expected={1600} priorAttempts={state.calculations["essentials-total"]?.attempts} onSubmit={(raw, value, correct) => submitCalculation(dispatch, "essentials-total", raw, value, correct)} scaffold="Multiply $200 by 8 weeks. Think: $200 + $200 + $200 + $200 + $200 + $200 + $200 + $200." {...calculationSupport(dispatch, "essentials-total")} />
         <section className="income-switches" aria-labelledby="maybe-money-heading">
           <div><p className="field-label">{STUDENT_COPY.working.maybeMoney.title}</p><h2 id="maybe-money-heading">{STUDENT_COPY.working.maybeMoney.body}</h2></div>
           <button type="button" aria-pressed={state.income.includeCompletion} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId: "completion-800", included: !state.income.includeCompletion })}>
-            <span><b>{STUDENT_COPY.working.maybeMoney.attendance.title}</b><small>{STUDENT_COPY.working.maybeMoney.attendance.body}</small><em>{state.income.includeCompletion ? "COUNTING THIS BONUS" : "NOT COUNTING IT"}</em></span><MoneyAmount value={800} />
+            <span><b>{STUDENT_COPY.working.maybeMoney.attendance.title}</b><small>{STUDENT_COPY.working.maybeMoney.attendance.body}</small><em>{state.income.includeCompletion ? "Counting it" : "Not counting it"}</em></span><MoneyAmount value={800} />
           </button>
           <button type="button" aria-pressed={state.income.includeOutcome} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId: "outcome-1000", included: !state.income.includeOutcome })}>
-            <span><b>{STUDENT_COPY.working.maybeMoney.showcase.title}</b><small>{STUDENT_COPY.working.maybeMoney.showcase.body}</small><em>{state.income.includeOutcome ? "COUNTING THIS BONUS" : "NOT COUNTING IT"}</em></span><MoneyAmount value={1000} />
+            <span><b>{STUDENT_COPY.working.maybeMoney.showcase.title}</b><small>{STUDENT_COPY.working.maybeMoney.showcase.body}</small><em>{state.income.includeOutcome ? "Counting it" : "Not counting it"}</em></span><MoneyAmount value={1000} />
           </button>
         </section>
       </div>
-      {essentialsReady && floorReady ? <PlanBoardForMode mode="working" /> : <div className="board-gate"><span>🔒</span><p>{STUDENT_COPY.working.locked}</p></div>}
+      {essentialsReady && floorReady ? <PlanBoardForMode mode="working" /> : <div className="board-gate"><span aria-hidden="true">🔒</span><p>{STUDENT_COPY.working.locked}</p></div>}
     </StageShell>
   );
 }
@@ -211,9 +220,9 @@ function WorkingStage() {
 function IncomeCheckStage() {
   const { dispatch } = useChallenge();
   return (
-    <StageShell stage="income-check" kicker="BACKUP CHECK · DONE" title="Your first plan uses only safe cash.">
-      <section className="state-message state-message--resolved"><span>✓</span><div><h2>You did not count either bonus.</h2><p>That means Avery’s first plan does not break if a bonus disappears. You can skip the bonus backup screen.</p><p><strong>You are not skipping the challenge.</strong> A surprise is still coming in Week 5, and you will have to fix the plan then.</p></div></section>
-      <div className="stage-action"><p>Counting bonus cash or skipping it can both be smart. The game checks whether your plan works—not which style you choose.</p><Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "week5-transition" })}>Jump to Week 5</Button></div>
+    <StageShell stage="income-check" kicker="Backup check" title="Your plan already survives a lost bonus.">
+      <section className="state-message state-message--resolved"><span aria-hidden="true">✓</span><div><h2>You counted no maybe money.</h2><p>Nothing in this plan disappears if a bonus falls through, so there is no backup version to build.</p><p>Counting a bonus or leaving it out are both reasonable. Only whether the plan works is scored.</p></div></section>
+      <div className="stage-action"><p>Week 5 still has something waiting for you.</p><Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "week5-transition" })}>Go to Week 5</Button></div>
     </StageShell>
   );
 }
@@ -221,8 +230,13 @@ function IncomeCheckStage() {
 function Week5TransitionStage() {
   const { dispatch } = useChallenge();
   return (
-    <StageShell stage="week5-transition" kicker="CHECKPOINT SAVED" title="Fast-forward to Week 5.">
-      <section className="time-jump"><div><span>Week 1</span><i /><strong>Week 5</strong></div><h2>Your first plan is saved. Now the story changes.</h2><p>Think of this like a game checkpoint. Your earlier choices stay saved, so you cannot pretend you made a different choice after seeing the surprise.</p><Button onClick={() => dispatch({ type: "WEEK5_ADVANCE_CONFIRMED" })}>Show Me What Happened</Button></section>
+    <StageShell stage="week5-transition" kicker="Checkpoint saved" title="Four weeks go by.">
+      <section className="time-jump">
+        <div className="time-jump__track"><span>Week 1</span><i /><strong>Week 5</strong></div>
+        <h2>Your plan is locked in.</h2>
+        <p>Everything you decided is saved exactly as you left it. What happens next does not let you go back and choose differently.</p>
+        <Button onClick={() => dispatch({ type: "WEEK5_ADVANCE_CONFIRMED" })}>Continue to Week 5</Button>
+      </section>
     </StageShell>
   );
 }
@@ -232,20 +246,52 @@ function Week5EventStage() {
   if (!state.setupId) return null;
   const expected = week5Change({ includeOutcome: state.income.includeOutcome, setupId: state.setupId }, SCENARIO_NUMBERS);
   const setup = BASKETBALL_SCENARIO.setups.find((item) => item.id === state.setupId)!;
-  const tiles = [
-    ...(state.income.includeOutcome ? [{ id: "lost-outcome", label: "The $1,000 Making the Cut Bonus disappears", amount: 1000 }] : []),
-    { id: "required-cost", label: "New bill: brace and off-site rehab", amount: 700 },
-    { id: "setup-cost", label: `Extra travel bill for ${setup.title}`, amount: setup.eventCost },
+  // Only changes that actually moved money appear. A setup with no extra travel cost
+  // produces no card, so nothing here is worth $0.
+  const changes = [
+    ...(state.income.includeOutcome
+      ? [{ id: "lost-outcome", kind: "lost" as const, label: "Making the Cut Bonus", detail: "You counted this. It is gone.", amount: 1000 }]
+      : []),
+    { id: "required-cost", kind: "bill" as const, label: "Brace and off-site rehab", detail: "Required. Not optional.", amount: 700 },
+    ...(setup.eventCost > 0
+      ? [{ id: "setup-cost", kind: "bill" as const, label: `Travel to rehab · ${setup.title}`, detail: setup.eventCostLabel, amount: setup.eventCost }]
+      : []),
   ];
+  const selectedTotal = changes
+    .filter((change) => state.selectedGapTiles.includes(change.id))
+    .reduce((sum, change) => sum + change.amount, 0);
   return (
-    <StageShell stage="week5-event" kicker="WEEK 5 · SURPRISE UPDATE" title="Uh-oh. Avery’s money plan just changed.">
-      <section className="disruption-card"><span className="disruption-card__week">W5</span><div><p className="eyebrow">STORM ALERT</p><h2>{BASKETBALL_SCENARIO.disruption.title}</h2><p>{BASKETBALL_SCENARIO.disruption.body}</p><p><strong>Translation:</strong> Avery may lose money that was in your plan, and Avery now has new bills that must be paid.</p></div></section>
-      <section className="gap-builder">
-        <div><p className="field-label">WHAT CHANGED?</p><h2>Find the size of the money problem.</h2><p>Tap every change that affects <strong>your</strong> plan. A plus sign here means the problem gets bigger—either money disappeared or a new bill appeared.</p></div>
-        <div className="gap-tiles">
-          {tiles.map((tile) => <button key={tile.id} type="button" aria-pressed={state.selectedGapTiles.includes(tile.id)} onClick={() => dispatch({ type: "GAP_TILE_TOGGLED", tileId: tile.id, selected: !state.selectedGapTiles.includes(tile.id) })}><span>{tile.label}</span><strong className="money">+{formatDollars(tile.amount)}</strong></button>)}
+    <StageShell stage="week5-event" kicker="Week 5" title="The showcase is off.">
+      <section className="disruption-card">
+        <span className="disruption-card__week" aria-hidden="true">W5</span>
+        <div>
+          <h2>{BASKETBALL_SCENARIO.disruption.title}</h2>
+          <p>{BASKETBALL_SCENARIO.disruption.body}</p>
         </div>
-        <CalculationInput calcId="week5-change" label="HOW BIG IS THE MONEY PROBLEM?" prompt="Bonus cash that disappeared + new bills Avery must pay" terms="Add only the changes that affect the plan you made." expected={expected} priorAttempts={state.calculations["week5-change"]?.attempts} onSubmit={(raw, value, correct) => submitCalculation(dispatch, "week5-change", raw, value, correct)} onCorrect={() => dispatch({ type: "GO_TO_STAGE", stage: "first-response" })} scaffold="Look at the cards you selected. Add their dollar amounts together. Money Avery lost and new bills both make the problem bigger." {...calculationSupport(dispatch, "week5-change")} />
+      </section>
+      <section className="gap-builder">
+        <div className="gap-builder__intro">
+          <p className="field-label">What hit your plan</p>
+          <h2>Pull out the pieces that changed Avery’s money.</h2>
+          <p>Some of these are in your plan and some are not. Select the ones that hit <strong>the plan you built</strong>, then add them up.</p>
+          <CalculationInput calcId="week5-change" label="Total change to Avery’s money" prompt="Money that disappeared + new bills that must be paid" terms="Count only what affects the plan you built." expected={expected} priorAttempts={state.calculations["week5-change"]?.attempts} onSubmit={(raw, value, correct) => submitCalculation(dispatch, "week5-change", raw, value, correct)} onCorrect={() => dispatch({ type: "GO_TO_STAGE", stage: "first-response" })} scaffold="Add the dollar amounts on the cards you selected. Money lost and new bills both count the same way here." {...calculationSupport(dispatch, "week5-change")} />
+        </div>
+        <div className="gap-tiles">
+          {changes.map((change) => {
+            const selected = state.selectedGapTiles.includes(change.id);
+            return (
+              <button key={change.id} type="button" data-kind={change.kind} aria-pressed={selected}
+                onClick={() => dispatch({ type: "GAP_TILE_TOGGLED", tileId: change.id, selected: !selected })}>
+                <span className="gap-tiles__kind">{change.kind === "lost" ? "Money gone" : "New bill"}</span>
+                <span className="gap-tiles__label"><b>{change.label}</b><small>{change.detail}</small></span>
+                <strong className="money">{formatDollars(change.amount)}</strong>
+              </button>
+            );
+          })}
+          <p className="gap-tiles__running" aria-live="polite">
+            <span>Selected</span><strong className="money">{formatDollars(selectedTotal)}</strong>
+          </p>
+        </div>
       </section>
     </StageShell>
   );
@@ -256,18 +302,38 @@ function OpportunityStage() {
   const completionDecided = state.log.some((event) => event.type === "COMPLETION_INCOME_DECIDED");
   const ready = state.income.includeOptionalWork !== null && completionDecided;
   return (
-    <StageShell stage="opportunity-final-repair" kicker="WEEK 5 · TWO LAST CHOICES" title="Make two choices. Then finish the plan.">
+    <StageShell stage="opportunity-final-repair" kicker="Week 5 · Two calls to make" title="Two decisions, then land the plan.">
       <div className="decision-row">
         <section className="opportunity-card">
-          <p className="eyebrow">CHOICE 1 · EXTRA JOB FOR $500</p><h2>{BASKETBALL_SCENARIO.opportunity.title}</h2><p>{BASKETBALL_SCENARIO.opportunity.body}</p><p className="time-cost"><strong>What Avery gives up:</strong> {BASKETBALL_SCENARIO.opportunity.timeCost}</p><p>Taking the job adds $500. Saying no protects Avery’s rest. <strong>Neither answer gets extra points.</strong></p>
-          <div className="binary-choice"><button type="button" aria-pressed={state.income.includeOptionalWork === true} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: true })}>Take the job +$500</button><button type="button" aria-pressed={state.income.includeOptionalWork === false} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: false })}>Say no and keep the rest time</button></div>
+          <p className="eyebrow">Decision 1 · Weekend clinics</p>
+          <h2>{BASKETBALL_SCENARIO.opportunity.title}</h2>
+          <p>{BASKETBALL_SCENARIO.opportunity.body}</p>
+          <dl className="tradeoff-pair">
+            <div><dt>Avery gains</dt><dd className="money">$500</dd></div>
+            <div><dt>Avery gives up</dt><dd>{BASKETBALL_SCENARIO.opportunity.timeCost}</dd></div>
+          </dl>
+          <div className="binary-choice">
+            <button type="button" aria-pressed={state.income.includeOptionalWork === true} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: true })}>Take the clinics</button>
+            <button type="button" aria-pressed={state.income.includeOptionalWork === false} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: false })}>Keep the rest block</button>
+          </div>
+          <p className="decision-note">Neither answer is worth points. More money can still cost something.</p>
         </section>
         <section className="opportunity-card">
-          <p className="eyebrow">CHOICE 2 · $800 ATTENDANCE BONUS</p><h2>Will your final plan count this maybe money?</h2><p>Avery can still earn it, but only by making every practice and game. If you count it, the game will make you test the plan once more without it.</p>
-          <div className="binary-choice"><button type="button" aria-pressed={completionDecided && state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: true })}>Yes, count the $800</button><button type="button" aria-pressed={completionDecided && !state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: false })}>No, plan without it</button></div>
+          <p className="eyebrow">Decision 2 · The $800 bonus</p>
+          <h2>Does your final plan count on it?</h2>
+          <p>Avery can still earn the Perfect Attendance Bonus, but only by making every remaining practice and game.</p>
+          <dl className="tradeoff-pair">
+            <div><dt>Count it</dt><dd>More to work with, and one more check to pass</dd></div>
+            <div><dt>Leave it out</dt><dd>Less to work with, nothing left to lose</dd></div>
+          </dl>
+          <div className="binary-choice">
+            <button type="button" aria-pressed={completionDecided && state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: true })}>Count the $800</button>
+            <button type="button" aria-pressed={completionDecided && !state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: false })}>Plan without it</button>
+          </div>
+          <p className="decision-note">Counting it means testing the plan once more without it.</p>
         </section>
       </div>
-      {ready ? <PlanBoardForMode mode="final" /> : <div className="board-gate"><span>🔒</span><p>Make <strong>both choices</strong> above to unlock the final dashboard. There is no “correct” lifestyle choice. You only need to make the money work.</p></div>}
+      {ready ? <PlanBoardForMode mode="final" /> : <div className="board-gate"><span aria-hidden="true">🔒</span><p>Make both calls to open the final board. Neither one is graded — only whether the money works afterward.</p></div>}
     </StageShell>
   );
 }
@@ -277,21 +343,43 @@ function DefenseStage() {
   const [selected, setSelected] = useState<string[]>(state.defense.tileIds);
   const [text, setText] = useState(state.defense.text);
   const final = amountsFor(state, "final");
+  const finalInput = snapshotForMode(state, "final");
+  // Every tile is derived from the student's own saved plan, and any tile worth $0
+  // is dropped rather than offered as misleading evidence.
   const tiles = [
-    { id: "final-funds", label: "Cash in your final plan", value: 5000 + (state.income.includeCompletionFinal ? 800 : 0) + (state.income.includeOptionalWork ? 500 : 0) },
-    { id: "week5-cost", label: "New bills from Week 5", value: state.setupId ? 700 + SCENARIO_NUMBERS.setupEventCosts[state.setupId] : 700 },
-    { id: "course", label: "Money saved for the course", value: final.goal },
-    { id: "reserve", label: "Backup money left", value: final.reserve },
-    { id: "flex", label: "Money for anything else", value: final.flexibleCash },
-    { id: "completion", label: "$800 attendance bonus you are still counting", value: state.income.includeCompletionFinal ? 800 : 0 },
-  ];
+    { id: "final-funds", label: "Cash in your final plan", value: finalInput ? availableFor(finalInput, SCENARIO_NUMBERS) : 0 },
+    { id: "week5-cost", label: "New Week 5 bills", value: state.setupId ? SCENARIO_NUMBERS.requiredWeek5Cost + SCENARIO_NUMBERS.setupEventCosts[state.setupId] : SCENARIO_NUMBERS.requiredWeek5Cost },
+    { id: "course", label: "Saved for the course", value: final.goal },
+    { id: "reserve", label: "Backup money kept", value: final.reserve },
+    { id: "flex", label: "Left for anything else", value: final.flexibleCash },
+    ...(state.income.includeCompletionFinal ? [{ id: "completion", label: "$800 bonus you are still counting on", value: SCENARIO_NUMBERS.completionIncome as number }] : []),
+    ...(state.income.includeOptionalWork ? [{ id: "clinic", label: "Earned from the weekend clinics", value: SCENARIO_NUMBERS.optionalWorkIncome as number }] : []),
+  ].filter((tile) => tile.value > 0);
   const canSubmit = selected.length >= 2 && selected.length <= 3 && text.trim().length >= 40;
   const toggle = (id: string) => setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length < 3 ? [...current, id] : current);
   return (
-    <StageShell stage="defense" kicker="FINAL LEVEL · EXPLAIN YOUR CHOICE" title="Tell us why your plan makes sense.">
+    <StageShell stage="defense" kicker="Final step" title="Make the case for your plan.">
       <div className="defense-layout">
-        <section className="evidence-picker"><p className="field-label">STEP 1 · PICK YOUR NUMBERS</p><h2>Choose 2 or 3 numbers that help tell your story.</h2><p>The numbers are proof. Pick the ones that show what worked, what you saved, or what your choice cost.</p>{tiles.map((tile) => <button key={tile.id} type="button" aria-pressed={selected.includes(tile.id)} onClick={() => toggle(tile.id)}><span>{tile.label}</span><MoneyAmount value={tile.value} /></button>)}</section>
-        <section className="defense-composer"><p><strong>Step 2: Explain your move.</strong> Say how the plan works after Week 5, what mattered most to you, and what you had to give up. Use the numbers you picked on the left.</p><div className="sentence-starters"><button type="button" onClick={() => setText((value) => `${value}${value ? " " : ""}My plan still works because `)}>Start with “My plan still works…”</button><button type="button" onClick={() => setText((value) => `${value}${value ? " " : ""}I protected `)}>Start with “I protected…”</button><button type="button" onClick={() => setText((value) => `${value}${value ? " " : ""}I gave up `)}>Start with “I gave up…”</button></div><label htmlFor="defense-text">Write 2–4 short sentences</label><textarea id="defense-text" value={text} onChange={(event) => setText(event.target.value)} rows={8} placeholder="Example: My plan still works because…" /><p className="defense-progress" aria-live="polite">{selected.length < 2 ? `Pick ${2 - selected.length} more number${selected.length === 1 ? "" : "s"}. ` : "Numbers ready. "}{text.trim().length < 40 ? `Write ${40 - text.trim().length} more character${40 - text.trim().length === 1 ? "" : "s"}.` : "Your explanation is long enough."}</p><Button aria-disabled={!canSubmit} onClick={() => canSubmit && dispatch({ type: "DEFENSE_SUBMITTED", tileIds: selected, text })}>Turn In My Plan</Button></section>
+        <section className="evidence-picker">
+          <p className="field-label">1 · Your evidence</p>
+          <h2>Pick 2 or 3 numbers.</h2>
+          <p>These come straight from the plan you built. Choose the ones that back up what you are about to say.</p>
+          {tiles.map((tile) => <button key={tile.id} type="button" aria-pressed={selected.includes(tile.id)} onClick={() => toggle(tile.id)}><span>{tile.label}</span><MoneyAmount value={tile.value} /></button>)}
+        </section>
+        <section className="defense-composer">
+          <p className="field-label">2 · Your reasoning</p>
+          <h2>Why does this plan hold up?</h2>
+          <p>Say how it works after Week 5, what you protected, and what you gave up. Use your numbers.</p>
+          <div className="sentence-starters">
+            <button type="button" onClick={() => setText((value) => `${value}${value ? " " : ""}My plan still works because `)}>My plan still works…</button>
+            <button type="button" onClick={() => setText((value) => `${value}${value ? " " : ""}I protected `)}>I protected…</button>
+            <button type="button" onClick={() => setText((value) => `${value}${value ? " " : ""}I gave up `)}>I gave up…</button>
+          </div>
+          <label htmlFor="defense-text">Two to four sentences</label>
+          <textarea id="defense-text" value={text} onChange={(event) => setText(event.target.value)} rows={7} placeholder="My plan still works because…" />
+          <p className="defense-progress" aria-live="polite">{selected.length < 2 ? `Pick ${2 - selected.length} more number${selected.length === 1 ? "" : "s"}. ` : "Numbers ready. "}{text.trim().length < 40 ? `${40 - text.trim().length} more character${40 - text.trim().length === 1 ? "" : "s"} to go.` : "Long enough to turn in."}</p>
+          <Button aria-disabled={!canSubmit} onClick={() => canSubmit && dispatch({ type: "DEFENSE_SUBMITTED", tileIds: selected, text })}>Turn in my plan</Button>
+        </section>
       </div>
     </StageShell>
   );
@@ -301,8 +389,20 @@ function SubmittedStage() {
   const { state, reset } = useChallenge();
   const navigate = useNavigate();
   return (
-    <StageShell stage="submitted" kicker="MISSION COMPLETE" title="Avery’s plan is turned in.">
-      <section className="submitted-card"><span>✓</span><h2>You made it through all 8 weeks!</h2><p>Your choices, math, backup plans, fixes, and explanation are saved. Your teacher will read your final explanation because a computer should not decide whether your reasoning makes sense.</p><div><Button onClick={() => navigate("/educator/class/students/14")}>See What a Teacher Sees</Button><Button variant="quiet" onClick={reset}>Play Again</Button></div><small>{state.log.length} game moves saved on this computer.</small></section>
+    <StageShell stage="submitted" kicker="Turned in" title="You handled it.">
+      <section className="submitted-card">
+        <p className="submitted-card__lede">Avery finished the eight weeks on a plan you built and then repaired under pressure.</p>
+        <dl className="submitted-card__record">
+          <div><dt>Saved states</dt><dd>{state.snapshots.length}</dd></div>
+          <div><dt>Decisions recorded</dt><dd>{state.log.length}</dd></div>
+          <div><dt>Reasoning</dt><dd>With your teacher</dd></div>
+        </dl>
+        <p>A person reads your explanation, not a computer. Software can check whether the money works; it should not decide whether your thinking makes sense.</p>
+        <div className="submitted-card__actions">
+          <Button onClick={() => navigate("/educator/class/students/14")}>See what your teacher sees</Button>
+          <Button variant="quiet" onClick={reset}>Start over</Button>
+        </div>
+      </section>
     </StageShell>
   );
 }
@@ -312,17 +412,18 @@ export function StudentChallenge() {
   return useMemo(() => {
     switch (state.stage) {
       case "entry": case "join": return <JoinStage />;
-      case "choose-world": return <ChooseWorldStage />;
+      // Restored only when a second world ships; the reducer routes past it today.
+      case "choose-world": return <RoleStage />;
       case "role-contract": return <RoleStage />;
       case "setup-comparison": return <SetupStage />;
       case "working-plan": return <WorkingStage />;
-      case "fallback-version": return <PlanStage mode="fallback" kicker="BACKUP CHECK · BONUS CASH OFF" title="What if the bonus cash never shows up?" />;
+      case "fallback-version": return <PlanStage mode="fallback" kicker="Backup check" title="What if the bonus never shows up?" />;
       case "income-check": return <IncomeCheckStage />;
       case "week5-transition": return <Week5TransitionStage />;
       case "week5-event": return <Week5EventStage />;
-      case "first-response": return <PlanStage mode="week5-first-response" kicker="WEEK 5 · YOUR FIRST FIX" title="Try fixing the money problem with the plan you already made." />;
+      case "first-response": return <PlanStage mode="week5-first-response" kicker="Week 5 · First response" title="Fix what you can with what Avery has." />;
       case "opportunity-final-repair": return <OpportunityStage />;
-      case "remaining-risk-preview": return <PlanStage mode="remaining-risk" kicker="WEEK 5 · LAST BACKUP CHECK" title="Now test your final plan without the $800 bonus." />;
+      case "remaining-risk-preview": return <PlanStage mode="remaining-risk" kicker="Week 5 · Last check" title="Test the plan without the $800." />;
       case "defense": return <DefenseStage />;
       case "submitted": return <SubmittedStage />;
     }

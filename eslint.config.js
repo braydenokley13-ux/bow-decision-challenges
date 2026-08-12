@@ -5,7 +5,8 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", "coverage", "playwright-report", "test-results", "eslint.config.js", "stylelint.config.js"] },
+  // `scripts` holds standalone dev tooling that runs outside the app tsconfig.
+  { ignores: ["dist", "coverage", "playwright-report", "test-results", "screens", "scripts", "eslint.config.js", "stylelint.config.js"] },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {

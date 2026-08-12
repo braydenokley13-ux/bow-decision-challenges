@@ -18,5 +18,5 @@ export const STRUCTURED_MICRO_SKILLS: readonly StructuredMicroSkillDefinition[] 
   { id: "C5.3", conceptId: "adaptation", label: "Incorporate every event component", maxPoints: 5, evidenceRule: "Select every applicable Week 5 component with the correct sign." },
   { id: "C5.4", conceptId: "adaptation", label: "Finish with a viable plan", maxPoints: 5, evidenceRule: "Submit a balanced final plan, or explicitly preserve a known unresolved amount." },
   { id: "C5.5", conceptId: "adaptation", label: "Handle the remaining $800 risk", maxPoints: 5, evidenceRule: "Balance a direct no-$800 preview, or exclude the payment and balance without it." },
-  { id: "C5.6", conceptId: "adaptation", label: "Use the optional opportunity coherently", maxPoints: 5, evidenceRule: "Reconcile the final state after the last recorded opportunity decision." },
+  { id: "C5.6", conceptId: "adaptation", label: "Respond with the resources already held", maxPoints: 5, evidenceRule: "At the Week 5 first response, before any new income is offered, free as much adjustable money as the shortfall required and the plan allowed." },
 ] as const;

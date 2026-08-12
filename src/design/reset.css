@@ -2,6 +2,10 @@
 html { font-family: var(--font-ui); color: var(--ink-1); background: var(--canvas); }
 body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--canvas); }
 button, input, textarea, select { font: inherit; }
+
+/* Form controls default to an intrinsic min-width that refuses to shrink inside grid
+   and flex tracks, which pushes numeric fields off narrow screens. */
+input, textarea, select { min-width: 0; }
 button { color: inherit; }
 img, svg { display: block; max-width: 100%; }
 a { color: inherit; }

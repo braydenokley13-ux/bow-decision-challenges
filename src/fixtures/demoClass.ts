@@ -1,5 +1,8 @@
-import type { ConceptId } from "../domain/blueprint/types";
+import type { ConceptId, StructuredMicroSkillId } from "../domain/blueprint/types";
+import { STRUCTURED_MICRO_SKILLS } from "../domain/blueprint/microSkills";
 import type { MasteryStatus, Trajectory } from "../domain/evidence/types";
+
+export type MicroBucket = "independent" | "support" | "partial";
 
 export interface DemoConceptResult {
   conceptId: ConceptId;
@@ -18,7 +21,8 @@ export interface DemoStudent {
   primaryNeed: string;
   evidenceLine: string;
   concepts: DemoConceptResult[];
-  c4MicroStatuses: Record<"C4.1" | "C4.2" | "C4.3" | "C4.4", "independent" | "support" | "partial">;
+  microStatuses: Record<StructuredMicroSkillId, MicroBucket>;
+  c4MicroStatuses: Record<"C4.1" | "C4.2" | "C4.3" | "C4.4", MicroBucket>;
   openingFallbackIncomplete: boolean;
   laterClosedFallbackGap: boolean;
   classTrajectoryFlags: { independentFirst: boolean; completedWithSupport: boolean };
@@ -59,6 +63,28 @@ function statusAt(index: number, counts: [number, number, number, number, number
     if (index < cursor) return statusOrder[statusIndex] ?? "not_observed";
   }
   return "not_observed";
+}
+
+/**
+ * Micro-skill detail is derived from each record's own concept status rather than
+ * invented at render time, so every number an educator sees traces back to a student.
+ * A deterministic offset lets individual micro-skills separate within a concept the
+ * way real evidence does, without contradicting that student's concept status.
+ */
+function microBucketFor(status: MasteryStatus, skillIndex: number, studentIndex: number): MicroBucket {
+  if (status === "not_observed") return "partial";
+  if (status === "not_demonstrated") return "partial";
+  if (status === "developing") return (studentIndex + skillIndex) % 3 === 0 ? "support" : "partial";
+  if (status === "demonstrated_with_support") return (studentIndex + skillIndex * 3) % 4 === 0 ? "partial" : "support";
+  return (studentIndex + skillIndex * 7) % 6 === 0 ? "support" : "independent";
+}
+
+function microStatusesFor(concepts: DemoConceptResult[], studentIndex: number): Record<StructuredMicroSkillId, MicroBucket> {
+  const entries = STRUCTURED_MICRO_SKILLS.map((skill, skillIndex) => {
+    const status = concepts.find((concept) => concept.conceptId === skill.conceptId)?.status ?? "not_observed";
+    return [skill.id, microBucketFor(status, skillIndex, studentIndex)] as const;
+  });
+  return Object.fromEntries(entries) as Record<StructuredMicroSkillId, MicroBucket>;
 }
 
 function trajectoryFor(status: MasteryStatus, index: number): Trajectory {
@@ -125,6 +151,7 @@ export const DEMO_STUDENTS: DemoStudent[] = Array.from({ length: 28 }, (_, index
     primaryNeed: override?.primaryNeed ?? (index % 4 === 0 ? "C4 contingency" : index % 4 === 1 ? "C1 income reliability" : "Monitor current evidence"),
     evidenceLine: override?.evidenceLine ?? (index % 3 === 0 ? "Saved a lower-resource plan with a visible residual." : "Structured evidence is ready for review."),
     concepts,
+    microStatuses: microStatusesFor(concepts, index),
     c4MicroStatuses: Object.fromEntries(Object.entries(c4MicroCounts).map(([id, counts]) => [id, index < counts[0] ? "independent" : index < counts[0] + counts[1] ? "support" : "partial"])) as DemoStudent["c4MicroStatuses"],
     openingFallbackIncomplete: index < 14,
     laterClosedFallbackGap: [0, 1, 2, 3, 13].includes(index),
@@ -153,6 +180,16 @@ export function aggregateC4MicroSkills(records: DemoStudent[]) {
     independent: records.filter((student) => student.c4MicroStatuses[id] === "independent").length,
     support: records.filter((student) => student.c4MicroStatuses[id] === "support").length,
     partial: records.filter((student) => student.c4MicroStatuses[id] === "partial").length,
+  }));
+}
+
+export function aggregateMicroSkills(records: DemoStudent[], conceptId: ConceptId) {
+  return STRUCTURED_MICRO_SKILLS.filter((skill) => skill.conceptId === conceptId).map((skill) => ({
+    id: skill.id,
+    label: skill.label,
+    independent: records.filter((student) => student.microStatuses[skill.id] === "independent").length,
+    support: records.filter((student) => student.microStatuses[skill.id] === "support").length,
+    partial: records.filter((student) => student.microStatuses[skill.id] === "partial").length,
   }));
 }
 

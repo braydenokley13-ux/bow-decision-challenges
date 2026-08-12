@@ -16,11 +16,11 @@ const CATEGORIES: Record<CategoryId, { label: string; description: string }> = {
 };
 
 const MODE_COPY = {
-  working: { eyebrow: "YOUR FIRST PLAN", title: "Give every dollar a job", body: "The costs on the left cannot move. You choose how to split all the money that is left." },
-  fallback: { eyebrow: "BACKUP PLAN", title: "Plan without the bonus cash", body: "Pretend the extra bonuses never arrive. Change only the three money choices on the right." },
-  "week5-first-response": { eyebrow: "YOUR FIRST FIX", title: "Try to fix the Week 5 problem", body: "Start with your saved numbers. Change the money on the right until the missing amount is gone—or save it to show exactly how much is still missing." },
-  final: { eyebrow: "YOUR FINAL PLAN", title: "Make the updated plan work", body: "Your two new choices are now included. Move the money on the right until every dollar has a job." },
-  "remaining-risk": { eyebrow: "ONE LAST CHECK", title: "What if the $800 bonus disappears?", body: "This is a copy of your final plan. Remove the $800 bonus and change the money on the right so the plan still works." },
+  working: { eyebrow: "First plan", title: "Split what is left", body: "The costs on the left are already promised. You decide what happens to the rest." },
+  fallback: { eyebrow: "Backup plan", title: "Now assume the bonus never arrives", body: "Same costs, less money. Change your three choices so the plan still holds." },
+  "week5-first-response": { eyebrow: "First response", title: "Fix it with what Avery already has", body: "No new money yet. Move your own numbers as far as they go, then save what is left." },
+  final: { eyebrow: "Final plan", title: "Land the plan", body: "Your two Week 5 decisions are in. Move the money until every dollar has a job." },
+  "remaining-risk": { eyebrow: "Last check", title: "And if the $800 never comes?", body: "A copy of your final plan with the bonus removed. Make it work without that money." },
 } as const;
 
 interface PlanBoardProps {
@@ -41,7 +41,6 @@ export function PlanBoard({ input, setupTitle, baseline, reference, attempts, on
   const [showHelp, setShowHelp] = useState(false);
   const balance = balanceOf(input, SCENARIO_NUMBERS);
   const residual = Math.max(0, -Number(balance));
-  const unassigned = Math.max(0, balance);
   const freed = baseline ? amountFreed(baseline, input.amounts) : undefined;
   const mode = PLAN_MODES[input.mode];
   const copy = MODE_COPY[input.mode];
@@ -60,21 +59,21 @@ export function PlanBoard({ input, setupTitle, baseline, reference, attempts, on
           {reference && onApplyReference && <Button variant="quiet" type="button" onClick={() => onApplyReference()}>Use my saved numbers</Button>}
         </header>
         <div className="plan-board__body">
-          <aside className="locked-stack" aria-label="Locked commitments">
-            <p className="field-label">MONEY ALREADY PROMISED</p>
+          <aside className="locked-stack" aria-label="Money already promised">
+            <p className="field-label">Already promised</p>
             <button type="button" aria-disabled="true" onClick={() => onLockedMoveAttempt("setup")}>
-              <span>🔒 Cannot move · {setupTitle}</span><strong className="money">{formatDollars(SCENARIO_NUMBERS.setupCosts[input.setupId])}</strong>
+              <span><i aria-hidden="true">🔒</i>{setupTitle}</span><strong className="money">{formatDollars(SCENARIO_NUMBERS.setupCosts[input.setupId])}</strong>
             </button>
             <button type="button" aria-disabled="true" onClick={() => onLockedMoveAttempt("essentials")}>
-              <span>🔒 Cannot move · Food, phone, laundry, and other needs</span><strong className="money">{formatDollars(SCENARIO_NUMBERS.essentialsTotal)}</strong>
+              <span><i aria-hidden="true">🔒</i>Food, phone, laundry, other needs</span><strong className="money">{formatDollars(SCENARIO_NUMBERS.essentialsTotal)}</strong>
             </button>
-            {input.week5Applied && <button type="button" aria-disabled="true" onClick={() => onLockedMoveAttempt("week5-cost")}>
-              <span>🔒 New must-pay cost · Brace, rehab, and travel</span><strong className="money">{formatDollars(SCENARIO_NUMBERS.requiredWeek5Cost + SCENARIO_NUMBERS.setupEventCosts[input.setupId])}</strong>
+            {input.week5Applied && <button type="button" aria-disabled="true" className="is-new" onClick={() => onLockedMoveAttempt("week5-cost")}>
+              <span><i aria-hidden="true">🔒</i>New · brace, rehab, and travel</span><strong className="money">{formatDollars(SCENARIO_NUMBERS.requiredWeek5Cost + SCENARIO_NUMBERS.setupEventCosts[input.setupId])}</strong>
             </button>}
-            <p className="locked-stack__note"><strong>Why can’t these move?</strong> Avery already agreed to pay them. You can only change the money choices on the right.</p>
+            <p className="locked-stack__note">Avery already agreed to pay these, so they cannot move.</p>
           </aside>
           <div className="adjustable-grid">
-            <p className="field-label adjustable-grid__label">MONEY YOU GET TO CHOOSE</p>
+            <p className="field-label adjustable-grid__label">Your choices</p>
             {(["goal", "reserve", "flexibleCash"] as const).map((category) => (
               <AllocationControl
                 key={category}
@@ -95,24 +94,29 @@ export function PlanBoard({ input, setupTitle, baseline, reference, attempts, on
         {mode.baseline && (
           <div className="exposure-summary" aria-live="polite">
             {input.mode === "fallback" && <div><span>Bonus cash removed</span><strong className="money">{formatDollars(exposureFor(input, SCENARIO_NUMBERS))}</strong></div>}
-            <div><span>Money cut from your earlier plan</span><strong className="money">{freed === undefined ? "—" : formatDollars(freed)}</strong></div>
-            <div><span>{mode.residualLabel === "gapRemaining" ? "Money you still need" : "Money still missing"}</span><strong className="money">{formatDollars(residual)}</strong></div>
+            <div><span>Cut from your earlier plan</span><strong className="money">{freed === undefined ? "—" : formatDollars(freed)}</strong></div>
+            <div><span>{mode.residualLabel === "gapRemaining" ? "Still needed" : "Still missing"}</span><strong className="money">{formatDollars(residual)}</strong></div>
           </div>
         )}
         {attempts >= 2 && balance !== 0 && (
           <section className="plan-help" aria-label="Step-by-step help">
-            {!showHelp ? <Button type="button" variant="quiet" onClick={() => { setShowHelp(true); onScaffold?.(); }}>Show me how this dashboard works</Button> : <div role="note"><strong>Do this one step at a time:</strong><ol><li>Find the amount that is <b>short</b> or <b>still unassigned</b> below.</li><li>Use the minus or plus buttons on the three cards above.</li><li>Keep changing those cards until the number below reaches <b>$0</b>.</li></ol></div>}
-            {attempts >= 3 && <Button type="button" variant="quiet" onClick={onShowAndContinue}>Build one working answer for me</Button>}
+            {!showHelp ? <Button type="button" variant="quiet" onClick={() => { setShowHelp(true); onScaffold?.(); }}>Show me how this board works</Button> : <div role="note"><strong>One step at a time:</strong><ol><li>Read the number at the bottom of the board.</li><li>Use − and + on any of the three cards above.</li><li>Keep going until that number reaches <b>$0</b>.</li></ol></div>}
+            {attempts >= 3 && (
+              <div className="plan-help__supply">
+                <Button type="button" variant="quiet" onClick={onShowAndContinue}>Fill in one plan that balances</Button>
+                <small>This spreads the money evenly. It is one plan that works, not the right answer — this board stops counting toward your score once you use it.</small>
+              </div>
+            )}
           </section>
         )}
         <footer className={`plan-commit plan-commit--${balance === 0 ? "balanced" : balance < 0 ? "over" : "unassigned"}`}>
-          <div>
-            <span>{balance === 0 ? "Perfect! Every dollar has a job." : balance < 0 ? `You need ${formatDollars(residual)} more than you have.` : `You still need to give ${formatDollars(unassigned)} a job.`}</span>
+          <div className="plan-commit__state">
             <strong className="money">{formatDollars(Math.abs(balance))}</strong>
+            <span>{balance === 0 ? "Every dollar has a job." : balance < 0 ? "more than Avery has." : "still needs a job."}</span>
           </div>
           <div className="plan-commit__actions">
             <Button type="button" onClick={() => onCommit()}>{balance === 0 ? (input.mode === "final" ? "Save final plan" : input.mode === "remaining-risk" ? "Save preview" : "Save this version") : "Check this plan"}</Button>
-            {residual > 0 && attempts > 0 && <Button type="button" variant="quiet" onClick={() => onCommit(dollars(residual))}>Save it and show that {formatDollars(residual)} is still missing</Button>}
+            {residual > 0 && attempts > 0 && <Button type="button" variant="quiet" onClick={() => onCommit(dollars(residual))}>Save it, {formatDollars(residual)} still missing</Button>}
           </div>
         </footer>
       </section>

@@ -25,6 +25,7 @@ function alternate(): AlternateStateEvidence {
     entered: true,
     saved: true,
     amountFreed: dollars(800),
+    absorbTarget: dollars(800),
     residual: dollars(0),
     unassigned: dollars(0),
     residualAcknowledged: false,
@@ -45,10 +46,11 @@ function facts(): AssessmentFacts {
       "reliable-floor": { calcId: "reliable-floor", attempts: [{ raw: "5000", value: dollars(5000), correct: true, eventRef: "safe" }], support: "standard_access", supplied: false },
       "week5-change": { calcId: "week5-change", attempts: [{ raw: "1050", value: dollars(1050), correct: true, eventRef: "week5" }], support: "standard_access", supplied: false },
     },
-    opening: { snapshot: snapshot(1), balance: dollars(0), firstSaveBalance: dollars(0), conditionalExposure: dollars(1800), evidenceRefs: ["opening"] },
+    opening: { snapshot: snapshot(1), balance: dollars(0), firstSaveBalance: dollars(0), conditionalExposure: dollars(1800), support: "standard_access", evidenceRefs: ["opening"] },
     fallback: alternate(),
+    firstResponse: alternate(),
     preview: alternate(),
-    final: { snapshot: snapshot(10), balance: dollars(0), acknowledgedResidual: false, lockedMoveAttempts: 0, evidenceRefs: ["final"] },
+    final: { snapshot: snapshot(10), balance: dollars(0), acknowledgedResidual: false, lockedMoveAttempts: 0, support: "standard_access", evidenceRefs: ["final"] },
     selectedSetupId: "flexible-1000",
     selectedGapTiles: ["required-cost", "setup-cost"],
     applicableGapTiles: ["required-cost", "setup-cost"],
@@ -89,12 +91,23 @@ describe("choice-neutral scoring", () => {
     expect(scores(nearby, ["C2.1", "C2.2"])).toEqual(scores(longCommute, ["C2.1", "C2.2"]));
   });
 
-  it("gives equal opportunity credit for taking the job or protecting rest time", () => {
+  it("scores nothing at all on whether the extra work was taken or declined", () => {
     const takesJob = facts();
     const keepsRest = facts();
     keepsRest.optionalDecision = { accepted: false, sequence: 9, evidenceRef: "rest-choice" };
-    expect(scores(takesJob, ["C5.6"])).toEqual([5]);
-    expect(scores(keepsRest, ["C5.6"])).toEqual([5]);
+    keepsRest.final = { ...keepsRest.final!, snapshot: { ...snapshot(10), inputs: { ...snapshot(10).inputs, includeOptionalWork: false } } };
+    const everySkill = observeStructured(takesJob).map((observation) => observation.microSkillId);
+    expect(scores(takesJob, everySkill)).toEqual(scores(keepsRest, everySkill));
+  });
+
+  it("does not reward which category a student cut to absorb the Week 5 shortfall", () => {
+    const cutTheGoal = facts();
+    const cutSpendingMoney = facts();
+    cutTheGoal.firstResponse = alternate();
+    cutSpendingMoney.firstResponse = alternate();
+    cutTheGoal.opening!.snapshot.inputs.amounts = { goal: dollars(200), reserve: dollars(700), flexibleCash: dollars(1500) };
+    cutSpendingMoney.opening!.snapshot.inputs.amounts = { goal: dollars(1200), reserve: dollars(200), flexibleCash: dollars(1000) };
+    expect(scores(cutTheGoal, ["C5.6"])).toEqual(scores(cutSpendingMoney, ["C5.6"]));
   });
 });
 
