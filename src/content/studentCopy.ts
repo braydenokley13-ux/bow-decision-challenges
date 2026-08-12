@@ -5,22 +5,18 @@
  */
 export const STUDENT_COPY = {
   join: {
-    eyebrow: "Harbor City Flight · Check in",
-    title: "Two codes and you're in.",
-    body: "Your teacher gave you both. That is all BOW ever asks for — no name, no email, nothing about your real money.",
-    privacy: "These codes stay on this computer.",
+    privacy: "No name, no email, nothing about your real money. These codes stay on this computer.",
   },
   working: {
-    kicker: "Choice 2 · Build the plan",
     title: "Every dollar gets a job.",
-    deck: "Find Avery's safe cash and must-pay costs. Then decide whether to count either bonus.",
+    deck: "Two things to work out before Avery can plan anything.",
     safeMoney: {
       title: "Safe cash",
       prompt: "$500 saved + $4,500 base pay",
       body: "Money Avery will have no matter what.",
     },
     mustPay: {
-      title: "Must-pay costs",
+      title: "8-week essentials",
       prompt: "$200 a week × 8 weeks",
       body: "Food, phone, laundry, and other needs.",
     },
@@ -36,7 +32,6 @@ export const STUDENT_COPY = {
         body: "Only if the Flight qualifies for the showcase.",
       },
     },
-    locked: "Answer both math boxes to open the plan board.",
   },
   dashboard: {
     safeCash: "Money you can use in this plan",

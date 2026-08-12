@@ -62,16 +62,44 @@ function AlignmentBlock() {
   );
 }
 
+/**
+ * The eight questions a teacher who has never spoken to anyone at BOW needs answered
+ * before they will run this, answered above the fold and in their own words. The last
+ * three are questions about a real class, so they link into the evidence rather than
+ * being described here.
+ */
+function BriefAnswers() {
+  return (
+    <section className="brief-answers">
+      <div className="section-heading"><p className="eyebrow">Read this first</p><h2>The whole resource in one minute.</h2></div>
+      <dl>
+        <div><dt>What does it assess?</dt><dd>Whether students can <b>apply</b> budgeting under uncertainty — build a workable eight-week plan, keep it working when income and costs change, and justify it.</dd></div>
+        <div><dt>When do I use it?</dt><dd><b>After</b> you have taught the concepts. It is an application task, not a lesson.</dd></div>
+        <div><dt>How long?</dt><dd><b>12–15 minutes</b> for most students. One sitting, one device, no sound.</dd></div>
+        <div><dt>What do students do?</dt><dd>They handle the money for a player’s eight-week season: read a contract, choose housing, build a plan, absorb a Week 5 loss and a new required cost, repair the plan, and defend it.</dd></div>
+        <div><dt>What do I get back?</dt><dd>Six concept results and 18 micro-skill observations, each traceable to a saved financial state — plus one short written defense you score.</dd></div>
+        <div><dt>How do I launch it?</dt><dd>Share the challenge link with a class code and give each student a seat number. No accounts, no roster, no student data.</dd></div>
+      </dl>
+      <div className="brief-answers__links">
+        <Link to="/educator/class">Where did my class struggle? →</Link>
+        <Link to="/educator/class/concepts/contingency">What evidence supports that? →</Link>
+        <Link to="/educator/teaching-companion">What could I teach next? →</Link>
+      </div>
+    </section>
+  );
+}
+
 export function EducatorGuide() {
   return (
     <EducatorShell>
       <section className="guide-hero">
         <div><p className="eyebrow">Educator challenge brief · Grades 6–8</p><h1>Plan Under Pressure</h1><p className="lede">A post-instruction application assessment for adaptive budgeting under uncertainty.</p><div className="guide-meta"><span>Grades 6–8</span><span>12–15 minutes</span><span>Basketball · Eight Weeks to the Showcase</span><span>Use after instruction</span></div><div className="hero-actions"><Link className="button button--primary" to="/challenge">Try the student challenge</Link><Link className="button button--secondary" to="/educator/class">Open demo evidence</Link></div></div>
-        <aside><span className="guide-hero__mark">PUP / 01</span><blockquote>“Schools teach the skill. BOW reveals whether students can apply it.”</blockquote><p>No vocabulary quiz. The financial state the student constructs is the answer.</p></aside>
+        <aside><span className="guide-hero__mark">PUP / 01</span><blockquote>“You teach the concept. BOW gives students a world where they have to use it.”</blockquote><p>No vocabulary quiz. The financial state the student constructs is the answer.</p></aside>
       </section>
+      <BriefAnswers />
+      <section className="guide-section evidence-system"><div className="section-heading"><p className="eyebrow">Evidence generated</p><h2>Every point can be traced.</h2></div><div className="evidence-system__grid"><div className="score-architecture"><div><strong>90</strong><span>structured points</span></div><i>+</i><div><strong>10</strong><span>educator-reviewed reasoning</span></div><i>=</i><div><strong>100</strong><span>transparent final grade</span></div></div><ul><li>Six concept results</li><li>18 structured micro-skill observations</li><li>First attempts and independent corrections</li><li>Support history and saved financial states</li><li>Status and trajectory shown separately</li><li>Written reasoning reviewed by the educator</li></ul></div></section>
       <section className="guide-section guide-section--dark"><div className="section-heading"><p className="eyebrow">Before students begin</p><h2>Students should already know how to…</h2></div><ol className="prerequisite-list"><li><span>01</span>Distinguish dependable and conditional income.</li><li><span>02</span>Combine recurring and one-time costs.</li><li><span>03</span>Build a budget that does not exceed available money.</li><li><span>04</span>Separate committed money from money that can change.</li><li><span>05</span>Revise after income or expenses change.</li><li><span>06</span>Explain a tradeoff with relevant numbers.</li></ol><p className="companion-callout">Schools may use their own instruction. <Link to="/educator/teaching-companion">View the optional two-day sample mini-unit →</Link></p></section>
       <section className="guide-section"><div className="section-heading"><p className="eyebrow">What students do</p><h2>One plan. A consequence. A defense.</h2></div><div className="process-line"><div><span>01</span><h3>Compare</h3><p>Calculate full setup costs and choose a context.</p></div><div><span>02</span><h3>Construct</h3><p>Build a viable eight-week plan from dependable and optional conditional income.</p></div><div><span>03</span><h3>Check</h3><p>Build a lower-resource state by changing the real plan.</p></div><div><span>04</span><h3>Adapt</h3><p>Respond to a personalized Week 5 income loss and required cost.</p></div><div><span>05</span><h3>Defend</h3><p>Explain workability, priority, and opportunity cost with numbers.</p></div></div></section>
-      <section className="guide-section evidence-system"><div className="section-heading"><p className="eyebrow">Evidence generated</p><h2>Every point can be traced.</h2></div><div className="evidence-system__grid"><div className="score-architecture"><div><strong>90</strong><span>structured points</span></div><i>+</i><div><strong>10</strong><span>educator-reviewed reasoning</span></div><i>=</i><div><strong>100</strong><span>transparent final grade</span></div></div><ul><li>Six concept results</li><li>18 structured micro-skill observations</li><li>First attempts and independent corrections</li><li>Support history and saved financial states</li><li>Status and trajectory shown separately</li><li>Written reasoning reviewed by the educator</li></ul></div></section>
       <AlignmentBlock />
       <section className="guide-section launch-guide"><div className="section-heading"><p className="eyebrow">Use it in class</p><h2>Five simple steps.</h2></div><ol><li>Confirm your instruction covered the prerequisites.</li><li>Give students the challenge link, class code, and seat code.</li><li>Allow about 15 minutes and do not coach a financial strategy.</li><li>Open the top concept gap and inspect affected evidence.</li><li>Score reasoning, compare defensible plans, and decide what to reteach.</li></ol><p>A high grade reflects demonstrated financial skills—not a preference for saving more, spending less, taking a job, or choosing the cheapest option.</p></section>
     </EducatorShell>

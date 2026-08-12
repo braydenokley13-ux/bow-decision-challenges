@@ -4,8 +4,20 @@
 
 Students step into an eight-week basketball season as the person handling the money: they
 build a plan that works, watch Week 5 break it, repair it with what they have left, and
-defend the result in their own words. Schools teach the skill. The challenge reveals
-whether students can apply it.
+defend the result in their own words. You teach the concept. The challenge gives students
+a world in which they have to use it.
+
+The story opens on the first screen — Avery's call, the roster card, the goal, and the two
+class codes are one screen, so nothing stands between the link and the situation. An
+eight-week season strip in the header is the only progress indicator, so a student always
+knows where they are in Avery's season rather than which numbered form they are on.
+
+Weeks 1 to 4 run as a feed in Avery's own voice, written three ways so the housing choice
+is felt every week rather than only when it bills. Money is drawn as two towers on one
+scale — what Avery has, and where it is going — so overspending clears a line instead of
+turning a figure red, and counting a bonus visibly reaches above the money that is
+certain. Every plan pass after the first opens with what moved, so a returning board reads
+as a response rather than the same three fields handed back.
 
 This MVP ships one complete world: **Basketball — Eight Weeks to the Showcase**. The
 finance, evidence, and scoring layers are world-neutral, so a second story can be added
@@ -33,7 +45,11 @@ npm run test:e2e  # full student and educator paths in a real browser
 
 The browser suite covers both income routes through submission, accepting and declining the
 optional work, both `$800` branches, the support and answer-supplied paths, refresh and
-resume, educator deep links, keyboard-only operation, an axe scan, and two Chromebook widths.
+resume, educator deep links, keyboard-only operation, axe scans (including the plan board
+and the season review), the per-housing narration, and two Chromebook widths.
+
+Entrance animations move elements but never fade their opacity: a mid-animation frame with
+partially transparent text drops real contrast below AA, and the axe scan catches it.
 
 To review the rendered product, `node scripts/walkthrough.mjs <outDir>` drives the whole
 Basketball flow and screenshots every stage at 1366×768, 1024×600, and 640px wide, reporting
@@ -56,7 +72,10 @@ resulting plan holds together is observed.
 ## Main areas
 
 - `src/stages/StudentChallenge.tsx` — the complete Basketball flow, beat by beat.
-- `src/components/financial/` — Money Rail, Plan Board, and allocation controls.
+- `src/components/story/` — season strip, Avery's roster card, court backdrop.
+- `src/design/scenes.css` — the arena scenes and the money split.
+- `src/domain/machine/stages.ts` — where each stage sits in season time.
+- `src/components/financial/` — Money Split, Plan Board, and the three choice rows.
 - `src/domain/` — world-neutral finance, evidence, scoring, and state machine.
 - `src/domain/scenario/worlds/basketball.ts` — Basketball story details and amounts.
 - `src/educator/` — challenge brief, class evidence, student ledger, reasoning review, NYSED view.

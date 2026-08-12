@@ -1,9 +1,10 @@
 import type { PropsWithChildren } from "react";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { formatDollars } from "../domain/core/money";
-import { PROGRESS_STEPS, progressIndexFor } from "../domain/machine/stages";
+import { PROGRESS_STEPS, progressIndexFor, seasonPositionFor } from "../domain/machine/stages";
 import type { StageId } from "../domain/evidence/types";
 import { AppMark } from "../components/primitives/AppMark";
+import { SeasonStrip } from "../components/story/SeasonStrip";
 
 const { numbers, incomeCopy, goalLabel } = BASKETBALL_SCENARIO;
 
@@ -18,21 +19,14 @@ const MAYBE_MONEY = [
 ];
 
 export function StageShell({ stage, title, kicker, children }: PropsWithChildren<{ stage: StageId; title: string; kicker?: string }>) {
-  const current = progressIndexFor(stage);
+  const chapter = progressIndexFor(stage);
+  const position = seasonPositionFor(stage);
+  const announcement = `${position.caption}. Part ${chapter + 1} of ${PROGRESS_STEPS.length}: ${PROGRESS_STEPS[chapter]?.label}.`;
   return (
     <div className="challenge-shell" data-world={BASKETBALL_SCENARIO.id}>
       <header className="challenge-topbar">
         <AppMark />
-        <nav className="progress" aria-label="Challenge progress">
-          <ol>
-            {PROGRESS_STEPS.map((item, index) => (
-              <li key={item.label} className={index < current ? "is-done" : index === current ? "is-current" : ""} aria-current={index === current ? "step" : undefined}>
-                <span aria-hidden="true">{index + 1}</span><b>{item.label}</b>
-              </li>
-            ))}
-          </ol>
-          <p className="visually-hidden">Step {current + 1} of {PROGRESS_STEPS.length}: {PROGRESS_STEPS[current]?.label}</p>
-        </nav>
+        <SeasonStrip position={position} announcement={announcement} />
         <details className="contract-drawer">
           <summary>Money sheet</summary>
           <div>

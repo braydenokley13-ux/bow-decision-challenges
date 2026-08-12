@@ -43,36 +43,34 @@ async function walk(browser, size) {
   await page.goto(`${BASE}/challenge`);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
-  await shoot(page, size, "02-join");
-  await page.getByRole("button", { name: "Enter the challenge" }).click();
-  await shoot(page, size, "03-offer");
-  await page.getByRole("button", { name: "See what it pays" }).click();
-  await shoot(page, size, "04-deal");
+  await shoot(page, size, "02-opening");
+  await page.getByRole("button", { name: "Start the eight weeks" }).click();
+  await shoot(page, size, "03-deal");
 
   await page.getByRole("button", { name: "Find Avery a place" }).click();
   await page.getByLabel("Full eight-week cost").first().fill("1400");
-  await page.locator(".setup-card").nth(1).getByRole("button", { name: "Check" }).click();
+  await page.locator(".place-card").nth(1).getByRole("button", { name: "Check" }).click();
   await page.getByLabel("Full eight-week cost").nth(1).fill("1000");
-  await page.locator(".setup-card").nth(2).getByRole("button", { name: "Check" }).click();
-  await page.locator(".setup-card").nth(2).getByRole("button", { name: "Choose this setup" }).click();
+  await page.locator(".place-card").nth(2).getByRole("button", { name: "Check" }).click();
+  await page.locator(".place-card").nth(2).getByRole("button", { name: "Choose this setup" }).click();
   await shoot(page, size, "05-setup");
 
   await page.getByRole("button", { name: "Build the plan" }).click();
   await page.getByLabel("Safe cash").fill("5000");
   await page.locator(".working-setup .calculation").first().getByRole("button", { name: "Check" }).click();
-  await page.getByLabel("Must-pay costs").fill("1600");
+  await page.getByLabel("8-week essentials").fill("1600");
   await page.locator(".working-setup .calculation").nth(1).getByRole("button", { name: "Check" }).click();
-  await page.getByRole("button", { name: /Perfect Attendance Bonus/ }).click();
-  await page.getByRole("button", { name: /Making the Cut Bonus/ }).click();
+  await page.locator(".bet").first().getByRole("button", { name: "Count it" }).click();
+  await page.locator(".bet").nth(1).getByRole("button", { name: "Count it" }).click();
   await setAmount(page, "Sports-media course", "1200");
   await setAmount(page, "Backup money", "900");
-  await setAmount(page, "Money for anything else", "2100");
+  await setAmount(page, "Anything else", "2100");
   await shoot(page, size, "06-working-plan");
   await page.getByRole("button", { name: "Save this version" }).click();
 
   await setAmount(page, "Sports-media course", "1100");
   await setAmount(page, "Backup money", "600");
-  await setAmount(page, "Money for anything else", "1600");
+  await setAmount(page, "Anything else", "1600");
   await shoot(page, size, "07-fallback");
   await page.getByRole("button", { name: "Check this plan" }).click();
   await page.getByRole("button", { name: /Save it, .* still missing/ }).click();
@@ -87,7 +85,7 @@ async function walk(browser, size) {
 
   await setAmount(page, "Sports-media course", "800");
   await setAmount(page, "Backup money", "400");
-  await setAmount(page, "Money for anything else", "950");
+  await setAmount(page, "Anything else", "950");
   await page.getByRole("button", { name: "Save this version" }).click();
   await shoot(page, size, "11-opportunity");
 
@@ -95,19 +93,19 @@ async function walk(browser, size) {
   await page.getByRole("button", { name: "Count the $800" }).click();
   await setAmount(page, "Sports-media course", "800");
   await setAmount(page, "Backup money", "400");
-  await setAmount(page, "Money for anything else", "1450");
+  await setAmount(page, "Anything else", "1450");
   await shoot(page, size, "12-final-plan");
   await page.getByRole("button", { name: "Save final plan" }).click();
 
   await setAmount(page, "Sports-media course", "500");
   await setAmount(page, "Backup money", "200");
-  await setAmount(page, "Money for anything else", "1150");
+  await setAmount(page, "Anything else", "1150");
   await shoot(page, size, "13-remaining-risk");
   await page.getByRole("button", { name: "Save preview" }).click();
 
   await shoot(page, size, "14-defense");
-  await page.locator(".evidence-picker > button").nth(0).click();
-  await page.locator(".evidence-picker > button").nth(2).click();
+  await page.locator(".interview__stats button").nth(0).click();
+  await page.locator(".interview__stats button").nth(2).click();
   await page.getByLabel("Two to four sentences").fill("My plan still works because it balances at $0 after the update. I protected $800 for the course and gave up the open rest block to take the clinics.");
   await page.getByRole("button", { name: "Turn in my plan" }).click();
   await shoot(page, size, "15-submitted");

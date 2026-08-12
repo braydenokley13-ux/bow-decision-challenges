@@ -48,24 +48,25 @@ export function CalculationInput({ label, prompt, terms, expected, onSubmit, onC
 
   return (
     <div className={`calculation ${compact ? "calculation--compact" : ""}`}>
-      <div>
-        <span className="field-label">{label}</span>
-        <p id={`${id}-prompt`}>{prompt}</p>
-        {terms && <p className="terms">{terms}</p>}
-      </div>
-      <div className="calculation__entry">
-        <span aria-hidden="true">$</span>
-        <input
-          id={id}
-          aria-label={label}
-          aria-describedby={`${id}-prompt ${id}-feedback`}
-          inputMode="numeric"
-          autoComplete="off"
-          value={raw}
-          onChange={(event) => { setRaw(event.target.value); setVerdict("idle"); }}
-          onKeyDown={(event) => { if (event.key === "Enter") submit(); }}
-        />
-        <Button type="button" variant="secondary" onClick={submit}>Check</Button>
+      <span className="field-label">{label}</span>
+      <p className="calculation__given" id={`${id}-prompt`}>{prompt}</p>
+      {terms && <p className="terms">{terms}</p>}
+      <div className="calculation__total">
+        <span aria-hidden="true">Total</span>
+        <div className="calculation__entry">
+          <span aria-hidden="true">$</span>
+          <input
+            id={id}
+            aria-label={label}
+            aria-describedby={`${id}-prompt ${id}-feedback`}
+            inputMode="numeric"
+            autoComplete="off"
+            value={raw}
+            onChange={(event) => { setRaw(event.target.value); setVerdict("idle"); }}
+            onKeyDown={(event) => { if (event.key === "Enter") submit(); }}
+          />
+          <Button type="button" variant="secondary" onClick={submit}>Check</Button>
+        </div>
       </div>
       <p id={`${id}-feedback`} className={`inline-feedback inline-feedback--${verdict}`} aria-live="polite">
         {verdict === "correct" && "That's the full amount."}

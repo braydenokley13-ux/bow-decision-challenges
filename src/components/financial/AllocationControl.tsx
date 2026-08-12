@@ -10,12 +10,14 @@ interface AllocationControlProps {
   step: 50 | 100;
   max: number;
   originalValue?: number | undefined;
-  referenceValue?: number | undefined;
   onChange: (value: ReturnType<typeof dollars>) => void;
-  onApplyReference?: () => void;
 }
 
-export function AllocationControl({ id, label, description, value, step, max, originalValue, referenceValue, onChange, onApplyReference }: AllocationControlProps) {
+/**
+ * One choice, as a row: the colour block that matches its slice of the tower, what the
+ * money is for, what it is worth now, and the two keys that move it.
+ */
+export function AllocationControl({ id, label, description, value, step, max, originalValue, onChange }: AllocationControlProps) {
   const inputId = useId();
   const [raw, setRaw] = useState<string | null>(null);
   const commit = (candidate: string) => {
@@ -28,16 +30,15 @@ export function AllocationControl({ id, label, description, value, step, max, or
   const changeBy = (delta: number) => commit(String(value + delta));
 
   return (
-    <section className="allocation-card" data-category={id}>
-      <div className="allocation-card__top">
-        <div>
-          <label htmlFor={inputId}>{label}</label>
-          <span className="allocation-card__description">{description}</span>
-          {originalValue !== undefined && originalValue !== value && <small>was {formatDollars(originalValue)}</small>}
-        </div>
-        <strong className="money">{formatDollars(value)}</strong>
+    <section className="choice-row" data-category={id}>
+      <span className="choice-row__swatch" aria-hidden="true" />
+      <div className="choice-row__id">
+        <label htmlFor={inputId}>{label}</label>
+        <span className="choice-row__description">{description}</span>
+        {originalValue !== undefined && originalValue !== value && <small>was {formatDollars(originalValue)}</small>}
       </div>
-      <div className="allocation-card__controls" role="group" aria-label={`${label} allocation`}>
+      <strong className="choice-row__value money">{formatDollars(value)}</strong>
+      <div className="choice-row__controls" role="group" aria-label={`${label} allocation`}>
         <button type="button" aria-label={`Decrease ${label} by $${step}`} onClick={() => changeBy(-step)}>−</button>
         <input
           id={inputId}
@@ -63,10 +64,6 @@ export function AllocationControl({ id, label, description, value, step, max, or
         />
         <button type="button" aria-label={`Increase ${label} by $${step}`} onClick={() => changeBy(step)}>+</button>
       </div>
-      <div className="allocation-card__share" aria-hidden="true"><span style={{ width: `${max > 0 ? Math.min(100, (value / max) * 100) : 0}%` }} /></div>
-      {referenceValue !== undefined && referenceValue !== value && onApplyReference && (
-        <button type="button" className="allocation-card__reference" onClick={onApplyReference}>Use saved {formatDollars(referenceValue)}</button>
-      )}
     </section>
   );
 }

@@ -12,4 +12,11 @@
   --world-hero-body: #c8cedb;
   --world-hero-muted: #8f9bb0;
   --world-hero-edge: #46587a;
+
+  /* Arena surfaces: the dark scenes are layered, not one flat navy. */
+  --world-deep: #061020;
+  --world-panel: #11253f;
+  --world-panel-edge: #24406a;
+  --world-court: #1b3a63;
+  --world-flare: #e0672e;
 }
