@@ -24,4 +24,11 @@ describe("schema-versioned persistence", () => {
     expect(loadAttempt(memory)).toBeNull();
     expect([...memory.values.keys()].some((key) => key.startsWith("bow.backup."))).toBe(true);
   });
+
+  // A stage this build cannot render would leave the student looking at nothing.
+  it("refuses an attempt parked on a stage this build does not know", () => {
+    const memory = storage({ [ATTEMPT_KEY]: JSON.stringify({ ...createInitialState(10), stage: "world-picker-v0" }) });
+    expect(loadAttempt(memory)).toBeNull();
+    expect([...memory.values.keys()].some((key) => key.startsWith("bow.backup."))).toBe(true);
+  });
 });

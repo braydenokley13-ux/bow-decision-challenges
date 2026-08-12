@@ -39,9 +39,9 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
     { week: "Week 4", note: "Most minutes on the roster. Two weeks of practice left before the showcase bracket is set." },
   ],
   setups: [
-    { id: "stable-1800", title: "Gym District Sublet", terms: "One price for all 8 weeks", total: SCENARIO_NUMBERS.setupCosts["stable-1800"], tradeoff: "Five minutes from training. The higher price buys Avery a short, predictable trip.", eventCost: SCENARIO_NUMBERS.setupEventCosts["stable-1800"], eventCostLabel: "No added rehab travel" },
-    { id: "shared-1400", title: "Teammate Share", terms: "$150 a week × 8 weeks + $200 for travel", total: SCENARIO_NUMBERS.setupCosts["shared-1400"], tradeoff: "Thirty minutes from training, with a teammate sharing the space and the routine.", eventCost: SCENARIO_NUMBERS.setupEventCosts["shared-1400"], eventCostLabel: "Added travel to rehab" },
-    { id: "flexible-1000", title: "Cousin Commute", terms: "$125 a week × 8 weeks", total: SCENARIO_NUMBERS.setupCosts["flexible-1000"], tradeoff: "Seventy minutes from training when traffic and rides cooperate. It costs less and asks more of Avery’s time.", eventCost: SCENARIO_NUMBERS.setupEventCosts["flexible-1000"], eventCostLabel: "Late rides to required rehab" },
+    { id: "stable-1800", title: "Gym District Sublet", terms: "One price for all 8 weeks", total: SCENARIO_NUMBERS.setupCosts["stable-1800"], commute: "5 min to the gym", tradeoff: "The most expensive room, and the one that asks the least of Avery's day. Walk to practice, walk home.", eventCost: SCENARIO_NUMBERS.setupEventCosts["stable-1800"], eventCostLabel: "No added rehab travel" },
+    { id: "shared-1400", title: "Teammate Share", terms: "$150 a week × 8 weeks + $200 for travel", total: SCENARIO_NUMBERS.setupCosts["shared-1400"], commute: "30 min by bus", tradeoff: "A room split with a teammate who keeps the same schedule. The bus pass is a single up-front charge.", eventCost: SCENARIO_NUMBERS.setupEventCosts["shared-1400"], eventCostLabel: "Added travel to rehab" },
+    { id: "flexible-1000", title: "Cousin Commute", terms: "$125 a week × 8 weeks", total: SCENARIO_NUMBERS.setupCosts["flexible-1000"], commute: "70 min each way", tradeoff: "Avery’s cousin has a spare room across the city. It costs the least and takes the most out of the day.", eventCost: SCENARIO_NUMBERS.setupEventCosts["flexible-1000"], eventCostLabel: "Late rides to required rehab" },
   ],
   disruption: {
     source: "Harbor City Flight · Team update",

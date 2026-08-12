@@ -56,7 +56,10 @@ export function PlanBoard({ input, setupTitle, baseline, reference, attempts, on
             <h2 id="plan-board-title">{copy.title}</h2>
             <p className="plan-board__intro">{copy.body}</p>
           </div>
-          {reference && onApplyReference && <Button variant="quiet" type="button" onClick={() => onApplyReference()}>Use my saved numbers</Button>}
+          {/* Only offered once the board differs from what the student saved; otherwise
+              the control does nothing and reads as a step they have missed. */}
+          {reference && onApplyReference && (["goal", "reserve", "flexibleCash"] as const).some((category) => reference[category] !== input.amounts[category])
+            && <Button variant="quiet" type="button" onClick={() => onApplyReference()}>Put my saved numbers back</Button>}
         </header>
         <div className="plan-board__body">
           <aside className="locked-stack" aria-label="Money already promised">

@@ -186,7 +186,7 @@ test("confirmed-only path on the inexpensive setup skips the fallback and comple
   await expect(page.getByRole("heading", { name: "Your plan already survives a lost bonus." })).toBeVisible();
   await expect(page.getByText("You counted no maybe money.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "What if the bonus never shows up?" })).not.toBeVisible();
-  await page.getByRole("button", { name: "Go to Week 5" }).click();
+  await page.getByRole("button", { name: "Start the season" }).click();
   await page.getByRole("button", { name: "Play Week 5" }).click();
 
   await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
@@ -258,7 +258,7 @@ test("leaving the $800 bonus out of the final plan skips the remaining-risk prev
 
   await fillPlan(page, "1200", "400", "400");
   await page.getByRole("button", { name: "Save this version" }).click();
-  await page.getByRole("button", { name: "Go to Week 5" }).click();
+  await page.getByRole("button", { name: "Start the season" }).click();
   await page.getByRole("button", { name: "Play Week 5" }).click();
 
   await passWeek5Calculation(page, "850");
@@ -444,7 +444,7 @@ test("key screens have no serious or critical accessibility violations", async (
   await completeWorkingCalcs(page);
   await fillPlan(page, "1200", "600", "600");
   await page.getByRole("button", { name: "Save this version" }).click();
-  await page.getByRole("button", { name: "Go to Week 5" }).click();
+  await page.getByRole("button", { name: "Start the season" }).click();
   await page.getByRole("button", { name: "Play Week 5" }).click();
   await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
   await noSeriousAxeViolations(page);

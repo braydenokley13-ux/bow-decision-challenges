@@ -25,6 +25,8 @@ export interface SetupOptionDefinition {
   title: string;
   terms: string;
   total: Dollars;
+  /** The cost that is not money: what this place asks of Avery's day. */
+  commute: string;
   tradeoff: string;
   eventCost: Dollars;
   eventCostLabel: string;

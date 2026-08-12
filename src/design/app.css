@@ -116,7 +116,9 @@ p { color: var(--ink-2); }
 .setup-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
 .setup-card__head span { color: var(--ink-3); font: var(--t-micro); text-transform: uppercase; }
 .setup-card__head b { text-align: right; font: var(--t-title3); }
-.setup-card__tradeoff { min-height: 60px; margin: 0; font: var(--t-ui); color: var(--ink-2); }
+.setup-card__commute { display: flex; align-items: center; gap: var(--s-3); margin: 0; color: var(--ink-1); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.setup-card__commute i { width: 26px; height: 3px; background: var(--world-accent); }
+.setup-card__tradeoff { min-height: 76px; margin: 0; font: var(--t-ui); font-weight: 400; color: var(--ink-2); }
 .setup-card > .button { margin-top: auto; }
 .given-total { display: flex; flex-direction: column; justify-content: space-between; min-height: 126px; gap: var(--s-3); padding: var(--s-4); background: var(--surface-sunken); }
 .given-total span { color: var(--ink-3); font: var(--t-micro); }

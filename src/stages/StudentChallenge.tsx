@@ -124,6 +124,7 @@ function SetupStage() {
         {BASKETBALL_SCENARIO.setups.map((setup, index) => (
           <article key={setup.id} className={`setup-card ${state.setupId === setup.id ? "is-selected" : ""}`}>
             <div className="setup-card__head"><span>Option {String.fromCharCode(65 + index)}</span><b>{setup.title}</b></div>
+            <p className="setup-card__commute"><i aria-hidden="true" />{setup.commute}</p>
             <p className="setup-card__tradeoff">{setup.tradeoff}</p>
             {index === 0 ? (
               <div className="given-total"><span>Full 8-week price · already worked out</span><MoneyAmount value={setup.total} /></div>
@@ -253,7 +254,7 @@ function IncomeCheckStage() {
   return (
     <StageShell stage="income-check" kicker="Backup check" title="Your plan already survives a lost bonus.">
       <section className="state-message state-message--resolved"><span aria-hidden="true">✓</span><div><h2>You counted no maybe money.</h2><p>Nothing in this plan disappears if a bonus falls through, so there is no backup version to build.</p><p>Counting a bonus or leaving it out are both reasonable. Only whether the plan works is scored.</p></div></section>
-      <div className="stage-action"><p>Week 5 still has something waiting for you.</p><Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "week5-transition" })}>Go to Week 5</Button></div>
+      <div className="stage-action"><p>Avery reports Monday. The plan you just saved is what the next eight weeks run on.</p><Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "week5-transition" })}>Start the season</Button></div>
     </StageShell>
   );
 }
@@ -360,7 +361,7 @@ function FinalRepairStage() {
   const completionDecided = state.log.some((event) => event.type === "COMPLETION_INCOME_DECIDED");
   const ready = state.income.includeOptionalWork !== null && completionDecided;
   return (
-    <StageShell stage="opportunity-final-repair" kicker="Week 5 · Still Week 5" title="Two calls, then land the plan.">
+    <StageShell stage="opportunity-final-repair" kicker="Week 5 · Two calls" title="Two calls, then land the plan.">
       <div className="decision-row">
         <section className="opportunity-card">
           <p className="eyebrow">Message · {opportunity.from}</p>
