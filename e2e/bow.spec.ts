@@ -141,7 +141,7 @@ test("full conditional path completes through fallback, Week 5, remaining-risk p
   await expect(page.getByRole("heading", { name: "Four weeks go by." })).toBeVisible();
   await page.getByRole("button", { name: "Continue to Week 5" }).click();
 
-  await expect(page.getByRole("heading", { name: "The showcase is off." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
   await passWeek5Calculation(page, "2050");
 
   await expect(page.getByRole("heading", { name: "Fix what you can with what Avery has." })).toBeVisible();
@@ -188,7 +188,7 @@ test("confirmed-only path on the inexpensive setup skips the fallback and comple
   await page.getByRole("button", { name: "Go to Week 5" }).click();
   await page.getByRole("button", { name: "Continue to Week 5" }).click();
 
-  await expect(page.getByRole("heading", { name: "The showcase is off." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
   await passWeek5Calculation(page, "1050");
 
   await fillPlan(page, "450", "400", "500");
@@ -442,7 +442,7 @@ test("key screens have no serious or critical accessibility violations", async (
   await page.getByRole("button", { name: "Save this version" }).click();
   await page.getByRole("button", { name: "Go to Week 5" }).click();
   await page.getByRole("button", { name: "Continue to Week 5" }).click();
-  await expect(page.getByRole("heading", { name: "The showcase is off." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
   await noSeriousAxeViolations(page);
 });
 

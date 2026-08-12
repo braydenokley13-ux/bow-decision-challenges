@@ -132,8 +132,14 @@ function PlanBoardForMode({ mode }: { mode: PlanMode }) {
   const input = snapshotForMode(state, mode);
   if (!input || !state.setupId) return null;
   const setupTitle = BASKETBALL_SCENARIO.setups.find((setup) => setup.id === state.setupId)?.title ?? "Selected setup";
-  const baseline = mode === "fallback" ? amountsFor(state, "working") : mode === "week5-first-response" ? amountsFor(state, "working") : mode === "remaining-risk" ? amountsFor(state, "final") : undefined;
-  const reference = (mode === "week5-first-response" || mode === "remaining-risk") && state.saved.fallback ? amountsFor(state, "fallback") : undefined;
+  const baseline = mode === "fallback"
+    ? amountsFor(state, "working")
+    : mode === "week5-first-response"
+      ? amountsFor(state, state.saved.fallback ? "fallback" : "working")
+      : mode === "remaining-risk"
+        ? amountsFor(state, "final")
+        : undefined;
+  const reference = mode === "week5-first-response" || mode === "remaining-risk" ? baseline : undefined;
   const applyReference = (category?: CategoryId) => {
     if (!reference) return;
     for (const key of category ? [category] : (["goal", "reserve", "flexibleCash"] as const)) dispatch({ type: "PLAN_AMOUNT_CHANGED", mode, category: key, amount: reference[key] });
