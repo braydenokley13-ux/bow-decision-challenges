@@ -11,8 +11,14 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [
-    { name: "chromium-1366", use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 768 } } },
-    { name: "chromium-1024", use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 600 } } },
+    {
+      name: "chromium-1366",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 768 }, launchOptions: { executablePath: "/opt/pw-browsers/chromium" } },
+    },
+    {
+      name: "chromium-1024",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 600 }, launchOptions: { executablePath: "/opt/pw-browsers/chromium" } },
+    },
   ],
   webServer: {
     command: "npm run dev",

@@ -7,7 +7,9 @@
   --surface-inset: #dfddd4;
   --ink-1: #14171c;
   --ink-2: #3f4750;
-  --ink-3: #666e78;
+
+  /* Meets AA against every surface token, including surface-sunken and surface-inset. */
+  --ink-3: #5a626c;
   --ink-4: #8a9099;
   --ink-invert: #ffffff;
   --border-subtle: #e3e0d8;

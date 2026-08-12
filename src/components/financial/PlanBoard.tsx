@@ -91,10 +91,12 @@ export function PlanBoard({ input, setupTitle, baseline, reference, attempts, on
             ))}
           </div>
         </div>
-        {mode.baseline && (
+        {/* Only shown where an earlier plan exists to compare against. The final board
+            has no such baseline, and a $0 there would read as a real measurement. */}
+        {freed !== undefined && (
           <div className="exposure-summary" aria-live="polite">
             {input.mode === "fallback" && <div><span>Bonus cash removed</span><strong className="money">{formatDollars(exposureFor(input, SCENARIO_NUMBERS))}</strong></div>}
-            <div><span>Cut from your earlier plan</span><strong className="money">{formatDollars(freed ?? 0)}</strong></div>
+            <div><span>Cut from your earlier plan</span><strong className="money">{formatDollars(Math.max(0, freed))}</strong></div>
           </div>
         )}
         {attempts >= 2 && balance !== 0 && (
