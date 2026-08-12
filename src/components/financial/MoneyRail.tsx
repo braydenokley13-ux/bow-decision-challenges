@@ -18,6 +18,10 @@ interface Band {
 export function MoneyRail({ input }: { input: SnapshotInputs }) {
   const available = availableFor(input, SCENARIO_NUMBERS);
   const locked = lockedFor(input, SCENARIO_NUMBERS);
+  // The Week 5 bills get their own band rather than disappearing into "must pay", so the
+  // reason the plan stopped balancing is visible in the plan's own picture of itself.
+  const week5Bills = input.week5Applied ? SCENARIO_NUMBERS.requiredWeek5Cost + SCENARIO_NUMBERS.setupEventCosts[input.setupId] : 0;
+  const committed = locked - week5Bills;
   const assignedTotal = assigned(input.amounts);
   const balance = balanceOf(input, SCENARIO_NUMBERS);
   const conditional = input.mode === "working"
@@ -38,7 +42,8 @@ export function MoneyRail({ input }: { input: SnapshotInputs }) {
     ...(conditional > 0 ? [{ key: "conditional", label: "Maybe money", amount: conditional, tone: "conditional" }] : []),
   ];
   const demand: Band[] = [
-    { key: "locked", label: "Must pay", amount: locked, tone: "locked" },
+    { key: "locked", label: "Must pay", amount: committed, tone: "locked" },
+    ...(week5Bills > 0 ? [{ key: "week5", label: "New Week 5 bills", amount: week5Bills, tone: "event" }] : []),
     ...(assignedTotal > 0 ? [{ key: "assigned", label: "Your choices", amount: assignedTotal, tone: "assigned" }] : []),
   ];
 
@@ -93,7 +98,8 @@ export function MoneyRail({ input }: { input: SnapshotInputs }) {
           <tbody>
             <tr><th scope="row">Safe cash</th><td>{formatDollars(dependable)}</td><td>Avery will definitely have this money.</td></tr>
             {conditional > 0 && <tr><th scope="row">Maybe money</th><td>{formatDollars(conditional)}</td><td>Only arrives if the bonus rule is met.</td></tr>}
-            <tr><th scope="row">Must pay</th><td>{formatDollars(locked)}</td><td>Already promised. These costs cannot move.</td></tr>
+            <tr><th scope="row">Must pay</th><td>{formatDollars(committed)}</td><td>Already promised. These costs cannot move.</td></tr>
+            {week5Bills > 0 && <tr><th scope="row">New Week 5 bills</th><td>{formatDollars(week5Bills)}</td><td>Required after Week 5. These costs cannot move either.</td></tr>}
             <tr><th scope="row">Your choices</th><td>{formatDollars(assignedTotal)}</td><td>Amounts you can change.</td></tr>
             <tr><th scope="row">{state.headline}</th><td>{formatDollars(state.amount)}</td><td>{balance === 0 ? "The plan balances." : balance > 0 ? "Give this money a job to balance the plan." : "Reduce your choices by this much to balance the plan."}</td></tr>
           </tbody>

@@ -515,7 +515,7 @@ function SubmittedStage() {
   const navigate = useNavigate();
   const final = amountsFor(state, "final");
   const setup = BASKETBALL_SCENARIO.setups.find((item) => item.id === state.setupId);
-  const goalShare = Math.round((final.goal / SCENARIO_NUMBERS.goalCap) * 100);
+  const goalShare = Math.min(100, Math.round((final.goal / SCENARIO_NUMBERS.goalCap) * 100));
   const clinics = state.income.includeOptionalWork === true;
   const weeks = [
     { week: 1, tone: "played", text: "Avery moves in" },
@@ -543,8 +543,10 @@ function SubmittedStage() {
             <p className="field-label">Sports-media course</p>
             <strong className="money">{formatDollars(final.goal)}</strong>
             <span>of {formatDollars(SCENARIO_NUMBERS.goalCap)}</span>
-            <span className="recap__meter" aria-hidden="true"><i style={{ width: `${Math.min(100, goalShare)}%` }} /></span>
-            <p>{goalShare >= 100 ? "Fully covered." : `${goalShare}% covered by the end of the season.`}</p>
+            {/* The meter states the fact and stops there. A percentage here would read as
+                a score, and how much a student chose to put toward the course is a
+                strategy, not a result. */}
+            <span className="recap__meter" aria-hidden="true"><i style={{ width: `${goalShare}%` }} /></span>
           </div>
           <dl className="recap__numbers">
             <div><dt>Backup money</dt><dd className="money">{formatDollars(final.reserve)}</dd></div>

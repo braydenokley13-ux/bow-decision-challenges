@@ -4,8 +4,13 @@
 
 Students step into an eight-week basketball season as the person handling the money: they
 build a plan that works, watch Week 5 break it, repair it with what they have left, and
-defend the result in their own words. Schools teach the skill. The challenge reveals
-whether students can apply it.
+defend the result in their own words. You teach the concept. The challenge gives students
+a world in which they have to use it.
+
+The story opens on the first screen — Avery's call, the player card, the goal, and the two
+class codes are one screen, so nothing stands between the link and the situation. An
+eight-week season strip in the header is the only progress indicator, so a student always
+knows where they are in Avery's season rather than which numbered form they are on.
 
 This MVP ships one complete world: **Basketball — Eight Weeks to the Showcase**. The
 finance, evidence, and scoring layers are world-neutral, so a second story can be added
@@ -35,6 +40,9 @@ The browser suite covers both income routes through submission, accepting and de
 optional work, both `$800` branches, the support and answer-supplied paths, refresh and
 resume, educator deep links, keyboard-only operation, an axe scan, and two Chromebook widths.
 
+Entrance animations move elements but never fade their opacity: a mid-animation frame with
+partially transparent text drops real contrast below AA, and the axe scan catches it.
+
 To review the rendered product, `node scripts/walkthrough.mjs <outDir>` drives the whole
 Basketball flow and screenshots every stage at 1366×768, 1024×600, and 640px wide, reporting
 any horizontal overflow or console error it encounters along the way.
@@ -56,6 +64,8 @@ resulting plan holds together is observed.
 ## Main areas
 
 - `src/stages/StudentChallenge.tsx` — the complete Basketball flow, beat by beat.
+- `src/components/story/SeasonStrip.tsx` — the eight-week header indicator.
+- `src/domain/machine/stages.ts` — where each stage sits in season time.
 - `src/components/financial/` — Money Rail, Plan Board, and allocation controls.
 - `src/domain/` — world-neutral finance, evidence, scoring, and state machine.
 - `src/domain/scenario/worlds/basketball.ts` — Basketball story details and amounts.
