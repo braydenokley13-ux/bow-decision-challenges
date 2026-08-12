@@ -35,7 +35,8 @@ async function gotoFreshChallenge(page: Page) {
 
 async function enterChallenge(page: Page) {
   await page.getByRole("button", { name: "Enter the challenge" }).click();
-  await page.getByRole("button", { name: "Show me the money" }).click();
+  await page.getByRole("button", { name: "See what it pays" }).click();
+  await page.getByRole("button", { name: "Find Avery a place" }).click();
 }
 
 /** Both comparison calculations must be answered correctly no matter which setup is chosen. */
@@ -79,7 +80,7 @@ async function passWeek5Calculation(page: Page, total: string) {
 }
 
 async function decideOpportunity(page: Page, opts: { clinics: boolean; countBonus: boolean }) {
-  await page.getByRole("button", { name: opts.clinics ? "Take the clinics" : "Keep the rest block" }).click();
+  await page.getByRole("button", { name: opts.clinics ? "Take the clinics" : "Keep the Saturdays" }).click();
   await page.getByRole("button", { name: opts.countBonus ? "Count the $800" : "Plan without it" }).click();
 }
 
@@ -138,8 +139,8 @@ test("full conditional path completes through fallback, Week 5, remaining-risk p
   await page.getByRole("button", { name: "Check this plan" }).click();
   await page.getByRole("button", { name: "Save it, $900 still missing" }).click();
 
-  await expect(page.getByRole("heading", { name: "Four weeks go by." })).toBeVisible();
-  await page.getByRole("button", { name: "Continue to Week 5" }).click();
+  await expect(page.getByRole("heading", { name: "The season starts." })).toBeVisible();
+  await page.getByRole("button", { name: "Play Week 5" }).click();
 
   await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
   await passWeek5Calculation(page, "2050");
@@ -148,7 +149,7 @@ test("full conditional path completes through fallback, Week 5, remaining-risk p
   await fillPlan(page, "800", "400", "950");
   await page.getByRole("button", { name: "Save this version" }).click();
 
-  await expect(page.getByRole("heading", { name: "Two decisions, then land the plan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Two calls, then land the plan." })).toBeVisible();
   await decideOpportunity(page, { clinics: true, countBonus: true });
   await fillPlan(page, "800", "400", "1450");
   await page.getByRole("button", { name: "Save final plan" }).click();
@@ -160,12 +161,12 @@ test("full conditional path completes through fallback, Week 5, remaining-risk p
   await expect(page.getByRole("heading", { name: "Make the case for your plan." })).toBeVisible();
   await submitDefense(page, "My plan still works because it balances at $0 after the update. I protected $800 for the course and gave up the open rest block to take the clinics.");
 
-  await expect(page.getByRole("heading", { name: "You handled it." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Avery got through it." })).toBeVisible();
   await noSeriousAxeViolations(page);
 
   // #9: refreshing after submission still shows the submitted state.
   await page.reload();
-  await expect(page.getByRole("heading", { name: "You handled it." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Avery got through it." })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -185,8 +186,8 @@ test("confirmed-only path on the inexpensive setup skips the fallback and comple
   await expect(page.getByRole("heading", { name: "Your plan already survives a lost bonus." })).toBeVisible();
   await expect(page.getByText("You counted no maybe money.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "What if the bonus never shows up?" })).not.toBeVisible();
-  await page.getByRole("button", { name: "Go to Week 5" }).click();
-  await page.getByRole("button", { name: "Continue to Week 5" }).click();
+  await page.getByRole("button", { name: "Start the season" }).click();
+  await page.getByRole("button", { name: "Play Week 5" }).click();
 
   await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
   await passWeek5Calculation(page, "1050");
@@ -203,7 +204,7 @@ test("confirmed-only path on the inexpensive setup skips the fallback and comple
   await page.getByRole("button", { name: "Save preview" }).click();
 
   await submitDefense(page, "My plan still works because every dollar has a job after Week 5. I protected the course goal and gave up the $800 bonus in this preview.");
-  await expect(page.getByRole("heading", { name: "You handled it." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Avery got through it." })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -223,15 +224,15 @@ test("declining the optional weekend clinics still completes the plan", async ({
   await fillPlan(page, "800", "800", "800");
   await page.getByRole("button", { name: "Save this version" }).click();
 
-  await page.getByRole("button", { name: "Continue to Week 5" }).click();
+  await page.getByRole("button", { name: "Play Week 5" }).click();
   await passWeek5Calculation(page, "1050");
 
   await fillPlan(page, "800", "400", "950");
   await page.getByRole("button", { name: "Save this version" }).click();
 
-  await expect(page.getByRole("heading", { name: "Two decisions, then land the plan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Two calls, then land the plan." })).toBeVisible();
   await decideOpportunity(page, { clinics: false, countBonus: true });
-  await expect(page.getByRole("button", { name: "Keep the rest block" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Keep the Saturdays" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: "Take the clinics" })).toHaveAttribute("aria-pressed", "false");
 
   await fillPlan(page, "800", "400", "950");
@@ -242,7 +243,7 @@ test("declining the optional weekend clinics still completes the plan", async ({
   await page.getByRole("button", { name: "Save preview" }).click();
 
   await submitDefense(page, "My plan still works because I did not take the clinics and still balance at $0. I protected the course goal and gave up nothing extra.");
-  await expect(page.getByRole("heading", { name: "You handled it." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Avery got through it." })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -257,8 +258,8 @@ test("leaving the $800 bonus out of the final plan skips the remaining-risk prev
 
   await fillPlan(page, "1200", "400", "400");
   await page.getByRole("button", { name: "Save this version" }).click();
-  await page.getByRole("button", { name: "Go to Week 5" }).click();
-  await page.getByRole("button", { name: "Continue to Week 5" }).click();
+  await page.getByRole("button", { name: "Start the season" }).click();
+  await page.getByRole("button", { name: "Play Week 5" }).click();
 
   await passWeek5Calculation(page, "850");
 
@@ -276,7 +277,7 @@ test("leaving the $800 bonus out of the final plan skips the remaining-risk prev
   await expect(page.getByRole("heading", { name: "Make the case for your plan." })).toBeVisible();
 
   await submitDefense(page, "My plan still works because it never depended on the $800 bonus in the first place. I protected the course goal and gave up the reserve.");
-  await expect(page.getByRole("heading", { name: "You handled it." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Avery got through it." })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -297,7 +298,7 @@ test("the expensive setup completes and Week 5 shows only two changed items (no 
   await fillPlan(page, "600", "400", "600");
   await page.getByRole("button", { name: "Save this version" }).click();
 
-  await page.getByRole("button", { name: "Continue to Week 5" }).click();
+  await page.getByRole("button", { name: "Play Week 5" }).click();
   await expect(page.locator(".gap-tiles button")).toHaveCount(2);
   await passWeek5Calculation(page, "1700");
 
@@ -313,7 +314,7 @@ test("the expensive setup completes and Week 5 shows only two changed items (no 
   await page.getByRole("button", { name: "Save preview" }).click();
 
   await submitDefense(page, "My plan still works because the stable setup has no extra travel cost after Week 5. I protected the course goal and gave up flexible cash.");
-  await expect(page.getByRole("heading", { name: "You handled it." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Avery got through it." })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -364,9 +365,12 @@ test("the opening screens work with a keyboard only", async ({ page }) => {
   const enterButton = page.getByRole("button", { name: "Enter the challenge" });
   await enterButton.focus();
   await enterButton.press("Enter");
-  const roleButton = page.getByRole("button", { name: "Show me the money" });
-  await roleButton.focus();
-  await roleButton.press("Enter");
+  const offerButton = page.getByRole("button", { name: "See what it pays" });
+  await offerButton.focus();
+  await offerButton.press("Enter");
+  const dealButton = page.getByRole("button", { name: "Find Avery a place" });
+  await dealButton.focus();
+  await dealButton.press("Enter");
   await expect(page.getByRole("heading", { name: "Cheaper rent costs something else." })).toBeVisible();
 });
 
@@ -440,8 +444,8 @@ test("key screens have no serious or critical accessibility violations", async (
   await completeWorkingCalcs(page);
   await fillPlan(page, "1200", "600", "600");
   await page.getByRole("button", { name: "Save this version" }).click();
-  await page.getByRole("button", { name: "Go to Week 5" }).click();
-  await page.getByRole("button", { name: "Continue to Week 5" }).click();
+  await page.getByRole("button", { name: "Start the season" }).click();
+  await page.getByRole("button", { name: "Play Week 5" }).click();
   await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
   await noSeriousAxeViolations(page);
 });
@@ -458,7 +462,8 @@ test("no stale Fashion or coming-soon copy appears in the student flow or educat
   await noStaleCopy(page);
   await page.getByRole("button", { name: "Enter the challenge" }).click();
   await noStaleCopy(page);
-  await page.getByRole("button", { name: "Show me the money" }).click();
+  await page.getByRole("button", { name: "See what it pays" }).click();
+  await page.getByRole("button", { name: "Find Avery a place" }).click();
   await noStaleCopy(page);
 
   for (const path of ["/educator/guide", "/educator/class", "/educator/class/standards", "/educator/teaching-companion", "/educator/class/students/14"]) {
@@ -481,7 +486,8 @@ test("student entry screens do not spill sideways at a 640px-wide viewport", asy
   await noHorizontalOverflow(page);
   await page.getByRole("button", { name: "Enter the challenge" }).click();
   await noHorizontalOverflow(page);
-  await page.getByRole("button", { name: "Show me the money" }).click();
+  await page.getByRole("button", { name: "See what it pays" }).click();
+  await page.getByRole("button", { name: "Find Avery a place" }).click();
   await noHorizontalOverflow(page);
 
   await page.goto("/educator/guide");

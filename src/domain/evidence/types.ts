@@ -9,7 +9,7 @@ export type Trajectory = "independent_first_opportunity" | "corrected_after_cons
 export type C4ObservationContext = "opening_income_fallback" | "week5_cost_response";
 
 export type StageId =
-  | "entry" | "join" | "choose-world" | "role-contract" | "setup-comparison" | "working-plan"
+  | "entry" | "join" | "choose-world" | "the-offer" | "role-contract" | "setup-comparison" | "working-plan"
   | "fallback-version" | "income-check" | "week5-transition" | "week5-event" | "first-response"
   | "opportunity-final-repair" | "remaining-risk-preview" | "defense" | "submitted";
 

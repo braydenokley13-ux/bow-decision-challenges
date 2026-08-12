@@ -46,42 +46,67 @@ function JoinStage() {
         <p className="privacy-note">{STUDENT_COPY.join.privacy}</p>
       </div>
       <aside className="entry-page__stage" aria-hidden="true">
-        <span>Plan Under Pressure</span>
-        <strong>08</strong>
-        <b>weeks to the showcase</b>
+        <span>{BASKETBALL_SCENARIO.offer.team}</span>
+        <strong>Avery<br />Reyes</strong>
+        <b>Guard · 18 · eight weeks with the team</b>
       </aside>
     </div>
   );
 }
 
-function RoleStage() {
+/** Beat 1. What just happened to Avery, and what Avery wants out of it. */
+function OfferStage() {
+  const { dispatch } = useChallenge();
+  const { offer, numbers } = BASKETBALL_SCENARIO;
+  return (
+    <StageShell stage="the-offer" kicker={offer.kicker} title={offer.headline}>
+      <div className="offer-layout">
+        <section className="offer-story">
+          <p className="offer-story__lede">{offer.body}</p>
+          <dl className="offer-story__facts">
+            {offer.facts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}
+          </dl>
+        </section>
+        <aside className="offer-want">
+          <p className="eyebrow">What Avery wants out of it</p>
+          <strong className="money">{formatDollars(numbers.goalCap)}</strong>
+          <b>{offer.want}</b>
+          <p>{offer.wantDetail}</p>
+        </aside>
+      </div>
+      <div className="stage-action">
+        <p><strong>Avery plays. You handle the money.</strong> Every call about what the money does for the next eight weeks is yours.</p>
+        <Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "role-contract" })}>See what it pays</Button>
+      </div>
+    </StageShell>
+  );
+}
+
+/** Beat 2. The contract itself, with the difference between the two halves left visible. */
+function DealStage() {
   const { dispatch } = useChallenge();
   return (
-    <StageShell stage="role-contract" kicker="Your player · Avery Reyes" title="Eight weeks. One plan. No do-overs.">
-      <div className="role-layout">
-        <section className="role-hero">
-          <span className="role-hero__number">08</span>
-          <p className="role-hero__lede">Avery, 18, guard. Eight weeks with the Harbor City Flight.</p>
-          <h2>You handle the money.</h2>
-          <p>Pick where Avery stays. Decide which cash to count on. Then hold the plan together when Week 5 changes it.</p>
-          <Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "setup-comparison" })}>Show me the money</Button>
+    <StageShell stage="role-contract" kicker="The terms" title="What the eight weeks pay.">
+      <p className="stage-deck">Two of these arrive on schedule. Two depend on something happening first. All four are in the same contract.</p>
+      <div className="deal-sheet">
+        <section className="deal-column" data-tone="safe">
+          <p className="field-label">Avery will have this</p>
+          {[
+            ["Already saved", "$500", "Sitting in the account now."],
+            ["Base pay after taxes", "$4,500", "Paid every week, win or lose."],
+          ].map(([label, amount, condition]) => <div key={label}><span>{label}<small>{condition}</small></span><strong className="money">{amount}</strong></div>)}
         </section>
-        <section className="contract-sheet">
-          <header><p className="eyebrow">Avery’s 8-week money</p></header>
-          <div className="income-list">
-            <p className="income-list__group">Safe — Avery will have this</p>
-            {[
-              ["Already saved", "$500", "Sitting in the account now."],
-              ["Base pay after taxes", "$4,500", "Paid no matter how the team plays."],
-            ].map(([label, amount, condition]) => <div key={label} data-tone="safe"><span>{label}<small>{condition}</small></span><strong className="money">{amount}</strong></div>)}
-            <p className="income-list__group">Maybe — only if a rule is met</p>
-            {[
-              ["Perfect Attendance Bonus", "$800", "Every practice. Every game."],
-              ["Making the Cut Bonus", "$1,000", "Only if the Flight qualifies."],
-            ].map(([label, amount, condition]) => <div key={label} data-tone="maybe"><span>{label}<small>{condition}</small></span><strong className="money">{amount}</strong></div>)}
-          </div>
-          <p className="course-goal"><span>Saving toward</span><b>A sports-media course after the season</b><strong className="money">up to $1,200</strong></p>
+        <section className="deal-column" data-tone="maybe">
+          <p className="field-label">Only if the rule is met</p>
+          {[
+            ["Perfect Attendance Bonus", "$800", "Every practice, every game. Miss one and it is gone."],
+            ["Making the Cut Bonus", "$1,000", "Paid only if the Flight qualifies for the showcase."],
+          ].map(([label, amount, condition]) => <div key={label}><span>{label}<small>{condition}</small></span><strong className="money">{amount}</strong></div>)}
         </section>
+      </div>
+      <div className="stage-action">
+        <p>Nothing is spent yet. The first bill is the biggest one: eight weeks of somewhere to live.</p>
+        <Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "setup-comparison" })}>Find Avery a place</Button>
       </div>
     </StageShell>
   );
@@ -99,6 +124,7 @@ function SetupStage() {
         {BASKETBALL_SCENARIO.setups.map((setup, index) => (
           <article key={setup.id} className={`setup-card ${state.setupId === setup.id ? "is-selected" : ""}`}>
             <div className="setup-card__head"><span>Option {String.fromCharCode(65 + index)}</span><b>{setup.title}</b></div>
+            <p className="setup-card__commute"><i aria-hidden="true" />{setup.commute}</p>
             <p className="setup-card__tradeoff">{setup.tradeoff}</p>
             {index === 0 ? (
               <div className="given-total"><span>Full 8-week price · already worked out</span><MoneyAmount value={setup.total} /></div>
@@ -218,7 +244,7 @@ function WorkingStage() {
           </button>
         </section>
       </div>
-      {essentialsReady && floorReady ? <PlanBoardForMode mode="working" /> : <div className="board-gate"><span aria-hidden="true">🔒</span><p>{STUDENT_COPY.working.locked}</p></div>}
+      {essentialsReady && floorReady ? <PlanBoardForMode mode="working" /> : <p className="board-gate">{STUDENT_COPY.working.locked}</p>}
     </StageShell>
   );
 }
@@ -228,21 +254,46 @@ function IncomeCheckStage() {
   return (
     <StageShell stage="income-check" kicker="Backup check" title="Your plan already survives a lost bonus.">
       <section className="state-message state-message--resolved"><span aria-hidden="true">✓</span><div><h2>You counted no maybe money.</h2><p>Nothing in this plan disappears if a bonus falls through, so there is no backup version to build.</p><p>Counting a bonus or leaving it out are both reasonable. Only whether the plan works is scored.</p></div></section>
-      <div className="stage-action"><p>Week 5 still has something waiting for you.</p><Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "week5-transition" })}>Go to Week 5</Button></div>
+      <div className="stage-action"><p>Avery reports Monday. The plan you just saved is what the next eight weeks run on.</p><Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "week5-transition" })}>Start the season</Button></div>
     </StageShell>
   );
 }
 
-function Week5TransitionStage() {
-  const { dispatch } = useChallenge();
+/** The three amounts the student chose, as they stand in the plan they last committed. */
+function PlanEcho({ mode, label, note }: { mode: PlanMode; label: string; note?: string }) {
+  const { state } = useChallenge();
+  const amounts = amountsFor(state, mode);
   return (
-    <StageShell stage="week5-transition" kicker="Checkpoint saved" title="Four weeks go by.">
-      <section className="time-jump">
-        <div className="time-jump__track"><span>Week 1</span><i /><strong>Week 5</strong></div>
-        <h2>Your plan is locked in.</h2>
-        <p>Everything you decided is saved exactly as you left it. What happens next does not let you go back and choose differently.</p>
-        <Button onClick={() => dispatch({ type: "WEEK5_ADVANCE_CONFIRMED" })}>Continue to Week 5</Button>
-      </section>
+    <section className="plan-echo">
+      <p className="field-label">{label}</p>
+      <dl>
+        <div><dt>Sports-media course</dt><dd className="money">{formatDollars(amounts.goal)}</dd></div>
+        <div><dt>Backup money</dt><dd className="money">{formatDollars(amounts.reserve)}</dd></div>
+        <div><dt>Anything else</dt><dd className="money">{formatDollars(amounts.flexibleCash)}</dd></div>
+      </dl>
+      {note && <p className="plan-echo__note">{note}</p>}
+    </section>
+  );
+}
+
+function Week5TransitionStage() {
+  const { state, dispatch } = useChallenge();
+  const savedMode: PlanMode = state.saved.fallback ? "fallback" : "working";
+  return (
+    <StageShell stage="week5-transition" kicker="Weeks 1 to 4" title="The season starts.">
+      <div className="season-layout">
+        <ol className="season-log">
+          {BASKETBALL_SCENARIO.season.map((entry) => (
+            <li key={entry.week}><b>{entry.week}</b><p>{entry.note}</p></li>
+          ))}
+          <li data-state="next"><b>Week 5</b><p>Not played yet.</p></li>
+        </ol>
+        <PlanEcho mode={savedMode} label="What Avery has been living on" note="Four weeks in, the plan you built is holding. Rent is paid. The bonuses are still open." />
+      </div>
+      <div className="stage-action">
+        <p>Nothing you saved changes from here. Whatever Week 5 brings, it lands on the plan you already built.</p>
+        <Button onClick={() => dispatch({ type: "WEEK5_ADVANCE_CONFIRMED" })}>Play Week 5</Button>
+      </div>
     </StageShell>
   );
 }
@@ -267,14 +318,15 @@ function Week5EventStage() {
     .filter((change) => state.selectedGapTiles.includes(change.id))
     .reduce((sum, change) => sum + change.amount, 0);
   return (
-    <StageShell stage="week5-event" kicker="Week 5" title="The showcase is off.">
+    <StageShell stage="week5-event" kicker="Week 5" title={BASKETBALL_SCENARIO.disruption.title}>
       <section className="disruption-card">
         <span className="disruption-card__week" aria-hidden="true">W5</span>
         <div>
-          <h2>{BASKETBALL_SCENARIO.disruption.title}</h2>
-          <p>{BASKETBALL_SCENARIO.disruption.body}</p>
+          <p className="disruption-card__source">{BASKETBALL_SCENARIO.disruption.source}</p>
+          <p className="disruption-card__lede">{BASKETBALL_SCENARIO.disruption.body}</p>
         </div>
       </section>
+      <PlanEcho mode={state.saved.fallback ? "fallback" : "working"} label="The plan Avery walked into this week with" note="It was built for a season that still had a showcase in it." />
       <section className="gap-builder">
         <div className="gap-builder__intro">
           <p className="field-label">What hit your plan</p>
@@ -303,33 +355,34 @@ function Week5EventStage() {
   );
 }
 
-function OpportunityStage() {
+function FinalRepairStage() {
   const { state, dispatch } = useChallenge();
+  const { opportunity } = BASKETBALL_SCENARIO;
   const completionDecided = state.log.some((event) => event.type === "COMPLETION_INCOME_DECIDED");
   const ready = state.income.includeOptionalWork !== null && completionDecided;
   return (
-    <StageShell stage="opportunity-final-repair" kicker="Week 5 · Two calls to make" title="Two decisions, then land the plan.">
+    <StageShell stage="opportunity-final-repair" kicker="Week 5 · Two calls" title="Two calls, then land the plan.">
       <div className="decision-row">
         <section className="opportunity-card">
-          <p className="eyebrow">Decision 1 · Weekend clinics</p>
-          <h2>{BASKETBALL_SCENARIO.opportunity.title}</h2>
-          <p>{BASKETBALL_SCENARIO.opportunity.body}</p>
+          <p className="eyebrow">Message · {opportunity.from}</p>
+          <h2>{opportunity.title}</h2>
+          <p>{opportunity.body}</p>
           <dl className="tradeoff-pair">
             <div><dt>Avery gains</dt><dd className="money">$500</dd></div>
-            <div><dt>Avery gives up</dt><dd>{BASKETBALL_SCENARIO.opportunity.timeCost}</dd></div>
+            <div><dt>Avery gives up</dt><dd>{opportunity.timeCost}</dd></div>
           </dl>
           <div className="binary-choice">
             <button type="button" aria-pressed={state.income.includeOptionalWork === true} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: true })}>Take the clinics</button>
-            <button type="button" aria-pressed={state.income.includeOptionalWork === false} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: false })}>Keep the rest block</button>
+            <button type="button" aria-pressed={state.income.includeOptionalWork === false} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: false })}>Keep the Saturdays</button>
           </div>
           <p className="decision-note">Neither answer is worth points. More money can still cost something.</p>
         </section>
         <section className="opportunity-card">
-          <p className="eyebrow">Decision 2 · The $800 bonus</p>
-          <h2>Does your final plan count on it?</h2>
-          <p>Avery can still earn the Perfect Attendance Bonus, but only by making every remaining practice and game.</p>
+          <p className="eyebrow">Your call · The $800 bonus</p>
+          <h2>Is it still in the plan?</h2>
+          <p>Avery has made every practice and every game so far. Three weeks left, and the brace does not change the rule: miss one and the bonus is gone.</p>
           <dl className="tradeoff-pair">
-            <div><dt>Count it</dt><dd>More to work with, and one more check to pass</dd></div>
+            <div><dt>Count it</dt><dd>More to work with, and one more thing that has to go right</dd></div>
             <div><dt>Leave it out</dt><dd>Less to work with, nothing left to lose</dd></div>
           </dl>
           <div className="binary-choice">
@@ -339,7 +392,7 @@ function OpportunityStage() {
           <p className="decision-note">Counting it means testing the plan once more without it.</p>
         </section>
       </div>
-      {ready ? <PlanBoardForMode mode="final" /> : <div className="board-gate"><span aria-hidden="true">🔒</span><p>Make both calls to open the final board. Neither one is graded — only whether the money works afterward.</p></div>}
+      {ready ? <PlanBoardForMode mode="final" /> : <p className="board-gate">Make both calls above to open the final board. Neither call is graded — only whether the money works afterward.</p>}
     </StageShell>
   );
 }
@@ -394,16 +447,23 @@ function DefenseStage() {
 function SubmittedStage() {
   const { state, reset } = useChallenge();
   const navigate = useNavigate();
+  const final = amountsFor(state, "final");
+  const setupTitle = BASKETBALL_SCENARIO.setups.find((setup) => setup.id === state.setupId)?.title;
   return (
-    <StageShell stage="submitted" kicker="Turned in" title="You handled it.">
+    <StageShell stage="submitted" kicker="Week 8 · Turned in" title="Avery got through it.">
       <section className="submitted-card">
-        <p className="submitted-card__lede">Avery finished the eight weeks on a plan you built and then repaired under pressure.</p>
+        <p className="submitted-card__lede">The showcase never happened, the brace was not optional, and the eight weeks still closed on a plan that works. Here is where Avery landed.</p>
         <dl className="submitted-card__record">
-          <div><dt>Saved states</dt><dd>{state.snapshots.length}</dd></div>
-          <div><dt>Decisions recorded</dt><dd>{state.log.length}</dd></div>
-          <div><dt>Reasoning</dt><dd>With your teacher</dd></div>
+          <div><dt>Course fund</dt><dd><b className="money">{formatDollars(final.goal)}</b><span>of {formatDollars(SCENARIO_NUMBERS.goalCap)}</span></dd></div>
+          <div><dt>Backup money</dt><dd><b className="money">{formatDollars(final.reserve)}</b><span>kept for a surprise</span></dd></div>
+          <div><dt>Anything else</dt><dd><b className="money">{formatDollars(final.flexibleCash)}</b><span>Avery's to spend</span></dd></div>
         </dl>
-        <p>A person reads your explanation, not a computer. Software can check whether the money works; it should not decide whether your thinking makes sense.</p>
+        <ul className="submitted-card__ledger">
+          {setupTitle && <li>Home for eight weeks: {setupTitle}.</li>}
+          <li>{state.income.includeOptionalWork ? "Four Saturdays went to the clinics instead of rest." : "The Saturdays stayed Avery's."}</li>
+          <li>{state.income.includeCompletionFinal ? "The plan still counts on the $800 attendance bonus, and you showed it works without it." : "Nothing in the plan depends on a bonus arriving."}</li>
+        </ul>
+        <p>Your explanation goes to a person, not a computer. Software can check whether the money works. It should not decide whether your thinking makes sense.</p>
         <div className="submitted-card__actions">
           <Button onClick={() => navigate("/educator/class/students/14")}>See what your teacher sees</Button>
           <Button variant="quiet" onClick={reset}>Start over</Button>
@@ -419,8 +479,9 @@ export function StudentChallenge() {
     switch (state.stage) {
       case "entry": case "join": return <JoinStage />;
       // Restored only when a second world ships; the reducer routes past it today.
-      case "choose-world": return <RoleStage />;
-      case "role-contract": return <RoleStage />;
+      case "choose-world": return <OfferStage />;
+      case "the-offer": return <OfferStage />;
+      case "role-contract": return <DealStage />;
       case "setup-comparison": return <SetupStage />;
       case "working-plan": return <WorkingStage />;
       case "fallback-version": return <PlanStage mode="fallback" kicker="Backup check" title="What if the bonus never shows up?" />;
@@ -428,7 +489,7 @@ export function StudentChallenge() {
       case "week5-transition": return <Week5TransitionStage />;
       case "week5-event": return <Week5EventStage />;
       case "first-response": return <PlanStage mode="week5-first-response" kicker="Week 5 · First response" title="Fix what you can with what Avery has." />;
-      case "opportunity-final-repair": return <OpportunityStage />;
+      case "opportunity-final-repair": return <FinalRepairStage />;
       case "remaining-risk-preview": return <PlanStage mode="remaining-risk" kicker="Week 5 · Last check" title="Test the plan without the $800." />;
       case "defense": return <DefenseStage />;
       case "submitted": return <SubmittedStage />;

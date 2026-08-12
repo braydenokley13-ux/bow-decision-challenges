@@ -39,6 +39,10 @@ To review the rendered product, `node scripts/walkthrough.mjs <outDir>` drives t
 Basketball flow and screenshots every stage at 1366×768, 1024×600, and 640px wide, reporting
 any horizontal overflow or console error it encounters along the way.
 
+On a machine whose Chromium was not installed by Playwright, set `CHROMIUM_PATH` to that
+binary and both the walkthrough and `npm run test:e2e` will use it instead of downloading
+one.
+
 ## How the assessment works
 
 90 structured points across 18 micro-skill observations, plus 10 points of written reasoning
@@ -51,12 +55,13 @@ resulting plan holds together is observed.
 
 ## Main areas
 
-- `src/stages/StudentChallenge.tsx` — the complete Basketball flow.
+- `src/stages/StudentChallenge.tsx` — the complete Basketball flow, beat by beat.
 - `src/components/financial/` — Money Rail, Plan Board, and allocation controls.
 - `src/domain/` — world-neutral finance, evidence, scoring, and state machine.
 - `src/domain/scenario/worlds/basketball.ts` — Basketball story details and amounts.
 - `src/educator/` — challenge brief, class evidence, student ledger, reasoning review, NYSED view.
-- `src/fixtures/demoClass.ts` — 28 clearly labeled hypothetical records.
+- `src/fixtures/demoClass.ts` — 28 clearly labeled hypothetical records. Every total the
+  educator sees is computed from these; nothing on that side is a hardcoded headline.
 
 ## Standards
 

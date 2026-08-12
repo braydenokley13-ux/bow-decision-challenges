@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { CONCEPTS } from "../domain/blueprint/concepts";
+import { STRUCTURED_MICRO_SKILLS } from "../domain/blueprint/microSkills";
 import { ALIGNMENT_DISCLAIMER, NYSED_OBJECTIVES, STANDARDS_ROWS } from "../domain/blueprint/standards";
 import type { MasteryStatus, Trajectory } from "../domain/evidence/types";
-import { aggregateC4MicroSkills, aggregateConcepts, aggregateMicroSkills, classSummary, DEMO_LABEL, DEMO_STUDENTS, teachNext, type DemoStudent } from "../fixtures/demoClass";
+import { aggregateConcepts, aggregateMicroSkills, classSummary, contingencyRoutes, DEMO_LABEL, DEMO_STUDENTS, reviewQueue, teachNext, type DemoStudent } from "../fixtures/demoClass";
 import { EducatorShell } from "./EducatorShell";
 
 const STATUS_LABELS: Record<MasteryStatus, string> = {
@@ -90,6 +91,14 @@ export function TeachingCompanion() {
   );
 }
 
+function StatusKey() {
+  return (
+    <ul className="status-key">
+      {statusOrder.map((status) => <li key={status}><i data-status={status} />{STATUS_LABELS[status]}</li>)}
+    </ul>
+  );
+}
+
 function Matrix({ records }: { records: DemoStudent[] }) {
   const rows = aggregateConcepts(records);
   return (
@@ -110,34 +119,36 @@ const statusOrder: readonly MasteryStatus[] = ["demonstrated_independently", "de
 export function ClassOverview() {
   const insight = teachNext(DEMO_STUDENTS);
   const summary = classSummary(DEMO_STUDENTS);
-  const reviewStudents = ["04", "11", "14", "18"].map((seat) => DEMO_STUDENTS.find((student) => student.seatCode === seat)!);
+  const routes = contingencyRoutes(DEMO_STUDENTS);
+  const reviewStudents = reviewQueue(DEMO_STUDENTS);
   return (
     <EducatorShell demo>
       <header className="class-header"><div><p className="eyebrow">Period 3 · Plan Under Pressure</p><h1>Basketball evidence room</h1></div><div><span>{summary.total} students</span><span>{summary.reviewed} reviewed</span><span>{summary.pending} reasoning pending</span></div></header>
-      <section className="teach-next"><p className="eyebrow">Teach next · C4</p><h2>Build a complete fallback.</h2><p><b>{summary.openingIncomplete} of {summary.total}</b> students saved a plan with money still exposed. <b>{summary.laterCorrected}</b> later closed the gap during Week 5; <b>{summary.persistentFallbackGap}</b> still need follow-up.</p><div><Link className="button button--primary" to={`/educator/class/concepts/${insight?.conceptId}`}>Open C4 evidence</Link><CopyButton text={RETEACH_SCRIPT} /></div><span className="standard-chip">NYSED 1.2 · 4.1 partial</span></section>
-      <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Concept matrix</p><h2>Current evidence by financial concept</h2></div><Matrix records={DEMO_STUDENTS} /></section>
-      <section className="trajectory-panel"><div><p className="eyebrow">Trajectory</p><h2>How students got here</h2><p>Counts answer different questions and may overlap.</p></div><div className="trajectory-strip"><span><b>{summary.independentFirst}</b> independent first</span><span><b>{summary.laterCorrected}</b> corrected after consequence</span><span><b>{summary.completedWithSupport}</b> completed with support</span><span><b>{summary.persistentFallbackGap}</b> still need follow-up</span></div></section>
-      <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Students to review</p><h2>Evidence before grade order</h2></div><div className="student-worklist">{reviewStudents.map((student) => <Link key={student.seatCode} to={`/educator/class/students/${student.seatCode}`}><div><span>Seat {student.seatCode} · {student.finalPoints === null ? `${student.structuredPoints}/90 structured` : `${student.finalPoints}/100`}</span><h3>{student.evidenceLine}</h3><p>{student.primaryNeed}</p></div><span aria-hidden="true">→</span></Link>)}</div></section>
+      <section className="teach-next"><p className="eyebrow">Teach next · C4</p><h2>Build a complete fallback.</h2><p><b>{summary.persistentFallbackGap} of {summary.total}</b> students finished with a backup plan that does not cover the risk. Another <b>{summary.laterCorrected}</b> left the opening fallback short and closed it themselves during Week 5, and <b>{summary.completedWithSupport}</b> got there after using a scaffold.</p><div><Link className="button button--primary" to={`/educator/class/concepts/${insight?.conceptId}`}>Open C4 evidence</Link><CopyButton text={RETEACH_SCRIPT} /></div><span className="standard-chip">NYSED 1.2 · 4.1 partial</span></section>
+      <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Concept matrix</p><h2>Current evidence by financial concept</h2></div><StatusKey /><Matrix records={DEMO_STUDENTS} /></section>
+      <section className="trajectory-panel"><div><p className="eyebrow">How they got there · C4</p><h2>Every student is in exactly one of these four.</h2><p>Same 28 records as the matrix, grouped by the route they took to a backup plan.</p></div><div className="route-grid">{routes.map((group) => (
+        <article key={group.route} data-route={group.route}>
+          <b>{group.students.length}</b>
+          <h3>{group.label}</h3>
+          <p>{group.meaning}</p>
+          <div className="seat-chips">{group.students.map((student) => <Link key={student.seatCode} to={`/educator/class/students/${student.seatCode}`}>{student.seatCode}</Link>)}</div>
+        </article>
+      ))}</div></section>
+      <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Open these first</p><h2>Ordered by evidence, not by grade</h2></div><div className="student-worklist">{reviewStudents.map((student) => <Link key={student.seatCode} to={`/educator/class/students/${student.seatCode}`}><div><span>Seat {student.seatCode} · {student.finalPoints === null ? `${student.structuredPoints}/90 structured` : `${student.finalPoints}/100`}</span><h3>{student.evidenceLine}</h3><p>{student.primaryNeed}</p></div><span aria-hidden="true">→</span></Link>)}</div></section>
       <section className="class-foot"><div><span>Grade status</span><strong>{summary.reviewed} of {summary.total} reviewed</strong><p>Median {summary.median} · Range {summary.range[0]}–{summary.range[1]}</p></div><div><span>Challenge</span><strong>Plan Under Pressure</strong><p>Basketball · Eight Weeks to the Showcase</p></div><div><span>Data status</span><strong>{DEMO_LABEL}</strong><p>All totals derive from individual records.</p></div></section>
     </EducatorShell>
   );
 }
 
-const C4_LABELS = { "C4.1": "Constructed a fallback or first response", "C4.2": "Changed only adjustable, uncommitted money", "C4.3": "Recognized the exact remaining exposure", "C4.4": "Produced a workable lower-resource plan" } as const;
-
 export function ConceptDrilldown() {
   const { conceptId = "contingency" } = useParams();
   const concept = CONCEPTS.find((item) => item.id === conceptId) ?? CONCEPTS[3]!;
   const affected = DEMO_STUDENTS.filter((student) => ["developing", "not_demonstrated"].includes(student.concepts.find((result) => result.conceptId === concept.id)?.status ?? ""));
-  const c4Micro = aggregateC4MicroSkills(DEMO_STUDENTS);
   return (
     <EducatorShell demo>
       <header className="page-header page-header--with-back"><Link to="/educator/class">← Class evidence</Link><p className="eyebrow">{concept.code} · Concept drill-down</p><h1>{concept.label}</h1><p>{concept.description}</p><div className="tag-row"><span>NYSED 1.2</span>{concept.id === "contingency" && <span>4.1 partial</span>}</div></header>
       <section className="drill-grid">
-        <div className="drill-main"><div className="section-heading"><p className="eyebrow">Micro-skill distribution</p><h2>Where the evidence separates</h2></div><table className="micro-table"><caption>Counts across {DEMO_STUDENTS.length} hypothetical records</caption><thead><tr><th scope="col">Micro-skill</th><th scope="col">Independent</th><th scope="col">Support</th><th scope="col">Partial / not</th></tr></thead><tbody>{(concept.id === "contingency"
-          ? c4Micro.map((row) => ({ ...row, label: C4_LABELS[row.id] }))
-          : aggregateMicroSkills(DEMO_STUDENTS, concept.id)
-        ).map(({ id, label, independent, support, partial }) => <tr key={id}><th scope="row"><code>{id}</code>{label}</th><td>{independent}</td><td>{support}</td><td>{partial}</td></tr>)}</tbody></table>{concept.id === "contingency" && <p className="context-note">C4 observation context is shown for every student: <b>Opening income fallback</b> or <b>Week 5 cost response</b>.</p>}
+        <div className="drill-main"><div className="section-heading"><p className="eyebrow">Micro-skill distribution</p><h2>Where the evidence separates</h2></div><table className="micro-table"><caption>Counts across {DEMO_STUDENTS.length} hypothetical records</caption><thead><tr><th scope="col">Micro-skill</th><th scope="col">Independent</th><th scope="col">Support</th><th scope="col">Partial / not</th></tr></thead><tbody>{aggregateMicroSkills(DEMO_STUDENTS, concept.id).map(({ id, label, independent, support, partial }) => <tr key={id}><th scope="row"><code>{id}</code>{label}</th><td>{independent}</td><td>{support}</td><td>{partial}</td></tr>)}</tbody></table>{concept.id === "contingency" && <p className="context-note">C4 observation context is shown for every student: <b>Opening income fallback</b> or <b>Week 5 cost response</b>.</p>}
           <div className="misconception-list"><h2>How each pattern is identified</h2><p className="misconception-list__note">These are fixed rules applied to the financial states a student saved. The same evidence always produces the same flag — nothing here is inferred or AI-generated.</p>{[
             ["Partial fallback", "A lower-resource plan was saved, but money was still exposed when it was saved.", "The student changed the plan and left part of the risk uncovered."],
             ["Reached for committed money", "The student tried to move a cost that was already locked.", "Committed money is being treated as if it were still available."],
@@ -146,7 +157,19 @@ export function ConceptDrilldown() {
         </div>
         <aside className="reteach-card"><p className="eyebrow">4-minute next move</p><h2>Which $800 can move?</h2><p>Show two sample plans that both include an $800 conditional payment. In one, the money supports adjustable goals. In the other, it is needed for a locked cost.</p><ol><li>Remove the $800.</li><li>Ask which plan can still work.</li><li>Have students revise the other plan without choosing their priority for them.</li></ol><CopyButton text={RETEACH_SCRIPT} label="Copy reteach" /></aside>
       </section>
-      <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Affected students</p><h2>{affected.length} students need follow-up</h2></div><div className="student-worklist">{affected.slice(0, 9).map((student) => <Link key={student.seatCode} to={`/educator/class/students/${student.seatCode}`}><div><span>Seat {student.seatCode}</span><h3>{student.evidenceLine}</h3><p>{student.primaryNeed}</p></div><span>→</span></Link>)}</div></section>
+      <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Affected students</p><h2>{affected.length} students need follow-up on {concept.code}</h2><p>Each row lists the micro-skills still open for that student, so a small group can be pulled for the piece they are actually missing.</p></div><div className="student-worklist">{affected.map((student) => {
+        const open = STRUCTURED_MICRO_SKILLS.filter((skill) => skill.conceptId === concept.id && student.microStatuses[skill.id] !== "independent");
+        return (
+          <Link key={student.seatCode} to={`/educator/class/students/${student.seatCode}`}>
+            <div>
+              <span>Seat {student.seatCode} · {STATUS_LABELS[student.concepts.find((result) => result.conceptId === concept.id)!.status]}</span>
+              <h3>{open.map((skill) => skill.label).join(" · ") || "Concept-level gap with no single micro-skill isolated"}</h3>
+              <p>{open.map((skill) => skill.id).join(", ")}</p>
+            </div>
+            <span aria-hidden="true">→</span>
+          </Link>
+        );
+      })}</div></section>
     </EducatorShell>
   );
 }
@@ -176,16 +199,8 @@ export function StudentEvidence() {
       {student.seatCode === "14" && <section className="golden-case"><p className="eyebrow">Golden evidence case</p><h2>C4: 17/20 · Demonstrated independently</h2><p>Trajectory: <b>Corrected after consequence.</b> The incomplete opening fallback stays in the ledger; the later balanced no-$800 preview updates current status without rewriting earlier points.</p></section>}
       <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Grade ledger</p><h2>Every point has a source</h2></div><StudentLedger student={student} /></section>
       <section className="evidence-detail-grid">
-        <div><div className="section-heading"><p className="eyebrow">Student evidence timeline</p><h2>First attempt through final state</h2></div><ol className="evidence-timeline">{student.seatCode === "14" ? [
-          ["Setup comparison", "Entered $1,200 for Teammate Share, then independently corrected to $1,400.", "C2.1 · 4/5"],
-          ["Working Plan", "Saved $6,800 funds with $1,200 goal, $900 reserve, and $2,100 flexible cash.", "C3 · 15/15"],
-          ["Opening fallback", "Freed $900 and explicitly acknowledged $900 still exposed.", "C4 · 17/20"],
-          ["Week 5 change", "Entered $1,950, then corrected to $2,050 without a scaffold.", "C5.1 · 4/5"],
-          ["First response", "Freed the full $1,150 from adjustable money before the clinic was offered.", "C5.6 · 5/5"],
-          ["Final repair", "Accepted the $500 clinic and balanced at $0 with $6,300 in working funds.", "C5.4 · 5/5"],
-          ["Remaining-risk preview", "Removed the conditional $800 and built a second balanced state.", "Current C4 status updated"],
-        ].map(([label, body, result]) => <li key={label}><span /><div><b>{label}</b><p>{body}</p><small>{result}</small></div></li>) : <li><span /><div><b>Recorded evidence</b><p>{student.evidenceLine}</p><small>{student.primaryNeed}</small></div></li>}</ol></div>
-        <aside className="snapshot-stack"><p className="eyebrow">Saved financial states</p>{student.seatCode === "14" ? <><article><span>Working Plan</span><strong>$6,800 funds</strong><p>Locked $2,600 · Assigned $4,200 · Balance $0</p></article><article><span>Fallback Version</span><strong>$900 exposed</strong><p>Freed $900 · residual acknowledged</p></article><article><span>Final</span><strong>$6,300 funds</strong><p>Locked $3,650 · Assigned $2,650 · Balance $0</p></article><article><span>No-$800 preview</span><strong>$5,500 funds</strong><p>Assigned $1,850 · Balance $0</p></article></> : <article><span>Evidence snapshot</span><strong>{student.primaryNeed}</strong><p>{student.evidenceLine}</p></article>}</aside>
+        <div><div className="section-heading"><p className="eyebrow">Student evidence timeline</p><h2>First attempt through final state</h2></div><ol className="evidence-timeline">{student.timeline.map((entry) => <li key={entry.stage}><span /><div><b>{entry.stage}</b><p>{entry.body}</p><small>{entry.result}</small></div></li>)}</ol></div>
+        <aside className="snapshot-stack"><p className="eyebrow">Saved financial states</p>{student.savedStates.map((saved) => <article key={saved.label}><span>{saved.label}</span><strong>{saved.headline}</strong><p>{saved.detail}</p></article>)}</aside>
       </section>
     </EducatorShell>
   );
@@ -210,7 +225,10 @@ export function ReasoningReview() {
   return (
     <EducatorShell demo>
       <header className="page-header page-header--with-back"><Link to={`/educator/class/students/${student.seatCode}`}>← Seat {student.seatCode} evidence</Link><p className="eyebrow">Human review · C6</p><h1>Score the financial defense.</h1><p>Reasoning changes only C6 and the final grade. Structured evidence remains untouched.</p></header>
-      <div className="reasoning-layout"><section className="student-response"><p className="eyebrow">Student response</p><blockquote>{student.seatCode === "14" ? "I kept $800 for the sports-media course after the update. The clinic added $500, but I gave up Avery's only rest block and reduced the reserve to $400. The revised plan balances at $6,300, and if the $800 completion payment does not arrive, my preview still balances." : "My plan works because I changed future money after the new cost. I used the numbers in my final plan to make sure it balanced."}</blockquote><div className="selected-evidence"><span>Final funds <b>$6,300</b></span><span>Course goal <b>$800</b></span><span>Reserve <b>$400</b></span></div></section><section className="rubric-panel"><p className="eyebrow">10-point reasoning rubric</p>{([
+      <div className="reasoning-layout"><section className="student-response"><p className="eyebrow">Student response</p><blockquote>{student.seatCode === "14" ? "I kept $800 for the sports-media course after the update. The clinic added $500, but I gave up Avery's only rest block and reduced the reserve to $400. The revised plan balances at $6,300, and if the $800 completion payment does not arrive, my preview still balances." : "My plan works because I changed future money after the new cost. I used the numbers in my final plan to make sure it balanced."}</blockquote><div className="selected-evidence">{(student.seatCode === "14"
+        ? [["Final funds", "$6,300"], ["Course goal", "$800"], ["Reserve", "$400"]]
+        : [["Structured evidence", `${student.structuredPoints}/90`], ["Current need", student.primaryNeed]]
+      ).map(([label, value]) => <span key={label}>{label} <b>{value}</b></span>)}</div><p className="response-note">Numbers shown are the ones this student selected from their own saved plan. Scoring the writing does not change any of them.</p></section><section className="rubric-panel"><p className="eyebrow">10-point reasoning rubric</p>{([
         ["workability", "Workability", 2, "Explains why the final plan actually holds"], ["priority", "Protected priority", 2, "Names what they chose to keep, and why"], ["tradeoff", "Tradeoff / opportunity cost", 2, "Names what that choice cost them"], ["numbers", "Numerical evidence", 4, "Two accurate, relevant numbers from their own plan"],
       ] as const).map(([key, label, max, hint]) => <div className="rubric-row" key={key}><div><b>{label}</b><span>{hint}</span></div><div>{Array.from({ length: max + 1 }, (_, value) => <button type="button" key={value} aria-pressed={scores[key] === value} onClick={() => setScores((current) => ({ ...current, [key]: value }))}>{value}</button>)}</div></div>)}<footer><span>Reasoning total</span><strong>{total}/10</strong><Button onClick={save}>Save review</Button></footer></section></div>
     </EducatorShell>

@@ -1,4 +1,5 @@
 import type { ChallengeState } from "../machine/state";
+import { STAGE_ORDER } from "../machine/stages";
 
 export const ATTEMPT_KEY = "bow.student.v1.attempt";
 
@@ -7,7 +8,11 @@ export function isValidPersistedAttempt(value: unknown): value is ChallengeState
   const candidate = value as Partial<ChallengeState>;
   return candidate.meta?.schemaVersion === 1
     && candidate.meta.challengeId === "plan-under-pressure"
+    // A stage the current build does not know how to render would leave the student
+    // on a blank screen, so an attempt carrying one is treated as unreadable and
+    // backed up rather than restored.
     && typeof candidate.stage === "string"
+    && STAGE_ORDER.includes(candidate.stage)
     && Array.isArray(candidate.log)
     && Array.isArray(candidate.snapshots);
 }

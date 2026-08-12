@@ -25,6 +25,8 @@ export interface SetupOptionDefinition {
   title: string;
   terms: string;
   total: Dollars;
+  /** The cost that is not money: what this place asks of Avery's day. */
+  commute: string;
   tradeoff: string;
   eventCost: Dollars;
   eventCostLabel: string;
@@ -39,8 +41,21 @@ export interface WorldScenario {
   numbers: ScenarioNumbers;
   setups: readonly SetupOptionDefinition[];
   incomeCopy: Record<"savings" | "base" | "completion" | "outcome", string>;
-  disruption: { title: string; body: string; requiredCostLabel: string };
-  opportunity: { title: string; body: string; timeCost: string };
+  /** Beat 1. What just happened to the player, and what they want out of it. */
+  offer: {
+    team: string;
+    position: string;
+    kicker: string;
+    headline: string;
+    body: string;
+    want: string;
+    wantDetail: string;
+    facts: readonly { label: string; value: string }[];
+  };
+  /** Weeks the student does not play through, so the jump to Week 5 still feels earned. */
+  season: readonly { week: string; note: string }[];
+  disruption: { source: string; title: string; body: string; requiredCostLabel: string };
+  opportunity: { from: string; title: string; body: string; timeCost: string };
 }
 
 export interface WorldRegistryEntry {

@@ -13,6 +13,9 @@ const SIZES = [
   { name: "narrow", width: 640, height: 720 },
 ];
 
+// Schools' CI images sometimes ship a browser Playwright did not download itself.
+const EXECUTABLE = process.env.CHROMIUM_PATH;
+
 const problems = [];
 
 async function shoot(page, size, name) {
@@ -42,15 +45,17 @@ async function walk(browser, size) {
   await page.reload();
   await shoot(page, size, "02-join");
   await page.getByRole("button", { name: "Enter the challenge" }).click();
-  await shoot(page, size, "03-role");
+  await shoot(page, size, "03-offer");
+  await page.getByRole("button", { name: "See what it pays" }).click();
+  await shoot(page, size, "04-deal");
 
-  await page.getByRole("button", { name: "Show me the money" }).click();
+  await page.getByRole("button", { name: "Find Avery a place" }).click();
   await page.getByLabel("Full eight-week cost").first().fill("1400");
   await page.locator(".setup-card").nth(1).getByRole("button", { name: "Check" }).click();
   await page.getByLabel("Full eight-week cost").nth(1).fill("1000");
   await page.locator(".setup-card").nth(2).getByRole("button", { name: "Check" }).click();
   await page.locator(".setup-card").nth(2).getByRole("button", { name: "Choose this setup" }).click();
-  await shoot(page, size, "04-setup");
+  await shoot(page, size, "05-setup");
 
   await page.getByRole("button", { name: "Build the plan" }).click();
   await page.getByLabel("Safe cash").fill("5000");
@@ -62,59 +67,59 @@ async function walk(browser, size) {
   await setAmount(page, "Sports-media course", "1200");
   await setAmount(page, "Backup money", "900");
   await setAmount(page, "Money for anything else", "2100");
-  await shoot(page, size, "05-working-plan");
+  await shoot(page, size, "06-working-plan");
   await page.getByRole("button", { name: "Save this version" }).click();
 
   await setAmount(page, "Sports-media course", "1100");
   await setAmount(page, "Backup money", "600");
   await setAmount(page, "Money for anything else", "1600");
-  await shoot(page, size, "06-fallback");
+  await shoot(page, size, "07-fallback");
   await page.getByRole("button", { name: "Check this plan" }).click();
   await page.getByRole("button", { name: /Save it, .* still missing/ }).click();
-  await shoot(page, size, "07-week5-transition");
+  await shoot(page, size, "08-week5-transition");
 
-  await page.getByRole("button", { name: "Continue to Week 5" }).click();
-  await shoot(page, size, "08-week5-reveal");
+  await page.getByRole("button", { name: "Play Week 5" }).click();
+  await shoot(page, size, "09-week5-reveal");
   for (let i = 0; i < 3; i += 1) await page.locator(".gap-tiles button").nth(i).click();
   await page.getByLabel("Total change to Avery’s money").fill("2050");
   await page.locator(".gap-builder .calculation").getByRole("button", { name: "Check" }).click();
-  await shoot(page, size, "09-first-response");
+  await shoot(page, size, "10-first-response");
 
   await setAmount(page, "Sports-media course", "800");
   await setAmount(page, "Backup money", "400");
   await setAmount(page, "Money for anything else", "950");
   await page.getByRole("button", { name: "Save this version" }).click();
-  await shoot(page, size, "10-opportunity");
+  await shoot(page, size, "11-opportunity");
 
   await page.getByRole("button", { name: "Take the clinics" }).click();
   await page.getByRole("button", { name: "Count the $800" }).click();
   await setAmount(page, "Sports-media course", "800");
   await setAmount(page, "Backup money", "400");
   await setAmount(page, "Money for anything else", "1450");
-  await shoot(page, size, "11-final-plan");
+  await shoot(page, size, "12-final-plan");
   await page.getByRole("button", { name: "Save final plan" }).click();
 
   await setAmount(page, "Sports-media course", "500");
   await setAmount(page, "Backup money", "200");
   await setAmount(page, "Money for anything else", "1150");
-  await shoot(page, size, "12-remaining-risk");
+  await shoot(page, size, "13-remaining-risk");
   await page.getByRole("button", { name: "Save preview" }).click();
 
-  await shoot(page, size, "13-defense");
+  await shoot(page, size, "14-defense");
   await page.locator(".evidence-picker > button").nth(0).click();
   await page.locator(".evidence-picker > button").nth(2).click();
   await page.getByLabel("Two to four sentences").fill("My plan still works because it balances at $0 after the update. I protected $800 for the course and gave up the open rest block to take the clinics.");
   await page.getByRole("button", { name: "Turn in my plan" }).click();
-  await shoot(page, size, "14-submitted");
+  await shoot(page, size, "15-submitted");
 
   for (const [name, path] of [
-    ["15-educator-guide", "/educator/guide"],
-    ["16-educator-class", "/educator/class"],
-    ["17-concept-drilldown", "/educator/class/concepts/contingency"],
-    ["18-seat-14", "/educator/class/students/14"],
-    ["19-reasoning", "/educator/class/students/14/reasoning"],
-    ["20-standards", "/educator/class/standards"],
-    ["21-companion", "/educator/teaching-companion"],
+    ["16-educator-guide", "/educator/guide"],
+    ["17-educator-class", "/educator/class"],
+    ["18-concept-drilldown", "/educator/class/concepts/contingency"],
+    ["19-seat-14", "/educator/class/students/14"],
+    ["20-reasoning", "/educator/class/students/14/reasoning"],
+    ["21-standards", "/educator/class/standards"],
+    ["22-companion", "/educator/teaching-companion"],
   ]) {
     await page.goto(`${BASE}${path}`);
     await shoot(page, size, name);
@@ -124,7 +129,7 @@ async function walk(browser, size) {
 }
 
 await mkdir(OUT, { recursive: true });
-const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
+const browser = await chromium.launch(EXECUTABLE ? { executablePath: EXECUTABLE } : {});
 for (const size of SIZES) {
   try {
     await walk(browser, size);
