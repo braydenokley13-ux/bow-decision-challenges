@@ -37,6 +37,19 @@
 .roster-card[data-tone="light"] .roster-card__vitals dd { color: var(--ink-1); }
 .roster-card__note { margin: var(--s-4) 0 0; color: var(--world-hero-muted); font: var(--t-micro); }
 
+/* --- Public entry --------------------------------------------------------- */
+.home { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
+.home__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-5); padding: var(--s-4) clamp(20px, 4vw, 56px); border-bottom: 1px solid var(--world-hero-line); }
+.home__bar .app-mark { color: var(--world-hero-ink); }
+.home__bar .app-mark small { color: var(--world-hero-muted); }
+.home__bar > a { color: var(--world-hero-ink); font: var(--t-ui); text-underline-offset: 5px; }
+.home__grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr); align-items: center; gap: clamp(28px, 5vw, 80px); width: min(1440px, 100%); margin: auto; padding: clamp(28px, 5vw, 72px) clamp(20px, 4vw, 56px); }
+.home h1 { max-width: 13ch; margin: var(--s-3) 0 var(--s-5); font: 700 clamp(3rem, 6.4vw, 5.6rem)/0.92 var(--font-display); letter-spacing: -0.05em; }
+.home__deck { max-width: 50ch; margin: 0; font: 400 clamp(1.02rem, 1.4vw, 1.22rem)/1.5 var(--font-ui); }
+.home__actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: clamp(24px, 4vw, 40px); }
+.home__actions .button--secondary { color: var(--world-hero-ink); background: transparent; border-color: var(--world-hero-edge); }
+.home__foot { display: flex; flex-wrap: wrap; gap: var(--s-3) clamp(16px, 3vw, 48px); align-items: center; padding: var(--s-4) clamp(20px, 4vw, 56px); color: var(--world-hero-muted); border-top: 1px solid var(--world-hero-line); font: var(--t-micro); letter-spacing: 0.1em; text-transform: uppercase; }
+
 /* --- Scene 1: the opening ------------------------------------------------- */
 .opening { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
 .opening__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-5); padding: var(--s-4) clamp(20px, 4vw, 56px); border-bottom: 1px solid var(--world-hero-line); }
@@ -288,7 +301,8 @@
 
 @media (max-width: 760px) {
   .opening { min-height: 0; }
-  .opening__grid, .contract__columns, .plan-board__body, .recap__grid, .interview { grid-template-columns: 1fr; }
+  .home__grid, .opening__grid, .contract__columns, .plan-board__body, .recap__grid, .interview { grid-template-columns: 1fr; }
+  .home { min-height: 0; }
   .opening__weeks { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .contract__column + .contract__column { border-left: 0; border-top: 1px solid var(--border-default); }
   .reel { grid-template-columns: 1fr 1fr; }
