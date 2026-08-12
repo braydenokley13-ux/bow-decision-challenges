@@ -27,6 +27,12 @@
   --fin-locked-soft: #e8e6e0;
   --fin-locked-ink: #4a515c;
   --fin-adjustable: #4a44a8;
+
+  /* The three things a student can move. One family, three steps, so they read as the
+     same kind of money — and each one has a text colour that clears AA on it. */
+  --choice-1: #35317f;
+  --choice-2: #4a44a8;
+  --choice-3: #a9a5e4;
   --fin-adjustable-soft: #e6e4f7;
   --fin-adjustable-ink: #35317f;
   --fin-balanced: #1e7a49;
@@ -45,6 +51,8 @@
   --focus-ring: #1552e0;
   --focus-halo: #ffffff;
   --shadow-rail: 0 1px 0 var(--border-default), 0 8px 18px -16px rgb(14 20 28 / 45%);
+  --shadow-card: 0 1px 2px rgb(14 20 28 / 6%), 0 12px 28px -20px rgb(14 20 28 / 40%);
+  --shadow-lift: 0 2px 4px rgb(14 20 28 / 8%), 0 22px 44px -28px rgb(14 20 28 / 50%);
   --shadow-overlay: 0 24px 48px -24px rgb(14 20 28 / 34%), 0 2px 6px -3px rgb(14 20 28 / 16%);
   --s-1: 2px;
   --s-2: 4px;
@@ -81,6 +89,7 @@
 
   /* Numbers carry the product, so they always align in columns and never read as letters. */
   --num: "tnum" 1, "lnum" 1, "zero" 1, "ss01" 1;
+  --t-scene: 700 clamp(2.6rem, 5vw, 4.4rem)/0.94 var(--font-display);
   --t-display1: 600 3.25rem/1.02 var(--font-display);
   --t-display2: 600 2.5rem/1.06 var(--font-display);
   --t-title1: 600 1.75rem/1.2 var(--font-ui);

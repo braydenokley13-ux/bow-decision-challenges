@@ -2,10 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChallenge } from "../app/ChallengeContext";
 import { StageShell } from "../app/StageShell";
+import { AppMark } from "../components/primitives/AppMark";
 import { Button } from "../components/primitives/Button";
 import { CalculationInput } from "../components/primitives/CalculationInput";
 import { MoneyAmount } from "../components/primitives/MoneyAmount";
 import { PlanBoard } from "../components/financial/PlanBoard";
+import { CourtBackdrop } from "../components/story/CourtBackdrop";
+import { RosterCard } from "../components/story/RosterCard";
 import { dollars, formatDollars, type Dollars } from "../domain/core/money";
 import type { CalcId, CategoryId } from "../domain/core/ids";
 import type { PlanMode } from "../domain/finance/types";
@@ -50,39 +53,39 @@ function OpeningStage() {
   const [seatCode, setSeatCode] = useState("14");
   const valid = /^[A-Z0-9]{4,8}$/i.test(classCode) && /^\d{1,2}$/.test(seatCode);
   return (
-    <div className="opening" data-world="basketball">
-      <section className="opening__story">
-        <p className="eyebrow">{offer.kicker}</p>
-        <h1>{offer.headline}</h1>
-        <p className="opening__lede">{offer.body}</p>
-        <dl className="opening__facts">
-          {offer.facts.map((fact) => <div key={fact.label}><dt>{fact.label}</dt><dd>{fact.value}</dd></div>)}
-        </dl>
-      </section>
-      <aside className="opening__side">
-        <article className="player-card">
-          <span className="player-card__jersey" aria-hidden="true">{offer.jersey}</span>
-          <div>
-            <b>{BASKETBALL_SCENARIO.role.name}</b>
-            <span>{offer.position} · {BASKETBALL_SCENARIO.role.age} · {offer.team}</span>
+    <div className="opening scene" data-world="basketball">
+      <CourtBackdrop />
+      <div className="opening__bar">
+        <AppMark />
+        <span>Plan Under Pressure</span>
+      </div>
+      <div className="opening__grid">
+        <section className="opening__story">
+          <p className="eyebrow">{offer.kicker}</p>
+          <h1>{offer.headline}</h1>
+          <p className="opening__lede">{offer.body}</p>
+          <ol className="opening__weeks" aria-hidden="true">
+            {Array.from({ length: 8 }, (_, index) => <li key={index}><i />{index + 1}</li>)}
+          </ol>
+          <p>Eight weeks · ends at the regional showcase</p>
+        </section>
+        <aside className="opening__side">
+          <RosterCard />
+          <div className="goal-strip">
+            <strong className="money">{formatDollars(numbers.goalCap)}</strong>
+            <div><b>{offer.want}</b><span>{offer.wantDetail}</span></div>
           </div>
-        </article>
-        <article className="goal-card">
-          <p className="field-label">What Avery is playing for</p>
-          <strong className="money">{formatDollars(numbers.goalCap)}</strong>
-          <b>{offer.want}</b>
-          <p>{offer.wantDetail}</p>
-        </article>
-        <div className="opening__job">
-          <p><strong>Avery plays. You handle the money.</strong> Eight weeks of decisions are yours.</p>
-          <div className="opening__codes">
-            <label>Class code<input value={classCode} onChange={(event) => setClassCode(event.target.value.toUpperCase())} maxLength={8} /></label>
-            <label>Seat<input value={seatCode} onChange={(event) => setSeatCode(event.target.value.replace(/\D/g, ""))} inputMode="numeric" maxLength={2} /></label>
+          <div className="opening__job">
+            <p><strong>Avery plays. You handle the money.</strong> Eight weeks of decisions are yours.</p>
+            <div className="opening__codes">
+              <label>Class code<input value={classCode} onChange={(event) => setClassCode(event.target.value.toUpperCase())} maxLength={8} /></label>
+              <label>Seat<input value={seatCode} onChange={(event) => setSeatCode(event.target.value.replace(/\D/g, ""))} inputMode="numeric" maxLength={2} /></label>
+            </div>
+            <Button type="button" aria-disabled={!valid} onClick={() => valid && dispatch({ type: "SESSION_STARTED", sessionId: crypto.randomUUID(), classCode, seatCode })}>Start the eight weeks</Button>
+            <p className="privacy-note">{STUDENT_COPY.join.privacy}</p>
           </div>
-          <Button type="button" aria-disabled={!valid} onClick={() => valid && dispatch({ type: "SESSION_STARTED", sessionId: crypto.randomUUID(), classCode, seatCode })}>Start the eight weeks</Button>
-          <p className="privacy-note">{STUDENT_COPY.join.privacy}</p>
-        </div>
-      </aside>
+        </aside>
+      </div>
     </div>
   );
 }
@@ -90,24 +93,39 @@ function OpeningStage() {
 /** Beat 2. The contract itself, with the difference between the two halves left visible. */
 function DealStage() {
   const { dispatch } = useChallenge();
+  const { offer } = BASKETBALL_SCENARIO;
+  const lines = [
+    { tone: "safe", label: "Already saved", amount: "$500", rule: "In the account", detail: "Avery has it now." },
+    { tone: "safe", label: "Base pay after taxes", amount: "$4,500", rule: "Every week", detail: "Paid win or lose." },
+    { tone: "maybe", label: "Perfect Attendance Bonus", amount: "$800", rule: "Only if", detail: "Avery makes every practice and every game." },
+    { tone: "maybe", label: "Making the Cut Bonus", amount: "$1,000", rule: "Only if", detail: "The Flight qualifies for the showcase." },
+  ];
   return (
     <StageShell stage="role-contract" kicker="The terms" title="What the eight weeks pay.">
-      <p className="stage-deck">Two of these arrive on schedule. Two depend on something happening first.</p>
-      <div className="deal-sheet">
-        <section className="deal-column" data-tone="safe">
-          <p className="field-label">Avery will have this</p>
-          {[
-            ["Already saved", "$500", "Sitting in the account now."],
-            ["Base pay after taxes", "$4,500", "Paid every week, win or lose."],
-          ].map(([label, amount, condition]) => <div key={label}><span>{label}<small>{condition}</small></span><strong className="money">{amount}</strong></div>)}
-        </section>
-        <section className="deal-column" data-tone="maybe">
-          <p className="field-label">Only if the rule is met</p>
-          {[
-            ["Perfect Attendance Bonus", "$800", "Every practice, every game. Miss one and it is gone."],
-            ["Making the Cut Bonus", "$1,000", "Paid only if the Flight qualifies for the showcase."],
-          ].map(([label, amount, condition]) => <div key={label}><span>{label}<small>{condition}</small></span><strong className="money">{amount}</strong></div>)}
-        </section>
+      <p className="stage-deck">Four payments, one contract. Two of them come with a condition attached.</p>
+      <div className="contract">
+        <div className="contract__head">
+          <b>{offer.team} · 8-week terms</b>
+          <span>Avery Reyes #{offer.jersey} · {offer.position}</span>
+        </div>
+        <div className="contract__columns">
+          {(["safe", "maybe"] as const).map((tone) => (
+            <section key={tone} className="contract__column" data-tone={tone}>
+              <p className="contract__tag">{tone === "safe" ? "Avery will have this" : "Depends on something happening"}</p>
+              {lines.filter((line) => line.tone === tone).map((line) => (
+                <div key={line.label} className="contract__line">
+                  <b>{line.label}</b>
+                  <strong className="money">{line.amount}</strong>
+                  <span className="contract__rule"><em>{line.rule}</em>{line.detail}</span>
+                </div>
+              ))}
+            </section>
+          ))}
+        </div>
+        <div className="contract__foot">
+          <p><i data-tone="safe" aria-hidden="true" />Solid means the money arrives.</p>
+          <p><i data-tone="maybe" aria-hidden="true" />Striped means it might not.</p>
+        </div>
       </div>
       <div className="stage-action">
         <p>Nothing is spent yet. The first bill is the biggest one: eight weeks of somewhere to live.</p>
@@ -130,13 +148,21 @@ function SetupStage() {
       <p className="stage-deck">Work out what each place really costs for all eight weeks, then pick one.</p>
       <div className="setup-grid">
         {BASKETBALL_SCENARIO.setups.map((setup, index) => (
-          <article key={setup.id} className={`setup-card ${state.setupId === setup.id ? "is-selected" : ""}`}>
-            <div className="setup-card__head"><span>Option {String.fromCharCode(65 + index)}</span><b>{setup.title}</b></div>
-            <div className="commute-meter">
-              <span className="commute-meter__bar" aria-hidden="true"><i style={{ width: `${(setup.commuteMinutes / longest) * 100}%` }} /></span>
-              <span className="commute-meter__read">{setup.commute} · <b>{setup.commuteMinutes * 2} min a day</b></span>
+          <article key={setup.id} className={`place-card ${state.setupId === setup.id ? "is-selected" : ""}`}>
+            <div className="place-card__scene" data-place={setup.id}>
+              <CourtBackdrop variant={index === 0 ? "key" : "half"} />
+              <span className="place-card__option">Option {String.fromCharCode(65 + index)}</span>
+              <b className="place-card__name">{setup.title}</b>
             </div>
-            <p className="setup-card__tradeoff">{setup.tradeoff}</p>
+            <div className="trip">
+              <div className="trip__map" aria-hidden="true">
+                <span className="trip__dot" />
+                <span className="trip__path"><i style={{ width: `${(setup.commuteMinutes / longest) * 100}%` }} /></span>
+                <span className="trip__dot trip__dot--gym" />
+              </div>
+              <p className="trip__read"><span>{setup.commute}</span><b>{setup.commuteMinutes * 2} min a day</b></p>
+            </div>
+            <p className="place-card__tradeoff">{setup.tradeoff}</p>
             {index === 0 ? (
               <div className="given-total"><span>Full 8-week price · already worked out</span><MoneyAmount value={setup.total} /></div>
             ) : (
@@ -312,12 +338,12 @@ function Week5TransitionStage() {
   return (
     <StageShell stage="week5-transition" kicker="Weeks 1 to 4" title="The season starts.">
       <div className="season-layout">
-        <ol className="season-log">
+        <div className="reel">
           {BASKETBALL_SCENARIO.season.map((entry) => (
-            <li key={entry.week}><b>{entry.week}</b><p>{entry.note}</p></li>
+            <article key={entry.week}><b>{entry.week}</b><p>{entry.note}</p></article>
           ))}
-          <li data-state="next"><b>Week 5</b><p>Not played yet.</p></li>
-        </ol>
+          <article data-state="next"><b>Week 5</b><p>Not played yet.</p></article>
+        </div>
         <PlanEcho
           mode={savedMode}
           label="What Avery has been living on"
@@ -356,13 +382,14 @@ function Week5EventStage() {
     .reduce((sum, change) => sum + change.amount, 0);
   return (
     <StageShell stage="week5-event" kicker="Week 5" title={BASKETBALL_SCENARIO.disruption.title}>
-      <div className="disruption-stack">
+      <div className="bulletins scene">
+        <CourtBackdrop variant="key" />
         {BASKETBALL_SCENARIO.disruption.beats.map((beat, index) => (
-          <section key={beat.tag} className="disruption-card" style={{ animationDelay: `${index * 320}ms` }}>
-            <span className="disruption-card__week" aria-hidden="true">{beat.marker}</span>
+          <section key={beat.tag} className="bulletin" style={{ animationDelay: `${index * 320}ms` }}>
+            <span className="bulletin__day" aria-hidden="true">{beat.marker}</span>
             <div>
-              <p className="disruption-card__source">{beat.tag}</p>
-              <p className="disruption-card__lede">{beat.text}</p>
+              <p className="bulletin__tag">{beat.tag}</p>
+              <p className="bulletin__text">{beat.text}</p>
             </div>
           </section>
         ))}
@@ -424,11 +451,17 @@ function FinalRepairStage() {
           <p className="eyebrow">Message · {opportunity.from}</p>
           <h2>{opportunity.title}</h2>
           <p>{opportunity.body}</p>
-          <SaturdayBlocks decision={state.income.includeOptionalWork} />
-          <dl className="tradeoff-pair">
-            <div><dt>Avery gains</dt><dd className="money">$500</dd></div>
-            <div><dt>Avery gives up</dt><dd>{opportunity.timeCost}</dd></div>
-          </dl>
+          <div className="scale">
+            <div className="scale__side">
+              <span>Avery gains</span>
+              <b className="scale__money money">+$500</b>
+            </div>
+            <div className="scale__side">
+              <span>Avery gives up</span>
+              <SaturdayBlocks decision={state.income.includeOptionalWork} />
+              <small>{opportunity.timeCost}</small>
+            </div>
+          </div>
           <div className="binary-choice">
             <button type="button" aria-pressed={state.income.includeOptionalWork === true} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: true })}>Take the clinics</button>
             <button type="button" aria-pressed={state.income.includeOptionalWork === false} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: false })}>Keep the Saturdays</button>
@@ -518,45 +551,44 @@ function SubmittedStage() {
   const goalShare = Math.min(100, Math.round((final.goal / SCENARIO_NUMBERS.goalCap) * 100));
   const clinics = state.income.includeOptionalWork === true;
   const weeks = [
-    { week: 1, tone: "played", text: "Avery moves in" },
+    { week: 1, tone: "played", text: setup ? `Avery moves into the ${setup.title}` : "Avery moves in" },
     { week: 2, tone: "played", text: "First start" },
-    { week: 3, tone: "played", text: "Bills clear" },
-    { week: 4, tone: "played", text: "Most minutes" },
-    { week: 5, tone: "shock", text: "Showcase off · brace" },
-    { week: 6, tone: clinics ? "work" : "played", text: clinics ? "Clinic Saturday" : "Rest Saturday" },
-    { week: 7, tone: clinics ? "work" : "played", text: clinics ? "Clinic Saturday" : "Rest Saturday" },
+    { week: 3, tone: "played", text: "Rent, food and phone clear" },
+    { week: 4, tone: "played", text: "Most minutes on the roster" },
+    { week: 5, tone: "shock", text: "Showcase cancelled · brace and rehab" },
+    { week: 6, tone: clinics ? "work" : "played", text: clinics ? "Saturday clinic" : "Saturday kept for rehab" },
+    { week: 7, tone: clinics ? "work" : "played", text: clinics ? "Saturday clinic" : "Saturday kept for rehab" },
     { week: 8, tone: "end", text: clinics ? "Last clinic · season closes" : "Season closes" },
   ];
   return (
     <StageShell stage="submitted" kicker="Turned in" title="Avery’s eight weeks, your version.">
-      <section className="recap">
-        <ol className="recap__timeline">
-          {weeks.map((entry) => (
-            <li key={entry.week} data-tone={entry.tone}>
-              <b>W{entry.week}</b>
-              <span>{entry.text}</span>
-            </li>
-          ))}
-        </ol>
-        <div className="recap__body">
-          <div className="recap__goal">
-            <p className="field-label">Sports-media course</p>
-            <strong className="money">{formatDollars(final.goal)}</strong>
-            <span>of {formatDollars(SCENARIO_NUMBERS.goalCap)}</span>
-            {/* The meter states the fact and stops there. A percentage here would read as
-                a score, and how much a student chose to put toward the course is a
-                strategy, not a result. */}
-            <span className="recap__meter" aria-hidden="true"><i style={{ width: `${goalShare}%` }} /></span>
+      <section className="recap scene">
+        <CourtBackdrop />
+        <div className="recap__grid">
+          <div>
+            <RosterCard {...(setup ? { note: `Lived at the ${setup.title} · ${setup.commuteMinutes * 2} min a day` } : {})} />
+            <div className="recap__goal">
+              <p className="field-label">Sports-media course</p>
+              <strong className="money">{formatDollars(final.goal)}</strong>
+              <span>of {formatDollars(SCENARIO_NUMBERS.goalCap)}</span>
+              {/* The meter states the amount and stops there. A percentage would read as a
+                  score, and how much a student put toward the course is a strategy. */}
+              <span className="recap__meter" aria-hidden="true"><i style={{ width: `${goalShare}%` }} /></span>
+            </div>
+            <dl className="recap__numbers">
+              <div><dt>Backup money</dt><dd className="money">{formatDollars(final.reserve)}</dd></div>
+              <div><dt>Anything else</dt><dd className="money">{formatDollars(final.flexibleCash)}</dd></div>
+            </dl>
           </div>
-          <dl className="recap__numbers">
-            <div><dt>Backup money</dt><dd className="money">{formatDollars(final.reserve)}</dd></div>
-            <div><dt>Anything else</dt><dd className="money">{formatDollars(final.flexibleCash)}</dd></div>
-          </dl>
-          <ul className="recap__decisions">
-            {setup && <li><span>Lived</span>{setup.title} · {setup.commuteMinutes * 2} min a day</li>}
-            <li><span>Saturdays</span>{clinics ? "Four clinics, +$500" : "Kept for rest and rehab"}</li>
-            <li><span>$800 bonus</span>{state.income.includeCompletionFinal ? "Still counted, and shown to work without it" : "Left out of the plan"}</li>
-          </ul>
+          <div>
+            <ol className="recap__timeline">
+              {weeks.map((entry) => <li key={entry.week} data-tone={entry.tone}><b>Week {entry.week}</b><span>{entry.text}</span></li>)}
+            </ol>
+            <ul className="recap__decisions">
+              <li><span>Saturdays</span>{clinics ? "Four clinics, +$500" : "Kept for rest and rehab"}</li>
+              <li><span>$800 bonus</span>{state.income.includeCompletionFinal ? "Still counted, and shown to work without it" : "Left out of the plan"}</li>
+            </ul>
+          </div>
         </div>
       </section>
       <div className="stage-action">

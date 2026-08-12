@@ -49,10 +49,10 @@ async function walk(browser, size) {
 
   await page.getByRole("button", { name: "Find Avery a place" }).click();
   await page.getByLabel("Full eight-week cost").first().fill("1400");
-  await page.locator(".setup-card").nth(1).getByRole("button", { name: "Check" }).click();
+  await page.locator(".place-card").nth(1).getByRole("button", { name: "Check" }).click();
   await page.getByLabel("Full eight-week cost").nth(1).fill("1000");
-  await page.locator(".setup-card").nth(2).getByRole("button", { name: "Check" }).click();
-  await page.locator(".setup-card").nth(2).getByRole("button", { name: "Choose this setup" }).click();
+  await page.locator(".place-card").nth(2).getByRole("button", { name: "Check" }).click();
+  await page.locator(".place-card").nth(2).getByRole("button", { name: "Choose this setup" }).click();
   await shoot(page, size, "05-setup");
 
   await page.getByRole("button", { name: "Build the plan" }).click();
@@ -64,13 +64,13 @@ async function walk(browser, size) {
   await page.getByRole("button", { name: /Making the Cut Bonus/ }).click();
   await setAmount(page, "Sports-media course", "1200");
   await setAmount(page, "Backup money", "900");
-  await setAmount(page, "Money for anything else", "2100");
+  await setAmount(page, "Anything else", "2100");
   await shoot(page, size, "06-working-plan");
   await page.getByRole("button", { name: "Save this version" }).click();
 
   await setAmount(page, "Sports-media course", "1100");
   await setAmount(page, "Backup money", "600");
-  await setAmount(page, "Money for anything else", "1600");
+  await setAmount(page, "Anything else", "1600");
   await shoot(page, size, "07-fallback");
   await page.getByRole("button", { name: "Check this plan" }).click();
   await page.getByRole("button", { name: /Save it, .* still missing/ }).click();
@@ -85,7 +85,7 @@ async function walk(browser, size) {
 
   await setAmount(page, "Sports-media course", "800");
   await setAmount(page, "Backup money", "400");
-  await setAmount(page, "Money for anything else", "950");
+  await setAmount(page, "Anything else", "950");
   await page.getByRole("button", { name: "Save this version" }).click();
   await shoot(page, size, "11-opportunity");
 
@@ -93,13 +93,13 @@ async function walk(browser, size) {
   await page.getByRole("button", { name: "Count the $800" }).click();
   await setAmount(page, "Sports-media course", "800");
   await setAmount(page, "Backup money", "400");
-  await setAmount(page, "Money for anything else", "1450");
+  await setAmount(page, "Anything else", "1450");
   await shoot(page, size, "12-final-plan");
   await page.getByRole("button", { name: "Save final plan" }).click();
 
   await setAmount(page, "Sports-media course", "500");
   await setAmount(page, "Backup money", "200");
-  await setAmount(page, "Money for anything else", "1150");
+  await setAmount(page, "Anything else", "1150");
   await shoot(page, size, "13-remaining-risk");
   await page.getByRole("button", { name: "Save preview" }).click();
 

@@ -41,10 +41,10 @@ async function enterChallenge(page: Page) {
 /** Both comparison calculations must be answered correctly no matter which setup is chosen. */
 async function completeSetupStage(page: Page, chosenIndex: 0 | 1 | 2) {
   await page.getByLabel("Full eight-week cost").first().fill("1400");
-  await page.locator(".setup-card").nth(1).getByRole("button", { name: "Check" }).click();
+  await page.locator(".place-card").nth(1).getByRole("button", { name: "Check" }).click();
   await page.getByLabel("Full eight-week cost").nth(1).fill("1000");
-  await page.locator(".setup-card").nth(2).getByRole("button", { name: "Check" }).click();
-  await page.locator(".setup-card").nth(chosenIndex).getByRole("button", { name: "Choose this setup" }).click();
+  await page.locator(".place-card").nth(2).getByRole("button", { name: "Check" }).click();
+  await page.locator(".place-card").nth(chosenIndex).getByRole("button", { name: "Choose this setup" }).click();
   await page.getByRole("button", { name: "Build the plan" }).click();
 }
 
@@ -66,7 +66,7 @@ async function setAmount(page: Page, label: string, value: string) {
 async function fillPlan(page: Page, goal: string, reserve: string, flexible: string) {
   await setAmount(page, "Sports-media course", goal);
   await setAmount(page, "Backup money", reserve);
-  await setAmount(page, "Money for anything else", flexible);
+  await setAmount(page, "Anything else", flexible);
 }
 
 /** Selects every gap tile shown (they are exactly the components of the expected total) and checks the sum. */
@@ -344,7 +344,7 @@ test("a stuck student gets a step-by-step hint on a calculation and can keep mov
   const input = page.getByLabel("Full eight-week cost").first();
   for (const answer of ["100", "200", "300"]) {
     await input.fill(answer);
-    await page.locator(".setup-card").nth(1).getByRole("button", { name: "Check" }).click();
+    await page.locator(".place-card").nth(1).getByRole("button", { name: "Check" }).click();
   }
   await expect(page.getByRole("button", { name: "Show me one step" })).toBeVisible();
   await page.getByRole("button", { name: "Show me one step" }).click();
