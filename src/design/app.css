@@ -76,14 +76,6 @@ p { color: var(--ink-2); }
 .calculation-help > div span { color: var(--ink-2); }
 .calculation--compact .calculation-help { flex-direction: column; }
 .working-setup { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); margin-bottom: var(--s-6); }
-.income-switches { grid-column: 1 / -1; display: grid; grid-template-columns: 1.1fr 1fr 1fr; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); background: var(--surface-sunken); }
-.income-switches h2 { margin: 0; font: var(--t-ui); font-weight: 600; }
-.income-switches > button { min-height: 66px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); padding: var(--s-4); text-align: left; background: var(--surface); border: 1px solid var(--border-strong); cursor: pointer; }
-.income-switches > button[aria-pressed="true"] { background: var(--fin-conditional-soft); border: 2px solid var(--fin-conditional); }
-.income-switches b, .income-switches small { display: block; }
-.income-switches small { margin-top: var(--s-2); color: var(--ink-3); font: var(--t-micro); }
-.income-switches em { display: inline-block; margin-top: var(--s-3); color: var(--ink-2); font: var(--t-micro); font-style: normal; font-weight: 800; }
-.income-switches strong { font: var(--m-md); }
 .board-gate { max-width: var(--measure); margin: 0; padding: var(--s-5) var(--s-6); color: var(--ink-2); background: var(--surface-sunken); border: 1px dashed var(--border-strong); font: var(--t-body-lg); }
 
 /* Once the two amounts are worked out they stop being questions and become a fact strip,
@@ -429,8 +421,7 @@ p { color: var(--ink-2); }
   .contract-drawer { grid-column: 2; grid-row: 1; }
   .contract-drawer > div { width: min(350px, calc(100vw - 24px)); }
   .stage-main { width: calc(100% - 24px); }
-  .setup-grid, .income-switches, .exposure-summary, .class-foot, .standards-list, .prerequisite-list { grid-template-columns: 1fr; }
-  .income-switches { grid-column: auto; }
+  .setup-grid, .exposure-summary, .class-foot, .standards-list, .prerequisite-list { grid-template-columns: 1fr; }
   .plan-commit, .stage-action { align-items: stretch; flex-direction: column; }
   .plan-commit__actions { flex-direction: column; }
   .calculation-help, .plan-help { flex-direction: column; }

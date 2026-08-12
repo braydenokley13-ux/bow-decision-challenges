@@ -126,6 +126,17 @@
 .given-total span { color: var(--ink-3); font: var(--t-micro); }
 .given-total .money { font: var(--m-lg); font-feature-settings: var(--num); }
 
+/* --- Scene 4a: the two bets ----------------------------------------------- */
+.bets { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-3); align-items: stretch; }
+.bets__intro { align-self: center; }
+.bets__intro h2 { margin: 0; max-width: 24ch; font: var(--t-title3); }
+.bet { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4); background: var(--fin-conditional-soft); border: 1px solid var(--fin-conditional); border-left: 4px solid transparent; border-image: var(--pat-conditional) 4; border-image-slice: 4; }
+.bet__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
+.bet__head b { font: var(--t-title3); }
+.bet__head strong { font: var(--m-md); font-feature-settings: var(--num); }
+.bet__rule { margin: 0 0 auto; color: var(--fin-conditional-ink); font: var(--t-micro); }
+.bet[data-counted="true"] { background: var(--surface-raised); border-color: var(--fin-adjustable); }
+
 /* --- Scene 4: the money split -------------------------------------------- */
 .split { display: grid; align-content: start; gap: var(--s-4); padding: var(--s-5); background: var(--surface-sunken); border-right: 1px solid var(--border-default); }
 .split__head { display: grid; gap: var(--s-2); }
@@ -294,6 +305,8 @@
   .split__line i { width: 70px; }
   .plan-board__body { grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr); }
   .feed { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bets { grid-template-columns: 1fr 1fr; }
+  .bets__intro { grid-column: 1 / -1; }
   .feed .post:last-child { grid-column: 1 / -1; }
   .choice-row { grid-template-columns: 6px minmax(0, 1fr) auto; row-gap: var(--s-3); }
   .choice-row__controls { grid-column: 2 / -1; justify-self: end; }
@@ -309,6 +322,7 @@
   .reel article:last-child { grid-column: 1 / -1; }
   .feed { grid-template-columns: 1fr; }
   .change-banner { grid-template-columns: 1fr; }
+  .bets { grid-template-columns: 1fr; }
   .setup-grid { grid-template-columns: 1fr; }
   .scale { grid-template-columns: 1fr; }
   .split { border-right: 0; border-bottom: 1px solid var(--border-default); }

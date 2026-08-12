@@ -60,8 +60,8 @@ async function walk(browser, size) {
   await page.locator(".working-setup .calculation").first().getByRole("button", { name: "Check" }).click();
   await page.getByLabel("8-week essentials").fill("1600");
   await page.locator(".working-setup .calculation").nth(1).getByRole("button", { name: "Check" }).click();
-  await page.getByRole("button", { name: /Perfect Attendance Bonus/ }).click();
-  await page.getByRole("button", { name: /Making the Cut Bonus/ }).click();
+  await page.locator(".bet").first().getByRole("button", { name: "Count it" }).click();
+  await page.locator(".bet").nth(1).getByRole("button", { name: "Count it" }).click();
   await setAmount(page, "Sports-media course", "1200");
   await setAmount(page, "Backup money", "900");
   await setAmount(page, "Anything else", "2100");

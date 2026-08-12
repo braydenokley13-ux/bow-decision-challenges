@@ -53,8 +53,8 @@ async function completeWorkingCalcs(page: Page, opts: { attendance?: boolean; sh
   await page.locator(".working-setup .calculation").first().getByRole("button", { name: "Check" }).click();
   await page.getByLabel("8-week essentials").fill("1600");
   await page.locator(".working-setup .calculation").nth(1).getByRole("button", { name: "Check" }).click();
-  if (opts.attendance) await page.getByRole("button", { name: /Perfect Attendance Bonus/ }).click();
-  if (opts.showcase) await page.getByRole("button", { name: /Making the Cut Bonus/ }).click();
+  if (opts.attendance) await page.locator(".bet").first().getByRole("button", { name: "Count it" }).click();
+  if (opts.showcase) await page.locator(".bet").nth(1).getByRole("button", { name: "Count it" }).click();
 }
 
 async function setAmount(page: Page, label: string, value: string) {

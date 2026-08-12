@@ -320,14 +320,27 @@ function WorkingStage() {
       )}
       {counted && (
         <div ref={revealRef} className="staged-reveal">
-          <section className="income-switches" aria-labelledby="maybe-money-heading">
-            <div><p className="field-label">{STUDENT_COPY.working.maybeMoney.title}</p><h2 id="maybe-money-heading">{STUDENT_COPY.working.maybeMoney.body}</h2></div>
-            <button type="button" aria-pressed={state.income.includeCompletion} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId: "completion-800", included: !state.income.includeCompletion })}>
-              <span><b>{STUDENT_COPY.working.maybeMoney.attendance.title}</b><small>{STUDENT_COPY.working.maybeMoney.attendance.body}</small><em>{state.income.includeCompletion ? "Counting it" : "Not counting it"}</em></span><MoneyAmount value={800} />
-            </button>
-            <button type="button" aria-pressed={state.income.includeOutcome} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId: "outcome-1000", included: !state.income.includeOutcome })}>
-              <span><b>{STUDENT_COPY.working.maybeMoney.showcase.title}</b><small>{STUDENT_COPY.working.maybeMoney.showcase.body}</small><em>{state.income.includeOutcome ? "Counting it" : "Not counting it"}</em></span><MoneyAmount value={1000} />
-            </button>
+          <section className="bets" aria-labelledby="maybe-money-heading">
+            <div className="bets__intro">
+              <p className="field-label">{STUDENT_COPY.working.maybeMoney.title}</p>
+              <h2 id="maybe-money-heading">{STUDENT_COPY.working.maybeMoney.body}</h2>
+            </div>
+            {([
+              ["completion-800", 800, state.income.includeCompletion, STUDENT_COPY.working.maybeMoney.attendance],
+              ["outcome-1000", 1000, state.income.includeOutcome, STUDENT_COPY.working.maybeMoney.showcase],
+            ] as const).map(([sourceId, amount, included, copy]) => (
+              <article key={sourceId} className="bet" data-counted={included}>
+                <div className="bet__head">
+                  <b>{copy.title}</b>
+                  <strong className="money">{formatDollars(amount)}</strong>
+                </div>
+                <p className="bet__rule">{copy.body}</p>
+                <div className="binary-choice">
+                  <button type="button" aria-pressed={included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: true })}>Count it</button>
+                  <button type="button" aria-pressed={!included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: false })}>Leave it out</button>
+                </div>
+              </article>
+            ))}
           </section>
           <PlanBoardForMode mode="working" />
         </div>
