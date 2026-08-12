@@ -1,0 +1,21 @@
+[data-world="basketball"] {
+  --world-accent: #c0501c;
+  --world-accent-strong: #9e3f14;
+  --world-accent-soft: #f7e5da;
+  --world-accent-ink: #ffffff;
+  --world-hero-bg: #0b1b33;
+  --world-hero-ink: #f4f1ea;
+  --world-hero-second: #e0672e;
+  --font-display: Archivo, Impact, var(--font-ui);
+}
+
+[data-world="fashion"] {
+  --world-accent: #c42a5b;
+  --world-accent-strong: #9e1f49;
+  --world-accent-soft: #fbe3ea;
+  --world-accent-ink: #ffffff;
+  --world-hero-bg: #17161a;
+  --world-hero-ink: #f5f2ee;
+  --world-hero-second: #2440c8;
+  --font-display: "Instrument Serif", Georgia, serif;
+}
