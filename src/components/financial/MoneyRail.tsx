@@ -3,54 +3,102 @@ import { SCENARIO_NUMBERS } from "../../domain/scenario/numbers";
 import { availableFor, assigned, exposureFor, lockedFor, balanceOf } from "../../domain/finance/formulas";
 import { formatDollars } from "../../domain/core/money";
 
+interface Band {
+  key: string;
+  label: string;
+  amount: number;
+  tone: string;
+}
+
+/**
+ * Two stacked bars share one scale so their lengths can be compared directly:
+ * what Avery has on top, what it is already doing underneath. Every band carries its
+ * own amount, and the state readout never depends on colour alone.
+ */
 export function MoneyRail({ input }: { input: SnapshotInputs }) {
   const available = availableFor(input, SCENARIO_NUMBERS);
   const locked = lockedFor(input, SCENARIO_NUMBERS);
   const assignedTotal = assigned(input.amounts);
   const balance = balanceOf(input, SCENARIO_NUMBERS);
-  const exposure = input.mode === "working" ? exposureFor(input, SCENARIO_NUMBERS) : input.mode === "final" && input.includeCompletion ? SCENARIO_NUMBERS.completionIncome : 0;
+  const conditional = input.mode === "working"
+    ? exposureFor(input, SCENARIO_NUMBERS)
+    : (input.mode === "week5-first-response" || input.mode === "final") && input.includeCompletion
+      ? SCENARIO_NUMBERS.completionIncome
+      : 0;
+  const dependable = Math.max(0, available - conditional);
+  const shortfall = Math.max(0, -Number(balance));
+  const spare = Math.max(0, Number(balance));
+
+  // One scale for both rows, wide enough to show an overspend running past the money.
   const scale = Math.max(available, locked + assignedTotal, 1);
-  const reliable = SCENARIO_NUMBERS.reliableFloor + (input.includeOptionalWork && input.mode !== "working" && input.mode !== "fallback" ? SCENARIO_NUMBERS.optionalWorkIncome : 0);
-  const dependablePercent = Math.min(100, (reliable / scale) * 100);
-  const conditionalPercent = Math.max(0, (exposure / scale) * 100);
-  const lockedPercent = Math.min(100, (locked / scale) * 100);
-  const assignedPercent = Math.max(0, (assignedTotal / scale) * 100);
+  const width = (amount: number) => `${Math.max(0, (amount / scale) * 100)}%`;
+
+  const supply: Band[] = [
+    { key: "dependable", label: "Safe cash", amount: dependable, tone: "reliable" },
+    ...(conditional > 0 ? [{ key: "conditional", label: "Maybe money", amount: conditional, tone: "conditional" }] : []),
+  ];
+  const demand: Band[] = [
+    { key: "locked", label: "Must pay", amount: locked, tone: "locked" },
+    ...(assignedTotal > 0 ? [{ key: "assigned", label: "Your choices", amount: assignedTotal, tone: "assigned" }] : []),
+  ];
+
+  const state = balance === 0
+    ? { tone: "balanced", headline: "Every dollar has a job", amount: 0 }
+    : spare > 0
+      ? { tone: "unassigned", headline: "Still needs a job", amount: spare }
+      : { tone: "over", headline: "More than Avery has", amount: shortfall };
 
   return (
-    <section className="rail" aria-label="Money Rail">
-      <div className="rail__heading">
-        <div><span>Cash you can use in this plan</span><strong className="money">{formatDollars(available)}</strong></div>
-        <span className="rail__week">{input.week5Applied ? "Week 5" : "Start"}</span>
+    <section className="rail" aria-label="Money Rail" data-state={state.tone}>
+      <div className="rail__head">
+        <div className="rail__total">
+          <span>Cash in this plan</span>
+          <strong className="money">{formatDollars(available)}</strong>
+        </div>
+        <p className="rail__state" aria-live="polite">
+          <b>{state.headline}</b>
+          {state.amount > 0 && <strong className="money">{formatDollars(state.amount)}</strong>}
+        </p>
+        <span className="rail__week">{input.week5Applied ? "Week 5" : "Week 1"}</span>
       </div>
+
       <div className="rail__plot" aria-hidden="true">
-        <div className="rail__row rail__row--supply">
-          <span className="rail__segment rail__segment--reliable" style={{ width: `${dependablePercent}%` }}>Safe cash</span>
-          {conditionalPercent > 0 && <span className="rail__segment rail__segment--conditional" style={{ width: `${conditionalPercent}%` }}><b>MAYBE</b> {formatDollars(exposure)}</span>}
+        <div className="rail__row">
+          {supply.map((band) => (
+            <span key={band.key} className="rail__band" data-tone={band.tone} style={{ width: width(band.amount) }}>
+              <i>{band.label}</i>
+              <b className="money">{formatDollars(band.amount)}</b>
+            </span>
+          ))}
         </div>
-        <div className="rail__row rail__row--demand">
-          <span className="rail__segment rail__segment--locked" style={{ width: `${lockedPercent}%` }}>Must pay {formatDollars(locked)}</span>
-          <span className="rail__segment rail__segment--assigned" style={{ width: `${assignedPercent}%` }}>Your choices {formatDollars(assignedTotal)}</span>
-          {balance < 0 && <span className="rail__overrun" style={{ width: `${Math.min(25, Math.abs(balance / scale) * 100)}%` }} />}
+        <div className="rail__row">
+          {demand.map((band) => (
+            <span key={band.key} className="rail__band" data-tone={band.tone} style={{ width: width(band.amount) }}>
+              <i>{band.label}</i>
+              <b className="money">{formatDollars(band.amount)}</b>
+            </span>
+          ))}
+          {spare > 0 && <span className="rail__band rail__band--open" style={{ width: width(spare) }}><i>Unassigned</i><b className="money">{formatDollars(spare)}</b></span>}
+          {shortfall > 0 && <span className="rail__band rail__band--over" style={{ width: width(shortfall) }}><i>Over</i><b className="money">{formatDollars(shortfall)}</b></span>}
         </div>
-        {exposure > 0 && <span className="rail__exposure-line" style={{ left: `${dependablePercent}%` }} />}
+        {conditional > 0 && <span className="rail__marker" style={{ left: width(dependable) }} />}
       </div>
-      <div className="rail__legend">
-        <span>Safe cash <b className="money">{formatDollars(reliable)}</b></span>
-        <span>Must pay <b className="money">{formatDollars(locked)}</b></span>
-        <span>Your choices <b className="money">{formatDollars(assignedTotal)}</b></span>
-        <span>{balance === 0 ? "All money has a job" : balance > 0 ? `${formatDollars(balance)} still needs a job` : `${formatDollars(Math.abs(balance))} more than you have`}</span>
+
+      {/* A table sizes to its content and ignores the utility's 1px width, so the
+          clipping wrapper is what actually keeps it out of the layout. */}
+      <div className="visually-hidden">
+        <table>
+          <caption>Money Rail summary</caption>
+          <thead><tr><th scope="col">Part of the plan</th><th scope="col">Amount</th><th scope="col">What it means</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Safe cash</th><td>{formatDollars(dependable)}</td><td>Avery will definitely have this money.</td></tr>
+            {conditional > 0 && <tr><th scope="row">Maybe money</th><td>{formatDollars(conditional)}</td><td>Only arrives if the bonus rule is met.</td></tr>}
+            <tr><th scope="row">Must pay</th><td>{formatDollars(locked)}</td><td>Already promised. These costs cannot move.</td></tr>
+            <tr><th scope="row">Your choices</th><td>{formatDollars(assignedTotal)}</td><td>Amounts you can change.</td></tr>
+            <tr><th scope="row">{state.headline}</th><td>{formatDollars(state.amount)}</td><td>{balance === 0 ? "The plan balances." : balance > 0 ? "Give this money a job to balance the plan." : "Reduce your choices by this much to balance the plan."}</td></tr>
+          </tbody>
+        </table>
       </div>
-      <table className="visually-hidden">
-        <caption>Money Rail financial summary</caption>
-        <thead><tr><th scope="col">Area</th><th scope="col">Amount</th><th scope="col">State</th></tr></thead>
-        <tbody>
-          <tr><th scope="row">Safe cash</th><td>{formatDollars(reliable)}</td><td>You will definitely have this money</td></tr>
-          {exposure > 0 && <tr><th scope="row">Maybe money</th><td>{formatDollars(exposure)}</td><td>You get this only if the bonus rules are met</td></tr>}
-          <tr><th scope="row">Money already promised</th><td>{formatDollars(locked)}</td><td>These costs cannot move</td></tr>
-          <tr><th scope="row">Money choices</th><td>{formatDollars(assignedTotal)}</td><td>You can change these amounts</td></tr>
-          <tr><th scope="row">Money left to fix</th><td>{formatDollars(Math.abs(balance))}</td><td>{balance === 0 ? "Every dollar has a job" : balance > 0 ? "Still needs a job" : "More money is needed"}</td></tr>
-        </tbody>
-      </table>
     </section>
   );
 }

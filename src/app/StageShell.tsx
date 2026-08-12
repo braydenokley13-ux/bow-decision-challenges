@@ -1,46 +1,52 @@
 import type { PropsWithChildren } from "react";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
+import { formatDollars } from "../domain/core/money";
+import { PROGRESS_STEPS, progressIndexFor } from "../domain/machine/stages";
 import type { StageId } from "../domain/evidence/types";
 import { AppMark } from "../components/primitives/AppMark";
 
-const PROGRESS: Array<{ label: string; stages: StageId[] }> = [
-  { label: "Setup", stages: ["role-contract", "setup-comparison"] },
-  { label: "First Plan", stages: ["working-plan"] },
-  { label: "Backup Check", stages: ["fallback-version", "income-check", "week5-transition"] },
-  { label: "Week 5", stages: ["week5-event", "first-response", "opportunity-final-repair", "remaining-risk-preview"] },
-  { label: "Explain It", stages: ["defense", "submitted"] },
+const { numbers, incomeCopy, goalLabel } = BASKETBALL_SCENARIO;
+
+// Read from the scenario so a second world needs no change here.
+const SAFE_MONEY = [
+  { label: "Already saved", amount: numbers.savings, note: incomeCopy.savings },
+  { label: "Base pay", amount: numbers.basePay, note: incomeCopy.base },
+];
+const MAYBE_MONEY = [
+  { label: "Perfect Attendance Bonus", amount: numbers.completionIncome, note: incomeCopy.completion },
+  { label: "Making the Cut Bonus", amount: numbers.outcomeIncome, note: incomeCopy.outcome },
 ];
 
 export function StageShell({ stage, title, kicker, children }: PropsWithChildren<{ stage: StageId; title: string; kicker?: string }>) {
-  const current = Math.max(0, PROGRESS.findIndex((item) => item.stages.includes(stage)));
+  const current = progressIndexFor(stage);
   return (
-    <div className="challenge-shell" data-world="basketball">
+    <div className="challenge-shell" data-world={BASKETBALL_SCENARIO.id}>
       <header className="challenge-topbar">
         <AppMark />
-        {current >= 0 && (
-          <nav className="progress" aria-label="Challenge progress">
-            <ol>
-              {PROGRESS.map((item, index) => (
-                <li key={item.label} className={index < current ? "is-done" : index === current ? "is-current" : ""} aria-current={index === current ? "step" : undefined}>
-                  <span>{index + 1}</span><b>{item.label}</b>
-                </li>
-              ))}
-            </ol>
-            <p className="visually-hidden">Step {current + 1} of 5: {PROGRESS[current]?.label}</p>
-          </nav>
-        )}
+        <nav className="progress" aria-label="Challenge progress">
+          <ol>
+            {PROGRESS_STEPS.map((item, index) => (
+              <li key={item.label} className={index < current ? "is-done" : index === current ? "is-current" : ""} aria-current={index === current ? "step" : undefined}>
+                <span aria-hidden="true">{index + 1}</span><b>{item.label}</b>
+              </li>
+            ))}
+          </ol>
+          <p className="visually-hidden">Step {current + 1} of {PROGRESS_STEPS.length}: {PROGRESS_STEPS[current]?.label}</p>
+        </nav>
         <details className="contract-drawer">
-          <summary>Money cheat sheet</summary>
+          <summary>Money sheet</summary>
           <div>
             <h2>Avery’s money</h2>
-            <p><strong>Safe cash</strong> is guaranteed. <strong>Maybe money</strong> only shows up when its rule is completed.</p>
+            <p><strong>Safe cash</strong> always arrives. <strong>Maybe money</strong> arrives only if its rule is met.</p>
             <dl>
-              <div><dt>Money already saved · safe</dt><dd>$500</dd></div>
-              <div><dt>Base pay · safe</dt><dd>$4,500</dd></div>
-              <div><dt>Perfect Attendance Bonus · maybe</dt><dd>$800</dd></div>
-              <div><dt>Making the Cut Bonus · maybe</dt><dd>$1,000</dd></div>
+              {[...SAFE_MONEY, ...MAYBE_MONEY].map((item) => (
+                <div key={item.label}>
+                  <dt>{item.label}<small>{item.note}</small></dt>
+                  <dd className="money">{formatDollars(item.amount)}</dd>
+                </div>
+              ))}
             </dl>
-            <p>{BASKETBALL_SCENARIO.role.description}</p>
+            <p className="contract-drawer__goal">{goalLabel} · up to {formatDollars(numbers.goalCap)}</p>
           </div>
         </details>
       </header>
@@ -51,7 +57,6 @@ export function StageShell({ stage, title, kicker, children }: PropsWithChildren
         </header>
         {children}
       </main>
-      <div className="visually-hidden" aria-live="polite" aria-atomic="true" />
     </div>
   );
 }

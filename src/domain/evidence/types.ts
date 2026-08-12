@@ -50,6 +50,12 @@ export interface AlternateStateEvidence {
   entered: boolean;
   saved: boolean;
   amountFreed: Dollars;
+  /**
+   * The most money the student could have freed from the state they were handed:
+   * the smaller of the shortfall they faced and the adjustable money they held.
+   * Lets a full response be recognised even when a full repair was impossible.
+   */
+  absorbTarget: Dollars;
   residual: Dollars;
   unassigned: Dollars;
   residualAcknowledged: boolean;
@@ -62,11 +68,11 @@ export interface AlternateStateEvidence {
 
 export interface AssessmentFacts {
   calculations: Partial<Record<CalcId, CalculationEvidence>>;
-  opening?: { snapshot: PlanSnapshot; balance: Dollars; firstSaveBalance: Dollars; conditionalExposure: Dollars; evidenceRefs: string[] };
+  opening?: { snapshot: PlanSnapshot; balance: Dollars; firstSaveBalance: Dollars; conditionalExposure: Dollars; support: SupportLevel; evidenceRefs: string[] };
   fallback?: AlternateStateEvidence;
   firstResponse?: AlternateStateEvidence;
   preview?: AlternateStateEvidence;
-  final?: { snapshot: PlanSnapshot; balance: Dollars; acknowledgedResidual: boolean; lockedMoveAttempts: number; evidenceRefs: string[] };
+  final?: { snapshot: PlanSnapshot; balance: Dollars; acknowledgedResidual: boolean; lockedMoveAttempts: number; support: SupportLevel; evidenceRefs: string[] };
   selectedSetupId?: SetupId;
   selectedGapTiles: string[];
   applicableGapTiles: string[];

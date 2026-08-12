@@ -6,13 +6,35 @@ import { ClassOverview, ConceptDrilldown, EducatorGuide, ReasoningReview, Standa
 
 function Home() {
   return (
-    <main className="home-page">
-      <header><AppMark /><Link to="/educator/guide">Educator brief</Link></header>
-      <section>
-        <div><p className="eyebrow">BOW DECISION CHALLENGES · BASKETBALL</p><h1>Can you keep Avery’s money plan alive?</h1><p>You have 8 weeks. Pick a place to stay. Decide which cash to count. Then fix the plan when the season goes sideways.</p><div><Link className="button button--primary" to="/challenge">Start the Basketball Story</Link><Link className="button button--secondary" to="/educator/class">See the Teacher View</Link></div></div>
-        <aside><span>PLAN</span><strong>UNDER</strong><b>PRESSURE</b><i>08 WEEKS</i></aside>
+    <main className="home-page" data-world="basketball">
+      <header><AppMark /><Link to="/educator/guide">For educators</Link></header>
+      <section className="home-page__stage">
+        <div className="home-page__copy">
+          <p className="eyebrow">Plan Under Pressure · Basketball</p>
+          <h1>Eight weeks to the showcase.</h1>
+          <p className="home-page__deck">Avery has $5,000 that is certain, $1,800 that is not, and bills either way. You make the money calls. In Week 5 the season changes and your plan has to survive it.</p>
+          <ol className="home-page__beats">
+            <li><span>01</span>Build a plan that works</li>
+            <li><span>02</span>Week 5 breaks it</li>
+            <li><span>03</span>Repair it and defend it</li>
+          </ol>
+          <div className="home-page__actions">
+            <Link className="button button--primary" to="/challenge">Start the challenge</Link>
+            <Link className="button button--secondary" to="/educator/class">See the evidence a teacher gets</Link>
+          </div>
+        </div>
+        <aside className="home-page__mark" aria-hidden="true">
+          <span className="home-page__weeks">08</span>
+          <b>weeks</b>
+          <i>Week 5 changes everything</i>
+        </aside>
       </section>
-      <footer><span>Grades 6–8</span><span>Real money choices</span><span>Basketball ready · Fashion coming soon</span></footer>
+      <footer>
+        <span>Grades 6–8</span>
+        <span>12–15 minutes</span>
+        <span>Applied after instruction</span>
+        <span>Adaptive budgeting under uncertainty</span>
+      </footer>
     </main>
   );
 }

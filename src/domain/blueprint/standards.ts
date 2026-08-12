@@ -34,6 +34,11 @@ const primary12 = (microSkillId: StructuredMicroSkillId): StandardsRow => ({ mic
 const primary13 = (microSkillId: StructuredMicroSkillId): StandardsRow => ({ microSkillId, objectiveId: "1.3", strength: "primary" });
 
 export const STANDARDS_ROWS: readonly StandardsRow[] = [
+  // 1.1 is supported where the student must actually separate required costs from a
+  // savings goal from discretionary cash, and then choose among them under pressure.
+  { microSkillId: "C3.1", objectiveId: "1.1", strength: "supporting" },
+  { microSkillId: "C3.3", objectiveId: "1.1", strength: "supporting" },
+  { microSkillId: "C4.1", objectiveId: "1.1", strength: "supporting" },
   primary13("C1.1"), primary12("C1.1"), primary12("C1.2"), { microSkillId: "C1.2", objectiveId: "4.1", strength: "partial" },
   primary12("C1.3"), { microSkillId: "C1.3", objectiveId: "4.1", strength: "partial" },
   primary13("C2.1"), primary12("C2.1"), primary13("C2.2"), primary12("C2.2"),

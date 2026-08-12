@@ -22,6 +22,7 @@ const alternate = (overrides: Partial<AlternateStateEvidence> = {}): AlternateSt
   entered: true,
   saved: true,
   amountFreed: dollars(800),
+  absorbTarget: dollars(800),
   residual: dollars(0),
   unassigned: dollars(0),
   residualAcknowledged: false,
@@ -35,10 +36,11 @@ const alternate = (overrides: Partial<AlternateStateEvidence> = {}): AlternateSt
 
 const baseFacts = (): AssessmentFacts => ({
   calculations: {},
-  opening: { snapshot: snapshot(1), balance: dollars(0), firstSaveBalance: dollars(0), conditionalExposure: dollars(1800), evidenceRefs: ["opening"] },
+  opening: { snapshot: snapshot(1), balance: dollars(0), firstSaveBalance: dollars(0), conditionalExposure: dollars(1800), support: "standard_access", evidenceRefs: ["opening"] },
   fallback: alternate(),
+  firstResponse: alternate(),
   preview: alternate(),
-  final: { snapshot: snapshot(10), balance: dollars(0), acknowledgedResidual: false, lockedMoveAttempts: 0, evidenceRefs: ["final"] },
+  final: { snapshot: snapshot(10), balance: dollars(0), acknowledgedResidual: false, lockedMoveAttempts: 0, support: "standard_access", evidenceRefs: ["final"] },
   selectedSetupId: "flexible-1000",
   selectedGapTiles: ["lost-outcome", "required-cost", "setup-cost"],
   applicableGapTiles: ["lost-outcome", "required-cost", "setup-cost"],
@@ -79,10 +81,37 @@ describe("materially overlapping micro-skills remain independently observable", 
     expect(points(facts, "C5.3")).toBe(2);
   });
 
-  it("separates C5.4 final viability from C5.6 opportunity reconciliation", () => {
+  it("separates C5.4 final viability from C5.6 response with existing resources", () => {
+    // A student who made only a token adjustment at the first response, then reached a
+    // balanced final plan once the extra $500 arrived, is strong on C5.4 and weak on C5.6.
+    const tokenResponse = baseFacts();
+    tokenResponse.firstResponse = alternate({ amountFreed: dollars(100), absorbTarget: dollars(1150), residual: dollars(1050) });
+    expect(points(tokenResponse, "C5.4")).toBe(5);
+    expect(points(tokenResponse, "C5.6")).toBe(2);
+
+    // The reverse: everything that could be freed was freed, but the final plan is
+    // still short. C5.6 is full credit, C5.4 is not.
+    const fullResponseShortFinal = baseFacts();
+    fullResponseShortFinal.firstResponse = alternate({ amountFreed: dollars(1150), absorbTarget: dollars(1150) });
+    fullResponseShortFinal.final = { ...fullResponseShortFinal.final!, balance: dollars(-300), acknowledgedResidual: false };
+    expect(points(fullResponseShortFinal, "C5.6")).toBe(5);
+    expect(points(fullResponseShortFinal, "C5.4")).toBe(0);
+  });
+
+  it("credits a full C5.6 response even when the shortfall could not be fully covered", () => {
+    // Capacity below need: freeing every adjustable dollar is the best possible response,
+    // so C5.6 is full credit while C4.4 workability is not.
     const facts = baseFacts();
-    facts.optionalDecision = { accepted: false, sequence: 11, evidenceRef: "reversed-after-last-save" };
-    expect(points(facts, "C5.4")).toBe(5);
-    expect(points(facts, "C5.6")).toBe(2);
+    facts.opening = { ...facts.opening!, conditionalExposure: dollars(0) };
+    delete facts.fallback;
+    facts.firstResponse = alternate({ amountFreed: dollars(600), absorbTarget: dollars(600), residual: dollars(400), residualAcknowledged: true });
+    expect(points(facts, "C5.6")).toBe(5);
+    expect(points(facts, "C4.4")).toBe(2);
+  });
+
+  it("does not credit C5.6 when the plan board built the response for the student", () => {
+    const facts = baseFacts();
+    facts.firstResponse = alternate({ amountFreed: dollars(1150), absorbTarget: dollars(1150), support: "answer_supplied" });
+    expect(points(facts, "C5.6")).toBe(0);
   });
 });

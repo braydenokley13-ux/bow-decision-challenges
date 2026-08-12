@@ -1,5 +1,6 @@
 import { dollars } from "../core/money";
 import { SCENARIO_NUMBERS } from "../scenario/numbers";
+import { DEFAULT_WORLD_ID, PLAN_UNDER_PRESSURE_LAUNCH } from "../scenario/registry";
 import { balanceOf, residualOf, unassignedOf } from "../finance/formulas";
 import type { PlanMode, SnapshotInputs } from "../finance/types";
 import type { EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../evidence/types";
@@ -59,8 +60,11 @@ export function challengeReducer(state: ChallengeState, action: ChallengeAction)
     case "GO_TO_STAGE":
       return goTo(state, action.stage);
     case "SESSION_STARTED": {
-      const next = { ...state, meta: { ...state.meta, sessionId: action.sessionId, classCode: action.classCode, seatCode: action.seatCode } };
-      return goTo(append(next, action.type, action), "choose-world");
+      // With one finished world there is no choice to present, so the session opens
+      // straight into it. Restoring the picker means routing to "choose-world" here.
+      const next = { ...state, meta: { ...state.meta, sessionId: action.sessionId, classCode: action.classCode, seatCode: action.seatCode, worldId: DEFAULT_WORLD_ID } };
+      const started = append(next, action.type, action);
+      return goTo(PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? started : append(started, "WORLD_CONFIRMED", { worldId: DEFAULT_WORLD_ID }), PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? "choose-world" : "role-contract");
     }
     case "WORLD_CONFIRMED": {
       const next = { ...state, meta: { ...state.meta, worldId: action.worldId } };
