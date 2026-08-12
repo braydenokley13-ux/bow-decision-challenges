@@ -84,7 +84,7 @@ async function decideOpportunity(page: Page, opts: { clinics: boolean; countBonu
 }
 
 async function submitDefense(page: Page, text: string, tileIndices: number[] = [0, 2]) {
-  for (const index of tileIndices) await page.locator(".evidence-picker > button").nth(index).click();
+  for (const index of tileIndices) await page.locator(".interview__stats button").nth(index).click();
   await page.getByLabel("Two to four sentences").fill(text);
   await page.getByRole("button", { name: "Turn in my plan" }).click();
 }

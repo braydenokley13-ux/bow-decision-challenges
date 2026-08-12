@@ -104,8 +104,8 @@ async function walk(browser, size) {
   await page.getByRole("button", { name: "Save preview" }).click();
 
   await shoot(page, size, "14-defense");
-  await page.locator(".evidence-picker > button").nth(0).click();
-  await page.locator(".evidence-picker > button").nth(2).click();
+  await page.locator(".interview__stats button").nth(0).click();
+  await page.locator(".interview__stats button").nth(2).click();
   await page.getByLabel("Two to four sentences").fill("My plan still works because it balances at $0 after the update. I protected $800 for the course and gave up the open rest block to take the clinics.");
   await page.getByRole("button", { name: "Turn in my plan" }).click();
   await shoot(page, size, "15-submitted");

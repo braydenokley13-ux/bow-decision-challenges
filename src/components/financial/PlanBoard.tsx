@@ -40,9 +40,11 @@ interface PlanBoardProps {
   onApplyReference?: ((category?: CategoryId) => void) | undefined;
   onScaffold?: () => void;
   onShowAndContinue?: () => void;
+  /** What moved since the student last saved, so a returning board reads as a response. */
+  change?: { headline: string; items: readonly string[] } | undefined;
 }
 
-export function PlanBoard({ input, setupTitle, baseline, reference, attempts, onAmountChange, onLockedMoveAttempt, onCommit, onApplyReference, onScaffold, onShowAndContinue }: PlanBoardProps) {
+export function PlanBoard({ input, setupTitle, baseline, reference, attempts, onAmountChange, onLockedMoveAttempt, onCommit, onApplyReference, onScaffold, onShowAndContinue, change }: PlanBoardProps) {
   const [showHelp, setShowHelp] = useState(false);
   const balance = balanceOf(input, SCENARIO_NUMBERS);
   const residual = Math.max(0, -Number(balance));
@@ -65,6 +67,12 @@ export function PlanBoard({ input, setupTitle, baseline, reference, attempts, on
           {reference && onApplyReference && CHOICE_ORDER.some((category) => reference[category] !== input.amounts[category])
             && <Button variant="quiet" type="button" onClick={() => onApplyReference()}>Put my saved numbers back</Button>}
         </header>
+        {change && (
+          <div className="change-banner">
+            <b>{change.headline}</b>
+            <ul>{change.items.map((item) => <li key={item}>{item}</li>)}</ul>
+          </div>
+        )}
         <div className="plan-board__body">
           <MoneySplit input={input} onLockedMoveAttempt={onLockedMoveAttempt} />
           <div className="choice-stack">

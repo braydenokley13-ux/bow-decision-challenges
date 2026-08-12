@@ -142,7 +142,14 @@
 .split__line i { position: absolute; left: calc(100% + 8px); top: -0.75em; width: 88px; color: var(--ink-2); font: var(--t-micro); font-style: normal; }
 .split__line--certain { border-top: 2px dashed var(--fin-conditional-stripe); opacity: 0.75; }
 .split__line--certain i { color: var(--fin-conditional-ink); }
-.split__over { position: absolute; right: 96px; width: calc(50% - var(--s-2)); background: var(--pat-over); opacity: 0.55; pointer-events: none; }
+.split__over { position: absolute; right: 96px; width: calc(50% - var(--s-2)); background: var(--pat-over); opacity: 0.3; border-bottom: 2px solid var(--fin-over); pointer-events: none; }
+
+/* What moved since the last save, named on the board that has to absorb it. */
+.change-banner { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: var(--s-3) var(--s-5); padding: var(--s-4) var(--s-5); color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); border-bottom: 1px solid var(--fin-conditional); }
+.change-banner b { font: var(--t-title3); }
+.change-banner ul { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); margin: 0; padding: 0; list-style: none; }
+.change-banner li { position: relative; padding-left: var(--s-4); font: var(--t-ui); }
+.change-banner li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 6px; height: 6px; background: currentcolor; border-radius: 50%; }
 
 /* --- Scene 4: the three choices ------------------------------------------ */
 .plan-board__body { display: grid; grid-template-columns: minmax(300px, 0.85fr) minmax(0, 1.15fr); }
@@ -163,6 +170,19 @@
 .choice-row__controls button:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
 .choice-row__controls button:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 .choice-row__controls input { width: 100%; padding: 0 var(--s-2); text-align: center; border-right: 0; border-left: 0; font: var(--m-sm); }
+
+/* --- Scene 5: the season feed --------------------------------------------- */
+.feed { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s-3); }
+.post { display: grid; align-content: start; gap: var(--s-3); padding: var(--s-4); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--fin-reliable); animation: week-in var(--dur-stage) var(--ease-exit) both; }
+.post__tag { margin: 0; color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
+.post__note { margin: 0; font: var(--t-ui); font-weight: 400; }
+.post__voice { display: grid; grid-template-columns: auto 1fr; gap: var(--s-3); margin: 0; padding: var(--s-3); background: var(--surface-sunken); border-radius: var(--r-sm); }
+.post__voice p { margin: 0; color: var(--ink-1); font: var(--t-ui); font-weight: 400; font-style: italic; }
+.post__who { width: 30px; height: 30px; display: grid; place-items: center; color: var(--ink-invert); background: var(--world-accent); border-radius: 50%; font: var(--m-xs); font-feature-settings: var(--num); }
+.post[data-state="next"] { background: var(--surface-sunken); border-style: dashed; border-top: 3px solid var(--world-accent); }
+.post[data-state="next"] .post__tag { color: var(--world-accent); }
+.post__voice--scene { grid-column: 1 / -1; margin: 0 clamp(24px, 4vw, 48px) clamp(20px, 3vw, 32px); background: var(--world-panel); border: 1px solid var(--world-panel-edge); }
+.post__voice--scene p { color: var(--world-hero-ink); }
 
 /* --- Scene 5: Week 5 ------------------------------------------------------ */
 .reel { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s-3); }
@@ -199,7 +219,25 @@
 .saturdays li[data-state="pending"] { background: var(--fin-conditional-soft); border-color: var(--fin-conditional); }
 .saturdays li[data-state="pending"] span, .saturdays li[data-state="pending"] b { color: var(--fin-conditional-ink); }
 
-/* --- Scene 6: the season recap ------------------------------------------- */
+/* --- Scene 6a: the season review ------------------------------------------ */
+.interview { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); gap: var(--s-4); align-items: stretch; }
+.interview__ask { padding: clamp(24px, 3vw, 40px); }
+.interview__ask h2 { margin: 0 0 var(--s-3); color: var(--world-hero-ink); font: 700 clamp(1.7rem, 2.8vw, 2.4rem)/1.05 var(--font-display); letter-spacing: -0.035em; }
+.interview__ask > p { max-width: 42ch; margin: 0; }
+.interview__stats { display: grid; gap: var(--s-2); margin-top: var(--s-6); }
+.interview__stats .field-label { color: var(--world-hero-muted); }
+.interview__stats button { min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-3) var(--s-4); color: var(--world-hero-ink); text-align: left; background: var(--world-panel); border: 1px solid var(--world-panel-edge); border-radius: var(--r-sm); cursor: pointer; font: var(--t-ui); transition: background var(--dur-micro) var(--ease-standard), border-color var(--dur-micro) var(--ease-standard); }
+.interview__stats button .money { font: var(--m-sm); font-feature-settings: var(--num); }
+.interview__stats button[aria-pressed="true"] { color: var(--ink-1); background: var(--surface-raised); border-color: var(--world-accent); box-shadow: inset 4px 0 0 var(--world-accent); }
+.interview__answer { display: flex; flex-direction: column; padding: clamp(20px, 3vw, 32px); background: var(--surface); border: 1px solid var(--border-default); }
+.interview__answer label { display: block; margin-bottom: var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.interview__answer textarea { width: 100%; flex: 1; min-height: 180px; padding: var(--s-4); resize: vertical; color: var(--ink-1); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); font: var(--t-body); }
+.interview__answer footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3); margin-top: var(--s-4); }
+.interview__answer footer p { margin: 0; color: var(--ink-3); font: var(--t-micro); }
+.sentence-starters { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0 0 var(--s-4); }
+.sentence-starters button { min-height: 36px; padding: 0 var(--s-4); color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); border: 0; border-radius: var(--r-pill); cursor: pointer; font: var(--t-micro); }
+
+/* --- Scene 6b: the season recap ------------------------------------------- */
 .recap { position: relative; overflow: hidden; padding: clamp(24px, 4vw, 44px); }
 .recap__grid { display: grid; grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.2fr); gap: clamp(20px, 3vw, 40px); align-items: start; }
 .recap__timeline { display: grid; gap: 2px; margin: 0 0 var(--s-5); padding: 0; list-style: none; }
@@ -241,17 +279,21 @@
   .split__over { right: 76px; }
   .split__line i { width: 70px; }
   .plan-board__body { grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr); }
+  .feed { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .feed .post:last-child { grid-column: 1 / -1; }
   .choice-row { grid-template-columns: 6px minmax(0, 1fr) auto; row-gap: var(--s-3); }
   .choice-row__controls { grid-column: 2 / -1; justify-self: end; }
 }
 
 @media (max-width: 760px) {
   .opening { min-height: 0; }
-  .opening__grid, .contract__columns, .plan-board__body, .recap__grid { grid-template-columns: 1fr; }
+  .opening__grid, .contract__columns, .plan-board__body, .recap__grid, .interview { grid-template-columns: 1fr; }
   .opening__weeks { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .contract__column + .contract__column { border-left: 0; border-top: 1px solid var(--border-default); }
   .reel { grid-template-columns: 1fr 1fr; }
   .reel article:last-child { grid-column: 1 / -1; }
+  .feed { grid-template-columns: 1fr; }
+  .change-banner { grid-template-columns: 1fr; }
   .setup-grid { grid-template-columns: 1fr; }
   .scale { grid-template-columns: 1fr; }
   .split { border-right: 0; border-bottom: 1px solid var(--border-default); }
