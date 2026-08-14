@@ -10,6 +10,7 @@ import {
   enterChallenge,
   gotoFreshChallenge,
   playSeasonWeeks,
+  readWeek8Resolution,
   noHorizontalOverflow,
   noSeriousAxeViolations,
   noStaleCopy,
@@ -81,15 +82,16 @@ test("full conditional path completes through fallback, Week 5, remaining-risk p
   await fillPlanToBalance(page, "remaining-risk", landed);
   await page.getByRole("button", { name: "Save preview" }).click();
 
+  await readWeek8Resolution(page);
   await expect(page.getByRole("heading", { name: "Make the case for your plan." })).toBeVisible();
   await submitDefense(page, "My plan still works because it balances at $0 after the update. I protected $800 for the course and gave up the open rest block to take the clinics.");
 
-  await expect(page.getByRole("heading", { name: "Avery’s eight weeks, your version." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible();
   await noSeriousAxeViolations(page);
 
   // #9: refreshing after submission still shows the submitted state.
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Avery’s eight weeks, your version." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -128,8 +130,9 @@ test("confirmed-only path on the inexpensive setup skips the fallback and comple
   await fillPlanToBalance(page, "remaining-risk", landed);
   await page.getByRole("button", { name: "Save preview" }).click();
 
+  await readWeek8Resolution(page);
   await submitDefense(page, "My plan still works because every dollar has a job after Week 5. I protected the course goal and gave up the $800 bonus in this preview.");
-  await expect(page.getByRole("heading", { name: "Avery’s eight weeks, your version." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -169,8 +172,9 @@ test("declining the optional weekend clinics still completes the plan", async ({
   await fillPlanToBalance(page, "remaining-risk", landed);
   await page.getByRole("button", { name: "Save preview" }).click();
 
+  await readWeek8Resolution(page);
   await submitDefense(page, "My plan still works because I did not take the clinics and still balance at $0. I protected the course goal and gave up nothing extra.");
-  await expect(page.getByRole("heading", { name: "Avery’s eight weeks, your version." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -201,10 +205,11 @@ test("leaving the $800 bonus out of the final plan skips the remaining-risk prev
 
   // The remaining-risk preview only exists when the final plan still counts the bonus.
   await expect(page.getByRole("heading", { name: NO_BONUS_HEADING })).not.toBeVisible();
+  await readWeek8Resolution(page);
   await expect(page.getByRole("heading", { name: "Make the case for your plan." })).toBeVisible();
 
   await submitDefense(page, "My plan still works because it never depended on the $800 bonus in the first place. I protected the course goal and gave up the reserve.");
-  await expect(page.getByRole("heading", { name: "Avery’s eight weeks, your version." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -242,8 +247,9 @@ test("the expensive setup completes and Week 5 shows only two changed items (no 
   await fillPlanToBalance(page, "remaining-risk", landed);
   await page.getByRole("button", { name: "Save preview" }).click();
 
+  await readWeek8Resolution(page);
   await submitDefense(page, "My plan still works because the stable setup has no extra travel cost after Week 5. I protected the course goal and gave up flexible cash.");
-  await expect(page.getByRole("heading", { name: "Avery’s eight weeks, your version." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -400,6 +406,9 @@ test("key screens have no serious or critical accessibility violations", async (
   await decideOpportunity(page, { clinics: false, countBonus: false });
   await fillPlanToBalance(page, "final", { ...scanned, clinics: false, countCompletionFinal: false });
   await page.getByRole("button", { name: "Save final plan" }).click();
+  await expect(page.getByRole("heading", { name: "The season ends." })).toBeVisible();
+  await noSeriousAxeViolations(page);
+  await page.getByRole("button", { name: "Explain my plan" }).click();
   await expect(page.getByRole("heading", { name: "Why does your plan hold up?" })).toBeVisible();
   await noSeriousAxeViolations(page);
 });

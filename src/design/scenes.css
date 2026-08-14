@@ -549,8 +549,87 @@
 }
 .deposit-call--deadline .stage-action { margin-top: 0; }
 
+
+/* ---------------------------------------------------------------------------
+   Week 8. The season resolves against the plan the student actually built.
+   --------------------------------------------------------------------------- */
+
+.resolve-weeks {
+  display: grid;
+  gap: var(--s-5);
+  padding: clamp(24px, 4vw, 40px);
+  background: var(--world-deep);
+  border: 1px solid var(--world-panel-edge);
+}
+
+.resolve-weeks__read { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
+.resolve-weeks__read .eyebrow { margin: 0; color: var(--world-hero-second); }
+.resolve-weeks__load { display: flex; align-items: baseline; gap: var(--s-3); margin: 0; color: var(--world-hero-ink); }
+.resolve-weeks__load strong { font: var(--m-lg); font-feature-settings: var(--num); }
+.resolve-weeks__load span { color: var(--world-hero-body); font: var(--t-sm); font-weight: 400; }
+
+.resolve-weeks__list { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.resolve-weeks__list li { display: grid; gap: var(--s-1); padding: var(--s-4); background: var(--world-panel); border-left: 3px solid var(--time-over); }
+.resolve-weeks__list li[data-made="true"] { border-left-color: var(--fin-balanced); }
+.resolve-weeks__list span { color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.08em; text-transform: uppercase; }
+.resolve-weeks__list b { color: var(--world-hero-ink); font: var(--t-ui); }
+
+.resolve-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4); margin-top: var(--s-5); }
+.resolve-card { display: grid; align-content: start; gap: var(--s-2); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--border-strong); }
+.resolve-card[data-tone="balanced"] { border-top-color: var(--fin-balanced); }
+.resolve-card[data-tone="over"] { border-top-color: var(--fin-over); }
+.resolve-card[data-tone="neutral"] { border-top-color: var(--fin-adjustable); }
+.resolve-card > .field-label { margin: 0; }
+.resolve-card strong { font: var(--m-hero); font-feature-settings: var(--num); }
+.resolve-card p { margin: 0; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.resolve-card__lines { display: grid; gap: var(--s-2); margin: var(--s-3) 0 0; padding-top: var(--s-3); border-top: 1px solid var(--border-subtle); }
+.resolve-card__lines > div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
+.resolve-card__lines dt { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.resolve-card__lines dd { margin: 0; font: var(--m-xs); font-feature-settings: var(--num); }
+.resolve-card__lines > div[data-alert="true"] dd { color: var(--fin-over-ink); }
+
+.resolve-risks { margin-top: var(--s-7); }
+.resolve-risks .section-heading { margin-bottom: var(--s-5); }
+.resolve-risks ul { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.resolve-risks li { display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: start; gap: var(--s-5); padding: var(--s-4) var(--s-5); background: var(--surface); border: 1px solid var(--border-subtle); border-left: 3px solid var(--border-strong); }
+.resolve-risks li[data-outcome="paid_off"] { border-left-color: var(--fin-balanced); }
+.resolve-risks li[data-outcome="cost_you"] { border-left-color: var(--fin-over); }
+.resolve-risks li[data-outcome="fell_short"] { border-left-color: var(--fin-conditional); }
+.resolve-risks li[data-taken="false"] { background: var(--surface-sunken); }
+.resolve-risks__verdict { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.resolve-risks li[data-outcome="paid_off"] .resolve-risks__verdict { color: var(--fin-balanced-ink); }
+.resolve-risks li[data-outcome="cost_you"] .resolve-risks__verdict { color: var(--fin-over-ink); }
+.resolve-risks li[data-outcome="fell_short"] .resolve-risks__verdict { color: var(--fin-conditional-ink); }
+.resolve-risks b { display: block; font: var(--t-ui); }
+.resolve-risks p { max-width: 72ch; margin: var(--s-1) 0 0; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+
+.resolve-changes { margin-top: var(--s-7); }
+.resolve-changes table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border-default); }
+.resolve-changes th, .resolve-changes td { padding: var(--s-3) var(--s-5); text-align: right; border-bottom: 1px solid var(--border-subtle); }
+.resolve-changes thead th { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.resolve-changes th:first-child, .resolve-changes tbody th { text-align: left; font: var(--t-ui); }
+.resolve-changes td { font: var(--m-xs); font-feature-settings: var(--num); }
+.resolve-changes td[data-delta="up"] { color: var(--fin-balanced-ink); }
+.resolve-changes td[data-delta="down"] { color: var(--fin-over-ink); }
+.resolve-changes td[data-delta="flat"] { color: var(--ink-4); }
+.resolve-changes__note { margin: var(--s-3) 0 0; color: var(--ink-3); font: var(--t-sm); font-weight: 400; }
+
+
+/* Turned in. Where the work went and who reads it — the season itself already resolved. */
+.handed-in { padding: clamp(24px, 4vw, 40px); background: var(--world-deep); border: 1px solid var(--world-panel-edge); }
+.handed-in__grid { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: clamp(20px, 3vw, 40px); align-items: center; }
+.handed-in__body { display: grid; gap: var(--s-5); }
+.handed-in__body p { max-width: 56ch; margin: 0; color: var(--world-hero-body); font: var(--t-body-lg); }
+.handed-in__where { display: grid; grid-auto-flow: column; grid-auto-columns: max-content; gap: var(--s-8); margin: 0; }
+.handed-in__where dt { color: var(--world-hero-muted); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.handed-in__where dd { margin: var(--s-1) 0 0; color: var(--world-hero-ink); font: var(--m-md); font-feature-settings: var(--num); }
+
 @media (max-width: 760px) {
   .deposit-call, .deposit-call__options, .deposit-call--deadline .deposit-call__options { grid-template-columns: 1fr; }
+  .resolve-grid { grid-template-columns: 1fr; }
+  .resolve-weeks__list { grid-auto-flow: row; }
+  .resolve-risks li { grid-template-columns: 1fr; gap: var(--s-2); }
+  .handed-in__grid { grid-template-columns: 1fr; }
   .season { grid-template-columns: 1fr; }
   .season-ledger { position: static; }
   .rank-list li { grid-template-columns: var(--tap) minmax(0, 1fr); grid-template-areas: "place body" "controls controls"; }

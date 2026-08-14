@@ -132,6 +132,12 @@ export async function decideOpportunity(page: Page, opts: { clinics: boolean; co
   await page.getByRole("button", { name: opts.countBonus ? COUNT_BONUS_BUTTON : "Plan without it" }).click();
 }
 
+/** Week 8 resolves the season before the student explains it. */
+export async function readWeek8Resolution(page: Page) {
+  await expect(page.getByRole("heading", { name: "The season ends." })).toBeVisible();
+  await page.getByRole("button", { name: "Explain my plan" }).click();
+}
+
 export async function submitDefense(page: Page, text: string, tileIndices: number[] = [0, 2]) {
   for (const index of tileIndices) await page.locator(".interview__stats button").nth(index).click();
   await page.getByLabel("Two to four sentences").fill(text);

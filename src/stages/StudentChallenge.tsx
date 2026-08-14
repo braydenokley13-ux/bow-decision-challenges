@@ -20,6 +20,7 @@ import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { amountsFor, meaningfulAttempts, snapshotForMode } from "../domain/machine/selectors";
 import { STUDENT_COPY } from "../content/studentCopy";
 import { SeasonWeeks } from "./SeasonWeeks";
+import { Week8Resolution } from "./Week8Resolution";
 
 const BONUS_WEEKS = bonusWeeks(SCENARIO_NUMBERS);
 const CLINIC_WEEKS = clinicWeeks(SCENARIO_NUMBERS);
@@ -659,71 +660,39 @@ function DefenseStage() {
 }
 
 /**
- * Beat 12. The student's own version of the eight weeks, replayed. Two students who both
- * finished with a working plan should still see two different stories here.
+ * Beat 13. Turned in.
+ *
+ * This screen used to replay the eight weeks, which was the right idea in the wrong place —
+ * Week 8 now resolves the season properly, and a second recap directly after it was the
+ * same story told twice with less detail. What is left is the only thing the resolution
+ * cannot say: where the work went, who reads it, and that a different plan would have
+ * produced a different season.
  */
 function SubmittedStage() {
   const { state, reset } = useChallenge();
-  const final = amountsFor(state, "final");
   const setup = BASKETBALL_SCENARIO.setups.find((item) => item.id === state.setupId);
-  const goalShare = Math.min(100, Math.round((final.goal / SCENARIO_NUMBERS.goalCap) * 100));
-  const clinics = state.income.includeOptionalWork === true;
-  // Avery signs off with facts from the student's own run, in Avery's own voice. It
-  // states what happened and never says whether it was the right way to play it.
-  const closing = [
-    setup ? `Eight weeks at the ${setup.title}, ${setup.commuteMinutes * 2} minutes of travel a day.` : null,
-    clinics ? "Four Saturdays coaching instead of resting." : "I kept my Saturdays.",
-    final.goal > 0 ? `${formatDollars(final.goal)} put away for the course.` : "Nothing left over for the course this time.",
-  ].filter(Boolean).join(" ");
-  const weeks = [
-    { week: 1, tone: "played", text: setup ? `Avery moves into the ${setup.title}` : "Avery moves in" },
-    { week: 2, tone: "played", text: "First start" },
-    { week: 3, tone: "played", text: "Rent, food and phone clear" },
-    { week: 4, tone: "played", text: "Most minutes on the roster" },
-    { week: 5, tone: "shock", text: "Showcase cancelled · brace and rehab" },
-    { week: 6, tone: clinics ? "work" : "played", text: clinics ? "Saturday clinic" : "Saturday kept for rehab" },
-    { week: 7, tone: clinics ? "work" : "played", text: clinics ? "Saturday clinic" : "Saturday kept for rehab" },
-    { week: 8, tone: "end", text: clinics ? "Last clinic · season closes" : "Season closes" },
-  ];
   return (
-    <StageShell stage="submitted" kicker="Turned in" title="Avery’s eight weeks, your version.">
-      <section className="recap scene">
+    <StageShell stage="submitted" kicker="Turned in" title="Your plan is with your teacher.">
+      <section className="handed-in scene">
         <CourtBackdrop />
-        <div className="recap__grid">
-          <div>
-            <RosterCard {...(setup ? { note: `Lived at the ${setup.title} · ${setup.commuteMinutes * 2} min a day` } : {})} />
-            <div className="recap__goal">
-              <p className="field-label">Sports-media course</p>
-              <strong className="money">{formatDollars(final.goal)}</strong>
-              <span>of {formatDollars(SCENARIO_NUMBERS.goalCap)}</span>
-              {/* The meter states the amount and stops there. A percentage would read as a
-                  score, and how much a student put toward the course is a strategy. */}
-              <span className="recap__meter" aria-hidden="true"><i style={{ width: `${goalShare}%` }} /></span>
-            </div>
-            <dl className="recap__numbers">
-              <div><dt>Backup money</dt><dd className="money">{formatDollars(final.reserve)}</dd></div>
-              <div><dt>Anything else</dt><dd className="money">{formatDollars(final.flexibleCash)}</dd></div>
+        <div className="handed-in__grid">
+          <RosterCard {...(setup ? { note: `Eight weeks at the ${setup.title}` } : {})} />
+          <div className="handed-in__body">
+            <dl className="handed-in__where">
+              <div><dt>Class</dt><dd>{state.meta.classCode || "—"}</dd></div>
+              <div><dt>Seat</dt><dd>{state.meta.seatCode || "—"}</dd></div>
             </dl>
-          </div>
-          <div>
-            <ol className="recap__timeline">
-              {weeks.map((entry) => <li key={entry.week} data-tone={entry.tone}><b>Week {entry.week}</b><span>{entry.text}</span></li>)}
-            </ol>
-            <blockquote className="post__voice post__voice--scene recap__closing">
-              <span className="post__who" aria-hidden="true">{BASKETBALL_SCENARIO.offer.jersey}</span>
-              <p>{closing}</p>
-            </blockquote>
-            <ul className="recap__decisions">
-              <li><span>Saturdays</span>{clinics ? `${CLINIC_WEEKS.length} clinics, +${formatDollars(SCENARIO_NUMBERS.optionalWorkIncome)}` : "Kept for rest and rehab"}</li>
-              <li><span>{BASKETBALL_SCENARIO.incomeCopy.completion.label}</span>{state.income.includeCompletionFinal ? "Still counted, and shown to work without it" : "Left out of the plan"}</li>
-            </ul>
+            <p>
+              Your explanation goes to a person, not a computer. Software can check whether the money
+              works. It should not decide whether your thinking makes sense.
+            </p>
           </div>
         </div>
       </section>
       <div className="stage-action">
-        <p>Your explanation goes to a person, not a computer. Software can check whether the money works. It should not decide whether your thinking makes sense.</p>
+        <p>Avery’s eight weeks would have gone differently on a different plan. You can run them again.</p>
         <div className="stage-action__pair">
-          <Button variant="quiet" onClick={reset}>Start over</Button>
+          <Button variant="quiet" onClick={reset}>Try a different plan</Button>
         </div>
       </div>
     </StageShell>
@@ -750,6 +719,7 @@ export function StudentChallenge() {
       case "first-response": return <PlanStage mode="week5-first-response" kicker="Week 5 · First response" title="Fix what you can with what Avery has." deck="No new money. Move your own numbers as far as they go." />;
       case "opportunity-final-repair": return <FinalRepairStage />;
       case "remaining-risk-preview": return <PlanStage mode="remaining-risk" kicker="Week 5 · Last check" title={`Test the plan without the ${formatDollars(SCENARIO_NUMBERS.completionIncome)}.`} deck="Same plan, bonus removed. If it never arrives, this is what Avery is living on." />;
+      case "week8-resolution": return <Week8Resolution />;
       case "defense": return <DefenseStage />;
       case "submitted": return <SubmittedStage />;
     }

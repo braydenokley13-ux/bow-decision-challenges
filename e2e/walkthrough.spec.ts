@@ -104,7 +104,9 @@ for (const size of SIZES) {
     await fillPlanToBalance(page, "remaining-risk", landed);
     await shoot("13-remaining-risk");
     await page.getByRole("button", { name: "Save preview" }).click();
+    await shoot("13b-week8-resolution");
 
+    await page.getByRole("button", { name: "Explain my plan" }).click();
     await shoot("14-defense");
     await submitDefense(page, "My plan still works because it balances after Week 5. I protected the course money and gave up the open Saturdays to take the clinics.");
     await shoot("15-submitted");

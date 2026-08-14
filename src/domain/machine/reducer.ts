@@ -157,8 +157,8 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
       if (action.mode === "working") return goTo(next, state.income.includeCompletion || state.income.includeOutcome ? "fallback-version" : "season-weeks", at);
       if (action.mode === "fallback") return goTo(next, "season-weeks", at);
       if (action.mode === "week5-first-response") return goTo(next, "opportunity-final-repair", at);
-      if (action.mode === "final") return goTo(next, state.income.includeCompletionFinal ? "remaining-risk-preview" : "defense", at);
-      return goTo(next, "defense", at);
+      if (action.mode === "final") return goTo(next, state.income.includeCompletionFinal ? "remaining-risk-preview" : "week8-resolution", at);
+      return goTo(next, "week8-resolution", at);
     }
     case "LOCKED_MOVE_ATTEMPTED":
       return append(state, action.type, action, supportFor(state, action.mode), undefined, at);
