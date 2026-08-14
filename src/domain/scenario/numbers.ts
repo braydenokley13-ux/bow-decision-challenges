@@ -13,6 +13,7 @@ import type { ScenarioNumbers } from "./types";
 export const SCENARIO_NUMBERS: ScenarioNumbers = {
   version: "pup-numbers-2",
   weeks: 8,
+  disruptionWeek: 5,
   savings: dollars(500),
   basePay: dollars(4500),
   reliableFloor: dollars(5000),

@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { NUMBERS as N } from "./plan";
+import { COUNT_BONUS_BUTTON, NUMBERS as N } from "./plan";
 
 /**
  * One driver for both the assertion suite and the screenshot walkthrough.
@@ -116,7 +116,7 @@ export async function passWeek5Calculation(page: Page, total: string) {
 
 export async function decideOpportunity(page: Page, opts: { clinics: boolean; countBonus: boolean }) {
   await page.getByRole("button", { name: opts.clinics ? "Take the clinics" : "Keep the Saturdays" }).click();
-  await page.getByRole("button", { name: opts.countBonus ? "Count the $800" : "Plan without it" }).click();
+  await page.getByRole("button", { name: opts.countBonus ? COUNT_BONUS_BUTTON : "Plan without it" }).click();
 }
 
 export async function submitDefense(page: Page, text: string, tileIndices: number[] = [0, 2]) {

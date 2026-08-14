@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { NUMBERS as N, fillPlanToBalance, fillPlanLeavingShortfall, week5TotalFor, type PlanContext } from "./plan";
+import { NUMBERS as N, NO_BONUS_HEADING, fillPlanToBalance, fillPlanLeavingShortfall, money, week5TotalFor, type PlanContext } from "./plan";
 import {
   SETUP_ORDER,
   SETUP_TITLES,
@@ -58,7 +58,7 @@ test("full conditional path completes through fallback, Week 5, remaining-risk p
   await expect(page.getByRole("heading", { name: "What if the bonus never shows up?" })).toBeVisible();
   await fillPlanLeavingShortfall(page, "fallback", context, 900);
   await page.getByRole("button", { name: "Check this plan" }).click();
-  await page.getByRole("button", { name: "Save it, $900 still missing" }).click();
+  await page.getByRole("button", { name: `Save it, ${money(900)} still missing` }).click();
 
   await expect(page.getByRole("heading", { name: "The season starts." })).toBeVisible();
   await page.getByRole("button", { name: "Play Week 5" }).click();
@@ -76,7 +76,7 @@ test("full conditional path completes through fallback, Week 5, remaining-risk p
   await fillPlanToBalance(page, "final", landed);
   await page.getByRole("button", { name: "Save final plan" }).click();
 
-  await expect(page.getByRole("heading", { name: "Test the plan without the $800." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: NO_BONUS_HEADING })).toBeVisible();
   await fillPlanToBalance(page, "remaining-risk", landed);
   await page.getByRole("button", { name: "Save preview" }).click();
 
@@ -123,7 +123,7 @@ test("confirmed-only path on the inexpensive setup skips the fallback and comple
   await fillPlanToBalance(page, "final", landed);
   await page.getByRole("button", { name: "Save final plan" }).click();
 
-  await expect(page.getByRole("heading", { name: "Test the plan without the $800." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: NO_BONUS_HEADING })).toBeVisible();
   await fillPlanToBalance(page, "remaining-risk", landed);
   await page.getByRole("button", { name: "Save preview" }).click();
 
@@ -164,7 +164,7 @@ test("declining the optional weekend clinics still completes the plan", async ({
   await fillPlanToBalance(page, "final", landed);
   await page.getByRole("button", { name: "Save final plan" }).click();
 
-  await expect(page.getByRole("heading", { name: "Test the plan without the $800." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: NO_BONUS_HEADING })).toBeVisible();
   await fillPlanToBalance(page, "remaining-risk", landed);
   await page.getByRole("button", { name: "Save preview" }).click();
 
@@ -199,7 +199,7 @@ test("leaving the $800 bonus out of the final plan skips the remaining-risk prev
   await page.getByRole("button", { name: "Save final plan" }).click();
 
   // The remaining-risk preview only exists when the final plan still counts the bonus.
-  await expect(page.getByRole("heading", { name: "Test the plan without the $800." })).not.toBeVisible();
+  await expect(page.getByRole("heading", { name: NO_BONUS_HEADING })).not.toBeVisible();
   await expect(page.getByRole("heading", { name: "Make the case for your plan." })).toBeVisible();
 
   await submitDefense(page, "My plan still works because it never depended on the $800 bonus in the first place. I protected the course goal and gave up the reserve.");
@@ -237,7 +237,7 @@ test("the expensive setup completes and Week 5 shows only two changed items (no 
   await fillPlanToBalance(page, "final", landed);
   await page.getByRole("button", { name: "Save final plan" }).click();
 
-  await expect(page.getByRole("heading", { name: "Test the plan without the $800." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: NO_BONUS_HEADING })).toBeVisible();
   await fillPlanToBalance(page, "remaining-risk", landed);
   await page.getByRole("button", { name: "Save preview" }).click();
 

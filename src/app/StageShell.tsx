@@ -1,5 +1,6 @@
 import type { PropsWithChildren } from "react";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
+import { CONDITIONAL_INCOME_KEYS, incomeAmount, RELIABLE_INCOME_KEYS } from "../domain/scenario/expectations";
 import { formatDollars } from "../domain/core/money";
 import { PROGRESS_STEPS, progressIndexFor, seasonPositionFor } from "../domain/machine/stages";
 import type { StageId } from "../domain/evidence/types";
@@ -8,15 +9,14 @@ import { SeasonStrip } from "../components/story/SeasonStrip";
 
 const { numbers, incomeCopy, goalLabel } = BASKETBALL_SCENARIO;
 
-// Read from the scenario so a second world needs no change here.
-const SAFE_MONEY = [
-  { label: "Already saved", amount: numbers.savings, note: incomeCopy.savings },
-  { label: "Base pay", amount: numbers.basePay, note: incomeCopy.base },
-];
-const MAYBE_MONEY = [
-  { label: "Perfect Attendance Bonus", amount: numbers.completionIncome, note: incomeCopy.completion },
-  { label: "Making the Cut Bonus", amount: numbers.outcomeIncome, note: incomeCopy.outcome },
-];
+// Read from the scenario so a second world needs no change here, and so no amount on this
+// screen can drift from the amount the grader prices.
+const MONEY_SHEET = [...RELIABLE_INCOME_KEYS, ...CONDITIONAL_INCOME_KEYS].map((key) => ({
+  key,
+  label: incomeCopy[key].label,
+  note: incomeCopy[key].note,
+  amount: incomeAmount(numbers, key),
+}));
 
 export function StageShell({ stage, title, kicker, children }: PropsWithChildren<{ stage: StageId; title: string; kicker?: string }>) {
   const chapter = progressIndexFor(stage);
@@ -33,8 +33,8 @@ export function StageShell({ stage, title, kicker, children }: PropsWithChildren
             <h2>Avery’s money</h2>
             <p><strong>Safe cash</strong> always arrives. <strong>Maybe money</strong> arrives only if its rule is met.</p>
             <dl>
-              {[...SAFE_MONEY, ...MAYBE_MONEY].map((item) => (
-                <div key={item.label}>
+              {MONEY_SHEET.map((item) => (
+                <div key={item.key}>
                   <dt>{item.label}<small>{item.note}</small></dt>
                   <dd className="money">{formatDollars(item.amount)}</dd>
                 </div>

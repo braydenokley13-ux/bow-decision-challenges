@@ -1,8 +1,20 @@
 import type { Page } from "@playwright/test";
 import { SCENARIO_NUMBERS as N } from "../src/domain/scenario/numbers";
+import { formatDollars } from "../src/domain/core/money";
+import { BASKETBALL_SCENARIO } from "../src/domain/scenario/worlds/basketball";
 import type { SetupId } from "../src/domain/core/ids";
 import type { PlanMode } from "../src/domain/finance/types";
 import { CHOICE_LABELS } from "../src/components/financial/choices";
+
+/**
+ * Strings the app builds from the scenario, rebuilt the same way here. Writing "$800" into
+ * a selector makes the suite a second place the model is priced, which is exactly the
+ * drift `src/domain/scenario/pricing.test.ts` exists to stop.
+ */
+export const money = formatDollars;
+export const COMPLETION_LABEL = BASKETBALL_SCENARIO.incomeCopy.completion.label;
+export const NO_BONUS_HEADING = `Test the plan without the ${money(N.completionIncome)}.`;
+export const COUNT_BONUS_BUTTON = `Count the ${money(N.completionIncome)}`;
 
 /**
  * The browser suite reads its dollar amounts from the scenario, exactly as the grader does.

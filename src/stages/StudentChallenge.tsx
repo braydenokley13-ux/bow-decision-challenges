@@ -14,10 +14,14 @@ import type { PlanMode } from "../domain/finance/types";
 import { availableFor, lockedFor, week5Change } from "../domain/finance/formulas";
 import { PLAN_MODES } from "../domain/finance/modes";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
-import { setupCostOrder } from "../domain/scenario/expectations";
+import { essentialsExpectation, incomeAmount, reliableFloorExpectation, setupCostOrder } from "../domain/scenario/expectations";
+import { bonusWeeks, clinicWeeks } from "../domain/scenario/season";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { amountsFor, meaningfulAttempts, snapshotForMode } from "../domain/machine/selectors";
 import { STUDENT_COPY } from "../content/studentCopy";
+
+const BONUS_WEEKS = bonusWeeks(SCENARIO_NUMBERS);
+const CLINIC_WEEKS = clinicWeeks(SCENARIO_NUMBERS);
 
 function submitCalculation(dispatch: ReturnType<typeof useChallenge>["dispatch"], calcId: CalcId, raw: string, value: Dollars | null, correct: boolean) {
   dispatch({ type: "CALCULATION_SUBMITTED", calcId, raw, value, correct });
@@ -93,13 +97,14 @@ function OpeningStage() {
 /** Beat 2. The contract itself, with the difference between the two halves left visible. */
 function DealStage() {
   const { dispatch } = useChallenge();
-  const { offer } = BASKETBALL_SCENARIO;
+  const { offer, incomeCopy, numbers } = BASKETBALL_SCENARIO;
+  const weekly = Math.round(numbers.basePay / numbers.weeks / 10) * 10;
   const lines = [
-    { tone: "safe", label: "Already saved", amount: "$500", rule: "In the account", detail: "Avery has it now." },
-    { tone: "safe", label: "Base pay after taxes", amount: "$4,500", rule: "Across the 8 weeks", detail: "About $560 a week, win or lose." },
-    { tone: "maybe", label: "Perfect Attendance Bonus", amount: "$800", rule: "Only if", detail: "Avery makes every practice and every game." },
-    { tone: "maybe", label: "Making the Cut Bonus", amount: "$1,000", rule: "Only if", detail: "The Flight qualifies for the showcase." },
-  ];
+    { tone: "safe", key: "savings" as const, rule: "In the account", detail: "Avery has it now." },
+    { tone: "safe", key: "base" as const, rule: `Across the ${numbers.weeks} weeks`, detail: `About ${formatDollars(weekly)} a week, win or lose.` },
+    { tone: "maybe", key: "completion" as const, rule: "Only if", detail: incomeCopy.completion.rule ?? "" },
+    { tone: "maybe", key: "outcome" as const, rule: "Only if", detail: incomeCopy.outcome.rule ?? "" },
+  ].map((line) => ({ ...line, label: incomeCopy[line.key].label, amount: formatDollars(incomeAmount(numbers, line.key)) }));
   return (
     <StageShell stage="role-contract" kicker="The terms" title="What the eight weeks pay.">
       <p className="stage-deck">Four payments, one contract. Two of them come with a condition attached.</p>
@@ -113,7 +118,7 @@ function DealStage() {
             <section key={tone} className="contract__column" data-tone={tone}>
               <p className="contract__tag">{tone === "safe" ? "Avery will have this" : "Depends on something happening"}</p>
               {lines.filter((line) => line.tone === tone).map((line) => (
-                <div key={line.label} className="contract__line">
+                <div key={line.key} className="contract__line">
                   <b>{line.label}</b>
                   <strong className="money">{line.amount}</strong>
                   <span className="contract__rule"><em>{line.rule}</em>{line.detail}</span>
@@ -279,24 +284,29 @@ function PlanBoardForMode({ mode }: { mode: PlanMode }) {
   // Named out loud, every pass after the first is a reaction to something that happened
   // rather than the same board handed back.
   const week5Bills = SCENARIO_NUMBERS.requiredWeek5Cost + SCENARIO_NUMBERS.setupEventCosts[state.setupId];
+  const { incomeCopy } = BASKETBALL_SCENARIO;
+  const named = (key: "completion" | "outcome" | "optionalWork") =>
+    `${formatDollars(incomeAmount(SCENARIO_NUMBERS, key))} ${incomeCopy[key].label}`;
   const change = mode === "fallback"
     ? { headline: "Take the bonus money out.", items: [
-        ...(state.income.includeOutcome ? [`The $1,000 showcase bonus leaves the plan`] : []),
-        ...(state.income.includeCompletion ? [`The $800 attendance bonus leaves the plan`] : []),
+        ...(state.income.includeOutcome ? [`The ${named("outcome")} leaves the plan`] : []),
+        ...(state.income.includeCompletion ? [`The ${named("completion")} leaves the plan`] : []),
         "Rent and essentials do not change",
       ] }
     : mode === "week5-first-response"
       ? { headline: "Week 5 landed on your plan.", items: [
-          ...(state.income.includeOutcome ? ["The $1,000 showcase bonus is gone"] : []),
+          ...(state.income.includeOutcome ? [`The ${named("outcome")} is gone`] : []),
           `${formatDollars(week5Bills)} of brace, rehab and travel is now locked in`,
         ] }
       : mode === "final"
         ? { headline: "Your two calls are in.", items: [
-            state.income.includeOptionalWork ? "Four Saturday clinics: +$500" : "No clinics. The Saturdays stay Avery’s",
-            state.income.includeCompletionFinal ? "The $800 attendance bonus is back in the plan" : "The $800 attendance bonus stays out",
+            state.income.includeOptionalWork
+              ? `${incomeCopy.optionalWork.label}: +${formatDollars(SCENARIO_NUMBERS.optionalWorkIncome)}`
+              : "No clinics. The Saturdays stay Avery’s",
+            `The ${named("completion")} ${state.income.includeCompletionFinal ? "is back in the plan" : "stays out"}`,
           ] }
         : mode === "remaining-risk"
-          ? { headline: "The $800 never arrives.", items: ["A copy of your final plan with that money removed"] }
+          ? { headline: `The ${named("completion")} never arrives.`, items: ["A copy of your final plan with that money removed"] }
           : undefined;
   const applyReference = (category?: CategoryId) => {
     if (!reference) return;
@@ -384,8 +394,28 @@ function WorkingStage() {
         <>
           <p className="stage-deck">{STUDENT_COPY.working.deck}</p>
           <div className="working-setup">
-            <CalculationInput calcId="reliable-floor" label={STUDENT_COPY.working.safeMoney.title} prompt={STUDENT_COPY.working.safeMoney.prompt} terms={STUDENT_COPY.working.safeMoney.body} expected={5000} priorAttempts={state.calculations["reliable-floor"]?.attempts} onSubmit={(raw, value, correct) => submitCalculation(dispatch, "reliable-floor", raw, value, correct)} scaffold="Add the two safe amounts: $500 + $4,500. Do not add either bonus yet." {...calculationSupport(dispatch, "reliable-floor")} />
-            <CalculationInput calcId="essentials-total" label={STUDENT_COPY.working.mustPay.title} prompt={STUDENT_COPY.working.mustPay.prompt} terms={STUDENT_COPY.working.mustPay.body} expected={1600} priorAttempts={state.calculations["essentials-total"]?.attempts} onSubmit={(raw, value, correct) => submitCalculation(dispatch, "essentials-total", raw, value, correct)} scaffold="Multiply $200 by 8 weeks. Think: $200 + $200 + $200 + $200 + $200 + $200 + $200 + $200." {...calculationSupport(dispatch, "essentials-total")} />
+            <CalculationInput
+              calcId="reliable-floor"
+              label={STUDENT_COPY.working.safeMoney.title}
+              prompt={`${formatDollars(SCENARIO_NUMBERS.savings)} saved + ${formatDollars(SCENARIO_NUMBERS.basePay)} base pay`}
+              terms={STUDENT_COPY.working.safeMoney.body}
+              expected={reliableFloorExpectation(SCENARIO_NUMBERS)}
+              priorAttempts={state.calculations["reliable-floor"]?.attempts}
+              onSubmit={(raw, value, correct) => submitCalculation(dispatch, "reliable-floor", raw, value, correct)}
+              scaffold={`Add the two safe amounts: ${formatDollars(SCENARIO_NUMBERS.savings)} + ${formatDollars(SCENARIO_NUMBERS.basePay)}. Do not add either bonus yet.`}
+              {...calculationSupport(dispatch, "reliable-floor")}
+            />
+            <CalculationInput
+              calcId="essentials-total"
+              label={STUDENT_COPY.working.mustPay.title}
+              prompt={`${formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)} a week × ${SCENARIO_NUMBERS.weeks} weeks`}
+              terms={STUDENT_COPY.working.mustPay.body}
+              expected={essentialsExpectation(SCENARIO_NUMBERS)}
+              priorAttempts={state.calculations["essentials-total"]?.attempts}
+              onSubmit={(raw, value, correct) => submitCalculation(dispatch, "essentials-total", raw, value, correct)}
+              scaffold={`Multiply ${formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)} by ${SCENARIO_NUMBERS.weeks} weeks. Think: ${Array.from({ length: SCENARIO_NUMBERS.weeks }, () => formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)).join(" + ")}.`}
+              {...calculationSupport(dispatch, "essentials-total")}
+            />
           </div>
         </>
       )}
@@ -418,15 +448,15 @@ function WorkingStage() {
               <h2 id="maybe-money-heading">{STUDENT_COPY.working.maybeMoney.body}</h2>
             </div>
             {([
-              ["completion-800", 800, state.income.includeCompletion, STUDENT_COPY.working.maybeMoney.attendance],
-              ["outcome-1000", 1000, state.income.includeOutcome, STUDENT_COPY.working.maybeMoney.showcase],
-            ] as const).map(([sourceId, amount, included, copy]) => (
+              ["completion-800", "completion", state.income.includeCompletion],
+              ["outcome-1000", "outcome", state.income.includeOutcome],
+            ] as const).map(([sourceId, key, included]) => (
               <article key={sourceId} className="bet" data-counted={included}>
                 <div className="bet__head">
-                  <b>{copy.title}</b>
-                  <strong className="money">{formatDollars(amount)}</strong>
+                  <b>{BASKETBALL_SCENARIO.incomeCopy[key].label}</b>
+                  <strong className="money">{formatDollars(incomeAmount(SCENARIO_NUMBERS, key))}</strong>
                 </div>
-                <p className="bet__rule">{copy.body}</p>
+                <p className="bet__rule">Only if {BASKETBALL_SCENARIO.incomeCopy[key].rule}</p>
                 <div className="binary-choice">
                   <button type="button" aria-pressed={included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: true })}>Count it</button>
                   <button type="button" aria-pressed={!included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: false })}>Leave it out</button>
@@ -518,11 +548,11 @@ function Week5EventStage() {
   // produces no card, so nothing here is worth $0.
   const changes = [
     ...(state.income.includeOutcome
-      ? [{ id: "lost-outcome", kind: "lost" as const, label: "Making the Cut Bonus", detail: "You counted this. It is gone.", amount: 1000 }]
+      ? [{ id: "lost-outcome", kind: "lost" as const, label: BASKETBALL_SCENARIO.incomeCopy.outcome.label, detail: "You counted this. It is gone.", amount: SCENARIO_NUMBERS.outcomeIncome as number }]
       : []),
-    { id: "required-cost", kind: "bill" as const, label: "Brace and off-site rehab", detail: "Required. Not optional.", amount: 700 },
+    { id: "required-cost", kind: "bill" as const, label: BASKETBALL_SCENARIO.disruption.requiredCostLabel, detail: "Required. Not optional.", amount: SCENARIO_NUMBERS.requiredWeek5Cost as number },
     ...(setup.eventCost > 0
-      ? [{ id: "setup-cost", kind: "bill" as const, label: `Travel to rehab · ${setup.title}`, detail: setup.eventCostLabel, amount: setup.eventCost }]
+      ? [{ id: "setup-cost", kind: "bill" as const, label: `Travel to rehab · ${setup.title}`, detail: setup.eventCostLabel, amount: setup.eventCost as number }]
       : []),
   ];
   const selectedTotal = changes
@@ -578,8 +608,8 @@ function Week5EventStage() {
 /** The last four Saturdays of the season, drawn, so the tradeoff is not only a sentence. */
 function SaturdayBlocks({ decision }: { decision: boolean | null }) {
   return (
-    <ol className="saturdays" aria-label="Avery's last four Saturdays">
-      {[5, 6, 7, 8].map((week) => (
+    <ol className="saturdays" aria-label={`Avery's last ${CLINIC_WEEKS.length} Saturdays`}>
+      {CLINIC_WEEKS.map((week) => (
         <li key={week} data-state={decision === null ? "open" : decision ? "clinic" : "rest"}>
           <span>Sat · wk {week}</span>
           <b>{decision === null ? "Open" : decision ? "Clinic" : "Avery’s"}</b>
@@ -606,7 +636,7 @@ function FinalRepairStage() {
           <div className="scale">
             <div className="scale__side">
               <span>Avery gains</span>
-              <b className="scale__money money">+$500</b>
+              <b className="scale__money money">+{formatDollars(SCENARIO_NUMBERS.optionalWorkIncome)}</b>
             </div>
             <div className="scale__side">
               <span>Avery gives up</span>
@@ -621,18 +651,18 @@ function FinalRepairStage() {
           <p className="decision-note">Four Saturdays that were Avery’s. The money is real and so is the tiredness.</p>
         </section>
         <section className="opportunity-card">
-          <p className="eyebrow">Your call · The $800 bonus</p>
+          <p className="eyebrow">Your call · The {BASKETBALL_SCENARIO.incomeCopy.completion.label}</p>
           <h2>Is it still in the plan?</h2>
           <p>Avery has made every practice and every game so far. Three weeks left, and the brace does not change the rule: miss one and the bonus is gone.</p>
           <ol className="saturdays" aria-label="Weeks left to keep the attendance bonus">
-            {[6, 7, 8].map((week) => <li key={week} data-state="pending"><span>Week {week}</span><b>Every session</b></li>)}
+            {BONUS_WEEKS.map((week) => <li key={week} data-state="pending"><span>Week {week}</span><b>Every session</b></li>)}
           </ol>
           <dl className="tradeoff-pair">
             <div><dt>Count it</dt><dd>More to work with, and one more thing that has to go right</dd></div>
             <div><dt>Leave it out</dt><dd>Less to work with, nothing left to lose</dd></div>
           </dl>
           <div className="binary-choice">
-            <button type="button" aria-pressed={completionDecided && state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: true })}>Count the $800</button>
+            <button type="button" aria-pressed={completionDecided && state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: true })}>Count the {formatDollars(SCENARIO_NUMBERS.completionIncome)}</button>
             <button type="button" aria-pressed={completionDecided && !state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: false })}>Plan without it</button>
           </div>
           <p className="decision-note">Count it and you will be asked to show the plan still works if it never comes.</p>
@@ -658,7 +688,7 @@ function DefenseStage() {
     { id: "course", label: "Saved for the course", value: final.goal },
     { id: "reserve", label: "Backup money kept", value: final.reserve },
     { id: "flex", label: "Left for anything else", value: final.flexibleCash },
-    ...(state.income.includeCompletionFinal ? [{ id: "completion", label: "$800 bonus still counted on", value: SCENARIO_NUMBERS.completionIncome as number }] : []),
+    ...(state.income.includeCompletionFinal ? [{ id: "completion", label: `${BASKETBALL_SCENARIO.incomeCopy.completion.label} still counted on`, value: SCENARIO_NUMBERS.completionIncome as number }] : []),
     ...(state.income.includeOptionalWork ? [{ id: "clinic", label: "Earned from the clinics", value: SCENARIO_NUMBERS.optionalWorkIncome as number }] : []),
   ].filter((tile) => tile.value > 0);
   const canSubmit = selected.length >= 2 && selected.length <= 3 && text.trim().length >= 40;
@@ -754,8 +784,8 @@ function SubmittedStage() {
               <p>{closing}</p>
             </blockquote>
             <ul className="recap__decisions">
-              <li><span>Saturdays</span>{clinics ? "Four clinics, +$500" : "Kept for rest and rehab"}</li>
-              <li><span>$800 bonus</span>{state.income.includeCompletionFinal ? "Still counted, and shown to work without it" : "Left out of the plan"}</li>
+              <li><span>Saturdays</span>{clinics ? `${CLINIC_WEEKS.length} clinics, +${formatDollars(SCENARIO_NUMBERS.optionalWorkIncome)}` : "Kept for rest and rehab"}</li>
+              <li><span>{BASKETBALL_SCENARIO.incomeCopy.completion.label}</span>{state.income.includeCompletionFinal ? "Still counted, and shown to work without it" : "Left out of the plan"}</li>
             </ul>
           </div>
         </div>
@@ -789,7 +819,7 @@ export function StudentChallenge() {
       case "week5-event": return <Week5EventStage />;
       case "first-response": return <PlanStage mode="week5-first-response" kicker="Week 5 · First response" title="Fix what you can with what Avery has." deck="No new money. Move your own numbers as far as they go." />;
       case "opportunity-final-repair": return <FinalRepairStage />;
-      case "remaining-risk-preview": return <PlanStage mode="remaining-risk" kicker="Week 5 · Last check" title="Test the plan without the $800." deck="Same plan, bonus removed. If it never arrives, this is what Avery is living on." />;
+      case "remaining-risk-preview": return <PlanStage mode="remaining-risk" kicker="Week 5 · Last check" title={`Test the plan without the ${formatDollars(SCENARIO_NUMBERS.completionIncome)}.`} deck="Same plan, bonus removed. If it never arrives, this is what Avery is living on." />;
       case "defense": return <DefenseStage />;
       case "submitted": return <SubmittedStage />;
     }

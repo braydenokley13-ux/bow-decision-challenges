@@ -41,6 +41,8 @@ export interface CourseNumbers {
 export interface ScenarioNumbers {
   version: string;
   weeks: 8;
+  /** The week the season turns. Everything after it is played under the new terms. */
+  disruptionWeek: number;
   savings: Dollars;
   basePay: Dollars;
   reliableFloor: Dollars;
@@ -75,6 +77,25 @@ export interface SetupOptionDefinition {
   eventCostLabel: string;
 }
 
+/**
+ * The five payments a world can name, and the only place they are named.
+ *
+ * Screens used to write "$800" and "Perfect Attendance Bonus" into their own JSX, which is
+ * the same defect the grader had before it was priced from the scenario: re-pricing the
+ * model left correct copy describing the wrong money. Amounts come from
+ * `incomeAmount`, words come from `incomeCopy`, and no student-facing file spells either.
+ */
+export type IncomeKey = "savings" | "base" | "completion" | "outcome" | "optionalWork";
+
+export interface IncomeLineCopy {
+  /** What the payment is called, wherever it is named. */
+  label: string;
+  /** What the money is, in one line. */
+  note: string;
+  /** The condition attached, for the payments that carry one. */
+  rule?: string;
+}
+
 export interface WorldScenario {
   id: WorldId;
   title: string;
@@ -83,7 +104,7 @@ export interface WorldScenario {
   goalLabel: string;
   numbers: ScenarioNumbers;
   setups: readonly SetupOptionDefinition[];
-  incomeCopy: Record<"savings" | "base" | "completion" | "outcome", string>;
+  incomeCopy: Record<IncomeKey, IncomeLineCopy>;
   /** Beat 1. What just happened to the player, and what they want out of it. */
   offer: {
     team: string;

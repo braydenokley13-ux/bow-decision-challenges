@@ -1,7 +1,7 @@
 import type { Dollars } from "../core/money";
 import { dollars } from "../core/money";
 import type { SetupId } from "../core/ids";
-import type { ScenarioNumbers } from "./types";
+import type { IncomeKey, ScenarioNumbers } from "./types";
 
 /**
  * The answer each entered calculation should reconcile to, derived from the scenario's
@@ -12,6 +12,24 @@ import type { ScenarioNumbers } from "./types";
  * correct answers wrong without failing a test. Every expectation is now a function of
  * `ScenarioNumbers`, which is what lets the model be re-priced and re-balanced safely.
  */
+
+/**
+ * What each named payment is worth. The only bridge between a copy key and a dollar
+ * amount, so a screen can name a payment without also quoting its price.
+ */
+export function incomeAmount(n: ScenarioNumbers, key: IncomeKey): Dollars {
+  switch (key) {
+    case "savings": return n.savings;
+    case "base": return n.basePay;
+    case "completion": return n.completionIncome;
+    case "outcome": return n.outcomeIncome;
+    case "optionalWork": return n.optionalWorkIncome;
+  }
+}
+
+/** The two payments that arrive only if their rule is met, in the order screens show them. */
+export const CONDITIONAL_INCOME_KEYS: readonly IncomeKey[] = ["completion", "outcome"] as const;
+export const RELIABLE_INCOME_KEYS: readonly IncomeKey[] = ["savings", "base"] as const;
 
 /** The places ordered cheapest-first over the whole eight weeks. */
 export function setupCostOrder(n: ScenarioNumbers): SetupId[] {

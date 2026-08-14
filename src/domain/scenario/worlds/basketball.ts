@@ -1,5 +1,10 @@
+import { formatDollars } from "../../core/money";
 import { SCENARIO_NUMBERS } from "../numbers";
+import { clinicWeeks } from "../season";
 import type { WorldScenario } from "../types";
+
+/** How many Saturdays the clinics actually run, so the copy cannot claim a different four. */
+const CLINIC_SATURDAYS = clinicWeeks(SCENARIO_NUMBERS).length;
 
 export const BASKETBALL_SCENARIO: WorldScenario = {
   id: "basketball",
@@ -13,10 +18,19 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
   goalLabel: "Sports-media course",
   numbers: SCENARIO_NUMBERS,
   incomeCopy: {
-    savings: "Money Avery already has",
-    base: "Pay that arrives no matter how the team performs",
-    completion: "Payment tied to making every practice and game",
-    outcome: "Payment tied to reaching the showcase",
+    savings: { label: "Already saved", note: "Money Avery already has." },
+    base: { label: "Base pay after taxes", note: "Pay that arrives no matter how the team performs." },
+    completion: {
+      label: "Perfect Attendance Bonus",
+      note: "Payment tied to making every practice and game.",
+      rule: "Avery makes every practice and every game.",
+    },
+    outcome: {
+      label: "Making the Cut Bonus",
+      note: "Payment tied to reaching the showcase.",
+      rule: "The Flight qualifies for the showcase.",
+    },
+    optionalWork: { label: "Saturday clinics", note: "Coaching fee for the last four Saturdays." },
   },
   offer: {
     team: "Harbor City Flight",
@@ -122,8 +136,8 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
   },
   opportunity: {
     from: "Flight community office",
-    title: "Four Saturday clinics. $500.",
-    body: "The team runs skills clinics for younger players and is short a coach. Four Saturdays, the last four of the season, and the money lands before the eight weeks end.",
+    title: `${CLINIC_SATURDAYS} Saturday clinics. ${formatDollars(SCENARIO_NUMBERS.optionalWorkIncome)}.`,
+    body: `The team runs skills clinics for younger players and is short a coach. ${CLINIC_SATURDAYS} Saturdays, the last ${CLINIC_SATURDAYS} of the season, and the money lands before the ${SCENARIO_NUMBERS.weeks} weeks end.`,
     timeCost: "Avery’s only open block for rest, rehab, and everything that is not basketball.",
   },
 };
