@@ -160,7 +160,7 @@ p { color: var(--ink-2); }
 .educator-topbar nav a { padding: var(--s-3) 0; color: var(--ink-3); font: var(--t-ui); text-decoration: none; }
 .educator-topbar nav a.active { color: var(--ink-1); border-bottom: 2px solid var(--ink-1); }
 .demo-pill, .standard-chip, .tag-row span { padding: var(--s-2) var(--s-3); background: var(--surface-sunken); border-radius: var(--r-pill); color: var(--ink-2); font: var(--t-micro); }
-.educator-main { width: min(var(--w-dash), 100%); margin: auto; }
+.educator-main { width: min(var(--w-dash), 100%); margin: auto; padding: var(--s-7) var(--gutter) var(--s-9); }
 .guide-hero { min-height: 590px; display: grid; grid-template-columns: 1.2fr 0.8fr; background: var(--surface); }
 .guide-hero > div { padding: clamp(40px, 7vw, 96px); }
 .guide-hero h1 { margin: 0 0 var(--s-5); font: 600 clamp(3.8rem, 8vw, 7.6rem)/0.88 var(--font-ui); letter-spacing: -0.07em; }
@@ -289,6 +289,7 @@ p { color: var(--ink-2); }
 .student-worklist span, .student-worklist p { color: var(--ink-3); font: var(--t-micro); }
 .student-worklist h3 { margin: var(--s-2) 0; font: var(--t-title3); }
 .student-worklist > a > span { font: var(--t-title1); }
+.class-foot:has(> div:only-child) { grid-template-columns: minmax(0, 1fr); }
 .class-foot { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: var(--s-7); padding: 1px; background: var(--border-default); }
 .class-foot div { padding: var(--s-5); background: var(--surface); }
 .class-foot span, .class-foot strong { display: block; }
@@ -453,5 +454,99 @@ p { color: var(--ink-2); }
 
 @media (max-width: 860px) {
   .class-created { grid-template-columns: 1fr; }
+}
+
+/* ---------------------------------------------------------------------------
+   A real class. Every number on these surfaces is derived from submitted work,
+   and the empty state is a first-class state rather than a blank page.
+   --------------------------------------------------------------------------- */
+
+.class-state { margin: var(--s-6) 0; color: var(--ink-3); font: var(--t-body-lg); }
+
+.empty-state { display: grid; gap: var(--s-5); justify-items: start; max-width: 720px; padding: var(--s-7); background: var(--surface); border: 1px solid var(--border-default); border-left: 3px solid var(--fin-conditional); }
+.empty-state p { margin: 0; font: var(--t-body-lg); }
+.empty-state dl { display: grid; grid-auto-flow: column; grid-auto-columns: max-content; gap: var(--s-8); margin: 0; }
+.empty-state dt { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.empty-state dd { margin: var(--s-1) 0 0; font: var(--m-md); font-feature-settings: var(--num); }
+
+.choice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--s-4); }
+.choice-dist { display: grid; align-content: start; gap: var(--s-3); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); }
+.choice-dist h3 { margin: 0; font: var(--t-title3); }
+.choice-dist__bar { display: flex; height: 10px; overflow: hidden; background: var(--surface-inset); border-radius: var(--r-pill); }
+.choice-dist__bar span { display: block; background: var(--fin-reliable); }
+.choice-dist__bar span:nth-child(2) { background: var(--fin-adjustable); }
+.choice-dist__bar span:nth-child(3) { background: var(--fin-conditional); }
+.choice-dist ul { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.choice-dist li { display: grid; grid-template-columns: 2.5ch minmax(0, 1fr); gap: var(--s-2) var(--s-3); align-items: baseline; }
+.choice-dist li[data-empty="true"] { color: var(--ink-4); }
+.choice-dist li b { font: var(--m-sm); font-feature-settings: var(--num); }
+.choice-dist li > span:first-of-type { font: var(--t-ui); font-weight: 400; }
+.choice-dist__seats { grid-column: 2; color: var(--ink-3); font: var(--t-micro); font-feature-settings: var(--num); }
+.choice-dist__note { margin: 0; padding-top: var(--s-3); border-top: 1px solid var(--border-subtle); color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+
+.cut-list { display: grid; gap: var(--s-3); margin: 0 0 var(--s-5); padding: 0; list-style: none; }
+.cut-list li { display: grid; grid-template-columns: 3ch minmax(0, 1fr); gap: var(--s-1) var(--s-4); align-items: baseline; padding: var(--s-4) var(--s-5); background: var(--surface); border: 1px solid var(--border-subtle); border-left: 3px solid var(--fin-adjustable); }
+.cut-list b { font: var(--m-sm); font-feature-settings: var(--num); }
+.cut-list .choice-dist__seats { grid-column: 2; }
+
+.adaptation-lines { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s-4); margin: 0; }
+.adaptation-lines > div { display: grid; gap: var(--s-1); padding: var(--s-4); background: var(--surface-sunken); }
+.adaptation-lines dt { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.adaptation-lines dd { margin: 0; font: var(--m-sm); font-feature-settings: var(--num); }
+
+.resolve-changes-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border-default); }
+.resolve-changes-table th, .resolve-changes-table td { padding: var(--s-3) var(--s-5); text-align: right; border-bottom: 1px solid var(--border-subtle); }
+.resolve-changes-table thead th { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.resolve-changes-table th:first-child, .resolve-changes-table tbody th { text-align: left; font: var(--t-ui); }
+.resolve-changes-table td { font: var(--m-xs); font-feature-settings: var(--num); }
+
+/* ---------------------------------------------------------------------------
+   The debrief. Built to be read from, and to be printed.
+   --------------------------------------------------------------------------- */
+
+.debrief { max-width: 900px; }
+.debrief__head { margin-bottom: var(--s-8); }
+.debrief__head h1 { margin: var(--s-2) 0 var(--s-4); font: var(--t-display1); letter-spacing: var(--display-tracking); }
+.debrief__actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-5); }
+.debrief__section { margin-bottom: var(--s-8); padding-top: var(--s-6); border-top: 1px solid var(--border-default); }
+.debrief__section h2 { margin: 0 0 var(--s-4); font: var(--t-title1); }
+.debrief__prompts { display: grid; gap: var(--s-5); margin: 0; padding: 0; list-style: none; counter-reset: prompt; }
+.debrief__prompts li { padding-left: var(--s-6); border-left: 3px solid var(--world-accent); }
+.debrief__ask { margin: 0; font: var(--t-title3); font-weight: 500; }
+.debrief__because { margin: var(--s-2) 0 0; color: var(--ink-3); font: var(--t-sm); font-weight: 400; }
+.debrief__list { display: grid; gap: var(--s-2); margin: var(--s-3) 0 0; padding-left: var(--s-6); }
+.debrief__list li { font: var(--t-body); }
+.debrief__contrast { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s-4); }
+.debrief__plan { padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--fin-reliable); }
+.debrief__plan h3 { margin: var(--s-1) 0 var(--s-4); font: var(--t-title3); }
+.debrief__plan dl { display: grid; gap: var(--s-2); margin: 0; }
+.debrief__plan dl > div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
+.debrief__plan dt { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.debrief__plan dd { margin: 0; font: var(--m-xs); font-feature-settings: var(--num); }
+.debrief__outcome { margin: var(--s-4) 0 0; padding-top: var(--s-3); border-top: 1px solid var(--border-subtle); font: var(--t-sm); font-weight: 400; }
+.debrief__status { margin: var(--s-2) 0 0; color: var(--ink-3); font: var(--t-micro); }
+.debrief__quotes { display: grid; gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
+.debrief__quotes blockquote { margin: 0; padding: var(--s-4) var(--s-5); background: var(--surface-sunken); border-left: 3px solid var(--fin-adjustable); font: var(--t-body); font-style: italic; }
+.debrief__quotes cite { display: block; margin-top: var(--s-2); color: var(--ink-3); font: var(--t-micro); font-style: normal; }
+
+/*
+ * A teacher standing at the front of a room is not holding a laptop. The debrief prints
+ * as a document: no chrome, no interactive controls, and nothing that only makes sense
+ * on a screen.
+ */
+@media print {
+  .educator-topbar, .no-print, .button { display: none !important; }
+  .educator-main { width: 100%; margin: 0; padding: 0; }
+  body, .educator-shell { background: var(--print-paper); }
+  .debrief { max-width: none; }
+  .debrief__section { page-break-inside: avoid; border-top: 1px solid var(--print-rule); }
+  .debrief__plan, .debrief__quotes li { page-break-inside: avoid; border-color: var(--print-rule); }
+  .debrief__prompts li { border-left-color: var(--print-rule-strong); }
+  a[href]::after { content: ""; }
+}
+
+@media (max-width: 860px) {
+  .adaptation-lines, .choice-grid, .debrief__contrast { grid-template-columns: 1fr; }
+  .empty-state dl { grid-auto-flow: row; gap: var(--s-3); }
 }
 

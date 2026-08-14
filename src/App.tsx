@@ -6,6 +6,8 @@ import { RosterCard } from "./components/story/RosterCard";
 import { StudentChallenge } from "./stages/StudentChallenge";
 import { ClassOverview, ConceptDrilldown, EducatorGuide, ReasoningReview, StandardsView, StudentEvidence, TeachingCompanion } from "./educator/EducatorPages";
 import { ClassSetup } from "./educator/ClassSetup";
+import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPages";
+import { Debrief } from "./educator/Debrief";
 import { durationLabel, PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
 
 function Home() {
@@ -51,11 +53,21 @@ export function App() {
       <Route path="/educator/guide" element={<EducatorGuide />} />
       <Route path="/educator/classes/new" element={<ClassSetup />} />
       <Route path="/educator/teaching-companion" element={<TeachingCompanion />} />
-      <Route path="/educator/class" element={<ClassOverview />} />
-      <Route path="/educator/class/concepts/:conceptId" element={<ConceptDrilldown />} />
-      <Route path="/educator/class/students/:seatCode" element={<StudentEvidence />} />
-      <Route path="/educator/class/students/:seatCode/reasoning" element={<ReasoningReview />} />
-      <Route path="/educator/class/standards" element={<StandardsView />} />
+      {/* A real class. Everything under here reads submitted evidence and nothing else. */}
+      <Route path="/educator/class/:code" element={<RealClassOverview />} />
+      <Route path="/educator/class/:code/students/:seatCode" element={<RealStudentEvidence />} />
+      <Route path="/educator/class/:code/debrief" element={<Debrief />} />
+      {/* The fixture class, behind a route that says so. It exists to show an educator the
+          shape of the evidence before they run one, and it can never be reached from a
+          real class's URL. */}
+      <Route path="/educator/demo" element={<ClassOverview />} />
+      <Route path="/educator/demo/concepts/:conceptId" element={<ConceptDrilldown />} />
+      <Route path="/educator/demo/students/:seatCode" element={<StudentEvidence />} />
+      <Route path="/educator/demo/students/:seatCode/reasoning" element={<ReasoningReview />} />
+      <Route path="/educator/demo/standards" element={<StandardsView />} />
+      {/* The routes the demo shipped on. */}
+      <Route path="/educator/class" element={<Navigate to="/educator/demo" replace />} />
+      <Route path="/educator/class/standards" element={<Navigate to="/educator/demo/standards" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

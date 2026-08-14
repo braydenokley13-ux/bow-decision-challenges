@@ -362,11 +362,11 @@ studentTest("the opening screens work with a keyboard only", async ({ page, clas
 test("educator deep links render directly on a fresh navigation", async ({ page }) => {
   const routes: Array<[string, string]> = [
     ["/educator/guide", "Plan Under Pressure"],
-    ["/educator/class", "Basketball evidence room"],
-    ["/educator/class/concepts/contingency", "Build an executable contingency"],
-    ["/educator/class/students/14", "94/100"],
-    ["/educator/class/students/14/reasoning", "Score the financial defense."],
-    ["/educator/class/standards", "Evidence connected to NYSED objectives."],
+    ["/educator/demo", "Basketball evidence room"],
+    ["/educator/demo/concepts/contingency", "Build an executable contingency"],
+    ["/educator/demo/students/14", "94/100"],
+    ["/educator/demo/students/14/reasoning", "Score the financial defense."],
+    ["/educator/demo/standards", "Evidence connected to NYSED objectives."],
     ["/educator/teaching-companion", "Two-Day Mini-Unit: Budgeting Under Uncertainty"],
   ];
   for (const [path, heading] of routes) {
@@ -380,7 +380,7 @@ test("educator deep links render directly on a fresh navigation", async ({ page 
 // ---------------------------------------------------------------------------
 
 test("scoring reasoning and saving the review updates the student's final grade", async ({ page }) => {
-  await page.goto("/educator/class/students/14/reasoning");
+  await page.goto("/educator/demo/students/14/reasoning");
   await expect(page.getByRole("heading", { name: "Score the financial defense." })).toBeVisible();
 
   // Default rubric totals 9/10 (2 + 2 + 1 + 4). Drop "Protected priority" to 0 for a 7/10 total.
@@ -396,7 +396,7 @@ test("scoring reasoning and saving the review updates the student's final grade"
 // ---------------------------------------------------------------------------
 
 test("seat 14 golden case shows 94/100 and the C4 evidence line", async ({ page }) => {
-  await page.goto("/educator/class/students/14");
+  await page.goto("/educator/demo/students/14");
   await expect(page.getByRole("heading", { name: "94/100" })).toBeVisible();
   await expect(page.getByText("C4: 17/20 · Demonstrated independently")).toBeVisible();
 });
@@ -412,7 +412,7 @@ studentTest("key screens have no serious or critical accessibility violations", 
   await page.goto("/educator/guide");
   await noSeriousAxeViolations(page);
 
-  await page.goto("/educator/class");
+  await page.goto("/educator/demo");
   await noSeriousAxeViolations(page);
 
   await reachWorkingBoard(page, classCode);
@@ -475,7 +475,7 @@ studentTest("no stale Fashion or coming-soon copy appears in the student flow or
   await enterChallenge(page, { classCode });
   await noStaleCopy(page);
 
-  for (const path of ["/educator/guide", "/educator/class", "/educator/class/standards", "/educator/teaching-companion", "/educator/class/students/14"]) {
+  for (const path of ["/educator/guide", "/educator/demo", "/educator/demo/standards", "/educator/teaching-companion", "/educator/demo/students/14"]) {
     await page.goto(path);
     await noStaleCopy(page);
   }
@@ -498,7 +498,7 @@ studentTest("student entry screens do not spill sideways at a 640px-wide viewpor
 
   await page.goto("/educator/guide");
   await noHorizontalOverflow(page);
-  await page.goto("/educator/class");
+  await page.goto("/educator/demo");
   await noHorizontalOverflow(page);
 });
 
@@ -732,4 +732,181 @@ studentTest("a refresh mid-challenge does not lose the class the student joined"
   // The class travels with the attempt, so a resumed session still turns in to the right room.
   const stored = await page.evaluate(() => localStorage.getItem("bow.attempt.v2.plan-under-pressure"));
   expect(stored).toContain(classCode);
+});
+
+// ---------------------------------------------------------------------------
+// 23. The educator reads a real class. Three students, three different plans,
+//     and every number on the page traceable to one of them.
+// ---------------------------------------------------------------------------
+
+studentTest("a real class shows what its own students did, and never a fixture", async ({ page, classCode }) => {
+  const key = createClassKeyFor(classCode);
+  const runs = [
+    { seat: "3", index: 0 as const, setupId: "gym-sublet" as const, clinics: false },
+    { seat: "9", index: 2 as const, setupId: "cousin-room" as const, clinics: true },
+    { seat: "12", index: 1 as const, setupId: "teammate-share" as const, clinics: false },
+  ];
+  for (const run of runs) {
+    const context: PlanContext = { setupId: run.setupId };
+    await gotoFreshChallenge(page);
+    await enterChallenge(page, { classCode, seatCode: run.seat });
+    await completeSetupStage(page, run.index);
+    await completeWorkingCalcs(page);
+    await fillPlanToBalance(page, "working", context);
+    await page.getByRole("button", { name: "Save this version" }).click();
+    await playSeasonWeeks(page);
+    await passWeek5Calculation(page, String(week5TotalFor(context)));
+    await fillPlanToBalance(page, "week5-first-response", context);
+    await page.getByRole("button", { name: "Save this version" }).click();
+    await decideOpportunity(page, { clinics: run.clinics, countBonus: false });
+    await fillPlanToBalance(page, "final", { ...context, clinics: run.clinics, countCompletionFinal: false });
+    await page.getByRole("button", { name: "Save final plan" }).click();
+    await readWeek8Resolution(page);
+    await submitDefense(page, `Seat ${run.seat}: my plan still works because every dollar has a job after Week 5. I protected the course money and gave up part of the reserve.`);
+    await waitForDelivery(page);
+  }
+
+  await page.goto(`/educator/class/${classCode}?key=${key}`);
+  await expect(page.getByRole("heading", { name: "What the class did" })).toBeVisible();
+  await expect(page.getByText("3 submissions")).toBeVisible();
+
+  // The housing split is real: three students, three different places.
+  const housing = page.locator(".choice-dist").first();
+  await expect(housing).toContainText("Where did they put Avery?");
+  for (const run of runs) await expect(housing).toContainText(run.seat);
+
+  // The fixture class is 28 students with a seat 14 golden case. None of it may appear.
+  const body = page.locator("body");
+  await expect(body).not.toContainText("28");
+  await expect(body).not.toContainText("Hypothetical demo data");
+  await expect(body).not.toContainText("94/100");
+  await noSeriousAxeViolations(page);
+});
+
+studentTest("an educator reads one student's evidence and scores their writing", async ({ page, classCode }) => {
+  const key = createClassKeyFor(classCode);
+  const context: PlanContext = { setupId: "teammate-share" };
+  await gotoFreshChallenge(page);
+  await enterChallenge(page, { classCode, seatCode: "5" });
+  await completeSetupStage(page, 1);
+  await completeWorkingCalcs(page);
+  await fillPlanToBalance(page, "working", context);
+  await page.getByRole("button", { name: "Save this version" }).click();
+  await playSeasonWeeks(page, { deposit: true });
+  await passWeek5Calculation(page, String(week5TotalFor(context)));
+  await fillPlanToBalance(page, "week5-first-response", { ...context, deposit: true });
+  await page.getByRole("button", { name: "Save this version" }).click();
+  await decideOpportunity(page, { clinics: false, countBonus: false });
+  await fillPlanToBalance(page, "final", { ...context, deposit: true, clinics: false, countCompletionFinal: false });
+  await page.getByRole("button", { name: "Save final plan" }).click();
+  await readWeek8Resolution(page);
+  await submitDefense(page, "My plan still works because I reserved the course seat while I could afford it. I protected the course and gave up the flexibility of holding that money.");
+  await waitForDelivery(page);
+
+  await page.goto(`/educator/class/${classCode}/students/5?key=${key}`);
+  await expect(page.getByRole("heading", { name: "Reasoning not read yet" })).toBeVisible();
+  await expect(page.locator(".student-response blockquote")).toContainText("reserved the course seat");
+
+  // A person scores it, and only then does a final grade exist.
+  await page.locator(".rubric-row").nth(0).getByRole("button", { name: "2", exact: true }).click();
+  await page.locator(".rubric-row").nth(1).getByRole("button", { name: "2", exact: true }).click();
+  await page.locator(".rubric-row").nth(2).getByRole("button", { name: "1", exact: true }).click();
+  await page.locator(".rubric-row").nth(3).getByRole("button", { name: "3", exact: true }).click();
+  await expect(page.locator(".rubric-panel footer strong")).toContainText("8/10");
+  await page.getByRole("button", { name: "Save review" }).click();
+  await expect(page.getByText("Saved.")).toBeVisible();
+
+  await page.reload();
+  await expect(page.locator(".student-evidence-header h1")).toContainText("/100");
+  await noSeriousAxeViolations(page);
+});
+
+studentTest("the debrief is built from the class, and says so when there is nothing to build from", async ({ page, classCode }) => {
+  const key = createClassKeyFor(classCode);
+
+  // Before anybody submits, the debrief refuses to invent one.
+  await page.goto(`/educator/class/${classCode}/debrief?key=${key}`);
+  await expect(page.getByRole("heading", { name: "There is nothing to debrief yet." })).toBeVisible();
+
+  for (const [seat, index, setupId, clinics] of [["2", 0, "gym-sublet", true], ["7", 2, "cousin-room", false]] as const) {
+    const context: PlanContext = { setupId };
+    await gotoFreshChallenge(page);
+    await enterChallenge(page, { classCode, seatCode: seat });
+    await completeSetupStage(page, index);
+    await completeWorkingCalcs(page);
+    await fillPlanToBalance(page, "working", context);
+    await page.getByRole("button", { name: "Save this version" }).click();
+    await playSeasonWeeks(page);
+    await passWeek5Calculation(page, String(week5TotalFor(context)));
+    await fillPlanToBalance(page, "week5-first-response", context);
+    await page.getByRole("button", { name: "Save this version" }).click();
+    await decideOpportunity(page, { clinics, countBonus: false });
+    await fillPlanToBalance(page, "final", { ...context, clinics, countCompletionFinal: false });
+    await page.getByRole("button", { name: "Save final plan" }).click();
+    await readWeek8Resolution(page);
+    await submitDefense(page, `Seat ${seat}: my plan still works because I kept the money that mattered. I gave up what I could afford to lose after Week 5.`);
+    await waitForDelivery(page);
+  }
+
+  await page.goto(`/educator/class/${classCode}/debrief?key=${key}`);
+  await expect(page.getByRole("heading", { name: "Debrief" })).toBeVisible();
+  await expect(page.getByText("2 students finished")).toBeVisible();
+  // Two real plans, side by side, and the students' own words.
+  await expect(page.locator(".debrief__plan")).toHaveCount(2);
+  await expect(page.locator(".debrief__quotes blockquote").first()).toContainText("my plan still works");
+  await expect(page.locator(".debrief__prompts li").first()).toBeVisible();
+  await noSeriousAxeViolations(page);
+});
+
+test("a class code alone does not open somebody else's evidence", async ({ page, request }) => {
+  const created = await createClass(request, "Private");
+  await page.goto(`/educator/class/${created.code}`);
+  await expect(page.getByRole("heading", { name: "This class did not open." })).toBeVisible();
+  await expect(page.getByText("This link does not open that class")).toBeVisible();
+
+  await page.goto(`/educator/class/${created.code}?key=${created.code}`);
+  await expect(page.getByRole("heading", { name: "This class did not open." })).toBeVisible();
+});
+
+test("the demo evidence is reachable only under a route that says it is a demo", async ({ page }) => {
+  await page.goto("/educator/demo");
+  await expect(page.locator(".demo-pill")).toContainText("Hypothetical demo data");
+
+  // The route the demo shipped on still works, and lands on the demo.
+  await page.goto("/educator/class");
+  await expect(page).toHaveURL(/\/educator\/demo$/);
+});
+
+// ---------------------------------------------------------------------------
+// 24. Over-committing is survivable. Reserving the seat on the dearest place
+//     costs more than Avery's reliable income once Week 5 lands, so the plan
+//     cannot balance — and a student who does it must still be able to finish.
+// ---------------------------------------------------------------------------
+
+studentTest("a student who over-commits can still land and turn in a plan they cannot balance", async ({ page, classCode }) => {
+  const context: PlanContext = { setupId: "gym-sublet" };
+  await gotoFreshChallenge(page);
+  await enterChallenge(page, { classCode, seatCode: "17" });
+  await completeSetupStage(page, 0);
+  await completeWorkingCalcs(page);
+  await fillPlanToBalance(page, "working", context);
+  await page.getByRole("button", { name: "Save this version" }).click();
+
+  // At Week 4 this looks like a clean conversion, and it is: the course row already held
+  // more than the seat costs, so reserving pays it and hands some money back. The squeeze
+  // is Week 5's doing, which is exactly the uncertainty the decision is made under.
+  for (const week of [2, 3, 4]) await page.getByRole("button", { name: `Play Week ${week}` }).click();
+  await page.getByRole("button", { name: "Reserve it now" }).click();
+  await expect(page.locator(".deposit-call__effect")).toContainText("the course is paid");
+  await page.getByRole("button", { name: "Lock it in and play Week 5" }).click();
+
+  await passWeek5Calculation(page, String(week5TotalFor(context)));
+  // Everything adjustable goes, and the plan is still under water.
+  for (const label of ["Backup money", "Avery’s week"]) await setAmount(page, label, "0");
+  await expect(page.locator(".plan-commit--over")).toBeVisible();
+  await page.getByRole("button", { name: "Check this plan" }).click();
+  await page.getByRole("button", { name: /^Save it, .* still missing$/ }).click();
+
+  // Naming the exact amount still missing is a real answer, and the run completes.
+  await expect(page.getByRole("heading", { name: "Two calls, then land the plan." })).toBeVisible();
 });

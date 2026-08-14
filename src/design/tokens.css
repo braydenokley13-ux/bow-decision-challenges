@@ -61,6 +61,12 @@
   --time-bought: #d8d4cb;
   --time-over: #c22b2b;
 
+  /* Print. A debrief on paper has no surfaces to sit on, so it gets its own ink and
+     rules rather than borrowing screen tokens that assume a coloured ground. */
+  --print-paper: #ffffff;
+  --print-rule: #999999;
+  --print-rule-strong: #333333;
+
   --focus-ring: #1552e0;
   --focus-halo: #ffffff;
   --shadow-rail: 0 1px 0 var(--border-default), 0 8px 18px -16px rgb(14 20 28 / 45%);

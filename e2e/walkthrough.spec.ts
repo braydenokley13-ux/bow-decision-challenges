@@ -5,6 +5,8 @@ import {
   completeSetupStage,
   createClass,
   enterChallenge,
+  passWeek5Calculation,
+  playSeasonWeeks,
   completeWorkingCalcs,
   decideOpportunity,
   gotoFreshChallenge,
@@ -113,14 +115,39 @@ for (const size of SIZES) {
     await submitDefense(page, "My plan still works because it balances after Week 5. I protected the course money and gave up the open Saturdays to take the clinics.");
     await shoot("15-submitted");
 
+    // A second student, so the class views have a class in them.
+    for (const [seat, index] of [["21", 0], ["22", 1]] as const) {
+      const other: PlanContext = { setupId: index === 0 ? "gym-sublet" : "teammate-share" };
+      await gotoFreshChallenge(page);
+      await enterChallenge(page, { classCode: created.code, seatCode: seat });
+      await completeSetupStage(page, index);
+      await completeWorkingCalcs(page);
+      await fillPlanToBalance(page, "working", other);
+      await page.getByRole("button", { name: "Save this version" }).click();
+      await playSeasonWeeks(page, { deposit: index === 1 });
+      await passWeek5Calculation(page, String(week5TotalFor(other)));
+      await fillPlanToBalance(page, "week5-first-response", { ...other, deposit: index === 1 });
+      await page.getByRole("button", { name: "Save this version" }).click();
+      await decideOpportunity(page, { clinics: index === 0, countBonus: false });
+      await fillPlanToBalance(page, "final", { ...other, deposit: index === 1, clinics: index === 0, countCompletionFinal: false });
+      await page.getByRole("button", { name: "Save final plan" }).click();
+      await page.getByRole("button", { name: "Explain my plan" }).click();
+      await submitDefense(page, `Seat ${seat}: my plan still works because every dollar has a job after Week 5. I protected the course money and gave up part of the reserve.`);
+      await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible({ timeout: 15_000 });
+    }
+
+    const evidence = `/educator/class/${created.code}?key=${created.teacherKey}`;
     for (const [name, path] of [
       ["15b-class-setup", "/educator/classes/new"],
+      ["15c-real-class", evidence],
+      ["15d-real-student", `/educator/class/${created.code}/students/21?key=${created.teacherKey}`],
+      ["15e-debrief", `/educator/class/${created.code}/debrief?key=${created.teacherKey}`],
       ["16-educator-guide", "/educator/guide"],
-      ["17-educator-class", "/educator/class"],
-      ["18-concept-drilldown", "/educator/class/concepts/contingency"],
-      ["19-seat-14", "/educator/class/students/14"],
-      ["20-reasoning", "/educator/class/students/14/reasoning"],
-      ["21-standards", "/educator/class/standards"],
+      ["17-demo-evidence", "/educator/demo"],
+      ["18-concept-drilldown", "/educator/demo/concepts/contingency"],
+      ["19-seat-14", "/educator/demo/students/14"],
+      ["20-reasoning", "/educator/demo/students/14/reasoning"],
+      ["21-standards", "/educator/demo/standards"],
       ["22-companion", "/educator/teaching-companion"],
     ] as const) {
       await page.goto(path);
