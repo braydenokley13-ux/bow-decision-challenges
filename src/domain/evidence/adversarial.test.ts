@@ -3,7 +3,7 @@ import { dollars } from "../core/money";
 import type { SetupId } from "../core/ids";
 import type { PlanMode } from "../finance/types";
 import { SCENARIO_NUMBERS } from "../scenario/numbers";
-import { setupTotalsByRank } from "../scenario/expectations";
+import { setupCostOrder } from "../scenario/expectations";
 import { challengeReducer } from "../machine/reducer";
 import { createInitialState, type ChallengeState } from "../machine/state";
 import type { ChallengeAction } from "../machine/actions";
@@ -40,7 +40,6 @@ describe("blueprint arithmetic holds", () => {
 // read from the scenario, so re-pricing the model changes what this run enters rather than
 // breaking the test — the same rule the grader itself now follows.
 const N = SCENARIO_NUMBERS;
-const setupTotals = setupTotalsByRank(N);
 
 const balancedFill = (spendable: number) => {
   const goal = Math.max(0, Math.min(N.course.fullPrice, spendable));
@@ -68,8 +67,8 @@ const competent = (over: Partial<{ setup: SetupId; takeWork: boolean; countCompl
 
   let s = run(createInitialState(),
     { type: "SETUP_SELECTED", setupId },
-    { type: "CALCULATION_SUBMITTED", calcId: "setup-middle-total", raw: String(setupTotals.middle), value: setupTotals.middle, correct: true },
-    { type: "CALCULATION_SUBMITTED", calcId: "setup-lowest-total", raw: String(setupTotals.lowest), value: setupTotals.lowest, correct: true },
+    { type: "SETUP_RANKED", order: setupCostOrder(N), correct: true },
+    { type: "CALCULATION_SUBMITTED", calcId: "chosen-setup-total", raw: String(cost), value: cost, correct: true },
     { type: "CALCULATION_SUBMITTED", calcId: "essentials-total", raw: String(N.essentialsTotal), value: N.essentialsTotal, correct: true },
     { type: "CALCULATION_SUBMITTED", calcId: "reliable-floor", raw: String(reliable), value: dollars(reliable), correct: true },
     ...fillFor("working", spendableWorking),

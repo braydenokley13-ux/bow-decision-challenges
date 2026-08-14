@@ -10,6 +10,8 @@ interface AllocationControlProps {
   step: 50 | 100;
   max: number;
   originalValue?: number | undefined;
+  /** When present the row is already committed and cannot be moved; this says why. */
+  lockedNote?: string | undefined;
   onChange: (value: ReturnType<typeof dollars>) => void;
 }
 
@@ -17,17 +19,37 @@ interface AllocationControlProps {
  * One choice, as a row: the colour block that matches its slice of the tower, what the
  * money is for, what it is worth now, and the two keys that move it.
  */
-export function AllocationControl({ id, label, description, value, step, max, originalValue, onChange }: AllocationControlProps) {
+export function AllocationControl({ id, label, description, value, step, max, originalValue, lockedNote, onChange }: AllocationControlProps) {
   const inputId = useId();
   const [raw, setRaw] = useState<string | null>(null);
   const commit = (candidate: string) => {
     const parsed = parseDollars(candidate);
-    if (parsed === null) { setRaw(null); return; }
+    // A negative step below zero fails the parse, so the minus key used to be silently
+    // dead at $0. Clamping first means the control always answers.
+    if (parsed === null) {
+      const numeric = Number(candidate.replaceAll("$", "").replaceAll(",", "").trim());
+      if (Number.isFinite(numeric) && numeric < 0) { setRaw(null); onChange(dollars(0)); return; }
+      setRaw(null);
+      return;
+    }
     const normalized = dollars(Math.min(max, Math.max(0, Math.round(parsed / step) * step)));
     setRaw(null);
     onChange(normalized);
   };
   const changeBy = (delta: number) => commit(String(value + delta));
+
+  if (lockedNote) {
+    return (
+      <section className="choice-row choice-row--locked" data-category={id}>
+        <span className="choice-row__swatch" aria-hidden="true" />
+        <div className="choice-row__id">
+          <p className="choice-row__label">{label}</p>
+          <span className="choice-row__description">{lockedNote}</span>
+        </div>
+        <strong className="choice-row__value money">Paid</strong>
+      </section>
+    );
+  }
 
   return (
     <section className="choice-row" data-category={id}>

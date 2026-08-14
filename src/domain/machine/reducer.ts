@@ -113,6 +113,10 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
       const next = { ...state, calculations: { ...state.calculations, [action.calcId]: calculation } };
       return append(next, action.type, action, supportFor(state, action.calcId), undefined, at);
     }
+    case "SETUP_RANKED": {
+      const next = { ...state, setupRanking: { order: [...action.order], correct: action.correct } };
+      return append(next, action.type, action, "standard_access", undefined, at);
+    }
     case "SETUP_SELECTED": {
       const next = { ...state, setupId: action.setupId };
       return append(next, action.type, action, "standard_access", undefined, at);

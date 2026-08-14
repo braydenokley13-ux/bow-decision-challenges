@@ -4,12 +4,12 @@ import { CONCEPTS } from "./concepts";
 import { STRUCTURED_MICRO_SKILLS } from "./microSkills";
 
 describe("assessment invariants", () => {
-  it("preserves six concepts, 18 structured micro-skills, 90 structured points, and five calculations", () => {
+  it("preserves six concepts, 18 structured micro-skills, 90 structured points, and four entered totals", () => {
     expect(CONCEPTS).toHaveLength(6);
     expect(STRUCTURED_MICRO_SKILLS).toHaveLength(18);
     expect(STRUCTURED_MICRO_SKILLS.reduce((sum, skill) => sum + skill.maxPoints, 0)).toBe(90);
-    expect(PLAN_UNDER_PRESSURE_BLUEPRINT.calculationIds).toHaveLength(5);
-    expect(new Set(PLAN_UNDER_PRESSURE_BLUEPRINT.calculationIds).size).toBe(5);
+    expect(PLAN_UNDER_PRESSURE_BLUEPRINT.calculationIds).toHaveLength(4);
+    expect(new Set(PLAN_UNDER_PRESSURE_BLUEPRINT.calculationIds).size).toBe(4);
   });
 
   it("preserves the six concept weights", () => {

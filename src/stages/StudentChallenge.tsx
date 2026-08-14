@@ -9,11 +9,12 @@ import { PlanBoard } from "../components/financial/PlanBoard";
 import { CourtBackdrop } from "../components/story/CourtBackdrop";
 import { RosterCard } from "../components/story/RosterCard";
 import { dollars, formatDollars, type Dollars } from "../domain/core/money";
-import type { CalcId, CategoryId } from "../domain/core/ids";
+import type { CalcId, CategoryId, SetupId } from "../domain/core/ids";
 import type { PlanMode } from "../domain/finance/types";
 import { availableFor, lockedFor, week5Change } from "../domain/finance/formulas";
 import { PLAN_MODES } from "../domain/finance/modes";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
+import { setupCostOrder } from "../domain/scenario/expectations";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { amountsFor, meaningfulAttempts, snapshotForMode } from "../domain/machine/selectors";
 import { STUDENT_COPY } from "../content/studentCopy";
@@ -134,59 +135,130 @@ function DealStage() {
   );
 }
 
-/** Beat 3. Three places, three versions of Avery's day. The money is only half of it. */
+/**
+ * Beat 3. Three places, priced in two currencies.
+ *
+ * Comparing full cost across time used to be two multiplication drills that gated the
+ * screen. Here the comparison itself is the interaction: the student puts the three places
+ * in order by what each really costs over eight weeks, working from the terms rather than
+ * from totals the screen hands them. Only after that do the totals appear — and each card
+ * also says what the place costs out of Avery's week, so the cheapest is not automatically
+ * the best.
+ */
 function SetupStage() {
   const { state, dispatch } = useChallenge();
-  const middleCorrect = state.calculations["setup-middle-total"]?.correct === true;
-  const lowCorrect = state.calculations["setup-lowest-total"]?.correct === true;
-  const ready = middleCorrect && lowCorrect && state.setupId !== null;
-  const chosen = BASKETBALL_SCENARIO.setups.find((setup) => setup.id === state.setupId);
-  const longest = Math.max(...BASKETBALL_SCENARIO.setups.map((setup) => setup.commuteMinutes));
+  const { setups } = BASKETBALL_SCENARIO;
+  const [order, setOrder] = useState<SetupId[]>(() => state.setupRanking?.order ?? setups.map((setup) => setup.id));
+  const ranked = state.setupRanking?.correct === true;
+  const totalEntered = state.calculations["chosen-setup-total"]?.correct === true;
+  const chosen = setups.find((setup) => setup.id === state.setupId);
+  const ready = ranked && state.setupId !== null && totalEntered;
+  const revealRef = useRevealOnce(ranked);
+  const longest = Math.max(...setups.map((setup) => setup.commuteMinutes));
+  const byId = (id: SetupId) => setups.find((setup) => setup.id === id)!;
+
+  const move = (index: number, delta: number) => {
+    const target = index + delta;
+    if (target < 0 || target >= order.length) return;
+    const next = [...order];
+    const [moved] = next.splice(index, 1);
+    next.splice(target, 0, moved!);
+    setOrder(next);
+  };
+  const checkOrder = () => {
+    const correct = order.every((id, index) => id === setupCostOrder(SCENARIO_NUMBERS)[index]);
+    dispatch({ type: "SETUP_RANKED", order, correct });
+  };
+
   return (
     <StageShell stage="setup-comparison" kicker="Where Avery stays" title="Cheaper rent costs something else.">
-      <p className="stage-deck">Work out what each place really costs for all eight weeks, then pick one.</p>
-      <div className="setup-grid">
-        {BASKETBALL_SCENARIO.setups.map((setup, index) => (
-          <article key={setup.id} className={`place-card ${state.setupId === setup.id ? "is-selected" : ""}`}>
-            <div className="place-card__scene" data-place={setup.id}>
-              <CourtBackdrop variant={index === 0 ? "key" : "half"} />
-              <span className="place-card__option">Option {String.fromCharCode(65 + index)}</span>
-              <b className="place-card__name">{setup.title}</b>
-            </div>
-            <div className="trip">
-              <div className="trip__map" aria-hidden="true">
-                <span className="trip__dot" />
-                <span className="trip__path"><i style={{ width: `${(setup.commuteMinutes / longest) * 100}%` }} /></span>
-                <span className="trip__dot trip__dot--gym" />
-              </div>
-              <p className="trip__read"><span>{setup.commute}</span><b>{setup.commuteMinutes * 2} min a day</b></p>
-            </div>
-            <p className="place-card__tradeoff">{setup.tradeoff}</p>
-            {index === 0 ? (
-              <div className="given-total"><span>Full 8-week price · already worked out</span><MoneyAmount value={setup.total} /></div>
-            ) : (
+      {!ranked ? (
+        <>
+          <p className="stage-deck">
+            Three places, three ways of paying. Put them in order from the cheapest to the most expensive
+            <strong> across all eight weeks</strong> — the weekly price is not the whole story.
+          </p>
+          <ol className="rank-list">
+            {order.map((id, index) => {
+              const setup = byId(id);
+              return (
+                <li key={id}>
+                  <span className="rank-list__place" aria-hidden="true">{index + 1}</span>
+                  <div className="rank-list__body">
+                    <b>{setup.title}</b>
+                    <span>{setup.terms}</span>
+                  </div>
+                  <div className="rank-list__controls" role="group" aria-label={`Move ${setup.title}`}>
+                    <button type="button" aria-label={`Move ${setup.title} earlier`} aria-disabled={index === 0} onClick={() => move(index, -1)}>↑</button>
+                    <button type="button" aria-label={`Move ${setup.title} later`} aria-disabled={index === order.length - 1} onClick={() => move(index, 1)}>↓</button>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+          <div className="stage-action">
+            {state.setupRanking && !state.setupRanking.correct
+              ? <p aria-live="polite">Not yet. One of these costs less over eight weeks than its weekly price suggests.</p>
+              : <p>Order them cheapest first.</p>}
+            <Button type="button" onClick={checkOrder}>Check the order</Button>
+          </div>
+        </>
+      ) : (
+        <div ref={revealRef}>
+          <p className="stage-deck">That is the order. Now pick where Avery lives — and what it costs out of the week.</p>
+          <div className="setup-grid">
+            {setups.map((setup, index) => (
+              <article key={setup.id} className={`place-card ${state.setupId === setup.id ? "is-selected" : ""}`}>
+                <div className="place-card__scene" data-place={setup.id}>
+                  <CourtBackdrop variant={index === 0 ? "key" : "half"} />
+                  <span className="place-card__option">Option {String.fromCharCode(65 + index)}</span>
+                  <b className="place-card__name">{setup.title}</b>
+                </div>
+                <div className="given-total">
+                  <span>Eight weeks</span>
+                  <MoneyAmount value={setup.total} />
+                </div>
+                <div className="trip">
+                  <div className="trip__map" aria-hidden="true">
+                    <span className="trip__dot" />
+                    <span className="trip__path"><i style={{ width: `${(setup.commuteMinutes / longest) * 100}%` }} /></span>
+                    <span className="trip__dot trip__dot--gym" />
+                  </div>
+                  <p className="trip__read">
+                    <span>{setup.commute}</span>
+                    <b>{SCENARIO_NUMBERS.load.commuteBlocks[setup.id]} hours a week</b>
+                  </p>
+                </div>
+                <p className="place-card__tradeoff">{setup.tradeoff}</p>
+                <Button variant={state.setupId === setup.id ? "primary" : "secondary"} type="button" onClick={() => dispatch({ type: "SETUP_SELECTED", setupId: setup.id })}>{state.setupId === setup.id ? "Selected" : "Choose this setup"}</Button>
+              </article>
+            ))}
+          </div>
+          {chosen && (
+            <div className="chosen-total">
               <CalculationInput
-                calcId={index === 1 ? "setup-middle-total" : "setup-lowest-total"}
-                label="Full eight-week cost"
-                prompt={setup.terms}
-                expected={setup.total}
-                priorAttempts={state.calculations[index === 1 ? "setup-middle-total" : "setup-lowest-total"]?.attempts}
-                onSubmit={(raw, value, correct) => submitCalculation(dispatch, index === 1 ? "setup-middle-total" : "setup-lowest-total", raw, value, correct)}
-                scaffold={index === 1 ? "Multiply $125 × 8 weeks. That answer is the full price." : "The room is free. The $300 for groceries and gas is the whole eight-week cost."}
-                {...calculationSupport(dispatch, index === 1 ? "setup-middle-total" : "setup-lowest-total")}
-                compact
+                calcId="chosen-setup-total"
+                label={`What the ${chosen.title} costs Avery`}
+                prompt={chosen.terms}
+                terms="All eight weeks, before anything else is paid for."
+                expected={chosen.total}
+                priorAttempts={state.calculations["chosen-setup-total"]?.attempts}
+                onSubmit={(raw, value, correct) => submitCalculation(dispatch, "chosen-setup-total", raw, value, correct)}
+                scaffold={`Take the price in the terms and carry it across all ${SCENARIO_NUMBERS.weeks} weeks.`}
+                {...calculationSupport(dispatch, "chosen-setup-total")}
               />
-            )}
-            <Button variant={state.setupId === setup.id ? "primary" : "secondary"} type="button" onClick={() => dispatch({ type: "SETUP_SELECTED", setupId: setup.id })}>{state.setupId === setup.id ? "Selected" : "Choose this setup"}</Button>
-          </article>
-        ))}
-      </div>
-      <div className="stage-action">
-        {chosen
-          ? <p aria-live="polite"><strong>{chosen.title}.</strong> {formatDollars(chosen.total)} of Avery's money is now spoken for, and {chosen.commuteMinutes * 2} minutes of every day belong to the trip.</p>
-          : <p>No option scores better than another. Making the plan work with the place you pick is what counts.</p>}
-        <Button aria-disabled={!ready} onClick={() => ready && dispatch({ type: "GO_TO_STAGE", stage: "working-plan" })}>{ready ? "Build the plan" : middleCorrect && lowCorrect ? "Pick a place to continue" : "Finish both prices to continue"}</Button>
-      </div>
+            </div>
+          )}
+          <div className="stage-action">
+            {chosen
+              ? <p aria-live="polite"><strong>{chosen.title}.</strong> {formatDollars(chosen.total)} of Avery’s money is spoken for, and {SCENARIO_NUMBERS.load.commuteBlocks[chosen.id]} hours of every week belong to the trip.</p>
+              : <p>Each place asks for something different. Pick the one you want to build the plan around.</p>}
+            <Button aria-disabled={!ready} onClick={() => ready && dispatch({ type: "GO_TO_STAGE", stage: "working-plan" })}>
+              {ready ? "Build the plan" : chosen ? "Work out the eight-week cost to continue" : "Pick a place to continue"}
+            </Button>
+          </div>
+        </div>
+      )}
     </StageShell>
   );
 }
@@ -319,6 +391,27 @@ function WorkingStage() {
       )}
       {counted && (
         <div ref={revealRef} className="staged-reveal">
+          {/* Committing early is cheaper and takes the money out of reach. This is the
+              current-versus-future call, made before Week 5 is known. */}
+          <section className="deposit-call" aria-labelledby="deposit-heading">
+            <div className="deposit-call__intro">
+              <p className="field-label">The course seat</p>
+              <h2 id="deposit-heading">Reserve it now, or decide later?</h2>
+              <p>The sports-media course starts the week the season ends. Avery can hold a seat now for less, or wait and pay the full price.</p>
+            </div>
+            <div className="deposit-call__options">
+              <button type="button" aria-pressed={state.depositTaken === true} onClick={() => dispatch({ type: "COURSE_DEPOSIT_DECIDED", taken: true })}>
+                <b>Reserve it now</b>
+                <strong className="money">{formatDollars(SCENARIO_NUMBERS.course.depositPrice)}</strong>
+                <span>Paid up front. It stops being money you can move.</span>
+              </button>
+              <button type="button" aria-pressed={state.depositTaken === false} onClick={() => dispatch({ type: "COURSE_DEPOSIT_DECIDED", taken: false })}>
+                <b>Decide later</b>
+                <strong className="money">{formatDollars(SCENARIO_NUMBERS.course.fullPrice)}</strong>
+                <span>{formatDollars(SCENARIO_NUMBERS.course.fullPrice - SCENARIO_NUMBERS.course.depositPrice)} more, and you can still change your mind.</span>
+              </button>
+            </div>
+          </section>
           <section className="bets" aria-labelledby="maybe-money-heading">
             <div className="bets__intro">
               <p className="field-label">{STUDENT_COPY.working.maybeMoney.title}</p>
@@ -341,7 +434,9 @@ function WorkingStage() {
               </article>
             ))}
           </section>
-          <PlanBoardForMode mode="working" />
+          {state.depositTaken === null
+            ? <p className="board-gate">Make the call on the course seat to open the board.</p>
+            : <PlanBoardForMode mode="working" />}
         </div>
       )}
     </StageShell>
@@ -523,7 +618,7 @@ function FinalRepairStage() {
             <button type="button" aria-pressed={state.income.includeOptionalWork === true} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: true })}>Take the clinics</button>
             <button type="button" aria-pressed={state.income.includeOptionalWork === false} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: false })}>Keep the Saturdays</button>
           </div>
-          <p className="decision-note">Neither answer is worth points. More money can still cost something.</p>
+          <p className="decision-note">Four Saturdays that were Avery’s. The money is real and so is the tiredness.</p>
         </section>
         <section className="opportunity-card">
           <p className="eyebrow">Your call · The $800 bonus</p>
@@ -540,10 +635,10 @@ function FinalRepairStage() {
             <button type="button" aria-pressed={completionDecided && state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: true })}>Count the $800</button>
             <button type="button" aria-pressed={completionDecided && !state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: false })}>Plan without it</button>
           </div>
-          <p className="decision-note">Counting it means testing the plan once more without it.</p>
+          <p className="decision-note">Count it and you will be asked to show the plan still works if it never comes.</p>
         </section>
       </div>
-      {ready ? <div ref={revealRef}><PlanBoardForMode mode="final" /></div> : <p className="board-gate">Make both calls above to open the final board. Neither call is graded — only whether the money works afterward.</p>}
+      {ready ? <div ref={revealRef}><PlanBoardForMode mode="final" /></div> : <p className="board-gate">Make both calls above to open the final board.</p>}
     </StageShell>
   );
 }

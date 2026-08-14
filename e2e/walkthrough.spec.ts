@@ -53,11 +53,12 @@ for (const size of SIZES) {
     await page.getByRole("button", { name: "Start the eight weeks" }).click();
     await shoot("03-deal");
     await page.getByRole("button", { name: "Find Avery a place" }).click();
-    await completeSetupStage(page, 2);
-    await shoot("05-setup");
+    await shoot("04-rank-the-places");
+    await completeSetupStage(page, 2, () => shoot("05-setup"));
 
     const context: PlanContext = { setupId: "cousin-room", countCompletion: true, countOutcome: true };
     await completeWorkingCalcs(page, { attendance: true, showcase: true });
+    await shoot("05b-deposit-and-bonuses");
     await fillPlanToBalance(page, "working", context);
     await shoot("06-working-plan");
     await page.getByRole("button", { name: "Save this version" }).click();

@@ -10,5 +10,5 @@
   },
   // The browser suite reads the scenario's own numbers, so the domain it imports is
   // part of this project too.
-  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "eslint.config.js", "e2e/**/*.ts", "src/domain/**/*.ts"]
+  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "eslint.config.js", "e2e/**/*.ts", "src/domain/**/*.ts", "src/components/financial/choices.ts"]
 }

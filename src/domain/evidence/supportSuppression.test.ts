@@ -14,8 +14,8 @@ const run = (state: ChallengeState, ...actions: ChallengeAction[]) => actions.re
  */
 const setup: ChallengeAction[] = [
   { type: "SETUP_SELECTED", setupId: "gym-sublet" },
-  { type: "CALCULATION_SUBMITTED", calcId: "setup-middle-total", raw: "1000", value: dollars(1000), correct: true },
-  { type: "CALCULATION_SUBMITTED", calcId: "setup-lowest-total", raw: "300", value: dollars(300), correct: true },
+  { type: "SETUP_RANKED", order: ["cousin-room", "teammate-share", "gym-sublet"], correct: true },
+  { type: "CALCULATION_SUBMITTED", calcId: "chosen-setup-total", raw: "1800", value: dollars(1800), correct: true },
   { type: "CALCULATION_SUBMITTED", calcId: "essentials-total", raw: "1600", value: dollars(1600), correct: true },
   { type: "CALCULATION_SUBMITTED", calcId: "reliable-floor", raw: "5000", value: dollars(5000), correct: true },
 ];

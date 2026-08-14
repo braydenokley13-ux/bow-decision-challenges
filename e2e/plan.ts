@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import { SCENARIO_NUMBERS as N } from "../src/domain/scenario/numbers";
 import type { SetupId } from "../src/domain/core/ids";
 import type { PlanMode } from "../src/domain/finance/types";
+import { CHOICE_LABELS } from "../src/components/financial/choices";
 
 /**
  * The browser suite reads its dollar amounts from the scenario, exactly as the grader does.
@@ -74,9 +75,9 @@ export function splitFor(spendable: number, step: number): { goal: number; reser
 export async function fillPlanToBalance(page: Page, mode: PlanMode, context: PlanContext) {
   const step = mode === "working" || mode === "fallback" ? N.openingIncrement : N.repairIncrement;
   const { goal, reserve, flexible } = splitFor(spendableFor(mode, context), step);
-  await setAmount(page, "Sports-media course", goal);
-  await setAmount(page, "Backup money", reserve);
-  await setAmount(page, "Anything else", flexible);
+  await setAmount(page, CHOICE_LABELS.goal, goal);
+  await setAmount(page, CHOICE_LABELS.reserve, reserve);
+  await setAmount(page, CHOICE_LABELS.flexibleCash, flexible);
   return { goal, reserve, flexible };
 }
 
@@ -87,9 +88,9 @@ export async function fillPlanToBalance(page: Page, mode: PlanMode, context: Pla
 export async function fillPlanLeavingShortfall(page: Page, mode: PlanMode, context: PlanContext, shortfall: number) {
   const step = mode === "working" || mode === "fallback" ? N.openingIncrement : N.repairIncrement;
   const { goal, reserve, flexible } = splitFor(spendableFor(mode, context) + shortfall, step);
-  await setAmount(page, "Sports-media course", goal);
-  await setAmount(page, "Backup money", reserve);
-  await setAmount(page, "Anything else", flexible);
+  await setAmount(page, CHOICE_LABELS.goal, goal);
+  await setAmount(page, CHOICE_LABELS.reserve, reserve);
+  await setAmount(page, CHOICE_LABELS.flexibleCash, flexible);
 }
 
 export { N as NUMBERS };

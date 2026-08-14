@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 import { NUMBERS as N, fillPlanToBalance, fillPlanLeavingShortfall, week5TotalFor, type PlanContext } from "./plan";
 import {
   SETUP_ORDER,
+  SETUP_TITLES,
+  rankPlacesCorrectly,
   completeSetupStage,
   completeWorkingCalcs,
   decideOpportunity,
@@ -269,17 +271,35 @@ test("refreshing mid-challenge preserves stage, setup, and entered plan numbers"
 test("a stuck student gets a step-by-step hint on a calculation and can keep moving", async ({ page }) => {
   await gotoFreshChallenge(page);
   await enterChallenge(page);
-  const input = page.getByLabel("Full eight-week cost").first();
+  await rankPlacesCorrectly(page);
+  await page.locator(".place-card").nth(1).getByRole("button", { name: "Choose this setup" }).click();
+
+  const input = page.getByLabel(`What the ${SETUP_TITLES["teammate-share"]} costs Avery`);
   for (const answer of ["100", "200", "300"]) {
     await input.fill(answer);
-    await page.locator(".place-card").nth(1).getByRole("button", { name: "Check" }).click();
+    await page.locator(".chosen-total").getByRole("button", { name: "Check" }).click();
   }
   await expect(page.getByRole("button", { name: "Show me one step" })).toBeVisible();
   await page.getByRole("button", { name: "Show me one step" }).click();
-  await expect(page.getByText("$125 × 8 weeks")).toBeVisible();
+  await expect(page.getByRole("note")).toContainText(/carry it across all 8 weeks/i);
   await page.getByRole("button", { name: "Show the answer and keep going" }).click();
   await expect(input).toHaveValue(String(N.setupCosts["teammate-share"]));
   await expect(page.getByText("That's the full amount.")).toBeVisible();
+});
+
+test("clicking Check on an empty box does not burn the student's attempts", async ({ page }) => {
+  await gotoFreshChallenge(page);
+  await enterChallenge(page);
+  await rankPlacesCorrectly(page);
+  await page.locator(".place-card").nth(1).getByRole("button", { name: "Choose this setup" }).click();
+
+  // Three idle taps used to unlock "show the answer" and write answer_supplied into the
+  // student's permanent record without them ever attempting the problem.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    await page.locator(".chosen-total").getByRole("button", { name: "Check" }).click();
+  }
+  await expect(page.getByRole("button", { name: "Show me one step" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Show the answer and keep going" })).toHaveCount(0);
 });
 
 // ---------------------------------------------------------------------------

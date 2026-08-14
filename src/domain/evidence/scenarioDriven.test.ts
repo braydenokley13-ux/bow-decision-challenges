@@ -102,20 +102,18 @@ describe("expected answers are derived from the scenario, never hardcoded", () =
     const repricedRun = factsWith({
       "reliable-floor": calc("reliable-floor", 5500),
       "essentials-total": calc("essentials-total", 2000),
-      "setup-middle-total": calc("setup-middle-total", 1650),
-      "setup-lowest-total": calc("setup-lowest-total", 1150),
+      "chosen-setup-total": calc("chosen-setup-total", 1150),
     });
-    for (const [skill] of [["C1.1"], ["C3.1"], ["C2.1"], ["C2.2"]]) {
+    for (const [skill] of [["C1.1"], ["C3.1"], ["C2.2"]]) {
       expect(pointsFor(repricedRun, skill!, REPRICED)).toBe(5);
     }
 
     const staleRun = factsWith({
       "reliable-floor": calc("reliable-floor", 5000),
       "essentials-total": calc("essentials-total", 1600),
-      "setup-middle-total": calc("setup-middle-total", 1400),
-      "setup-lowest-total": calc("setup-lowest-total", 1000),
+      "chosen-setup-total": calc("chosen-setup-total", 300),
     });
-    for (const [skill] of [["C1.1"], ["C3.1"], ["C2.1"], ["C2.2"]]) {
+    for (const [skill] of [["C1.1"], ["C3.1"], ["C2.2"]]) {
       expect(pointsFor(staleRun, skill!, REPRICED)).toBe(0);
     }
   });

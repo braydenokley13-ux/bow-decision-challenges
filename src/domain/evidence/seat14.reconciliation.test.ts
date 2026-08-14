@@ -12,9 +12,9 @@ describe("Seat 14 golden case", () => {
     let state = createInitialState();
     state = run(state,
       { type: "SETUP_SELECTED", setupId: "cousin-room" },
-      { type: "CALCULATION_SUBMITTED", calcId: "setup-middle-total", raw: "900", value: dollars(900), correct: false },
-      { type: "CALCULATION_SUBMITTED", calcId: "setup-middle-total", raw: "1000", value: dollars(1000), correct: true },
-      { type: "CALCULATION_SUBMITTED", calcId: "setup-lowest-total", raw: "300", value: dollars(300), correct: true },
+      { type: "SETUP_RANKED", order: ["teammate-share", "cousin-room", "gym-sublet"], correct: false },
+      { type: "SETUP_RANKED", order: ["cousin-room", "teammate-share", "gym-sublet"], correct: true },
+      { type: "CALCULATION_SUBMITTED", calcId: "chosen-setup-total", raw: "300", value: dollars(300), correct: true },
       { type: "CALCULATION_SUBMITTED", calcId: "essentials-total", raw: "1600", value: dollars(1600), correct: true },
       { type: "CALCULATION_SUBMITTED", calcId: "reliable-floor", raw: "5000", value: dollars(5000), correct: true },
       { type: "INCOME_SOURCE_TOGGLED", sourceId: "completion-800", included: true },

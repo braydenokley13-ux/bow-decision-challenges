@@ -13,6 +13,11 @@ import type { ScenarioNumbers } from "./types";
  * `ScenarioNumbers`, which is what lets the model be re-priced and re-balanced safely.
  */
 
+/** The places ordered cheapest-first over the whole eight weeks. */
+export function setupCostOrder(n: ScenarioNumbers): SetupId[] {
+  return (Object.keys(n.setupCosts) as SetupId[]).sort((a, b) => n.setupCosts[a] - n.setupCosts[b]);
+}
+
 /** The three setup prices in rank order, so "middle" and "lowest" survive a re-pricing. */
 export function setupTotalsByRank(n: ScenarioNumbers): { lowest: Dollars; middle: Dollars; highest: Dollars } {
   const totals = (Object.keys(n.setupCosts) as SetupId[])
@@ -23,6 +28,11 @@ export function setupTotalsByRank(n: ScenarioNumbers): { lowest: Dollars; middle
     throw new Error("A scenario must price exactly three setups for the full-cost comparison.");
   }
   return { lowest, middle, highest };
+}
+
+/** What the place the student actually picked costs across the eight weeks. */
+export function chosenSetupExpectation(n: ScenarioNumbers, setupId: SetupId | undefined): Dollars | null {
+  return setupId ? n.setupCosts[setupId] : null;
 }
 
 export function reliableFloorExpectation(n: ScenarioNumbers): Dollars {

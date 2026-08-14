@@ -10,7 +10,13 @@
 
   /* Meets AA against every surface token, including surface-sunken and surface-inset. */
   --ink-3: #5a626c;
-  --ink-4: #8a9099;
+
+  /* Was #8a9099, which failed AA against every light surface it sat on. */
+  --ink-4: #6b727c;
+
+  /* Muted text on the dark panels. One token cannot clear AA against both a near-white
+     surface and a near-black one, so the dark scenes get their own. */
+  --ink-muted-invert: #b9bfc8;
   --ink-invert: #ffffff;
   --border-subtle: #e3e0d8;
   --border-default: #d0ccc1;
@@ -21,18 +27,21 @@
   --fin-reliable-ink: #0e4353;
   --fin-conditional: #e9a93c;
   --fin-conditional-soft: #fbebcb;
-  --fin-conditional-ink: #7a4b06;
+
+  /* On the striped conditional band this used to be 2.04:1. */
+  --fin-conditional-ink: #3d2503;
   --fin-conditional-stripe: #b87914;
   --fin-locked: #c9c7c0;
   --fin-locked-soft: #e8e6e0;
   --fin-locked-ink: #4a515c;
   --fin-adjustable: #4a44a8;
 
-  /* The three things a student can move. One family, three steps, so they read as the
-     same kind of money — and each one has a text colour that clears AA on it. */
-  --choice-1: #35317f;
-  --choice-2: #4a44a8;
-  --choice-3: #a9a5e4;
+  /* The three things a student can move. They read as one family, but adjacent slices
+     have to be separable as graphical objects too: --choice-1 against --choice-2 used to
+     be 1.41:1, so the two largest allocations merged into one block in the chart. */
+  --choice-1: #2b2668;
+  --choice-2: #6f68c9;
+  --choice-3: #c3bff0;
   --fin-adjustable-soft: #e6e4f7;
   --fin-adjustable-ink: #35317f;
   --fin-balanced: #1e7a49;
@@ -48,6 +57,16 @@
   --pat-exposed: repeating-linear-gradient(45deg, var(--fin-exposed-soft) 0 4px, var(--fin-exposed) 4px 8px);
   --pat-over: repeating-linear-gradient(45deg, var(--fin-over-soft) 0 4px, var(--fin-over) 4px 8px);
   --pat-ghost: repeating-linear-gradient(45deg, var(--surface-inset) 0 3px, var(--surface-sunken) 3px 6px);
+
+  /* Avery's week. Time is the second currency, so it gets its own family rather than
+     borrowing one of the money colours. */
+  --time-commute: #7a5c3a;
+  --time-rehab: #a8452e;
+  --time-clinics: #b8862b;
+  --time-bought: #d8d4cb;
+  --time-safe: #1e7a49;
+  --time-over: #c22b2b;
+
   --focus-ring: #1552e0;
   --focus-halo: #ffffff;
   --shadow-rail: 0 1px 0 var(--border-default), 0 8px 18px -16px rgb(14 20 28 / 45%);

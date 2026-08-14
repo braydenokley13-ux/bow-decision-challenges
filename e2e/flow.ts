@@ -49,21 +49,50 @@ export async function enterChallenge(page: Page) {
 
 export const SETUP_ORDER = ["gym-sublet", "teammate-share", "cousin-room"] as const;
 
-/** Both comparison calculations must be answered correctly no matter which setup is chosen. */
-export async function completeSetupStage(page: Page, chosenIndex: 0 | 1 | 2) {
-  await page.getByLabel("Full eight-week cost").first().fill(String(N.setupCosts["teammate-share"]));
-  await page.locator(".place-card").nth(1).getByRole("button", { name: "Check" }).click();
-  await page.getByLabel("Full eight-week cost").nth(1).fill(String(N.setupCosts["cousin-room"]));
-  await page.locator(".place-card").nth(2).getByRole("button", { name: "Check" }).click();
+/** Titles as the cards render them, so the ranking helper can find each row. */
+export const SETUP_TITLES: Record<(typeof SETUP_ORDER)[number], string> = {
+  "gym-sublet": "Gym District Sublet",
+  "teammate-share": "Teammate Share",
+  "cousin-room": "Cousin\u2019s Spare Room",
+};
+
+/**
+ * Order the three places cheapest-first over eight weeks, pick one, and total it. The
+ * ranking is done with the move buttons so the path is the keyboard-operable one.
+ */
+/** Puts the three places in true cheapest-first order using the move buttons. */
+export async function rankPlacesCorrectly(page: Page) {
+  const cheapestFirst = [...SETUP_ORDER].sort((a, b) => N.setupCosts[a] - N.setupCosts[b]);
+  for (let target = 0; target < cheapestFirst.length; target += 1) {
+    const wanted = cheapestFirst[target];
+    const title = SETUP_TITLES[wanted];
+    for (let guard = 0; guard < 4; guard += 1) {
+      const rows = page.locator(".rank-list li");
+      const positions = await rows.allInnerTexts();
+      const current = positions.findIndex((text) => text.includes(title));
+      if (current === target) break;
+      await rows.nth(current).getByRole("button", { name: `Move ${title} earlier` }).click();
+    }
+  }
+  await page.getByRole("button", { name: "Check the order" }).click();
+}
+
+export async function completeSetupStage(page: Page, chosenIndex: 0 | 1 | 2, onCards?: () => Promise<void>) {
+  await rankPlacesCorrectly(page);
   await page.locator(".place-card").nth(chosenIndex).getByRole("button", { name: "Choose this setup" }).click();
+  const chosen = SETUP_ORDER[chosenIndex];
+  await page.getByLabel(`What the ${SETUP_TITLES[chosen]} costs Avery`).fill(String(N.setupCosts[chosen]));
+  await page.locator(".chosen-total").getByRole("button", { name: "Check" }).click();
+  await onCards?.();
   await page.getByRole("button", { name: "Build the plan" }).click();
 }
 
-export async function completeWorkingCalcs(page: Page, opts: { attendance?: boolean; showcase?: boolean } = {}) {
+export async function completeWorkingCalcs(page: Page, opts: { attendance?: boolean; showcase?: boolean; deposit?: boolean } = {}) {
   await page.getByLabel("Safe cash").fill(String(N.savings + N.basePay));
   await page.locator(".working-setup .calculation").first().getByRole("button", { name: "Check" }).click();
   await page.getByLabel("8-week essentials").fill(String(N.essentialsTotal));
   await page.locator(".working-setup .calculation").nth(1).getByRole("button", { name: "Check" }).click();
+  await page.getByRole("button", { name: opts.deposit ? "Reserve it now" : "Decide later" }).click();
   if (opts.attendance) await page.locator(".bet").first().getByRole("button", { name: "Count it" }).click();
   if (opts.showcase) await page.locator(".bet").nth(1).getByRole("button", { name: "Count it" }).click();
 }

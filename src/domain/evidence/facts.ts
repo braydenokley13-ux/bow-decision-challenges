@@ -154,6 +154,15 @@ export function deriveFacts(log: EvidenceEvent[], n: ScenarioNumbers = SCENARIO_
     if (preview) facts.preview = preview;
   }
   if (selectedSetup) facts.selectedSetupId = selectedSetup;
+  const rankings = eventsOf(log, "SETUP_RANKED");
+  if (rankings.length > 0) {
+    facts.setupRanking = {
+      attempts: rankings.length,
+      firstCorrect: eventPayload<{ correct: boolean }>(rankings[0]!).correct,
+      correct: rankings.some((event) => eventPayload<{ correct: boolean }>(event).correct),
+      evidenceRefs: rankings.map((event) => event.id),
+    };
+  }
   if (optional) facts.optionalDecision = { accepted: eventPayload<{ accepted: boolean }>(optional).accepted, sequence: optional.sequence, evidenceRef: optional.id };
   const completion = eventsOf(log, "COMPLETION_INCOME_DECIDED").at(-1);
   if (completion) facts.completionDecision = { included: eventPayload<{ included: boolean }>(completion).included, sequence: completion.sequence, evidenceRef: completion.id };

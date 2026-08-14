@@ -28,6 +28,8 @@ export interface ChallengeState {
   stageHistory: StageId[];
   calculations: Partial<Record<CalcId, CalculationState>>;
   setupId: SetupId | null;
+  /** The student's ordering of the places by full eight-week cost, and whether it held up. */
+  setupRanking: { order: SetupId[]; correct: boolean } | null;
   /** The course seat was reserved early at the deposit price. Null until the call is made. */
   depositTaken: boolean | null;
   income: { includeCompletion: boolean; includeOutcome: boolean; includeCompletionFinal: boolean; includeOptionalWork: boolean | null };
@@ -59,6 +61,7 @@ export function createInitialState(now = 1): ChallengeState {
     stageHistory: ["entry"],
     calculations: {},
     setupId: null,
+    setupRanking: null,
     depositTaken: null,
     income: { includeCompletion: false, includeOutcome: false, includeCompletionFinal: false, includeOptionalWork: null },
     drafts: {},

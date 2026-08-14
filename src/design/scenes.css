@@ -332,3 +332,167 @@
   .recap__numbers { grid-template-columns: 1fr; }
   .bulletin { grid-template-columns: 1fr; gap: var(--s-3); }
 }
+
+/* ---------------------------------------------------------------------------
+   Ordering the places by full cost. A ranking, not a form: the comparison the
+   concept names is the thing the student actually does.
+   --------------------------------------------------------------------------- */
+
+.rank-list {
+  display: grid;
+  gap: var(--s-2);
+  margin: var(--s-5) 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: rank;
+}
+
+.rank-list li {
+  display: grid;
+  grid-template-columns: var(--tap) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-4);
+  border: 1px solid var(--border-default);
+  border-left: 4px solid var(--fin-reliable);
+  background: var(--surface);
+}
+
+.rank-list__place {
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: var(--r-pill);
+  background: var(--surface-sunken);
+  font: var(--m-sm);
+  font-feature-settings: var(--num);
+}
+
+.rank-list__body { display: grid; gap: 2px; }
+.rank-list__body b { font: var(--t-ui); }
+.rank-list__body span { color: var(--ink-2); font: var(--t-sm); }
+
+.rank-list__controls { display: flex; gap: var(--s-2); }
+
+.rank-list__controls button {
+  width: var(--tap);
+  height: var(--tap);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.rank-list__controls button[aria-disabled="true"] { color: var(--ink-4); cursor: default; }
+.rank-list__controls button:not([aria-disabled="true"]):hover { background: var(--surface-sunken); }
+
+.chosen-total { margin-top: var(--s-5); max-width: 34rem; }
+
+/* ---------------------------------------------------------------------------
+   Avery's week. One readout, never a second ledger: the student does not
+   balance it, they watch it move as the money moves.
+   --------------------------------------------------------------------------- */
+
+.week-meter {
+  display: grid;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+  padding: var(--s-4);
+  border: 1px solid var(--border-default);
+  border-top: 3px solid var(--time-commute);
+  background: var(--surface);
+}
+
+.week-meter__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; }
+.week-meter__read { display: flex; align-items: baseline; gap: var(--s-2); margin: 0; flex-wrap: wrap; }
+.week-meter__read strong { font: var(--m-sm); font-feature-settings: var(--num); }
+.week-meter__read span { color: var(--ink-2); font: var(--t-sm); }
+
+.week-meter__track {
+  position: relative;
+  display: flex;
+  height: 38px;
+  background: var(--surface-inset);
+  border: 1px solid var(--border-default);
+}
+
+.week-meter__part { display: grid; align-items: center; overflow: hidden; min-width: 0; padding-inline: 6px; color: var(--ink-invert); }
+.week-meter__part[data-part="commute"] { background: var(--time-commute); }
+.week-meter__part[data-part="rehab"] { background: var(--time-rehab); }
+.week-meter__part[data-part="clinics"] { background: var(--time-clinics); }
+.week-meter__part i, .week-meter__bought i { font-style: normal; font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
+
+.week-meter__bought {
+  display: grid;
+  align-items: center;
+  padding-inline: 6px;
+  overflow: hidden;
+  background: var(--pat-ghost);
+  color: var(--ink-2);
+  border-left: 2px solid var(--time-bought);
+}
+
+.week-meter__limit { position: absolute; inset-block: -6px; width: 0; border-left: 2px dashed var(--ink-1); }
+.week-meter__limit b {
+  position: absolute;
+  top: -1.35em;
+  left: 0;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  font-feature-settings: var(--num);
+}
+
+.week-meter__state { margin: 0; font: var(--t-sm); font-weight: 400; }
+.week-meter[data-state="quiet"] .week-meter__state { color: var(--ink-2); }
+.week-meter[data-state="safe"] .week-meter__state { color: var(--fin-balanced-ink); }
+.week-meter[data-state="over"] { border-top-color: var(--time-over); }
+.week-meter[data-state="over"] .week-meter__state { color: var(--fin-over-ink); }
+
+/* A committed row cannot be moved, so it does not pretend to be a control. */
+.choice-row--locked { grid-template-columns: 6px minmax(0, 1fr) auto; opacity: 0.9; }
+.choice-row--locked .choice-row__label { margin: 0; font: var(--t-ui); }
+.choice-row--locked .choice-row__value { color: var(--ink-2); }
+
+/* ---------------------------------------------------------------------------
+   The course seat: cheaper now, or flexible later.
+   --------------------------------------------------------------------------- */
+
+.deposit-call {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: var(--s-5);
+  align-items: center;
+  padding: var(--s-5);
+  border: 1px solid var(--border-default);
+  border-top: 3px solid var(--fin-conditional);
+  background: var(--surface);
+}
+
+.deposit-call__intro h2 { margin: var(--s-1) 0 var(--s-2); font: var(--t-display3); }
+.deposit-call__intro p { margin: 0; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.deposit-call__options { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+
+.deposit-call__options button {
+  display: grid;
+  gap: var(--s-1);
+  padding: var(--s-4);
+  text-align: left;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.deposit-call__options button b { font: var(--t-ui); }
+.deposit-call__options button strong { font: var(--m-sm); font-feature-settings: var(--num); }
+.deposit-call__options button span { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.deposit-call__options button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); border-color: var(--ink-1); }
+.deposit-call__options button[aria-pressed="true"] span { color: var(--surface-sunken); }
+
+@media (max-width: 760px) {
+  .deposit-call, .deposit-call__options { grid-template-columns: 1fr; }
+  .rank-list li { grid-template-columns: var(--tap) minmax(0, 1fr); grid-template-areas: "place body" "controls controls"; }
+  .rank-list__place { grid-area: place; }
+  .rank-list__body { grid-area: body; }
+  .rank-list__controls { grid-area: controls; }
+}

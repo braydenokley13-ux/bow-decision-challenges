@@ -28,12 +28,22 @@ export interface LoadReadout {
   net: number;
   /** The line above which Avery misses a session. */
   limit: number;
+  /**
+   * Whether the attendance bonus is on the line yet. It is decided in the weeks after the
+   * injury, so before rehab starts the meter is context about the choice already made, not
+   * a warning about a consequence that cannot happen yet.
+   */
+  atRisk: boolean;
   capacity: number;
   /** Blocks still to shed before the attendance bonus is safe. Zero when it is. */
   overBy: number;
   attendanceHolds: boolean;
+  /** What one hour a week costs to buy back. */
+  blockCost: Dollars;
   /** What it would cost to get back under the line, or null when already under it. */
   costToProtect: Dollars | null;
+  /** What it would cost from here, given what has already been spent. */
+  costToClear: Dollars;
 }
 
 export function blocksBoughtBy(timeMoney: Dollars, n: ScenarioNumbers): number {
@@ -54,16 +64,20 @@ export function loadFor(input: LoadInputs, n: ScenarioNumbers): LoadReadout {
   // Money only buys back blocks that are actually there to buy.
   const bought = Math.min(demand, blocksBoughtBy(input.timeMoney, n));
   const net = demand - bought;
-  const overBy = Math.max(0, net - n.load.attendanceLimit);
-  const shortfallFromDemand = Math.max(0, demand - n.load.attendanceLimit);
+  const atRisk = input.rehabActive;
+  const overBy = atRisk ? Math.max(0, net - n.load.attendanceLimit) : 0;
+  const shortfallFromDemand = atRisk ? Math.max(0, demand - n.load.attendanceLimit) : 0;
   return {
     demand,
     bought,
     net,
     limit: n.load.attendanceLimit,
+    atRisk,
     capacity: n.load.weeklyCapacity,
     overBy,
     attendanceHolds: overBy === 0,
+    blockCost: n.load.blockBuybackCost,
     costToProtect: shortfallFromDemand === 0 ? null : dollars(shortfallFromDemand * n.load.blockBuybackCost),
+    costToClear: dollars(overBy * n.load.blockBuybackCost),
   };
 }

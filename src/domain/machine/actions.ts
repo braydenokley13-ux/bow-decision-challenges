@@ -8,6 +8,7 @@ export type ChallengeAction =
   | { type: "SESSION_STARTED"; sessionId: string; classCode: string; seatCode: string }
   | { type: "WORLD_CONFIRMED"; worldId: "basketball" }
   | { type: "CALCULATION_SUBMITTED"; calcId: CalcId; raw: string; value: Dollars | null; correct: boolean }
+  | { type: "SETUP_RANKED"; order: readonly SetupId[]; correct: boolean }
   | { type: "SETUP_SELECTED"; setupId: SetupId }
   | { type: "COURSE_DEPOSIT_DECIDED"; taken: boolean }
   | { type: "INCOME_SOURCE_TOGGLED"; sourceId: Extract<IncomeSourceId, "completion-800" | "outcome-1000">; included: boolean }

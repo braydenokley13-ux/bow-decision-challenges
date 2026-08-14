@@ -41,8 +41,6 @@ function alternate(): AlternateStateEvidence {
 function facts(): AssessmentFacts {
   return {
     calculations: {
-      "setup-middle-total": { calcId: "setup-middle-total", attempts: [{ raw: "1400", value: dollars(1400), correct: true, eventRef: "middle" }], support: "standard_access", supplied: false },
-      "setup-lowest-total": { calcId: "setup-lowest-total", attempts: [{ raw: "1000", value: dollars(1000), correct: true, eventRef: "low" }], support: "standard_access", supplied: false },
       "essentials-total": { calcId: "essentials-total", attempts: [{ raw: "1600", value: dollars(1600), correct: true, eventRef: "must-pay" }], support: "standard_access", supplied: false },
       "reliable-floor": { calcId: "reliable-floor", attempts: [{ raw: "5000", value: dollars(5000), correct: true, eventRef: "safe" }], support: "standard_access", supplied: false },
       "week5-change": { calcId: "week5-change", attempts: [{ raw: "1050", value: dollars(1050), correct: true, eventRef: "week5" }], support: "standard_access", supplied: false },

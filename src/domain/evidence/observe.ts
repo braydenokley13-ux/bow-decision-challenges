@@ -2,7 +2,7 @@ import type { ConceptId, StructuredMicroSkillId } from "../blueprint/types";
 import { STRUCTURED_MICRO_SKILLS } from "../blueprint/microSkills";
 import { SCENARIO_NUMBERS } from "../scenario/numbers";
 import type { ScenarioNumbers } from "../scenario/types";
-import { essentialsExpectation, reliableFloorExpectation, setupTotalsByRank, week5ChangeExpectation } from "../scenario/expectations";
+import { chosenSetupExpectation, essentialsExpectation, reliableFloorExpectation, week5ChangeExpectation } from "../scenario/expectations";
 import { dollars } from "../core/money";
 import type { AssessmentFacts, MicroSkillObservation, SupportLevel, C4ObservationContext, AlternateStateEvidence } from "./types";
 import { scoreOf, type Quality } from "./support";
@@ -52,7 +52,6 @@ function primaryC4(facts: AssessmentFacts): { evidence?: AlternateStateEvidence;
 }
 
 export function observeStructured(facts: AssessmentFacts, n: ScenarioNumbers = SCENARIO_NUMBERS): MicroSkillObservation[] {
-  const setupTotals = setupTotalsByRank(n);
   const observations: MicroSkillObservation[] = [];
   observations.push(calcObservation("C1.1", facts, "reliable-floor", reliableFloorExpectation(n)));
   if (!facts.opening) observations.push(notObserved("C1.2", "The Working Plan was not saved."));
@@ -68,8 +67,21 @@ export function observeStructured(facts: AssessmentFacts, n: ScenarioNumbers = S
     observations.push(observation("C1.3", completionHandled ? "first_opportunity" : "partial", facts.preview?.support ?? "standard_access", [...facts.final.evidenceRefs, ...(facts.preview?.evidenceRefs ?? [])], completionHandled ? "Impossible outcome income is absent and remaining income risk is handled." : "The final state retains unresolved completion-payment exposure."));
   }
 
-  observations.push(calcObservation("C2.1", facts, "setup-middle-total", setupTotals.middle));
-  observations.push(calcObservation("C2.2", facts, "setup-lowest-total", setupTotals.lowest));
+  // Comparing full cost across time is a comparison, so it is observed as one: the
+  // student orders the three places by what they actually cost over eight weeks. It used
+  // to be two multiplication drills that gated the screen.
+  const ranking = facts.setupRanking;
+  if (!ranking) observations.push(notObserved("C2.1", "The places were never ordered by full cost."));
+  else observations.push(observation(
+    "C2.1",
+    ranking.firstCorrect ? "first_opportunity" : ranking.correct ? "corrected" : "none",
+    "standard_access",
+    ranking.evidenceRefs,
+    ranking.correct
+      ? "The three places were ordered by what each costs across the whole eight weeks."
+      : "The ordering does not match what the places cost across eight weeks.",
+  ));
+  observations.push(calcObservation("C2.2", facts, "chosen-setup-total", chosenSetupExpectation(n, facts.selectedSetupId)));
 
   const essentials = calcObservation("C3.1", facts, "essentials-total", essentialsExpectation(n));
   observations.push(facts.opening && essentials.points !== null ? essentials : !facts.opening ? notObserved("C3.1", "The locked-cost plan was not saved.") : essentials);

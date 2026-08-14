@@ -38,7 +38,7 @@ export interface PlanSnapshot {
  * an event type appears that is not on this list.
  */
 export type EvidenceEventType =
-  | "SESSION_STARTED" | "WORLD_CONFIRMED" | "STAGE_ENTERED" | "CALCULATION_SUBMITTED" | "SETUP_SELECTED"
+  | "SESSION_STARTED" | "WORLD_CONFIRMED" | "STAGE_ENTERED" | "CALCULATION_SUBMITTED" | "SETUP_RANKED" | "SETUP_SELECTED"
   | "COURSE_DEPOSIT_DECIDED"
   | "INCOME_SOURCE_TOGGLED" | "PLAN_SAVE_REQUESTED" | "PLAN_SAVED" | "LOCKED_MOVE_ATTEMPTED"
   | "WEEK5_ADVANCE_CONFIRMED" | "GAP_TILE_TOGGLED" | "OPTIONAL_WORK_DECIDED"
@@ -46,7 +46,7 @@ export type EvidenceEventType =
   | "DEFENSE_SUBMITTED";
 
 export const EVIDENCE_EVENT_TYPES: readonly EvidenceEventType[] = [
-  "SESSION_STARTED", "WORLD_CONFIRMED", "STAGE_ENTERED", "CALCULATION_SUBMITTED", "SETUP_SELECTED",
+  "SESSION_STARTED", "WORLD_CONFIRMED", "STAGE_ENTERED", "CALCULATION_SUBMITTED", "SETUP_RANKED", "SETUP_SELECTED",
   "COURSE_DEPOSIT_DECIDED",
   "INCOME_SOURCE_TOGGLED", "PLAN_SAVE_REQUESTED", "PLAN_SAVED", "LOCKED_MOVE_ATTEMPTED",
   "WEEK5_ADVANCE_CONFIRMED", "GAP_TILE_TOGGLED", "OPTIONAL_WORK_DECIDED",
@@ -112,6 +112,8 @@ export interface AssessmentFacts {
   preview?: AlternateStateEvidence;
   final?: { snapshot: PlanSnapshot; balance: Dollars; acknowledgedResidual: boolean; lockedMoveAttempts: number; support: SupportLevel; evidenceRefs: string[] };
   selectedSetupId?: SetupId;
+  /** Ordering the three places by true eight-week cost — the comparison, as an action. */
+  setupRanking?: { attempts: number; firstCorrect: boolean; correct: boolean; evidenceRefs: string[] };
   selectedGapTiles: string[];
   applicableGapTiles: string[];
   optionalDecision?: { accepted: boolean; sequence: number; evidenceRef: string };

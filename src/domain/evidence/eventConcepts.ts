@@ -15,8 +15,7 @@ import type { EvidenceEventType } from "./types";
 
 const CALC_CONCEPTS: Record<CalcId, ConceptId> = {
   "reliable-floor": "income-reliability",
-  "setup-middle-total": "full-cost",
-  "setup-lowest-total": "full-cost",
+  "chosen-setup-total": "full-cost",
   "essentials-total": "viable-budget",
   "week5-change": "adaptation",
 };
@@ -30,6 +29,7 @@ const PLAN_CONCEPTS: Record<PlanMode, readonly ConceptId[]> = {
 };
 
 const STATIC_CONCEPTS: Partial<Record<EvidenceEventType, readonly ConceptId[]>> = {
+  SETUP_RANKED: ["full-cost"],
   SETUP_SELECTED: ["full-cost"],
   COURSE_DEPOSIT_DECIDED: ["viable-budget", "contingency"],
   INCOME_SOURCE_TOGGLED: ["income-reliability"],
