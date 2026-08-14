@@ -27,7 +27,7 @@ describe("challenge state machine", () => {
     state = challengeReducer(state, { type: "PLAN_SAVE_REQUESTED", mode: "working" });
     // No conditional income means no lower-resource version to build, so there is no
     // screen in between whose only message is that there is nothing to do.
-    expect(state.stage).toBe("week5-transition");
+    expect(state.stage).toBe("season-weeks");
     expect(state.saved.working).toBeDefined();
   });
 

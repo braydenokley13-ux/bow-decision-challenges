@@ -154,8 +154,8 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
       next = append(next, "PLAN_SAVED", { mode: action.mode, snapshot, balance }, supportFor(state, action.mode), undefined, at);
       // A plan built on no conditional income has no lower-resource version to build,
       // so the season starts instead of a screen that only says there is nothing to do.
-      if (action.mode === "working") return goTo(next, state.income.includeCompletion || state.income.includeOutcome ? "fallback-version" : "week5-transition", at);
-      if (action.mode === "fallback") return goTo(next, "week5-transition", at);
+      if (action.mode === "working") return goTo(next, state.income.includeCompletion || state.income.includeOutcome ? "fallback-version" : "season-weeks", at);
+      if (action.mode === "fallback") return goTo(next, "season-weeks", at);
       if (action.mode === "week5-first-response") return goTo(next, "opportunity-final-repair", at);
       if (action.mode === "final") return goTo(next, state.income.includeCompletionFinal ? "remaining-risk-preview" : "defense", at);
       return goTo(next, "defense", at);

@@ -208,6 +208,52 @@
 .post__voice--scene { grid-column: 1 / -1; margin: 0 clamp(24px, 4vw, 48px) clamp(20px, 3vw, 32px); background: var(--world-panel); border: 1px solid var(--world-panel-edge); }
 .post__voice--scene p { color: var(--world-hero-ink); }
 
+/* ---------------------------------------------------------------------------
+   Weeks 1–4, played. The ledger sits beside the weeks rather than under them, so
+   what a week costs is legible at the moment it costs it.
+   --------------------------------------------------------------------------- */
+
+.season { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+
+.season-ledger {
+  position: sticky;
+  top: calc(72px + var(--s-4));
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-top: 3px solid var(--fin-adjustable);
+}
+
+.season-ledger > .field-label { margin: 0; }
+.season-ledger__row { display: grid; gap: var(--s-1); }
+.season-ledger__row > span:first-child { color: var(--ink-2); font: var(--t-ui); }
+.season-ledger__row strong { font: var(--m-lg); font-feature-settings: var(--num); }
+.season-ledger__row small { color: var(--ink-3); font: var(--t-micro); font-feature-settings: var(--num); }
+.season-ledger__bar { height: 6px; margin-top: var(--s-2); display: block; background: var(--surface-inset); border-radius: var(--r-pill); overflow: hidden; }
+.season-ledger__bar i { height: 100%; display: block; border-radius: var(--r-pill); transition: width var(--dur-move) var(--ease-standard); }
+.season-ledger__row[data-tone="money"] .season-ledger__bar i { background: var(--fin-reliable); }
+.season-ledger__row[data-tone="time"] .season-ledger__bar i { background: var(--time-commute); }
+.season-ledger__plan { display: grid; gap: var(--s-2); margin: 0; padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); }
+.season-ledger__plan > div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
+.season-ledger__plan dt { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.season-ledger__plan dd { margin: 0; font: var(--m-xs); font-feature-settings: var(--num); }
+.season-ledger__note { margin: 0; color: var(--ink-3); font: var(--t-micro); }
+
+/* The weeks themselves stack down the page: one card per week, newest last, so the
+   season reads as a column of time rather than a row of equal-weight tiles. */
+.feed--season { grid-template-columns: 1fr; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.feed--season > li { display: grid; }
+.feed--season .post { grid-template-columns: 110px minmax(0, 1fr) minmax(0, 20ch); align-items: start; gap: var(--s-3) var(--s-5); }
+.feed--season .post__tag { grid-row: 1 / span 2; align-self: center; }
+.feed--season .post__note { max-width: 52ch; }
+.feed--season .post__voice { grid-column: 3; grid-row: 1 / span 2; }
+.post__spend { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); margin: 0; font: var(--m-xs); font-feature-settings: var(--num); }
+.post__spend span:first-child { color: var(--fin-over-ink); }
+.post__spend span:last-child { color: var(--time-commute); }
+
+
 /* --- Scene 5: Week 5 ------------------------------------------------------ */
 .reel { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s-3); }
 .reel article { display: grid; align-content: start; gap: var(--s-3); padding: var(--s-4); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--fin-reliable); animation: week-in var(--dur-stage) var(--ease-exit) both; }
@@ -489,8 +535,24 @@
 .deposit-call__options button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); border-color: var(--ink-1); }
 .deposit-call__options button[aria-pressed="true"] span { color: var(--surface-sunken); }
 
+/* At the Week 4 deadline the call is the screen, so it stacks and states its own
+   consequence before the student can commit to it. */
+.deposit-call--deadline { grid-template-columns: 1fr; align-items: stretch; border-top-width: 4px; }
+.deposit-call--deadline .deposit-call__options { grid-template-columns: 1fr 1fr; }
+.deposit-call__effect {
+  margin: 0;
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface-sunken);
+  border-left: 3px solid var(--fin-conditional);
+  font: var(--t-body);
+  font-feature-settings: var(--num);
+}
+.deposit-call--deadline .stage-action { margin-top: 0; }
+
 @media (max-width: 760px) {
-  .deposit-call, .deposit-call__options { grid-template-columns: 1fr; }
+  .deposit-call, .deposit-call__options, .deposit-call--deadline .deposit-call__options { grid-template-columns: 1fr; }
+  .season { grid-template-columns: 1fr; }
+  .season-ledger { position: static; }
   .rank-list li { grid-template-columns: var(--tap) minmax(0, 1fr); grid-template-areas: "place body" "controls controls"; }
   .rank-list__place { grid-area: place; }
   .rank-list__body { grid-area: body; }

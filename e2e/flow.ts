@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { COUNT_BONUS_BUTTON, NUMBERS as N } from "./plan";
 import { PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
+import { weeksBeforeDisruption } from "../src/domain/scenario/season";
 
 /**
  * One driver for both the assertion suite and the screenshot walkthrough.
@@ -88,14 +89,25 @@ export async function completeSetupStage(page: Page, chosenIndex: 0 | 1 | 2, onC
   await page.getByRole("button", { name: "Build the plan" }).click();
 }
 
-export async function completeWorkingCalcs(page: Page, opts: { attendance?: boolean; showcase?: boolean; deposit?: boolean } = {}) {
+export async function completeWorkingCalcs(page: Page, opts: { attendance?: boolean; showcase?: boolean } = {}) {
   await page.getByLabel("Safe cash").fill(String(N.savings + N.basePay));
   await page.locator(".working-setup .calculation").first().getByRole("button", { name: "Check" }).click();
   await page.getByLabel("8-week essentials").fill(String(N.essentialsTotal));
   await page.locator(".working-setup .calculation").nth(1).getByRole("button", { name: "Check" }).click();
-  await page.getByRole("button", { name: opts.deposit ? "Reserve it now" : "Decide later" }).click();
   if (opts.attendance) await page.locator(".bet").first().getByRole("button", { name: "Count it" }).click();
   if (opts.showcase) await page.locator(".bet").nth(1).getByRole("button", { name: "Count it" }).click();
+}
+
+/**
+ * Plays Weeks 1–4 one at a time and answers the course-deposit deadline that closes them.
+ * The weeks are stepped rather than skipped because stepping is what a student does.
+ */
+export async function playSeasonWeeks(page: Page, opts: { deposit?: boolean } = {}) {
+  for (const week of weeksBeforeDisruption(N).slice(1)) {
+    await page.getByRole("button", { name: `Play Week ${week}` }).click();
+  }
+  await page.getByRole("button", { name: opts.deposit ? "Reserve it now" : "Wait and decide later" }).click();
+  await page.getByRole("button", { name: "Lock it in and play Week 5" }).click();
 }
 
 export async function setAmount(page: Page, label: string, value: string) {

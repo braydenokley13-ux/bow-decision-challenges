@@ -113,20 +113,6 @@ p { color: var(--ink-2); }
 
 /* Plan checks and Week 5 */
 
-/* Weeks 1–4 pass here, so Week 5 lands on a season the student has watched happen. */
-.season-layout { display: grid; gap: var(--s-4); }
-.season-log { margin: 0; padding: 0; list-style: none; background: var(--surface); border: 1px solid var(--border-default); }
-.season-log li { display: grid; grid-template-columns: 92px 1fr; gap: var(--s-5); padding: var(--s-5) var(--s-6); border-left: 3px solid var(--fin-reliable); animation: week-in var(--dur-stage) var(--ease-exit) both; }
-.season-log li + li { border-top: 1px solid var(--border-subtle); }
-.season-log li:nth-child(2) { animation-delay: 90ms; }
-.season-log li:nth-child(3) { animation-delay: 180ms; }
-.season-log li:nth-child(4) { animation-delay: 270ms; }
-.season-log li:nth-child(5) { animation-delay: 380ms; }
-.season-log li[data-state="next"] { border-left-color: var(--world-accent); background: var(--surface-sunken); }
-.season-log b { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
-.season-log li[data-state="next"] b { color: var(--world-accent); }
-.season-log p { margin: 0; font: var(--t-ui); font-weight: 400; }
-
 @keyframes week-in { from { transform: translateY(8px); } to { transform: none; } }
 
 /* The three amounts the student chose, echoed back where the story needs them. */

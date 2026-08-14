@@ -10,8 +10,8 @@ export type C4ObservationContext = "opening_income_fallback" | "week5_cost_respo
 
 export type StageId =
   | "entry" | "join" | "choose-world" | "the-offer" | "role-contract" | "setup-comparison" | "working-plan"
-  | "fallback-version" | "income-check" | "week5-transition" | "week5-event" | "first-response"
-  | "opportunity-final-repair" | "remaining-risk-preview" | "defense" | "submitted";
+  | "fallback-version" | "income-check" | "season-weeks" | "week5-transition" | "week5-event" | "first-response"
+  | "opportunity-final-repair" | "remaining-risk-preview" | "week8-resolution" | "defense" | "submitted";
 
 export interface PlanSnapshot {
   id: string;

@@ -2,7 +2,7 @@ import type { PropsWithChildren } from "react";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { CONDITIONAL_INCOME_KEYS, incomeAmount, RELIABLE_INCOME_KEYS } from "../domain/scenario/expectations";
 import { formatDollars } from "../domain/core/money";
-import { PROGRESS_STEPS, progressIndexFor, seasonPositionFor } from "../domain/machine/stages";
+import { PROGRESS_STEPS, progressIndexFor, seasonPositionFor, type SeasonPosition } from "../domain/machine/stages";
 import type { StageId } from "../domain/evidence/types";
 import { AppMark } from "../components/primitives/AppMark";
 import { SeasonStrip } from "../components/story/SeasonStrip";
@@ -18,9 +18,15 @@ const MONEY_SHEET = [...RELIABLE_INCOME_KEYS, ...CONDITIONAL_INCOME_KEYS].map((k
   amount: incomeAmount(numbers, key),
 }));
 
-export function StageShell({ stage, title, kicker, children }: PropsWithChildren<{ stage: StageId; title: string; kicker?: string }>) {
+/**
+ * `position` lets a stage that spans several weeks drive the strip itself. The season
+ * stage plays four weeks inside one stage id, and a strip frozen on Week 1 while the
+ * student watches Week 4 spend money would be the one thing on screen telling them the
+ * story had not moved.
+ */
+export function StageShell({ stage, title, kicker, position: override, children }: PropsWithChildren<{ stage: StageId; title: string; kicker?: string; position?: SeasonPosition }>) {
   const chapter = progressIndexFor(stage);
-  const position = seasonPositionFor(stage);
+  const position = override ?? seasonPositionFor(stage);
   const announcement = `${position.caption}. Part ${chapter + 1} of ${PROGRESS_STEPS.length}: ${PROGRESS_STEPS[chapter]?.label}.`;
   return (
     <div className="challenge-shell" data-world={BASKETBALL_SCENARIO.id}>

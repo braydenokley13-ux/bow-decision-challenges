@@ -19,6 +19,7 @@ import { bonusWeeks, clinicWeeks } from "../domain/scenario/season";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { amountsFor, meaningfulAttempts, snapshotForMode } from "../domain/machine/selectors";
 import { STUDENT_COPY } from "../content/studentCopy";
+import { SeasonWeeks } from "./SeasonWeeks";
 
 const BONUS_WEEKS = bonusWeeks(SCENARIO_NUMBERS);
 const CLINIC_WEEKS = clinicWeeks(SCENARIO_NUMBERS);
@@ -421,27 +422,6 @@ function WorkingStage() {
       )}
       {counted && (
         <div ref={revealRef} className="staged-reveal">
-          {/* Committing early is cheaper and takes the money out of reach. This is the
-              current-versus-future call, made before Week 5 is known. */}
-          <section className="deposit-call" aria-labelledby="deposit-heading">
-            <div className="deposit-call__intro">
-              <p className="field-label">The course seat</p>
-              <h2 id="deposit-heading">Reserve it now, or decide later?</h2>
-              <p>The sports-media course starts the week the season ends. Avery can hold a seat now for less, or wait and pay the full price.</p>
-            </div>
-            <div className="deposit-call__options">
-              <button type="button" aria-pressed={state.depositTaken === true} onClick={() => dispatch({ type: "COURSE_DEPOSIT_DECIDED", taken: true })}>
-                <b>Reserve it now</b>
-                <strong className="money">{formatDollars(SCENARIO_NUMBERS.course.depositPrice)}</strong>
-                <span>Paid up front. It stops being money you can move.</span>
-              </button>
-              <button type="button" aria-pressed={state.depositTaken === false} onClick={() => dispatch({ type: "COURSE_DEPOSIT_DECIDED", taken: false })}>
-                <b>Decide later</b>
-                <strong className="money">{formatDollars(SCENARIO_NUMBERS.course.fullPrice)}</strong>
-                <span>{formatDollars(SCENARIO_NUMBERS.course.fullPrice - SCENARIO_NUMBERS.course.depositPrice)} more, and you can still change your mind.</span>
-              </button>
-            </div>
-          </section>
           <section className="bets" aria-labelledby="maybe-money-heading">
             <div className="bets__intro">
               <p className="field-label">{STUDENT_COPY.working.maybeMoney.title}</p>
@@ -464,9 +444,7 @@ function WorkingStage() {
               </article>
             ))}
           </section>
-          {state.depositTaken === null
-            ? <p className="board-gate">Make the call on the course seat to open the board.</p>
-            : <PlanBoardForMode mode="working" />}
+          <PlanBoardForMode mode="working" />
         </div>
       )}
     </StageShell>
@@ -487,54 +465,6 @@ function PlanEcho({ mode, label, note }: { mode: PlanMode; label: string; note?:
       </dl>
       {note && <p className="plan-echo__note">{note}</p>}
     </section>
-  );
-}
-
-/** One week of the season: what the team saw, and what Avery says about it. */
-function WeekPost({ tag, note, voice, index }: { tag: string; note: string; voice: string; index: number }) {
-  return (
-    <article className="post" style={{ animationDelay: `${index * 140}ms` }}>
-      <p className="post__tag">{tag}</p>
-      <p className="post__note">{note}</p>
-      <blockquote className="post__voice">
-        <span className="post__who" aria-hidden="true">{BASKETBALL_SCENARIO.offer.jersey}</span>
-        <p>{voice}</p>
-      </blockquote>
-    </article>
-  );
-}
-
-/** Beat 6. Four weeks pass on screen so Week 5 lands on a season the student watched. */
-function Week5TransitionStage() {
-  const { state, dispatch } = useChallenge();
-  const savedMode: PlanMode = state.saved.fallback ? "fallback" : "working";
-  const setupId = state.setupId;
-  const noConditional = !state.income.includeCompletion && !state.income.includeOutcome;
-  return (
-    <StageShell stage="week5-transition" kicker="Weeks 1 to 4" title="The season starts.">
-      <div className="season-layout">
-        <div className="feed">
-          {BASKETBALL_SCENARIO.season.map((entry, index) => (
-            <WeekPost key={entry.week} tag={entry.week} note={entry.note} voice={setupId ? entry.voice[setupId] : ""} index={index} />
-          ))}
-          <article className="post" data-state="next" style={{ animationDelay: "560ms" }}>
-            <p className="post__tag">Week 5</p>
-            <p className="post__note">Not played yet.</p>
-          </article>
-        </div>
-        <PlanEcho
-          mode={savedMode}
-          label="What Avery has been living on"
-          note={noConditional
-            ? "Your plan counts on no bonus money, so there was no backup version to build."
-            : "Rent is paid. The bonuses are still open."}
-        />
-      </div>
-      <div className="stage-action">
-        <p>Nothing you saved changes from here. Whatever Week 5 brings, it lands on the plan you already built.</p>
-        <Button onClick={() => dispatch({ type: "WEEK5_ADVANCE_CONFIRMED" })}>Play Week 5</Button>
-      </div>
-    </StageShell>
   );
 }
 
@@ -813,9 +743,9 @@ export function StudentChallenge() {
       case "setup-comparison": return <SetupStage />;
       case "working-plan": return <WorkingStage />;
       case "fallback-version": return <PlanStage mode="fallback" kicker="Before the season" title="What if the bonus never shows up?" deck="Your plan counts on money Avery does not have yet. Build the version that works without it." />;
-      // Retired as its own screen — a plan with no bonus money now starts the season directly.
-      case "income-check": return <Week5TransitionStage />;
-      case "week5-transition": return <Week5TransitionStage />;
+      // Retired as their own screens — a plan with no bonus money starts the season
+      // directly, and the passive Weeks 1–4 feed is now a season the student plays.
+      case "income-check": case "week5-transition": case "season-weeks": return <SeasonWeeks />;
       case "week5-event": return <Week5EventStage />;
       case "first-response": return <PlanStage mode="week5-first-response" kicker="Week 5 · First response" title="Fix what you can with what Avery has." deck="No new money. Move your own numbers as far as they go." />;
       case "opportunity-final-repair": return <FinalRepairStage />;

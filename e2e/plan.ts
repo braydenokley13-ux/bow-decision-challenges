@@ -48,6 +48,8 @@ export function availableFor(mode: PlanMode, context: PlanContext): number {
 }
 
 export function lockedFor(mode: PlanMode, context: PlanContext): number {
+  // The seat is reserved at the Week 4 deadline, which is after the opening plan and its
+  // backup are saved, so those two boards never carry the deposit as a locked cost.
   const week5 = mode === "week5-first-response" || mode === "final" || mode === "remaining-risk";
   const clinicsCounted = (mode === "final" || mode === "remaining-risk") && context.clinics;
   return (
@@ -55,7 +57,7 @@ export function lockedFor(mode: PlanMode, context: PlanContext): number {
     + N.essentialsTotal
     + (week5 ? N.requiredWeek5Cost + N.setupEventCosts[context.setupId] : 0)
     + (clinicsCounted ? N.optionalWorkCost : 0)
-    + (context.deposit ? N.course.depositPrice : 0)
+    + (week5 && context.deposit ? N.course.depositPrice : 0)
   );
 }
 
@@ -75,9 +77,9 @@ async function setAmount(page: Page, label: string, value: number) {
 }
 
 /** Splits whatever is spendable across the three rows, course first up to its cap. */
-export function splitFor(spendable: number, step: number): { goal: number; reserve: number; flexible: number } {
+export function splitFor(spendable: number, step: number, courseCap: number = N.course.fullPrice): { goal: number; reserve: number; flexible: number } {
   const usable = Math.max(0, spendable);
-  const goal = Math.min(N.course.fullPrice, Math.floor(usable / step) * step);
+  const goal = Math.min(courseCap, Math.floor(usable / step) * step);
   const rest = usable - goal;
   const reserve = Math.floor(rest / 2 / step) * step;
   return { goal, reserve, flexible: rest - reserve };
@@ -86,8 +88,10 @@ export function splitFor(spendable: number, step: number): { goal: number; reser
 /** Fills the board so the plan lands on exactly zero for the mode being shown. */
 export async function fillPlanToBalance(page: Page, mode: PlanMode, context: PlanContext) {
   const step = mode === "working" || mode === "fallback" ? N.openingIncrement : N.repairIncrement;
-  const { goal, reserve, flexible } = splitFor(spendableFor(mode, context), step);
-  await setAmount(page, CHOICE_LABELS.goal, goal);
+  // A reserved seat is already paid, so the course row is locked at zero on later boards.
+  const reservedAlready = context.deposit && mode !== "working" && mode !== "fallback";
+  const { goal, reserve, flexible } = splitFor(spendableFor(mode, context), step, reservedAlready ? 0 : Number(N.course.fullPrice));
+  if (!reservedAlready) await setAmount(page, CHOICE_LABELS.goal, goal);
   await setAmount(page, CHOICE_LABELS.reserve, reserve);
   await setAmount(page, CHOICE_LABELS.flexibleCash, flexible);
   return { goal, reserve, flexible };

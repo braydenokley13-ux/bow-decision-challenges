@@ -38,11 +38,20 @@ for (const size of SIZES) {
     });
     page.on("pageerror", (error) => problems.push(`page error — ${error.message}`));
 
+    // A full-page screenshot pins sticky elements to the top of the *image*, so the
+    // challenge topbar was covering the heading of every stage it was meant to sit above —
+    // which made the captures unreadable for exactly the review they exist for. Sticky is
+    // released for the shot and restored straight after, so the artefact shows the page
+    // and the running product still behaves as designed.
     const shoot = async (name: string) => {
       await page.waitForTimeout(650); // let stage entrance animations settle
-      await page.screenshot({ path: `${OUT}/${size.name}-${name}.png`, fullPage: true });
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       if (overflow > 1) problems.push(`${name}: horizontal overflow ${overflow}px`);
+      await page.addStyleTag({ content: "[class*='topbar'], .season-ledger { position: static !important; }" });
+      await page.screenshot({ path: `${OUT}/${size.name}-${name}.png`, fullPage: true });
+      await page.evaluate(() => document.querySelectorAll("style").forEach((tag) => {
+        if (tag.textContent?.includes("position: static !important")) tag.remove();
+      }));
     };
 
     await page.goto("/");
@@ -58,7 +67,7 @@ for (const size of SIZES) {
 
     const context: PlanContext = { setupId: "cousin-room", countCompletion: true, countOutcome: true };
     await completeWorkingCalcs(page, { attendance: true, showcase: true });
-    await shoot("05b-deposit-and-bonuses");
+    await shoot("05b-count-the-bonuses");
     await fillPlanToBalance(page, "working", context);
     await shoot("06-working-plan");
     await page.getByRole("button", { name: "Save this version" }).click();
@@ -66,9 +75,15 @@ for (const size of SIZES) {
     await fillPlanToBalance(page, "fallback", context);
     await shoot("07-fallback");
     await page.getByRole("button", { name: "Save this version" }).click();
-    await shoot("08-week5-transition");
+    await shoot("08-season-week-1");
 
-    await page.getByRole("button", { name: "Play Week 5" }).click();
+    for (const week of [2, 3, 4]) {
+      await page.getByRole("button", { name: `Play Week ${week}` }).click();
+      if (week === 4) await shoot("08b-season-week-4");
+    }
+    await page.getByRole("button", { name: "Wait and decide later" }).click();
+    await shoot("08c-deposit-deadline");
+    await page.getByRole("button", { name: "Lock it in and play Week 5" }).click();
     await shoot("09-week5-reveal");
     const tiles = page.locator(".gap-tiles button");
     for (let index = 0; index < (await tiles.count()); index += 1) await tiles.nth(index).click();

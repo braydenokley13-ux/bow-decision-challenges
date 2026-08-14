@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { NUMBERS as N, NO_BONUS_HEADING, fillPlanToBalance, fillPlanLeavingShortfall, money, week5TotalFor, type PlanContext } from "./plan";
+import { NUMBERS as N, NO_BONUS_HEADING, fillPlanToBalance, fillPlanLeavingShortfall, money, spendableFor, week5TotalFor, type PlanContext } from "./plan";
 import {
   SETUP_ORDER,
   SETUP_TITLES,
@@ -9,6 +9,7 @@ import {
   decideOpportunity,
   enterChallenge,
   gotoFreshChallenge,
+  playSeasonWeeks,
   noHorizontalOverflow,
   noSeriousAxeViolations,
   noStaleCopy,
@@ -61,7 +62,7 @@ test("full conditional path completes through fallback, Week 5, remaining-risk p
   await page.getByRole("button", { name: `Save it, ${money(900)} still missing` }).click();
 
   await expect(page.getByRole("heading", { name: "The season starts." })).toBeVisible();
-  await page.getByRole("button", { name: "Play Week 5" }).click();
+  await playSeasonWeeks(page);
 
   await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
   await passWeek5Calculation(page, String(week5TotalFor(context)));
@@ -110,7 +111,7 @@ test("confirmed-only path on the inexpensive setup skips the fallback and comple
   // starts straight away instead of on a screen that only says there is nothing to do.
   await expect(page.getByRole("heading", { name: "The season starts." })).toBeVisible();
   await expect(page.getByRole("heading", { name: "What if the bonus never shows up?" })).not.toBeVisible();
-  await page.getByRole("button", { name: "Play Week 5" }).click();
+  await playSeasonWeeks(page);
 
   await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
   await passWeek5Calculation(page, String(week5TotalFor(context)));
@@ -149,7 +150,7 @@ test("declining the optional weekend clinics still completes the plan", async ({
   await fillPlanToBalance(page, "fallback", context);
   await page.getByRole("button", { name: "Save this version" }).click();
 
-  await page.getByRole("button", { name: "Play Week 5" }).click();
+  await playSeasonWeeks(page);
   await passWeek5Calculation(page, String(week5TotalFor(context)));
 
   await fillPlanToBalance(page, "week5-first-response", context);
@@ -185,7 +186,7 @@ test("leaving the $800 bonus out of the final plan skips the remaining-risk prev
   const context: PlanContext = { setupId: "teammate-share" };
   await fillPlanToBalance(page, "working", context);
   await page.getByRole("button", { name: "Save this version" }).click();
-  await page.getByRole("button", { name: "Play Week 5" }).click();
+  await playSeasonWeeks(page);
 
   await passWeek5Calculation(page, String(week5TotalFor(context)));
 
@@ -225,7 +226,7 @@ test("the expensive setup completes and Week 5 shows only two changed items (no 
   await fillPlanToBalance(page, "fallback", context);
   await page.getByRole("button", { name: "Save this version" }).click();
 
-  await page.getByRole("button", { name: "Play Week 5" }).click();
+  await playSeasonWeeks(page);
   await expect(page.locator(".gap-tiles button")).toHaveCount(2);
   await passWeek5Calculation(page, String(week5TotalFor(context)));
 
@@ -388,7 +389,7 @@ test("key screens have no serious or critical accessibility violations", async (
   const scanned: PlanContext = { setupId: "cousin-room" };
   await fillPlanToBalance(page, "working", scanned);
   await page.getByRole("button", { name: "Save this version" }).click();
-  await page.getByRole("button", { name: "Play Week 5" }).click();
+  await playSeasonWeeks(page);
   await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
   await noSeriousAxeViolations(page);
 
@@ -463,4 +464,123 @@ test("student entry screens do not spill sideways at a 640px-wide viewport", asy
   await noHorizontalOverflow(page);
   await page.goto("/educator/class");
   await noHorizontalOverflow(page);
+});
+
+// ---------------------------------------------------------------------------
+// 19. Weeks 1–4 spend. The season stage is the beat that makes the plan feel like
+//     a commitment, so what it claims to spend has to actually move on screen.
+// ---------------------------------------------------------------------------
+
+test("playing Weeks 1 to 4 drains money and piles up hours at the rate the housing charges", async ({ page }) => {
+  await gotoFreshChallenge(page);
+  await enterChallenge(page);
+  await completeSetupStage(page, 2); // cousin-room: nearly free, nearly unreachable
+  await completeWorkingCalcs(page);
+  await fillPlanToBalance(page, "working", { setupId: "cousin-room" });
+  await page.getByRole("button", { name: "Save this version" }).click();
+
+  const money = page.locator(".season-ledger__row[data-tone='money'] strong");
+  const hours = page.locator(".season-ledger__row[data-tone='time'] strong");
+  const read = async (locator: typeof money) => Number((await locator.innerText()).replace(/[^0-9]/g, ""));
+
+  const startMoney = await read(money);
+  const startHours = await read(hours);
+  expect(startHours).toBe(N.load.commuteBlocks["cousin-room"]);
+
+  for (const week of [2, 3, 4]) await page.getByRole("button", { name: `Play Week ${week}` }).click();
+
+  // Four weeks of rent and essentials have gone out, and four weeks of the trip.
+  expect(await read(hours)).toBe(N.load.commuteBlocks["cousin-room"] * 4);
+  const endMoney = await read(money);
+  expect(endMoney).toBeGreaterThan(0);
+  expect(endMoney).not.toBe(startMoney);
+});
+
+test("a costlier place leaves Avery visibly poorer by Week 4 than a cheaper one", async ({ page }) => {
+  const inHandAtWeek4 = async (index: 0 | 2, setupId: "gym-sublet" | "cousin-room") => {
+    await gotoFreshChallenge(page);
+    await enterChallenge(page);
+    await completeSetupStage(page, index);
+    await completeWorkingCalcs(page);
+    await fillPlanToBalance(page, "working", { setupId });
+    await page.getByRole("button", { name: "Save this version" }).click();
+    for (const week of [2, 3, 4]) await page.getByRole("button", { name: `Play Week ${week}` }).click();
+    const text = await page.locator(".season-ledger__row[data-tone='money'] strong").innerText();
+    return Number(text.replace(/[^0-9]/g, ""));
+  };
+  const dear = await inHandAtWeek4(0, "gym-sublet");
+  const cheap = await inHandAtWeek4(2, "cousin-room");
+  expect(cheap).toBeGreaterThan(dear);
+});
+
+// ---------------------------------------------------------------------------
+// 20. The Week 4 deposit deadline states its own consequence before it is taken,
+//     which is the difference between a decision and a trap.
+// ---------------------------------------------------------------------------
+
+test("the course deposit deadline says what reserving would do before the student commits", async ({ page }) => {
+  await gotoFreshChallenge(page);
+  await enterChallenge(page);
+  await completeSetupStage(page, 2);
+  await completeWorkingCalcs(page);
+  // Put nothing toward the course, so reserving the seat is visibly unaffordable.
+  await setAmount(page, "Sports-media course", "0");
+  const spendable = spendableFor("working", { setupId: "cousin-room" });
+  await setAmount(page, "Backup money", String(spendable));
+  await setAmount(page, "Avery’s week", "0");
+  await page.getByRole("button", { name: "Save this version" }).click();
+  for (const week of [2, 3, 4]) await page.getByRole("button", { name: `Play Week ${week}` }).click();
+
+  const effect = page.locator(".deposit-call__effect");
+  await expect(effect).toContainText(money(0));
+
+  await page.getByRole("button", { name: "Reserve it now" }).click();
+  await expect(effect).toContainText(`${money(N.course.depositPrice)} short`);
+
+  await page.getByRole("button", { name: "Wait and decide later" }).click();
+  await expect(effect).toContainText("Nothing moves today");
+});
+
+test("reserving the seat locks the course row and pays the course by Week 8", async ({ page }) => {
+  const context: PlanContext = { setupId: "cousin-room", deposit: true };
+  await gotoFreshChallenge(page);
+  await enterChallenge(page);
+  await completeSetupStage(page, 2);
+  await completeWorkingCalcs(page);
+  await fillPlanToBalance(page, "working", { setupId: "cousin-room" });
+  await page.getByRole("button", { name: "Save this version" }).click();
+  await playSeasonWeeks(page, { deposit: true });
+
+  await passWeek5Calculation(page, String(week5TotalFor(context)));
+  // The reserved seat is committed money, so the course row is no longer adjustable.
+  await expect(page.locator(".choice-row--locked")).toBeVisible();
+  await expect(page.getByRole("spinbutton", { name: "Sports-media course" })).toHaveCount(0);
+});
+
+// ---------------------------------------------------------------------------
+// 21. Keyboard parity for the season stage and its deadline.
+// ---------------------------------------------------------------------------
+
+test("Weeks 1 to 4 and the deposit deadline are fully operable from the keyboard", async ({ page }) => {
+  await gotoFreshChallenge(page);
+  await enterChallenge(page);
+  await completeSetupStage(page, 1);
+  await completeWorkingCalcs(page);
+  await fillPlanToBalance(page, "working", { setupId: "teammate-share" });
+  await page.getByRole("button", { name: "Save this version" }).click();
+
+  for (const week of [2, 3, 4]) {
+    const step = page.getByRole("button", { name: `Play Week ${week}` });
+    await step.focus();
+    await step.press("Enter");
+  }
+  const reserve = page.getByRole("button", { name: "Reserve it now" });
+  await reserve.focus();
+  await reserve.press("Enter");
+  await expect(reserve).toHaveAttribute("aria-pressed", "true");
+
+  const lock = page.getByRole("button", { name: "Lock it in and play Week 5" });
+  await lock.focus();
+  await lock.press("Enter");
+  await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
 });
