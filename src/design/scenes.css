@@ -624,6 +624,15 @@
 .handed-in__where dt { color: var(--world-hero-muted); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
 .handed-in__where dd { margin: var(--s-1) 0 0; color: var(--world-hero-ink); font: var(--m-md); font-feature-settings: var(--num); }
 
+
+/* Joining a class, and getting the finished work back out of the room. */
+.join-status { margin: var(--s-3) 0 0; color: var(--world-hero-body); font: var(--t-sm); font-weight: 400; }
+.join-status--problem { color: var(--world-hero-second); font-weight: 600; }
+.delivery { margin: 0; font: var(--t-sm); font-weight: 400; }
+.delivery--sending, .delivery--idle { color: var(--world-hero-muted); }
+.delivery--delivered { color: var(--world-hero-body); }
+.delivery--failed { color: var(--world-hero-second); font-weight: 600; }
+
 @media (max-width: 760px) {
   .deposit-call, .deposit-call__options, .deposit-call--deadline .deposit-call__options { grid-template-columns: 1fr; }
   .resolve-grid { grid-template-columns: 1fr; }

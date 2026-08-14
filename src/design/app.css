@@ -425,3 +425,33 @@ p { color: var(--ink-2); }
   .score-architecture div { width: 180px; aspect-ratio: 1; }
   .standards-list article:last-child { grid-column: auto; }
 }
+
+/* ---------------------------------------------------------------------------
+   Creating a class. The whole setup step: a name in, a code and a private link out.
+   --------------------------------------------------------------------------- */
+
+.class-form { display: grid; gap: var(--s-3); max-width: 520px; }
+.class-form label { font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.class-form input { min-height: var(--tap); padding: 0 var(--s-4); font: var(--t-body-lg); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
+.class-form__status { margin: 0; color: var(--ink-3); font: var(--t-sm); font-weight: 400; }
+.class-form__status--problem { color: var(--fin-over-ink); font-weight: 600; }
+
+.class-created { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: var(--s-7); align-items: start; }
+.class-created__code { display: grid; gap: var(--s-2); padding: var(--s-6); background: var(--bow-brand); color: var(--ink-invert); border-radius: var(--r-md); }
+.class-created__code .field-label { margin: 0; color: var(--bow-brand-ink-muted); }
+.class-created__code strong { font: 700 clamp(2.6rem, 6vw, 3.6rem)/1 var(--font-display); letter-spacing: 0.12em; font-feature-settings: var(--num); }
+.class-created__code p { margin: 0; color: var(--bow-brand-ink-muted); font: var(--t-sm); font-weight: 400; }
+.class-created__body { display: grid; gap: var(--s-5); }
+.class-created__body h2 { margin: 0; font: var(--t-title1); }
+.class-created__steps { display: grid; gap: var(--s-3); margin: 0; padding-left: var(--s-6); }
+.class-created__steps li { font: var(--t-body); }
+.class-created__steps code, .class-created__key code { padding: 2px 6px; background: var(--surface-sunken); border-radius: var(--r-xs); font: var(--t-sm); font-family: var(--font-mono); overflow-wrap: anywhere; }
+.class-created__key { display: grid; gap: var(--s-2); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-left: 3px solid var(--fin-conditional); }
+.class-created__key .field-label { margin: 0; }
+.class-created__key p { margin: 0; max-width: 66ch; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.class-created .button { justify-self: start; }
+
+@media (max-width: 860px) {
+  .class-created { grid-template-columns: 1fr; }
+}
+

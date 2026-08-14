@@ -31,9 +31,20 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "npm run dev",
-    url: "http://127.0.0.1:4173",
-    reuseExistingServer: true,
-  },
+  // Two servers, because the suite exercises the real class service rather than a mock of
+  // it: what the browser tests drive is the handler that ships. The store is in memory so
+  // a run starts clean and leaves nothing behind.
+  webServer: [
+    {
+      command: "npm run api",
+      url: "http://127.0.0.1:4180/api/health",
+      reuseExistingServer: true,
+      env: { BOW_CLASS_STORE: "memory", BOW_API_PORT: "4180" },
+    },
+    {
+      command: "npm run dev",
+      url: "http://127.0.0.1:4173",
+      reuseExistingServer: true,
+    },
+  ],
 });

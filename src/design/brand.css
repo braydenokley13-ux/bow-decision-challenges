@@ -19,6 +19,10 @@
   --bow-brand-strong: #0c2f27;
   --bow-brand-ink: #ffffff;
 
+  /* Muted text on the brand panel. A single muted token cannot clear AA against both a
+     near-white surface and this one, so the brand ground carries its own. */
+  --bow-brand-ink-muted: #cfded8;
+
   /*
    * One family, differentiated by treatment.
    *

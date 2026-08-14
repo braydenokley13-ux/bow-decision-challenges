@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { NUMBERS as N, NO_BONUS_HEADING, fillPlanToBalance, fillPlanLeavingShortfall, money, spendableFor, week5TotalFor, type PlanContext } from "./plan";
 import {
+  createClass,
+  createClassKeyFor,
+  waitForDelivery,
   SETUP_ORDER,
   SETUP_TITLES,
   rankPlacesCorrectly,
@@ -22,8 +25,30 @@ import {
 
 test.beforeEach(({ page }) => {
   page.on("console", (message) => {
-    if (message.type() === "error") throw new Error(`Browser console error: ${message.text()}`);
+    // The browser logs every non-2xx fetch as a failed resource, including the ones this
+    // product asks for on purpose — a class code that does not resolve is a designed
+    // outcome, not a defect. Uncaught exceptions are the signal that matters and nothing
+    // was watching for them.
+    if (message.type() === "error" && !message.text().startsWith("Failed to load resource")) {
+      throw new Error(`Browser console error: ${message.text()}`);
+    }
   });
+  page.on("pageerror", (error) => { throw new Error(`Uncaught page error: ${error.message}`); });
+});
+
+/**
+ * A fresh class per test. Every student path here joins a real one through the real API,
+ * so the suite covers the join, the submission and the educator read rather than a mock of
+ * any of them.
+ */
+const studentTest = test.extend<{ classCode: string; teacherKey: string }>({
+  classCode: async ({ request }, use, testInfo) => {
+    const created = await createClass(request, testInfo.title.slice(0, 60));
+    await use(created.code);
+  },
+  teacherKey: async ({ request }, use) => {
+    await use((await createClass(request)).teacherKey);
+  },
 });
 
 // ---------------------------------------------------------------------------
@@ -46,9 +71,9 @@ test("home page and educator guide load as accessible entry points", async ({ pa
 //    defense -> submitted. Also proves submission survives a refresh (#9).
 // ---------------------------------------------------------------------------
 
-test("full conditional path completes through fallback, Week 5, remaining-risk preview, and defense, and survives a refresh", async ({ page }) => {
+studentTest("full conditional path completes through fallback, Week 5, remaining-risk preview, and defense, and survives a refresh", async ({ page, classCode }) => {
   await gotoFreshChallenge(page);
-  await enterChallenge(page);
+  await enterChallenge(page, { classCode });
   await completeSetupStage(page, 2); // cousin-room
   await completeWorkingCalcs(page, { attendance: true, showcase: true });
 
@@ -99,9 +124,9 @@ test("full conditional path completes through fallback, Week 5, remaining-risk p
 //    skips the fallback screen and completes all the way to submission.
 // ---------------------------------------------------------------------------
 
-test("confirmed-only path on the inexpensive setup skips the fallback and completes through submission", async ({ page }) => {
+studentTest("confirmed-only path on the inexpensive setup skips the fallback and completes through submission", async ({ page, classCode }) => {
   await gotoFreshChallenge(page);
-  await enterChallenge(page);
+  await enterChallenge(page, { classCode });
   await completeSetupStage(page, 2); // cousin-room, the inexpensive setup
   await completeWorkingCalcs(page); // no bonuses counted
 
@@ -139,9 +164,9 @@ test("confirmed-only path on the inexpensive setup skips the fallback and comple
 // 4. Optional work DECLINED path completes.
 // ---------------------------------------------------------------------------
 
-test("declining the optional weekend clinics still completes the plan", async ({ page }) => {
+studentTest("declining the optional weekend clinics still completes the plan", async ({ page, classCode }) => {
   await gotoFreshChallenge(page);
-  await enterChallenge(page);
+  await enterChallenge(page, { classCode });
   await completeSetupStage(page, 2); // cousin-room
   await completeWorkingCalcs(page, { attendance: true });
 
@@ -181,9 +206,9 @@ test("declining the optional weekend clinics still completes the plan", async ({
 // 5. Excluding the $800 bonus at the final plan skips remaining-risk preview.
 // ---------------------------------------------------------------------------
 
-test("leaving the $800 bonus out of the final plan skips the remaining-risk preview", async ({ page }) => {
+studentTest("leaving the $800 bonus out of the final plan skips the remaining-risk preview", async ({ page, classCode }) => {
   await gotoFreshChallenge(page);
-  await enterChallenge(page);
+  await enterChallenge(page, { classCode });
   await completeSetupStage(page, 1); // teammate-share
   await completeWorkingCalcs(page); // confirmed-only, keeps the path short
 
@@ -217,9 +242,9 @@ test("leaving the $800 bonus out of the final plan skips the remaining-risk prev
 //    only two Week 5 change tiles.
 // ---------------------------------------------------------------------------
 
-test("the expensive setup completes and Week 5 shows only two changed items (no travel cost card)", async ({ page }) => {
+studentTest("the expensive setup completes and Week 5 shows only two changed items (no travel cost card)", async ({ page, classCode }) => {
   await gotoFreshChallenge(page);
-  await enterChallenge(page);
+  await enterChallenge(page, { classCode });
   await completeSetupStage(page, 0); // gym-sublet, chosen straight from the given total
   await completeWorkingCalcs(page, { showcase: true });
 
@@ -256,9 +281,9 @@ test("the expensive setup completes and Week 5 shows only two changed items (no 
 // 8. Refresh mid-challenge preserves stage and entered numbers.
 // ---------------------------------------------------------------------------
 
-test("refreshing mid-challenge preserves stage, setup, and entered plan numbers", async ({ page }) => {
+studentTest("refreshing mid-challenge preserves stage, setup, and entered plan numbers", async ({ page, classCode }) => {
   await gotoFreshChallenge(page);
-  await enterChallenge(page);
+  await enterChallenge(page, { classCode });
   await completeSetupStage(page, 1); // teammate-share ("Teammate Share")
   await completeWorkingCalcs(page);
   await setAmount(page, "Sports-media course", "900");
@@ -275,9 +300,9 @@ test("refreshing mid-challenge preserves stage, setup, and entered plan numbers"
 // 10. Stuck-student support path on a calculation.
 // ---------------------------------------------------------------------------
 
-test("a stuck student gets a step-by-step hint on a calculation and can keep moving", async ({ page }) => {
+studentTest("a stuck student gets a step-by-step hint on a calculation and can keep moving", async ({ page, classCode }) => {
   await gotoFreshChallenge(page);
-  await enterChallenge(page);
+  await enterChallenge(page, { classCode });
   await rankPlacesCorrectly(page);
   await page.locator(".place-card").nth(1).getByRole("button", { name: "Choose this setup" }).click();
 
@@ -294,9 +319,9 @@ test("a stuck student gets a step-by-step hint on a calculation and can keep mov
   await expect(page.getByText("That's the full amount.")).toBeVisible();
 });
 
-test("clicking Check on an empty box does not burn the student's attempts", async ({ page }) => {
+studentTest("clicking Check on an empty box does not burn the student's attempts", async ({ page, classCode }) => {
   await gotoFreshChallenge(page);
-  await enterChallenge(page);
+  await enterChallenge(page, { classCode });
   await rankPlacesCorrectly(page);
   await page.locator(".place-card").nth(1).getByRole("button", { name: "Choose this setup" }).click();
 
@@ -313,8 +338,14 @@ test("clicking Check on an empty box does not burn the student's attempts", asyn
 // 11. Keyboard-only operation through the opening screens.
 // ---------------------------------------------------------------------------
 
-test("the opening screens work with a keyboard only", async ({ page }) => {
+studentTest("the opening screens work with a keyboard only", async ({ page, classCode }) => {
   await gotoFreshChallenge(page);
+  const codeField = page.getByLabel("Class code");
+  await codeField.focus();
+  await codeField.fill(classCode);
+  const seatField = page.getByLabel("Seat", { exact: true });
+  await seatField.focus();
+  await seatField.fill("9");
   const enterButton = page.getByRole("button", { name: "Start the eight weeks" });
   await enterButton.focus();
   await enterButton.press("Enter");
@@ -374,7 +405,7 @@ test("seat 14 golden case shows 94/100 and the C4 evidence line", async ({ page 
 // 15. Axe scan on key screens, including mid-flow boards.
 // ---------------------------------------------------------------------------
 
-test("key screens have no serious or critical accessibility violations", async ({ page }) => {
+studentTest("key screens have no serious or critical accessibility violations", async ({ page, classCode }) => {
   await page.goto("/");
   await noSeriousAxeViolations(page);
 
@@ -384,12 +415,12 @@ test("key screens have no serious or critical accessibility violations", async (
   await page.goto("/educator/class");
   await noSeriousAxeViolations(page);
 
-  await reachWorkingBoard(page);
+  await reachWorkingBoard(page, classCode);
   await expect(page.getByRole("heading", { name: "Every dollar gets a job." })).toBeVisible();
   await noSeriousAxeViolations(page);
 
   await gotoFreshChallenge(page);
-  await enterChallenge(page);
+  await enterChallenge(page, { classCode });
   await completeSetupStage(page, 2);
   await completeWorkingCalcs(page);
   const scanned: PlanContext = { setupId: "cousin-room" };
@@ -418,10 +449,10 @@ test("key screens have no serious or critical accessibility violations", async (
 //     same four weeks read differently depending on where Avery was put.
 // ---------------------------------------------------------------------------
 
-test("the weeks Avery plays are narrated differently for each housing choice", async ({ page }) => {
+studentTest("the weeks Avery plays are narrated differently for each housing choice", async ({ page, classCode }) => {
   for (const [index, line] of [[0, /first one in the building/i], [2, /5:40/]] as const) {
     await gotoFreshChallenge(page);
-    await enterChallenge(page);
+    await enterChallenge(page, { classCode });
     await completeSetupStage(page, index);
     await completeWorkingCalcs(page);
     await fillPlanToBalance(page, "working", { setupId: SETUP_ORDER[index] });
@@ -435,15 +466,13 @@ test("the weeks Avery plays are narrated differently for each housing choice", a
 // 16. No stale "Fashion" or "coming soon" copy anywhere.
 // ---------------------------------------------------------------------------
 
-test("no stale Fashion or coming-soon copy appears in the student flow or educator pages", async ({ page }) => {
+studentTest("no stale Fashion or coming-soon copy appears in the student flow or educator pages", async ({ page, classCode }) => {
   await page.goto("/");
   await noStaleCopy(page);
 
   await gotoFreshChallenge(page);
   await noStaleCopy(page);
-  await page.getByRole("button", { name: "Start the eight weeks" }).click();
-  await noStaleCopy(page);
-  await page.getByRole("button", { name: "Find Avery a place" }).click();
+  await enterChallenge(page, { classCode });
   await noStaleCopy(page);
 
   for (const path of ["/educator/guide", "/educator/class", "/educator/class/standards", "/educator/teaching-companion", "/educator/class/students/14"]) {
@@ -456,7 +485,7 @@ test("no stale Fashion or coming-soon copy appears in the student flow or educat
 // 17. No horizontal overflow at a 640px-wide Chromebook-style viewport.
 // ---------------------------------------------------------------------------
 
-test("student entry screens do not spill sideways at a 640px-wide viewport", async ({ page }) => {
+studentTest("student entry screens do not spill sideways at a 640px-wide viewport", async ({ page, classCode }) => {
   await page.setViewportSize({ width: 640, height: 720 });
 
   await page.goto("/");
@@ -464,9 +493,7 @@ test("student entry screens do not spill sideways at a 640px-wide viewport", asy
 
   await gotoFreshChallenge(page);
   await noHorizontalOverflow(page);
-  await page.getByRole("button", { name: "Start the eight weeks" }).click();
-  await noHorizontalOverflow(page);
-  await page.getByRole("button", { name: "Find Avery a place" }).click();
+  await enterChallenge(page, { classCode });
   await noHorizontalOverflow(page);
 
   await page.goto("/educator/guide");
@@ -480,9 +507,9 @@ test("student entry screens do not spill sideways at a 640px-wide viewport", asy
 //     a commitment, so what it claims to spend has to actually move on screen.
 // ---------------------------------------------------------------------------
 
-test("playing Weeks 1 to 4 drains money and piles up hours at the rate the housing charges", async ({ page }) => {
+studentTest("playing Weeks 1 to 4 drains money and piles up hours at the rate the housing charges", async ({ page, classCode }) => {
   await gotoFreshChallenge(page);
-  await enterChallenge(page);
+  await enterChallenge(page, { classCode });
   await completeSetupStage(page, 2); // cousin-room: nearly free, nearly unreachable
   await completeWorkingCalcs(page);
   await fillPlanToBalance(page, "working", { setupId: "cousin-room" });
@@ -505,10 +532,10 @@ test("playing Weeks 1 to 4 drains money and piles up hours at the rate the housi
   expect(endMoney).not.toBe(startMoney);
 });
 
-test("a costlier place leaves Avery visibly poorer by Week 4 than a cheaper one", async ({ page }) => {
+studentTest("a costlier place leaves Avery visibly poorer by Week 4 than a cheaper one", async ({ page, classCode }) => {
   const inHandAtWeek4 = async (index: 0 | 2, setupId: "gym-sublet" | "cousin-room") => {
     await gotoFreshChallenge(page);
-    await enterChallenge(page);
+    await enterChallenge(page, { classCode });
     await completeSetupStage(page, index);
     await completeWorkingCalcs(page);
     await fillPlanToBalance(page, "working", { setupId });
@@ -527,9 +554,9 @@ test("a costlier place leaves Avery visibly poorer by Week 4 than a cheaper one"
 //     which is the difference between a decision and a trap.
 // ---------------------------------------------------------------------------
 
-test("the course deposit deadline says what reserving would do before the student commits", async ({ page }) => {
+studentTest("the course deposit deadline says what reserving would do before the student commits", async ({ page, classCode }) => {
   await gotoFreshChallenge(page);
-  await enterChallenge(page);
+  await enterChallenge(page, { classCode });
   await completeSetupStage(page, 2);
   await completeWorkingCalcs(page);
   // Put nothing toward the course, so reserving the seat is visibly unaffordable.
@@ -550,10 +577,10 @@ test("the course deposit deadline says what reserving would do before the studen
   await expect(effect).toContainText("Nothing moves today");
 });
 
-test("reserving the seat locks the course row and pays the course by Week 8", async ({ page }) => {
+studentTest("reserving the seat locks the course row and pays the course by Week 8", async ({ page, classCode }) => {
   const context: PlanContext = { setupId: "cousin-room", deposit: true };
   await gotoFreshChallenge(page);
-  await enterChallenge(page);
+  await enterChallenge(page, { classCode });
   await completeSetupStage(page, 2);
   await completeWorkingCalcs(page);
   await fillPlanToBalance(page, "working", { setupId: "cousin-room" });
@@ -570,9 +597,9 @@ test("reserving the seat locks the course row and pays the course by Week 8", as
 // 21. Keyboard parity for the season stage and its deadline.
 // ---------------------------------------------------------------------------
 
-test("Weeks 1 to 4 and the deposit deadline are fully operable from the keyboard", async ({ page }) => {
+studentTest("Weeks 1 to 4 and the deposit deadline are fully operable from the keyboard", async ({ page, classCode }) => {
   await gotoFreshChallenge(page);
-  await enterChallenge(page);
+  await enterChallenge(page, { classCode });
   await completeSetupStage(page, 1);
   await completeWorkingCalcs(page);
   await fillPlanToBalance(page, "working", { setupId: "teammate-share" });
@@ -592,4 +619,117 @@ test("Weeks 1 to 4 and the deposit deadline are fully operable from the keyboard
   await lock.focus();
   await lock.press("Enter");
   await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
+});
+
+// ---------------------------------------------------------------------------
+// 22. The class path, end to end and for real: a class is created, a student
+//     joins it, finishes, and the evidence comes back out through the API.
+// ---------------------------------------------------------------------------
+
+test("a facilitator creates a class and gets a code plus a private link", async ({ page }) => {
+  await page.goto("/educator/classes/new");
+  await page.getByLabel("Class name").fill("Period 3 · Grade 7");
+  await page.getByRole("button", { name: "Create the class" }).click();
+
+  const code = page.locator(".class-created__code strong");
+  await expect(code).toBeVisible();
+  const created: string = (await code.innerText()).trim();
+  expect(created).toMatch(/^[A-Z0-9]{5}$/);
+
+  // The private link is what opens the evidence; the class code alone must not.
+  await expect(page.locator(".class-created__key code")).toContainText(`/educator/class/${created}?key=`);
+  await noSeriousAxeViolations(page);
+});
+
+studentTest("a student's finished work reaches the class it joined", async ({ page, request, classCode }) => {
+  const context: PlanContext = { setupId: "cousin-room" };
+  await gotoFreshChallenge(page);
+  await enterChallenge(page, { classCode, seatCode: "21" });
+  await completeSetupStage(page, 2);
+  await completeWorkingCalcs(page);
+  await fillPlanToBalance(page, "working", context);
+  await page.getByRole("button", { name: "Save this version" }).click();
+  await playSeasonWeeks(page);
+  await passWeek5Calculation(page, String(week5TotalFor(context)));
+  await fillPlanToBalance(page, "week5-first-response", context);
+  await page.getByRole("button", { name: "Save this version" }).click();
+  await decideOpportunity(page, { clinics: false, countBonus: false });
+  await fillPlanToBalance(page, "final", { ...context, clinics: false, countCompletionFinal: false });
+  await page.getByRole("button", { name: "Save final plan" }).click();
+  await readWeek8Resolution(page);
+  await submitDefense(page, "My plan still works because every dollar has a job after Week 5. I protected the course money and gave up some of the reserve.");
+  await waitForDelivery(page);
+
+  // Read it back through the API, exactly as the educator surface does.
+  const key = createClassKeyFor(classCode);
+  const response = await request.get(`http://127.0.0.1:4180/api/classes/${classCode}/submissions`, {
+    headers: { "X-BOW-Teacher-Key": key },
+  });
+  expect(response.status()).toBe(200);
+  const body = (await response.json()) as { submissions: { seatCode: string; log: unknown[] }[] };
+  expect(body.submissions).toHaveLength(1);
+  const [only] = body.submissions;
+  expect(only?.seatCode).toBe("21");
+  expect(only?.log.length).toBeGreaterThan(20);
+});
+
+test("a class code that does not exist is refused before the challenge starts", async ({ page }) => {
+  await gotoFreshChallenge(page);
+  await page.getByLabel("Class code").fill("QQQQQ");
+  await page.getByLabel("Seat", { exact: true }).fill("4");
+  await page.getByRole("button", { name: "Start the eight weeks" }).click();
+
+  await expect(page.locator("#join-status")).toContainText("No class with that code");
+  await expect(page.getByRole("heading", { name: "What the eight weeks pay." })).not.toBeVisible();
+});
+
+studentTest("a student who loses the network keeps their work and can send it again", async ({ page, request, classCode }) => {
+  const context: PlanContext = { setupId: "gym-sublet" };
+  await gotoFreshChallenge(page);
+  await enterChallenge(page, { classCode, seatCode: "33" });
+  await completeSetupStage(page, 0);
+  await completeWorkingCalcs(page);
+  await fillPlanToBalance(page, "working", context);
+  await page.getByRole("button", { name: "Save this version" }).click();
+  await playSeasonWeeks(page);
+  await passWeek5Calculation(page, String(week5TotalFor(context)));
+  await fillPlanToBalance(page, "week5-first-response", context);
+  await page.getByRole("button", { name: "Save this version" }).click();
+  await decideOpportunity(page, { clinics: false, countBonus: false });
+  await fillPlanToBalance(page, "final", { ...context, clinics: false, countCompletionFinal: false });
+
+  // The network drops at exactly the moment the work is turned in.
+  await page.route("**/api/classes/*/submissions", (route) => route.abort());
+  await page.getByRole("button", { name: "Save final plan" }).click();
+  await readWeek8Resolution(page);
+  await submitDefense(page, "My plan still works because I kept the reserve intact after Week 5. I gave up the clinics to protect Avery's Saturdays.");
+
+  await expect(page.getByRole("heading", { name: "Your plan is saved, but not sent yet." })).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator(".delivery--failed")).toContainText("Your work is safe on this computer");
+
+  // The network comes back and the student sends it themselves.
+  await page.unroute("**/api/classes/*/submissions");
+  await page.getByRole("button", { name: "Try sending again" }).click();
+  await waitForDelivery(page);
+
+  const key = createClassKeyFor(classCode);
+  const response = await request.get(`http://127.0.0.1:4180/api/classes/${classCode}/submissions`, {
+    headers: { "X-BOW-Teacher-Key": key },
+  });
+  const body = (await response.json()) as { submissions: { seatCode: string }[] };
+  expect(body.submissions.map((item) => item.seatCode)).toEqual(["33"]);
+});
+
+studentTest("a refresh mid-challenge does not lose the class the student joined", async ({ page, classCode }) => {
+  await gotoFreshChallenge(page);
+  await enterChallenge(page, { classCode, seatCode: "8" });
+  await completeSetupStage(page, 1);
+  await completeWorkingCalcs(page);
+  await page.waitForTimeout(600);
+  await page.reload();
+
+  await expect(page.getByRole("heading", { name: "Every dollar gets a job." })).toBeVisible();
+  // The class travels with the attempt, so a resumed session still turns in to the right room.
+  const stored = await page.evaluate(() => localStorage.getItem("bow.attempt.v2.plan-under-pressure"));
+  expect(stored).toContain(classCode);
 });

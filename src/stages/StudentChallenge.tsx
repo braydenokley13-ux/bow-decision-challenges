@@ -19,6 +19,7 @@ import { bonusWeeks, clinicWeeks } from "../domain/scenario/season";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { amountsFor, meaningfulAttempts, snapshotForMode } from "../domain/machine/selectors";
 import { STUDENT_COPY } from "../content/studentCopy";
+import { CODE_LENGTH, isWellFormedClassCode, isWellFormedSeatCode, normaliseSeatCode } from "../platform/classes/codes";
 import { SeasonWeeks } from "./SeasonWeeks";
 import { Week8Resolution } from "./Week8Resolution";
 
@@ -53,11 +54,37 @@ function useRevealOnce(active: boolean) {
  * to Avery while entering the two codes, so nothing stands between the URL and the story.
  */
 function OpeningStage() {
-  const { dispatch } = useChallenge();
+  const { dispatch, transport } = useChallenge();
   const { offer, numbers } = BASKETBALL_SCENARIO;
-  const [classCode, setClassCode] = useState("BOW301");
-  const [seatCode, setSeatCode] = useState("14");
-  const valid = /^[A-Z0-9]{4,8}$/i.test(classCode) && /^\d{1,2}$/.test(seatCode);
+  const [classCode, setClassCode] = useState("");
+  const [seatCode, setSeatCode] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [joinedLabel, setJoinedLabel] = useState<string | null>(null);
+  // The codes are checked for shape here and for existence by the transport. Neither is
+  // prefilled: a default class code that happened to resolve would start a room of
+  // students in somebody else's class.
+  const valid = isWellFormedClassCode(classCode) && isWellFormedSeatCode(seatCode);
+
+  const start = async () => {
+    if (!valid || joining) return;
+    setJoining(true);
+    setProblem(null);
+    const result = await transport.join(classCode);
+    setJoining(false);
+    if (!result.ok) {
+      setProblem(result.message);
+      return;
+    }
+    setJoinedLabel(result.joined.record?.label ?? null);
+    dispatch({
+      type: "SESSION_STARTED",
+      sessionId: crypto.randomUUID(),
+      classCode: result.joined.classCode,
+      seatCode: normaliseSeatCode(seatCode),
+    });
+  };
+
   return (
     <div className="opening scene" data-world="basketball">
       <CourtBackdrop />
@@ -84,10 +111,42 @@ function OpeningStage() {
           <div className="opening__job">
             <p><strong>Avery plays. You handle the money.</strong> Eight weeks of decisions are yours.</p>
             <div className="opening__codes">
-              <label>Class code<input value={classCode} onChange={(event) => setClassCode(event.target.value.toUpperCase())} maxLength={8} /></label>
-              <label>Seat<input value={seatCode} onChange={(event) => setSeatCode(event.target.value.replace(/\D/g, ""))} inputMode="numeric" maxLength={2} /></label>
+              <label>
+                Class code
+                <input
+                  value={classCode}
+                  onChange={(event) => { setClassCode(event.target.value.toUpperCase()); setProblem(null); }}
+                  onKeyDown={(event) => { if (event.key === "Enter") void start(); }}
+                  maxLength={CODE_LENGTH}
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  aria-describedby="join-status"
+                />
+              </label>
+              <label>
+                Seat
+                <input
+                  value={seatCode}
+                  onChange={(event) => { setSeatCode(normaliseSeatCode(event.target.value)); setProblem(null); }}
+                  onKeyDown={(event) => { if (event.key === "Enter") void start(); }}
+                  inputMode="numeric"
+                  maxLength={2}
+                  autoComplete="off"
+                  aria-describedby="join-status"
+                />
+              </label>
             </div>
-            <Button type="button" aria-disabled={!valid} onClick={() => valid && dispatch({ type: "SESSION_STARTED", sessionId: crypto.randomUUID(), classCode, seatCode })}>Start the eight weeks</Button>
+            <Button type="button" aria-disabled={!valid || joining} onClick={() => void start()}>
+              {joining ? "Checking the code…" : "Start the eight weeks"}
+            </Button>
+            {/* One live region for every outcome, so a screen reader hears the result of
+                joining rather than only sighted students seeing it. */}
+            <p id="join-status" className={`join-status${problem ? " join-status--problem" : ""}`} aria-live="polite">
+              {problem ?? joinedLabel ?? (transport.requiresClass
+                ? "Your teacher gives you the class code and your seat number."
+                : transport.promise)}
+            </p>
             <p className="privacy-note">{STUDENT_COPY.join.privacy}</p>
           </div>
         </aside>
@@ -669,10 +728,25 @@ function DefenseStage() {
  * produced a different season.
  */
 function SubmittedStage() {
-  const { state, reset } = useChallenge();
+  const { state, reset, transport, delivery, deliver } = useChallenge();
   const setup = BASKETBALL_SCENARIO.setups.find((item) => item.id === state.setupId);
+  // Sent once on arrival. The attempt is already safe in local storage, so a failure here
+  // is something to retry rather than work that has been lost.
+  const sent = useRef(false);
+  useEffect(() => {
+    if (sent.current) return;
+    sent.current = true;
+    void deliver();
+  }, [deliver]);
+
+  const title = delivery.status === "delivered"
+    ? "Your plan is with your teacher."
+    : delivery.status === "failed"
+      ? "Your plan is saved, but not sent yet."
+      : "Sending your plan…";
+
   return (
-    <StageShell stage="submitted" kicker="Turned in" title="Your plan is with your teacher.">
+    <StageShell stage="submitted" kicker="Turned in" title={title}>
       <section className="handed-in scene">
         <CourtBackdrop />
         <div className="handed-in__grid">
@@ -682,6 +756,17 @@ function SubmittedStage() {
               <div><dt>Class</dt><dd>{state.meta.classCode || "—"}</dd></div>
               <div><dt>Seat</dt><dd>{state.meta.seatCode || "—"}</dd></div>
             </dl>
+            {/* A delivery that did not happen is never drawn as one. Everything an educator
+                sees downstream treats a submission as a fact about a student. */}
+            <p className={`delivery delivery--${delivery.status}`} aria-live="polite">
+              {delivery.status === "delivered" && transport.promise}
+              {delivery.status === "sending" && "Sending it to your class now…"}
+              {delivery.status === "idle" && "Getting ready to send…"}
+              {delivery.status === "failed" && `${delivery.message} Your work is safe on this computer — try again, or leave this page open and tell your teacher.`}
+            </p>
+            {delivery.status === "failed" && delivery.retryable && (
+              <Button type="button" variant="secondary" onClick={() => void deliver()}>Try sending again</Button>
+            )}
             <p>
               Your explanation goes to a person, not a computer. Software can check whether the money
               works. It should not decide whether your thinking makes sense.
@@ -692,7 +777,9 @@ function SubmittedStage() {
       <div className="stage-action">
         <p>Avery’s eight weeks would have gone differently on a different plan. You can run them again.</p>
         <div className="stage-action__pair">
-          <Button variant="quiet" onClick={reset}>Try a different plan</Button>
+          <Button variant="quiet" aria-disabled={delivery.status !== "delivered"} onClick={() => delivery.status === "delivered" && reset()}>
+            Try a different plan
+          </Button>
         </div>
       </div>
     </StageShell>

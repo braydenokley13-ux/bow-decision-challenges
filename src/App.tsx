@@ -5,6 +5,7 @@ import { CourtBackdrop } from "./components/story/CourtBackdrop";
 import { RosterCard } from "./components/story/RosterCard";
 import { StudentChallenge } from "./stages/StudentChallenge";
 import { ClassOverview, ConceptDrilldown, EducatorGuide, ReasoningReview, StandardsView, StudentEvidence, TeachingCompanion } from "./educator/EducatorPages";
+import { ClassSetup } from "./educator/ClassSetup";
 import { durationLabel, PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
 
 function Home() {
@@ -48,6 +49,7 @@ export function App() {
           redirects rather than 404s — and keeps redirecting after Challenge #2 lands. */}
       <Route path="/challenge" element={<Navigate to={PLAN_UNDER_PRESSURE.route} replace />} />
       <Route path="/educator/guide" element={<EducatorGuide />} />
+      <Route path="/educator/classes/new" element={<ClassSetup />} />
       <Route path="/educator/teaching-companion" element={<TeachingCompanion />} />
       <Route path="/educator/class" element={<ClassOverview />} />
       <Route path="/educator/class/concepts/:conceptId" element={<ConceptDrilldown />} />

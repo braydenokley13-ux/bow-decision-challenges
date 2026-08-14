@@ -1,8 +1,9 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type APIRequestContext, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { COUNT_BONUS_BUTTON, NUMBERS as N } from "./plan";
 import { PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 import { weeksBeforeDisruption } from "../src/domain/scenario/season";
+import type { ClassCreation } from "../src/platform/classes/types";
 
 /**
  * One driver for both the assertion suite and the screenshot walkthrough.
@@ -38,13 +39,44 @@ export async function noHorizontalOverflow(page: Page) {
 // app renders today so tests read like the steps a student actually takes.
 // ---------------------------------------------------------------------------
 
+/**
+ * A real class, created through the real API. Every student path in this suite joins one,
+ * because a suite that started the challenge without a class would not be exercising the
+ * thing a pilot depends on.
+ */
+export async function createClass(request: APIRequestContext, label = "Browser suite"): Promise<ClassCreation> {
+  const response = await request.post("http://127.0.0.1:4180/api/classes", {
+    data: { label, challengeId: PLAN_UNDER_PRESSURE.id },
+  });
+  expect(response.status(), await response.text()).toBe(201);
+  const created = (await response.json()) as ClassCreation;
+  CREATED_KEYS.set(created.code, created.teacherKey);
+  return created;
+}
+
+/**
+ * The key for a class the suite created. The fixture keeps only the code, and reading a
+ * class back is the educator's job — so the test asks the API for its own class the same
+ * way the setup page did.
+ */
+const CREATED_KEYS = new Map<string, string>();
+
+export function createClassKeyFor(code: string): string {
+  const known = CREATED_KEYS.get(code);
+  if (!known) throw new Error(`No teacher key recorded for class ${code}.`);
+  return known;
+}
+
 export async function gotoFreshChallenge(page: Page) {
   await page.goto(PLAN_UNDER_PRESSURE.route);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
 }
 
-export async function enterChallenge(page: Page) {
+/** Joins the class and steps past the contract. Seats differ so runs never collide. */
+export async function enterChallenge(page: Page, options: { classCode: string; seatCode?: string }) {
+  await page.getByLabel("Class code").fill(options.classCode);
+  await page.getByLabel("Seat", { exact: true }).fill(options.seatCode ?? "7");
   await page.getByRole("button", { name: "Start the eight weeks" }).click();
   await page.getByRole("button", { name: "Find Avery a place" }).click();
 }
@@ -145,10 +177,15 @@ export async function submitDefense(page: Page, text: string, tileIndices: numbe
 }
 
 /** Reaches the unlocked working-plan board (cousin-room setup, no bonuses) and stops there. */
-export async function reachWorkingBoard(page: Page) {
+export async function reachWorkingBoard(page: Page, classCode: string) {
   await gotoFreshChallenge(page);
-  await enterChallenge(page);
+  await enterChallenge(page, { classCode });
   await completeSetupStage(page, 2);
   await completeWorkingCalcs(page);
+}
+
+/** Waits for the finished attempt to actually reach the class before reading it back. */
+export async function waitForDelivery(page: Page) {
+  await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible({ timeout: 15_000 });
 }
 

@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 import { fillPlanToBalance, week5TotalFor, type PlanContext } from "./plan";
 import {
   completeSetupStage,
+  createClass,
+  enterChallenge,
   completeWorkingCalcs,
   decideOpportunity,
   gotoFreshChallenge,
@@ -26,7 +28,7 @@ const SIZES = [
 ];
 
 for (const size of SIZES) {
-  test(`walkthrough at ${size.name}`, async ({ page }) => {
+  test(`walkthrough at ${size.name}`, async ({ page, request }) => {
     test.skip(!OUT, "set WALKTHROUGH_OUT to capture the walkthrough");
     test.setTimeout(180_000);
     await mkdir(OUT!, { recursive: true });
@@ -57,11 +59,11 @@ for (const size of SIZES) {
     await page.goto("/");
     await shoot("01-home");
 
+    const created = await createClass(request, `Walkthrough ${size.name}`);
     await gotoFreshChallenge(page);
     await shoot("02-opening");
-    await page.getByRole("button", { name: "Start the eight weeks" }).click();
-    await shoot("03-deal");
-    await page.getByRole("button", { name: "Find Avery a place" }).click();
+    await enterChallenge(page, { classCode: created.code });
+    await shoot("03-deal-and-places");
     await shoot("04-rank-the-places");
     await completeSetupStage(page, 2, () => shoot("05-setup"));
 
@@ -112,6 +114,7 @@ for (const size of SIZES) {
     await shoot("15-submitted");
 
     for (const [name, path] of [
+      ["15b-class-setup", "/educator/classes/new"],
       ["16-educator-guide", "/educator/guide"],
       ["17-educator-class", "/educator/class"],
       ["18-concept-drilldown", "/educator/class/concepts/contingency"],
