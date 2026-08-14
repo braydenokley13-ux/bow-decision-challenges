@@ -36,14 +36,30 @@
   --display-tracking-tight: -0.05em;
 }
 
-/* The mark. Small, quiet, and the same everywhere it appears. */
+/*
+ * The mark. Small, quiet, and the same everywhere it appears.
+ *
+ * The wordmark takes the brand colour on the light chrome and inherits on the dark scenes,
+ * because a single fixed colour cannot clear AA against both. This is not something the axe
+ * scan can catch: the scenes put an SVG court behind the mark, so the computed background
+ * is indeterminate and the check reports incomplete rather than failing. It was found by
+ * looking at the rendered page.
+ */
 .app-mark__monogram {
-  border-color: var(--bow-brand);
-  background: var(--bow-brand);
+  border-color: var(--mark-ground, var(--bow-brand));
+  background: var(--mark-ground, var(--bow-brand));
   color: var(--bow-brand-ink);
 }
 
-.app-mark b { color: var(--bow-brand-strong); }
+.app-mark b { color: var(--mark-ink, var(--bow-brand-strong)); }
+.app-mark small { color: var(--mark-note, var(--ink-3)); }
+
+/* Every dark scene: the mark inherits the light text it is sitting in. */
+.scene, .opening__bar, .home__bar {
+  --mark-ink: currentcolor;
+  --mark-note: var(--world-hero-body);
+  --mark-ground: var(--world-flare);
+}
 
 /* Educator chrome is brand surface, not world surface — a teacher is in BOW, not in Avery's
    season, and the navigation should say so. */

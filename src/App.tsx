@@ -25,7 +25,6 @@ function Home() {
           <p className="home__deck">Avery Reyes just got the last roster spot with the Harbor City Flight. Some of the money is promised, some has to be earned, and the bills arrive either way. Avery plays. You handle the money.</p>
           <div className="home__actions">
             <Link className="button button--primary" to={PLAN_UNDER_PRESSURE.route}>Start the challenge</Link>
-            <Link className="button button--secondary" to="/educator/guide">For educators</Link>
           </div>
         </div>
         <aside className="home__side">
