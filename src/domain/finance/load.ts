@@ -1,0 +1,69 @@
+import type { SetupId } from "../core/ids";
+import { dollars, type Dollars } from "../core/money";
+import type { ScenarioNumbers } from "../scenario/types";
+
+/**
+ * Avery's week, priced the same way the money is.
+ *
+ * Load is deliberately a single readout, not a second ledger. The student never balances
+ * it — they see one meter move as a consequence of where Avery lives, what the season has
+ * done to the schedule, and how much of the plan they spent buying time back.
+ */
+export interface LoadInputs {
+  setupId: SetupId;
+  /** Rehab has started: Week 5 onward. */
+  rehabActive: boolean;
+  /** The Saturday clinics were accepted. */
+  clinicsAccepted: boolean;
+  /** Money assigned to Avery's week, which buys blocks back. */
+  timeMoney: Dollars;
+}
+
+export interface LoadReadout {
+  /** Blocks the week costs before any money is spent on it. */
+  demand: number;
+  /** Blocks bought back with money assigned to Avery's week. */
+  bought: number;
+  /** What Avery is actually carrying. */
+  net: number;
+  /** The line above which Avery misses a session. */
+  limit: number;
+  capacity: number;
+  /** Blocks still to shed before the attendance bonus is safe. Zero when it is. */
+  overBy: number;
+  attendanceHolds: boolean;
+  /** What it would cost to get back under the line, or null when already under it. */
+  costToProtect: Dollars | null;
+}
+
+export function blocksBoughtBy(timeMoney: Dollars, n: ScenarioNumbers): number {
+  if (n.load.blockBuybackCost <= 0) return 0;
+  return Math.floor(timeMoney / n.load.blockBuybackCost);
+}
+
+export function loadDemand(input: Pick<LoadInputs, "setupId" | "rehabActive" | "clinicsAccepted">, n: ScenarioNumbers): number {
+  return (
+    n.load.commuteBlocks[input.setupId]
+    + (input.rehabActive ? n.load.rehabBlocks + n.load.rehabTravelBlocks[input.setupId] : 0)
+    + (input.rehabActive && input.clinicsAccepted ? n.load.clinicBlocks : 0)
+  );
+}
+
+export function loadFor(input: LoadInputs, n: ScenarioNumbers): LoadReadout {
+  const demand = loadDemand(input, n);
+  // Money only buys back blocks that are actually there to buy.
+  const bought = Math.min(demand, blocksBoughtBy(input.timeMoney, n));
+  const net = demand - bought;
+  const overBy = Math.max(0, net - n.load.attendanceLimit);
+  const shortfallFromDemand = Math.max(0, demand - n.load.attendanceLimit);
+  return {
+    demand,
+    bought,
+    net,
+    limit: n.load.attendanceLimit,
+    capacity: n.load.weeklyCapacity,
+    overBy,
+    attendanceHolds: overBy === 0,
+    costToProtect: shortfallFromDemand === 0 ? null : dollars(shortfallFromDemand * n.load.blockBuybackCost),
+  };
+}

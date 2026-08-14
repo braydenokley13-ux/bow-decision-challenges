@@ -23,6 +23,7 @@ export function snapshotForMode(state: ChallengeState, mode: PlanMode): Snapshot
     includeOptionalWork: state.income.includeOptionalWork ?? false,
     setupId: state.setupId,
     week5Applied: mode === "week5-first-response" || mode === "final" || mode === "remaining-risk",
+    depositTaken: state.depositTaken === true,
     numbersVersion: SCENARIO_NUMBERS.version,
   };
 }

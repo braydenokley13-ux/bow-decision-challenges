@@ -96,7 +96,7 @@ function DealStage() {
   const { offer } = BASKETBALL_SCENARIO;
   const lines = [
     { tone: "safe", label: "Already saved", amount: "$500", rule: "In the account", detail: "Avery has it now." },
-    { tone: "safe", label: "Base pay after taxes", amount: "$4,500", rule: "Every week", detail: "Paid win or lose." },
+    { tone: "safe", label: "Base pay after taxes", amount: "$4,500", rule: "Across the 8 weeks", detail: "About $560 a week, win or lose." },
     { tone: "maybe", label: "Perfect Attendance Bonus", amount: "$800", rule: "Only if", detail: "Avery makes every practice and every game." },
     { tone: "maybe", label: "Making the Cut Bonus", amount: "$1,000", rule: "Only if", detail: "The Flight qualifies for the showcase." },
   ];

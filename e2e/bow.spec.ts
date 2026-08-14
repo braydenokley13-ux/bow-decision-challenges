@@ -89,7 +89,7 @@ async function submitDefense(page: Page, text: string, tileIndices: number[] = [
   await page.getByRole("button", { name: "Turn in my plan" }).click();
 }
 
-/** Reaches the unlocked working-plan board (flexible-1000 setup, no bonuses) and stops there. */
+/** Reaches the unlocked working-plan board (cousin-room setup, no bonuses) and stops there. */
 async function reachWorkingBoard(page: Page) {
   await gotoFreshChallenge(page);
   await enterChallenge(page);
@@ -126,7 +126,7 @@ test("home page and educator guide load as accessible entry points", async ({ pa
 test("full conditional path completes through fallback, Week 5, remaining-risk preview, and defense, and survives a refresh", async ({ page }) => {
   await gotoFreshChallenge(page);
   await enterChallenge(page);
-  await completeSetupStage(page, 2); // flexible-1000
+  await completeSetupStage(page, 2); // cousin-room
   await completeWorkingCalcs(page, { attendance: true, showcase: true });
 
   await fillPlan(page, "1200", "900", "2100");
@@ -176,7 +176,7 @@ test("full conditional path completes through fallback, Week 5, remaining-risk p
 test("confirmed-only path on the inexpensive setup skips the fallback and completes through submission", async ({ page }) => {
   await gotoFreshChallenge(page);
   await enterChallenge(page);
-  await completeSetupStage(page, 2); // flexible-1000, the inexpensive setup
+  await completeSetupStage(page, 2); // cousin-room, the inexpensive setup
   await completeWorkingCalcs(page); // no bonuses counted
 
   await fillPlan(page, "1200", "600", "600");
@@ -213,7 +213,7 @@ test("confirmed-only path on the inexpensive setup skips the fallback and comple
 test("declining the optional weekend clinics still completes the plan", async ({ page }) => {
   await gotoFreshChallenge(page);
   await enterChallenge(page);
-  await completeSetupStage(page, 2); // flexible-1000
+  await completeSetupStage(page, 2); // cousin-room
   await completeWorkingCalcs(page, { attendance: true });
 
   await fillPlan(page, "1200", "1000", "1000");
@@ -252,7 +252,7 @@ test("declining the optional weekend clinics still completes the plan", async ({
 test("leaving the $800 bonus out of the final plan skips the remaining-risk preview", async ({ page }) => {
   await gotoFreshChallenge(page);
   await enterChallenge(page);
-  await completeSetupStage(page, 1); // shared-1400
+  await completeSetupStage(page, 1); // teammate-share
   await completeWorkingCalcs(page); // confirmed-only, keeps the path short
 
   await fillPlan(page, "1200", "400", "400");
@@ -279,14 +279,14 @@ test("leaving the $800 bonus out of the final plan skips the remaining-risk prev
 });
 
 // ---------------------------------------------------------------------------
-// 6. Expensive setup (stable-1800, no extra travel cost) completes and shows
+// 6. Expensive setup (gym-sublet, no extra travel cost) completes and shows
 //    only two Week 5 change tiles.
 // ---------------------------------------------------------------------------
 
 test("the expensive setup completes and Week 5 shows only two changed items (no travel cost card)", async ({ page }) => {
   await gotoFreshChallenge(page);
   await enterChallenge(page);
-  await completeSetupStage(page, 0); // stable-1800, chosen straight from the given total
+  await completeSetupStage(page, 0); // gym-sublet, chosen straight from the given total
   await completeWorkingCalcs(page, { showcase: true });
 
   await fillPlan(page, "1200", "700", "700");
@@ -322,7 +322,7 @@ test("the expensive setup completes and Week 5 shows only two changed items (no 
 test("refreshing mid-challenge preserves stage, setup, and entered plan numbers", async ({ page }) => {
   await gotoFreshChallenge(page);
   await enterChallenge(page);
-  await completeSetupStage(page, 1); // shared-1400 ("Teammate Share")
+  await completeSetupStage(page, 1); // teammate-share ("Teammate Share")
   await completeWorkingCalcs(page);
   await setAmount(page, "Sports-media course", "900");
 

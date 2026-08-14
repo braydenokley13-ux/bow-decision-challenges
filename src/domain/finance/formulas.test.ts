@@ -11,8 +11,9 @@ const input = (overrides: Partial<SnapshotInputs> = {}): SnapshotInputs => ({
   includeCompletion: false,
   includeOutcome: false,
   includeOptionalWork: false,
-  setupId: "stable-1800",
+  setupId: "gym-sublet",
   week5Applied: false,
+  depositTaken: false,
   numbersVersion: SCENARIO_NUMBERS.version,
   ...overrides,
 });
@@ -28,30 +29,30 @@ describe("financial formulas", () => {
   });
 
   it.each([
-    ["stable-1800", false, 700], ["shared-1400", false, 850], ["flexible-1000", false, 1050],
-    ["stable-1800", true, 1700], ["shared-1400", true, 1850], ["flexible-1000", true, 2050],
+    ["gym-sublet", false, 700], ["teammate-share", false, 850], ["cousin-room", false, 1000],
+    ["gym-sublet", true, 1700], ["teammate-share", true, 1850], ["cousin-room", true, 2000],
   ] as const)("computes Week 5 change for %s with outcome=%s", (setupId, includeOutcome, expected) => {
     expect(week5Change(input({ setupId, includeOutcome }), SCENARIO_NUMBERS)).toBe(expected);
   });
 
   it("keeps opening and event locked amounts separate", () => {
-    expect(lockedFor(input({ setupId: "flexible-1000" }), SCENARIO_NUMBERS)).toBe(2600);
-    expect(lockedFor(input({ setupId: "flexible-1000", mode: "final", week5Applied: true }), SCENARIO_NUMBERS)).toBe(3650);
+    expect(lockedFor(input({ setupId: "cousin-room" }), SCENARIO_NUMBERS)).toBe(1900);
+    expect(lockedFor(input({ setupId: "cousin-room", mode: "final", week5Applied: true }), SCENARIO_NUMBERS)).toBe(2900);
   });
 
   it("uses balance-based fallback residual math for an unresolved opening", () => {
     const opening = input({
       includeCompletion: true,
       includeOutcome: true,
-      setupId: "flexible-1000",
-      amounts: { goal: dollars(1200), reserve: dollars(900), flexibleCash: dollars(2300) },
+      setupId: "cousin-room",
+      amounts: { goal: dollars(1200), reserve: dollars(900), flexibleCash: dollars(3000) },
     });
     const fallback = input({
       mode: "fallback",
       includeCompletion: true,
       includeOutcome: true,
-      setupId: "flexible-1000",
-      amounts: { goal: dollars(1100), reserve: dollars(600), flexibleCash: dollars(1600) },
+      setupId: "cousin-room",
+      amounts: { goal: dollars(1100), reserve: dollars(600), flexibleCash: dollars(2300) },
     });
     expect(balanceOf(opening, SCENARIO_NUMBERS)).toBe(-200);
     expect(fallbackMetrics(opening, fallback, SCENARIO_NUMBERS)).toEqual({
@@ -71,7 +72,7 @@ describe("financial formulas", () => {
 });
 
 describe("increment reachability and feasibility", () => {
-  const setupIds = ["stable-1800", "shared-1400", "flexible-1000"] as const;
+  const setupIds = ["gym-sublet", "teammate-share", "cousin-room"] as const;
   const incomeStates = [[false, false], [true, false], [false, true], [true, true]] as const;
 
   it("provides a nonnegative balanced assignment on every opening cell", () => {

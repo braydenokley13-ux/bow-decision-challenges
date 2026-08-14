@@ -28,6 +28,8 @@ export interface ChallengeState {
   stageHistory: StageId[];
   calculations: Partial<Record<CalcId, CalculationState>>;
   setupId: SetupId | null;
+  /** The course seat was reserved early at the deposit price. Null until the call is made. */
+  depositTaken: boolean | null;
   income: { includeCompletion: boolean; includeOutcome: boolean; includeCompletionFinal: boolean; includeOptionalWork: boolean | null };
   drafts: Partial<Record<PlanMode, PlanAmounts>>;
   snapshots: PlanSnapshot[];
@@ -57,6 +59,7 @@ export function createInitialState(now = 1): ChallengeState {
     stageHistory: ["entry"],
     calculations: {},
     setupId: null,
+    depositTaken: null,
     income: { includeCompletion: false, includeOutcome: false, includeCompletionFinal: false, includeOptionalWork: null },
     drafts: {},
     snapshots: [],

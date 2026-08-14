@@ -29,7 +29,23 @@ export function availableFor(input: SnapshotInputs, n: ScenarioNumbers) {
 export function lockedFor(input: SnapshotInputs, n: ScenarioNumbers) {
   const base = n.setupCosts[input.setupId] + n.essentialsTotal;
   const event = input.week5Applied ? n.requiredWeek5Cost + n.setupEventCosts[input.setupId] : 0;
-  return dollars(base + event);
+  // A reserved seat is committed money. It is cheaper than paying later and it cannot be
+  // pulled back to cover Week 5 — that is the whole trade.
+  const deposit = input.depositTaken ? n.course.depositPrice : 0;
+  // Coaching the clinics is not free to Avery: travel, and the physio a body that is not
+  // resting needs. The fee is gross; this is what comes back out of it.
+  const clinicCost = input.includeOptionalWork ? n.optionalWorkCost : 0;
+  return dollars(base + event + deposit + clinicCost);
+}
+
+/** What the course still costs this plan, given whether the seat was reserved early. */
+export function courseCostFor(input: Pick<SnapshotInputs, "depositTaken">, n: ScenarioNumbers) {
+  return input.depositTaken ? n.course.depositPrice : n.course.fullPrice;
+}
+
+/** The most the adjustable course row may hold. A reserved seat is already paid. */
+export function courseRowCapFor(input: Pick<SnapshotInputs, "depositTaken">, n: ScenarioNumbers) {
+  return input.depositTaken ? dollars(0) : n.course.fullPrice;
 }
 
 export function balanceOf(input: SnapshotInputs, n: ScenarioNumbers) {

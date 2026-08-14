@@ -13,8 +13,9 @@ function snapshot(sequence = 10): PlanSnapshot {
       includeCompletion: true,
       includeOutcome: false,
       includeOptionalWork: true,
-      setupId: "flexible-1000",
+      setupId: "cousin-room",
       week5Applied: true,
+      depositTaken: false,
       numbersVersion: "pup-numbers-1",
     },
   };
@@ -51,7 +52,7 @@ function facts(): AssessmentFacts {
     firstResponse: alternate(),
     preview: alternate(),
     final: { snapshot: snapshot(10), balance: dollars(0), acknowledgedResidual: false, lockedMoveAttempts: 0, support: "standard_access", evidenceRefs: ["final"] },
-    selectedSetupId: "flexible-1000",
+    selectedSetupId: "cousin-room",
     selectedGapTiles: ["required-cost", "setup-cost"],
     applicableGapTiles: ["required-cost", "setup-cost"],
     optionalDecision: { accepted: true, sequence: 9, evidenceRef: "job-choice" },
@@ -86,8 +87,8 @@ describe("choice-neutral scoring", () => {
   it("does not reward a particular housing choice", () => {
     const nearby = facts();
     const longCommute = facts();
-    nearby.selectedSetupId = "stable-1800";
-    longCommute.selectedSetupId = "flexible-1000";
+    nearby.selectedSetupId = "gym-sublet";
+    longCommute.selectedSetupId = "cousin-room";
     expect(scores(nearby, ["C2.1", "C2.2"])).toEqual(scores(longCommute, ["C2.1", "C2.2"]));
   });
 

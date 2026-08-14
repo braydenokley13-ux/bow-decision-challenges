@@ -51,6 +51,7 @@ function snapshotInputs(state: ChallengeState, mode: PlanMode): SnapshotInputs |
     includeOptionalWork: state.income.includeOptionalWork ?? false,
     setupId: state.setupId,
     week5Applied: mode === "week5-first-response" || mode === "final" || mode === "remaining-risk",
+    depositTaken: state.depositTaken === true,
     numbersVersion: SCENARIO_NUMBERS.version,
   };
 }
@@ -86,6 +87,18 @@ export function challengeReducer(state: ChallengeState, action: ChallengeAction)
     }
     case "SETUP_SELECTED": {
       const next = { ...state, setupId: action.setupId };
+      return append(next, action.type, action);
+    }
+    case "COURSE_DEPOSIT_DECIDED": {
+      // Reserving the seat moves that money out of the adjustable rows and into the
+      // locked costs, so any course amount the student had parked is released.
+      const next = {
+        ...state,
+        depositTaken: action.taken,
+        drafts: action.taken
+          ? Object.fromEntries(Object.entries(state.drafts).map(([mode, amounts]) => [mode, { ...amounts, goal: dollars(0) }])) as ChallengeState["drafts"]
+          : state.drafts,
+      };
       return append(next, action.type, action);
     }
     case "INCOME_SOURCE_TOGGLED": {

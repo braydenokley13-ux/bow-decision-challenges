@@ -31,8 +31,8 @@ const REPRICED: ScenarioNumbers = {
   essentialsTotal: dollars(2000),
   outcomeIncome: dollars(1200),
   requiredWeek5Cost: dollars(900),
-  setupCosts: { "stable-1800": dollars(2100), "shared-1400": dollars(1650), "flexible-1000": dollars(1150) },
-  setupEventCosts: { "stable-1800": dollars(0), "shared-1400": dollars(200), "flexible-1000": dollars(400) },
+  setupCosts: { "gym-sublet": dollars(2100), "teammate-share": dollars(1650), "cousin-room": dollars(1150) },
+  setupEventCosts: { "gym-sublet": dollars(0), "teammate-share": dollars(200), "cousin-room": dollars(400) },
 };
 
 function calc(calcId: CalcId, value: number): CalculationEvidence {
@@ -58,8 +58,9 @@ function factsWith(calculations: Partial<Record<CalcId, CalculationEvidence>>): 
           includeCompletion: false,
           includeOutcome: true,
           includeOptionalWork: false,
-          setupId: "flexible-1000",
+          setupId: "cousin-room",
           week5Applied: false,
+          depositTaken: false,
           numbersVersion: "test-repriced",
         },
       },
@@ -69,7 +70,7 @@ function factsWith(calculations: Partial<Record<CalcId, CalculationEvidence>>): 
       support: "standard_access",
       evidenceRefs: ["opening"],
     },
-    selectedSetupId: "flexible-1000",
+    selectedSetupId: "cousin-room",
     selectedGapTiles: [],
     applicableGapTiles: [],
     defenseSubmitted: false,
@@ -83,7 +84,7 @@ describe("expected answers are derived from the scenario, never hardcoded", () =
   it("derives the reliable floor, essentials and setup ranks from the numbers in force", () => {
     expect(reliableFloorExpectation(SCENARIO_NUMBERS)).toBe(5000);
     expect(essentialsExpectation(SCENARIO_NUMBERS)).toBe(1600);
-    expect(setupTotalsByRank(SCENARIO_NUMBERS)).toEqual({ lowest: 1000, middle: 1400, highest: 1800 });
+    expect(setupTotalsByRank(SCENARIO_NUMBERS)).toEqual({ lowest: 300, middle: 1000, highest: 1800 });
 
     expect(reliableFloorExpectation(REPRICED)).toBe(5500);
     expect(essentialsExpectation(REPRICED)).toBe(2000);
@@ -120,13 +121,13 @@ describe("expected answers are derived from the scenario, never hardcoded", () =
   });
 
   it("re-prices the Week 5 change against the setup the student chose", () => {
-    const countedOutcome = { setupId: "flexible-1000" as const, countedOutcome: true };
-    expect(week5ChangeExpectation(SCENARIO_NUMBERS, countedOutcome)).toBe(1000 + 700 + 350);
+    const countedOutcome = { setupId: "cousin-room" as const, countedOutcome: true };
+    expect(week5ChangeExpectation(SCENARIO_NUMBERS, countedOutcome)).toBe(1000 + 700 + 300);
     expect(week5ChangeExpectation(REPRICED, countedOutcome)).toBe(1200 + 900 + 400);
 
     // The cheapest-to-reach setup adds no travel, so the total is smaller and the grader
     // must not expect the other setup's number.
-    expect(week5ChangeExpectation(REPRICED, { setupId: "stable-1800", countedOutcome: false })).toBe(900);
+    expect(week5ChangeExpectation(REPRICED, { setupId: "gym-sublet", countedOutcome: false })).toBe(900);
     expect(week5ChangeExpectation(REPRICED, { setupId: undefined, countedOutcome: false })).toBeNull();
   });
 
