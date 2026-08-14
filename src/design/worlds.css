@@ -2,9 +2,7 @@
    means adding a block here — no component needs to know which story it is rendering. */
 [data-world="basketball"] {
   --world-accent: #b8431a;
-  --world-accent-strong: #93330f;
   --world-accent-soft: #f7e5da;
-  --world-accent-ink: #ffffff;
   --world-hero-bg: #0b1b33;
   --world-hero-ink: #f4f1ea;
   --world-hero-second: #e0672e;

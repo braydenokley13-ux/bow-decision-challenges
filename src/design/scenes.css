@@ -26,8 +26,8 @@
 .roster-card__number { color: var(--world-flare); font: 700 clamp(3.4rem, 6vw, 4.6rem)/0.8 var(--font-display); font-feature-settings: var(--num); letter-spacing: -0.06em; }
 .roster-card[data-tone="light"] .roster-card__number { color: var(--world-accent); }
 .roster-card__plate h2 { margin: 0; }
-.roster-card__plate b { display: block; color: var(--world-hero-ink); font: 700 clamp(1.5rem, 2.4vw, 2rem)/0.98 var(--font-display); letter-spacing: -0.035em; }
-.roster-card__plate i { display: block; color: var(--world-hero-ink); font: 400 clamp(1.5rem, 2.4vw, 2rem)/1.02 var(--font-display); font-style: normal; letter-spacing: -0.035em; }
+.roster-card__plate b { display: block; color: var(--world-hero-ink); font: 700 clamp(1.5rem, 2.4vw, 2rem)/0.98 var(--font-display); letter-spacing: var(--display-tracking); }
+.roster-card__plate i { display: block; color: var(--world-hero-ink); font: 400 clamp(1.5rem, 2.4vw, 2rem)/1.02 var(--font-display); font-style: normal; letter-spacing: var(--display-tracking); }
 .roster-card[data-tone="light"] .roster-card__plate b, .roster-card[data-tone="light"] .roster-card__plate i { color: var(--ink-1); }
 .roster-card__vitals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin: 0; padding-top: var(--s-4); border-top: 1px solid var(--world-panel-edge); }
 .roster-card[data-tone="light"] .roster-card__vitals { border-top-color: var(--border-subtle); }
@@ -44,7 +44,7 @@
 .home__bar .app-mark small { color: var(--world-hero-muted); }
 .home__bar > a { color: var(--world-hero-ink); font: var(--t-ui); text-underline-offset: 5px; }
 .home__grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr); align-items: center; gap: clamp(28px, 5vw, 80px); width: min(1440px, 100%); margin: auto; padding: clamp(28px, 5vw, 72px) clamp(20px, 4vw, 56px); }
-.home h1 { max-width: 13ch; margin: var(--s-3) 0 var(--s-5); font: 700 clamp(3rem, 6.4vw, 5.6rem)/0.92 var(--font-display); letter-spacing: -0.05em; }
+.home h1 { max-width: 13ch; margin: var(--s-3) 0 var(--s-5); font: 700 clamp(3rem, 6.4vw, 5.6rem)/0.92 var(--font-display); letter-spacing: var(--display-tracking-tight); }
 .home__deck { max-width: 50ch; margin: 0; font: 400 clamp(1.02rem, 1.4vw, 1.22rem)/1.5 var(--font-ui); }
 .home__actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: clamp(24px, 4vw, 40px); }
 .home__actions .button--secondary { color: var(--world-hero-ink); background: transparent; border-color: var(--world-hero-edge); }
@@ -58,7 +58,7 @@
 .opening__bar > span { color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.18em; text-transform: uppercase; }
 .opening__grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr); align-items: center; gap: clamp(28px, 5vw, 72px); padding: clamp(24px, 4vw, 56px) clamp(20px, 4vw, 56px); }
 .opening__story { animation: stage-in var(--dur-stage) var(--ease-exit) both; }
-.opening__story h1 { max-width: 11ch; margin: var(--s-3) 0 var(--s-5); font: var(--t-scene); letter-spacing: -0.05em; }
+.opening__story h1 { max-width: 11ch; margin: var(--s-3) 0 var(--s-5); font: var(--t-scene); letter-spacing: var(--display-tracking-tight); }
 .opening__lede { max-width: 44ch; margin: 0; font: 400 clamp(1.02rem, 1.4vw, 1.22rem)/1.5 var(--font-ui); }
 .opening__weeks { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; margin-top: clamp(20px, 3vw, 36px); padding-top: var(--s-5); border-top: 1px solid var(--world-hero-line); }
 .opening__weeks li { display: grid; gap: var(--s-2); color: var(--world-hero-muted); font: var(--t-micro); font-feature-settings: var(--num); }
@@ -246,7 +246,7 @@
 /* --- Scene 6a: the season review ------------------------------------------ */
 .interview { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); gap: var(--s-4); align-items: stretch; }
 .interview__ask { padding: clamp(24px, 3vw, 40px); }
-.interview__ask h2 { margin: 0 0 var(--s-3); color: var(--world-hero-ink); font: 700 clamp(1.7rem, 2.8vw, 2.4rem)/1.05 var(--font-display); letter-spacing: -0.035em; }
+.interview__ask h2 { margin: 0 0 var(--s-3); color: var(--world-hero-ink); font: 700 clamp(1.7rem, 2.8vw, 2.4rem)/1.05 var(--font-display); letter-spacing: var(--display-tracking); }
 .interview__ask > p { max-width: 42ch; margin: 0; }
 .interview__stats { display: grid; gap: var(--s-2); margin-top: var(--s-6); }
 .interview__stats .field-label { color: var(--world-hero-muted); }
@@ -469,7 +469,7 @@
   background: var(--surface);
 }
 
-.deposit-call__intro h2 { margin: var(--s-1) 0 var(--s-2); font: var(--t-display3); }
+.deposit-call__intro h2 { margin: var(--s-1) 0 var(--s-2); font: var(--t-display3); letter-spacing: var(--display-tracking); }
 .deposit-call__intro p { margin: 0; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
 .deposit-call__options { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
 

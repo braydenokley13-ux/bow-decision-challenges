@@ -7,6 +7,8 @@ import { ALIGNMENT_DISCLAIMER, NYSED_OBJECTIVES, STANDARDS_ROWS } from "../domai
 import type { MasteryStatus, Trajectory } from "../domain/evidence/types";
 import { aggregateConcepts, aggregateMicroSkills, classSummary, contingencyRoutes, DEMO_LABEL, DEMO_STUDENTS, reviewQueue, teachNext, type DemoStudent } from "../fixtures/demoClass";
 import { EducatorShell } from "./EducatorShell";
+import { durationLabel, PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
+import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 
 const STATUS_LABELS: Record<MasteryStatus, string> = {
   demonstrated_independently: "Independent",
@@ -75,7 +77,7 @@ function BriefAnswers() {
       <dl>
         <div><dt>What does it assess?</dt><dd>Whether students can <b>apply</b> budgeting under uncertainty — build a workable eight-week plan, keep it working when income and costs change, and justify it.</dd></div>
         <div><dt>When do I use it?</dt><dd><b>After</b> you have taught the concepts. It is an application task, not a lesson.</dd></div>
-        <div><dt>How long?</dt><dd><b>12–15 minutes</b> for most students. One sitting, one device, no sound.</dd></div>
+        <div><dt>How long?</dt><dd><b>{durationLabel(PLAN_UNDER_PRESSURE)}</b> for most students. One sitting, one device, no sound.</dd></div>
         <div><dt>What do students do?</dt><dd>They handle the money for a player’s eight-week season: read a contract, choose housing, build a plan, absorb a Week 5 loss and a new required cost, repair the plan, and defend it.</dd></div>
         <div><dt>What do I get back?</dt><dd>Six concept results and 18 micro-skill observations, each traceable to a saved financial state — plus one short written defense you score.</dd></div>
         <div><dt>How do I launch it?</dt><dd>Share the challenge link with a class code and give each student a seat number. No accounts, no roster, no student data.</dd></div>
@@ -93,7 +95,7 @@ export function EducatorGuide() {
   return (
     <EducatorShell>
       <section className="guide-hero">
-        <div><p className="eyebrow">Educator challenge brief · Grades 6–8</p><h1>Plan Under Pressure</h1><p className="lede">A post-instruction application assessment for adaptive budgeting under uncertainty.</p><div className="guide-meta"><span>Grades 6–8</span><span>12–15 minutes</span><span>Basketball · Eight Weeks to the Showcase</span><span>Use after instruction</span></div><div className="hero-actions"><Link className="button button--primary" to="/challenge">Try the student challenge</Link><Link className="button button--secondary" to="/educator/class">Open demo evidence</Link></div></div>
+        <div><p className="eyebrow">Educator challenge brief · {PLAN_UNDER_PRESSURE.grades}</p><h1>{PLAN_UNDER_PRESSURE.title}</h1><p className="lede">A post-instruction application assessment for adaptive budgeting under uncertainty.</p><div className="guide-meta"><span>{PLAN_UNDER_PRESSURE.grades}</span><span>{durationLabel(PLAN_UNDER_PRESSURE)}</span><span>Basketball · {BASKETBALL_SCENARIO.title}</span><span>{PLAN_UNDER_PRESSURE.placement}</span></div><div className="hero-actions"><Link className="button button--primary" to={PLAN_UNDER_PRESSURE.route}>Try the student challenge</Link><Link className="button button--secondary" to="/educator/class">Open demo evidence</Link></div></div>
         <aside><span className="guide-hero__mark">PUP / 01</span><blockquote>“You teach the concept. BOW gives students a world where they have to use it.”</blockquote><p>No vocabulary quiz. The financial state the student constructs is the answer.</p></aside>
       </section>
       <BriefAnswers />

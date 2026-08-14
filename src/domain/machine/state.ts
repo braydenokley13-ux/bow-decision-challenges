@@ -2,6 +2,7 @@ import type { CalcId, SetupId, WorldId } from "../core/ids";
 import { dollars, type Dollars } from "../core/money";
 import type { PlanAmounts, PlanMode } from "../finance/types";
 import type { EvidenceEvent, PlanSnapshot, StageId, SupportLevel } from "../evidence/types";
+import { PLAN_UNDER_PRESSURE } from "../../platform/challenges/registry";
 
 export interface CalculationState {
   raw: string;
@@ -17,8 +18,9 @@ export interface ChallengeState {
     sessionId: string;
     classCode: string;
     seatCode: string;
-    challengeId: "plan-under-pressure";
-    challengeVersion: "2.1.0-mvp";
+    challengeId: string;
+    /** The registry's version at the moment the attempt started. */
+    challengeVersion: string;
     worldId: WorldId;
     startedAt: number;
     updatedAt: number;
@@ -51,8 +53,8 @@ export function createInitialState(now = 1): ChallengeState {
       sessionId: "",
       classCode: "",
       seatCode: "",
-      challengeId: "plan-under-pressure",
-      challengeVersion: "2.1.0-mvp",
+      challengeId: PLAN_UNDER_PRESSURE.id,
+      challengeVersion: PLAN_UNDER_PRESSURE.version,
       worldId: "basketball",
       startedAt: now,
       updatedAt: now,

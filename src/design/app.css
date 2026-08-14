@@ -49,7 +49,7 @@ p { color: var(--ink-2); }
 .contract-drawer__goal { margin: var(--s-4) 0 0; padding: var(--s-3); background: var(--fin-adjustable-soft); color: var(--fin-adjustable-ink); font: var(--t-micro); }
 .stage-main { width: min(var(--w-board), calc(100% - 2 * var(--gutter))); margin: 0 auto; padding: var(--s-7) 0 var(--s-10); }
 .stage-heading { position: relative; margin-bottom: var(--s-6); padding-left: var(--s-5); border-left: 4px solid var(--world-accent); }
-.stage-heading h1 { max-width: 960px; margin: 0; font: var(--t-display2); }
+.stage-heading h1 { max-width: 960px; margin: 0; font: var(--t-display2); letter-spacing: var(--display-tracking); }
 
 .stage-action { display: flex; align-items: center; justify-content: space-between; gap: var(--s-6); margin-top: var(--s-6); padding: var(--s-5) 0; border-top: 1px solid var(--border-default); }
 .stage-action p { max-width: 650px; margin: 0; font: var(--t-ui); }
@@ -227,14 +227,14 @@ p { color: var(--ink-2); }
 
 /* Teaching companion */
 .page-header { padding: clamp(40px, 6vw, 80px); background: var(--surface); border-bottom: 1px solid var(--border-default); }
-.page-header h1 { max-width: 1050px; margin: 0 0 var(--s-5); font: var(--t-display1); }
+.page-header h1 { max-width: 1050px; margin: 0 0 var(--s-5); font: var(--t-display1); letter-spacing: var(--display-tracking); }
 .page-header > p:last-child { max-width: 800px; font: var(--t-body-lg); }
 .page-header--with-back > a { display: inline-block; margin-bottom: var(--s-7); color: var(--ink-2); font: var(--t-ui); }
 .mini-unit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); padding: var(--s-7); }
 .mini-unit-grid > article { background: var(--surface); border: 1px solid var(--border-default); }
 .mini-unit-grid article > header { min-height: 240px; padding: var(--s-6); color: var(--ink-invert); background: var(--ink-1); }
 .mini-unit-grid article > header span { color: var(--fin-conditional); font: var(--font-mono); }
-.mini-unit-grid article > header h2 { margin: var(--s-8) 0 var(--s-3); font: var(--t-display2); }
+.mini-unit-grid article > header h2 { margin: var(--s-8) 0 var(--s-3); font: var(--t-display2); letter-spacing: var(--display-tracking); }
 .mini-unit-grid article > header p { color: var(--border-default); }
 .mini-unit-grid ol { margin: 0; padding: var(--s-6) var(--s-6) var(--s-4) 52px; }
 .mini-unit-grid li { padding: var(--s-3) 0; }
@@ -244,7 +244,7 @@ p { color: var(--ink-2); }
 
 /* Educator dashboard */
 .class-header { display: flex; align-items: end; justify-content: space-between; gap: var(--s-6); padding: var(--s-7); }
-.class-header h1 { margin: 0; font: var(--t-display1); }
+.class-header h1 { margin: 0; font: var(--t-display1); letter-spacing: var(--display-tracking); }
 .class-header > div:last-child { display: flex; gap: var(--s-4); color: var(--ink-3); font: var(--t-micro); }
 .teach-next { position: relative; padding: clamp(32px, 5vw, 64px); background: var(--surface); border-top: 4px solid var(--fin-adjustable); border-bottom: 1px solid var(--border-default); }
 .teach-next h2 { max-width: 900px; margin: 0 0 var(--s-4); font: 600 clamp(2.5rem, 6vw, 5.6rem)/0.94 var(--font-ui); }
@@ -322,7 +322,7 @@ p { color: var(--ink-2); }
 .misconception-list__note { max-width: 70ch; margin-bottom: var(--s-5); }
 .reteach-card { align-self: start; position: sticky; top: var(--s-6); padding: var(--s-6); color: var(--ink-invert); background: var(--ink-1); }
 .reteach-card p, .reteach-card li { color: var(--border-default); }
-.reteach-card h2 { margin: var(--s-7) 0 var(--s-4); font: var(--t-display2); }
+.reteach-card h2 { margin: var(--s-7) 0 var(--s-4); font: var(--t-display2); letter-spacing: var(--display-tracking); }
 .student-evidence-header { display: grid; grid-template-columns: 1fr auto; gap: var(--s-7); align-items: end; padding: var(--s-7); background: var(--surface); border-bottom: 1px solid var(--border-default); }
 .student-evidence-header h1 { margin: var(--s-5) 0; font: 600 5rem/0.9 var(--font-ui); }
 .student-evidence-header > div:last-child { display: grid; grid-template-columns: auto auto; gap: var(--s-2) var(--s-6); align-items: baseline; }

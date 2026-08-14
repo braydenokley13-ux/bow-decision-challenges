@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { COUNT_BONUS_BUTTON, NUMBERS as N } from "./plan";
+import { PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 
 /**
  * One driver for both the assertion suite and the screenshot walkthrough.
@@ -37,7 +38,7 @@ export async function noHorizontalOverflow(page: Page) {
 // ---------------------------------------------------------------------------
 
 export async function gotoFreshChallenge(page: Page) {
-  await page.goto("/challenge");
+  await page.goto(PLAN_UNDER_PRESSURE.route);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
 }

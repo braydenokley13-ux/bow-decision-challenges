@@ -6,6 +6,7 @@ import type { ChallengeAction } from "../machine/actions";
 import { CONCEPTS } from "../blueprint/concepts";
 import { EVIDENCE_EVENT_TYPES } from "./types";
 import { deriveGrade, REASONING_MAXIMUM, STRUCTURED_MAXIMUM } from "./grade";
+import { PLAN_UNDER_PRESSURE } from "../../platform/challenges/registry";
 
 const run = (state: ChallengeState, ...actions: (ChallengeAction & { at?: number })[]) =>
   actions.reduce(challengeReducer, state);
@@ -28,8 +29,8 @@ describe("the shared evidence envelope", () => {
   it("stamps every event with the challenge, its version, and the session", () => {
     expect(log.length).toBeGreaterThan(0);
     for (const event of log) {
-      expect(event.challengeId).toBe("plan-under-pressure");
-      expect(event.challengeVersion).toBe("2.1.0-mvp");
+      expect(event.challengeId).toBe(PLAN_UNDER_PRESSURE.id);
+      expect(event.challengeVersion).toBe(PLAN_UNDER_PRESSURE.version);
       expect(event.stage).toBeTruthy();
       expect(Array.isArray(event.conceptIds)).toBe(true);
     }
