@@ -910,3 +910,93 @@ studentTest("a student who over-commits can still land and turn in a plan they c
   // Naming the exact amount still missing is a real answer, and the run completes.
   await expect(page.getByRole("heading", { name: "Two calls, then land the plan." })).toBeVisible();
 });
+
+// ---------------------------------------------------------------------------
+// 25. Accessibility across every educator route, not only the ones that were
+//     easy to reach. These pages were previously scanned in two places out of
+//     nine.
+// ---------------------------------------------------------------------------
+
+studentTest("every educator route passes an accessibility scan, including the real class", async ({ page, request, classCode }) => {
+  const key = createClassKeyFor(classCode);
+  // A class with work in it and a class with none are different pages; both are scanned.
+  const empty = await createClass(request, "Empty class");
+
+  const context: PlanContext = { setupId: "teammate-share" };
+  await gotoFreshChallenge(page);
+  await enterChallenge(page, { classCode, seatCode: "6" });
+  await completeSetupStage(page, 1);
+  await completeWorkingCalcs(page);
+  await fillPlanToBalance(page, "working", context);
+  await page.getByRole("button", { name: "Save this version" }).click();
+  await playSeasonWeeks(page);
+  await passWeek5Calculation(page, String(week5TotalFor(context)));
+  await fillPlanToBalance(page, "week5-first-response", context);
+  await page.getByRole("button", { name: "Save this version" }).click();
+  await decideOpportunity(page, { clinics: true, countBonus: false });
+  await fillPlanToBalance(page, "final", { ...context, clinics: true, countCompletionFinal: false });
+  await page.getByRole("button", { name: "Save final plan" }).click();
+  await readWeek8Resolution(page);
+  await submitDefense(page, "My plan still works because the clinics covered the new rehab bills. I protected the course money and gave up my Saturdays.");
+  await waitForDelivery(page);
+
+  for (const path of [
+    "/educator/guide",
+    "/educator/classes/new",
+    "/educator/teaching-companion",
+    "/educator/demo",
+    "/educator/demo/concepts/contingency",
+    "/educator/demo/students/14",
+    "/educator/demo/students/14/reasoning",
+    "/educator/demo/standards",
+    `/educator/class/${classCode}?key=${key}`,
+    `/educator/class/${classCode}/students/6?key=${key}`,
+    `/educator/class/${classCode}/debrief?key=${key}`,
+    `/educator/class/${empty.code}?key=${empty.teacherKey}`,
+    `/educator/class/${empty.code}/debrief?key=${empty.teacherKey}`,
+    `/educator/class/${empty.code}`,
+  ]) {
+    await page.goto(path);
+    await noSeriousAxeViolations(page);
+    await noHorizontalOverflow(page);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// 26. A student who has asked their machine to stop animating things gets a
+//     product that stops animating things, and one on a short Chromebook
+//     screen can still reach the control that moves them forward.
+// ---------------------------------------------------------------------------
+
+studentTest("the challenge runs with animation turned off and on a short Chromebook screen", async ({ browser, classCode }) => {
+  const context = await browser.newContext({ reducedMotion: "reduce", viewport: { width: 1366, height: 640 } });
+  const page = await context.newPage();
+  try {
+    const plan: PlanContext = { setupId: "gym-sublet" };
+    await gotoFreshChallenge(page);
+    await enterChallenge(page, { classCode, seatCode: "28" });
+    await completeSetupStage(page, 0);
+    await completeWorkingCalcs(page);
+    await fillPlanToBalance(page, "working", plan);
+    await page.getByRole("button", { name: "Save this version" }).click();
+
+    // The season steps and the deadline are both reachable without a mouse wheel fight.
+    for (const week of [2, 3, 4]) await page.getByRole("button", { name: `Play Week ${week}` }).click();
+    await expect(page.getByRole("heading", { name: "Hold the seat now, or pay full price later?" })).toBeVisible();
+    await noHorizontalOverflow(page);
+    await page.getByRole("button", { name: "Wait and decide later" }).click();
+    await page.getByRole("button", { name: "Lock it in and play Week 5" }).click();
+
+    await passWeek5Calculation(page, String(week5TotalFor(plan)));
+    await fillPlanToBalance(page, "week5-first-response", plan);
+    await page.getByRole("button", { name: "Save this version" }).click();
+    await decideOpportunity(page, { clinics: false, countBonus: false });
+    await fillPlanToBalance(page, "final", { ...plan, clinics: false, countCompletionFinal: false });
+    await page.getByRole("button", { name: "Save final plan" }).click();
+    await expect(page.getByRole("heading", { name: "The season ends." })).toBeVisible();
+    await noHorizontalOverflow(page);
+    await noSeriousAxeViolations(page);
+  } finally {
+    await context.close();
+  }
+});

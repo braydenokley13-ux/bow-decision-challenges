@@ -243,7 +243,7 @@ p { color: var(--ink-2); }
 .concept-matrix th, .concept-matrix td, .micro-table th, .micro-table td, .grade-ledger th, .grade-ledger td { padding: var(--s-4); text-align: left; border-bottom: 1px solid var(--border-default); }
 .concept-matrix thead th, .micro-table thead th, .grade-ledger thead th { color: var(--ink-3); font: var(--t-micro); text-transform: uppercase; letter-spacing: 0.06em; }
 .concept-matrix tbody th { width: 270px; }
-.concept-matrix tbody th a { display: grid; grid-template-columns: 40px 1fr; color: var(--ink-1); text-decoration: none; }
+.concept-matrix tbody th, .concept-matrix tbody th a { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: baseline; gap: var(--s-2); color: var(--ink-1); text-decoration: none; }
 .concept-matrix tbody th span, .grade-ledger th span { color: var(--ink-3); font: var(--font-mono); }
 .concept-matrix tbody td:last-child { width: 110px; }
 .concept-matrix tr.is-emphasized { background: var(--fin-adjustable-soft); }
