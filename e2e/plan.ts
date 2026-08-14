@@ -13,8 +13,23 @@ import { CHOICE_LABELS } from "../src/components/financial/choices";
  */
 export const money = formatDollars;
 export const COMPLETION_LABEL = BASKETBALL_SCENARIO.incomeCopy.completion.label;
-export const NO_BONUS_HEADING = `Test the plan without the ${money(N.completionIncome)}.`;
+export const NO_BONUS_HEADING = `Now show it works without the ${money(N.completionIncome)}.`;
 export const COUNT_BONUS_BUTTON = `Count the ${money(N.completionIncome)}`;
+export const BACKUP_HEADING = "That money never arrives.";
+export const TRIAGE_HEADING = "Something has to give.";
+
+/**
+ * What each money moment calls the button that commits it. They differ on purpose — five
+ * identically-labelled "Save this version" buttons were the surface reading of five
+ * identical screens — so the suite keeps them in one place rather than in sixteen.
+ */
+export const SAVE_LABEL: Record<PlanMode, string> = {
+  working: "Save this version",
+  fallback: "Save the backup plan",
+  "week5-first-response": "Lock in what Avery gives up",
+  final: "Save final plan",
+  "remaining-risk": "Save this check",
+};
 
 /**
  * The browser suite reads its dollar amounts from the scenario, exactly as the grader does.
@@ -83,6 +98,12 @@ export function splitFor(spendable: number, step: number, courseCap: number = N.
   const rest = usable - goal;
   const reserve = Math.floor(rest / 2 / step) * step;
   return { goal, reserve, flexible: rest - reserve };
+}
+
+/** Fills the plan to zero and commits it, whatever this moment calls committing. */
+export async function savePlan(page: Page, mode: PlanMode, context: PlanContext) {
+  await fillPlanToBalance(page, mode, context);
+  await page.getByRole("button", { name: SAVE_LABEL[mode] }).click();
 }
 
 /** Fills the board so the plan lands on exactly zero for the mode being shown. */

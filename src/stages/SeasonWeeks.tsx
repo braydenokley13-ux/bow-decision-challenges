@@ -100,8 +100,7 @@ export function SeasonWeeks() {
             <div><dt>Avery’s week</dt><dd className="money">{formatDollars(amounts.flexibleCash)}</dd></div>
           </dl>
           <p className="season-ledger__note">
-            These are the eight-week costs you already committed to, arriving one week at a time.
-            Nothing here is yours to change.
+            The eight-week costs you already committed to, arriving one week at a time.
           </p>
         </aside>
 
@@ -150,9 +149,9 @@ export function SeasonWeeks() {
             <p className="field-label">Week {DEADLINE} · The course office</p>
             <h2 id="deposit-heading" ref={deadlineRef} tabIndex={-1}>Hold the seat now, or pay full price later?</h2>
             <p>
-              The sports-media course starts the week the season ends and it is filling up. Avery can
-              hold a seat today for less, or wait and pay the full price when the season is over —
-              with {REMAINING_WEEKS} weeks still to play and no idea what they hold.
+              The course starts the week the season ends and it is filling up. Hold a seat today for
+              less, or wait and pay full price — with {REMAINING_WEEKS} weeks still to play and no
+              idea what they hold.
             </p>
           </div>
           <div className="deposit-call__options">
@@ -182,7 +181,7 @@ export function SeasonWeeks() {
                     : "The seat is yours and the course is paid in full. Your course money covered it exactly."}
           </p>
           <div className="stage-action">
-            <p>{REMAINING_WEEKS} weeks left after this one. Whatever they bring, it lands on the plan you already built.</p>
+            <p>Whatever the last {REMAINING_WEEKS} weeks bring, it lands on the plan you already built.</p>
             <Button aria-disabled={reserving === null} onClick={commit}>
               {reserving === null ? "Make the call to continue" : "Lock it in and play Week 5"}
             </Button>

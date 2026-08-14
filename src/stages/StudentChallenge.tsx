@@ -5,13 +5,15 @@ import { AppMark } from "../components/primitives/AppMark";
 import { Button } from "../components/primitives/Button";
 import { CalculationInput } from "../components/primitives/CalculationInput";
 import { MoneyAmount } from "../components/primitives/MoneyAmount";
-import { PlanBoard } from "../components/financial/PlanBoard";
+import { PlanBoard, type BoardVariant } from "../components/financial/PlanBoard";
+import { AdjustPanel, type SupplyChange } from "../components/financial/AdjustPanel";
 import { CourtBackdrop } from "../components/story/CourtBackdrop";
 import { RosterCard } from "../components/story/RosterCard";
 import { dollars, formatDollars, type Dollars } from "../domain/core/money";
 import type { CalcId, CategoryId, SetupId } from "../domain/core/ids";
 import type { PlanMode } from "../domain/finance/types";
 import { availableFor, lockedFor, week5Change } from "../domain/finance/formulas";
+import { planConsequences } from "../domain/finance/consequences";
 import { PLAN_MODES } from "../domain/finance/modes";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
 import { essentialsExpectation, incomeAmount, reliableFloorExpectation, setupCostOrder } from "../domain/scenario/expectations";
@@ -38,8 +40,8 @@ function calculationSupport(dispatch: ReturnType<typeof useChallenge>["dispatch"
 }
 
 /** Brings a section that has just appeared into view without yanking the page around. */
-function useRevealOnce(active: boolean) {
-  const ref = useRef<HTMLDivElement>(null);
+function useRevealOnce<T extends HTMLElement = HTMLDivElement>(active: boolean) {
+  const ref = useRef<T>(null);
   const done = useRef(false);
   useEffect(() => {
     if (!active || done.current || !ref.current) return;
@@ -271,7 +273,7 @@ function SetupStage() {
         </>
       ) : (
         <div ref={revealRef}>
-          <p className="stage-deck">That is the order. Now pick where Avery lives — and what it costs out of the week.</p>
+          <p className="stage-deck">That is the order. Now pick where Avery lives, and work out what it costs.</p>
           <div className="setup-grid">
             {setups.map((setup, index) => (
               <article key={setup.id} className={`place-card ${state.setupId === setup.id ? "is-selected" : ""}`}>
@@ -280,10 +282,21 @@ function SetupStage() {
                   <span className="place-card__option">Option {String.fromCharCode(65 + index)}</span>
                   <b className="place-card__name">{setup.title}</b>
                 </div>
-                <div className="given-total">
-                  <span>Eight weeks</span>
-                  <MoneyAmount value={setup.total} />
-                </div>
+                {/* The eight-week totals stay off the cards until the student has worked one
+                    out. They used to be printed here beside a box asking for the very same
+                    number, which made the only question on this screen a copying exercise
+                    and made the micro-skill behind it worth nothing. */}
+                {totalEntered ? (
+                  <div className="given-total">
+                    <span>Eight weeks</span>
+                    <MoneyAmount value={setup.total} />
+                  </div>
+                ) : (
+                  <div className="given-total given-total--terms">
+                    <span>The terms</span>
+                    <b>{setup.terms}</b>
+                  </div>
+                )}
                 <div className="trip">
                   <div className="trip__map" aria-hidden="true">
                     <span className="trip__dot" />
@@ -329,66 +342,50 @@ function SetupStage() {
   );
 }
 
-function PlanBoardForMode({ mode }: { mode: PlanMode }) {
+/** The plan a mode starts from: what the student last committed before this moment. */
+function baselineFor(state: ReturnType<typeof useChallenge>["state"], mode: PlanMode) {
+  switch (mode) {
+    case "fallback": return amountsFor(state, "working");
+    case "week5-first-response": return amountsFor(state, state.saved.fallback ? "fallback" : "working");
+    case "final": return amountsFor(state, "week5-first-response");
+    case "remaining-risk": return amountsFor(state, "final");
+    case "working": return undefined;
+  }
+}
+
+/**
+ * Everything the five money moments share: the priced snapshot, the plan they started
+ * from, and the four dispatches. What differs between them is the instrument, which is the
+ * whole point of them being separate components.
+ */
+function usePlanWiring(mode: PlanMode) {
   const { state, dispatch } = useChallenge();
   const input = snapshotForMode(state, mode);
-  if (!input || !state.setupId) return null;
-  const setupTitle = BASKETBALL_SCENARIO.setups.find((setup) => setup.id === state.setupId)?.title ?? "Selected setup";
-  const baseline = mode === "fallback"
-    ? amountsFor(state, "working")
-    : mode === "week5-first-response"
-      ? amountsFor(state, state.saved.fallback ? "fallback" : "working")
-      : mode === "remaining-risk"
-        ? amountsFor(state, "final")
-        : undefined;
-  const reference = mode === "week5-first-response" || mode === "remaining-risk" ? baseline : undefined;
-  // Named out loud, every pass after the first is a reaction to something that happened
-  // rather than the same board handed back.
-  const week5Bills = SCENARIO_NUMBERS.requiredWeek5Cost + SCENARIO_NUMBERS.setupEventCosts[state.setupId];
-  const { incomeCopy } = BASKETBALL_SCENARIO;
-  const named = (key: "completion" | "outcome" | "optionalWork") =>
-    `${formatDollars(incomeAmount(SCENARIO_NUMBERS, key))} ${incomeCopy[key].label}`;
-  const change = mode === "fallback"
-    ? { headline: "Take the bonus money out.", items: [
-        ...(state.income.includeOutcome ? [`The ${named("outcome")} leaves the plan`] : []),
-        ...(state.income.includeCompletion ? [`The ${named("completion")} leaves the plan`] : []),
-        "Rent and essentials do not change",
-      ] }
-    : mode === "week5-first-response"
-      ? { headline: "Week 5 landed on your plan.", items: [
-          ...(state.income.includeOutcome ? [`The ${named("outcome")} is gone`] : []),
-          `${formatDollars(week5Bills)} of brace, rehab and travel is now locked in`,
-        ] }
-      : mode === "final"
-        ? { headline: "Your two calls are in.", items: [
-            state.income.includeOptionalWork
-              ? `${incomeCopy.optionalWork.label}: +${formatDollars(SCENARIO_NUMBERS.optionalWorkIncome)}`
-              : "No clinics. The Saturdays stay Avery’s",
-            `The ${named("completion")} ${state.income.includeCompletionFinal ? "is back in the plan" : "stays out"}`,
-          ] }
-        : mode === "remaining-risk"
-          ? { headline: `The ${named("completion")} never arrives.`, items: ["A copy of your final plan with that money removed"] }
-          : undefined;
-  const applyReference = (category?: CategoryId) => {
-    if (!reference) return;
-    for (const key of category ? [category] : (["goal", "reserve", "flexibleCash"] as const)) dispatch({ type: "PLAN_AMOUNT_CHANGED", mode, category: key, amount: reference[key] });
+  const baseline = baselineFor(state, mode);
+
+  const setAmount = (category: CategoryId, amount: Dollars) => dispatch({ type: "PLAN_AMOUNT_CHANGED", mode, category, amount });
+  const restore = (category?: CategoryId) => {
+    if (!baseline) return;
+    for (const key of category ? [category] : CHOICE_KEYS) setAmount(key, baseline[key]);
   };
+
   /**
    * Supplies one balanced plan without expressing a preference between the three
-   * categories: the money is split as evenly as the step size allows, and only the
-   * course goal's own cap redirects anything. The student receives no credit for this
-   * board, so the plan must not model a "correct" set of priorities.
+   * categories: the money is split as evenly as the step size allows, and only the course
+   * goal's own cap redirects anything. The student receives no credit for this plan, so it
+   * must not model a "correct" set of priorities.
    */
   const supplyOneBalancedPlan = () => {
+    if (!input) return;
     const step = PLAN_MODES[mode].increment;
     const spendable = Math.max(0, availableFor(input, SCENARIO_NUMBERS) - lockedFor(input, SCENARIO_NUMBERS));
     const caps: Record<CategoryId, number> = { goal: SCENARIO_NUMBERS.goalCap, reserve: Infinity, flexibleCash: Infinity };
     const amounts: Record<CategoryId, number> = { goal: 0, reserve: 0, flexibleCash: 0 };
 
-    // Deal the money out one step at a time, always to whichever category currently
-    // holds the least, so no category is favoured by the order of the loop.
+    // Deal the money out one step at a time, always to whichever category currently holds
+    // the least, so no category is favoured by the order of the loop.
     for (let left = spendable; left >= step; left -= step) {
-      const target = (["goal", "reserve", "flexibleCash"] as const)
+      const target = CHOICE_KEYS
         .filter((category) => amounts[category] + step <= caps[category])
         .sort((a, b) => amounts[a] - amounts[b])[0];
       if (!target) break;
@@ -398,54 +395,143 @@ function PlanBoardForMode({ mode }: { mode: PlanMode }) {
     if (remainder > 0) amounts.flexibleCash += remainder;
 
     dispatch({ type: "SHOW_AND_CONTINUE_USED", interactionId: mode });
-    for (const category of ["goal", "reserve", "flexibleCash"] as const) {
-      dispatch({ type: "PLAN_AMOUNT_CHANGED", mode, category, amount: dollars(amounts[category]) });
-    }
+    for (const category of CHOICE_KEYS) setAmount(category, dollars(amounts[category]));
     dispatch({ type: "PLAN_SAVE_REQUESTED", mode });
   };
+
+  return {
+    state,
+    input,
+    baseline,
+    attempts: meaningfulAttempts(state, mode),
+    notes: input ? planConsequences(input, SCENARIO_NUMBERS) : null,
+    setAmount,
+    restore,
+    supplyOneBalancedPlan,
+    commit: (acknowledgedResidual?: Dollars) =>
+      dispatch({ type: "PLAN_SAVE_REQUESTED", mode, ...(acknowledgedResidual !== undefined ? { acknowledgedResidual } : {}) }),
+    lockedMove: (lockedCardId: string) => dispatch({ type: "LOCKED_MOVE_ATTEMPTED", mode, lockedCardId }),
+    scaffold: () => dispatch({ type: "SCAFFOLD_OPENED", interactionId: mode }),
+  };
+}
+
+const CHOICE_KEYS = ["goal", "reserve", "flexibleCash"] as const;
+
+/** The full board. Only the first plan and the Week 5 triage get one. */
+function BoardForMode({ mode, variant, commitLabel, change }: {
+  mode: PlanMode;
+  variant: BoardVariant;
+  commitLabel: string;
+  change?: { headline: string; items: readonly string[] };
+}) {
+  const wiring = usePlanWiring(mode);
+  const { input, notes, state } = wiring;
+  if (!input || !notes || !state.setupId) return null;
+  const setupTitle = BASKETBALL_SCENARIO.setups.find((setup) => setup.id === state.setupId)?.title ?? "Selected setup";
   return (
-      <PlanBoard
-        input={input}
-        setupTitle={setupTitle}
-        baseline={baseline}
-        reference={reference}
-        attempts={meaningfulAttempts(state, mode)}
-        onAmountChange={(category, amount) => dispatch({ type: "PLAN_AMOUNT_CHANGED", mode, category, amount })}
-        onLockedMoveAttempt={(lockedCardId) => dispatch({ type: "LOCKED_MOVE_ATTEMPTED", mode, lockedCardId })}
-        onCommit={(acknowledgedResidual) => dispatch({ type: "PLAN_SAVE_REQUESTED", mode, ...(acknowledgedResidual !== undefined ? { acknowledgedResidual } : {}) })}
-        onScaffold={() => dispatch({ type: "SCAFFOLD_OPENED", interactionId: mode })}
-        onShowAndContinue={supplyOneBalancedPlan}
-        {...(change ? { change } : {})}
-        {...(reference ? { onApplyReference: applyReference } : {})}
-      />
+    <PlanBoard
+      input={input}
+      variant={variant}
+      setupTitle={setupTitle}
+      baseline={wiring.baseline}
+      reference={variant === "triage" ? wiring.baseline : undefined}
+      attempts={wiring.attempts}
+      notes={notes}
+      commitLabel={commitLabel}
+      onAmountChange={wiring.setAmount}
+      onLockedMoveAttempt={wiring.lockedMove}
+      onCommit={wiring.commit}
+      onScaffold={wiring.scaffold}
+      onShowAndContinue={wiring.supplyOneBalancedPlan}
+      {...(change ? { change } : {})}
+      {...(variant === "triage" ? { onApplyReference: wiring.restore } : {})}
+    />
   );
 }
 
-function PlanStage({ mode, title, kicker, deck }: { mode: PlanMode; title: string; kicker: string; deck?: string }) {
-  const { state } = useChallenge();
+/** The compact instrument. Every moment after the first plan that is only an adjustment. */
+function AdjustForMode({ mode, eyebrow, headline, lead, changes, commitLabel }: {
+  mode: PlanMode;
+  eyebrow: string;
+  headline: string;
+  lead: string;
+  changes: readonly SupplyChange[];
+  commitLabel: string;
+}) {
+  const wiring = usePlanWiring(mode);
+  const { input, notes, baseline } = wiring;
+  if (!input || !notes || !baseline) return null;
   return (
-    <StageShell stage={state.stage} kicker={kicker} title={title}>
-      {deck && <p className="stage-deck">{deck}</p>}
-      <PlanBoardForMode mode={mode} />
-    </StageShell>
+    <AdjustPanel
+      input={input}
+      baseline={baseline}
+      changes={changes}
+      eyebrow={eyebrow}
+      headline={headline}
+      lead={lead}
+      notes={notes}
+      commitLabel={commitLabel}
+      attempts={wiring.attempts}
+      onAmountChange={wiring.setAmount}
+      onCommit={wiring.commit}
+      onRestore={() => wiring.restore()}
+      onScaffold={wiring.scaffold}
+      onShowAndContinue={wiring.supplyOneBalancedPlan}
+    />
   );
 }
+
+/** The two conditional payments, as the cards the student either counted or did not. */
+const BETS = [
+  ["completion-800", "completion"],
+  ["outcome-1000", "outcome"],
+] as const;
 
 /**
- * Beat 4. Read the money, decide what to count, then split what is left. Each part
- * only appears once the one before it is settled, so the screen never shows every
- * number at once.
+ * Beat 4 and 5, on one screen.
+ *
+ * Read the money, decide what to count, split what is left — and then, if any of it was
+ * bonus money, watch that money leave and put the plan back together without it.
+ *
+ * The backup version used to be its own screen with its own copy of the whole board, which
+ * made it the second of five near-identical planning passes. It is not a second plan. It
+ * is the same plan with a hole in it, and the way to make a student feel that is to take
+ * the money out of the plan they are looking at rather than hand them a fresh form. The
+ * cards they pressed "Count it" on stay on screen and get struck through, the totals they
+ * worked out stay where they were, and only the rows change. It is still a separate stage
+ * — the evidence, the grader and the educator view all depend on that — but it is no
+ * longer a separate screen.
  */
 function WorkingStage() {
   const { state, dispatch } = useChallenge();
+  const backup = state.stage === "fallback-version";
   const floorReady = state.calculations["reliable-floor"]?.correct === true;
   const essentialsReady = state.calculations["essentials-total"]?.correct === true;
   const counted = floorReady && essentialsReady;
   const revealRef = useRevealOnce(counted);
+  // The screen does not change when the bonus is pulled, so the moment it happens has to
+  // bring itself into view — otherwise a student who saved from the bottom of the board is
+  // left staring at a footer while the drama happens above them.
+  const pullRef = useRevealOnce<HTMLElement>(backup);
   const input = snapshotForMode(state, "working");
   if (!input || !state.setupId) return null;
+
+  const removed: SupplyChange[] = ([
+    ...(state.income.includeOutcome ? ["outcome" as const] : []),
+    ...(state.income.includeCompletion ? ["completion" as const] : []),
+  ]).map((key) => ({
+    id: key,
+    label: BASKETBALL_SCENARIO.incomeCopy[key].label,
+    amount: incomeAmount(SCENARIO_NUMBERS, key),
+    direction: "out" as const,
+  }));
+
   return (
-    <StageShell stage="working-plan" kicker="Build the plan" title={STUDENT_COPY.working.title}>
+    <StageShell
+      stage={backup ? "fallback-version" : "working-plan"}
+      kicker={backup ? "The same plan, without the bonus" : "Build the plan"}
+      title={backup ? "That money never arrives." : STUDENT_COPY.working.title}
+    >
       {counted ? (
         <div className="counted-strip" aria-label="What you worked out">
           <div><span>Safe cash</span><strong className="money">{formatDollars(SCENARIO_NUMBERS.reliableFloor)}</strong></div>
@@ -482,29 +568,48 @@ function WorkingStage() {
       )}
       {counted && (
         <div ref={revealRef} className="staged-reveal">
-          <section className="bets" aria-labelledby="maybe-money-heading">
+          <section ref={pullRef} className="bets" data-settled={backup} aria-labelledby="maybe-money-heading">
             <div className="bets__intro">
-              <p className="field-label">{STUDENT_COPY.working.maybeMoney.title}</p>
-              <h2 id="maybe-money-heading">{STUDENT_COPY.working.maybeMoney.body}</h2>
+              <p className="field-label">{backup ? "Neither of these arrived" : STUDENT_COPY.working.maybeMoney.title}</p>
+              <h2 id="maybe-money-heading">
+                {backup
+                  ? `${formatDollars(removed.reduce((sum, item) => sum + item.amount, 0))} leaves the plan.`
+                  : STUDENT_COPY.working.maybeMoney.body}
+              </h2>
             </div>
-            {([
-              ["completion-800", "completion", state.income.includeCompletion],
-              ["outcome-1000", "outcome", state.income.includeOutcome],
-            ] as const).map(([sourceId, key, included]) => (
-              <article key={sourceId} className="bet" data-counted={included}>
-                <div className="bet__head">
-                  <b>{BASKETBALL_SCENARIO.incomeCopy[key].label}</b>
-                  <strong className="money">{formatDollars(incomeAmount(SCENARIO_NUMBERS, key))}</strong>
-                </div>
-                <p className="bet__rule">Only if {BASKETBALL_SCENARIO.incomeCopy[key].rule}</p>
-                <div className="binary-choice">
-                  <button type="button" aria-pressed={included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: true })}>Count it</button>
-                  <button type="button" aria-pressed={!included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: false })}>Leave it out</button>
-                </div>
-              </article>
-            ))}
+            {BETS.map(([sourceId, key]) => {
+              const included = key === "completion" ? state.income.includeCompletion : state.income.includeOutcome;
+              return (
+                <article key={sourceId} className="bet" data-counted={included} data-struck={backup && included}>
+                  <div className="bet__head">
+                    <b>{BASKETBALL_SCENARIO.incomeCopy[key].label}</b>
+                    <strong className="money">{formatDollars(incomeAmount(SCENARIO_NUMBERS, key))}</strong>
+                  </div>
+                  <p className="bet__rule">Only if {BASKETBALL_SCENARIO.incomeCopy[key].rule}</p>
+                  {backup ? (
+                    <p className="bet__verdict">{included ? "You counted it. Take it back out." : "You left it out. Nothing changes here."}</p>
+                  ) : (
+                    <div className="binary-choice">
+                      <button type="button" aria-pressed={included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: true })}>Count it</button>
+                      <button type="button" aria-pressed={!included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: false })}>Leave it out</button>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
           </section>
-          <PlanBoardForMode mode="working" />
+          {backup ? (
+            <AdjustForMode
+              mode="fallback"
+              eyebrow="Backup plan"
+              headline="Put the plan back together without it."
+              lead="Rent, essentials and where Avery lives do not change. Only your three amounts can move."
+              changes={removed}
+              commitLabel="Save the backup plan"
+            />
+          ) : (
+            <BoardForMode mode="working" variant="build" commitLabel="Save this version" />
+          )}
         </div>
       )}
     </StageShell>
@@ -570,8 +675,8 @@ function Week5EventStage() {
       <section className="gap-builder">
         <div className="gap-builder__intro">
           <p className="field-label">What hit your plan</p>
-          <h2>Pull out the pieces that changed Avery’s money.</h2>
-          <p>Some of these are in your plan and some are not. Select the ones that hit <strong>the plan you built</strong>, then add them up.</p>
+          <h2>Pull out the pieces that hit your plan.</h2>
+          <p>Not all of these are in it. Select the ones that are, then add them up.</p>
           <CalculationInput calcId="week5-change" label="Total change to Avery’s money" prompt="Money that disappeared + new bills that must be paid" terms="Count only what affects the plan you built." expected={expected} priorAttempts={state.calculations["week5-change"]?.attempts} onSubmit={(raw, value, correct) => submitCalculation(dispatch, "week5-change", raw, value, correct)} onCorrect={() => dispatch({ type: "GO_TO_STAGE", stage: "first-response" })} scaffold="Add the dollar amounts on the cards you selected. Money lost and new bills both count the same way here." {...calculationSupport(dispatch, "week5-change")} />
         </div>
         <div className="gap-tiles">
@@ -595,6 +700,40 @@ function Week5EventStage() {
   );
 }
 
+/**
+ * Beat 8. The only other moment that earns the whole board.
+ *
+ * Everything in the plan is already committed and a bill has landed on top of it. There is
+ * no new money and no new information — the only question left is what Avery gives up, and
+ * that is a question about all three amounts at once, which is what the board is for. The
+ * rows carry what each one currently buys, so cutting the course row says how far short of
+ * the course it puts Avery and cutting the time row says how many hours a week Avery gets
+ * back on the bus. This is the hardest screen in the product and it is meant to be.
+ */
+function TriageStage() {
+  const { state } = useChallenge();
+  if (!state.setupId) return null;
+  const week5Bills = SCENARIO_NUMBERS.requiredWeek5Cost + SCENARIO_NUMBERS.setupEventCosts[state.setupId];
+  const outcomeLabel = BASKETBALL_SCENARIO.incomeCopy.outcome.label;
+  return (
+    <StageShell stage="first-response" kicker="Week 5 · First response" title="Something has to give.">
+      <p className="stage-deck">No new money is coming. Everything below is money you already promised somewhere else.</p>
+      <BoardForMode
+        mode="week5-first-response"
+        variant="triage"
+        commitLabel="Lock in what Avery gives up"
+        change={{
+          headline: "Week 5 landed on the plan you built.",
+          items: [
+            ...(state.income.includeOutcome ? [`The ${formatDollars(SCENARIO_NUMBERS.outcomeIncome)} ${outcomeLabel} is gone`] : []),
+            `${formatDollars(week5Bills)} of brace, rehab and travel is now locked in`,
+          ],
+        }}
+      />
+    </StageShell>
+  );
+}
+
 /** The last four Saturdays of the season, drawn, so the tradeoff is not only a sentence. */
 function SaturdayBlocks({ decision }: { decision: boolean | null }) {
   return (
@@ -609,56 +748,128 @@ function SaturdayBlocks({ decision }: { decision: boolean | null }) {
   );
 }
 
-/** Beat 9 and 10. Two calls that change what there is to work with, then the last repair. */
+/**
+ * Beat 9, 10 and 11, on one screen.
+ *
+ * Two calls change what there is to work with; the plan absorbs the change; and if the
+ * student is still counting on the attendance bonus, the same screen immediately takes it
+ * away and asks them to show the plan holds without it.
+ *
+ * That last part used to be a fifth full planning board on its own screen, which is the
+ * worst possible place for it: a student who has just committed to counting on the bonus
+ * gets a screen change, a new headline and a rebuilt board before finding out what that
+ * commitment costs them. Here the consequence arrives on the screen where the choice was
+ * made, two seconds later, and their two calls stay visible above it as the reason.
+ */
 function FinalRepairStage() {
   const { state, dispatch } = useChallenge();
-  const { opportunity } = BASKETBALL_SCENARIO;
+  const { opportunity, incomeCopy } = BASKETBALL_SCENARIO;
+  const preview = state.stage === "remaining-risk-preview";
   const completionDecided = state.log.some((event) => event.type === "COMPLETION_INCOME_DECIDED");
   const ready = state.income.includeOptionalWork !== null && completionDecided;
   const revealRef = useRevealOnce(ready);
+  // Same reason as the backup version: the screen stays, so the moment has to arrive.
+  const checkRef = useRevealOnce<HTMLDListElement>(preview);
+  const clinics = state.income.includeOptionalWork === true;
+  const bonusLabel = incomeCopy.completion.label;
+
+  // What the two calls actually did to the money, against the plan the student landed at
+  // the first response. Only moves that happened are listed; nothing here is worth $0.
+  const finalChanges: SupplyChange[] = [
+    ...(state.income.includeCompletionFinal && !state.income.includeCompletion
+      ? [{ id: "bonus-in", label: `${bonusLabel} back in the plan`, amount: Number(SCENARIO_NUMBERS.completionIncome), direction: "in" as const }] : []),
+    ...(!state.income.includeCompletionFinal && state.income.includeCompletion
+      ? [{ id: "bonus-out", label: `${bonusLabel} out of the plan`, amount: Number(SCENARIO_NUMBERS.completionIncome), direction: "out" as const }] : []),
+    ...(clinics
+      ? [
+          { id: "clinic-fee", label: incomeCopy.optionalWork.label, amount: Number(SCENARIO_NUMBERS.optionalWorkIncome), direction: "in" as const },
+          { id: "clinic-cost", label: "Getting there, and the physio a tired body needs", amount: Number(SCENARIO_NUMBERS.optionalWorkCost), direction: "out" as const },
+        ] : []),
+  ];
+
   return (
-    <StageShell stage="opportunity-final-repair" kicker="Week 5 · Two calls" title="Two calls, then land the plan.">
-      <div className="decision-row">
-        <section className="opportunity-card">
-          <p className="eyebrow">Message · {opportunity.from}</p>
-          <h2>{opportunity.title}</h2>
-          <p>{opportunity.body}</p>
-          <div className="scale">
-            <div className="scale__side">
-              <span>Avery gains</span>
-              <b className="scale__money money">+{formatDollars(SCENARIO_NUMBERS.optionalWorkIncome)}</b>
+    <StageShell
+      stage={preview ? "remaining-risk-preview" : "opportunity-final-repair"}
+      kicker={preview ? "Week 5 · Last check" : "Week 5 · Two calls"}
+      title={preview ? `Now show it works without the ${formatDollars(SCENARIO_NUMBERS.completionIncome)}.` : "Two calls, then land the plan."}
+    >
+      {preview ? (
+        <dl ref={checkRef} className="settled-calls" aria-label="The two calls you made">
+          <div>
+            <dt>The Saturdays</dt>
+            <dd>{clinics ? `Coaching. +${formatDollars(SCENARIO_NUMBERS.optionalWorkIncome)}, and the rest block is gone.` : "Kept. No extra money, no extra hours."}</dd>
+          </div>
+          <div data-alert="true">
+            <dt>The {bonusLabel}</dt>
+            <dd>Counted. Which means {formatDollars(SCENARIO_NUMBERS.completionIncome)} of this plan depends on Avery making every session.</dd>
+          </div>
+        </dl>
+      ) : (
+        <div className="decision-row">
+          {/* Once a call is made the paragraph that helped make it is spent, so it goes and
+              the panel that shows the consequence moves up the screen. */}
+          <section className="opportunity-card" data-decided={state.income.includeOptionalWork !== null}>
+            <p className="eyebrow">Message · {opportunity.from}</p>
+            <h2>{opportunity.title}</h2>
+            {state.income.includeOptionalWork === null && <p>{opportunity.body}</p>}
+            <div className="scale">
+              <div className="scale__side">
+                <span>Avery gains</span>
+                <b className="scale__money money">+{formatDollars(SCENARIO_NUMBERS.optionalWorkIncome)}</b>
+              </div>
+              <div className="scale__side">
+                <span>Avery gives up</span>
+                <SaturdayBlocks decision={state.income.includeOptionalWork} />
+                <small>{opportunity.timeCost}</small>
+              </div>
             </div>
-            <div className="scale__side">
-              <span>Avery gives up</span>
-              <SaturdayBlocks decision={state.income.includeOptionalWork} />
-              <small>{opportunity.timeCost}</small>
+            <div className="binary-choice">
+              <button type="button" aria-pressed={state.income.includeOptionalWork === true} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: true })}>Take the clinics</button>
+              <button type="button" aria-pressed={state.income.includeOptionalWork === false} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: false })}>Keep the Saturdays</button>
             </div>
-          </div>
-          <div className="binary-choice">
-            <button type="button" aria-pressed={state.income.includeOptionalWork === true} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: true })}>Take the clinics</button>
-            <button type="button" aria-pressed={state.income.includeOptionalWork === false} onClick={() => dispatch({ type: "OPTIONAL_WORK_DECIDED", accepted: false })}>Keep the Saturdays</button>
-          </div>
-          <p className="decision-note">Four Saturdays that were Avery’s. The money is real and so is the tiredness.</p>
-        </section>
-        <section className="opportunity-card">
-          <p className="eyebrow">Your call · The {BASKETBALL_SCENARIO.incomeCopy.completion.label}</p>
-          <h2>Is it still in the plan?</h2>
-          <p>Avery has made every practice and every game so far. Three weeks left, and the brace does not change the rule: miss one and the bonus is gone.</p>
-          <ol className="saturdays" aria-label="Weeks left to keep the attendance bonus">
-            {BONUS_WEEKS.map((week) => <li key={week} data-state="pending"><span>Week {week}</span><b>Every session</b></li>)}
-          </ol>
-          <dl className="tradeoff-pair">
-            <div><dt>Count it</dt><dd>More to work with, and one more thing that has to go right</dd></div>
-            <div><dt>Leave it out</dt><dd>Less to work with, nothing left to lose</dd></div>
-          </dl>
-          <div className="binary-choice">
-            <button type="button" aria-pressed={completionDecided && state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: true })}>Count the {formatDollars(SCENARIO_NUMBERS.completionIncome)}</button>
-            <button type="button" aria-pressed={completionDecided && !state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: false })}>Plan without it</button>
-          </div>
-          <p className="decision-note">Count it and you will be asked to show the plan still works if it never comes.</p>
-        </section>
-      </div>
-      {ready ? <div ref={revealRef}><PlanBoardForMode mode="final" /></div> : <p className="board-gate">Make both calls above to open the final board.</p>}
+            <p className="decision-note">The money is real and so is the tiredness.</p>
+          </section>
+          <section className="opportunity-card" data-decided={completionDecided}>
+            <p className="eyebrow">Your call · The {bonusLabel}</p>
+            <h2>Is it still in the plan?</h2>
+            {!completionDecided && <p>Avery has made every session so far. The brace does not change the rule: miss one and the bonus is gone.</p>}
+            <ol className="saturdays" aria-label="Weeks left to keep the attendance bonus">
+              {BONUS_WEEKS.map((week) => <li key={week} data-state="pending"><span>Week {week}</span><b>Every session</b></li>)}
+            </ol>
+            <div className="binary-choice">
+              <button type="button" aria-pressed={completionDecided && state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: true })}>Count the {formatDollars(SCENARIO_NUMBERS.completionIncome)}</button>
+              <button type="button" aria-pressed={completionDecided && !state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: false })}>Plan without it</button>
+            </div>
+            <p className="decision-note">Count it and you will be asked to show the plan still works if it never comes.</p>
+          </section>
+        </div>
+      )}
+
+      {preview ? (
+        <AdjustForMode
+          mode="remaining-risk"
+          eyebrow="Last check"
+          headline="Take it out and see."
+          lead="Same plan, same bills, that money gone. If it never arrives, this is what Avery is living on."
+          changes={[{ id: "bonus", label: `${bonusLabel} — never arrives`, amount: Number(SCENARIO_NUMBERS.completionIncome), direction: "out" }]}
+          commitLabel="Save this check"
+        />
+      ) : ready ? (
+        <div ref={revealRef}>
+          <AdjustForMode
+            mode="final"
+            eyebrow="Final plan"
+            headline={finalChanges.length > 0 ? "Your calls moved the money." : "Your calls moved no money."}
+            lead={finalChanges.length > 0
+              ? "Everything else is where you left it in Week 5. Decide where this lands."
+              : "The plan you landed in Week 5 still balances exactly. Check it and turn the corner."}
+            changes={finalChanges}
+            commitLabel="Save final plan"
+          />
+        </div>
+      ) : (
+        <p className="board-gate">Make both calls above, and the money moves.</p>
+      )}
     </StageShell>
   );
 }
@@ -797,15 +1008,16 @@ export function StudentChallenge() {
       case "the-offer": return <DealStage />;
       case "role-contract": return <DealStage />;
       case "setup-comparison": return <SetupStage />;
-      case "working-plan": return <WorkingStage />;
-      case "fallback-version": return <PlanStage mode="fallback" kicker="Before the season" title="What if the bonus never shows up?" deck="Your plan counts on money Avery does not have yet. Build the version that works without it." />;
+      // The backup version is the working plan with its bonus money taken out, so it is the
+      // same screen reacting rather than a second board.
+      case "working-plan": case "fallback-version": return <WorkingStage />;
       // Retired as their own screens — a plan with no bonus money starts the season
       // directly, and the passive Weeks 1–4 feed is now a season the student plays.
       case "income-check": case "week5-transition": case "season-weeks": return <SeasonWeeks />;
       case "week5-event": return <Week5EventStage />;
-      case "first-response": return <PlanStage mode="week5-first-response" kicker="Week 5 · First response" title="Fix what you can with what Avery has." deck="No new money. Move your own numbers as far as they go." />;
-      case "opportunity-final-repair": return <FinalRepairStage />;
-      case "remaining-risk-preview": return <PlanStage mode="remaining-risk" kicker="Week 5 · Last check" title={`Test the plan without the ${formatDollars(SCENARIO_NUMBERS.completionIncome)}.`} deck="Same plan, bonus removed. If it never arrives, this is what Avery is living on." />;
+      case "first-response": return <TriageStage />;
+      // The no-bonus check happens on the screen where the bonus was counted.
+      case "opportunity-final-repair": case "remaining-risk-preview": return <FinalRepairStage />;
       case "week8-resolution": return <Week8Resolution />;
       case "defense": return <DefenseStage />;
       case "submitted": return <SubmittedStage />;

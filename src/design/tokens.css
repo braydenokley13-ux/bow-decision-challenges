@@ -61,6 +61,17 @@
   --time-bought: #d8d4cb;
   --time-over: #c22b2b;
 
+  /* Chapter grounds. The five parts of the story sit on visibly different air, and each
+     takes its accent from the financial meaning of that chapter rather than from a new
+     decorative palette: choosing is indigo, money arriving is teal, the week that goes
+     wrong is the overspend red, and the ending is the world's own accent. The grounds
+     move only a few percent — enough that a student feels the room change, not enough to
+     put any text on a surface its contrast was not checked against. */
+  --ground-plan: #f2f1ec;
+  --ground-season: #eef1ef;
+  --ground-pressure: #ecebe5;
+  --ground-resolution: #f3f0e9;
+
   /* Print. A debrief on paper has no surfaces to sit on, so it gets its own ink and
      rules rather than borrowing screen tokens that assume a coloured ground. */
   --print-paper: #ffffff;

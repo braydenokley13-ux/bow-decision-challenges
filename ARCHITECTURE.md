@@ -33,10 +33,18 @@ so the same code runs in three places:
 
 That matters more than it looks: **what the tests exercise is what ships**, not a mock of it.
 
-`store.ts` holds three drivers behind one interface — `memory` (tests), `file` (any host with
-a disk), `redis` (Redis-over-REST, for serverless). Chosen by environment, never by code
-change. A deployment silently falling back to memory would lose a class the first time it
-scaled, so it does not: `storeFromEnvironment` only returns memory when explicitly asked.
+`store.ts` holds the drivers behind one interface — `memory` (tests), `file` (any host with a
+disk), `redis` (Redis-over-REST, for serverless), and `unconfigured`. Chosen by environment,
+never by code change.
+
+Every driver declares whether it is `durable`. `storeFromEnvironment` **fails closed**: on a
+host whose disk does not survive the request (Vercel, Lambda, or anything setting
+`BOW_EPHEMERAL_DISK`) with no managed store configured, it returns `unconfigured`, which
+refuses every operation and carries the reason. `GET /api/health` then answers `503` with the
+environment variables to set, and `POST /classes` refuses rather than opening a class the
+deployment cannot keep. The alternative — writing to a container disk — succeeds on every
+request and loses the class the first time the platform reschedules the function, in the
+middle of a lesson, to work students have already turned in.
 
 ### `src/domain/` — the model
 
@@ -46,7 +54,7 @@ or any view module from `src/domain/**`.
 | Module | Shared shape | PUP-specific content |
 | --- | --- | --- |
 | `core/` | ✅ money, ids | — |
-| `finance/` | ✅ formulas, load, timeline, resolution | prices arrive as `ScenarioNumbers` |
+| `finance/` | ✅ formulas, load, timeline, resolution, consequences, plan modes | prices arrive as `ScenarioNumbers` |
 | `evidence/` | ✅ envelope, facts, observation, grading | micro-skills are PUP's |
 | `machine/` | ✅ reducer, selectors | stage list is PUP's |
 | `scenario/` | — | **entirely PUP**: numbers, worlds, balance harness |
@@ -54,6 +62,16 @@ or any view module from `src/domain/**`.
 
 `src/domain/finance/**` additionally may not import a world — it receives `ScenarioNumbers`
 and nothing else. That is what lets the balance harness price hypothetical models.
+
+`finance/modes.ts` additionally declares **which instrument each money moment gets** —
+`board` for the two questions that are about the whole plan at once, `adjust` for the three
+that are "the total moved, something has to absorb it". That is a claim about the decisions
+rather than about layout, which is why it lives here and not in the stage that renders it;
+`modes.test.ts` checks the declaration and that the screens obey it.
+
+`finance/consequences.ts` derives the line under each of the three amounts — what the row
+currently buys, priced by the same model that resolves the season. Nothing in it recommends
+anything; `consequences.test.ts` holds it to that.
 
 ### `src/educator/` — the educator surface
 
@@ -115,9 +133,9 @@ the evidence room, including when passed as the key.
   than as missing.
 - **Size**: a complete submission is ~16 KB. A class of 30 is under 500 KB.
 - **Deployment**: set `KV_REST_API_URL` and `KV_REST_API_TOKEN` (Vercel KV or Upstash) before
-  running a real class on serverless. Without them the service falls back to a disk that
-  serverless functions do not keep. `GET /api/health` reports the driver actually in force —
-  check it first after any deploy.
+  running a real class on serverless. Without them the service refuses to open a class at all.
+  `GET /api/health` reports `store`, `durable` and `classroomReady` — the last is false unless
+  a class written now would still be there on Friday. Check it first after any deploy.
 - **Self-hosting**: `npm run api` runs the same service on Node with a file store.
 
 ## Error and reconnect behaviour
@@ -149,9 +167,9 @@ generalised before Challenge #2 could prove what it needs.
 
 The registry and routing; persistence keying; the whole class service and its three stores;
 the transport boundary and its three drivers; the evidence envelope, facts derivation,
-observation scoring, support caps and grading; the plan board, allocation control, money
-split and week meter; the educator shell, the class hook, the no-fixture invariant; the
-brand and token layers; the balance-harness *pattern*.
+observation scoring, support caps and grading; the plan board, the adjust panel, the
+allocation control, the money split and the week meter; the educator shell, the class hook,
+the no-fixture invariant; the brand and token layers; the balance-harness *pattern*.
 
 ## What Challenge #2 would have to build
 

@@ -100,7 +100,7 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
   const withoutClinics = heldWith(final, n, { clinics: false });
   const bonus = n.completionIncome;
 
-  return [
+  const verdicts: RiskVerdict[] = [
     {
       id: "attendance-bonus",
       label: `Building the plan around the ${bonusLabel}`,
@@ -162,7 +162,24 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
         : "Avery waited, kept the money reachable, and pays the full price.",
     },
   ];
+  return verdicts.sort((a, b) => VERDICT_WEIGHT[a.outcome] - VERDICT_WEIGHT[b.outcome]);
 }
+
+/**
+ * The order the verdicts are read in.
+ *
+ * A decision that changed the season goes above one that did not. Listing them in the
+ * order the code happens to build them meant a student whose plan turned on the clinics
+ * could find that verdict third, under two lines saying nothing happened — and the whole
+ * point of this panel is that the student can trace the ending back to the call that
+ * caused it. Ties keep their order, so nothing here is a ranking of how well they did.
+ */
+const VERDICT_WEIGHT: Record<RiskVerdict["outcome"], number> = {
+  cost_you: 0,
+  paid_off: 1,
+  fell_short: 2,
+  no_effect: 3,
+};
 
 export function resolveSeason(final: SnapshotInputs, n: ScenarioNumbers, opening?: PlanAmounts, bonusLabel = "attendance bonus"): SeasonResolution {
   const load = loadFor(

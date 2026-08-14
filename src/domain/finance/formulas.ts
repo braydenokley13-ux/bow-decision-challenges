@@ -26,6 +26,29 @@ export function availableFor(input: SnapshotInputs, n: ScenarioNumbers) {
   }
 }
 
+/**
+ * How much of what this plan can spend arrives only if a rule is met.
+ *
+ * It follows `availableFor` mode by mode rather than reading the student's ticks, because
+ * the two answer different questions: the ticks say what they once counted on, and this
+ * says what the plan in front of them is counting on now. The backup version and the
+ * no-bonus check are priced with no conditional money at all, so both are zero here — and
+ * anything drawing a hatched band or naming an exposure has to agree with the arithmetic
+ * that priced the board rather than with a checkbox two screens back.
+ */
+export function conditionalIn(input: SnapshotInputs, n: ScenarioNumbers) {
+  switch (input.mode) {
+    case "working":
+      return exposureFor(input, n);
+    case "week5-first-response":
+    case "final":
+      return dollars(input.includeCompletion ? n.completionIncome : 0);
+    case "fallback":
+    case "remaining-risk":
+      return dollars(0);
+  }
+}
+
 export function lockedFor(input: SnapshotInputs, n: ScenarioNumbers) {
   const base = n.setupCosts[input.setupId] + n.essentialsTotal;
   const event = input.week5Applied ? n.requiredWeek5Cost + n.setupEventCosts[input.setupId] : 0;
