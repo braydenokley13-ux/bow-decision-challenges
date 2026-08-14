@@ -11,7 +11,7 @@ import type { SnapshotInputs } from "./types";
  * The three amounts used to carry a fixed description — "What Avery is playing for",
  * "Untouched, unless something goes wrong" — which said what the row was *for* and never
  * what the number in it currently *does*. A student moving money had no way to feel the
- * difference between $400 and $1,200 in a row until Week 8 told them.
+ * difference between a little in a row and a lot in it until Week 8 told them.
  *
  * These lines are read out of the same model that resolves the season: the course price
  * the plan is actually facing, the cover the reserve is actually holding, the hours the

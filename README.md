@@ -64,6 +64,20 @@ assertion suite, so the two cannot describe different products.
 
 On a machine whose Chromium was not installed by Playwright, set `CHROMIUM_PATH`.
 
+## How long it takes
+
+`src/domain/machine/pacing.ts` holds a **design budget** per stage — what the interactions
+on that screen add up to, and what those seconds are made of. The longest route (both
+bonuses counted, the attendance bonus still counted at the end) budgets to **19.8 minutes**;
+the shortest complete route to 18.3. `pacing.test.ts` fails the build if the total leaves
+the band, if a stage grows past a quarter of the run, or if a stage a student never reaches
+is counted in the total.
+
+It aims below the middle of the advertised 20–25 minutes on purpose: a real student is
+slower than a budget. **It is not a measurement.** No test here can be — that takes
+middle-schoolers, a classroom and a clock, and the pilot gate that depends on them is open
+until they exist.
+
 ## The numbers
 
 Every price and threshold lives in `src/domain/scenario/numbers.ts`, and none of them is

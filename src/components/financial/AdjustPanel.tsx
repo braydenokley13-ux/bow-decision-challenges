@@ -76,14 +76,22 @@ export function AdjustPanel({
     if (residual > 0) {
       const take = Math.min(value, residual);
       return take > 0
-        ? { label: `Take ${formatDollars(take)}`, onPress: () => onAmountChange(category, dollars(value - take)) }
+        ? {
+            label: `Take ${formatDollars(take)}`,
+            spoken: `Take ${formatDollars(take)} out of ${CHOICE_LABELS[category]}`,
+            onPress: () => onAmountChange(category, dollars(value - take)),
+          }
         : undefined;
     }
     if (toPlace > 0) {
       const cap = category === "goal" ? courseCap : Number.POSITIVE_INFINITY;
       const put = Math.min(toPlace, Math.max(0, cap - value));
       return put > 0
-        ? { label: `Add ${formatDollars(put)}`, onPress: () => onAmountChange(category, dollars(value + put)) }
+        ? {
+            label: `Add ${formatDollars(put)}`,
+            spoken: `Add ${formatDollars(put)} to ${CHOICE_LABELS[category]}`,
+            onPress: () => onAmountChange(category, dollars(value + put)),
+          }
         : undefined;
     }
     return undefined;
@@ -91,7 +99,7 @@ export function AdjustPanel({
 
   const state = balance === 0 ? "balanced" : residual > 0 ? "over" : "unassigned";
   const countdown = balance === 0
-    ? { label: "This plan works", amount: 0 }
+    ? { label: "Every dollar has a job", amount: 0 }
     : residual > 0
       ? { label: "Still to take out", amount: residual }
       : { label: "Still to give a job", amount: toPlace };
@@ -164,7 +172,7 @@ export function AdjustPanel({
       <footer className={`plan-commit plan-commit--${state}`}>
         <p className="plan-commit__read">
           {balance === 0
-            ? "Every dollar has a job."
+            ? "Nothing left to move."
             : residual > 0
               ? "The plan still spends more than Avery has."
               : "Some of Avery’s money has nothing to do yet."}

@@ -16,8 +16,12 @@ interface AllocationControlProps {
    * One tap that does the whole obvious move for this row — take the rest of a shortfall
    * out of it, or put the rest of new money into it. The steppers still reach every other
    * amount, so this is a shortcut through the common case rather than a different model.
+   *
+   * `label` is short because it sits in a row; `spoken` names the row, because three
+   * buttons that all read "Take" and the same amount are not a choice anybody listening
+   * can make.
    */
-  action?: { label: string; onPress: () => void } | undefined;
+  action?: { label: string; spoken: string; onPress: () => void } | undefined;
   onChange: (value: ReturnType<typeof dollars>) => void;
 }
 
@@ -67,7 +71,9 @@ export function AllocationControl({ id, label, description, value, step, max, or
       </div>
       <strong className="choice-row__value money">{formatDollars(value)}</strong>
       {action && (
-        <button type="button" className="choice-row__action" onClick={action.onPress}>{action.label}</button>
+        <button type="button" className="choice-row__action" aria-label={action.spoken} onClick={action.onPress}>
+          {action.label}
+        </button>
       )}
       <div className="choice-row__controls" role="group" aria-label={`${label} allocation`}>
         <button type="button" aria-label={`Decrease ${label} by $${step}`} onClick={() => changeBy(-step)}>−</button>

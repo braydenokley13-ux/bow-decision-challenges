@@ -89,7 +89,11 @@ export function PlanBoard({
     const value = input.amounts[category];
     const take = Math.min(value, residual);
     return take > 0
-      ? { label: `Take ${formatDollars(take)}`, onPress: () => onAmountChange(category, dollars(value - take)) }
+      ? {
+          label: `Take ${formatDollars(take)}`,
+          spoken: `Take ${formatDollars(take)} out of ${CHOICE_LABELS[category]}`,
+          onPress: () => onAmountChange(category, dollars(value - take)),
+        }
       : undefined;
   };
 

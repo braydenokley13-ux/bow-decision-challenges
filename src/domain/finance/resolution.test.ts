@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dollars } from "../core/money";
+import { dollars, formatDollars } from "../core/money";
 import type { SetupId } from "../core/ids";
 import { SCENARIO_NUMBERS as N } from "../scenario/numbers";
 import { bonusWeeks } from "../scenario/season";
@@ -196,6 +196,49 @@ describe("the season says which risk paid off and which one cost", () => {
         if (resolution.attendanceHeld) continue;
         for (const risk of resolution.risks) {
           expect(risk.detail, `${setupId} clinics=${clinics}: ${risk.id}`).not.toContain("made every session");
+        }
+      }
+    }
+  });
+
+  /**
+   * "The bonus never came" is an outcome. "The bonus never came, and this much more in
+   * Avery's week would have kept it" is something a student can argue about with the person
+   * next to them, and something they can act on the second time through. The amount has to
+   * be exact, or the sentence is a figure of speech dressed as a model.
+   */
+  it("says what it would have taken to keep the bonus, and the amount actually keeps it", () => {
+    const missed = plan({
+      setupId: "cousin-room",
+      includeCompletion: true,
+      amounts: { goal: dollars(0), reserve: dollars(0), flexibleCash: dollars(0) },
+    });
+    const resolution = resolveSeason(missed, N);
+    expect(resolution.attendanceHeld).toBe(false);
+    expect(verdict(resolution, "attendance-bonus").outcome).toBe("cost_you");
+    expect(verdict(resolution, "attendance-bonus").detail).toContain(formatDollars(resolution.load.costToClear));
+
+    // Spend exactly that and the season resolves the other way, so the counterfactual is
+    // the model's own answer rather than a sentence written beside it.
+    const cleared = resolveSeason({ ...missed, amounts: { ...missed.amounts, flexibleCash: resolution.load.costToClear } }, N);
+    expect(cleared.attendanceHeld).toBe(true);
+
+    // And the sentence is not offered on a season the bonus survived.
+    expect(verdict(cleared, "attendance-bonus").detail).not.toContain("would have kept it");
+  });
+
+  it("writes every amount in a verdict as money rather than as a bare number", () => {
+    for (const setupId of ["gym-sublet", "teammate-share", "cousin-room"] as const) {
+      for (const includeCompletion of [false, true]) {
+        for (const includeOptionalWork of [false, true]) {
+          const resolution = resolveSeason(plan({ setupId, includeCompletion, includeOptionalWork }), N);
+          for (const risk of resolution.risks) {
+            // Every run of digits in a verdict is either an hour count or a price. Take the
+            // properly written prices out and anything three digits long that is left is a
+            // price that lost its dollar sign — which is how `$800` used to render as `800`.
+            const bare = risk.detail.replace(/\$\d{1,3}(,\d{3})*/g, "").match(/\d{3,}/g) ?? [];
+            expect(bare, `${setupId}/${includeCompletion}/${includeOptionalWork}: ${risk.id} — ${risk.detail}`).toEqual([]);
+          }
         }
       }
     }

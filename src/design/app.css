@@ -156,6 +156,10 @@ p { color: var(--ink-2); }
 .opportunity-card { display: flex; flex-direction: column; padding: var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--ink-1); }
 .opportunity-card h2 { margin: 0 0 var(--s-3); font: var(--t-title1); }
 .opportunity-card > p { margin: 0 0 var(--s-4); }
+
+/* The choice sits at the foot of its card, so two cards whose explanations are different
+   lengths — or whose explanation has been spent by making the call — still line up. */
+.opportunity-card > .binary-choice { margin-top: auto; }
 .tradeoff-pair { display: grid; gap: 1px; margin: auto 0 var(--s-5); padding: 1px; background: var(--border-default); }
 .tradeoff-pair > div { display: grid; grid-template-columns: 132px 1fr; align-items: baseline; gap: var(--s-4); padding: var(--s-3) var(--s-4); background: var(--surface-raised); }
 .tradeoff-pair dt { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
