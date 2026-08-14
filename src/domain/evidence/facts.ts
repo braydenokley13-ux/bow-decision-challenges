@@ -1,10 +1,25 @@
 import type { CalcId, SetupId } from "../core/ids";
 import { dollars } from "../core/money";
 import { SCENARIO_NUMBERS } from "../scenario/numbers";
+import type { ScenarioNumbers } from "../scenario/types";
 import { amountFreed, assigned, balanceOf, exposureFor, residualOf, unassignedOf } from "../finance/formulas";
 import type { PlanMode } from "../finance/types";
 import { eventPayload } from "../machine/reducer";
 import type { EvidenceEvent, AssessmentFacts, CalculationEvidence, PlanSnapshot, AlternateStateEvidence } from "./types";
+
+/**
+ * What the plan was worth when the student saved it. A snapshot saved by the app carries
+ * its own priced readout, so scoring reads that in preference to re-pricing the amounts —
+ * otherwise re-balancing the scenario would silently rewrite every past attempt.
+ */
+function savedBalance(snapshot: PlanSnapshot | undefined, n: ScenarioNumbers) {
+  if (!snapshot) return dollars(0);
+  return snapshot.readout ? snapshot.readout.balance : balanceOf(snapshot.inputs, n);
+}
+
+function savedExposure(snapshot: PlanSnapshot, n: ScenarioNumbers) {
+  return snapshot.readout ? snapshot.readout.exposure : exposureFor(snapshot.inputs, n);
+}
 
 interface PlanSavePayload {
   mode: PlanMode;
@@ -43,20 +58,21 @@ function latestSaved(log: EvidenceEvent[], mode: PlanMode): { event: EvidenceEve
     .at(-1);
 }
 
-function alternate(log: EvidenceEvent[], mode: Extract<PlanMode, "fallback" | "week5-first-response" | "remaining-risk">, baseline: PlanSnapshot | undefined): AlternateStateEvidence | undefined {
+function alternate(log: EvidenceEvent[], mode: Extract<PlanMode, "fallback" | "week5-first-response" | "remaining-risk">, baseline: PlanSnapshot | undefined, n: ScenarioNumbers): AlternateStateEvidence | undefined {
   const entered = log.some((event) => event.stage === (mode === "fallback" ? "fallback-version" : mode === "week5-first-response" ? "first-response" : "remaining-risk-preview"));
   const saved = latestSaved(log, mode);
   const requests = eventsOf(log, "PLAN_SAVE_REQUESTED").filter((event) => eventPayload<PlanRequestPayload>(event).mode === mode);
   if (!entered && !saved && requests.length === 0) return undefined;
   const snapshot = saved?.payload.snapshot;
-  const balance = snapshot ? balanceOf(snapshot.inputs, SCENARIO_NUMBERS) : dollars(0);
+  const balance = savedBalance(snapshot, n);
   const lockedAttempts = eventsOf(log, "LOCKED_MOVE_ATTEMPTED").filter((event) => eventPayload<{ mode: PlanMode }>(event).mode === mode);
   const acknowledged = requests.some((event) => eventPayload<PlanRequestPayload>(event).acknowledgedResidual === Math.max(0, -(eventPayload<PlanRequestPayload>(event).balance)));
   // The state the student was handed: the baseline amounts carried into this mode,
-  // priced with this mode's own income and locked costs.
+  // priced with this mode's own income and locked costs. This one is a counterfactual
+  // across two snapshots, so it has to be computed rather than read back.
   const entryAmounts = baseline?.inputs.amounts;
   const entryShortfall = entryAmounts && snapshot
-    ? residualOf(balanceOf({ ...snapshot.inputs, amounts: entryAmounts }, SCENARIO_NUMBERS))
+    ? residualOf(balanceOf({ ...snapshot.inputs, amounts: entryAmounts }, n))
     : dollars(0);
   const absorbTarget = entryAmounts ? dollars(Math.min(entryShortfall, assigned(entryAmounts))) : dollars(0);
   return {
@@ -78,7 +94,7 @@ function alternate(log: EvidenceEvent[], mode: Extract<PlanMode, "fallback" | "w
   };
 }
 
-export function deriveFacts(log: EvidenceEvent[]): AssessmentFacts {
+export function deriveFacts(log: EvidenceEvent[], n: ScenarioNumbers = SCENARIO_NUMBERS): AssessmentFacts {
   const openingSaved = latestSaved(log, "working");
   const finalSaved = latestSaved(log, "final");
   const finalLockedAttempts = eventsOf(log, "LOCKED_MOVE_ATTEMPTED").filter((event) => eventPayload<{ mode: PlanMode }>(event).mode === "final");
@@ -90,8 +106,8 @@ export function deriveFacts(log: EvidenceEvent[]): AssessmentFacts {
   // travel cost must not require the student to select a $0 change.
   const applicableGapTiles = [
     ...(openingSaved?.payload.snapshot.inputs.includeOutcome ? ["lost-outcome"] : []),
-    ...(SCENARIO_NUMBERS.requiredWeek5Cost > 0 ? ["required-cost"] : []),
-    ...(selectedSetup && SCENARIO_NUMBERS.setupEventCosts[selectedSetup] > 0 ? ["setup-cost"] : []),
+    ...(n.requiredWeek5Cost > 0 ? ["required-cost"] : []),
+    ...(selectedSetup && n.setupEventCosts[selectedSetup] > 0 ? ["setup-cost"] : []),
   ];
   const finalRequest = eventsOf(log, "PLAN_SAVE_REQUESTED").filter((event) => eventPayload<PlanRequestPayload>(event).mode === "final").at(-1);
   const facts: AssessmentFacts = {
@@ -105,32 +121,32 @@ export function deriveFacts(log: EvidenceEvent[]): AssessmentFacts {
   };
   if (openingSaved) {
     const snapshot = openingSaved.payload.snapshot;
-    const openingBalance = balanceOf(snapshot.inputs, SCENARIO_NUMBERS);
+    const openingBalance = savedBalance(snapshot, n);
     facts.opening = {
       snapshot,
       balance: openingBalance,
       firstSaveBalance: dollars(firstOpeningRequest ? eventPayload<PlanRequestPayload>(firstOpeningRequest).balance : openingBalance),
-      conditionalExposure: exposureFor(snapshot.inputs, SCENARIO_NUMBERS),
+      conditionalExposure: savedExposure(snapshot, n),
       support: openingSaved.event.supportLevel,
       evidenceRefs: [openingSaved.event.id, ...(firstOpeningRequest ? [firstOpeningRequest.id] : [])],
     };
-    const fallback = alternate(log, "fallback", snapshot);
+    const fallback = alternate(log, "fallback", snapshot, n);
     if (fallback) facts.fallback = fallback;
     // The first response starts from whatever the student last committed, so that
     // is the state their Week 5 repair is measured against.
-    const firstResponse = alternate(log, "week5-first-response", latestSaved(log, "fallback")?.payload.snapshot ?? snapshot);
+    const firstResponse = alternate(log, "week5-first-response", latestSaved(log, "fallback")?.payload.snapshot ?? snapshot, n);
     if (firstResponse) facts.firstResponse = firstResponse;
   }
   if (finalSaved) {
     facts.final = {
       snapshot: finalSaved.payload.snapshot,
-      balance: balanceOf(finalSaved.payload.snapshot.inputs, SCENARIO_NUMBERS),
+      balance: savedBalance(finalSaved.payload.snapshot, n),
       acknowledgedResidual: finalRequest ? eventPayload<PlanRequestPayload>(finalRequest).acknowledgedResidual !== undefined : false,
       lockedMoveAttempts: finalLockedAttempts.length,
       support: finalSaved.event.supportLevel,
       evidenceRefs: [...finalLockedAttempts.map((event) => event.id), finalSaved.event.id],
     };
-    const preview = alternate(log, "remaining-risk", finalSaved.payload.snapshot);
+    const preview = alternate(log, "remaining-risk", finalSaved.payload.snapshot, n);
     if (preview) facts.preview = preview;
   }
   if (selectedSetup) facts.selectedSetupId = selectedSetup;

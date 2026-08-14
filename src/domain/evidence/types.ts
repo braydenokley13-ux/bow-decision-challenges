@@ -1,6 +1,6 @@
 import type { CalcId, CategoryId, SetupId, WorldId } from "../core/ids";
 import type { Dollars } from "../core/money";
-import type { PlanAmounts, PlanMode, SnapshotInputs } from "../finance/types";
+import type { PlanAmounts, PlanMode, PlanReadout, SnapshotInputs } from "../finance/types";
 import type { StructuredMicroSkillId, EvidencePoints, ConceptId } from "../blueprint/types";
 
 export type SupportLevel = "standard_access" | "natural_consequence" | "direct_scaffold" | "answer_supplied";
@@ -18,6 +18,13 @@ export interface PlanSnapshot {
   sequence: number;
   inputs: SnapshotInputs;
   acknowledgedResidual?: Dollars;
+  /**
+   * What the plan was worth at the moment it was saved, priced with the numbers in force
+   * then. Scoring reads this rather than re-pricing the amounts, so re-balancing the
+   * scenario cannot silently rewrite a student's past result. Optional only because
+   * hand-built test fixtures predate it; real runs always carry one.
+   */
+  readout?: PlanReadout;
 }
 
 export type EvidenceEventType =

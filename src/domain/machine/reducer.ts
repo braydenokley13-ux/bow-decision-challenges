@@ -1,7 +1,7 @@
 import { dollars } from "../core/money";
 import { SCENARIO_NUMBERS } from "../scenario/numbers";
 import { DEFAULT_WORLD_ID, PLAN_UNDER_PRESSURE_LAUNCH } from "../scenario/registry";
-import { balanceOf, residualOf, unassignedOf } from "../finance/formulas";
+import { balanceOf, readoutFor, residualOf, unassignedOf } from "../finance/formulas";
 import type { PlanMode, SnapshotInputs } from "../finance/types";
 import type { EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../evidence/types";
 import type { ChallengeAction } from "./actions";
@@ -102,7 +102,9 @@ export function challengeReducer(state: ChallengeState, action: ChallengeAction)
       let next = append(state, action.type, { mode: action.mode, inputs, balance, residual: residualOf(balance), unassigned: unassignedOf(balance), acknowledgedResidual: action.acknowledgedResidual }, supportFor(state, action.mode));
       if (balance !== 0 && action.acknowledgedResidual === undefined) return next;
       const sequence = next.log.length + 1;
-      const snapshot = { id: `snapshot-${sequence}`, sequence, inputs, ...(action.acknowledgedResidual !== undefined ? { acknowledgedResidual: action.acknowledgedResidual } : {}) };
+      // The readout is frozen onto the snapshot here, priced with the numbers in force at
+      // save time, so a later re-balancing of the scenario cannot rewrite this result.
+      const snapshot = { id: `snapshot-${sequence}`, sequence, inputs, readout: readoutFor(inputs, SCENARIO_NUMBERS), ...(action.acknowledgedResidual !== undefined ? { acknowledgedResidual: action.acknowledgedResidual } : {}) };
       next = { ...next, snapshots: [...next.snapshots, snapshot], saved: { ...next.saved, [action.mode]: snapshot.id } };
       next = append(next, "PLAN_SAVED", { mode: action.mode, snapshot, balance }, supportFor(state, action.mode));
       // A plan built on no conditional income has no lower-resource version to build,

@@ -1,5 +1,7 @@
 import type { ConceptId, StructuredMicroSkillId } from "../blueprint/types";
 import { SCENARIO_NUMBERS } from "../scenario/numbers";
+import type { ScenarioNumbers } from "../scenario/types";
+import { essentialsExpectation, reliableFloorExpectation, setupTotalsByRank, week5ChangeExpectation } from "../scenario/expectations";
 import { dollars } from "../core/money";
 import type { AssessmentFacts, MicroSkillObservation, SupportLevel, C4ObservationContext, AlternateStateEvidence } from "./types";
 import { scoreOf, type Quality } from "./support";
@@ -30,9 +32,10 @@ function notObserved(id: StructuredMicroSkillId, reason: string): MicroSkillObse
   return { microSkillId: id, conceptId: CONCEPT_BY_SKILL[id], points: null, outcome: "not_observed", supportLevel: "standard_access", evidenceRefs: [`not-observed:${id}`], reason };
 }
 
-function calcObservation(id: StructuredMicroSkillId, facts: AssessmentFacts, calcId: keyof AssessmentFacts["calculations"], expected: number): MicroSkillObservation {
+function calcObservation(id: StructuredMicroSkillId, facts: AssessmentFacts, calcId: keyof AssessmentFacts["calculations"], expected: number | null): MicroSkillObservation {
   const calc = facts.calculations[calcId];
   if (!calc) return notObserved(id, "The calculation checkpoint was not reached.");
+  if (expected === null) return notObserved(id, "The scenario has no expected total for this checkpoint yet.");
   const firstCorrectIndex = calc.attempts.findIndex((attempt) => attempt.correct && attempt.value === expected);
   const quality: Quality = calc.supplied ? "none" : firstCorrectIndex === 0 ? "first_opportunity" : firstCorrectIndex > 0 ? "corrected" : "none";
   return observation(id, quality, calc.support, calc.attempts.map((attempt) => attempt.eventRef), quality === "none" ? "The submitted calculation did not reconcile." : "The submitted calculation reconciled with the scenario terms.");
@@ -45,9 +48,10 @@ function primaryC4(facts: AssessmentFacts): { evidence?: AlternateStateEvidence;
     : { ...(facts.firstResponse ? { evidence: facts.firstResponse } : {}), context: "week5_cost_response" };
 }
 
-export function observeStructured(facts: AssessmentFacts): MicroSkillObservation[] {
+export function observeStructured(facts: AssessmentFacts, n: ScenarioNumbers = SCENARIO_NUMBERS): MicroSkillObservation[] {
+  const setupTotals = setupTotalsByRank(n);
   const observations: MicroSkillObservation[] = [];
-  observations.push(calcObservation("C1.1", facts, "reliable-floor", 5000));
+  observations.push(calcObservation("C1.1", facts, "reliable-floor", reliableFloorExpectation(n)));
   if (!facts.opening) observations.push(notObserved("C1.2", "The Working Plan was not saved."));
   else if (facts.opening.conditionalExposure === 0) observations.push(observation("C1.2", "first_opportunity", "standard_access", facts.opening.evidenceRefs, "The saved Working Plan counted no conditional income."));
   else {
@@ -61,10 +65,10 @@ export function observeStructured(facts: AssessmentFacts): MicroSkillObservation
     observations.push(observation("C1.3", completionHandled ? "first_opportunity" : "partial", facts.preview?.support ?? "standard_access", [...facts.final.evidenceRefs, ...(facts.preview?.evidenceRefs ?? [])], completionHandled ? "Impossible outcome income is absent and remaining income risk is handled." : "The final state retains unresolved completion-payment exposure."));
   }
 
-  observations.push(calcObservation("C2.1", facts, "setup-middle-total", 1400));
-  observations.push(calcObservation("C2.2", facts, "setup-lowest-total", 1000));
+  observations.push(calcObservation("C2.1", facts, "setup-middle-total", setupTotals.middle));
+  observations.push(calcObservation("C2.2", facts, "setup-lowest-total", setupTotals.lowest));
 
-  const essentials = calcObservation("C3.1", facts, "essentials-total", 1600);
+  const essentials = calcObservation("C3.1", facts, "essentials-total", essentialsExpectation(n));
   observations.push(facts.opening && essentials.points !== null ? essentials : !facts.opening ? notObserved("C3.1", "The locked-cost plan was not saved.") : essentials);
   if (!facts.opening) {
     observations.push(notObserved("C3.2", "The Working Plan was not saved."), notObserved("C3.3", "The Working Plan was not saved."));
@@ -90,9 +94,10 @@ export function observeStructured(facts: AssessmentFacts): MicroSkillObservation
     observations.push(observation("C4.4", workable ? (corrected ? "corrected" : "first_opportunity") : e.saved ? "partial" : "none", e.support, e.evidenceRefs, "Workability is a separate observation from recognizing a residual.", c4.context));
   }
 
-  const week5Expected = facts.selectedSetupId
-    ? SCENARIO_NUMBERS.requiredWeek5Cost + SCENARIO_NUMBERS.setupEventCosts[facts.selectedSetupId] + (facts.opening?.snapshot.inputs.includeOutcome ? SCENARIO_NUMBERS.outcomeIncome : 0)
-    : -1;
+  const week5Expected = week5ChangeExpectation(n, {
+    setupId: facts.selectedSetupId,
+    countedOutcome: facts.opening?.snapshot.inputs.includeOutcome === true,
+  });
   observations.push(calcObservation("C5.1", facts, "week5-change", week5Expected));
   if (!facts.final) observations.push(notObserved("C5.2", "The final repair was not saved."));
   else observations.push(observation("C5.2", facts.final.lockedMoveAttempts === 0 ? "first_opportunity" : "corrected", facts.final.support, facts.final.evidenceRefs, "Locked-move attempts during final repair are observed separately from contingency attempts."));
