@@ -38,9 +38,10 @@ student information is used anywhere in the app.
 ```bash
 npm run typecheck
 npm run lint
-npm test          # domain, scoring, and assessment-integrity suites
+npm test           # domain, scoring, balance and assessment-integrity suites
 npm run build
-npm run test:e2e  # full student and educator paths in a real browser
+npm run test:e2e   # full student and educator paths in a real browser
+npm run balance    # writes the strategy sweep to balance-report.txt
 ```
 
 The browser suite covers both income routes through submission, accepting and declining the
@@ -51,13 +52,24 @@ and the season review), the per-housing narration, and two Chromebook widths.
 Entrance animations move elements but never fade their opacity: a mid-animation frame with
 partially transparent text drops real contrast below AA, and the axe scan catches it.
 
-To review the rendered product, `node scripts/walkthrough.mjs <outDir>` drives the whole
+To review the rendered product, `WALKTHROUGH_OUT=<dir> npm run walkthrough` drives the whole
 Basketball flow and screenshots every stage at 1366×768, 1024×600, and 640px wide, reporting
-any horizontal overflow or console error it encounters along the way.
+any horizontal overflow or console error it encounters along the way. It runs through the same
+helpers as the assertion suite (`e2e/flow.ts`), so the two cannot describe different products.
 
 On a machine whose Chromium was not installed by Playwright, set `CHROMIUM_PATH` to that
 binary and both the walkthrough and `npm run test:e2e` will use it instead of downloading
 one.
+
+## The numbers
+
+Every price and threshold lives in `src/domain/scenario/numbers.ts`, and none of them is
+canon because it sounds reasonable. `src/domain/scenario/balance.ts` enumerates every end
+state a student can reach and asks, for each choice, whether some set of priorities makes it
+the best move. A challenge where one option wins under every set of priorities has no
+decision in it; one where an option wins under none has a wrong answer in it. Both fail
+`balance.test.ts`, which is a publication gate. `tune.test.ts` is the search that chose the
+current values; it is skipped unless `TUNE` is set.
 
 ## How the assessment works
 

@@ -1,4 +1,5 @@
 import type { ConceptId, StructuredMicroSkillId } from "../blueprint/types";
+import { STRUCTURED_MICRO_SKILLS } from "../blueprint/microSkills";
 import { SCENARIO_NUMBERS } from "../scenario/numbers";
 import type { ScenarioNumbers } from "../scenario/types";
 import { essentialsExpectation, reliableFloorExpectation, setupTotalsByRank, week5ChangeExpectation } from "../scenario/expectations";
@@ -6,13 +7,15 @@ import { dollars } from "../core/money";
 import type { AssessmentFacts, MicroSkillObservation, SupportLevel, C4ObservationContext, AlternateStateEvidence } from "./types";
 import { scoreOf, type Quality } from "./support";
 
-const CONCEPT_BY_SKILL: Record<StructuredMicroSkillId, ConceptId> = {
-  "C1.1": "income-reliability", "C1.2": "income-reliability", "C1.3": "income-reliability",
-  "C2.1": "full-cost", "C2.2": "full-cost",
-  "C3.1": "viable-budget", "C3.2": "viable-budget", "C3.3": "viable-budget",
-  "C4.1": "contingency", "C4.2": "contingency", "C4.3": "contingency", "C4.4": "contingency",
-  "C5.1": "adaptation", "C5.2": "adaptation", "C5.3": "adaptation", "C5.4": "adaptation", "C5.5": "adaptation", "C5.6": "adaptation",
-};
+/**
+ * Derived, not restated. This map used to be a third hand-maintained copy of the
+ * micro-skill → concept relation alongside `blueprint/concepts.ts` and
+ * `blueprint/microSkills.ts`, and nothing checked it against either — a typo here would
+ * have filed evidence under the wrong concept and quietly changed a student's status.
+ */
+const CONCEPT_BY_SKILL: Record<StructuredMicroSkillId, ConceptId> = Object.fromEntries(
+  STRUCTURED_MICRO_SKILLS.map((skill) => [skill.id, skill.conceptId]),
+) as Record<StructuredMicroSkillId, ConceptId>;
 
 function observation(id: StructuredMicroSkillId, quality: Quality, support: SupportLevel, refs: string[], reason: string, context?: C4ObservationContext): MicroSkillObservation {
   const points = scoreOf(quality, support);
@@ -87,7 +90,19 @@ export function observeStructured(facts: AssessmentFacts, n: ScenarioNumbers = S
     const corrected = e.savesBeforeAcceptable > 0;
     const firstOrCorrected = (success: boolean): Quality => success ? (corrected ? "corrected" : "first_opportunity") : "none";
     observations.push(observation("C4.1", firstOrCorrected(e.saved && e.amountFreed > 0), e.support, e.evidenceRefs, "A lower-resource state changed actual future amounts.", c4.context));
-    observations.push(observation("C4.2", e.changedOnlyAdjustable ? (e.lockedMoveAttempts === 0 ? "first_opportunity" : "corrected") : "none", e.support, e.evidenceRefs, "Committed money remained separate from future money.", c4.context));
+    // Keeping committed money separate is only demonstrated by a state that was actually
+    // saved. This used to award full credit to a student who reached the screen and left,
+    // because its two branches tested the same fact as each other.
+    observations.push(observation(
+      "C4.2",
+      e.saved ? (e.lockedMoveAttempts === 0 ? "first_opportunity" : "corrected") : "none",
+      e.support,
+      e.evidenceRefs,
+      e.lockedMoveAttempts === 0
+        ? "Committed money was left alone while the future money moved."
+        : `Committed money was reached for ${e.lockedMoveAttempts} time(s), then the repair was made from adjustable money.`,
+      c4.context,
+    ));
     const recognizes = e.saved && e.unassigned === 0 && (e.residual === 0 || e.residualAcknowledged);
     observations.push(observation("C4.3", recognizes ? (corrected ? "corrected" : "first_opportunity") : e.saved ? "partial" : "none", e.support, e.evidenceRefs, "The exact remaining exposure was resolved or acknowledged.", c4.context));
     const workable = e.saved && e.residual === 0 && e.unassigned === 0;
@@ -108,9 +123,34 @@ export function observeStructured(facts: AssessmentFacts, n: ScenarioNumbers = S
   }
   if (!facts.final) observations.push(notObserved("C5.4", "The final plan was not submitted."));
   else observations.push(observation("C5.4", facts.final.balance === 0 ? "first_opportunity" : facts.final.acknowledgedResidual ? "partial" : "none", facts.final.support, facts.final.evidenceRefs, "Final viability is the financial state at submission."));
+  // C5.5 asks what the student did about money that might not arrive. Its two branches must
+  // rest on different evidence from each other and from C5.4 — the exclusion branch used to
+  // reuse C5.4's own predicate verbatim, so declining the bonus granted a free micro-skill.
   if (!facts.final) observations.push(notObserved("C5.5", "The completion-payment decision was not finalized."));
-  else if (!facts.final.snapshot.inputs.includeCompletion) observations.push(observation("C5.5", facts.final.balance === 0 ? "first_opportunity" : "partial", "standard_access", facts.final.evidenceRefs, "The final plan excludes completion pay and reconciles without it."));
-  else observations.push(observation("C5.5", facts.preview?.saved && facts.preview.residual === 0 && facts.preview.unassigned === 0 ? "first_opportunity" : facts.preview?.saved ? "partial" : "none", facts.preview?.support ?? "standard_access", facts.preview?.evidenceRefs ?? facts.final.evidenceRefs, "The no-$800 preview is independent of the balanced final plan."));
+  else if (!facts.completionDecision) {
+    observations.push(notObserved("C5.5", "No decision about the remaining conditional payment was recorded."));
+  } else if (!facts.final.snapshot.inputs.includeCompletion) {
+    // Excluding it is a real answer, but only when it was a decision taken before the plan
+    // was landed rather than a default the student never touched.
+    const deliberate = facts.finalPlanSequence !== undefined && facts.completionDecision.sequence < facts.finalPlanSequence;
+    observations.push(observation(
+      "C5.5",
+      deliberate ? "first_opportunity" : "partial",
+      "standard_access",
+      [facts.completionDecision.evidenceRef, ...facts.final.evidenceRefs],
+      deliberate
+        ? "The conditional payment was deliberately left out before the final plan was landed."
+        : "The plan excludes the conditional payment, but no decision preceded the final save.",
+    ));
+  } else {
+    observations.push(observation(
+      "C5.5",
+      facts.preview?.saved && facts.preview.residual === 0 && facts.preview.unassigned === 0 ? "first_opportunity" : facts.preview?.saved ? "partial" : "none",
+      facts.preview?.support ?? "standard_access",
+      facts.preview?.evidenceRefs ?? facts.final.evidenceRefs,
+      "The no-bonus preview is independent of the balanced final plan.",
+    ));
+  }
   // C5.6 is observed at the Week 5 first response — before any new money is offered —
   // so it measures a behaviour the final plan cannot reveal: whether the student put
   // their own resources to work against the shortfall they had just calculated.

@@ -10,7 +10,9 @@
     "lint": "eslint . && stylelint \"src/**/*.css\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test --project=chromium-1366 --project=chromium-1024",
+    "walkthrough": "playwright test --project=walkthrough",
+    "balance": "BALANCE_REPORT=balance-report.txt vitest run src/domain/scenario/balance.test.ts"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",

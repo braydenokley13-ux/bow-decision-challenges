@@ -1,9 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// This config runs in Node, but the app ships no @types/node, so the single
-// environment variable it reads is declared here rather than pulling in the package.
-declare const process: { env: Record<string, string | undefined> };
-
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -17,13 +13,22 @@ export default defineConfig({
     ...(process.env.CHROMIUM_PATH ? { launchOptions: { executablePath: process.env.CHROMIUM_PATH } } : {}),
   },
   projects: [
+    // The walkthrough drives the same helpers but exists to produce screenshots for a
+    // person to look at, so it runs on its own rather than twice inside the assertion pass.
     {
       name: "chromium-1366",
+      testIgnore: "**/walkthrough.spec.ts",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 768 } },
     },
     {
       name: "chromium-1024",
+      testIgnore: "**/walkthrough.spec.ts",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 600 } },
+    },
+    {
+      name: "walkthrough",
+      testMatch: "**/walkthrough.spec.ts",
+      use: { ...devices["Desktop Chrome"] },
     },
   ],
   webServer: {

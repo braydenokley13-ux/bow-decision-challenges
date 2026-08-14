@@ -5,9 +5,22 @@ function laterIndependentC4(facts: AssessmentFacts): boolean {
   return [facts.firstResponse, facts.preview].some((evidence) => evidence?.saved === true && evidence.residual === 0 && evidence.unassigned === 0 && evidence.changedOnlyAdjustable && evidence.support !== "direct_scaffold" && evidence.support !== "answer_supplied");
 }
 
+/**
+ * Whether one observation shows the skill.
+ *
+ * A scaffolded observation is capped at 3 by `supportCap`, so a flat "4 or better" bar made
+ * `demonstrated_with_support` mathematically unreachable while the educator surface showed
+ * it as a first-class band. A student who worked it out after a hint has demonstrated the
+ * skill — with support — and the bar has to say so.
+ */
+function shows(observation: MicroSkillObservation): boolean {
+  const points = observation.points ?? 0;
+  return observation.supportLevel === "direct_scaffold" ? points >= 3 : points >= 4;
+}
+
 function statusFor(observations: MicroSkillObservation[], laterIndependent: boolean): MasteryStatus {
   if (observations.every((observation) => observation.points === null)) return "not_observed";
-  const complete = laterIndependent || observations.every((observation) => (observation.points ?? 0) >= 4);
+  const complete = laterIndependent || observations.every(shows);
   if (!complete) return observations.some((observation) => observation.points === 0) ? "not_demonstrated" : "developing";
   const scaffolded = observations.some((observation) => observation.supportLevel === "direct_scaffold");
   return scaffolded && !laterIndependent ? "demonstrated_with_support" : "demonstrated_independently";

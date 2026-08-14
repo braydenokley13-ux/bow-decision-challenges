@@ -46,6 +46,7 @@ const baseFacts = (): AssessmentFacts => ({
   selectedGapTiles: ["lost-outcome", "required-cost", "setup-cost"],
   applicableGapTiles: ["lost-outcome", "required-cost", "setup-cost"],
   optionalDecision: { accepted: true, sequence: 9, evidenceRef: "opportunity" },
+  completionDecision: { included: true, sequence: 9, evidenceRef: "completion-call" },
   finalPlanSequence: 10,
   defenseSubmitted: false,
 });

@@ -59,7 +59,11 @@ function latestSaved(log: EvidenceEvent[], mode: PlanMode): { event: EvidenceEve
 }
 
 function alternate(log: EvidenceEvent[], mode: Extract<PlanMode, "fallback" | "week5-first-response" | "remaining-risk">, baseline: PlanSnapshot | undefined, n: ScenarioNumbers): AlternateStateEvidence | undefined {
-  const entered = log.some((event) => event.stage === (mode === "fallback" ? "fallback-version" : mode === "week5-first-response" ? "first-response" : "remaining-risk-preview"));
+  // Reaching a screen is now its own recorded fact rather than something inferred from
+  // whichever event happened to be stamped with that stage.
+  const stage = mode === "fallback" ? "fallback-version" : mode === "week5-first-response" ? "first-response" : "remaining-risk-preview";
+  const entered = log.some((event) => event.type === "STAGE_ENTERED" && (event.payload as { stage?: string }).stage === stage)
+    || log.some((event) => event.stage === stage);
   const saved = latestSaved(log, mode);
   const requests = eventsOf(log, "PLAN_SAVE_REQUESTED").filter((event) => eventPayload<PlanRequestPayload>(event).mode === mode);
   if (!entered && !saved && requests.length === 0) return undefined;
@@ -151,6 +155,8 @@ export function deriveFacts(log: EvidenceEvent[], n: ScenarioNumbers = SCENARIO_
   }
   if (selectedSetup) facts.selectedSetupId = selectedSetup;
   if (optional) facts.optionalDecision = { accepted: eventPayload<{ accepted: boolean }>(optional).accepted, sequence: optional.sequence, evidenceRef: optional.id };
+  const completion = eventsOf(log, "COMPLETION_INCOME_DECIDED").at(-1);
+  if (completion) facts.completionDecision = { included: eventPayload<{ included: boolean }>(completion).included, sequence: completion.sequence, evidenceRef: completion.id };
   if (finalSaved) facts.finalPlanSequence = finalSaved.event.sequence;
   return facts;
 }

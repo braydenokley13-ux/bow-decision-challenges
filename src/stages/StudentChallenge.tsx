@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useChallenge } from "../app/ChallengeContext";
 import { StageShell } from "../app/StageShell";
 import { AppMark } from "../components/primitives/AppMark";
@@ -173,7 +172,7 @@ function SetupStage() {
                 expected={setup.total}
                 priorAttempts={state.calculations[index === 1 ? "setup-middle-total" : "setup-lowest-total"]?.attempts}
                 onSubmit={(raw, value, correct) => submitCalculation(dispatch, index === 1 ? "setup-middle-total" : "setup-lowest-total", raw, value, correct)}
-                scaffold={index === 1 ? "Step 1: $150 × 8 weeks = $1,200. Step 2: $1,200 + $200 for travel = your full price." : "Multiply $125 by 8 weeks. That answer is the full price."}
+                scaffold={index === 1 ? "Multiply $125 × 8 weeks. That answer is the full price." : "The room is free. The $300 for groceries and gas is the whole eight-week cost."}
                 {...calculationSupport(dispatch, index === 1 ? "setup-middle-total" : "setup-lowest-total")}
                 compact
               />
@@ -610,7 +609,6 @@ function DefenseStage() {
  */
 function SubmittedStage() {
   const { state, reset } = useChallenge();
-  const navigate = useNavigate();
   const final = amountsFor(state, "final");
   const setup = BASKETBALL_SCENARIO.setups.find((item) => item.id === state.setupId);
   const goalShare = Math.min(100, Math.round((final.goal / SCENARIO_NUMBERS.goalCap) * 100));
@@ -670,7 +668,6 @@ function SubmittedStage() {
       <div className="stage-action">
         <p>Your explanation goes to a person, not a computer. Software can check whether the money works. It should not decide whether your thinking makes sense.</p>
         <div className="stage-action__pair">
-          <Button onClick={() => navigate("/educator/class/students/14")}>See what your teacher sees</Button>
           <Button variant="quiet" onClick={reset}>Start over</Button>
         </div>
       </div>
