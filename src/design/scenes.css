@@ -425,12 +425,15 @@
   .bets { grid-template-columns: 1fr 1fr; }
   .bets__intro { grid-column: 1 / -1; }
   .feed .post:last-child { grid-column: 1 / -1; }
-  .choice-row { grid-template-columns: 6px minmax(0, 1fr) auto; row-gap: var(--s-3); }
 
-  /* The one tap and the steppers share the second line rather than taking one each —
-     three rows at two lines apiece pushed the commit bar off a Chromebook screen. */
-  .choice-row__action { grid-column: 2; grid-row: 2; justify-self: start; }
-  .choice-row__controls { grid-column: 3; grid-row: 2; justify-self: end; }
+  /* The board's rows sit in a column beside the towers, so they run out of width long
+     before the adjust panel's do — the adjust panel is a single column and keeps its rows
+     on one line until the viewport is genuinely narrow. The one tap and the steppers then
+     share the second line rather than taking one each, because three rows at two lines
+     apiece pushed the commit bar off a Chromebook screen. */
+  .plan-board .choice-row { grid-template-columns: 6px minmax(0, 1fr) auto; row-gap: var(--s-3); }
+  .plan-board .choice-row__action { grid-column: 2; grid-row: 2; justify-self: start; }
+  .plan-board .choice-row__controls { grid-column: 3; grid-row: 2; justify-self: end; }
   .adjust__head { grid-template-columns: 1fr; }
 }
 
@@ -454,6 +457,9 @@
   .recap__numbers { grid-template-columns: 1fr; }
   .bulletin { grid-template-columns: 1fr; gap: var(--s-3); }
   .settled-calls { grid-template-columns: 1fr; }
+  .adjust .choice-row { grid-template-columns: 6px minmax(0, 1fr) auto; row-gap: var(--s-3); }
+  .adjust .choice-row__action { grid-column: 2; grid-row: 2; justify-self: start; }
+  .adjust .choice-row__controls { grid-column: 3; grid-row: 2; justify-self: end; }
   .adjust__head, .adjust__countdown, .adjust__rows { padding-left: var(--s-4); padding-right: var(--s-4); }
   .adjust .plan-help { margin-left: var(--s-4); margin-right: var(--s-4); }
   .adjust__countdown { flex-direction: column; align-items: flex-start; gap: var(--s-2); }
