@@ -1,4 +1,4 @@
-import type { ClassErrorCode, ClassRecord, EvidenceSubmission } from "../classes/types";
+import type { Assignment, ClassErrorCode, ClassRecord, EvidenceSubmission } from "../classes/types";
 
 /**
  * How a student's evidence gets to their teacher.
@@ -21,6 +21,12 @@ export interface JoinedClass {
   record: ClassRecord | null;
   /** What the student should be shown as their class. */
   classCode: string;
+  /**
+   * What this class was set. Empty for a transport with no service behind it, and never
+   * empty from one that has — a class with nothing stored still reports the one it was
+   * implicitly set, so a student's evidence always knows what it was for.
+   */
+  assignments: readonly Assignment[];
 }
 
 export type JoinResult =

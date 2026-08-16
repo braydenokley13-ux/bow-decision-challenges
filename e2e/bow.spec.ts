@@ -1022,3 +1022,117 @@ studentTest("the challenge runs with animation turned off and on a short Chromeb
     await context.close();
   }
 });
+
+// ---------------------------------------------------------------------------
+// 27. Closing the opening plan by naming the row that takes the rest — the one
+//     statement in this world that is evidence about whether savings was
+//     planned. It has to work with a mouse, work from a keyboard, say which row
+//     it is talking about out loud, and reach the same balanced plan the
+//     steppers reach.
+// ---------------------------------------------------------------------------
+
+studentTest("the opening plan can be closed by naming the row that takes the rest", async ({ page, classCode }) => {
+  await reachWorkingBoard(page, classCode);
+  const spendable = spendableFor("working", { setupId: "cousin-room" });
+
+  await setAmount(page, "Sports-media course", String(N.course.fullPrice));
+  await setAmount(page, "Backup money", "300");
+
+  // The button names the amount and the row, because three buttons reading "Put the rest
+  // here" are not a choice anybody listening to the page can make.
+  const rest = spendable - N.course.fullPrice - 300;
+  const intoWeek = page.getByRole("button", { name: `Put ${money(rest)} into Avery’s week` });
+  await expect(intoWeek).toBeVisible();
+  await noSeriousAxeViolations(page);
+  await intoWeek.click();
+
+  await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("spinbutton", { name: "Avery’s week" })).toHaveValue(String(rest));
+  // Nothing left to place, so the offer withdraws rather than sitting there doing nothing.
+  await expect(page.getByRole("button", { name: /^Put \$/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Save this version" }).click();
+  await expect(page.getByRole("heading", { name: "The season starts." })).toBeVisible();
+});
+
+studentTest("naming the row is operable from the keyboard and never overfills the course", async ({ page, classCode }) => {
+  await reachWorkingBoard(page, classCode);
+  const spendable = spendableFor("working", { setupId: "cousin-room" });
+
+  // The course row is capped at what the course costs, so the offer on that row is only
+  // ever the headroom — it can never propose paying $3,000 for a $1,200 course.
+  const courseOffer = page.getByRole("button", { name: `Put ${money(N.course.fullPrice)} into Sports-media course` });
+  await expect(courseOffer).toBeVisible();
+  await courseOffer.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("spinbutton", { name: "Sports-media course" })).toHaveValue(String(N.course.fullPrice));
+
+  // And what is left is still looking for a job, on the two rows that have no cap.
+  const remaining = spendable - N.course.fullPrice;
+  await page.getByRole("button", { name: `Put ${money(remaining)} into Backup money` }).click();
+  await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
+  await noSeriousAxeViolations(page);
+});
+
+// ---------------------------------------------------------------------------
+// 28. A teacher creates a class against an objective, a student joins with the
+//     code, and the evidence that comes back knows what it was for.
+// ---------------------------------------------------------------------------
+
+test("a teacher creates a class with an objective and a student joins with the code", async ({ page, request }) => {
+  await page.goto("/educator/classes/new");
+  await noSeriousAxeViolations(page);
+
+  // Only objectives a built world can actually assess are offered, so a code on a
+  // whiteboard always has something behind it.
+  const objective = page.getByLabel("Objective");
+  await expect(objective).toHaveValue("1.3");
+  await page.getByLabel("Class name").fill("Assignment browser suite");
+  await page.getByRole("button", { name: "Create the class" }).click();
+
+  const code = (await page.locator(".class-created__code strong").innerText()).trim();
+  // Scoped to the panel the class was just created in: the same label also appears in the
+  // "classes you have opened here" list once this browser remembers it.
+  await expect(page.locator(".class-created__body").getByRole("heading", { name: "Assignment browser suite" })).toBeVisible();
+  // The key is shown once, inside the private link, and never again — so the test reads it
+  // the same way the teacher does.
+  const privateLink = await page.locator(".class-created__key code").innerText();
+  const teacherKey = new URL(privateLink).searchParams.get("key") ?? "";
+  expect(teacherKey.length).toBeGreaterThan(16);
+
+  const assignments = await request.get(`http://127.0.0.1:4180/api/classes/${code}/assignments`);
+  expect(assignments.status()).toBe(200);
+  const set = (await assignments.json()) as { assignments: { id: string; objectiveRef: { code: string } | null; competencyIds: string[] }[] };
+  expect(set.assignments).toHaveLength(1);
+  expect(set.assignments[0].objectiveRef?.code).toBe("1.3");
+  expect(set.assignments[0].competencyIds).toEqual(["plan-within-income"]);
+
+  // The class code alone still opens nothing: assignments are what a student needs, and
+  // evidence is what only the key reads.
+  const withCodeOnly = await request.get(`http://127.0.0.1:4180/api/classes/${code}/submissions`, {
+    headers: { "X-BOW-Teacher-Key": code },
+  });
+  expect(withCodeOnly.status()).toBe(403);
+
+  const plan: PlanContext = { setupId: "cousin-room" };
+  await gotoFreshChallenge(page);
+  await enterChallenge(page, { classCode: code, seatCode: "9" });
+  await completeSetupStage(page, 2);
+  await completeWorkingCalcs(page);
+  await savePlan(page, "working", plan);
+  await playSeasonWeeks(page);
+  await passWeek5Calculation(page, String(week5TotalFor(plan)));
+  await savePlan(page, "week5-first-response", plan);
+  await decideOpportunity(page, { clinics: false, countBonus: false });
+  await savePlan(page, "final", { ...plan, clinics: false, countCompletionFinal: false });
+  await readWeek8Resolution(page);
+  await submitDefense(page, "I kept the course line where I set it and paid for the brace out of Avery’s week instead.");
+  await waitForDelivery(page);
+
+  const room = await request.get(`http://127.0.0.1:4180/api/classes/${code}/submissions`, {
+    headers: { "X-BOW-Teacher-Key": teacherKey },
+  });
+  expect(room.status()).toBe(200);
+  const body = (await room.json()) as { submissions: { seatCode: string; assignmentId: string }[] };
+  expect(body.submissions).toHaveLength(1);
+  expect(body.submissions[0].assignmentId).toBe(set.assignments[0].id);
+});

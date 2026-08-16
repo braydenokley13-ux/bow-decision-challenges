@@ -72,6 +72,10 @@ for (const size of SIZES) {
     const context: PlanContext = { setupId: "cousin-room", countCompletion: true, countOutcome: true };
     await completeWorkingCalcs(page, { attendance: true, showcase: true });
     await shoot("05b-count-the-bonuses");
+    // The board with money still looking for a job, which is where the one statement this
+    // world records about savings is actually made. Captured before it is filled, because
+    // a balanced board no longer offers it and the review needs to see it offered.
+    await shoot("05c-money-with-no-job-yet");
     await fillPlanToBalance(page, "working", context);
     await shoot("06-working-plan");
     await page.getByRole("button", { name: SAVE_LABEL.working }).click();

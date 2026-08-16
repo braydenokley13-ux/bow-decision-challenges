@@ -33,6 +33,11 @@ interface PlanBoardProps {
   /** What each row costs Avery at the amount it currently holds. Derived, never decorative. */
   notes: Record<CategoryId, string>;
   onAmountChange: (category: CategoryId, amount: ReturnType<typeof dollars>) => void;
+  /**
+   * The student says which row takes the money still unassigned. Only on `build`, because
+   * only there is there money looking for a job rather than a bill looking for a payer.
+   */
+  onAssignRemainder: (category: CategoryId, amount: ReturnType<typeof dollars>) => void;
   onLockedMoveAttempt: (id: string) => void;
   onCommit: (acknowledgedResidual?: ReturnType<typeof dollars>) => void;
   onApplyReference?: ((category?: CategoryId) => void) | undefined;
@@ -45,7 +50,7 @@ interface PlanBoardProps {
 
 export function PlanBoard({
   input, variant, setupTitle, baseline, reference, attempts, notes,
-  onAmountChange, onLockedMoveAttempt, onCommit, onApplyReference, onScaffold, onShowAndContinue, change, commitLabel,
+  onAmountChange, onAssignRemainder, onLockedMoveAttempt, onCommit, onApplyReference, onScaffold, onShowAndContinue, change, commitLabel,
 }: PlanBoardProps) {
   const [showHelp, setShowHelp] = useState(false);
   const balance = balanceOf(input, SCENARIO_NUMBERS);
@@ -84,8 +89,7 @@ export function PlanBoard({
 
   // Triage takes money away rather than handing it out, so the row's one tap and the
   // running number are framed as a shortfall being cleared.
-  const actionFor = (category: CategoryId) => {
-    if (!triage || residual <= 0) return undefined;
+  const takeFrom = (category: CategoryId) => {
     const value = input.amounts[category];
     const take = Math.min(value, residual);
     return take > 0
@@ -95,6 +99,37 @@ export function PlanBoard({
           onPress: () => onAmountChange(category, dollars(value - take)),
         }
       : undefined;
+  };
+
+  /**
+   * The other end of the same idea: money with no job yet, and one tap that says which row
+   * it belongs to. Everything the steppers can reach it can reach, so it is a shortcut
+   * through the ordinary way a plan gets closed rather than a different way of closing one —
+   * but it is a shortcut the student takes on purpose, and saying so is the point.
+   *
+   * The label states the amount rather than saying "the rest", because on the course row it
+   * is not always the rest: that row is capped at what the course costs, so the offer there
+   * is whatever will fit. Naming the figure keeps all three buttons the same shape and each
+   * of them true, which matters twice over — a button that overstated what it would do would
+   * mislead a student, and a course row that quietly behaved differently from the other two
+   * would be this board expressing a preference.
+   */
+  const putRestInto = (category: CategoryId) => {
+    const value = input.amounts[category];
+    const headroom = category === "goal" ? Math.max(0, courseCap - value) : balance;
+    const give = Math.min(balance, headroom);
+    return give > 0
+      ? {
+          label: `Put ${formatDollars(give)} here`,
+          spoken: `Put ${formatDollars(give)} into ${CHOICE_LABELS[category]}`,
+          onPress: () => onAssignRemainder(category, dollars(give)),
+        }
+      : undefined;
+  };
+
+  const actionFor = (category: CategoryId) => {
+    if (triage) return residual > 0 ? takeFrom(category) : undefined;
+    return balance > 0 ? putRestInto(category) : undefined;
   };
 
   return (

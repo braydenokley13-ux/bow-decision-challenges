@@ -8,9 +8,10 @@ import type {
   SupportLevel,
 } from "../../../competency/types";
 import { evidenceRequirementById } from "../../../competency/competencies";
+import type { CategoryId } from "../../../core/ids";
 import { deriveFacts } from "../../../evidence/facts";
 import { observeStructured } from "../../../evidence/observe";
-import type { EvidenceEvent, MicroSkillObservation } from "../../../evidence/types";
+import type { EvidenceEvent, MicroSkillObservation, RemainderChoice } from "../../../evidence/types";
 import { SCENARIO_NUMBERS } from "../../numbers";
 import type { ScenarioNumbers } from "../../types";
 
@@ -27,12 +28,17 @@ import type { ScenarioNumbers } from "../../types";
  * takes no world id, and neither of them knows that some state numbers one of these
  * objectives — that join lives in `src/domain/standards/` and nowhere near here.
  *
- * **What this file may not do.** It may not invent an observation. Every level it emits
- * comes from a micro-skill Plan Under Pressure already scores, or from a person who read
- * the student's writing. Deriving a new judgement here would mean Basketball started
- * scoring something it did not score yesterday — which changes what a saved attempt means,
- * and would risk creating a right answer in a scenario `balance.ts` sweeps precisely to
- * prove has none.
+ * **What this file may not do.** It may not invent an observation about a moment that has
+ * already happened. Every level below comes from a micro-skill Plan Under Pressure already
+ * scores, from a person who read the student's writing, or — in exactly one case — from a
+ * board action that did not exist before and therefore appears in no saved attempt.
+ *
+ * That one case is `plan-within-income.er3`, and the distinction matters. Re-reading an old
+ * log through a new rule would change what a finished attempt means. Reading a new action
+ * cannot: a log written before the action existed contains none of it and scores `null`,
+ * which is what "the world never presented the opportunity" has always meant here. And the
+ * action moves the same money the steppers move, so it adds no plan to the strategy space
+ * and takes none away — which is why `balance.ts` sweeps the same board it swept before.
  */
 
 /** How one evidence requirement gets produced in this world, or why it does not. */
@@ -45,6 +51,14 @@ export type BasketballRouteVia =
   | {
       /** The student writes it; a person scores it. BOW never grades student writing. */
       via: "written-defense";
+    }
+  | {
+      /**
+       * The student named the row that takes what their other choices left over. Derived
+       * from that statement alone — never from how much any row holds, and never from the
+       * order three steppers were touched in.
+       */
+      via: "remainder-declaration";
     }
   | {
       /** Examined and declined. `note` says what stops it. */
@@ -67,7 +81,7 @@ export type BasketballEvidenceRoute = BasketballRouteVia & {
  * does not account for, so the list cannot quietly go out of date.
  */
 export const BASKETBALL_EVIDENCE_ROUTES: readonly BasketballEvidenceRoute[] = [
-  // ── plan-within-income — four of five ──────────────────────────────────────────────
+  // ── plan-within-income — all five ──────────────────────────────────────────────────
   {
     evidenceRequirementId: "plan-within-income.er1",
     via: "micro-skills",
@@ -82,8 +96,8 @@ export const BASKETBALL_EVIDENCE_ROUTES: readonly BasketballEvidenceRoute[] = [
   },
   {
     evidenceRequirementId: "plan-within-income.er3",
-    via: "not-produced",
-    note: "Avery's three amounts move freely on one board and only the saved plan is recorded, so a student who set the course line first is indistinguishable from one who typed the leftovers into it. Reading the size of the line instead of the order would reward one set of priorities in a scenario balanced to have none. Producing this needs a world that records the order the amounts were set in, or one where the student sets the savings target.",
+    via: "remainder-declaration",
+    note: "Closing the opening plan by sending the last of the money to a named row. The course line is what Avery is saving into, so a student who sends the leftovers there has let the arithmetic set their savings, and a student who sends them to Avery's week or the backup money has set the course line themselves and let something else absorb the rest.",
   },
   {
     evidenceRequirementId: "plan-within-income.er4",
@@ -128,16 +142,22 @@ export const BASKETBALL_EVIDENCE_ROUTES: readonly BasketballEvidenceRoute[] = [
     note: "Avery's defense is where the student names what they refused to cut and why.",
   },
 
-  // ── save-toward-a-goal — examined, and none of it survives ─────────────────────────
+  // ── save-toward-a-goal — examined twice, and none of it survives ───────────────────
   // The course is a savings goal and Avery is plainly saving toward it, which is why this
   // competency was examined at all. Every requirement still fails for the same underlying
   // reason: in this world the target, its deadline and whether it survives are the
   // student's *strategy*, and `balance.ts` exists to keep every strategy defensible. An
   // observation here would turn one of them into the right answer.
+  //
+  // Re-examined requirement by requirement when the remainder declaration was added, since
+  // that control is the first thing this world records about the course line on purpose. It
+  // reaches none of these five: it says which row absorbs what is left, which is a fact
+  // about how the plan was closed, and says nothing about an amount, a date, a per-week
+  // figure, or what happened to the course when Week 5 came for the money.
   {
     evidenceRequirementId: "save-toward-a-goal.er1",
     via: "not-produced",
-    note: "The world sets the target and the date — the course costs what it costs and the season ends when it ends. Naming an amount and a deadline is not something this student does.",
+    note: "The world sets the target and the date — the course costs what it costs and the season ends when it ends. Naming an amount and a deadline is not something this student does, and naming the row that takes the leftovers is not naming a target.",
   },
   {
     evidenceRequirementId: "save-toward-a-goal.er2",
@@ -147,7 +167,7 @@ export const BASKETBALL_EVIDENCE_ROUTES: readonly BasketballEvidenceRoute[] = [
   {
     evidenceRequirementId: "save-toward-a-goal.er3",
     via: "not-produced",
-    note: "Week 5 does put the course under pressure, but this world scores absorbing the shortfall without regard to which line paid for it — deliberately, and `neutrality.test.ts` holds it there. Scoring the course line's survival would reward one priority over the others.",
+    note: "Week 5 does put the course under pressure, but this world scores absorbing the shortfall without regard to which line paid for it — deliberately, and `neutrality.test.ts` holds it there. Scoring the course line's survival would reward one priority over the others. The remainder declaration does not reach this either: it is offered while a plan is being built, never while one is being cut, so nothing records a choice made under competition.",
   },
   {
     evidenceRequirementId: "save-toward-a-goal.er4",
@@ -190,7 +210,90 @@ export interface BasketballObserverInput {
     /** The `DEFENSE_SUBMITTED` event ids, so the trail points at the writing itself. */
     evidenceRefs: readonly string[];
   };
+  /**
+   * Every row the student named as taking the leftovers while building the opening plan,
+   * in the order they named them. Absent or empty means they closed the plan another way,
+   * which is `null` evidence and not a low score.
+   */
+  openingRemainder?: readonly RemainderChoice[];
   scoredExplanations?: ScoredExplanations;
+}
+
+/**
+ * The row Avery is saving into.
+ *
+ * The course is the only thing in this world that money is being put aside *for* — it is the
+ * want the offer screen names, it has a price and a deadline, and it is the line the student
+ * is asked to fund. The backup money is a buffer against a season going wrong and Avery's
+ * week is what gets spent now, so neither is the savings line ER3 is about.
+ */
+const SAVINGS_ROW: CategoryId = "goal";
+
+/**
+ * `plan-within-income.er3`, from the one statement the student makes about it.
+ *
+ * The rule is the product definition's, unaltered: savings is a planned amount when the
+ * student set it and let something else take the remainder, and is not when the remainder
+ * *is* the savings.
+ *
+ * **Only a move that left nothing unassigned counts.** A row can take the rest of the money
+ * or it can fill up on the way past — the course row is capped at what the course costs, so
+ * a student funding it in full still has money to place afterwards. The first is a statement
+ * about where the leftovers went; the second is a deliberate figure being placed, and
+ * reading it as the first would score the goal-first student as the misconception. `remaining`
+ * is what tells them apart, which is why the board records it.
+ *
+ * Three things this deliberately does not read:
+ *
+ * - **How much is in any row.** A student who plans $0 for the course this season has still
+ *   planned it. Reading the size of the line would score a priority, which is the mistake
+ *   `balance.ts` and `neutrality.test.ts` exist to prevent, and the reason this evidence
+ *   could not be produced before.
+ * - **The order the steppers were touched in.** Click sequence is not intention, and this
+ *   product records no clickstream to read it from even if it were.
+ * - **Whether the plan is a good one.** A plan that sends the leftovers to Avery's week
+ *   scores here exactly as one that sends them to the backup money.
+ *
+ * The one level that is not a plain read of the closing statement is 4. A student who closed
+ * onto the course line, saw the board that produced, took money back off it and closed
+ * somewhere else has done what §10.3 calls self-correction: got it wrong, saw the raw state,
+ * fixed it with nothing but the tools already on screen.
+ */
+function remainderObservation(
+  route: BasketballEvidenceRoute,
+  kind: EvidenceKind,
+  choices: readonly RemainderChoice[],
+): EvidenceRequirementObservation {
+  const closings = choices.filter((choice) => choice.remaining === 0);
+  const closed = closings.at(-1);
+  if (!closed) {
+    const detail = choices.length === 0
+      ? "The student closed the opening plan without saying which row took the rest, so this world saw neither answer."
+      : "The student used the control to place a figure but finished the plan another way, so no row was ever named as taking the last of the money.";
+    return {
+      evidenceRequirementId: route.evidenceRequirementId,
+      kind,
+      level: null,
+      supportLevel: "standard_access",
+      evidenceRefs: choices.length > 0 ? choices.map((choice) => choice.evidenceRef) : ["not-observed:plan-remainder"],
+      reason: `${route.note} ${detail}`,
+    };
+  }
+  const everClosedOnSavings = closings.some((choice) => choice.category === SAVINGS_ROW);
+  const level: RubricLevel = closed.category === SAVINGS_ROW ? 0 : everClosedOnSavings ? 4 : 5;
+  const detail = closed.category === SAVINGS_ROW
+    ? "The course line took what the other rows left over, so the amount saved is what the arithmetic came to rather than a figure the student set."
+    : everClosedOnSavings
+      ? "The leftovers landed on the course line first and the student took them back off it and closed somewhere else, with nothing on screen but the board."
+      : "The course line held a figure the student set, and another row took the last of the money.";
+  return {
+    evidenceRequirementId: route.evidenceRequirementId,
+    kind,
+    level,
+    supportLevel: closed.supportLevel,
+    evidenceRefs: choices.map((choice) => choice.evidenceRef),
+    reason: `${route.note} ${detail}`,
+  };
 }
 
 /** What a conjunction of micro-skills came to, and which one decided it. */
@@ -291,6 +394,9 @@ export function observeBasketballEvidence(
     const requirement = evidenceRequirementById(route.evidenceRequirementId);
     if (!requirement || route.via === "not-produced") return [];
     if (route.via === "written-defense") return [explanationObservation(route, requirement.kind, input)];
+    if (route.via === "remainder-declaration") {
+      return [remainderObservation(route, requirement.kind, input.openingRemainder ?? [])];
+    }
     const combined = combine(route.microSkillIds, byId);
     return [{
       evidenceRequirementId: route.evidenceRequirementId,
@@ -321,6 +427,9 @@ export function observeBasketballFromLog(
   return observeBasketballEvidence({
     observations: observeStructured(facts, numbers),
     defense: { submitted: defenseEvents.length > 0, evidenceRefs: defenseEvents.map((event) => event.id) },
+    // The opening plan only. Later boards repair a plan that already exists, and ER3 is
+    // about the one moment money is being divided for the first time.
+    openingRemainder: (facts.remainderChoices ?? []).filter((choice) => choice.mode === "working"),
     ...(options.scoredExplanations ? { scoredExplanations: options.scoredExplanations } : {}),
   });
 }

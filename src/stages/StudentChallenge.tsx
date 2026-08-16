@@ -79,11 +79,17 @@ function OpeningStage() {
       return;
     }
     setJoinedLabel(result.joined.record?.label ?? null);
+    // One assignment per class today, so there is nothing to choose between and no screen
+    // asking a question with one answer. Which one this seat is doing still gets recorded,
+    // because the class knows and the submission is where that has to survive.
+    const assignment = result.joined.assignments.find((entry) => entry.allowedWorldIds.includes("basketball"))
+      ?? result.joined.assignments[0];
     dispatch({
       type: "SESSION_STARTED",
       sessionId: crypto.randomUUID(),
       classCode: result.joined.classCode,
       seatCode: normaliseSeatCode(seatCode),
+      ...(assignment ? { assignmentId: assignment.id } : {}),
     });
   };
 
@@ -364,6 +370,7 @@ function usePlanWiring(mode: PlanMode) {
   const baseline = baselineFor(state, mode);
 
   const setAmount = (category: CategoryId, amount: Dollars) => dispatch({ type: "PLAN_AMOUNT_CHANGED", mode, category, amount });
+  const assignRemainder = (category: CategoryId, amount: Dollars) => dispatch({ type: "PLAN_REMAINDER_ASSIGNED", mode, category, amount });
   const restore = (category?: CategoryId) => {
     if (!baseline) return;
     for (const key of category ? [category] : CHOICE_KEYS) setAmount(key, baseline[key]);
@@ -406,6 +413,7 @@ function usePlanWiring(mode: PlanMode) {
     attempts: meaningfulAttempts(state, mode),
     notes: input ? planConsequences(input, SCENARIO_NUMBERS) : null,
     setAmount,
+    assignRemainder,
     restore,
     supplyOneBalancedPlan,
     commit: (acknowledgedResidual?: Dollars) =>
@@ -439,6 +447,7 @@ function BoardForMode({ mode, variant, commitLabel, change }: {
       notes={notes}
       commitLabel={commitLabel}
       onAmountChange={wiring.setAmount}
+      onAssignRemainder={wiring.assignRemainder}
       onLockedMoveAttempt={wiring.lockedMove}
       onCommit={wiring.commit}
       onScaffold={wiring.scaffold}

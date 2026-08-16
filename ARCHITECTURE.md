@@ -19,6 +19,7 @@ would destroy student work.
 | `challenges/registry.ts` | What a challenge *is*: id, version, title, pillar, grades, concepts, duration, route, placement. Also the per-challenge persistence key. |
 | `classes/types.ts` | The class-service contract, read by both the client and the server. |
 | `classes/codes.ts` | Class and seat codes: alphabet, folding, validation, collision-safe allocation, teacher keys. |
+| `classes/assignments.ts` | What a class was set (§17.3), how a pre-assignment class synthesises one on read, and which assignment a submission belongs to. |
 | `evidence/transport.ts` | The `EvidenceTransport` boundary and the delivery retry schedule. |
 | `evidence/transports.ts` | The three drivers: `classService`, `fileHandoff`, `localOnly`. |
 
@@ -111,9 +112,22 @@ evidence Basketball does not produce.
 **A mapping is not an assessment.** `isAssessable()` additionally requires a built world
 that produces every required evidence requirement, so an objective BOW cannot assess yet
 reads *not yet available* rather than *not yet assessed*. Those are different sentences and
-a district reads them differently. `BUILT_WORLD_COVERAGE` is empty today: Basketball does
-not emit evidence-requirement observations yet, and declaring that it does before wiring it
-would be a claim nothing has verified.
+a district reads them differently.
+
+`BUILT_WORLD_COVERAGE` today records Basketball producing all five requirements of
+`adapt-a-plan` and all five of `plan-within-income`. **One NYSED objective is assessable —
+1.3, and only 1.3.** Every other objective has a mapping and no world.
+
+`plan-within-income.er3` — *savings is a planned amount, not the remainder* — is the one that
+took a world change rather than a wiring change. Nothing in the log could tell a student who
+set the course line first from one who typed the leftovers into it, and reading the size of
+the line instead would have made one set of priorities the right answer in a scenario
+`balance.ts` sweeps to prove has none. What closed it is a statement the student now makes:
+the opening board offers each row a one-tap *"put $X here"*, and the move that leaves nothing
+unassigned is the student naming the line that took the leftovers. It is neutral about
+amounts — planning $0 for the course is still planning it — it adds no plan the steppers
+could not already reach, and an attempt saved before it existed contains no such statement
+and scores `null`.
 
 ### `src/educator/` — the educator surface
 
@@ -157,6 +171,28 @@ server rejects a submission carrying an unknown one.
 
 There is deliberately no mouse tracking, no clickstream, no keystroke capture and no
 hesitation telemetry.
+
+## Assignments, and the classes that predate them
+
+A class used to hold exactly one thing — `ClassRecord.challengeId` — and a submission belonged
+to the class rather than to anything a teacher had decided. An `Assignment` now sits between
+them: what objective was chosen, what competencies that resolves to, which worlds are offered,
+who it was set for, and what it is a reassessment of.
+
+**Both halves of the claim are stored, and they are different claims.** `objectiveRef` is what
+the teacher picked and the only language reporting may speak to them in. `competencyIds` is
+what BOW actually measured, resolved from the mapping at the moment the assignment was set, so
+a framework revision rewrites the first and cannot touch the second.
+
+Nothing is migrated. A class with no stored assignments **synthesises** one on every read, and
+a submission naming no assignment is attributed to the oldest one the class has. Both are
+derivations: no stored record is altered, no field is back-filled, and a rollback loses
+nothing. The synthesised assignment's `objectiveRef` is `null` — those teachers chose a
+challenge, no objective was ever put in front of them, and writing a code there would
+manufacture a selection that reporting would then speak from.
+
+Assignments are readable with the class code, because a student needs to know what they were
+set. Evidence still is not.
 
 ## Security model
 

@@ -95,7 +95,7 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
       // straight into it. Restoring the picker means routing to "choose-world" here.
       // The opening screen already told the story, so checking in lands on the deal
       // rather than on a second orientation screen.
-      const next = { ...state, meta: { ...state.meta, sessionId: action.sessionId, classCode: action.classCode, seatCode: action.seatCode, worldId: DEFAULT_WORLD_ID } };
+      const next = { ...state, meta: { ...state.meta, sessionId: action.sessionId, classCode: action.classCode, seatCode: action.seatCode, assignmentId: action.assignmentId ?? "", worldId: DEFAULT_WORLD_ID } };
       const started = append(next, action.type, action, "standard_access", undefined, at);
       return goTo(PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? started : append(started, "WORLD_CONFIRMED", { worldId: DEFAULT_WORLD_ID }, "standard_access", undefined, at), PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? "choose-world" : "role-contract", at);
     }
@@ -142,6 +142,26 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
     }
     case "PLAN_AMOUNT_CHANGED":
       return { ...state, drafts: { ...state.drafts, [action.mode]: { ...(state.drafts[action.mode] ?? defaultAmountsFor(state, action.mode)), [action.category]: action.amount } } };
+    case "PLAN_REMAINDER_ASSIGNED": {
+      // The one move on this board that is a statement rather than an adjustment: the
+      // student names the row that absorbs whatever the rest of their plan left over. It
+      // moves exactly the same money the steppers would, so no plan is reachable one way
+      // and not the other — what it adds is a record of which line they let the arithmetic
+      // decide, which is the only difference between planned savings and leftover savings.
+      const current = state.drafts[action.mode] ?? defaultAmountsFor(state, action.mode);
+      const moved = {
+        ...state,
+        drafts: { ...state.drafts, [action.mode]: { ...current, [action.category]: dollars(current[action.category] + action.amount) } },
+      };
+      const after = snapshotInputs(moved, action.mode);
+      if (!after) return state;
+      // What is still looking for a job once this row has taken its share. Recorded because
+      // it is the difference between the two things this move can mean: a row that took the
+      // last of the money closed the plan, and a row that hit its own cap on the way past
+      // did not. Only the first is a statement about where the leftovers went.
+      const remaining = unassignedOf(balanceOf(after, SCENARIO_NUMBERS));
+      return append(moved, action.type, { ...action, remaining }, supportFor(state, action.mode), undefined, at);
+    }
     case "PLAN_SAVE_REQUESTED": {
       const inputs = snapshotInputs(state, action.mode);
       if (!inputs) return state;

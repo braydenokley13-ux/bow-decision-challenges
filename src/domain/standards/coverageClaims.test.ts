@@ -122,24 +122,26 @@ describe("what BOW may claim about an objective", () => {
 
   describe("assessability requires a built world, not a mapping", () => {
     it("counts exactly what Basketball can produce every requirement of", () => {
-      // Basketball's observer produces all five of `adapt-a-plan` and four of the five
-      // `plan-within-income` asks for — ER3 needs the order the amounts were set in, which
-      // this world does not record. Four fifths is written down honestly and is not the
-      // competency, so one of these is available and the other is not.
-      expect(availableCompetencyIds()).toEqual(new Set(["adapt-a-plan"]));
+      // Basketball's observer produces all five of `adapt-a-plan` and, since the opening
+      // plan started recording which row takes the leftovers, all five of
+      // `plan-within-income`. Both are whole, so both are available. Nothing else is: the
+      // other nineteen competencies have a mapping and no world.
+      expect(availableCompetencyIds()).toEqual(new Set(["adapt-a-plan", "plan-within-income"]));
       expect(worldsAssessing("adapt-a-plan")).toEqual(["basketball"]);
-      expect(worldsAssessing("plan-within-income")).toEqual([]);
+      expect(worldsAssessing("plan-within-income")).toEqual(["basketball"]);
+      expect(worldsAssessing("save-toward-a-goal")).toEqual([]);
     });
 
-    it("reports no objective assessable today", () => {
-      // Every one of the 23 has a mapping and one competency now has a world, and still
-      // nothing is assessable: `adapt-a-plan` is `partial` on 1.2 and `supporting` on 4.1,
-      // and neither of those makes an objective assessable on its own. The objective that
-      // would light up is 1.3, and it needs the competency Basketball is one requirement
-      // short of. Until then the honest answer is "coming," not "0%".
-      expect(assessableStandards(NYSED)).toEqual([]);
+    it("reports exactly one objective assessable today, and it is the one with a whole world behind it", () => {
+      // 1.3 is `full`-mapped to `plan-within-income` and carries no completion rule, so a
+      // world that produces every one of that competency's requirements is the entire bar,
+      // and it is now met. Nothing else moves with it. `adapt-a-plan` is `partial` on 1.2
+      // and `supporting` on 4.1; `save-toward-a-goal` is `partial` on 1.3 and Basketball
+      // produces none of it. A partial and a supporting mapping still make nothing
+      // assessable on their own, which is why 1.3 is alone here rather than first.
+      expect(assessableStandards(NYSED).map((standard) => standard.code)).toEqual(["1.3"]);
       for (const standard of NYSED_2026_STANDARDS) {
-        expect(isAssessable(ref(standard.code)), `NYSED ${standard.code}`).toBe(false);
+        expect(isAssessable(ref(standard.code)), `NYSED ${standard.code}`).toBe(standard.code === "1.3");
       }
     });
 

@@ -35,7 +35,10 @@ function readFrom(storage: Pick<Storage, "getItem" | "setItem">, key: string): C
   if (!raw) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
-    if (isValidPersistedAttempt(parsed)) return parsed;
+    // An attempt saved before assignments existed carries no assignment id, and the field
+    // is a string everywhere else. Defaulting it here rather than widening the type keeps
+    // "this run was set nothing" as one value instead of two.
+    if (isValidPersistedAttempt(parsed)) return { ...parsed, meta: { ...parsed.meta, assignmentId: parsed.meta.assignmentId ?? "" } };
     storage.setItem(`bow.backup.${Date.now()}`, raw);
     return null;
   } catch {

@@ -27,6 +27,9 @@ const REAL_CLASS_MODULES = [
   "src/educator/Debrief.tsx",
   "src/educator/classMemory.ts",
   "src/educator/labels.ts",
+  // Where a real class is created, and now where its objective is picked. A demo objective
+  // list here would put a code on a whiteboard that no world can assess.
+  "src/educator/ClassSetup.tsx",
 ];
 
 describe("a real class cannot reach a fixture", () => {

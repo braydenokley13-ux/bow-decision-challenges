@@ -47,7 +47,7 @@ export function conceptsForEvent(type: EvidenceEventType, payload: unknown): rea
     const concept = calcId ? CALC_CONCEPTS[calcId] : undefined;
     return concept ? [concept] : [];
   }
-  if (type === "PLAN_SAVE_REQUESTED" || type === "PLAN_SAVED" || type === "LOCKED_MOVE_ATTEMPTED") {
+  if (type === "PLAN_SAVE_REQUESTED" || type === "PLAN_SAVED" || type === "PLAN_REMAINDER_ASSIGNED" || type === "LOCKED_MOVE_ATTEMPTED") {
     const mode = (payload as { mode?: PlanMode }).mode;
     return mode ? PLAN_CONCEPTS[mode] : [];
   }
@@ -65,8 +65,8 @@ export function conceptsForEvent(type: EvidenceEventType, payload: unknown): rea
  *
  * A tag only names a requirement Basketball's observer actually produces —
  * `evidenceEnvelope.test.ts` reads the observer's route table and fails if one appears here
- * that nothing can observe. That is why `plan-within-income.er3` is nowhere below: no
- * moment in this world is evidence about it, so no moment claims to be.
+ * that nothing can observe. `plan-within-income.er3` was nowhere below until this world had
+ * a moment that was evidence about it; it now appears on exactly one, and on one mode of it.
  */
 const CALC_REQUIREMENTS: Record<CalcId, readonly EvidenceRequirementId[]> = {
   "reliable-floor": ["plan-within-income.er1"],
@@ -86,6 +86,19 @@ const PLAN_REQUIREMENTS: Record<PlanMode, readonly EvidenceRequirementId[]> = {
   "remaining-risk": ["plan-within-income.er1"],
 };
 
+/**
+ * Naming the row that takes the rest, per mode.
+ *
+ * Only the opening plan is tagged. That is the first and only moment in this world where a
+ * student is dividing money they have not divided before, which is what ER3 is about; the
+ * later boards are repairs to a plan that already exists, and Basketball's observer reads
+ * nothing from them. A tag on a mode nothing is judged from would put a sentence in the
+ * §19.2 evidence trail that no judgement ever stands behind.
+ */
+const REMAINDER_REQUIREMENTS: Partial<Record<PlanMode, readonly EvidenceRequirementId[]>> = {
+  working: ["plan-within-income.er3"],
+};
+
 const STATIC_REQUIREMENTS: Partial<Record<EvidenceEventType, readonly EvidenceRequirementId[]>> = {
   INCOME_SOURCE_TOGGLED: ["plan-within-income.er1"],
   COMPLETION_INCOME_DECIDED: ["plan-within-income.er1"],
@@ -97,6 +110,10 @@ export function evidenceRequirementsForEvent(type: EvidenceEventType, payload: u
   if (type === "CALCULATION_SUBMITTED") {
     const calcId = (payload as { calcId?: CalcId }).calcId;
     return calcId ? CALC_REQUIREMENTS[calcId] : [];
+  }
+  if (type === "PLAN_REMAINDER_ASSIGNED") {
+    const mode = (payload as { mode?: PlanMode }).mode;
+    return (mode ? REMAINDER_REQUIREMENTS[mode] : undefined) ?? [];
   }
   if (type === "PLAN_SAVE_REQUESTED" || type === "PLAN_SAVED" || type === "LOCKED_MOVE_ATTEMPTED") {
     const mode = (payload as { mode?: PlanMode }).mode;

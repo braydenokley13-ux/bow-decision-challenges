@@ -42,29 +42,24 @@ export interface WorldEvidenceCoverage {
  * than imported from the world so a person can review the claim; the test is what stops the
  * two drifting apart.
  *
- * Note the second row. It is a **partial** production route, and recording it is the point:
- * this array says what a world produces, and `isCompetencyAvailable` — not the author of
- * this array — decides what that adds up to. Four of five is written down honestly and
+ * The claim is per requirement rather than per competency on purpose: this array says what a
+ * world produces, and `isCompetencyAvailable` — not the author of this array — decides what
+ * that adds up to. A row listing four of five requirements is written down honestly and
  * makes nothing available.
  *
- * **Why `plan-within-income` is four fifths.** ER1, ER2, ER4 and ER5 map cleanly onto
- * Basketball's micro-skills and its written defense. ER3 — *savings is a deliberate figure
- * set before the discretionary categories, not the remainder after them* — has no honest
- * route in this world, for two independent reasons:
+ * **`plan-within-income.er3` was that missing fifth, and it is here now because the world
+ * changed.** It could not be produced from the board as it stood: three amounts moved freely,
+ * only the saved result was recorded, and the plan of a student who set the course line
+ * first was identical to the plan of one who typed the leftovers into it. Reading the size
+ * of the course line instead would have made one set of priorities the right answer, which
+ * `balance.ts` sweeps this scenario specifically to prove none of them is.
  *
- * 1. **The order is not in the log.** Basketball's three amounts move freely on one board
- *    and only the saved result is recorded, so the plan of a student who set the course
- *    line first is identical to the plan of one who typed the leftovers into it. The §19.2
- *    timeline judges ER3 on exactly that ordering, and this world cannot see it.
- * 2. **The amount cannot stand in for the order.** Scoring a larger course line would make
- *    one set of priorities the right answer, and `balance.ts` sweeps this scenario
- *    specifically to prove none of them is — "commit late, hold cash, keep options open,
- *    even at the cost of the course" is a reading the design protects on purpose.
- *
- * So the objective that competency fully covers stays unassessable, and the honest word for
- * it remains "coming." Closing the gap is a world change — record the order the amounts
- * were set in, or give a world a savings target the student sets — and it is the first
- * thing a second world for that objective has to carry.
+ * What closed it was not a new reading of the old evidence. It was a new statement the
+ * student makes: closing the opening plan by naming the row that takes what is left over.
+ * That is the difference ER3 is about, said out loud rather than inferred, and it is
+ * neutral about amounts — a student who plans $0 for the course has still planned it.
+ * Attempts saved before the control existed contain no such statement and score `null`,
+ * which is what "the world never presented the opportunity" has always meant.
  *
  * Checkpoint 8 replaces this array with the world contracts.
  */
@@ -86,6 +81,7 @@ export const BUILT_WORLD_COVERAGE: readonly WorldEvidenceCoverage[] = [
     producedEvidenceRequirementIds: [
       "plan-within-income.er1",
       "plan-within-income.er2",
+      "plan-within-income.er3",
       "plan-within-income.er4",
       "plan-within-income.er5",
     ],

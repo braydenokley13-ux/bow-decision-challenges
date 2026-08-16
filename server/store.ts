@@ -1,6 +1,6 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import type { ClassRecord, SubmissionRecord } from "../src/platform/classes/types";
+import { CLASS_RETENTION_DAYS, type Assignment, type ClassRecord, type SubmissionRecord } from "../src/platform/classes/types";
 
 /**
  * Where a class and its evidence actually live.
@@ -31,6 +31,13 @@ export interface ClassStore {
   readonly blockedReason?: string;
   getClass(code: string): Promise<StoredClass | null>;
   putClass(record: StoredClass): Promise<void>;
+  /**
+   * What this class was set, oldest first. Empty is the normal answer for every class
+   * created before assignments existed, and `assignmentsForClass` is what turns it into one.
+   */
+  listAssignments(code: string): Promise<Assignment[]>;
+  /** Idempotent on the assignment id, so a retried create replaces rather than duplicates. */
+  putAssignment(record: Assignment): Promise<void>;
   listSubmissions(code: string): Promise<SubmissionRecord[]>;
   /** Idempotent on (classCode, seatCode, sessionId): a retried delivery replaces, never duplicates. */
   putSubmission(record: SubmissionRecord): Promise<void>;
@@ -46,14 +53,25 @@ function merge(existing: SubmissionRecord[], incoming: SubmissionRecord): Submis
   return [...without, incoming].sort((a, b) => Number(a.seatCode) - Number(b.seatCode) || a.submittedAt - b.submittedAt);
 }
 
+/** Oldest first, and one record per id however many times it is written. */
+function mergeAssignments(existing: Assignment[], incoming: Assignment): Assignment[] {
+  return [...existing.filter((record) => record.id !== incoming.id), incoming].sort((a, b) => a.createdAt - b.createdAt);
+}
+
 export function memoryStore(): ClassStore {
   const classes = new Map<string, StoredClass>();
+  const assignments = new Map<string, Assignment[]>();
   const submissions = new Map<string, SubmissionRecord[]>();
   return {
     id: "memory",
     durable: false,
     getClass: (code) => Promise.resolve(classes.get(code) ?? null),
     putClass: (record) => { classes.set(record.code, record); return Promise.resolve(); },
+    listAssignments: (code) => Promise.resolve(assignments.get(code) ?? []),
+    putAssignment: (record) => {
+      assignments.set(record.classId, mergeAssignments(assignments.get(record.classId) ?? [], record));
+      return Promise.resolve();
+    },
     listSubmissions: (code) => Promise.resolve(submissions.get(code) ?? []),
     putSubmission: (record) => {
       submissions.set(record.classCode, merge(submissions.get(record.classCode) ?? [], record));
@@ -70,6 +88,7 @@ export function memoryStore(): ClassStore {
  */
 export function fileStore(root: string): ClassStore {
   const classPath = (code: string) => join(root, code, "class.json");
+  const assignmentPath = (code: string, id: string) => join(root, code, "assignments", `${id}.json`);
   const submissionPath = (code: string, record: Pick<SubmissionRecord, "seatCode" | "sessionId">) =>
     join(root, code, "submissions", `${submissionKey(record)}.json`);
 
@@ -89,25 +108,31 @@ export function fileStore(root: string): ClassStore {
     }
   }
 
+  /** Every JSON file in one of a class's folders. A missing folder is an empty list, not an error. */
+  async function readFolder<T>(code: string, folder: string): Promise<T[]> {
+    let names: string[];
+    try {
+      names = await readdir(join(root, code, folder));
+    } catch {
+      return [];
+    }
+    const records: (T | null)[] = await Promise.all(
+      names.filter((name) => name.endsWith(".json")).map((name) => readJson<T>(join(root, code, folder, name))),
+    );
+    return records.filter((record): record is T => record !== null);
+  }
+
   return {
     id: "file",
     durable: true,
     getClass: (code) => readJson<StoredClass>(classPath(code)),
     putClass: (record) => writeAtomic(classPath(record.code), record),
-    listSubmissions: async (code) => {
-      let names: string[];
-      try {
-        names = await readdir(join(root, code, "submissions"));
-      } catch {
-        return [];
-      }
-      const records = await Promise.all(
-        names.filter((name) => name.endsWith(".json")).map((name) => readJson<SubmissionRecord>(join(root, code, "submissions", name))),
-      );
-      return records
-        .filter((record): record is SubmissionRecord => record !== null)
-        .sort((a, b) => Number(a.seatCode) - Number(b.seatCode) || a.submittedAt - b.submittedAt);
-    },
+    listAssignments: async (code) =>
+      (await readFolder<Assignment>(code, "assignments")).sort((a, b) => a.createdAt - b.createdAt),
+    putAssignment: (record) => writeAtomic(assignmentPath(record.classId, record.id), record),
+    listSubmissions: async (code) =>
+      (await readFolder<SubmissionRecord>(code, "submissions"))
+        .sort((a, b) => Number(a.seatCode) - Number(b.seatCode) || a.submittedAt - b.submittedAt),
     putSubmission: (record) => writeAtomic(submissionPath(record.classCode, record), record),
   };
 }
@@ -131,6 +156,20 @@ export function redisRestStore(url: string, token: string): ClassStore {
 
   const ttl = (record: { expiresAt: number }) => Math.max(60, Math.round((record.expiresAt - Date.now()) / 1000));
 
+  /** One hash per class per kind of record, read back as whatever the REST API felt like returning. */
+  async function readHash<T>(key: string): Promise<T[]> {
+    const raw = await command<Record<string, string>>("HGETALL", key);
+    const values = Array.isArray(raw)
+      // The REST API returns HGETALL as a flat [field, value, field, value] array.
+      ? (raw as unknown as string[]).filter((_, index) => index % 2 === 1)
+      : Object.values(raw ?? {});
+    return values.map((value) => JSON.parse(value) as T);
+  }
+
+  /** The hash outlives nothing: it expires with the class it belongs to. */
+  const keepWithClass = (key: string) =>
+    command("EXPIRE", key, ttl({ expiresAt: Date.now() + 1000 * 60 * 60 * 24 * CLASS_RETENTION_DAYS }));
+
   return {
     id: "redis",
     durable: true,
@@ -141,20 +180,18 @@ export function redisRestStore(url: string, token: string): ClassStore {
     putClass: async (record) => {
       await command("SET", `class:${record.code}`, JSON.stringify(record), "EX", ttl(record));
     },
-    listSubmissions: async (code) => {
-      const raw = await command<Record<string, string>>("HGETALL", `submissions:${code}`);
-      const values = Array.isArray(raw)
-        // The REST API returns HGETALL as a flat [field, value, field, value] array.
-        ? (raw as unknown as string[]).filter((_, index) => index % 2 === 1)
-        : Object.values(raw ?? {});
-      return values
-        .map((value) => JSON.parse(value) as SubmissionRecord)
-        .sort((a, b) => Number(a.seatCode) - Number(b.seatCode) || a.submittedAt - b.submittedAt);
+    listAssignments: async (code) =>
+      (await readHash<Assignment>(`assignments:${code}`)).sort((a, b) => a.createdAt - b.createdAt),
+    putAssignment: async (record) => {
+      await command("HSET", `assignments:${record.classId}`, record.id, JSON.stringify(record));
+      await keepWithClass(`assignments:${record.classId}`);
     },
+    listSubmissions: async (code) =>
+      (await readHash<SubmissionRecord>(`submissions:${code}`))
+        .sort((a, b) => Number(a.seatCode) - Number(b.seatCode) || a.submittedAt - b.submittedAt),
     putSubmission: async (record) => {
       await command("HSET", `submissions:${record.classCode}`, submissionKey(record), JSON.stringify(record));
-      // The hash outlives nothing: it expires with the class it belongs to.
-      await command("EXPIRE", `submissions:${record.classCode}`, ttl({ expiresAt: Date.now() + 1000 * 60 * 60 * 24 * 120 }));
+      await keepWithClass(`submissions:${record.classCode}`);
     },
   };
 }
@@ -185,6 +222,8 @@ export function unconfiguredStore(reason: string): ClassStore {
     blockedReason: reason,
     getClass: refuse,
     putClass: refuse,
+    listAssignments: refuse,
+    putAssignment: refuse,
     listSubmissions: refuse,
     putSubmission: refuse,
   };

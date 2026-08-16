@@ -22,6 +22,7 @@ const aRun = () =>
     { type: "COURSE_DEPOSIT_DECIDED", taken: false, at: START + 35_000 },
     { type: "INCOME_SOURCE_TOGGLED", sourceId: "completion-800", included: true, at: START + 50_000 },
     { type: "CALCULATION_SUBMITTED", calcId: "reliable-floor", raw: "5000", value: dollars(5000), correct: true, at: START + 90_000 },
+    { type: "PLAN_REMAINDER_ASSIGNED", mode: "working", category: "flexibleCash", amount: dollars(400), at: START + 200_000 },
     { type: "DEFENSE_SUBMITTED", tileIds: ["a", "b"], text: "x".repeat(40), at: START + 600_000 },
   );
 
@@ -96,11 +97,29 @@ describe("the shared evidence envelope", () => {
     expect(defense?.competencyIds).toEqual(["plan-within-income", "adapt-a-plan"]);
   });
 
-  it("never tags a moment as evidence about savings being planned on purpose", () => {
-    // The one requirement of `plan-within-income` this world cannot see. Its absence from
-    // every tag is the same statement the coverage table makes, enforced where the events
-    // are actually written.
-    for (const event of log) expect(event.evidenceRequirementIds).not.toContain("plan-within-income.er3");
+  it("tags savings-was-planned on the one statement that is evidence about it, and nowhere else", () => {
+    // This assertion used to read the other way round: `plan-within-income.er3` appeared on
+    // no event at all, because nothing in this world was evidence about it. What changed is
+    // the world, not the reading — closing a plan by naming the row that takes the leftovers
+    // is a statement the student makes, and it is the only moment here that speaks to
+    // whether the savings figure was set or arrived. The general rule above still does the
+    // real work: a tag has to have a production route behind it. This pins which moment.
+    const tagged = log.filter((event) => event.evidenceRequirementIds.includes("plan-within-income.er3"));
+    expect(tagged.map((event) => event.type)).toEqual(["PLAN_REMAINDER_ASSIGNED"]);
+    expect(tagged[0]?.competencyIds).toEqual(["plan-within-income"]);
+  });
+
+  it("does not tag it on the repair boards, where nothing is judged from it", () => {
+    // The same control appears on the backup version. Its statement is real, and no observer
+    // reads it — so tagging it would put a sentence in the §19.2 trail that no judgement
+    // stands behind.
+    const repaired = run(createInitialState(START),
+      { type: "SETUP_SELECTED", setupId: "teammate-share" },
+      { type: "PLAN_REMAINDER_ASSIGNED", mode: "fallback", category: "reserve", amount: dollars(300) },
+    );
+    const declaration = repaired.log.find((event) => event.type === "PLAN_REMAINDER_ASSIGNED");
+    expect(declaration?.evidenceRequirementIds).toEqual([]);
+    expect(declaration?.competencyIds).toEqual([]);
   });
 
   it("records reaching a screen as its own fact", () => {

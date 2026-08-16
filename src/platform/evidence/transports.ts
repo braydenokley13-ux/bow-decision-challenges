@@ -1,5 +1,5 @@
 import { isWellFormedClassCode, normaliseClassCode } from "../classes/codes";
-import { CLASS_ERROR_MESSAGES, isClassError, type ClassErrorCode, type ClassRecord, type EvidenceSubmission } from "../classes/types";
+import { CLASS_ERROR_MESSAGES, isClassError, type Assignment, type ClassErrorCode, type ClassRecord, type EvidenceSubmission } from "../classes/types";
 import type { EvidenceTransport, JoinResult, DeliveryResult } from "./transport";
 
 /**
@@ -60,7 +60,8 @@ export function classServiceTransport(): EvidenceTransport {
       }
       const result = await call(`/classes/${classCode}`);
       if (result?.status === 200) {
-        return { ok: true, joined: { record: result.body as ClassRecord, classCode } };
+        const body = result.body as ClassRecord & { assignments?: readonly Assignment[] };
+        return { ok: true, joined: { record: body, classCode, assignments: body.assignments ?? [] } };
       }
       return { ok: false, ...errorFrom(result) };
     },
@@ -85,7 +86,7 @@ export function fileHandoffTransport(download: (name: string, contents: string) 
     id: "fileHandoff",
     requiresClass: false,
     promise: "Your work saves to this computer as a file you can give your teacher.",
-    join: (raw): Promise<JoinResult> => Promise.resolve({ ok: true, joined: { record: null, classCode: normaliseClassCode(raw) } }),
+    join: (raw): Promise<JoinResult> => Promise.resolve({ ok: true, joined: { record: null, classCode: normaliseClassCode(raw), assignments: [] } }),
     deliver: (submission: EvidenceSubmission): Promise<DeliveryResult> => {
       download(`bow-${submission.classCode || "class"}-seat-${submission.seatCode}.json`, JSON.stringify(submission, null, 2));
       return Promise.resolve({ ok: true, at: Date.now() });
@@ -102,7 +103,7 @@ export function localOnlyTransport(): EvidenceTransport {
     id: "localOnly",
     requiresClass: false,
     promise: "Your work stays on this computer. Nothing is sent anywhere.",
-    join: (raw): Promise<JoinResult> => Promise.resolve({ ok: true, joined: { record: null, classCode: normaliseClassCode(raw) } }),
+    join: (raw): Promise<JoinResult> => Promise.resolve({ ok: true, joined: { record: null, classCode: normaliseClassCode(raw), assignments: [] } }),
     deliver: (): Promise<DeliveryResult> => Promise.resolve({ ok: true, at: Date.now() }),
   };
 }

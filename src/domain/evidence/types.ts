@@ -41,7 +41,7 @@ export interface PlanSnapshot {
 export type EvidenceEventType =
   | "SESSION_STARTED" | "WORLD_CONFIRMED" | "STAGE_ENTERED" | "CALCULATION_SUBMITTED" | "SETUP_RANKED" | "SETUP_SELECTED"
   | "COURSE_DEPOSIT_DECIDED"
-  | "INCOME_SOURCE_TOGGLED" | "PLAN_SAVE_REQUESTED" | "PLAN_SAVED" | "LOCKED_MOVE_ATTEMPTED"
+  | "INCOME_SOURCE_TOGGLED" | "PLAN_SAVE_REQUESTED" | "PLAN_SAVED" | "PLAN_REMAINDER_ASSIGNED" | "LOCKED_MOVE_ATTEMPTED"
   | "WEEK5_ADVANCE_CONFIRMED" | "GAP_TILE_TOGGLED" | "OPTIONAL_WORK_DECIDED"
   | "COMPLETION_INCOME_DECIDED" | "SCAFFOLD_OPENED" | "SHOW_AND_CONTINUE_USED"
   | "DEFENSE_SUBMITTED";
@@ -49,7 +49,7 @@ export type EvidenceEventType =
 export const EVIDENCE_EVENT_TYPES: readonly EvidenceEventType[] = [
   "SESSION_STARTED", "WORLD_CONFIRMED", "STAGE_ENTERED", "CALCULATION_SUBMITTED", "SETUP_RANKED", "SETUP_SELECTED",
   "COURSE_DEPOSIT_DECIDED",
-  "INCOME_SOURCE_TOGGLED", "PLAN_SAVE_REQUESTED", "PLAN_SAVED", "LOCKED_MOVE_ATTEMPTED",
+  "INCOME_SOURCE_TOGGLED", "PLAN_SAVE_REQUESTED", "PLAN_SAVED", "PLAN_REMAINDER_ASSIGNED", "LOCKED_MOVE_ATTEMPTED",
   "WEEK5_ADVANCE_CONFIRMED", "GAP_TILE_TOGGLED", "OPTIONAL_WORK_DECIDED",
   "COMPLETION_INCOME_DECIDED", "SCAFFOLD_OPENED", "SHOW_AND_CONTINUE_USED",
   "DEFENSE_SUBMITTED",
@@ -124,6 +124,35 @@ export interface AlternateStateEvidence {
   evidenceRefs: string[];
 }
 
+/**
+ * One moment where the student sent the money still unassigned to a named row.
+ *
+ * The board has always demanded that every dollar end up somewhere. What it never recorded
+ * was *which line the student let the arithmetic decide*, and that is the difference between
+ * a savings figure that was planned and one that is what happened to be left — the whole of
+ * `plan-within-income.er3`, and the misconception the multiple-world model exists to catch.
+ *
+ * Only the category and the two amounts are kept, never a rank or a click order. This is a
+ * statement the student made on purpose with a labelled button, not an inference from the
+ * sequence they touched three steppers in.
+ */
+export interface RemainderChoice {
+  mode: PlanMode;
+  category: CategoryId;
+  /** What this row took. */
+  amount: Dollars;
+  /**
+   * What was still unassigned afterwards, and the field that decides what the move meant.
+   * Zero means this row took the last of the money and closed the plan. Anything else means
+   * the row filled up on the way past — a deliberate figure being placed, not leftovers
+   * being absorbed.
+   */
+  remaining: Dollars;
+  sequence: number;
+  supportLevel: SupportLevel;
+  evidenceRef: string;
+}
+
 export interface AssessmentFacts {
   calculations: Partial<Record<CalcId, CalculationEvidence>>;
   opening?: { snapshot: PlanSnapshot; balance: Dollars; firstSaveBalance: Dollars; conditionalExposure: Dollars; support: SupportLevel; evidenceRefs: string[] };
@@ -136,6 +165,11 @@ export interface AssessmentFacts {
   setupRanking?: { attempts: number; firstCorrect: boolean; correct: boolean; evidenceRefs: string[] };
   selectedGapTiles: string[];
   applicableGapTiles: string[];
+  /**
+   * Every "put the rest here", in the order they were made. Optional only because hand-built
+   * test fixtures predate it; `deriveFacts` always sets it, empty when the log holds none.
+   */
+  remainderChoices?: readonly RemainderChoice[];
   optionalDecision?: { accepted: boolean; sequence: number; evidenceRef: string };
   /** Whether the student decided about the still-conditional payment, and when. */
   completionDecision?: { included: boolean; sequence: number; evidenceRef: string };

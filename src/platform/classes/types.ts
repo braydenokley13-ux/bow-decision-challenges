@@ -1,4 +1,7 @@
+import type { CompetencyId } from "../../domain/competency/types";
+import type { WorldId } from "../../domain/core/ids";
 import type { EvidenceEvent } from "../../domain/evidence/types";
+import type { StandardRef } from "../../domain/standards/types";
 
 /**
  * The whole class-service contract, in one file both sides read.
@@ -29,17 +32,71 @@ export interface ClassCreation extends ClassRecord {
   teacherKey: string;
 }
 
+export type AssignmentFormat = "quick-check" | "decision-challenge";
+
+/**
+ * One thing a class was set, per §17.3.
+ *
+ * A class used to be able to hold exactly one thing — `ClassRecord.challengeId` — and a
+ * submission belonged to the class rather than to anything the teacher had decided. This is
+ * the record that separates the two: a class is a room of seats, and an assignment is
+ * something that room was asked to do.
+ *
+ * **Both the objective and the competencies are stored, and they are not the same claim.**
+ * `objectiveRef` is what the teacher picked and the only language reporting may speak in to
+ * them. `competencyIds` is what BOW actually measured, resolved from the mapping at the
+ * moment it was set. A state that revises its framework next year rewrites the first and
+ * cannot touch the second, which is what keeps an old result readable.
+ */
+export interface Assignment {
+  id: string;
+  /** The class it belongs to. A class is its code in V1; it has no other identity. */
+  classId: string;
+  /**
+   * What the teacher chose. `null` for a class created before there was an objective to
+   * choose — writing a code in there would record a selection nobody made.
+   */
+  objectiveRef: StandardRef | null;
+  /** What is actually assessed, resolved from the mapping when the assignment was set. */
+  competencyIds: readonly CompetencyId[];
+  /** The worlds offered. One today; the list is what makes a second one a config change. */
+  allowedWorldIds: readonly WorldId[];
+  studentChoosesWorld: boolean;
+  format: AssignmentFormat;
+  /**
+   * Who it was set for, or `null` for the whole class.
+   *
+   * V1 has no student accounts and no roster (§17.4), so the only identifier a student has
+   * is the seat they sat down at. The field keeps the product definition's name because the
+   * thing it identifies is a student; what stands in for one here is a seat code.
+   */
+  assignedStudentIds: readonly string[] | null;
+  createdAt: number;
+  /** The assignment this one is a reassessment of. Absent unless it is one. */
+  attemptOf?: string;
+}
+
 export interface SubmissionRecord {
   classCode: string;
   seatCode: string;
   sessionId: string;
   challengeId: string;
   challengeVersion: string;
+  /**
+   * What the student was doing. Absent on every submission stored before assignments
+   * existed, and on any client that does not send one — `assignmentIdFor` in
+   * `assignments.ts` is what turns absence into an answer, on read, without rewriting
+   * anybody's record.
+   */
+  assignmentId?: string;
   submittedAt: number;
   /** Educator-scored reasoning, written back after review. Null until a person scores it. */
   reasoningPoints: number | null;
   log: EvidenceEvent[];
 }
+
+/** A submission with the question "what was this for" already answered. */
+export type AttributedSubmission = SubmissionRecord & { assignmentId: string };
 
 /** What a student sends. The service stamps everything else. */
 export interface EvidenceSubmission {
@@ -48,6 +105,7 @@ export interface EvidenceSubmission {
   sessionId: string;
   challengeId: string;
   challengeVersion: string;
+  assignmentId?: string;
   log: EvidenceEvent[];
 }
 
@@ -58,6 +116,7 @@ export type ClassErrorCode =
   | "not_authorised"
   | "bad_request"
   | "challenge_mismatch"
+  | "assignment_not_found"
   | "unavailable";
 
 export interface ClassError {
@@ -81,6 +140,7 @@ export const CLASS_ERROR_MESSAGES: Record<ClassErrorCode, string> = {
   not_authorised: "This link does not open that class. Use the link you were given when you created it.",
   bad_request: "That request did not look right. Reload the page and try again.",
   challenge_mismatch: "That class is running a different challenge.",
+  assignment_not_found: "That class was not set that work. Ask your teacher for the code again.",
   unavailable: "The class service is not reachable right now.",
 };
 

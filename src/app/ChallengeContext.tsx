@@ -60,6 +60,10 @@ export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT }: P
         sessionId: state.meta.sessionId,
         challengeId: state.meta.challengeId,
         challengeVersion: state.meta.challengeVersion,
+        // Sent only when the class named one. An empty string would be a claim about which
+        // assignment this was, and the service is better placed to attribute it than a
+        // browser that was never told.
+        ...(state.meta.assignmentId ? { assignmentId: state.meta.assignmentId } : {}),
         log: state.log,
       },
       setDelivery,

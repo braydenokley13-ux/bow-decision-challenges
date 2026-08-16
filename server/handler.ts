@@ -1,5 +1,6 @@
 import { allocateClassCode, generateTeacherKey, isWellFormedClassCode, isWellFormedSeatCode, normaliseClassCode, normaliseSeatCode } from "../src/platform/classes/codes";
-import { CLASS_RETENTION_DAYS, type ClassErrorCode, type EvidenceSubmission, type SubmissionRecord } from "../src/platform/classes/types";
+import { assignmentIdFor, assignmentsForClass, generateAssignmentId, readAssignmentRequest } from "../src/platform/classes/assignments";
+import { CLASS_RETENTION_DAYS, type Assignment, type AttributedSubmission, type ClassErrorCode, type EvidenceSubmission, type SubmissionRecord } from "../src/platform/classes/types";
 import { EVIDENCE_EVENT_TYPES } from "../src/domain/evidence/types";
 import { challengeById, PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 import type { ClassStore, StoredClass } from "./store";
@@ -48,6 +49,7 @@ function readSubmission(body: unknown): EvidenceSubmission | null {
   if (typeof candidate.sessionId !== "string" || candidate.sessionId.length < 8 || candidate.sessionId.length > 64) return null;
   if (typeof candidate.challengeId !== "string" || !challengeById(candidate.challengeId)) return null;
   if (typeof candidate.challengeVersion !== "string" || candidate.challengeVersion.length > 32) return null;
+  if (candidate.assignmentId !== undefined && (typeof candidate.assignmentId !== "string" || candidate.assignmentId.length > 64)) return null;
   if (!Array.isArray(candidate.log) || candidate.log.length === 0 || candidate.log.length > 5000) return null;
   const known = new Set<string>(EVIDENCE_EVENT_TYPES);
   for (const event of candidate.log) {
@@ -61,6 +63,7 @@ function readSubmission(body: unknown): EvidenceSubmission | null {
     sessionId: candidate.sessionId,
     challengeId: candidate.challengeId,
     challengeVersion: candidate.challengeVersion,
+    ...(candidate.assignmentId !== undefined ? { assignmentId: candidate.assignmentId } : {}),
     log: candidate.log,
   };
 }
@@ -75,6 +78,31 @@ async function liveClass(store: ClassStore, code: string, now: number): Promise<
 
 function isResponse(value: StoredClass | ApiResponse): value is ApiResponse {
   return typeof (value as ApiResponse).status === "number";
+}
+
+/**
+ * What this class holds, synthesising the one a pre-assignment class was implicitly set.
+ *
+ * Read-time, every time, and nothing is written back. A class created before assignments
+ * existed answers the same way it always did and gains an assignment it can be reported
+ * against; a rollback loses nothing because nothing changed on disk.
+ */
+async function assignmentsOn(store: ClassStore, record: StoredClass): Promise<readonly Assignment[]> {
+  return assignmentsForClass(record, await store.listAssignments(record.code));
+}
+
+/**
+ * Every submission with the question "what was this for" answered.
+ *
+ * The stored record keeps exactly what the student sent, including nothing. Attribution is
+ * derived here so an old submission reads correctly without anybody rewriting it, and so the
+ * educator surface never has to carry the fallback rule itself.
+ */
+function attributed(submissions: readonly SubmissionRecord[], assignments: readonly Assignment[]): AttributedSubmission[] {
+  return submissions.flatMap((submission) => {
+    const assignmentId = assignmentIdFor(submission, assignments);
+    return assignmentId ? [{ ...submission, assignmentId }] : [];
+  });
 }
 
 export async function handleApiRequest(request: ApiRequest, options: HandlerOptions): Promise<ApiResponse> {
@@ -157,10 +185,25 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
   if (request.method === "GET" && segments.length === 2) {
     // Destructured field by field rather than by omission, so a field added to the stored
     // record can never reach a student's browser just because nobody remembered to strip it.
+    // The assignments ride along because a student needs to know what they were set before
+    // they start, and a second round trip to find out is a second thing to fail on a school
+    // network. They carry no evidence and no key, which is why the class code is enough.
     return {
       status: 200,
-      body: { code: record.code, label: record.label, challengeId: record.challengeId, createdAt: record.createdAt, expiresAt: record.expiresAt },
+      body: {
+        code: record.code,
+        label: record.label,
+        challengeId: record.challengeId,
+        createdAt: record.createdAt,
+        expiresAt: record.expiresAt,
+        assignments: await assignmentsOn(store, record),
+      },
     };
+  }
+
+  // GET /classes/:code/assignments — the same list on its own, for a client that has one.
+  if (request.method === "GET" && segments.length === 3 && segments[2] === "assignments") {
+    return { status: 200, body: { assignments: await assignmentsOn(store, record) } };
   }
 
   // POST /classes/:code/submissions — a student turns their evidence in.
@@ -169,6 +212,13 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
     if (!submission) return fail(400, "bad_request", "That submission could not be read.");
     if (submission.challengeId !== record.challengeId) {
       return fail(409, "challenge_mismatch", "That class is running a different challenge.");
+    }
+    // A named assignment has to be one this class actually holds. A submission naming
+    // nothing is accepted and attributed on read — that is every submission stored before
+    // this checkpoint, and refusing them would delete a class's history to add a field.
+    const assignments = await assignmentsOn(store, record);
+    if (submission.assignmentId !== undefined && !assignments.some((assignment) => assignment.id === submission.assignmentId)) {
+      return fail(404, "assignment_not_found", "That class was not set that work.");
     }
     const stored: SubmissionRecord = {
       ...submission,
@@ -187,9 +237,28 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
   const key = request.headers["x-bow-teacher-key"];
   if (!key || key !== record.teacherKey) return fail(403, "not_authorised", "This link does not open that class.");
 
+  // POST /classes/:code/assignments — the educator sets this class something.
+  if (request.method === "POST" && segments.length === 3 && segments[2] === "assignments") {
+    const existing = await store.listAssignments(record.code);
+    const requested = readAssignmentRequest(request.body ?? {}, existing);
+    if (!requested) return fail(400, "bad_request", "That assignment could not be read.");
+    const assignment: Assignment = {
+      id: generateAssignmentId(record.code, random),
+      classId: record.code,
+      createdAt: now,
+      ...requested,
+    };
+    await store.putAssignment(assignment);
+    return { status: 201, body: assignment };
+  }
+
   // GET /classes/:code/submissions — the educator's evidence room.
   if (request.method === "GET" && segments.length === 3 && segments[2] === "submissions") {
-    return { status: 200, body: { class: record, submissions: await store.listSubmissions(record.code) } };
+    const assignments = await assignmentsOn(store, record);
+    return {
+      status: 200,
+      body: { class: record, assignments, submissions: attributed(await store.listSubmissions(record.code), assignments) },
+    };
   }
 
   // PATCH /classes/:code/submissions/:seat — a person scores the written reasoning.
