@@ -10,7 +10,13 @@
 
   /* Meets AA against every surface token, including surface-sunken and surface-inset. */
   --ink-3: #5a626c;
-  --ink-4: #8a9099;
+
+  /* Was #8a9099, which failed AA against every light surface it sat on. */
+  --ink-4: #6b727c;
+
+  /* Muted text on the dark panels. One token cannot clear AA against both a near-white
+     surface and a near-black one, so the dark scenes get their own. */
+  --ink-muted-invert: #b9bfc8;
   --ink-invert: #ffffff;
   --border-subtle: #e3e0d8;
   --border-default: #d0ccc1;
@@ -21,33 +27,46 @@
   --fin-reliable-ink: #0e4353;
   --fin-conditional: #e9a93c;
   --fin-conditional-soft: #fbebcb;
-  --fin-conditional-ink: #7a4b06;
+
+  /* On the striped conditional band this used to be 2.04:1. */
+  --fin-conditional-ink: #3d2503;
   --fin-conditional-stripe: #b87914;
   --fin-locked: #c9c7c0;
-  --fin-locked-soft: #e8e6e0;
   --fin-locked-ink: #4a515c;
   --fin-adjustable: #4a44a8;
 
-  /* The three things a student can move. One family, three steps, so they read as the
-     same kind of money — and each one has a text colour that clears AA on it. */
-  --choice-1: #35317f;
-  --choice-2: #4a44a8;
-  --choice-3: #a9a5e4;
+  /* The three things a student can move. They read as one family, but adjacent slices
+     have to be separable as graphical objects too: --choice-1 against --choice-2 used to
+     be 1.41:1, so the two largest allocations merged into one block in the chart. */
+  --choice-1: #2b2668;
+  --choice-2: #6f68c9;
+  --choice-3: #c3bff0;
   --fin-adjustable-soft: #e6e4f7;
   --fin-adjustable-ink: #35317f;
   --fin-balanced: #1e7a49;
   --fin-balanced-soft: #dceee2;
   --fin-balanced-ink: #14603a;
-  --fin-exposed: #b87914;
-  --fin-exposed-soft: #f8e4be;
-  --fin-exposed-ink: #7a4b06;
   --fin-over: #c22b2b;
   --fin-over-soft: #fae0de;
   --fin-over-ink: #92201f;
   --pat-conditional: repeating-linear-gradient(45deg, var(--fin-conditional) 0 6px, var(--fin-conditional-stripe) 6px 10px);
-  --pat-exposed: repeating-linear-gradient(45deg, var(--fin-exposed-soft) 0 4px, var(--fin-exposed) 4px 8px);
   --pat-over: repeating-linear-gradient(45deg, var(--fin-over-soft) 0 4px, var(--fin-over) 4px 8px);
   --pat-ghost: repeating-linear-gradient(45deg, var(--surface-inset) 0 3px, var(--surface-sunken) 3px 6px);
+
+  /* Avery's week. Time is the second currency, so it gets its own family rather than
+     borrowing one of the money colours. */
+  --time-commute: #7a5c3a;
+  --time-rehab: #a8452e;
+  --time-clinics: #b8862b;
+  --time-bought: #d8d4cb;
+  --time-over: #c22b2b;
+
+  /* Print. A debrief on paper has no surfaces to sit on, so it gets its own ink and
+     rules rather than borrowing screen tokens that assume a coloured ground. */
+  --print-paper: #ffffff;
+  --print-rule: #999999;
+  --print-rule-strong: #333333;
+
   --focus-ring: #1552e0;
   --focus-halo: #ffffff;
   --shadow-rail: 0 1px 0 var(--border-default), 0 8px 18px -16px rgb(14 20 28 / 45%);
@@ -62,20 +81,14 @@
   --s-6: 24px;
   --s-7: 32px;
   --s-8: 40px;
-  --s-9: 56px;
   --s-10: 72px;
-  --s-11: 96px;
   --r-xs: 4px;
   --r-sm: 8px;
   --r-md: 10px;
-  --r-lg: 14px;
-  --r-xl: 20px;
   --r-pill: 999px;
   --w-board: 1200px;
   --w-dash: 1400px;
   --measure: 62ch;
-  --rail-h: 104px;
-  --stage-h: 44px;
   --actionbar-h: 64px;
   --gutter: 24px;
   --tap: 44px;
@@ -92,12 +105,14 @@
   --t-scene: 700 clamp(2.6rem, 5vw, 4.4rem)/0.94 var(--font-display);
   --t-display1: 600 3.25rem/1.02 var(--font-display);
   --t-display2: 600 2.5rem/1.06 var(--font-display);
+  --t-display3: 600 2rem/1.1 var(--font-display);
   --t-title1: 600 1.75rem/1.2 var(--font-ui);
   --t-title2: 600 1.375rem/1.25 var(--font-ui);
   --t-title3: 600 1.125rem/1.3 var(--font-ui);
   --t-body-lg: 400 1.0625rem/1.55 var(--font-ui);
   --t-body: 400 1rem/1.5 var(--font-ui);
   --t-ui: 500 0.9375rem/1.4 var(--font-ui);
+  --t-sm: 500 0.875rem/1.45 var(--font-ui);
   --t-label: 600 0.8125rem/1.3 var(--font-ui);
   --t-micro: 500 0.75rem/1.35 var(--font-ui);
   --m-hero: 640 2.75rem/1 var(--font-ui);
@@ -108,9 +123,9 @@
 }
 
 @media (max-height: 760px) {
-  :root { --rail-h: 88px; --s-7: 24px; --s-8: 32px; }
+  :root { --s-7: 24px; --s-8: 32px; }
 }
 
 @media (max-height: 640px) {
-  :root { --rail-h: 64px; --stage-h: 32px; --actionbar-h: 56px; --s-6: 16px; --s-7: 20px; --gutter: 16px; --tap: 44px; }
+  :root { --actionbar-h: 56px; --s-6: 16px; --s-7: 20px; --gutter: 16px; --tap: 44px; }
 }

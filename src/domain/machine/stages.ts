@@ -2,8 +2,8 @@ import type { StageId } from "../evidence/types";
 
 export const STAGE_ORDER: readonly StageId[] = [
   "entry", "join", "choose-world", "the-offer", "role-contract", "setup-comparison", "working-plan",
-  "fallback-version", "income-check", "week5-transition", "week5-event", "first-response",
-  "opportunity-final-repair", "remaining-risk-preview", "defense", "submitted",
+  "fallback-version", "income-check", "season-weeks", "week5-transition", "week5-event", "first-response",
+  "opportunity-final-repair", "remaining-risk-preview", "week8-resolution", "defense", "submitted",
 ] as const;
 
 /**
@@ -11,11 +11,11 @@ export const STAGE_ORDER: readonly StageId[] = [
  * source of truth so the announced position can never drift from the stage machine.
  */
 export const PROGRESS_STEPS: readonly { label: string; stages: readonly StageId[] }[] = [
-  { label: "Setup", stages: ["the-offer", "role-contract", "setup-comparison"] },
-  { label: "First Plan", stages: ["working-plan"] },
-  { label: "Backup Check", stages: ["fallback-version", "income-check", "week5-transition"] },
+  { label: "The offer", stages: ["the-offer", "role-contract", "setup-comparison"] },
+  { label: "The plan", stages: ["working-plan", "fallback-version", "income-check"] },
+  { label: "Weeks 1–4", stages: ["season-weeks", "week5-transition"] },
   { label: "Week 5", stages: ["week5-event", "first-response", "opportunity-final-repair", "remaining-risk-preview"] },
-  { label: "Explain It", stages: ["defense", "submitted"] },
+  { label: "Week 8", stages: ["week8-resolution", "defense", "submitted"] },
 ] as const;
 
 export function progressIndexFor(stage: StageId): number {
@@ -48,7 +48,8 @@ const SEASON_POSITIONS: Partial<Record<StageId, SeasonPosition>> = {
   "first-response": { caption: "Week 5", played: 4, current: 5 },
   "opportunity-final-repair": { caption: "Week 5", played: 4, current: 5 },
   "remaining-risk-preview": { caption: "Week 5", played: 4, current: 5 },
-  defense: { caption: "Week 8", played: 7, current: 8 },
+  "week8-resolution": { caption: "Week 8", played: 7, current: 8 },
+  defense: { caption: "Season over", played: 8, current: null },
   submitted: { caption: "Season over", played: 8, current: null },
 };
 

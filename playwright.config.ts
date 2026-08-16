@@ -1,9 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// This config runs in Node, but the app ships no @types/node, so the single
-// environment variable it reads is declared here rather than pulling in the package.
-declare const process: { env: Record<string, string | undefined> };
-
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -17,18 +13,38 @@ export default defineConfig({
     ...(process.env.CHROMIUM_PATH ? { launchOptions: { executablePath: process.env.CHROMIUM_PATH } } : {}),
   },
   projects: [
+    // The walkthrough drives the same helpers but exists to produce screenshots for a
+    // person to look at, so it runs on its own rather than twice inside the assertion pass.
     {
       name: "chromium-1366",
+      testIgnore: "**/walkthrough.spec.ts",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 768 } },
     },
     {
       name: "chromium-1024",
+      testIgnore: "**/walkthrough.spec.ts",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 600 } },
     },
+    {
+      name: "walkthrough",
+      testMatch: "**/walkthrough.spec.ts",
+      use: { ...devices["Desktop Chrome"] },
+    },
   ],
-  webServer: {
-    command: "npm run dev",
-    url: "http://127.0.0.1:4173",
-    reuseExistingServer: true,
-  },
+  // Two servers, because the suite exercises the real class service rather than a mock of
+  // it: what the browser tests drive is the handler that ships. The store is in memory so
+  // a run starts clean and leaves nothing behind.
+  webServer: [
+    {
+      command: "npm run api",
+      url: "http://127.0.0.1:4180/api/health",
+      reuseExistingServer: true,
+      env: { BOW_CLASS_STORE: "memory", BOW_API_PORT: "4180" },
+    },
+    {
+      command: "npm run dev",
+      url: "http://127.0.0.1:4173",
+      reuseExistingServer: true,
+    },
+  ],
 });

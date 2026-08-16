@@ -18,7 +18,7 @@ export default {
   },
   overrides: [
     {
-      files: ["src/design/tokens.css", "src/design/worlds.css"],
+      files: ["src/design/tokens.css", "src/design/brand.css", "src/design/worlds.css"],
       rules: { "color-no-hex": null }
     }
   ]

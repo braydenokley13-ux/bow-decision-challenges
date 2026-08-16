@@ -2,11 +2,14 @@ import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { CONCEPTS } from "../domain/blueprint/concepts";
+import { REASONING_MAXIMUM, STRUCTURED_MAXIMUM } from "../domain/evidence/grade";
 import { STRUCTURED_MICRO_SKILLS } from "../domain/blueprint/microSkills";
 import { ALIGNMENT_DISCLAIMER, NYSED_OBJECTIVES, STANDARDS_ROWS } from "../domain/blueprint/standards";
 import type { MasteryStatus, Trajectory } from "../domain/evidence/types";
 import { aggregateConcepts, aggregateMicroSkills, classSummary, contingencyRoutes, DEMO_LABEL, DEMO_STUDENTS, reviewQueue, teachNext, type DemoStudent } from "../fixtures/demoClass";
 import { EducatorShell } from "./EducatorShell";
+import { durationLabel, PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
+import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 
 const STATUS_LABELS: Record<MasteryStatus, string> = {
   demonstrated_independently: "Independent",
@@ -75,14 +78,14 @@ function BriefAnswers() {
       <dl>
         <div><dt>What does it assess?</dt><dd>Whether students can <b>apply</b> budgeting under uncertainty — build a workable eight-week plan, keep it working when income and costs change, and justify it.</dd></div>
         <div><dt>When do I use it?</dt><dd><b>After</b> you have taught the concepts. It is an application task, not a lesson.</dd></div>
-        <div><dt>How long?</dt><dd><b>12–15 minutes</b> for most students. One sitting, one device, no sound.</dd></div>
+        <div><dt>How long?</dt><dd><b>{durationLabel(PLAN_UNDER_PRESSURE)}</b> for most students. One sitting, one device, no sound.</dd></div>
         <div><dt>What do students do?</dt><dd>They handle the money for a player’s eight-week season: read a contract, choose housing, build a plan, absorb a Week 5 loss and a new required cost, repair the plan, and defend it.</dd></div>
-        <div><dt>What do I get back?</dt><dd>Six concept results and 18 micro-skill observations, each traceable to a saved financial state — plus one short written defense you score.</dd></div>
-        <div><dt>How do I launch it?</dt><dd>Share the challenge link with a class code and give each student a seat number. No accounts, no roster, no student data.</dd></div>
+        <div><dt>What do I get back?</dt><dd>{CONCEPTS.length - 1} concept results and {STRUCTURED_MICRO_SKILLS.length} micro-skill observations, each traceable to a financial state the student saved — plus what the class actually decided, and one short written explanation you read yourself.</dd></div>
+        <div><dt>How do I launch it?</dt><dd>Create a class, read out the code, and give each student a seat number. No accounts, no email addresses, no names, no roster.</dd></div>
       </dl>
       <div className="brief-answers__links">
-        <Link to="/educator/class">Where did my class struggle? →</Link>
-        <Link to="/educator/class/concepts/contingency">What evidence supports that? →</Link>
+        <Link to="/educator/classes/new">Run this with my class →</Link>
+        <Link to="/educator/demo/concepts/contingency">What evidence supports that? →</Link>
         <Link to="/educator/teaching-companion">What could I teach next? →</Link>
       </div>
     </section>
@@ -93,15 +96,15 @@ export function EducatorGuide() {
   return (
     <EducatorShell>
       <section className="guide-hero">
-        <div><p className="eyebrow">Educator challenge brief · Grades 6–8</p><h1>Plan Under Pressure</h1><p className="lede">A post-instruction application assessment for adaptive budgeting under uncertainty.</p><div className="guide-meta"><span>Grades 6–8</span><span>12–15 minutes</span><span>Basketball · Eight Weeks to the Showcase</span><span>Use after instruction</span></div><div className="hero-actions"><Link className="button button--primary" to="/challenge">Try the student challenge</Link><Link className="button button--secondary" to="/educator/class">Open demo evidence</Link></div></div>
+        <div><p className="eyebrow">Educator challenge brief · {PLAN_UNDER_PRESSURE.grades}</p><h1>{PLAN_UNDER_PRESSURE.title}</h1><p className="lede">A post-instruction application assessment for adaptive budgeting under uncertainty.</p><div className="guide-meta"><span>{PLAN_UNDER_PRESSURE.grades}</span><span>{durationLabel(PLAN_UNDER_PRESSURE)}</span><span>Basketball · {BASKETBALL_SCENARIO.title}</span><span>{PLAN_UNDER_PRESSURE.placement}</span></div><div className="hero-actions"><Link className="button button--primary" to={PLAN_UNDER_PRESSURE.route}>Try the student challenge</Link><Link className="button button--secondary" to="/educator/classes/new">Create a class</Link><Link className="button button--secondary" to="/educator/demo">See sample evidence</Link></div></div>
         <aside><span className="guide-hero__mark">PUP / 01</span><blockquote>“You teach the concept. BOW gives students a world where they have to use it.”</blockquote><p>No vocabulary quiz. The financial state the student constructs is the answer.</p></aside>
       </section>
       <BriefAnswers />
-      <section className="guide-section evidence-system"><div className="section-heading"><p className="eyebrow">Evidence generated</p><h2>Every point can be traced.</h2></div><div className="evidence-system__grid"><div className="score-architecture"><div><strong>90</strong><span>structured points</span></div><i>+</i><div><strong>10</strong><span>educator-reviewed reasoning</span></div><i>=</i><div><strong>100</strong><span>transparent final grade</span></div></div><ul><li>Six concept results</li><li>18 structured micro-skill observations</li><li>First attempts and independent corrections</li><li>Support history and saved financial states</li><li>Status and trajectory shown separately</li><li>Written reasoning reviewed by the educator</li></ul></div></section>
+      <section className="guide-section evidence-system"><div className="section-heading"><p className="eyebrow">Evidence generated</p><h2>Every point can be traced.</h2></div><div className="evidence-system__grid"><div className="score-architecture"><div><strong>{STRUCTURED_MAXIMUM}</strong><span>structured points</span></div><i>+</i><div><strong>{REASONING_MAXIMUM}</strong><span>reasoning you score</span></div><i>=</i><div><strong>{STRUCTURED_MAXIMUM + REASONING_MAXIMUM}</strong><span>transparent final grade</span></div></div><ul><li>{CONCEPTS.length - 1} concept results</li><li>{STRUCTURED_MICRO_SKILLS.length} structured micro-skill observations</li><li>First attempts and independent corrections</li><li>Support history and saved financial states</li><li>Status and trajectory shown separately</li><li>Written reasoning reviewed by the educator</li></ul></div></section>
       <section className="guide-section guide-section--dark"><div className="section-heading"><p className="eyebrow">Before students begin</p><h2>Students should already know how to…</h2></div><ol className="prerequisite-list"><li><span>01</span>Distinguish dependable and conditional income.</li><li><span>02</span>Combine recurring and one-time costs.</li><li><span>03</span>Build a budget that does not exceed available money.</li><li><span>04</span>Separate committed money from money that can change.</li><li><span>05</span>Revise after income or expenses change.</li><li><span>06</span>Explain a tradeoff with relevant numbers.</li></ol><p className="companion-callout">Schools may use their own instruction. <Link to="/educator/teaching-companion">View the optional two-day sample mini-unit →</Link></p></section>
-      <section className="guide-section"><div className="section-heading"><p className="eyebrow">What students do</p><h2>One plan. A consequence. A defense.</h2></div><div className="process-line"><div><span>01</span><h3>Compare</h3><p>Calculate full setup costs and choose a context.</p></div><div><span>02</span><h3>Construct</h3><p>Build a viable eight-week plan from dependable and optional conditional income.</p></div><div><span>03</span><h3>Check</h3><p>Build a lower-resource state by changing the real plan.</p></div><div><span>04</span><h3>Adapt</h3><p>Respond to a personalized Week 5 income loss and required cost.</p></div><div><span>05</span><h3>Defend</h3><p>Explain workability, priority, and opportunity cost with numbers.</p></div></div></section>
+      <section className="guide-section"><div className="section-heading"><p className="eyebrow">What students do</p><h2>A plan, a season, and what it cost.</h2></div><div className="process-line"><div><span>01</span><h3>Compare</h3><p>Order three places by what each really costs across eight weeks, then choose one.</p></div><div><span>02</span><h3>Construct</h3><p>Build a workable plan, deciding which conditional payments to count on.</p></div><div><span>03</span><h3>Commit</h3><p>Play four weeks as money and time drain, then decide about the course seat at its deadline.</p></div><div><span>04</span><h3>Adapt</h3><p>Absorb a Week 5 loss and a required cost, then make two more calls and land the plan.</p></div><div><span>05</span><h3>Resolve</h3><p>Watch the season end against their own plan — what held, what was lost, what it cost.</p></div><div><span>06</span><h3>Explain</h3><p>Say why they played it that way, with numbers from their own plan.</p></div></div></section>
       <AlignmentBlock />
-      <section className="guide-section launch-guide"><div className="section-heading"><p className="eyebrow">Use it in class</p><h2>Five simple steps.</h2></div><ol><li>Confirm your instruction covered the prerequisites.</li><li>Give students the challenge link, class code, and seat code.</li><li>Allow about 15 minutes and do not coach a financial strategy.</li><li>Open the top concept gap and inspect affected evidence.</li><li>Score reasoning, compare defensible plans, and decide what to reteach.</li></ol><p>A high grade reflects demonstrated financial skills—not a preference for saving more, spending less, taking a job, or choosing the cheapest option.</p></section>
+      <section className="guide-section launch-guide"><div className="section-heading"><p className="eyebrow">Use it in class</p><h2>Five steps.</h2></div><ol><li>Confirm your instruction covered the prerequisites.</li><li><Link to="/educator/classes/new">Create a class</Link>, read out the code, and give each student a seat number.</li><li>Allow {durationLabel(PLAN_UNDER_PRESSURE)} and do not coach a financial strategy.</li><li>Open the class and start with what students decided, not with the scores.</li><li>Run the debrief: two real plans, what changed after Week 5, and what to review.</li></ol><p>A high grade reflects demonstrated financial skills—not a preference for saving more, spending less, taking a job, or choosing the cheapest option.</p></section>
     </EducatorShell>
   );
 }
@@ -136,7 +139,7 @@ function Matrix({ records }: { records: DemoStudent[] }) {
       <tbody>{rows.map((row) => {
         const concept = CONCEPTS.find((item) => item.id === row.conceptId)!;
         const followUp = row.counts.developing + row.counts.not_demonstrated;
-        return <tr key={row.conceptId} className={row.conceptId === "contingency" ? "is-emphasized" : ""}><th scope="row"><Link to={`/educator/class/concepts/${row.conceptId}`}><span>{concept.code}</span>{concept.label}</Link></th><td><div className="matrix-bar" aria-label={`${row.counts.demonstrated_independently} independent, ${row.counts.demonstrated_with_support} with support, ${row.counts.developing} developing, ${row.counts.not_demonstrated} not demonstrated, ${row.counts.not_observed} not observed`}>{statusOrder.map((status) => row.counts[status] > 0 && <span key={status} data-status={status} style={{ width: `${(row.counts[status] / records.length) * 100}%` }} title={`${STATUS_LABELS[status]}: ${row.counts[status]} of ${records.length}`} />)}</div><div className="matrix-counts">{statusOrder.map((status) => <span key={status}><i data-status={status} />{row.counts[status]}</span>)}</div></td><td><b>{followUp}</b> of {records.length}</td></tr>;
+        return <tr key={row.conceptId} className={row.conceptId === "contingency" ? "is-emphasized" : ""}><th scope="row"><Link to={`/educator/demo/concepts/${row.conceptId}`}><span>{concept.code}</span>{concept.label}</Link></th><td><div className="matrix-bar" aria-label={`${row.counts.demonstrated_independently} independent, ${row.counts.demonstrated_with_support} with support, ${row.counts.developing} developing, ${row.counts.not_demonstrated} not demonstrated, ${row.counts.not_observed} not observed`}>{statusOrder.map((status) => row.counts[status] > 0 && <span key={status} data-status={status} style={{ width: `${(row.counts[status] / records.length) * 100}%` }} title={`${STATUS_LABELS[status]}: ${row.counts[status]} of ${records.length}`} />)}</div><div className="matrix-counts">{statusOrder.map((status) => <span key={status}><i data-status={status} />{row.counts[status]}</span>)}</div></td><td><b>{followUp}</b> of {records.length}</td></tr>;
       })}</tbody>
     </table>
   );
@@ -152,17 +155,17 @@ export function ClassOverview() {
   return (
     <EducatorShell demo>
       <header className="class-header"><div><p className="eyebrow">Period 3 · Plan Under Pressure</p><h1>Basketball evidence room</h1></div><div><span>{summary.total} students</span><span>{summary.reviewed} reviewed</span><span>{summary.pending} reasoning pending</span></div></header>
-      <section className="teach-next"><p className="eyebrow">Teach next · C4</p><h2>Build a complete fallback.</h2><p><b>{summary.persistentFallbackGap} of {summary.total}</b> students finished with a backup plan that does not cover the risk. Another <b>{summary.laterCorrected}</b> left the opening fallback short and closed it themselves during Week 5, and <b>{summary.completedWithSupport}</b> got there after using a scaffold.</p><div><Link className="button button--primary" to={`/educator/class/concepts/${insight?.conceptId}`}>Open C4 evidence</Link><CopyButton text={RETEACH_SCRIPT} /></div><span className="standard-chip">NYSED 1.2 · 4.1 partial</span></section>
+      <section className="teach-next"><p className="eyebrow">Teach next · C4</p><h2>Build a complete fallback.</h2><p><b>{summary.persistentFallbackGap} of {summary.total}</b> students finished with a backup plan that does not cover the risk. Another <b>{summary.laterCorrected}</b> left the opening fallback short and closed it themselves during Week 5, and <b>{summary.completedWithSupport}</b> got there after using a scaffold.</p><div><Link className="button button--primary" to={`/educator/demo/concepts/${insight?.conceptId}`}>Open C4 evidence</Link><CopyButton text={RETEACH_SCRIPT} /></div><span className="standard-chip">NYSED 1.2 · 4.1 partial</span></section>
       <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Concept matrix</p><h2>Current evidence by financial concept</h2></div><StatusKey /><Matrix records={DEMO_STUDENTS} /></section>
       <section className="trajectory-panel"><div><p className="eyebrow">How they got there · C4</p><h2>Every student is in exactly one of these four.</h2><p>Same 28 records as the matrix, grouped by the route they took to a backup plan.</p></div><div className="route-grid">{routes.map((group) => (
         <article key={group.route} data-route={group.route}>
           <b>{group.students.length}</b>
           <h3>{group.label}</h3>
           <p>{group.meaning}</p>
-          <div className="seat-chips">{group.students.map((student) => <Link key={student.seatCode} to={`/educator/class/students/${student.seatCode}`}>{student.seatCode}</Link>)}</div>
+          <div className="seat-chips">{group.students.map((student) => <Link key={student.seatCode} to={`/educator/demo/students/${student.seatCode}`}>{student.seatCode}</Link>)}</div>
         </article>
       ))}</div></section>
-      <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Open these first</p><h2>Ordered by evidence, not by grade</h2></div><div className="student-worklist">{reviewStudents.map((student) => <Link key={student.seatCode} to={`/educator/class/students/${student.seatCode}`}><div><span>Seat {student.seatCode} · {student.finalPoints === null ? `${student.structuredPoints}/90 structured` : `${student.finalPoints}/100`}</span><h3>{student.evidenceLine}</h3><p>{student.primaryNeed}</p></div><span aria-hidden="true">→</span></Link>)}</div></section>
+      <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Open these first</p><h2>Ordered by evidence, not by grade</h2></div><div className="student-worklist">{reviewStudents.map((student) => <Link key={student.seatCode} to={`/educator/demo/students/${student.seatCode}`}><div><span>Seat {student.seatCode} · {student.finalPoints === null ? `${student.structuredPoints}/90 structured` : `${student.finalPoints}/100`}</span><h3>{student.evidenceLine}</h3><p>{student.primaryNeed}</p></div><span aria-hidden="true">→</span></Link>)}</div></section>
       <section className="class-foot"><div><span>Grade status</span><strong>{summary.reviewed} of {summary.total} reviewed</strong><p>Median {summary.median} · Range {summary.range[0]}–{summary.range[1]}</p></div><div><span>Challenge</span><strong>Plan Under Pressure</strong><p>Basketball · Eight Weeks to the Showcase</p></div><div><span>Data status</span><strong>{DEMO_LABEL}</strong><p>All totals derive from individual records.</p></div></section>
     </EducatorShell>
   );
@@ -174,7 +177,7 @@ export function ConceptDrilldown() {
   const affected = DEMO_STUDENTS.filter((student) => ["developing", "not_demonstrated"].includes(student.concepts.find((result) => result.conceptId === concept.id)?.status ?? ""));
   return (
     <EducatorShell demo>
-      <header className="page-header page-header--with-back"><Link to="/educator/class">← Class evidence</Link><p className="eyebrow">{concept.code} · Concept drill-down</p><h1>{concept.label}</h1><p>{concept.description}</p><div className="tag-row"><span>NYSED 1.2</span>{concept.id === "contingency" && <span>4.1 partial</span>}</div></header>
+      <header className="page-header page-header--with-back"><Link to="/educator/demo">← Demo evidence</Link><p className="eyebrow">{concept.code} · Concept drill-down</p><h1>{concept.label}</h1><p>{concept.description}</p><div className="tag-row"><span>NYSED 1.2</span>{concept.id === "contingency" && <span>4.1 partial</span>}</div></header>
       <section className="drill-grid">
         <div className="drill-main"><div className="section-heading"><p className="eyebrow">Micro-skill distribution</p><h2>Where the evidence separates</h2></div><table className="micro-table"><caption>Counts across {DEMO_STUDENTS.length} hypothetical records</caption><thead><tr><th scope="col">Micro-skill</th><th scope="col">Independent</th><th scope="col">Support</th><th scope="col">Partial / not</th></tr></thead><tbody>{aggregateMicroSkills(DEMO_STUDENTS, concept.id).map(({ id, label, independent, support, partial }) => <tr key={id}><th scope="row"><code>{id}</code>{label}</th><td>{independent}</td><td>{support}</td><td>{partial}</td></tr>)}</tbody></table>{concept.id === "contingency" && <p className="context-note">C4 observation context is shown for every student: <b>Opening income fallback</b> or <b>Week 5 cost response</b>.</p>}
           <div className="misconception-list"><h2>How each pattern is identified</h2><p className="misconception-list__note">These are fixed rules applied to the financial states a student saved. The same evidence always produces the same flag — nothing here is inferred or AI-generated.</p>{[
@@ -188,7 +191,7 @@ export function ConceptDrilldown() {
       <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Affected students</p><h2>{affected.length} students need follow-up on {concept.code}</h2><p>Each row lists the micro-skills still open for that student, so a small group can be pulled for the piece they are actually missing.</p></div><div className="student-worklist">{affected.map((student) => {
         const open = STRUCTURED_MICRO_SKILLS.filter((skill) => skill.conceptId === concept.id && student.microStatuses[skill.id] !== "independent");
         return (
-          <Link key={student.seatCode} to={`/educator/class/students/${student.seatCode}`}>
+          <Link key={student.seatCode} to={`/educator/demo/students/${student.seatCode}`}>
             <div>
               <span>Seat {student.seatCode} · {STATUS_LABELS[student.concepts.find((result) => result.conceptId === concept.id)!.status]}</span>
               <h3>{open.map((skill) => skill.label).join(" · ") || "Concept-level gap with no single micro-skill isolated"}</h3>
@@ -223,7 +226,7 @@ export function StudentEvidence() {
   const final = reasoning === null ? null : student.structuredPoints + reasoning;
   return (
     <EducatorShell demo>
-      <header className="student-evidence-header"><div><Link to="/educator/class">← Students to review</Link><p className="eyebrow">Seat {student.seatCode} · Basketball</p><h1>{final === null ? "Final grade pending" : `${final}/100`}</h1><p>{student.evidenceLine}</p></div><div><span>Structured</span><strong>{student.structuredPoints}/90</strong><span>Reasoning</span><strong>{reasoning === null ? "Pending" : `${reasoning}/10`}</strong><Link className="button button--secondary" to={`/educator/class/students/${student.seatCode}/reasoning`}>Review reasoning</Link></div></header>
+      <header className="student-evidence-header"><div><Link to="/educator/demo">← Students to review</Link><p className="eyebrow">Seat {student.seatCode} · Basketball</p><h1>{final === null ? "Final grade pending" : `${final}/100`}</h1><p>{student.evidenceLine}</p></div><div><span>Structured</span><strong>{student.structuredPoints}/90</strong><span>Reasoning</span><strong>{reasoning === null ? "Pending" : `${reasoning}/10`}</strong><Link className="button button--secondary" to={`/educator/demo/students/${student.seatCode}/reasoning`}>Review reasoning</Link></div></header>
       {student.seatCode === "14" && <section className="golden-case"><p className="eyebrow">Golden evidence case</p><h2>C4: 17/20 · Demonstrated independently</h2><p>Trajectory: <b>Corrected after consequence.</b> The incomplete opening fallback stays in the ledger; the later balanced no-$800 preview updates current status without rewriting earlier points.</p></section>}
       <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Grade ledger</p><h2>Every point has a source</h2></div><StudentLedger student={student} /></section>
       <section className="evidence-detail-grid">
@@ -248,11 +251,11 @@ export function ReasoningReview() {
     } catch { /* A malformed local demo review is safely replaced. */ }
     reviews[student.seatCode] = { total, scores };
     window.localStorage.setItem("bow.educator.v1.review", JSON.stringify(reviews));
-    navigate(`/educator/class/students/${student.seatCode}`);
+    navigate(`/educator/demo/students/${student.seatCode}`);
   };
   return (
     <EducatorShell demo>
-      <header className="page-header page-header--with-back"><Link to={`/educator/class/students/${student.seatCode}`}>← Seat {student.seatCode} evidence</Link><p className="eyebrow">Human review · C6</p><h1>Score the financial defense.</h1><p>Reasoning changes only C6 and the final grade. Structured evidence remains untouched.</p></header>
+      <header className="page-header page-header--with-back"><Link to={`/educator/demo/students/${student.seatCode}`}>← Seat {student.seatCode} evidence</Link><p className="eyebrow">Human review · C6</p><h1>Score the financial defense.</h1><p>Reasoning changes only C6 and the final grade. Structured evidence remains untouched.</p></header>
       <div className="reasoning-layout"><section className="student-response"><p className="eyebrow">Student response</p><blockquote>{student.seatCode === "14" ? "I kept $800 for the sports-media course after the update. The clinic added $500, but I gave up Avery's only rest block and reduced the reserve to $400. The revised plan balances at $6,300, and if the $800 completion payment does not arrive, my preview still balances." : "My plan works because I changed future money after the new cost. I used the numbers in my final plan to make sure it balanced."}</blockquote><div className="selected-evidence">{(student.seatCode === "14"
         ? [["Final funds", "$6,300"], ["Course goal", "$800"], ["Reserve", "$400"]]
         : [["Structured evidence", `${student.structuredPoints}/90`], ["Current need", student.primaryNeed]]

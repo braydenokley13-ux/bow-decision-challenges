@@ -25,6 +25,10 @@ export function CalculationInput({ label, prompt, terms, expected, onSubmit, onC
   const [showScaffold, setShowScaffold] = useState(false);
 
   const submit = () => {
+    // An empty box is not an attempt. Three idle taps on Check used to increment the
+    // attempt count, unlock "show the answer and keep going", and write answer_supplied
+    // into the student's permanent record without them ever trying the problem.
+    if (raw.trim() === "") { setVerdict("invalid"); return; }
     const value = parseDollars(raw);
     const correct = value === expected;
     setVerdict(value === null ? "invalid" : correct ? "correct" : value < expected ? "low" : "high");

@@ -1,9 +1,48 @@
 import type { Dollars } from "../core/money";
 import type { SetupId, WorldId } from "../core/ids";
 
+/**
+ * Avery's week, in blocks.
+ *
+ * A block is one hour that is not already practice, a game, or school. Time is a second
+ * scarce resource, not decoration: where Avery lives, required rehab, and the Saturday
+ * clinics all spend blocks, and money can buy some of them back. Above `attendanceLimit`
+ * in the weeks that decide the attendance bonus, Avery misses a session and the bonus is
+ * gone — deterministically, from the student's own choices, never at random.
+ */
+export interface LoadNumbers {
+  /** Blocks Avery has in a week once practice, games and school are taken out. */
+  weeklyCapacity: number;
+  /** Blocks the trip to and from the gym costs each week, by where Avery stays. */
+  commuteBlocks: Record<SetupId, number>;
+  /** Blocks required rehab costs each week once it starts. */
+  rehabBlocks: number;
+  /** Extra blocks getting to rehab costs, by where Avery stays. */
+  rehabTravelBlocks: Record<SetupId, number>;
+  /** Blocks the Saturday clinics cost each week if Avery takes them. */
+  clinicBlocks: number;
+  /** Dollars that buy back one block a week for the rest of the season. */
+  blockBuybackCost: Dollars;
+  /** Above this weekly load, Avery misses a session and the attendance bonus is lost. */
+  attendanceLimit: number;
+}
+
+/**
+ * The sports-media course. Reserving the seat early is cheaper, and the money is gone the
+ * moment it is committed — which is the point: it buys a discount and costs flexibility
+ * the student may want back after Week 5.
+ */
+export interface CourseNumbers {
+  fullPrice: Dollars;
+  depositPrice: Dollars;
+  depositDeadlineWeek: number;
+}
+
 export interface ScenarioNumbers {
   version: string;
   weeks: 8;
+  /** The week the season turns. Everything after it is played under the new terms. */
+  disruptionWeek: number;
   savings: Dollars;
   basePay: Dollars;
   reliableFloor: Dollars;
@@ -12,10 +51,14 @@ export interface ScenarioNumbers {
   essentialsPerWeek: Dollars;
   essentialsTotal: Dollars;
   goalCap: Dollars;
+  course: CourseNumbers;
+  load: LoadNumbers;
   setupCosts: Record<SetupId, Dollars>;
   setupEventCosts: Record<SetupId, Dollars>;
   requiredWeek5Cost: Dollars;
   optionalWorkIncome: Dollars;
+  /** What coaching the clinics costs Avery out of pocket — travel, and the extra physio. */
+  optionalWorkCost: Dollars;
   openingIncrement: 100;
   repairIncrement: 50;
 }
@@ -34,6 +77,25 @@ export interface SetupOptionDefinition {
   eventCostLabel: string;
 }
 
+/**
+ * The five payments a world can name, and the only place they are named.
+ *
+ * Screens used to write "$800" and "Perfect Attendance Bonus" into their own JSX, which is
+ * the same defect the grader had before it was priced from the scenario: re-pricing the
+ * model left correct copy describing the wrong money. Amounts come from
+ * `incomeAmount`, words come from `incomeCopy`, and no student-facing file spells either.
+ */
+export type IncomeKey = "savings" | "base" | "completion" | "outcome" | "optionalWork";
+
+export interface IncomeLineCopy {
+  /** What the payment is called, wherever it is named. */
+  label: string;
+  /** What the money is, in one line. */
+  note: string;
+  /** The condition attached, for the payments that carry one. */
+  rule?: string;
+}
+
 export interface WorldScenario {
   id: WorldId;
   title: string;
@@ -42,7 +104,7 @@ export interface WorldScenario {
   goalLabel: string;
   numbers: ScenarioNumbers;
   setups: readonly SetupOptionDefinition[];
-  incomeCopy: Record<"savings" | "base" | "completion" | "outcome", string>;
+  incomeCopy: Record<IncomeKey, IncomeLineCopy>;
   /** Beat 1. What just happened to the player, and what they want out of it. */
   offer: {
     team: string;

@@ -38,9 +38,9 @@ export interface StructuredMicroSkillDefinition {
 }
 
 export interface AssessmentBlueprint {
-  id: "plan-under-pressure";
-  version: "2.1.0-mvp";
-  skillId: "adaptive-budgeting-under-uncertainty";
+  id: string;
+  version: string;
+  skillId: string;
   concepts: readonly ConceptDefinition[];
   structuredMicroSkills: readonly StructuredMicroSkillDefinition[];
   calculationIds: readonly CalcId[];

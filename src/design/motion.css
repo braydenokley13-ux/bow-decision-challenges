@@ -3,10 +3,8 @@
   --dur-state: 220ms;
   --dur-move: 420ms;
   --dur-stage: 560ms;
-  --dur-ghost: 300ms;
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-exit: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-stage: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -15,7 +13,6 @@
     --dur-state: 0ms;
     --dur-move: 0ms;
     --dur-stage: 0ms;
-    --dur-ghost: 0ms;
   }
 
   *, *::before, *::after {

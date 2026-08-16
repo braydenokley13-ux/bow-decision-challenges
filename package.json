@@ -1,16 +1,20 @@
 {
   "name": "bow-decision-challenges",
   "private": true,
-  "version": "2.1.0-mvp",
+  "version": "2.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run build:server",
     "typecheck": "tsc -b --pretty false",
     "lint": "eslint . && stylelint \"src/**/*.css\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test --project=chromium-1366 --project=chromium-1024",
+    "walkthrough": "playwright test --project=walkthrough",
+    "balance": "BALANCE_REPORT=balance-report.txt vitest run src/domain/scenario/balance.test.ts",
+    "build:server": "vite build --ssr server/index.ts --outDir dist-server",
+    "api": "npm run build:server && node dist-server/index.js"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",
@@ -26,6 +30,7 @@
     "@testing-library/jest-dom": "latest",
     "@testing-library/react": "latest",
     "@testing-library/user-event": "latest",
+    "@types/node": "^26.2.0",
     "@types/react": "^18.3.24",
     "@types/react-dom": "^18.3.7",
     "eslint": "latest",

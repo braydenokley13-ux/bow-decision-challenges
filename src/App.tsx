@@ -5,6 +5,10 @@ import { CourtBackdrop } from "./components/story/CourtBackdrop";
 import { RosterCard } from "./components/story/RosterCard";
 import { StudentChallenge } from "./stages/StudentChallenge";
 import { ClassOverview, ConceptDrilldown, EducatorGuide, ReasoningReview, StandardsView, StudentEvidence, TeachingCompanion } from "./educator/EducatorPages";
+import { ClassSetup } from "./educator/ClassSetup";
+import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPages";
+import { Debrief } from "./educator/Debrief";
+import { durationLabel, PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
 
 function Home() {
   return (
@@ -20,8 +24,7 @@ function Home() {
           <h1>Eight weeks to the showcase.</h1>
           <p className="home__deck">Avery Reyes just got the last roster spot with the Harbor City Flight. Some of the money is promised, some has to be earned, and the bills arrive either way. Avery plays. You handle the money.</p>
           <div className="home__actions">
-            <Link className="button button--primary" to="/challenge">Start the challenge</Link>
-            <Link className="button button--secondary" to="/educator/class">See the evidence a teacher gets</Link>
+            <Link className="button button--primary" to={PLAN_UNDER_PRESSURE.route}>Start the challenge</Link>
           </div>
         </div>
         <aside className="home__side">
@@ -29,9 +32,9 @@ function Home() {
         </aside>
       </section>
       <footer className="home__foot">
-        <span>Grades 6–8</span>
-        <span>12–15 minutes</span>
-        <span>Applied after instruction</span>
+        <span>{PLAN_UNDER_PRESSURE.grades}</span>
+        <span>{durationLabel(PLAN_UNDER_PRESSURE)}</span>
+        <span>{PLAN_UNDER_PRESSURE.placement}</span>
         <span>Adaptive budgeting under uncertainty</span>
       </footer>
     </main>
@@ -42,14 +45,28 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/challenge" element={<ChallengeProvider><StudentChallenge /></ChallengeProvider>} />
+      <Route path={PLAN_UNDER_PRESSURE.route} element={<ChallengeProvider><StudentChallenge /></ChallengeProvider>} />
+      {/* The route this shipped on. Class codes and bookmarks already point at it, so it
+          redirects rather than 404s — and keeps redirecting after Challenge #2 lands. */}
+      <Route path="/challenge" element={<Navigate to={PLAN_UNDER_PRESSURE.route} replace />} />
       <Route path="/educator/guide" element={<EducatorGuide />} />
+      <Route path="/educator/classes/new" element={<ClassSetup />} />
       <Route path="/educator/teaching-companion" element={<TeachingCompanion />} />
-      <Route path="/educator/class" element={<ClassOverview />} />
-      <Route path="/educator/class/concepts/:conceptId" element={<ConceptDrilldown />} />
-      <Route path="/educator/class/students/:seatCode" element={<StudentEvidence />} />
-      <Route path="/educator/class/students/:seatCode/reasoning" element={<ReasoningReview />} />
-      <Route path="/educator/class/standards" element={<StandardsView />} />
+      {/* A real class. Everything under here reads submitted evidence and nothing else. */}
+      <Route path="/educator/class/:code" element={<RealClassOverview />} />
+      <Route path="/educator/class/:code/students/:seatCode" element={<RealStudentEvidence />} />
+      <Route path="/educator/class/:code/debrief" element={<Debrief />} />
+      {/* The fixture class, behind a route that says so. It exists to show an educator the
+          shape of the evidence before they run one, and it can never be reached from a
+          real class's URL. */}
+      <Route path="/educator/demo" element={<ClassOverview />} />
+      <Route path="/educator/demo/concepts/:conceptId" element={<ConceptDrilldown />} />
+      <Route path="/educator/demo/students/:seatCode" element={<StudentEvidence />} />
+      <Route path="/educator/demo/students/:seatCode/reasoning" element={<ReasoningReview />} />
+      <Route path="/educator/demo/standards" element={<StandardsView />} />
+      {/* The routes the demo shipped on. */}
+      <Route path="/educator/class" element={<Navigate to="/educator/demo" replace />} />
+      <Route path="/educator/class/standards" element={<Navigate to="/educator/demo/standards" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

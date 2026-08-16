@@ -10,8 +10,9 @@ export function EducatorShell({ children, demo = false }: PropsWithChildren<{ de
         <AppMark />
         <nav aria-label="Educator navigation">
           <NavLink to="/educator/guide">Challenge brief</NavLink>
-          <NavLink to="/educator/class">Class evidence</NavLink>
-          <NavLink to="/educator/class/standards">NYSED view</NavLink>
+          <NavLink to="/educator/classes/new">My classes</NavLink>
+          <NavLink to="/educator/demo">Demo evidence</NavLink>
+          <NavLink to="/educator/demo/standards">NYSED view</NavLink>
           <NavLink to="/educator/teaching-companion">Teaching companion</NavLink>
         </nav>
         {demo && <span className="demo-pill">{DEMO_LABEL}</span>}

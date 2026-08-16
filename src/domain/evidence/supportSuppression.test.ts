@@ -13,9 +13,9 @@ const run = (state: ChallengeState, ...actions: ChallengeAction[]) => actions.re
  * may be earned simply by arriving at the final screen.
  */
 const setup: ChallengeAction[] = [
-  { type: "SETUP_SELECTED", setupId: "stable-1800" },
-  { type: "CALCULATION_SUBMITTED", calcId: "setup-middle-total", raw: "1400", value: dollars(1400), correct: true },
-  { type: "CALCULATION_SUBMITTED", calcId: "setup-lowest-total", raw: "1000", value: dollars(1000), correct: true },
+  { type: "SETUP_SELECTED", setupId: "gym-sublet" },
+  { type: "SETUP_RANKED", order: ["cousin-room", "teammate-share", "gym-sublet"], correct: true },
+  { type: "CALCULATION_SUBMITTED", calcId: "chosen-setup-total", raw: "1800", value: dollars(1800), correct: true },
   { type: "CALCULATION_SUBMITTED", calcId: "essentials-total", raw: "1600", value: dollars(1600), correct: true },
   { type: "CALCULATION_SUBMITTED", calcId: "reliable-floor", raw: "5000", value: dollars(5000), correct: true },
 ];
@@ -110,7 +110,7 @@ describe("C5.6 is not awarded for merely finishing", () => {
       { type: "OPTIONAL_WORK_DECIDED", accepted: true },
       { type: "COMPLETION_INCOME_DECIDED", included: false },
       { type: "PLAN_AMOUNT_CHANGED", mode: "final", category: "goal", amount: dollars(1200) },
-      { type: "PLAN_AMOUNT_CHANGED", mode: "final", category: "reserve", amount: dollars(200) },
+      { type: "PLAN_AMOUNT_CHANGED", mode: "final", category: "reserve", amount: dollars(100) },
       { type: "PLAN_AMOUNT_CHANGED", mode: "final", category: "flexibleCash", amount: dollars(0) },
       { type: "PLAN_SAVE_REQUESTED", mode: "final" },
     ));
@@ -121,7 +121,7 @@ describe("C5.6 is not awarded for merely finishing", () => {
 
 describe("Week 5 components exclude changes worth nothing", () => {
   it("does not require selecting a $0 travel cost for the setup with no extra travel", () => {
-    // stable-1800 has no event travel cost, so 'required-cost' is the only applicable component.
+    // gym-sublet has no event travel cost, so 'required-cost' is the only applicable component.
     const state = run(createInitialState(), ...setup, ...balancedWorkingPlan, ...toWeek5,
       { type: "PLAN_AMOUNT_CHANGED", mode: "week5-first-response", category: "goal", amount: dollars(500) },
       { type: "PLAN_SAVE_REQUESTED", mode: "week5-first-response" }, ...decisionsAndBalancedFinal);

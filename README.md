@@ -2,85 +2,111 @@
 
 **Plan Under Pressure** — an applied financial-literacy challenge for Grades 6–8.
 
-Students step into an eight-week basketball season as the person handling the money: they
-build a plan that works, watch Week 5 break it, repair it with what they have left, and
-defend the result in their own words. You teach the concept. The challenge gives students
-a world in which they have to use it.
+Students step into an eight-week basketball season as the person handling the money. They
+build a plan that works, play four weeks as it drains, commit to something before knowing
+what is coming, watch Week 5 break it, repair it with what they have left, see the season
+resolve against their own decisions, and say why they played it that way. You teach the
+concept. The challenge gives students a world in which they have to use it.
 
-The story opens on the first screen — Avery's call, the roster card, the goal, and the two
-class codes are one screen, so nothing stands between the link and the situation. An
-eight-week season strip in the header is the only progress indicator, so a student always
-knows where they are in Avery's season rather than which numbered form they are on.
+The design sentence is: **Avery has two scarce things — money and the hours in a week — and
+the student decides how to spend both, before knowing which of them Week 5 will take.**
 
-Weeks 1 to 4 run as a feed in Avery's own voice, written three ways so the housing choice
-is felt every week rather than only when it bills. Money is drawn as two towers on one
-scale — what Avery has, and where it is going — so overspending clears a line instead of
-turning a figure red, and counting a bonus visibly reaches above the money that is
-certain. Every plan pass after the first opens with what moved, so a returning board reads
-as a response rather than the same three fields handed back.
-
-This MVP ships one complete world: **Basketball — Eight Weeks to the Showcase**. The
-finance, evidence, and scoring layers are world-neutral, so a second story can be added
-without touching them.
+This repository is the home of BOW Decision Challenges. Plan Under Pressure is the first
+challenge in it, not the whole of it — see [`ARCHITECTURE.md`](./ARCHITECTURE.md) for what is
+shared, what is challenge-specific, and what a second challenge would have to build.
 
 ## Run it
 
 ```bash
 npm install
-npm run dev
+npm run api    # the class service, on :4180
+npm run dev    # the app, on :4173 — proxies /api
 ```
 
-Open the address Vite prints. The demo class and seat codes are already filled in — no real
-student information is used anywhere in the app.
+Then either create a class at `/educator/classes/new` and join it with the code, or run with
+`VITE_EVIDENCE_TRANSPORT=localOnly` to work on the student flow with nothing sent anywhere.
+
+No student accounts, no email addresses, no names. A class is a code; a seat is a number.
 
 ## Check it
 
 ```bash
 npm run typecheck
 npm run lint
-npm test          # domain, scoring, and assessment-integrity suites
-npm run build
-npm run test:e2e  # full student and educator paths in a real browser
+npm test           # domain, scoring, balance, class service, no-fixture invariant
+npm run build      # app and server
+npm run test:e2e   # full student, class and educator paths in a real browser
+npm run balance    # writes the strategy sweep to balance-report.txt
 ```
 
-The browser suite covers both income routes through submission, accepting and declining the
-optional work, both `$800` branches, the support and answer-supplied paths, refresh and
-resume, educator deep links, keyboard-only operation, axe scans (including the plan board
-and the season review), the per-housing narration, and two Chromebook widths.
+The browser suite runs against the **real class service**, not a mock of it: the API handler
+under test is the one that ships. It covers class creation, joining, submission, read-back, a
+dropped network at the moment of turning in, a mid-run refresh, both income routes, both
+bonus branches, over-committing and recovering, keyboard-only operation, reduced motion, a
+short Chromebook screen, axe scans on every educator route, and the no-fixture invariant on a
+live class.
 
-Entrance animations move elements but never fade their opacity: a mid-animation frame with
-partially transparent text drops real contrast below AA, and the axe scan catches it.
+`e2e/pilot.spec.ts` is the pilot rehearsal: one class, three students on three separate
+browser contexts, one refreshing mid-run and one losing the network, then the educator opening
+the class and the debrief and finding only those three runs in them.
 
-To review the rendered product, `node scripts/walkthrough.mjs <outDir>` drives the whole
-Basketball flow and screenshots every stage at 1366×768, 1024×600, and 640px wide, reporting
-any horizontal overflow or console error it encounters along the way.
+To review the rendered product, `WALKTHROUGH_OUT=<dir> npm run walkthrough` drives the whole
+flow and screenshots every stage at 1366×768, 1024×600 and 640px wide, reporting any
+horizontal overflow or console error it finds. It runs through the same helpers as the
+assertion suite, so the two cannot describe different products.
 
-On a machine whose Chromium was not installed by Playwright, set `CHROMIUM_PATH` to that
-binary and both the walkthrough and `npm run test:e2e` will use it instead of downloading
-one.
+On a machine whose Chromium was not installed by Playwright, set `CHROMIUM_PATH`.
+
+## The numbers
+
+Every price and threshold lives in `src/domain/scenario/numbers.ts`, and none of them is
+canon because it sounds reasonable. `src/domain/scenario/balance.ts` enumerates every end
+state a student can reach — currently 9,696 — and asks, for each choice, whether some set of
+priorities makes it the best move. A challenge where one option wins under every set of
+priorities has no decision in it; one where an option wins under none has a wrong answer in
+it. Both fail `balance.test.ts`, which is a publication gate. Every major option currently
+wins under 23–77% of the whole priority space.
+
+Nothing a student reads may spell a price the scenario owns. `pricing.test.ts` scans the
+student-facing sources and fails on any literal that matches a scenario amount — it has to be
+a source scan, because that drift is invisible to a behavioural test until someone edits
+`numbers.ts`.
 
 ## How the assessment works
 
 90 structured points across 18 micro-skill observations, plus 10 points of written reasoning
-scored by the educator. Nothing is graded by AI, and no micro-skill is earned by reaching the
-end of the challenge — support levels cap credit, and every point traces to a recorded event.
+scored by a person. **No AI scoring, and no student writing is ever sent to a model** — the
+student is told a person will read it, and that is true. Support levels cap credit, and every
+point traces to a recorded event.
 
-The challenge is deliberately preference-neutral. Choosing a cheaper place, saving more,
-taking the extra work, or declining it are never worth points on their own; only whether the
-resulting plan holds together is observed.
+The challenge is preference-neutral. Choosing a cheaper place, saving more, taking the extra
+work or declining it are never worth points on their own; only whether the resulting plan
+holds together is observed.
+
+## What an educator gets
+
+A real class, led by what students actually decided rather than by a score: where they put
+Avery, which income they planned around, when they committed to the course, what they cut
+first when Week 5 landed, and which concepts the evidence is short of. Then a debrief — two
+real contrasting plans, prompts earned by something this class disagreed about, and students'
+own words — which prints.
+
+Once a real class is open, **nothing falls back to demo data**. Missing evidence renders as
+missing. `src/educator/noFixture.test.ts` enforces that structurally and behaviourally.
+
+The fixture class still exists at `/educator/demo`, clearly labelled, so an educator can see
+the shape of the evidence before running one.
 
 ## Main areas
 
-- `src/stages/StudentChallenge.tsx` — the complete Basketball flow, beat by beat.
-- `src/components/story/` — season strip, Avery's roster card, court backdrop.
-- `src/design/scenes.css` — the arena scenes and the money split.
-- `src/domain/machine/stages.ts` — where each stage sits in season time.
-- `src/components/financial/` — Money Split, Plan Board, and the three choice rows.
-- `src/domain/` — world-neutral finance, evidence, scoring, and state machine.
-- `src/domain/scenario/worlds/basketball.ts` — Basketball story details and amounts.
-- `src/educator/` — challenge brief, class evidence, student ledger, reasoning review, NYSED view.
-- `src/fixtures/demoClass.ts` — 28 clearly labeled hypothetical records. Every total the
-  educator sees is computed from these; nothing on that side is a hardcoded headline.
+- `src/stages/` — the student flow: `StudentChallenge.tsx`, `SeasonWeeks.tsx`, `Week8Resolution.tsx`
+- `src/components/financial/` — money split, plan board, allocation rows, week meter
+- `src/domain/` — world-neutral finance, evidence, scoring and state machine
+- `src/domain/scenario/` — Plan Under Pressure's numbers, world and balance harness
+- `src/platform/` — challenge registry, class codes, evidence transports
+- `server/` — the class service; `api/` — the same handler as a Vercel function
+- `src/educator/` — class setup, real-class evidence, debrief, and the labelled demo
+- `src/design/` — `tokens.css` (platform), `brand.css` (BOW), `worlds.css` (basketball)
 
 ## Standards
 
@@ -89,8 +115,15 @@ BOW publishes the mapping as its own claim: **NYSED has not reviewed or endorsed
 
 ## Deployment
 
-A static Vite SPA — no backend, no database, no environment variables. `vercel.json` rewrites
-all non-asset routes to `index.html` so deep links such as `/challenge`,
-`/educator/guide`, and `/educator/class/students/14` resolve on refresh.
+A Vite SPA plus a small class service. `vercel.json` keeps `/api/*` off the SPA rewrite and
+routes it to `api/[[...route]].ts`.
 
-Student progress and educator demo reviews are stored in the browser only.
+Before running a real class on serverless, set `KV_REST_API_URL` and `KV_REST_API_TOKEN`
+(Vercel KV or Upstash). Without them the service falls back to a disk that serverless
+functions do not keep. **`GET /api/health` reports the store driver actually in force — check
+it first after any deploy.**
+
+Self-hosting instead: `npm run api` runs the same service on Node with a file store.
+
+Classes and their evidence are kept for 120 days, then deleted. A student's in-progress
+attempt stays in their own browser.

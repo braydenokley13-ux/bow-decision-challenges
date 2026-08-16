@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createInitialState } from "../machine/state";
 import { ATTEMPT_KEY, loadAttempt, saveAttempt } from "./persistence";
+import { attemptKeyFor, PLAN_UNDER_PRESSURE } from "../../platform/challenges/registry";
 
 function storage(seed: Record<string, string> = {}) {
   const values = new Map(Object.entries(seed));
@@ -30,5 +31,24 @@ describe("schema-versioned persistence", () => {
     const memory = storage({ [ATTEMPT_KEY]: JSON.stringify({ ...createInitialState(10), stage: "world-picker-v0" }) });
     expect(loadAttempt(memory)).toBeNull();
     expect([...memory.values.keys()].some((key) => key.startsWith("bow.backup."))).toBe(true);
+  });
+
+  it("keys the attempt to its own challenge so a second challenge cannot claim it", () => {
+    expect(ATTEMPT_KEY).toContain(PLAN_UNDER_PRESSURE.id);
+    expect(attemptKeyFor({ ...PLAN_UNDER_PRESSURE, id: "some-other-challenge" })).not.toBe(ATTEMPT_KEY);
+  });
+
+  it("still restores an attempt saved under the pre-namespaced key", () => {
+    const inFlight = { ...createInitialState(10), stage: "week5-event" as const };
+    const memory = storage({ "bow.student.v1.attempt": JSON.stringify(inFlight) });
+    expect(loadAttempt(memory)?.stage).toBe("week5-event");
+  });
+
+  it("prefers the namespaced attempt when both exist", () => {
+    const memory = storage({
+      "bow.student.v1.attempt": JSON.stringify({ ...createInitialState(10), stage: "week5-event" as const }),
+      [ATTEMPT_KEY]: JSON.stringify({ ...createInitialState(10), stage: "defense" as const }),
+    });
+    expect(loadAttempt(memory)?.stage).toBe("defense");
   });
 });

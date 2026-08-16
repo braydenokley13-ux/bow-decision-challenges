@@ -20,24 +20,24 @@ describe("challenge state machine", () => {
 
   it("starts the season straight from a confirmed-only Working Plan", () => {
     let state = createInitialState();
-    state = challengeReducer(state, { type: "SETUP_SELECTED", setupId: "stable-1800" });
+    state = challengeReducer(state, { type: "SETUP_SELECTED", setupId: "gym-sublet" });
     state = challengeReducer(state, { type: "PLAN_AMOUNT_CHANGED", mode: "working", category: "goal", amount: dollars(900) });
     state = challengeReducer(state, { type: "PLAN_AMOUNT_CHANGED", mode: "working", category: "reserve", amount: dollars(300) });
     state = challengeReducer(state, { type: "PLAN_AMOUNT_CHANGED", mode: "working", category: "flexibleCash", amount: dollars(400) });
     state = challengeReducer(state, { type: "PLAN_SAVE_REQUESTED", mode: "working" });
     // No conditional income means no lower-resource version to build, so there is no
     // screen in between whose only message is that there is nothing to do.
-    expect(state.stage).toBe("week5-transition");
+    expect(state.stage).toBe("season-weeks");
     expect(state.saved.working).toBeDefined();
   });
 
   it("routes a conditional Working Plan to Fallback Version", () => {
     let state = createInitialState();
-    state = challengeReducer(state, { type: "SETUP_SELECTED", setupId: "flexible-1000" });
+    state = challengeReducer(state, { type: "SETUP_SELECTED", setupId: "cousin-room" });
     state = challengeReducer(state, { type: "INCOME_SOURCE_TOGGLED", sourceId: "completion-800", included: true });
     state = challengeReducer(state, { type: "PLAN_AMOUNT_CHANGED", mode: "working", category: "goal", amount: dollars(1200) });
-    state = challengeReducer(state, { type: "PLAN_AMOUNT_CHANGED", mode: "working", category: "reserve", amount: dollars(500) });
-    state = challengeReducer(state, { type: "PLAN_AMOUNT_CHANGED", mode: "working", category: "flexibleCash", amount: dollars(1500) });
+    state = challengeReducer(state, { type: "PLAN_AMOUNT_CHANGED", mode: "working", category: "reserve", amount: dollars(900) });
+    state = challengeReducer(state, { type: "PLAN_AMOUNT_CHANGED", mode: "working", category: "flexibleCash", amount: dollars(1800) });
     state = challengeReducer(state, { type: "PLAN_SAVE_REQUESTED", mode: "working" });
     expect(state.stage).toBe("fallback-version");
   });

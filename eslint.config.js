@@ -6,7 +6,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   // `scripts` holds standalone dev tooling that runs outside the app tsconfig.
-  { ignores: ["dist", "coverage", "playwright-report", "test-results", "screens", "scripts", "eslint.config.js", "stylelint.config.js"] },
+  { ignores: ["dist", "dist-server", ".bow-classes", "coverage", "playwright-report", "test-results", "screens", "scripts", "eslint.config.js", "stylelint.config.js"] },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {
@@ -42,6 +42,13 @@ export default tseslint.config(
           { "group": ["react", "react-dom", "../scenario/worlds/**", "../../scenario/worlds/**"], "message": "Finance receives ScenarioNumbers and never imports a world." }
         ]
       }]
+    }
+  },
+  {
+    files: ["e2e/**/*.ts", "server/**/*.ts"],
+    rules: {
+      // Playwright fixtures take a callback named `use`, which is not a React hook.
+      "react-hooks/rules-of-hooks": "off"
     }
   },
   {

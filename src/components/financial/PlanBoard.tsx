@@ -2,18 +2,20 @@ import { useState } from "react";
 import type { CategoryId } from "../../domain/core/ids";
 import { dollars, formatDollars } from "../../domain/core/money";
 import { SCENARIO_NUMBERS } from "../../domain/scenario/numbers";
-import { balanceOf, amountFreed, assigned, exposureFor } from "../../domain/finance/formulas";
+import { balanceOf, amountFreed, assigned, courseRowCapFor, exposureFor } from "../../domain/finance/formulas";
 import { PLAN_MODES } from "../../domain/finance/modes";
 import type { PlanAmounts, SnapshotInputs } from "../../domain/finance/types";
+import { loadDemand, loadFor } from "../../domain/finance/load";
 import { Button } from "../primitives/Button";
 import { CHOICE_LABELS, CHOICE_ORDER } from "./choices";
 import { MoneySplit } from "./MoneySplit";
 import { AllocationControl } from "./AllocationControl";
+import { WeekMeter } from "./WeekMeter";
 
 const CATEGORY_NOTES: Record<CategoryId, string> = {
   goal: "What Avery is playing for.",
-  reserve: "Held back for a surprise.",
-  flexibleCash: "Avery’s to spend.",
+  reserve: "Untouched, unless something goes wrong.",
+  flexibleCash: "Rides, food, anything that buys back an hour.",
 };
 
 /**
@@ -51,7 +53,34 @@ export function PlanBoard({ input, setupTitle, baseline, reference, attempts, on
   const freed = baseline ? amountFreed(baseline, input.amounts) : undefined;
   const mode = PLAN_MODES[input.mode];
   const copy = MODE_COPY[input.mode];
-  const max = Math.max(1200, assigned(input.amounts) + Math.max(0, balance));
+  const courseCap = courseRowCapFor(input, SCENARIO_NUMBERS);
+  const max = Math.max(courseCap, assigned(input.amounts) + Math.max(0, balance));
+
+  // Avery's week only starts costing more than the commute once rehab begins, so before
+  // Week 5 the meter shows the choice the student has already made and its consequence.
+  const load = loadFor(
+    { setupId: input.setupId, rehabActive: input.week5Applied, clinicsAccepted: input.includeOptionalWork, timeMoney: input.amounts.flexibleCash },
+    SCENARIO_NUMBERS,
+  );
+  const loadParts = [
+    { id: "commute", label: "Getting there", blocks: SCENARIO_NUMBERS.load.commuteBlocks[input.setupId] },
+    {
+      id: "rehab",
+      label: "Rehab",
+      blocks: input.week5Applied ? SCENARIO_NUMBERS.load.rehabBlocks + SCENARIO_NUMBERS.load.rehabTravelBlocks[input.setupId] : 0,
+    },
+    {
+      id: "clinics",
+      label: "Clinics",
+      blocks: input.week5Applied && input.includeOptionalWork ? SCENARIO_NUMBERS.load.clinicBlocks : 0,
+    },
+  ].map((part) => ({ ...part, blocks: Math.max(0, part.blocks) }));
+  const demandNow = loadDemand(
+    { setupId: input.setupId, rehabActive: input.week5Applied, clinicsAccepted: input.includeOptionalWork },
+    SCENARIO_NUMBERS,
+  );
+  // Before rehab starts there is nothing at risk yet, so the meter is context, not a warning.
+  const showMeter = demandNow > 0;
 
   return (
     <div className="plan-composition">
@@ -85,11 +114,17 @@ export function PlanBoard({ input, setupTitle, baseline, reference, attempts, on
                 description={CATEGORY_NOTES[category]}
                 value={input.amounts[category]}
                 step={mode.increment}
-                max={category === "goal" ? SCENARIO_NUMBERS.goalCap : max}
+                max={category === "goal" ? courseCap : max}
                 originalValue={baseline?.[category]}
                 onChange={(amount) => onAmountChange(category, amount)}
+                {...(category === "goal" && input.depositTaken
+                  ? { lockedNote: `Seat reserved for ${formatDollars(SCENARIO_NUMBERS.course.depositPrice)}. That money is already committed.` }
+                  : {})}
               />
             ))}
+            {showMeter && (
+              <WeekMeter load={load} parts={loadParts} atStake={`the ${formatDollars(SCENARIO_NUMBERS.completionIncome)} attendance bonus`} />
+            )}
             {/* Only shown where an earlier plan exists to compare against. The final board
                 has no such baseline, and a $0 there would read as a real measurement. */}
             {freed !== undefined && (input.mode === "fallback" || freed > 0) && (
@@ -106,7 +141,7 @@ export function PlanBoard({ input, setupTitle, baseline, reference, attempts, on
             {attempts >= 3 && (
               <div className="plan-help__supply">
                 <Button type="button" variant="quiet" onClick={onShowAndContinue}>Fill in one plan that balances</Button>
-                <small>This spreads the money evenly. It is one plan that works, not the right answer — this board stops counting toward your score once you use it.</small>
+                <small>This spreads the money evenly. It is one plan that works, not the right answer.</small>
               </div>
             )}
           </section>

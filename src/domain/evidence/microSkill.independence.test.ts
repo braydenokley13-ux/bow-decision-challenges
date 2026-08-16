@@ -12,8 +12,9 @@ const snapshot = (sequence = 10): PlanSnapshot => ({
     includeCompletion: true,
     includeOutcome: true,
     includeOptionalWork: true,
-    setupId: "flexible-1000",
+    setupId: "cousin-room",
     week5Applied: true,
+    depositTaken: false,
     numbersVersion: "pup-numbers-1",
   },
 });
@@ -41,10 +42,11 @@ const baseFacts = (): AssessmentFacts => ({
   firstResponse: alternate(),
   preview: alternate(),
   final: { snapshot: snapshot(10), balance: dollars(0), acknowledgedResidual: false, lockedMoveAttempts: 0, support: "standard_access", evidenceRefs: ["final"] },
-  selectedSetupId: "flexible-1000",
+  selectedSetupId: "cousin-room",
   selectedGapTiles: ["lost-outcome", "required-cost", "setup-cost"],
   applicableGapTiles: ["lost-outcome", "required-cost", "setup-cost"],
   optionalDecision: { accepted: true, sequence: 9, evidenceRef: "opportunity" },
+  completionDecision: { included: true, sequence: 9, evidenceRef: "completion-call" },
   finalPlanSequence: 10,
   defenseSubmitted: false,
 });
@@ -75,7 +77,7 @@ describe("materially overlapping micro-skills remain independently observable", 
 
   it("separates C5.1 numerical total from C5.3 event-component assembly", () => {
     const facts = baseFacts();
-    facts.calculations["week5-change"] = { calcId: "week5-change", attempts: [{ raw: "2050", value: dollars(2050), correct: true, eventRef: "calc" }], support: "standard_access", supplied: false };
+    facts.calculations["week5-change"] = { calcId: "week5-change", attempts: [{ raw: "2000", value: dollars(2000), correct: true, eventRef: "calc" }], support: "standard_access", supplied: false };
     facts.selectedGapTiles = ["lost-outcome", "required-cost"];
     expect(points(facts, "C5.1")).toBe(5);
     expect(points(facts, "C5.3")).toBe(2);

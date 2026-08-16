@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { dollars } from "../core/money";
+import type { SetupId } from "../core/ids";
+import type { PlanMode } from "../finance/types";
+import { SCENARIO_NUMBERS } from "../scenario/numbers";
+import { setupCostOrder } from "../scenario/expectations";
 import { challengeReducer } from "../machine/reducer";
 import { createInitialState, type ChallengeState } from "../machine/state";
 import type { ChallengeAction } from "../machine/actions";
@@ -32,54 +36,61 @@ describe("blueprint arithmetic holds", () => {
   });
 });
 
-// A complete, competent run used as the baseline for perturbation tests.
-const competent = (over: Partial<{ setup: "stable-1800" | "shared-1400" | "flexible-1000"; takeWork: boolean; countCompletion: boolean }> = {}) => {
-  const setupId = over.setup ?? "stable-1800";
-  const cost = { "stable-1800": 1800, "shared-1400": 1400, "flexible-1000": 1000 }[setupId];
-  const event = { "stable-1800": 0, "shared-1400": 150, "flexible-1000": 350 }[setupId];
+// A complete, competent run used as the baseline for perturbation tests. Every amount is
+// read from the scenario, so re-pricing the model changes what this run enters rather than
+// breaking the test — the same rule the grader itself now follows.
+const N = SCENARIO_NUMBERS;
+
+const balancedFill = (spendable: number) => {
+  const goal = Math.max(0, Math.min(N.course.fullPrice, spendable));
+  return [
+    { type: "PLAN_AMOUNT_CHANGED", category: "goal", amount: dollars(goal) },
+    { type: "PLAN_AMOUNT_CHANGED", category: "reserve", amount: dollars(Math.max(0, spendable - goal)) },
+    { type: "PLAN_AMOUNT_CHANGED", category: "flexibleCash", amount: dollars(0) },
+  ] as const;
+};
+const fillFor = (mode: PlanMode, spendable: number): ChallengeAction[] =>
+  balancedFill(spendable).map((change) => ({ ...change, mode }));
+
+const competent = (over: Partial<{ setup: SetupId; takeWork: boolean; countCompletion: boolean }> = {}) => {
+  const setupId = over.setup ?? "gym-sublet";
+  const cost = N.setupCosts[setupId];
+  const event = N.setupEventCosts[setupId];
   const takeWork = over.takeWork ?? false;
   const countCompletion = over.countCompletion ?? false;
-  const spendableWorking = 5000 - (cost + 1600);
-  const lockedFinal = cost + 1600 + 700 + event;
-  const availFinal = 5000 + (countCompletion ? 800 : 0) + (takeWork ? 500 : 0);
-  const spendableFinal = availFinal - lockedFinal;
-  const availFR = 5000;
-  const spendableFR = availFR - lockedFinal;
+  const reliable = N.savings + N.basePay;
+  const spendableWorking = reliable - (cost + N.essentialsTotal);
+  const lockedFinal = cost + N.essentialsTotal + N.requiredWeek5Cost + event + (takeWork ? N.optionalWorkCost : 0);
+  const spendableFinal = reliable + (countCompletion ? N.completionIncome : 0) + (takeWork ? N.optionalWorkIncome : 0) - lockedFinal;
+  const spendableFR = reliable - (cost + N.essentialsTotal + N.requiredWeek5Cost + event);
+  const week5Total = N.requiredWeek5Cost + event;
 
   let s = run(createInitialState(),
     { type: "SETUP_SELECTED", setupId },
-    { type: "CALCULATION_SUBMITTED", calcId: "setup-middle-total", raw: "1400", value: dollars(1400), correct: true },
-    { type: "CALCULATION_SUBMITTED", calcId: "setup-lowest-total", raw: "1000", value: dollars(1000), correct: true },
-    { type: "CALCULATION_SUBMITTED", calcId: "essentials-total", raw: "1600", value: dollars(1600), correct: true },
-    { type: "CALCULATION_SUBMITTED", calcId: "reliable-floor", raw: "5000", value: dollars(5000), correct: true },
-    { type: "PLAN_AMOUNT_CHANGED", mode: "working", category: "goal", amount: dollars(Math.min(1200, spendableWorking)) },
-    { type: "PLAN_AMOUNT_CHANGED", mode: "working", category: "reserve", amount: dollars(Math.max(0, spendableWorking - 1200)) },
-    { type: "PLAN_AMOUNT_CHANGED", mode: "working", category: "flexibleCash", amount: dollars(0) },
+    { type: "SETUP_RANKED", order: setupCostOrder(N), correct: true },
+    { type: "CALCULATION_SUBMITTED", calcId: "chosen-setup-total", raw: String(cost), value: cost, correct: true },
+    { type: "CALCULATION_SUBMITTED", calcId: "essentials-total", raw: String(N.essentialsTotal), value: N.essentialsTotal, correct: true },
+    { type: "CALCULATION_SUBMITTED", calcId: "reliable-floor", raw: String(reliable), value: dollars(reliable), correct: true },
+    ...fillFor("working", spendableWorking),
     { type: "PLAN_SAVE_REQUESTED", mode: "working" },
     { type: "GO_TO_STAGE", stage: "week5-transition" },
     { type: "WEEK5_ADVANCE_CONFIRMED" },
     { type: "GAP_TILE_TOGGLED", tileId: "required-cost", selected: true },
     ...(event > 0 ? [{ type: "GAP_TILE_TOGGLED", tileId: "setup-cost", selected: true } as ChallengeAction] : []),
-    { type: "CALCULATION_SUBMITTED", calcId: "week5-change", raw: String(700 + event), value: dollars(700 + event), correct: true },
+    { type: "CALCULATION_SUBMITTED", calcId: "week5-change", raw: String(week5Total), value: dollars(week5Total), correct: true },
     { type: "GO_TO_STAGE", stage: "first-response" },
     // absorb everything possible with existing money
-    { type: "PLAN_AMOUNT_CHANGED", mode: "week5-first-response", category: "goal", amount: dollars(Math.max(0, Math.min(1200, spendableFR))) },
-    { type: "PLAN_AMOUNT_CHANGED", mode: "week5-first-response", category: "reserve", amount: dollars(Math.max(0, spendableFR - 1200)) },
-    { type: "PLAN_AMOUNT_CHANGED", mode: "week5-first-response", category: "flexibleCash", amount: dollars(0) },
+    ...fillFor("week5-first-response", spendableFR),
     { type: "PLAN_SAVE_REQUESTED", mode: "week5-first-response" },
     { type: "OPTIONAL_WORK_DECIDED", accepted: takeWork },
     { type: "COMPLETION_INCOME_DECIDED", included: countCompletion },
-    { type: "PLAN_AMOUNT_CHANGED", mode: "final", category: "goal", amount: dollars(Math.max(0, Math.min(1200, spendableFinal))) },
-    { type: "PLAN_AMOUNT_CHANGED", mode: "final", category: "reserve", amount: dollars(Math.max(0, spendableFinal - 1200)) },
-    { type: "PLAN_AMOUNT_CHANGED", mode: "final", category: "flexibleCash", amount: dollars(0) },
+    ...fillFor("final", spendableFinal),
     { type: "PLAN_SAVE_REQUESTED", mode: "final" },
   );
   if (countCompletion) {
-    const spendablePreview = 5000 + (takeWork ? 500 : 0) - lockedFinal;
+    const spendablePreview = reliable + (takeWork ? N.optionalWorkIncome : 0) - lockedFinal;
     s = run(s,
-      { type: "PLAN_AMOUNT_CHANGED", mode: "remaining-risk", category: "goal", amount: dollars(Math.max(0, Math.min(1200, spendablePreview))) },
-      { type: "PLAN_AMOUNT_CHANGED", mode: "remaining-risk", category: "reserve", amount: dollars(Math.max(0, spendablePreview - 1200)) },
-      { type: "PLAN_AMOUNT_CHANGED", mode: "remaining-risk", category: "flexibleCash", amount: dollars(0) },
+      ...fillFor("remaining-risk", spendablePreview),
       { type: "PLAN_SAVE_REQUESTED", mode: "remaining-risk" },
     );
   }
@@ -88,9 +99,9 @@ const competent = (over: Partial<{ setup: "stable-1800" | "shared-1400" | "flexi
 
 describe("no structured points depend on a lifestyle preference", () => {
   it("scores the three setups identically for the same quality of work", () => {
-    const a = pts(competent({ setup: "stable-1800" }));
-    const b = pts(competent({ setup: "shared-1400" }));
-    const c = pts(competent({ setup: "flexible-1000" }));
+    const a = pts(competent({ setup: "gym-sublet" }));
+    const b = pts(competent({ setup: "teammate-share" }));
+    const c = pts(competent({ setup: "cousin-room" }));
     expect(a).toEqual(b);
     expect(b).toEqual(c);
   });
@@ -107,7 +118,7 @@ describe("no structured points depend on a lifestyle preference", () => {
 });
 
 describe("every scored path reaches a complete, gradeable result", () => {
-  for (const setup of ["stable-1800", "shared-1400", "flexible-1000"] as const) {
+  for (const setup of ["gym-sublet", "teammate-share", "cousin-room"] as const) {
     for (const takeWork of [true, false]) {
       for (const countCompletion of [true, false]) {
         it(`${setup} / work=${takeWork} / $800=${countCompletion} produces no unobserved micro-skill`, () => {

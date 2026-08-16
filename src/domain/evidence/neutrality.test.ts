@@ -13,8 +13,9 @@ function snapshot(sequence = 10): PlanSnapshot {
       includeCompletion: true,
       includeOutcome: false,
       includeOptionalWork: true,
-      setupId: "flexible-1000",
+      setupId: "cousin-room",
       week5Applied: true,
+      depositTaken: false,
       numbersVersion: "pup-numbers-1",
     },
   };
@@ -40,8 +41,6 @@ function alternate(): AlternateStateEvidence {
 function facts(): AssessmentFacts {
   return {
     calculations: {
-      "setup-middle-total": { calcId: "setup-middle-total", attempts: [{ raw: "1400", value: dollars(1400), correct: true, eventRef: "middle" }], support: "standard_access", supplied: false },
-      "setup-lowest-total": { calcId: "setup-lowest-total", attempts: [{ raw: "1000", value: dollars(1000), correct: true, eventRef: "low" }], support: "standard_access", supplied: false },
       "essentials-total": { calcId: "essentials-total", attempts: [{ raw: "1600", value: dollars(1600), correct: true, eventRef: "must-pay" }], support: "standard_access", supplied: false },
       "reliable-floor": { calcId: "reliable-floor", attempts: [{ raw: "5000", value: dollars(5000), correct: true, eventRef: "safe" }], support: "standard_access", supplied: false },
       "week5-change": { calcId: "week5-change", attempts: [{ raw: "1050", value: dollars(1050), correct: true, eventRef: "week5" }], support: "standard_access", supplied: false },
@@ -51,7 +50,7 @@ function facts(): AssessmentFacts {
     firstResponse: alternate(),
     preview: alternate(),
     final: { snapshot: snapshot(10), balance: dollars(0), acknowledgedResidual: false, lockedMoveAttempts: 0, support: "standard_access", evidenceRefs: ["final"] },
-    selectedSetupId: "flexible-1000",
+    selectedSetupId: "cousin-room",
     selectedGapTiles: ["required-cost", "setup-cost"],
     applicableGapTiles: ["required-cost", "setup-cost"],
     optionalDecision: { accepted: true, sequence: 9, evidenceRef: "job-choice" },
@@ -86,8 +85,8 @@ describe("choice-neutral scoring", () => {
   it("does not reward a particular housing choice", () => {
     const nearby = facts();
     const longCommute = facts();
-    nearby.selectedSetupId = "stable-1800";
-    longCommute.selectedSetupId = "flexible-1000";
+    nearby.selectedSetupId = "gym-sublet";
+    longCommute.selectedSetupId = "cousin-room";
     expect(scores(nearby, ["C2.1", "C2.2"])).toEqual(scores(longCommute, ["C2.1", "C2.2"]));
   });
 

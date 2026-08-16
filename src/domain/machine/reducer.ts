@@ -1,22 +1,41 @@
 import { dollars } from "../core/money";
 import { SCENARIO_NUMBERS } from "../scenario/numbers";
 import { DEFAULT_WORLD_ID, PLAN_UNDER_PRESSURE_LAUNCH } from "../scenario/registry";
-import { balanceOf, residualOf, unassignedOf } from "../finance/formulas";
+import { balanceOf, readoutFor, residualOf, unassignedOf } from "../finance/formulas";
 import type { PlanMode, SnapshotInputs } from "../finance/types";
 import type { EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../evidence/types";
+import { conceptsForEvent } from "../evidence/eventConcepts";
 import type { ChallengeAction } from "./actions";
 import { EMPTY_AMOUNTS, type ChallengeState } from "./state";
 
-function append<T>(state: ChallengeState, type: EvidenceEventType, payload: T, supportLevel: SupportLevel = "standard_access", dedupeKey?: string): ChallengeState {
+/**
+ * The wall clock, supplied by whoever dispatched the action.
+ *
+ * The reducer stays pure, and every event carries a real timestamp instead of the
+ * synthetic `+1ms` counter that used to make every event look one millisecond apart —
+ * which meant nothing about how long anything took could be recovered from a product
+ * called Plan Under Pressure. Tests that do not care pass no clock and fall back to the
+ * old monotonic counter.
+ */
+function stampFor(state: ChallengeState, action: { at?: number }): number {
+  const at = action.at;
+  return typeof at === "number" && Number.isFinite(at) ? Math.max(at, state.meta.updatedAt) : state.meta.updatedAt + 1;
+}
+
+function append<T>(state: ChallengeState, type: EvidenceEventType, payload: T, supportLevel: SupportLevel = "standard_access", dedupeKey?: string, at?: number): ChallengeState {
   if (dedupeKey && state.log.some((event) => event.dedupeKey === dedupeKey)) return state;
   const sequence = state.log.length + 1;
   const event: EvidenceEvent<T> = {
     id: `event-${sequence}`,
     sequence,
-    timestamp: state.meta.updatedAt + 1,
+    timestamp: stampFor(state, { ...(at !== undefined ? { at } : {}) }),
     type,
     stage: state.stage,
+    challengeId: state.meta.challengeId,
+    challengeVersion: state.meta.challengeVersion,
+    sessionId: state.meta.sessionId,
     worldId: state.meta.worldId,
+    conceptIds: conceptsForEvent(type, payload),
     payload,
     supportLevel,
     ...(dedupeKey ? { dedupeKey } : {}),
@@ -24,9 +43,15 @@ function append<T>(state: ChallengeState, type: EvidenceEventType, payload: T, s
   return { ...state, log: [...state.log, event], meta: { ...state.meta, updatedAt: event.timestamp } };
 }
 
-function goTo(state: ChallengeState, stage: StageId): ChallengeState {
+/**
+ * Stage progression is recorded, not inferred. It used to be read off whichever event
+ * happened to be stamped with a stage, so a student who reached a screen and did nothing
+ * was indistinguishable from one who never got there at all.
+ */
+function goTo(state: ChallengeState, stage: StageId, at?: number): ChallengeState {
   if (state.stage === stage) return state;
-  return { ...state, stage, stageHistory: [...state.stageHistory, stage] };
+  const moved = { ...state, stage, stageHistory: [...state.stageHistory, stage] };
+  return append(moved, "STAGE_ENTERED", { stage, from: state.stage }, "standard_access", `stage:${stage}`, at);
 }
 
 function supportFor(state: ChallengeState, interactionId: string): SupportLevel {
@@ -51,26 +76,30 @@ function snapshotInputs(state: ChallengeState, mode: PlanMode): SnapshotInputs |
     includeOptionalWork: state.income.includeOptionalWork ?? false,
     setupId: state.setupId,
     week5Applied: mode === "week5-first-response" || mode === "final" || mode === "remaining-risk",
+    depositTaken: state.depositTaken === true,
     numbersVersion: SCENARIO_NUMBERS.version,
   };
 }
 
-export function challengeReducer(state: ChallengeState, action: ChallengeAction): ChallengeState {
+export type TimestampedAction = ChallengeAction & { at?: number };
+
+export function challengeReducer(state: ChallengeState, action: TimestampedAction): ChallengeState {
+  const at = action.at;
   switch (action.type) {
     case "GO_TO_STAGE":
-      return goTo(state, action.stage);
+      return goTo(state, action.stage, at);
     case "SESSION_STARTED": {
       // With one finished world there is no choice to present, so the session opens
       // straight into it. Restoring the picker means routing to "choose-world" here.
       // The opening screen already told the story, so checking in lands on the deal
       // rather than on a second orientation screen.
       const next = { ...state, meta: { ...state.meta, sessionId: action.sessionId, classCode: action.classCode, seatCode: action.seatCode, worldId: DEFAULT_WORLD_ID } };
-      const started = append(next, action.type, action);
-      return goTo(PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? started : append(started, "WORLD_CONFIRMED", { worldId: DEFAULT_WORLD_ID }), PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? "choose-world" : "role-contract");
+      const started = append(next, action.type, action, "standard_access", undefined, at);
+      return goTo(PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? started : append(started, "WORLD_CONFIRMED", { worldId: DEFAULT_WORLD_ID }, "standard_access", undefined, at), PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? "choose-world" : "role-contract", at);
     }
     case "WORLD_CONFIRMED": {
       const next = { ...state, meta: { ...state.meta, worldId: action.worldId } };
-      return goTo(append(next, action.type, action), "role-contract");
+      return goTo(append(next, action.type, action, "standard_access", undefined, at), "role-contract", at);
     }
     case "CALCULATION_SUBMITTED": {
       const previous = state.calculations[action.calcId];
@@ -82,16 +111,32 @@ export function challengeReducer(state: ChallengeState, action: ChallengeAction)
         supplied: previous?.supplied ?? false,
       };
       const next = { ...state, calculations: { ...state.calculations, [action.calcId]: calculation } };
-      return append(next, action.type, action, supportFor(state, action.calcId));
+      return append(next, action.type, action, supportFor(state, action.calcId), undefined, at);
+    }
+    case "SETUP_RANKED": {
+      const next = { ...state, setupRanking: { order: [...action.order], correct: action.correct } };
+      return append(next, action.type, action, "standard_access", undefined, at);
     }
     case "SETUP_SELECTED": {
       const next = { ...state, setupId: action.setupId };
-      return append(next, action.type, action);
+      return append(next, action.type, action, "standard_access", undefined, at);
+    }
+    case "COURSE_DEPOSIT_DECIDED": {
+      // Reserving the seat moves that money out of the adjustable rows and into the
+      // locked costs, so any course amount the student had parked is released.
+      const next = {
+        ...state,
+        depositTaken: action.taken,
+        drafts: action.taken
+          ? Object.fromEntries(Object.entries(state.drafts).map(([mode, amounts]) => [mode, { ...amounts, goal: dollars(0) }])) as ChallengeState["drafts"]
+          : state.drafts,
+      };
+      return append(next, action.type, action, "standard_access", undefined, at);
     }
     case "INCOME_SOURCE_TOGGLED": {
       const key = action.sourceId === "completion-800" ? "includeCompletion" : "includeOutcome";
       const next = { ...state, income: { ...state.income, [key]: action.included } };
-      return append(next, action.type, action);
+      return append(next, action.type, action, "standard_access", undefined, at);
     }
     case "PLAN_AMOUNT_CHANGED":
       return { ...state, drafts: { ...state.drafts, [action.mode]: { ...(state.drafts[action.mode] ?? defaultAmountsFor(state, action.mode)), [action.category]: action.amount } } };
@@ -99,49 +144,51 @@ export function challengeReducer(state: ChallengeState, action: ChallengeAction)
       const inputs = snapshotInputs(state, action.mode);
       if (!inputs) return state;
       const balance = balanceOf(inputs, SCENARIO_NUMBERS);
-      let next = append(state, action.type, { mode: action.mode, inputs, balance, residual: residualOf(balance), unassigned: unassignedOf(balance), acknowledgedResidual: action.acknowledgedResidual }, supportFor(state, action.mode));
+      let next = append(state, action.type, { mode: action.mode, inputs, balance, residual: residualOf(balance), unassigned: unassignedOf(balance), acknowledgedResidual: action.acknowledgedResidual }, supportFor(state, action.mode), undefined, at);
       if (balance !== 0 && action.acknowledgedResidual === undefined) return next;
       const sequence = next.log.length + 1;
-      const snapshot = { id: `snapshot-${sequence}`, sequence, inputs, ...(action.acknowledgedResidual !== undefined ? { acknowledgedResidual: action.acknowledgedResidual } : {}) };
+      // The readout is frozen onto the snapshot here, priced with the numbers in force at
+      // save time, so a later re-balancing of the scenario cannot rewrite this result.
+      const snapshot = { id: `snapshot-${sequence}`, sequence, inputs, readout: readoutFor(inputs, SCENARIO_NUMBERS), ...(action.acknowledgedResidual !== undefined ? { acknowledgedResidual: action.acknowledgedResidual } : {}) };
       next = { ...next, snapshots: [...next.snapshots, snapshot], saved: { ...next.saved, [action.mode]: snapshot.id } };
-      next = append(next, "PLAN_SAVED", { mode: action.mode, snapshot, balance }, supportFor(state, action.mode));
+      next = append(next, "PLAN_SAVED", { mode: action.mode, snapshot, balance }, supportFor(state, action.mode), undefined, at);
       // A plan built on no conditional income has no lower-resource version to build,
       // so the season starts instead of a screen that only says there is nothing to do.
-      if (action.mode === "working") return goTo(next, state.income.includeCompletion || state.income.includeOutcome ? "fallback-version" : "week5-transition");
-      if (action.mode === "fallback") return goTo(next, "week5-transition");
-      if (action.mode === "week5-first-response") return goTo(next, "opportunity-final-repair");
-      if (action.mode === "final") return goTo(next, state.income.includeCompletionFinal ? "remaining-risk-preview" : "defense");
-      return goTo(next, "defense");
+      if (action.mode === "working") return goTo(next, state.income.includeCompletion || state.income.includeOutcome ? "fallback-version" : "season-weeks", at);
+      if (action.mode === "fallback") return goTo(next, "season-weeks", at);
+      if (action.mode === "week5-first-response") return goTo(next, "opportunity-final-repair", at);
+      if (action.mode === "final") return goTo(next, state.income.includeCompletionFinal ? "remaining-risk-preview" : "week8-resolution", at);
+      return goTo(next, "week8-resolution", at);
     }
     case "LOCKED_MOVE_ATTEMPTED":
-      return append(state, action.type, action, supportFor(state, action.mode));
+      return append(state, action.type, action, supportFor(state, action.mode), undefined, at);
     case "WEEK5_ADVANCE_CONFIRMED":
-      return goTo(append(state, action.type, action, "standard_access", "week5-applied"), "week5-event");
+      return goTo(append(state, action.type, action, "standard_access", "week5-applied", at), "week5-event", at);
     case "GAP_TILE_TOGGLED": {
       const selectedGapTiles = action.selected
         ? [...new Set([...state.selectedGapTiles, action.tileId])]
         : state.selectedGapTiles.filter((id) => id !== action.tileId);
-      return append({ ...state, selectedGapTiles }, action.type, action);
+      return append({ ...state, selectedGapTiles }, action.type, action, "standard_access", undefined, at);
     }
     case "OPTIONAL_WORK_DECIDED": {
       const next = { ...state, income: { ...state.income, includeOptionalWork: action.accepted } };
-      return append(next, action.type, action);
+      return append(next, action.type, action, "standard_access", undefined, at);
     }
     case "COMPLETION_INCOME_DECIDED": {
       const next = { ...state, income: { ...state.income, includeCompletionFinal: action.included } };
-      return append(next, action.type, action);
+      return append(next, action.type, action, "standard_access", undefined, at);
     }
     case "SCAFFOLD_OPENED": {
       const next = { ...state, support: { ...state.support, [action.interactionId]: "direct_scaffold" as const } };
-      return append(next, action.type, action, "direct_scaffold");
+      return append(next, action.type, action, "direct_scaffold", undefined, at);
     }
     case "SHOW_AND_CONTINUE_USED": {
       const next = { ...state, support: { ...state.support, [action.interactionId]: "answer_supplied" as const } };
-      return append(next, action.type, action, "answer_supplied");
+      return append(next, action.type, action, "answer_supplied", undefined, at);
     }
     case "DEFENSE_SUBMITTED": {
       const next = { ...state, defense: { tileIds: action.tileIds, text: action.text }, meta: { ...state.meta, completedAt: state.meta.updatedAt + 1 } };
-      return goTo(append(next, action.type, action), "submitted");
+      return goTo(append(next, action.type, action, "standard_access", undefined, at), "submitted", at);
     }
   }
 }

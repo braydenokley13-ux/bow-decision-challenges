@@ -26,8 +26,8 @@
 .roster-card__number { color: var(--world-flare); font: 700 clamp(3.4rem, 6vw, 4.6rem)/0.8 var(--font-display); font-feature-settings: var(--num); letter-spacing: -0.06em; }
 .roster-card[data-tone="light"] .roster-card__number { color: var(--world-accent); }
 .roster-card__plate h2 { margin: 0; }
-.roster-card__plate b { display: block; color: var(--world-hero-ink); font: 700 clamp(1.5rem, 2.4vw, 2rem)/0.98 var(--font-display); letter-spacing: -0.035em; }
-.roster-card__plate i { display: block; color: var(--world-hero-ink); font: 400 clamp(1.5rem, 2.4vw, 2rem)/1.02 var(--font-display); font-style: normal; letter-spacing: -0.035em; }
+.roster-card__plate b { display: block; color: var(--world-hero-ink); font: 700 clamp(1.5rem, 2.4vw, 2rem)/0.98 var(--font-display); letter-spacing: var(--display-tracking); }
+.roster-card__plate i { display: block; color: var(--world-hero-ink); font: 400 clamp(1.5rem, 2.4vw, 2rem)/1.02 var(--font-display); font-style: normal; letter-spacing: var(--display-tracking); }
 .roster-card[data-tone="light"] .roster-card__plate b, .roster-card[data-tone="light"] .roster-card__plate i { color: var(--ink-1); }
 .roster-card__vitals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin: 0; padding-top: var(--s-4); border-top: 1px solid var(--world-panel-edge); }
 .roster-card[data-tone="light"] .roster-card__vitals { border-top-color: var(--border-subtle); }
@@ -44,7 +44,7 @@
 .home__bar .app-mark small { color: var(--world-hero-muted); }
 .home__bar > a { color: var(--world-hero-ink); font: var(--t-ui); text-underline-offset: 5px; }
 .home__grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr); align-items: center; gap: clamp(28px, 5vw, 80px); width: min(1440px, 100%); margin: auto; padding: clamp(28px, 5vw, 72px) clamp(20px, 4vw, 56px); }
-.home h1 { max-width: 13ch; margin: var(--s-3) 0 var(--s-5); font: 700 clamp(3rem, 6.4vw, 5.6rem)/0.92 var(--font-display); letter-spacing: -0.05em; }
+.home h1 { max-width: 13ch; margin: var(--s-3) 0 var(--s-5); font: 700 clamp(3rem, 6.4vw, 5.6rem)/0.92 var(--font-display); letter-spacing: var(--display-tracking-tight); }
 .home__deck { max-width: 50ch; margin: 0; font: 400 clamp(1.02rem, 1.4vw, 1.22rem)/1.5 var(--font-ui); }
 .home__actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: clamp(24px, 4vw, 40px); }
 .home__actions .button--secondary { color: var(--world-hero-ink); background: transparent; border-color: var(--world-hero-edge); }
@@ -58,7 +58,7 @@
 .opening__bar > span { color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.18em; text-transform: uppercase; }
 .opening__grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr); align-items: center; gap: clamp(28px, 5vw, 72px); padding: clamp(24px, 4vw, 56px) clamp(20px, 4vw, 56px); }
 .opening__story { animation: stage-in var(--dur-stage) var(--ease-exit) both; }
-.opening__story h1 { max-width: 11ch; margin: var(--s-3) 0 var(--s-5); font: var(--t-scene); letter-spacing: -0.05em; }
+.opening__story h1 { max-width: 11ch; margin: var(--s-3) 0 var(--s-5); font: var(--t-scene); letter-spacing: var(--display-tracking-tight); }
 .opening__lede { max-width: 44ch; margin: 0; font: 400 clamp(1.02rem, 1.4vw, 1.22rem)/1.5 var(--font-ui); }
 .opening__weeks { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; margin-top: clamp(20px, 3vw, 36px); padding-top: var(--s-5); border-top: 1px solid var(--world-hero-line); }
 .opening__weeks li { display: grid; gap: var(--s-2); color: var(--world-hero-muted); font: var(--t-micro); font-feature-settings: var(--num); }
@@ -208,6 +208,52 @@
 .post__voice--scene { grid-column: 1 / -1; margin: 0 clamp(24px, 4vw, 48px) clamp(20px, 3vw, 32px); background: var(--world-panel); border: 1px solid var(--world-panel-edge); }
 .post__voice--scene p { color: var(--world-hero-ink); }
 
+/* ---------------------------------------------------------------------------
+   Weeks 1–4, played. The ledger sits beside the weeks rather than under them, so
+   what a week costs is legible at the moment it costs it.
+   --------------------------------------------------------------------------- */
+
+.season { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+
+.season-ledger {
+  position: sticky;
+  top: calc(72px + var(--s-4));
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-top: 3px solid var(--fin-adjustable);
+}
+
+.season-ledger > .field-label { margin: 0; }
+.season-ledger__row { display: grid; gap: var(--s-1); }
+.season-ledger__row > span:first-child { color: var(--ink-2); font: var(--t-ui); }
+.season-ledger__row strong { font: var(--m-lg); font-feature-settings: var(--num); }
+.season-ledger__row small { color: var(--ink-3); font: var(--t-micro); font-feature-settings: var(--num); }
+.season-ledger__bar { height: 6px; margin-top: var(--s-2); display: block; background: var(--surface-inset); border-radius: var(--r-pill); overflow: hidden; }
+.season-ledger__bar i { height: 100%; display: block; border-radius: var(--r-pill); transition: width var(--dur-move) var(--ease-standard); }
+.season-ledger__row[data-tone="money"] .season-ledger__bar i { background: var(--fin-reliable); }
+.season-ledger__row[data-tone="time"] .season-ledger__bar i { background: var(--time-commute); }
+.season-ledger__plan { display: grid; gap: var(--s-2); margin: 0; padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); }
+.season-ledger__plan > div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
+.season-ledger__plan dt { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.season-ledger__plan dd { margin: 0; font: var(--m-xs); font-feature-settings: var(--num); }
+.season-ledger__note { margin: 0; color: var(--ink-3); font: var(--t-micro); }
+
+/* The weeks themselves stack down the page: one card per week, newest last, so the
+   season reads as a column of time rather than a row of equal-weight tiles. */
+.feed--season { grid-template-columns: 1fr; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.feed--season > li { display: grid; }
+.feed--season .post { grid-template-columns: 110px minmax(0, 1fr) minmax(0, 20ch); align-items: start; gap: var(--s-3) var(--s-5); }
+.feed--season .post__tag { grid-row: 1 / span 2; align-self: center; }
+.feed--season .post__note { max-width: 52ch; }
+.feed--season .post__voice { grid-column: 3; grid-row: 1 / span 2; }
+.post__spend { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); margin: 0; font: var(--m-xs); font-feature-settings: var(--num); }
+.post__spend span:first-child { color: var(--fin-over-ink); }
+.post__spend span:last-child { color: var(--time-commute); }
+
+
 /* --- Scene 5: Week 5 ------------------------------------------------------ */
 .reel { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s-3); }
 .reel article { display: grid; align-content: start; gap: var(--s-3); padding: var(--s-4); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--fin-reliable); animation: week-in var(--dur-stage) var(--ease-exit) both; }
@@ -246,7 +292,7 @@
 /* --- Scene 6a: the season review ------------------------------------------ */
 .interview { display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); gap: var(--s-4); align-items: stretch; }
 .interview__ask { padding: clamp(24px, 3vw, 40px); }
-.interview__ask h2 { margin: 0 0 var(--s-3); color: var(--world-hero-ink); font: 700 clamp(1.7rem, 2.8vw, 2.4rem)/1.05 var(--font-display); letter-spacing: -0.035em; }
+.interview__ask h2 { margin: 0 0 var(--s-3); color: var(--world-hero-ink); font: 700 clamp(1.7rem, 2.8vw, 2.4rem)/1.05 var(--font-display); letter-spacing: var(--display-tracking); }
 .interview__ask > p { max-width: 42ch; margin: 0; }
 .interview__stats { display: grid; gap: var(--s-2); margin-top: var(--s-6); }
 .interview__stats .field-label { color: var(--world-hero-muted); }
@@ -331,4 +377,272 @@
   .split__line i { display: none; }
   .recap__numbers { grid-template-columns: 1fr; }
   .bulletin { grid-template-columns: 1fr; gap: var(--s-3); }
+}
+
+/* ---------------------------------------------------------------------------
+   Ordering the places by full cost. A ranking, not a form: the comparison the
+   concept names is the thing the student actually does.
+   --------------------------------------------------------------------------- */
+
+.rank-list {
+  display: grid;
+  gap: var(--s-2);
+  margin: var(--s-5) 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: rank;
+}
+
+.rank-list li {
+  display: grid;
+  grid-template-columns: var(--tap) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-4);
+  padding: var(--s-4);
+  border: 1px solid var(--border-default);
+  border-left: 4px solid var(--fin-reliable);
+  background: var(--surface);
+}
+
+.rank-list__place {
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: var(--r-pill);
+  background: var(--surface-sunken);
+  font: var(--m-sm);
+  font-feature-settings: var(--num);
+}
+
+.rank-list__body { display: grid; gap: 2px; }
+.rank-list__body b { font: var(--t-ui); }
+.rank-list__body span { color: var(--ink-2); font: var(--t-sm); }
+
+.rank-list__controls { display: flex; gap: var(--s-2); }
+
+.rank-list__controls button {
+  width: var(--tap);
+  height: var(--tap);
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.rank-list__controls button[aria-disabled="true"] { color: var(--ink-4); cursor: default; }
+.rank-list__controls button:not([aria-disabled="true"]):hover { background: var(--surface-sunken); }
+
+.chosen-total { margin-top: var(--s-5); max-width: 34rem; }
+
+/* ---------------------------------------------------------------------------
+   Avery's week. One readout, never a second ledger: the student does not
+   balance it, they watch it move as the money moves.
+   --------------------------------------------------------------------------- */
+
+.week-meter {
+  display: grid;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+  padding: var(--s-4);
+  border: 1px solid var(--border-default);
+  border-top: 3px solid var(--time-commute);
+  background: var(--surface);
+}
+
+.week-meter__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; }
+.week-meter__read { display: flex; align-items: baseline; gap: var(--s-2); margin: 0; flex-wrap: wrap; }
+.week-meter__read strong { font: var(--m-sm); font-feature-settings: var(--num); }
+.week-meter__read span { color: var(--ink-2); font: var(--t-sm); }
+
+.week-meter__track {
+  position: relative;
+  display: flex;
+  height: 38px;
+  background: var(--surface-inset);
+  border: 1px solid var(--border-default);
+}
+
+.week-meter__part { display: grid; align-items: center; overflow: hidden; min-width: 0; padding-inline: 6px; color: var(--ink-invert); }
+.week-meter__part[data-part="commute"] { background: var(--time-commute); }
+.week-meter__part[data-part="rehab"] { background: var(--time-rehab); }
+.week-meter__part[data-part="clinics"] { background: var(--time-clinics); }
+.week-meter__part i, .week-meter__bought i { font-style: normal; font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
+
+.week-meter__bought {
+  display: grid;
+  align-items: center;
+  padding-inline: 6px;
+  overflow: hidden;
+  background: var(--pat-ghost);
+  color: var(--ink-2);
+  border-left: 2px solid var(--time-bought);
+}
+
+.week-meter__limit { position: absolute; inset-block: -6px; width: 0; border-left: 2px dashed var(--ink-1); }
+.week-meter__limit b {
+  position: absolute;
+  top: -1.35em;
+  left: 0;
+  transform: translateX(-50%);
+  font-size: 0.72rem;
+  font-feature-settings: var(--num);
+}
+
+.week-meter__state { margin: 0; font: var(--t-sm); font-weight: 400; }
+.week-meter[data-state="quiet"] .week-meter__state { color: var(--ink-2); }
+.week-meter[data-state="safe"] .week-meter__state { color: var(--fin-balanced-ink); }
+.week-meter[data-state="over"] { border-top-color: var(--time-over); }
+.week-meter[data-state="over"] .week-meter__state { color: var(--fin-over-ink); }
+
+/* A committed row cannot be moved, so it does not pretend to be a control. */
+.choice-row--locked { grid-template-columns: 6px minmax(0, 1fr) auto; opacity: 0.9; }
+.choice-row--locked .choice-row__label { margin: 0; font: var(--t-ui); }
+.choice-row--locked .choice-row__value { color: var(--ink-2); }
+
+/* ---------------------------------------------------------------------------
+   The course seat: cheaper now, or flexible later.
+   --------------------------------------------------------------------------- */
+
+.deposit-call {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: var(--s-5);
+  align-items: center;
+  padding: var(--s-5);
+  border: 1px solid var(--border-default);
+  border-top: 3px solid var(--fin-conditional);
+  background: var(--surface);
+}
+
+.deposit-call__intro h2 { margin: var(--s-1) 0 var(--s-2); font: var(--t-display3); letter-spacing: var(--display-tracking); }
+.deposit-call__intro p { margin: 0; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.deposit-call__options { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+
+.deposit-call__options button {
+  display: grid;
+  gap: var(--s-1);
+  padding: var(--s-4);
+  text-align: left;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.deposit-call__options button b { font: var(--t-ui); }
+.deposit-call__options button strong { font: var(--m-sm); font-feature-settings: var(--num); }
+.deposit-call__options button span { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.deposit-call__options button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); border-color: var(--ink-1); }
+.deposit-call__options button[aria-pressed="true"] span { color: var(--surface-sunken); }
+
+/* At the Week 4 deadline the call is the screen, so it stacks and states its own
+   consequence before the student can commit to it. */
+.deposit-call--deadline { grid-template-columns: 1fr; align-items: stretch; border-top-width: 4px; }
+.deposit-call--deadline .deposit-call__options { grid-template-columns: 1fr 1fr; }
+.deposit-call__effect {
+  margin: 0;
+  padding: var(--s-4) var(--s-5);
+  background: var(--surface-sunken);
+  border-left: 3px solid var(--fin-conditional);
+  font: var(--t-body);
+  font-feature-settings: var(--num);
+}
+.deposit-call--deadline .stage-action { margin-top: 0; }
+
+
+/* ---------------------------------------------------------------------------
+   Week 8. The season resolves against the plan the student actually built.
+   --------------------------------------------------------------------------- */
+
+.resolve-weeks {
+  display: grid;
+  gap: var(--s-5);
+  padding: clamp(24px, 4vw, 40px);
+  background: var(--world-deep);
+  border: 1px solid var(--world-panel-edge);
+}
+
+.resolve-weeks__read { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
+.resolve-weeks__read .eyebrow { margin: 0; color: var(--world-hero-second); }
+.resolve-weeks__load { display: flex; align-items: baseline; gap: var(--s-3); margin: 0; color: var(--world-hero-ink); }
+.resolve-weeks__load strong { font: var(--m-lg); font-feature-settings: var(--num); }
+.resolve-weeks__load span { color: var(--world-hero-body); font: var(--t-sm); font-weight: 400; }
+
+.resolve-weeks__list { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.resolve-weeks__list li { display: grid; gap: var(--s-1); padding: var(--s-4); background: var(--world-panel); border-left: 3px solid var(--time-over); }
+.resolve-weeks__list li[data-made="true"] { border-left-color: var(--fin-balanced); }
+.resolve-weeks__list span { color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.08em; text-transform: uppercase; }
+.resolve-weeks__list b { color: var(--world-hero-ink); font: var(--t-ui); }
+
+.resolve-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4); margin-top: var(--s-5); }
+.resolve-card { display: grid; align-content: start; gap: var(--s-2); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--border-strong); }
+.resolve-card[data-tone="balanced"] { border-top-color: var(--fin-balanced); }
+.resolve-card[data-tone="over"] { border-top-color: var(--fin-over); }
+.resolve-card[data-tone="neutral"] { border-top-color: var(--fin-adjustable); }
+.resolve-card > .field-label { margin: 0; }
+.resolve-card strong { font: var(--m-hero); font-feature-settings: var(--num); }
+.resolve-card p { margin: 0; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.resolve-card__lines { display: grid; gap: var(--s-2); margin: var(--s-3) 0 0; padding-top: var(--s-3); border-top: 1px solid var(--border-subtle); }
+.resolve-card__lines > div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
+.resolve-card__lines dt { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.resolve-card__lines dd { margin: 0; font: var(--m-xs); font-feature-settings: var(--num); }
+.resolve-card__lines > div[data-alert="true"] dd { color: var(--fin-over-ink); }
+
+.resolve-risks { margin-top: var(--s-7); }
+.resolve-risks .section-heading { margin-bottom: var(--s-5); }
+.resolve-risks ul { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.resolve-risks li { display: grid; grid-template-columns: 110px minmax(0, 1fr); align-items: start; gap: var(--s-5); padding: var(--s-4) var(--s-5); background: var(--surface); border: 1px solid var(--border-subtle); border-left: 3px solid var(--border-strong); }
+.resolve-risks li[data-outcome="paid_off"] { border-left-color: var(--fin-balanced); }
+.resolve-risks li[data-outcome="cost_you"] { border-left-color: var(--fin-over); }
+.resolve-risks li[data-outcome="fell_short"] { border-left-color: var(--fin-conditional); }
+.resolve-risks li[data-taken="false"] { background: var(--surface-sunken); }
+.resolve-risks__verdict { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.resolve-risks li[data-outcome="paid_off"] .resolve-risks__verdict { color: var(--fin-balanced-ink); }
+.resolve-risks li[data-outcome="cost_you"] .resolve-risks__verdict { color: var(--fin-over-ink); }
+.resolve-risks li[data-outcome="fell_short"] .resolve-risks__verdict { color: var(--fin-conditional-ink); }
+.resolve-risks b { display: block; font: var(--t-ui); }
+.resolve-risks p { max-width: 72ch; margin: var(--s-1) 0 0; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+
+.resolve-changes { margin-top: var(--s-7); }
+.resolve-changes table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border-default); }
+.resolve-changes th, .resolve-changes td { padding: var(--s-3) var(--s-5); text-align: right; border-bottom: 1px solid var(--border-subtle); }
+.resolve-changes thead th { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.resolve-changes th:first-child, .resolve-changes tbody th { text-align: left; font: var(--t-ui); }
+.resolve-changes td { font: var(--m-xs); font-feature-settings: var(--num); }
+.resolve-changes td[data-delta="up"] { color: var(--fin-balanced-ink); }
+.resolve-changes td[data-delta="down"] { color: var(--fin-over-ink); }
+.resolve-changes td[data-delta="flat"] { color: var(--ink-4); }
+.resolve-changes__note { margin: var(--s-3) 0 0; color: var(--ink-3); font: var(--t-sm); font-weight: 400; }
+
+
+/* Turned in. Where the work went and who reads it — the season itself already resolved. */
+.handed-in { padding: clamp(24px, 4vw, 40px); background: var(--world-deep); border: 1px solid var(--world-panel-edge); }
+.handed-in__grid { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: clamp(20px, 3vw, 40px); align-items: center; }
+.handed-in__body { display: grid; gap: var(--s-5); }
+.handed-in__body p { max-width: 56ch; margin: 0; color: var(--world-hero-body); font: var(--t-body-lg); }
+.handed-in__where { display: grid; grid-auto-flow: column; grid-auto-columns: max-content; gap: var(--s-8); margin: 0; }
+.handed-in__where dt { color: var(--world-hero-muted); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.handed-in__where dd { margin: var(--s-1) 0 0; color: var(--world-hero-ink); font: var(--m-md); font-feature-settings: var(--num); }
+
+
+/* Joining a class, and getting the finished work back out of the room. */
+.join-status { margin: var(--s-3) 0 0; color: var(--world-hero-body); font: var(--t-sm); font-weight: 400; }
+.join-status--problem { color: var(--world-hero-second); font-weight: 600; }
+.delivery { margin: 0; font: var(--t-sm); font-weight: 400; }
+.delivery--sending, .delivery--idle { color: var(--world-hero-muted); }
+.delivery--delivered { color: var(--world-hero-body); }
+.delivery--failed { color: var(--world-hero-second); font-weight: 600; }
+
+@media (max-width: 760px) {
+  .deposit-call, .deposit-call__options, .deposit-call--deadline .deposit-call__options { grid-template-columns: 1fr; }
+  .resolve-grid { grid-template-columns: 1fr; }
+  .resolve-weeks__list { grid-auto-flow: row; }
+  .resolve-risks li { grid-template-columns: 1fr; gap: var(--s-2); }
+  .handed-in__grid { grid-template-columns: 1fr; }
+  .season { grid-template-columns: 1fr; }
+  .season-ledger { position: static; }
+  .rank-list li { grid-template-columns: var(--tap) minmax(0, 1fr); grid-template-areas: "place body" "controls controls"; }
+  .rank-list__place { grid-area: place; }
+  .rank-list__body { grid-area: body; }
+  .rank-list__controls { grid-area: controls; }
 }
