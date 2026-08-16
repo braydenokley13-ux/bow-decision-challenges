@@ -1,4 +1,4 @@
-import type { Competency, CompetencyGroupId, CompetencyId, EvidenceRequirement } from "./types";
+import type { Competency, CompetencyGroupId, CompetencyId, EvidenceRequirement, EvidenceRequirementId } from "./types";
 
 /**
  * The 21 BOW financial-literacy competencies for Grades 5–8.
@@ -603,6 +603,23 @@ export function findCompetency(id: string): Competency | undefined {
 
 export function evidenceRequirementsFor(id: CompetencyId): readonly EvidenceRequirement[] {
   return COMPETENCY_BY_ID[id].evidenceRequirements;
+}
+
+/** Derived for the same reason the competency index is: one index, kept in step by having no twin. */
+const REQUIREMENT_BY_ID: ReadonlyMap<string, EvidenceRequirement> = new Map(
+  COMPETENCIES.flatMap((competency) => competency.evidenceRequirements.map((row) => [row.id, row] as const)),
+);
+
+/**
+ * One evidence requirement, or `undefined`.
+ *
+ * `EvidenceRequirementId` is a template type, so `"plan-for-the-unexpected.er1"` compiles
+ * cleanly and names nothing — that competency's requirements have not been written. An
+ * observation about a requirement nobody has defined is not evidence, and the caller has to
+ * be able to find that out rather than be handed a plausible-looking row.
+ */
+export function evidenceRequirementById(id: EvidenceRequirementId): EvidenceRequirement | undefined {
+  return REQUIREMENT_BY_ID.get(id);
 }
 
 /**

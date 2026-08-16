@@ -36,6 +36,24 @@ function sourcesIn(directory: string): string[] {
 const COMPETENCY_SOURCES = sourcesIn("src/domain/competency");
 const STANDARDS_SOURCES = sourcesIn("src/domain/standards");
 
+/** Every module inside a world, plus the two shared files that describe worlds generally. */
+const WORLD_SOURCES = [
+  ...sourcesIn("src/domain/scenario/worlds"),
+  "src/domain/scenario/registry.ts",
+  "src/domain/scenario/types.ts",
+];
+
+/**
+ * A world's story, as opposed to its assessment edge.
+ *
+ * A world's observer is the one file that is *supposed* to know evidence requirements
+ * exist — that is the whole of Checkpoint 2, and it is the direction the one-way rule
+ * allows. Everything else in a world is Avery's season, and the competency layer has no
+ * business in it: a scenario that imported competencies would make the story depend on the
+ * measurement rather than the other way round.
+ */
+const WORLD_STORY_SOURCES = WORLD_SOURCES.filter((path) => !path.endsWith("observer.ts"));
+
 /**
  * Where a competency and its evidence requirements are actually defined.
  *
@@ -114,15 +132,25 @@ describe("the spine stays separated", () => {
     expect(index).toMatch(/competenciesFor\(frameworkId: FrameworkId, code: string\)/);
   });
 
-  it("keeps the standards layer out of every world", () => {
+  it("scans every file in every world, including any added since this test was written", () => {
+    expect(WORLD_SOURCES).toContain("src/domain/scenario/worlds/basketball/scenario.ts");
+    expect(WORLD_SOURCES).toContain("src/domain/scenario/worlds/basketball/observer.ts");
+    expect(WORLD_STORY_SOURCES).not.toContain("src/domain/scenario/worlds/basketball/observer.ts");
+  });
+
+  it.each(WORLD_SOURCES)("keeps the standards layer out of %s", (path) => {
     // A world assesses competencies. It must never know that New York calls one of them
     // 1.3, or the world would have to change when New York renumbers.
-    for (const path of ["src/domain/scenario/worlds/basketball.ts", "src/domain/scenario/registry.ts", "src/domain/scenario/types.ts"]) {
-      const source = withoutComments(path);
-      expect(source, path).not.toMatch(NAMES_A_STATE);
-      for (const [, specifier] of source.matchAll(IMPORTS)) {
-        expect(specifier, `${path} imports ${String(specifier)}`).not.toMatch(/standards|competency/);
-      }
+    const source = withoutComments(path);
+    expect(source, path).not.toMatch(NAMES_A_STATE);
+    for (const [, specifier] of source.matchAll(IMPORTS)) {
+      expect(specifier, `${path} imports ${String(specifier)}`).not.toMatch(/standards/);
+    }
+  });
+
+  it.each(WORLD_STORY_SOURCES)("keeps the competency layer out of the story in %s", (path) => {
+    for (const [, specifier] of withoutComments(path).matchAll(IMPORTS)) {
+      expect(specifier, `${path} imports ${String(specifier)}`).not.toMatch(/competency/);
     }
   });
 });

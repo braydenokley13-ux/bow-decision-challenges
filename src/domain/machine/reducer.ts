@@ -4,7 +4,7 @@ import { DEFAULT_WORLD_ID, PLAN_UNDER_PRESSURE_LAUNCH } from "../scenario/regist
 import { balanceOf, readoutFor, residualOf, unassignedOf } from "../finance/formulas";
 import type { PlanMode, SnapshotInputs } from "../finance/types";
 import type { EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../evidence/types";
-import { conceptsForEvent } from "../evidence/eventConcepts";
+import { competenciesForEvent, conceptsForEvent, evidenceRequirementsForEvent } from "../evidence/eventConcepts";
 import type { ChallengeAction } from "./actions";
 import { EMPTY_AMOUNTS, type ChallengeState } from "./state";
 
@@ -36,6 +36,8 @@ function append<T>(state: ChallengeState, type: EvidenceEventType, payload: T, s
     sessionId: state.meta.sessionId,
     worldId: state.meta.worldId,
     conceptIds: conceptsForEvent(type, payload),
+    competencyIds: competenciesForEvent(type, payload),
+    evidenceRequirementIds: evidenceRequirementsForEvent(type, payload),
     payload,
     supportLevel,
     ...(dedupeKey ? { dedupeKey } : {}),

@@ -28,8 +28,10 @@ export type {
   EvidenceRequirement,
   EvidenceRequirementId,
   EvidenceRequirementLevel,
+  EvidenceRequirementObservation,
   GradeBand,
   RubricLevel,
+  SupportLevel,
 } from "./types";
 export { COMPETENCY_MODEL_VERSION, RUBRIC_VERSION } from "./types";
 
@@ -39,10 +41,38 @@ export {
   COMPETENCY_GROUPS,
   competenciesInGroup,
   competencyById,
+  evidenceRequirementById,
   evidenceRequirementsFor,
   findCompetency,
   requiredEvidenceRequirementsFor,
 } from "./competencies";
+
+export type { MasteryContext } from "./observe";
+export {
+  SUPPORT_CAPS,
+  competencyResultFor,
+  isCountable,
+  isDemonstrated,
+  levelUnderRubric,
+  masteryStateFor,
+  observeCompetencies,
+} from "./observe";
+
+export type {
+  ObjectiveDemand,
+  ObjectiveResult,
+  ObjectiveResultState,
+  StudentObjectiveOutcome,
+} from "./objectiveState";
+export {
+  DEVELOPING_THRESHOLD_PERCENT,
+  MINIMUM_ASSESSED_FOR_A_STATE,
+  STALE_AFTER_DAYS,
+  STRONG_THRESHOLD_PERCENT,
+  isStale,
+  objectiveResultFrom,
+  studentOutcomeFor,
+} from "./objectiveState";
 
 export type { WorldEvidenceCoverage } from "./availability";
 export {

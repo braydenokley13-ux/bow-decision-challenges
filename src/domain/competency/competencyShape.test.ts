@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { EvidencePoints } from "../blueprint/types";
+import { supportCap } from "../evidence/support";
+import type { SupportLevel as EngineSupportLevel } from "../evidence/types";
 import { BUILT_WORLD_COVERAGE } from "./availability";
 import { COMPETENCIES, COMPETENCY_GROUPS, competenciesInGroup, competencyById, findCompetency, requiredEvidenceRequirementsFor } from "./competencies";
-import type { AssessmentShape, CompetencyId, RubricLevel } from "./types";
+import { SUPPORT_CAPS } from "./observe";
+import type { AssessmentShape, CompetencyId, RubricLevel, SupportLevel } from "./types";
 import { COMPETENCY_MODEL_VERSION, RUBRIC_VERSION } from "./types";
 
 /**
@@ -24,7 +27,7 @@ import { COMPETENCY_MODEL_VERSION, RUBRIC_VERSION } from "./types";
 
 const SHAPES: readonly AssessmentShape[] = ["plan-and-repair", "choose-under-pressure", "run-it-forward", "read-and-judge", "compare-two-lives"];
 
-/** The competencies a built world can currently produce every required requirement of. */
+/** Every competency some built world produces evidence about, whole or partial. */
 const WITH_A_BUILT_WORLD: readonly CompetencyId[] = [...new Set(BUILT_WORLD_COVERAGE.map((claim) => claim.competencyId))];
 
 /** The ones somebody has actually written the observable rules for. */
@@ -101,9 +104,9 @@ describe("competency shape", () => {
   });
 
   it("holds every competency with a built world to the same rule", () => {
-    // The literal acceptance criterion. It is vacuous today because no world declares
-    // coverage yet, and it stops being vacuous the moment one does — which is exactly when
-    // it needs to bite.
+    // The literal acceptance criterion, and no longer vacuous: Basketball now declares
+    // coverage, so this bites on real rows.
+    expect(WITH_A_BUILT_WORLD.length).toBeGreaterThan(0);
     for (const competencyId of WITH_A_BUILT_WORLD) {
       const competency = competencyById(competencyId);
       const required = requiredEvidenceRequirementsFor(competencyId);
@@ -158,6 +161,28 @@ describe("competency shape", () => {
     expect([asRubricLevel(0), asEvidencePoints(5)]).toEqual([0, 5]);
     const levels: RubricLevel[] = [0, 2, 3, 4, 5];
     expect(levels).not.toContain(1);
+  });
+
+  it("keeps the support taxonomy on the one the evidence engine already uses", () => {
+    // Restated in the spine rather than imported, for the same reason the rubric scale is,
+    // and guarded the same way: these two conversions stop compiling the moment a level is
+    // added or renamed on either side.
+    const asSpineSupport = (level: EngineSupportLevel): SupportLevel => level;
+    const asEngineSupport = (level: SupportLevel): EngineSupportLevel => level;
+    expect([asSpineSupport("direct_scaffold"), asEngineSupport("answer_supplied")])
+      .toEqual(["direct_scaffold", "answer_supplied"]);
+  });
+
+  it("caps a level the same way the evidence engine does, wherever the engine has an opinion", () => {
+    // The spine caps `natural_consequence` at 4 because §10.3 says so. Plan Under Pressure's
+    // own cap returns 5 for it — it expresses "saw the consequence and fixed it" on the
+    // quality axis and never stamps that support level on an event — so the two can only be
+    // compared on the three levels it actually produces. Those three have to agree, or the
+    // same run scores differently depending on which layer read it.
+    for (const level of ["standard_access", "direct_scaffold", "answer_supplied"] as const) {
+      expect(SUPPORT_CAPS[level], level).toBe(supportCap(level));
+    }
+    expect(SUPPORT_CAPS.natural_consequence).toBe(4);
   });
 
   it("stamps a version on the model and the rubric", () => {

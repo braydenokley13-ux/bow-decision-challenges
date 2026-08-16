@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { WorldEvidenceCoverage } from "../competency/availability";
-import { BUILT_WORLD_COVERAGE, availableCompetencyIds } from "../competency/availability";
-import { COMPETENCIES, requiredEvidenceRequirementsFor } from "../competency/competencies";
+import { BUILT_WORLD_COVERAGE, availableCompetencyIds, worldsAssessing } from "../competency/availability";
+import { COMPETENCIES, evidenceRequirementById, requiredEvidenceRequirementsFor } from "../competency/competencies";
 import type { CompetencyId } from "../competency/types";
 import { NYSED_2026_STANDARDS } from "./frameworks/nysed-2026";
 import {
@@ -121,15 +121,39 @@ describe("what BOW may claim about an objective", () => {
   });
 
   describe("assessability requires a built world, not a mapping", () => {
+    it("counts exactly what Basketball can produce every requirement of", () => {
+      // Basketball's observer produces all five of `adapt-a-plan` and four of the five
+      // `plan-within-income` asks for — ER3 needs the order the amounts were set in, which
+      // this world does not record. Four fifths is written down honestly and is not the
+      // competency, so one of these is available and the other is not.
+      expect(availableCompetencyIds()).toEqual(new Set(["adapt-a-plan"]));
+      expect(worldsAssessing("adapt-a-plan")).toEqual(["basketball"]);
+      expect(worldsAssessing("plan-within-income")).toEqual([]);
+    });
+
     it("reports no objective assessable today", () => {
-      // Every one of the 23 has a mapping. None has a world that produces evidence-
-      // requirement observations yet — wiring Basketball onto them is Checkpoint 2, and
-      // Seat 14 is the gate. Until then the honest answer is "coming," not "0%".
-      expect(BUILT_WORLD_COVERAGE).toHaveLength(0);
-      expect(availableCompetencyIds().size).toBe(0);
+      // Every one of the 23 has a mapping and one competency now has a world, and still
+      // nothing is assessable: `adapt-a-plan` is `partial` on 1.2 and `supporting` on 4.1,
+      // and neither of those makes an objective assessable on its own. The objective that
+      // would light up is 1.3, and it needs the competency Basketball is one requirement
+      // short of. Until then the honest answer is "coming," not "0%".
       expect(assessableStandards(NYSED)).toEqual([]);
       for (const standard of NYSED_2026_STANDARDS) {
         expect(isAssessable(ref(standard.code)), `NYSED ${standard.code}`).toBe(false);
+      }
+    });
+
+    it("claims nothing in the coverage table that the competency model does not define", () => {
+      // The table is the one place a claim about a world is written by hand. Every id in it
+      // has to name a requirement that exists and belong to the competency it is filed
+      // under — a typo here would credit a world with producing something else entirely.
+      expect(BUILT_WORLD_COVERAGE.length).toBeGreaterThan(0);
+      for (const claim of BUILT_WORLD_COVERAGE) {
+        for (const id of claim.producedEvidenceRequirementIds) {
+          const requirement = evidenceRequirementById(id);
+          expect(requirement, `${claim.worldId} claims ${id}`).toBeDefined();
+          expect(requirement?.competencyId, id).toBe(claim.competencyId);
+        }
       }
     });
 

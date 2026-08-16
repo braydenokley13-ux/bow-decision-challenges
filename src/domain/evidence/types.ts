@@ -2,6 +2,7 @@ import type { CalcId, CategoryId, SetupId, WorldId } from "../core/ids";
 import type { Dollars } from "../core/money";
 import type { PlanAmounts, PlanMode, PlanReadout, SnapshotInputs } from "../finance/types";
 import type { StructuredMicroSkillId, EvidencePoints, ConceptId } from "../blueprint/types";
+import type { CompetencyId, EvidenceRequirementId } from "../competency/types";
 
 export type SupportLevel = "standard_access" | "natural_consequence" | "direct_scaffold" | "answer_supplied";
 export type MasteryStatus = "demonstrated_independently" | "demonstrated_with_support" | "developing" | "not_demonstrated" | "not_observed";
@@ -72,6 +73,25 @@ export interface EvidenceEvent<TPayload = unknown> {
   worldId: WorldId;
   /** Canonical BOW concepts this event can speak to. Empty when it speaks to none. */
   conceptIds: readonly ConceptId[];
+  /**
+   * The BOW competencies this event can speak to, and the specific things it is evidence
+   * about. Empty when it is evidence about none.
+   *
+   * These sit beside `conceptIds` rather than replacing them. Concepts are Plan Under
+   * Pressure's own grouping and every educator surface reads them today; competencies are
+   * the product's spine and the only vocabulary a second world can share. Both are written
+   * at the point the event is created, so the two never have to be reconciled later.
+   *
+   * A tag is a claim about relevance, never about mastery: it says "this action is evidence
+   * about whether savings was planned," never "this student plans savings." The level lives
+   * in an observation, and only a world's observer produces one.
+   *
+   * `evidenceRequirementIds` is deliberately stored rather than derived. It is what lets the
+   * §19.2 evidence timeline link a judgement back to the exact moment it came from, on a log
+   * written by a version of the world whose observer no longer exists.
+   */
+  competencyIds: readonly CompetencyId[];
+  evidenceRequirementIds: readonly EvidenceRequirementId[];
   payload: TPayload;
   supportLevel: SupportLevel;
   dedupeKey?: string;

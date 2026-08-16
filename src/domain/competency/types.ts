@@ -89,6 +89,25 @@ export type GradeBand = "5-8";
  */
 export type RubricLevel = 0 | 2 | 3 | 4 | 5;
 
+/**
+ * How much help was on the screen when the student did it.
+ *
+ * Support is part of the rubric rather than a note beside it: the same action taken after
+ * BOW named the problem is a different piece of evidence from the same action taken cold.
+ * Each level carries a cap, and the cap is applied by the shared engine in `observe.ts`, so
+ * a world cannot report a 5 for something it also says it scaffolded.
+ *
+ * | `standard_access`     | Tools that are always on screen. No cap — 5 is reachable. |
+ * | `natural_consequence` | The situation showed what happened. Caps at 4.            |
+ * | `direct_scaffold`     | BOW named the problem. Caps at 3.                         |
+ * | `answer_supplied`     | BOW gave the answer so the student could continue. Scores 0. |
+ *
+ * Restated here rather than imported for the same reason `RubricLevel` is: the taxonomy the
+ * codebase already uses lives beside Plan Under Pressure's scorer, and the spine must not
+ * depend on one challenge. `competencyShape.test.ts` fails to compile if the two drift.
+ */
+export type SupportLevel = "standard_access" | "natural_consequence" | "direct_scaffold" | "answer_supplied";
+
 /** Bumped when the meaning of a rubric level changes. Analyses may not pool two versions. */
 export const RUBRIC_VERSION = "1.0.0";
 
@@ -172,6 +191,38 @@ export type CompetencyResultState =
 export interface EvidenceRequirementLevel {
   evidenceRequirementId: EvidenceRequirementId;
   level: RubricLevel | null;
+}
+
+/**
+ * One judgement a world's observer offers about one evidence requirement.
+ *
+ * This is the only thing a world hands the shared engine. The observer knows the world; the
+ * engine knows the rubric; neither knows the other's details. That is what lets a second
+ * world produce evidence about `plan-within-income` that pools with this one's.
+ *
+ * The level is what the observer *claims*; the engine re-applies the support cap before
+ * using it, so a claim of 5 alongside `direct_scaffold` becomes a 3 rather than being
+ * trusted. `null` is *not observed* — the situation never presented the opportunity — and
+ * it is never a zero at any point downstream.
+ */
+export interface EvidenceRequirementObservation {
+  evidenceRequirementId: EvidenceRequirementId;
+  /**
+   * Which kind of evidence this is, restated by the observer rather than looked up.
+   *
+   * The engine checks it against the requirement's own `kind` and discards a mismatch. A
+   * challenge that machine-scored a written explanation would be inferring a grade for
+   * student writing, which §10.6 forbids outright, so the engine refuses the observation
+   * instead of trusting the caller to have read the rule.
+   */
+  kind: EvidenceKind;
+  /** The rubric level, before the engine applies the support cap. `null` is not observed. */
+  level: RubricLevel | null;
+  supportLevel: SupportLevel;
+  /** Event ids. A teacher who disagrees has to be able to see what BOW saw. */
+  evidenceRefs: readonly string[];
+  /** One plain sentence for the evidence trail, in the words a teacher would use. */
+  reason: string;
 }
 
 /**

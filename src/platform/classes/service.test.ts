@@ -17,7 +17,7 @@ function api(store: ClassStore, now = NOW) {
 }
 
 const log: EvidenceEvent[] = [
-  { id: "event-1", sequence: 1, timestamp: NOW, type: "SESSION_STARTED", stage: "entry", challengeId: PLAN_UNDER_PRESSURE.id, challengeVersion: PLAN_UNDER_PRESSURE.version, sessionId: "session-aaaaaaaa", worldId: "basketball", conceptIds: [], payload: {}, supportLevel: "standard_access" },
+  { id: "event-1", sequence: 1, timestamp: NOW, type: "SESSION_STARTED", stage: "entry", challengeId: PLAN_UNDER_PRESSURE.id, challengeVersion: PLAN_UNDER_PRESSURE.version, sessionId: "session-aaaaaaaa", worldId: "basketball", conceptIds: [], competencyIds: [], evidenceRequirementIds: [], payload: {}, supportLevel: "standard_access" },
 ];
 
 const submission = {

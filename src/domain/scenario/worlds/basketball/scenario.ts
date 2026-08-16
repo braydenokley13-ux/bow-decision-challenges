@@ -1,7 +1,7 @@
-import { formatDollars } from "../../core/money";
-import { SCENARIO_NUMBERS } from "../numbers";
-import { clinicWeeks } from "../season";
-import type { WorldScenario } from "../types";
+import { formatDollars } from "../../../core/money";
+import { SCENARIO_NUMBERS } from "../../numbers";
+import { clinicWeeks } from "../../season";
+import type { WorldScenario } from "../../types";
 
 /** How many Saturdays the clinics actually run, so the copy cannot claim a different four. */
 const CLINIC_SATURDAYS = clinicWeeks(SCENARIO_NUMBERS).length;

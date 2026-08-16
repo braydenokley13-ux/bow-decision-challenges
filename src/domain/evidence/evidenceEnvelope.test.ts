@@ -4,6 +4,8 @@ import { challengeReducer } from "../machine/reducer";
 import { createInitialState, type ChallengeState } from "../machine/state";
 import type { ChallengeAction } from "../machine/actions";
 import { CONCEPTS } from "../blueprint/concepts";
+import { evidenceRequirementById } from "../competency/competencies";
+import { BASKETBALL_EVIDENCE_ROUTES } from "../scenario/worlds/basketball/observer";
 import { EVIDENCE_EVENT_TYPES } from "./types";
 import { deriveGrade, REASONING_MAXIMUM, STRUCTURED_MAXIMUM } from "./grade";
 import { PLAN_UNDER_PRESSURE } from "../../platform/challenges/registry";
@@ -64,6 +66,41 @@ describe("the shared evidence envelope", () => {
     expect(setup?.conceptIds).toEqual(["full-cost"]);
     const floor = log.find((event) => event.type === "CALCULATION_SUBMITTED");
     expect(floor?.conceptIds).toEqual(["income-reliability"]);
+  });
+
+  it("tags events with the requirements the world can actually observe, and nothing else", () => {
+    // A tag is a claim about relevance, never about mastery: "this action is evidence about
+    // whether the plan balanced," never "this student can balance a plan." It still has to
+    // be true — a tag naming a requirement nothing observes would put a line in the §19.2
+    // evidence timeline with no judgement behind it and no way to reach one.
+    const routed = new Set(
+      BASKETBALL_EVIDENCE_ROUTES
+        .filter((route) => route.via !== "not-produced")
+        .map((route) => route.evidenceRequirementId),
+    );
+    for (const event of log) {
+      for (const id of event.evidenceRequirementIds) {
+        expect(evidenceRequirementById(id), `${event.type} tags ${id}`).toBeDefined();
+        expect(routed.has(id), `${event.type} tags ${id}, which nothing observes`).toBe(true);
+      }
+      // The competency tags are derived from the requirement tags, so the two can never
+      // disagree — an event filed under a skill without saying what about it is a claim
+      // with no evidence trail.
+      const derived = new Set(event.evidenceRequirementIds.map((id) => evidenceRequirementById(id)?.competencyId));
+      expect(new Set(event.competencyIds)).toEqual(derived);
+    }
+    const floor = log.find((event) => event.type === "CALCULATION_SUBMITTED");
+    expect(floor?.evidenceRequirementIds).toEqual(["plan-within-income.er1"]);
+    expect(floor?.competencyIds).toEqual(["plan-within-income"]);
+    const defense = log.find((event) => event.type === "DEFENSE_SUBMITTED");
+    expect(defense?.competencyIds).toEqual(["plan-within-income", "adapt-a-plan"]);
+  });
+
+  it("never tags a moment as evidence about savings being planned on purpose", () => {
+    // The one requirement of `plan-within-income` this world cannot see. Its absence from
+    // every tag is the same statement the coverage table makes, enforced where the events
+    // are actually written.
+    for (const event of log) expect(event.evidenceRequirementIds).not.toContain("plan-within-income.er3");
   });
 
   it("records reaching a screen as its own fact", () => {
