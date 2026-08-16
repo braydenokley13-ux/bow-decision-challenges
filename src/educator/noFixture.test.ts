@@ -30,6 +30,12 @@ const REAL_CLASS_MODULES = [
   // Where a real class is created, and now where its objective is picked. A demo objective
   // list here would put a code on a whiteboard that no world can assess.
   "src/educator/ClassSetup.tsx",
+  // The objective surfaces. Everything they render comes from the framework, the mappings
+  // and classes this browser can actually open — a fixture reaching any of them would put
+  // invented students under a real teacher's objective.
+  "src/educator/ObjectivePages.tsx",
+  "src/educator/objectiveResults.ts",
+  "src/educator/useObjectiveEvidence.ts",
 ];
 
 describe("a real class cannot reach a fixture", () => {

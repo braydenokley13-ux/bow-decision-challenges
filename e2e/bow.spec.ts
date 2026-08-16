@@ -839,11 +839,13 @@ studentTest("an educator reads one student's evidence and scores their writing",
   await expect(page.getByRole("heading", { name: "Reasoning not read yet" })).toBeVisible();
   await expect(page.locator(".student-response blockquote")).toContainText("reserved the course seat");
 
-  // A person scores it, and only then does a final grade exist.
-  await page.locator(".rubric-row").nth(0).getByRole("button", { name: "2", exact: true }).click();
-  await page.locator(".rubric-row").nth(1).getByRole("button", { name: "2", exact: true }).click();
-  await page.locator(".rubric-row").nth(2).getByRole("button", { name: "1", exact: true }).click();
-  await page.locator(".rubric-row").nth(3).getByRole("button", { name: "3", exact: true }).click();
+  // A person scores it, and only then does a final grade exist. Each mark names its own
+  // criterion, because four rows of bare 0-1-2 buttons are not a rubric anybody listening
+  // to the page can fill in.
+  await page.getByRole("button", { name: "Workability: 2 of 2" }).click();
+  await page.getByRole("button", { name: "Protected priority: 2 of 2" }).click();
+  await page.getByRole("button", { name: "Tradeoff / opportunity cost: 1 of 2" }).click();
+  await page.getByRole("button", { name: "Numerical evidence: 3 of 4" }).click();
   await expect(page.locator(".rubric-panel footer strong")).toContainText("8/10");
   await page.getByRole("button", { name: "Save review" }).click();
   await expect(page.getByText("Saved.")).toBeVisible();
@@ -974,6 +976,10 @@ studentTest("every educator route passes an accessibility scan, including the re
     "/educator/demo/students/14",
     "/educator/demo/students/14/reasoning",
     "/educator/demo/standards",
+    "/educator/objectives",
+    "/educator/objectives/nysed-pf-2026/1.3",
+    "/educator/objectives/nysed-pf-2026/4.2",
+    "/educator/assign?frameworkId=nysed-pf-2026&code=1.3",
     `/educator/class/${classCode}?key=${key}`,
     `/educator/class/${classCode}/students/6?key=${key}`,
     `/educator/class/${classCode}/debrief?key=${key}`,
@@ -1135,4 +1141,138 @@ test("a teacher creates a class with an objective and a student joins with the c
   const body = (await room.json()) as { submissions: { seatCode: string; assignmentId: string }[] };
   expect(body.submissions).toHaveLength(1);
   expect(body.submissions[0].assignmentId).toBe(set.assignments[0].id);
+});
+
+// ---------------------------------------------------------------------------
+// 29. The teacher's whole loop: find the objective, assign it, and read back
+//     what the class actually demonstrated against it. This is the first
+//     checkpoint a teacher can use, so it is asserted the way they would use it.
+// ---------------------------------------------------------------------------
+
+test("a teacher searches for budget, finds 1.3, and reads its exact wording", async ({ page }) => {
+  await page.goto("/educator/objectives");
+  await expect(page.getByRole("heading", { name: "What do you want to assess?" })).toBeVisible();
+
+  // All 23 are here, and the ones with a world behind them are told apart from the ones
+  // that are only mapped — "coming" and "0% demonstrated" are different sentences.
+  await expect(page.getByRole("row")).toHaveCount(24);
+  await expect(page.locator('.availability-pill[data-ready="true"]')).toHaveCount(1);
+  await expect(page.locator('.availability-pill[data-ready="false"]')).toHaveCount(22);
+
+  await page.getByLabel("Search objectives").fill("budget");
+  const budget = page.getByRole("link", { name: /1\.3\s+Create a budget/ });
+  await expect(budget).toBeVisible();
+  await budget.click();
+
+  // The official sentence, character for character, and the attribution beside it.
+  await expect(page.getByText("Create a budget for a hypothetical income that includes planned expenses and savings.", { exact: true })).toBeVisible();
+  await expect(page.locator(".framework-attribution")).toContainText("not reviewed or endorsed");
+  await expect(page.getByRole("link", { name: "Assign this" })).toBeVisible();
+  await noSeriousAxeViolations(page);
+});
+
+test("an objective with no world says so instead of reporting nothing as zero", async ({ page }) => {
+  await page.goto("/educator/objectives/nysed-pf-2026/4.2");
+  await expect(page.getByText(/BOW cannot assess this yet/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Assign this" })).toHaveCount(0);
+  await expect(page.getByText("%")).toHaveCount(0);
+});
+
+test("a teacher assigns 1.3, three students submit, and the objective reports what they did", async ({ page, browser, request }) => {
+  test.setTimeout(180_000);
+
+  await page.goto("/educator/objectives/nysed-pf-2026/1.3");
+  await page.getByRole("link", { name: "Assign this" }).click();
+
+  // §17.1's target: the objective arrives already chosen and the world step is a line,
+  // because there is one world and a choice of one is not a choice.
+  await expect(page.getByText("1.3 Create a budget")).toBeVisible();
+  await expect(page.getByText(/the only world for this today/)).toBeVisible();
+  await page.getByLabel("New class name").fill("Period 3 · Grade 7");
+  await page.getByRole("button", { name: "Assign and get the code" }).click();
+
+  await expect(page.getByRole("heading", { name: "Assigned. Here is the code." })).toBeVisible();
+  const code = (await page.locator(".class-created__code strong").innerText()).trim();
+  const teacherKey = new URL(await page.locator(".class-created__key code").innerText()).searchParams.get("key") ?? "";
+  await noSeriousAxeViolations(page);
+
+  // Nobody has played it yet: not assessed, and never 0%.
+  await page.goto("/educator/objectives/nysed-pf-2026/1.3");
+  await expect(page.getByText("Not yet assessed")).toBeVisible();
+  await expect(page.getByText("%")).toHaveCount(0);
+
+  // The students are on their own devices, which is also the only way this test can be
+  // written: joining a class clears the browser's saved attempt, and the teacher's saved
+  // classes live in the same storage.
+  const plan: PlanContext = { setupId: "cousin-room" };
+  for (const seat of ["7", "8", "9"]) {
+    const context = await browser.newContext();
+    const student = await context.newPage();
+    try {
+      await gotoFreshChallenge(student);
+      await enterChallenge(student, { classCode: code, seatCode: seat });
+      await completeSetupStage(student, 2);
+      await completeWorkingCalcs(student);
+      // Closed by naming the row that takes the rest, which is what makes the savings figure
+      // evidence rather than arithmetic.
+      await setAmount(student, "Sports-media course", String(N.course.fullPrice));
+      await student.getByRole("button", { name: /Put \$.* into Avery’s week/ }).click();
+      await student.getByRole("button", { name: "Save this version" }).click();
+      await playSeasonWeeks(student);
+      await passWeek5Calculation(student, String(week5TotalFor(plan)));
+      await savePlan(student, "week5-first-response", plan);
+      await decideOpportunity(student, { clinics: false, countBonus: false });
+      await savePlan(student, "final", { ...plan, clinics: false, countCompletionFinal: false });
+      await readWeek8Resolution(student);
+      await submitDefense(student, `Seat ${seat}: I set $1,200 for the course first and put the last $600 into Avery's week. I gave up rest to keep the course funded.`);
+      await waitForDelivery(student);
+    } finally {
+      await context.close();
+    }
+  }
+
+  // Three submissions, and none of their writing has been read — so nobody is assessed yet,
+  // and that reads as an absence rather than as three failures.
+  await page.goto(`/educator/objectives/nysed-pf-2026/1.3?t=${Date.now()}`);
+  await expect(page.getByText("Period 3 · Grade 7")).toBeVisible();
+  await expect(page.getByText("3 turned in · 3 written explanations still to read.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Not yet assessed")).toBeVisible();
+
+  // A person reads all three. Marks are recorded criterion by criterion, which is what lets
+  // the explanation requirement stand on a judgement somebody actually made.
+  for (const seat of ["7", "8", "9"]) {
+    await page.goto(`/educator/class/${code}/students/${seat}?key=${teacherKey}`);
+    for (const [label, mark] of [["Workability", 2], ["Protected priority", 2], ["Tradeoff / opportunity cost", 2], ["Numerical evidence", 4]] as const) {
+      await page.getByRole("button", { name: `${label}: ${mark} of ${mark}` }).click();
+    }
+    await page.getByRole("button", { name: "Save review" }).click();
+    await expect(page.getByText("Saved.")).toBeVisible();
+  }
+
+  // Now three students have a usable result — and three is still below the denominator a
+  // class state needs, so BOW shows the count and refuses the state.
+  await page.goto(`/educator/objectives/nysed-pf-2026/1.3?t=${Date.now()}`);
+  await expect(page.getByText("3 of 3 assessed")).toBeVisible();
+  await expect(page.getByText(/BOW shows the count and not a\s+class state/)).toBeVisible();
+  for (const state of ["Strong", "Developing", "Needs attention"]) {
+    await expect(page.getByText(state, { exact: true })).toHaveCount(0);
+  }
+  // The skill 1.3 actually rests on leads the breakdown, and it is the one that moved.
+  const planRow = page.locator(".objective-class tr").filter({ hasText: "gives savings a planned amount" });
+  await expect(planRow).toContainText("3 demonstrated");
+  await noSeriousAxeViolations(page);
+  await noHorizontalOverflow(page);
+
+  // And the evidence behind the number is one click away.
+  await page.getByRole("link", { name: "Open this class’s evidence" }).click();
+  await expect(page.getByRole("heading", { name: "What the class did" })).toBeVisible();
+  await expect(page.locator(".class-header")).toContainText("Period 3 · Grade 7");
+  await expect(page.locator(".class-header")).toContainText("3 submissions");
+
+  const room = await request.get(`http://127.0.0.1:4180/api/classes/${code}/submissions`, {
+    headers: { "X-BOW-Teacher-Key": teacherKey },
+  });
+  const body = (await room.json()) as { assignments: { id: string; objectiveRef: { code: string } | null }[]; submissions: { assignmentId: string }[] };
+  expect(body.assignments[0].objectiveRef?.code).toBe("1.3");
+  expect(body.submissions.map((entry) => entry.assignmentId)).toEqual([body.assignments[0].id, body.assignments[0].id, body.assignments[0].id]);
 });

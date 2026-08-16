@@ -8,6 +8,7 @@ import type { PlanAmounts } from "../domain/finance/types";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { CONCEPTS } from "../domain/blueprint/concepts";
+import type { ReasoningScores } from "../domain/blueprint/reasoning";
 import type { ConceptId } from "../domain/blueprint/types";
 import type { SubmissionRecord } from "../platform/classes/types";
 import { CHOICE_LABELS } from "../components/financial/choices";
@@ -32,6 +33,8 @@ export interface StudentRow {
   sessionId: string;
   submittedAt: number;
   reasoningPoints: number | null;
+  /** The same reading, criterion by criterion. Absent until a person has recorded one. */
+  reasoningCriteria: ReasoningScores | undefined;
   facts: AssessmentFacts;
   result: AssessmentResult;
   /** How the season ended for this plan. Null when the student never landed a final one. */
@@ -65,6 +68,7 @@ export function readSubmission(record: SubmissionRecord): StudentRow {
     sessionId: record.sessionId,
     submittedAt: record.submittedAt,
     reasoningPoints: record.reasoningPoints,
+    reasoningCriteria: record.reasoningCriteria,
     facts,
     result: deriveResult(record.log, record.reasoningPoints, SCENARIO_NUMBERS),
     resolution: finalInputs

@@ -1,3 +1,4 @@
+import type { ReasoningScores } from "../../domain/blueprint/reasoning";
 import type { CompetencyId } from "../../domain/competency/types";
 import type { WorldId } from "../../domain/core/ids";
 import type { EvidenceEvent } from "../../domain/evidence/types";
@@ -92,6 +93,16 @@ export interface SubmissionRecord {
   submittedAt: number;
   /** Educator-scored reasoning, written back after review. Null until a person scores it. */
   reasoningPoints: number | null;
+  /**
+   * The same reading, criterion by criterion.
+   *
+   * The total alone cannot say which requirement a mark answered — a student who explained
+   * the trade-off and quoted no numbers reaches the same ten-point score as one who did the
+   * reverse, and they have met opposite halves of the same requirement. Absent on every
+   * submission scored before this was recorded, which is why it is optional and why nothing
+   * derives a level when it is missing.
+   */
+  reasoningCriteria?: ReasoningScores;
   log: EvidenceEvent[];
 }
 

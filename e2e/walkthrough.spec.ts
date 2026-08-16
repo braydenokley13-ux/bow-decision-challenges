@@ -137,9 +137,24 @@ for (const size of SIZES) {
       await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible({ timeout: 15_000 });
     }
 
+    // The class the walkthrough created is set the objective, so the objective screens have
+    // a real result behind them rather than an empty state pretending to be one.
+    const set = await request.post(`http://127.0.0.1:4180/api/classes/${created.code}/assignments`, {
+      headers: { "X-BOW-Teacher-Key": created.teacherKey },
+      data: { objectiveRef: { frameworkId: "nysed-pf-2026", code: "1.3" } },
+    });
+    expect(set.status(), await set.text()).toBe(201);
+    // The objective pages read the classes this browser remembers, which is how a teacher
+    // actually reaches them — so the class page is opened once first to record the key.
+    await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}`);
+
     const evidence = `/educator/class/${created.code}?key=${created.teacherKey}`;
     for (const [name, path] of [
       ["15b-class-setup", "/educator/classes/new"],
+      ["15f-objectives", "/educator/objectives"],
+      ["15g-objective-detail", "/educator/objectives/nysed-pf-2026/1.3"],
+      ["15h-objective-coming", "/educator/objectives/nysed-pf-2026/4.2"],
+      ["15i-assign", "/educator/assign?frameworkId=nysed-pf-2026&code=1.3"],
       ["15c-real-class", evidence],
       ["15d-real-student", `/educator/class/${created.code}/students/21?key=${created.teacherKey}`],
       ["15e-debrief", `/educator/class/${created.code}/debrief?key=${created.teacherKey}`],

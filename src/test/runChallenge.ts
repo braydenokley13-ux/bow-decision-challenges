@@ -1,5 +1,5 @@
 import { dollars } from "../domain/core/money";
-import type { SetupId } from "../domain/core/ids";
+import type { CategoryId, SetupId } from "../domain/core/ids";
 import { challengeReducer, type TimestampedAction } from "../domain/machine/reducer";
 import { createInitialState, type ChallengeState } from "../domain/machine/state";
 import { availableFor, lockedFor, week5Change } from "../domain/finance/formulas";
@@ -29,6 +29,14 @@ export interface RunOptions {
   countCompletionFinal?: boolean;
   /** How the student splits what is left, as fractions of the spendable money. */
   split?: { goal: number; reserve: number };
+  /**
+   * Which row this student sends the last of the money to when closing the opening plan.
+   *
+   * Every real run now closes that board by naming a row, so the headless one does too —
+   * otherwise the log this produces stops resembling the log a browser produces, which is
+   * the whole reason this module exists. `goal` is the savings-as-leftovers behaviour.
+   */
+  closeOpeningInto?: CategoryId;
   defenseText?: string;
   startedAt?: number;
 }
@@ -42,6 +50,7 @@ const DEFAULTS: Required<Omit<RunOptions, "startedAt">> = {
   takeClinics: false,
   countCompletionFinal: false,
   split: { goal: 0.4, reserve: 0.3 },
+  closeOpeningInto: "flexibleCash",
   defenseText: "My plan still works because every dollar has a job after Week 5. I protected the course money and gave up part of the reserve.",
 };
 
@@ -89,9 +98,15 @@ export function runChallenge(options: RunOptions = {}): ChallengeState {
 
   const savePlan = (mode: PlanMode) => {
     const amounts = planFor(state, mode, opts.split);
+    // The opening board is closed the way the board offers: the other rows are set, and the
+    // last of the money is sent to one named row. The amounts are identical either way — the
+    // difference is that the student said which line took the leftovers.
+    const closing = mode === "working" ? opts.closeOpeningInto : null;
     for (const category of ["goal", "reserve", "flexibleCash"] as const) {
+      if (category === closing) continue;
       send({ type: "PLAN_AMOUNT_CHANGED", mode, category, amount: amounts[category] });
     }
+    if (closing) send({ type: "PLAN_REMAINDER_ASSIGNED", mode, category: closing, amount: amounts[closing] });
     send({ type: "PLAN_SAVE_REQUESTED", mode });
   };
 

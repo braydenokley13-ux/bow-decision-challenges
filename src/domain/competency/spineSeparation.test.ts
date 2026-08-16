@@ -46,13 +46,23 @@ const WORLD_SOURCES = [
 /**
  * A world's story, as opposed to its assessment edge.
  *
- * A world's observer is the one file that is *supposed* to know evidence requirements
- * exist — that is the whole of Checkpoint 2, and it is the direction the one-way rule
- * allows. Everything else in a world is Avery's season, and the competency layer has no
- * business in it: a scenario that imported competencies would make the story depend on the
- * measurement rather than the other way round.
+ * A world's **assessment edge** is the set of files that are *supposed* to know evidence
+ * requirements exist — that is the whole of Checkpoint 2, and it is the direction the
+ * one-way rule allows. Everything else in a world is Avery's season, and the competency
+ * layer has no business in it: a scenario that imported competencies would make the story
+ * depend on the measurement rather than the other way round.
+ *
+ * The edge is named rather than matched on a filename, so adding a file to it is a decision
+ * somebody writes down here. It is two files: the observer, which maps what the world scored
+ * onto evidence requirements, and the written-defense module, which does the same job for the
+ * half of the evidence a person scores rather than the world.
  */
-const WORLD_STORY_SOURCES = WORLD_SOURCES.filter((path) => !path.endsWith("observer.ts"));
+const WORLD_ASSESSMENT_EDGE = [
+  "src/domain/scenario/worlds/basketball/observer.ts",
+  "src/domain/scenario/worlds/basketball/writtenDefense.ts",
+];
+
+const WORLD_STORY_SOURCES = WORLD_SOURCES.filter((path) => !WORLD_ASSESSMENT_EDGE.includes(path));
 
 /**
  * Where a competency and its evidence requirements are actually defined.
@@ -134,8 +144,13 @@ describe("the spine stays separated", () => {
 
   it("scans every file in every world, including any added since this test was written", () => {
     expect(WORLD_SOURCES).toContain("src/domain/scenario/worlds/basketball/scenario.ts");
-    expect(WORLD_SOURCES).toContain("src/domain/scenario/worlds/basketball/observer.ts");
-    expect(WORLD_STORY_SOURCES).not.toContain("src/domain/scenario/worlds/basketball/observer.ts");
+    for (const path of WORLD_ASSESSMENT_EDGE) {
+      expect(WORLD_SOURCES, `${path} is not in the scan`).toContain(path);
+      expect(WORLD_STORY_SOURCES).not.toContain(path);
+    }
+    // The edge is exactly these two. A third file reaching for the competency layer has to
+    // be argued for here rather than added quietly to make a failing scan go green.
+    expect(WORLD_ASSESSMENT_EDGE).toHaveLength(2);
   });
 
   it.each(WORLD_SOURCES)("keeps the standards layer out of %s", (path) => {

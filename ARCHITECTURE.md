@@ -129,6 +129,41 @@ amounts — planning $0 for the course is still planning it — it adds no plan 
 could not already reach, and an attempt saved before it existed contains no such statement
 and scores `null`.
 
+### The teacher's loop
+
+Three screens, and they are the first thing in this product a teacher can use end to end:
+
+| Route | What it answers |
+| --- | --- |
+| `/educator/objectives` | "What can I assess?" — all 23, searchable, with the ones a built world can actually assess told apart from the ones that are only mapped. |
+| `/educator/objectives/:frameworkId/:code` | "What is this, and what did my class do?" — the framework's exact wording, its attribution, the skills behind it, and one result block per class that was set it. |
+| `/educator/assign` | "Give me a code." — §17.2's four steps with the two that have one answer collapsed to a line each. |
+
+**Every teacher-facing word that names a framework or one of its parts is composed from
+`FrameworkLabels`.** `frameworkNaming.test.ts` scans every surface source and fails on a
+literal, so a New Jersey deployment reads New Jersey's nouns without a component changing.
+Students see none of it: nothing under `/educator` is on a student route, and no student
+screen mentions a standard.
+
+**What the results may say** is the same set of rules everywhere: never a percentage without
+its denominator, *not yet assessed* rather than 0% when nobody has submitted, the count and
+no class state below `MINIMUM_ASSESSED_FOR_A_STATE`, and a missing piece of evidence rendered
+as an absence rather than a failure. The last one does the most work: `plan-within-income`
+requires a written explanation, BOW never scores writing, so a student whose paragraph nobody
+has read is *incomplete* and stays out of the denominator entirely.
+
+`blueprint/reasoning.ts` holds the four criteria a person marks the writing against, and
+`worlds/basketball/writtenDefense.ts` restates those marks on the common rubric, criterion by
+criterion. It scores nothing: every level it emits comes from a number a teacher typed after
+reading the student's own words. Marking criterion by criterion rather than banding the
+ten-point total is what lets two requirements that ask for different things read differently
+from the same paragraph.
+
+There is no server-side index of "classes set 1.3", and V1 will not have one — a class is a
+code and a key, the key never leaves the educator's browser, and listing a teacher's classes
+would take an account to list them for. So the objective screens read whatever classes this
+browser remembers. That limit is stated on the screen rather than hidden.
+
 ### `src/educator/` — the educator surface
 
 `analysis.ts` turns submitted evidence into what a class did. It is the **only** thing that

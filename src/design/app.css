@@ -567,3 +567,33 @@ p { color: var(--ink-2); }
   .empty-state dl { grid-auto-flow: row; gap: var(--s-3); }
 }
 
+
+/* Objectives — the list, the detail, and the assign flow ------------------- */
+.objective-table { width: 100%; border-collapse: collapse; background: var(--surface); }
+.objective-table th, .objective-table td { padding: var(--s-4); text-align: left; border-bottom: 1px solid var(--border-default); }
+.objective-table thead th { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
+.objective-table tbody th { font: var(--t-ui); font-weight: 400; }
+.objective-table tbody th a { color: var(--ink-1); text-decoration: none; }
+.objective-table tbody th a:hover { text-decoration: underline; }
+.objective-table code { margin-right: var(--s-3); color: var(--ink-3); font: var(--font-mono); }
+.objective-table tr[data-ready="false"] tbody th a, .objective-table tr[data-ready="false"] td { color: var(--ink-3); }
+.availability-pill { display: inline-block; padding: 2px var(--s-3); border-radius: var(--r-pill); color: var(--ink-3); background: var(--surface-sunken); font: var(--t-micro); }
+.availability-pill[data-ready="true"] { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); }
+.objective-wording { max-width: var(--measure); margin: 0 0 var(--s-5); padding-left: var(--s-5); border-left: 3px solid var(--border-ink); font: var(--t-body-lg); }
+.framework-attribution { max-width: var(--measure); margin: 0 0 var(--s-5); color: var(--ink-3); font: var(--t-micro); }
+.objective-class { margin-bottom: var(--s-6); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); }
+.objective-class > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); margin-bottom: var(--s-4); }
+.objective-class h3 { margin: 0; font: var(--t-title2); }
+.objective-class .micro-table { margin: var(--s-4) 0; }
+.objective-class .button { margin-top: var(--s-3); }
+.objective-result { max-width: 40ch; display: grid; gap: var(--s-2); text-align: right; }
+.objective-result strong { font: var(--t-title1); font-feature-settings: var(--num); }
+.objective-result span { color: var(--ink-3); font: var(--t-micro); }
+.objective-result[data-state="strong"] strong { color: var(--fin-balanced-ink); }
+.objective-result[data-state="needs-attention"] strong { color: var(--fin-over-ink); }
+.objective-actions { margin: 0; }
+.assign-steps { max-width: 640px; margin: 0; padding: 0; list-style: none; }
+.assign-steps > li { padding: var(--s-5) 0; border-bottom: 1px solid var(--border-default); }
+.assign-steps__settled { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); margin: 0; font: var(--t-ui); }
+.class-form select { min-height: var(--tap); padding: 0 var(--s-4); font: var(--t-body-lg); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
+.class-form__note { max-width: var(--measure); margin: 0; color: var(--ink-3); font: var(--t-micro); }

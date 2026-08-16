@@ -1,4 +1,5 @@
 import { availableCompetencyIds, isCompetencyAvailable } from "../competency/availability";
+import type { ObjectiveDemand } from "../competency/objectiveState";
 import { competencyById } from "../competency/competencies";
 import type { Competency, CompetencyId } from "../competency/types";
 import { NYSED_2026, NYSED_2026_STANDARDS } from "./frameworks/nysed-2026";
@@ -168,6 +169,26 @@ export function isAssessable(
   );
 }
 
+/**
+ * What this objective asks for, said without naming the framework that asks it.
+ *
+ * The same rule `isAssessable` applies, expressed as the shape the roll-up in
+ * `competency/objectiveState.ts` takes — a completion rule wins outright and every part of
+ * it is required; otherwise any one `full`-mapped competency meets the demand. `partial` and
+ * `supporting` mappings appear in neither list, because §10.5 says they never move a state.
+ *
+ * This is the join, and it belongs on this side of it: the competency layer may not know
+ * that some state numbers one of these, and this file already does.
+ */
+export function demandFor(ref: StandardRef): ObjectiveDemand {
+  const rule = completionRuleFor(ref);
+  if (rule) return { anyOf: [], allOf: rule.requires };
+  return {
+    anyOf: mappingsForStandard(ref).filter((mapping) => mapping.coverage === "full").map((mapping) => mapping.competencyId),
+    allOf: [],
+  };
+}
+
 /** Every objective BOW can assess today, across a framework. Empty is a legitimate answer. */
 export function assessableStandards(
   frameworkId: FrameworkId,
@@ -232,3 +253,4 @@ export function missingCompetenciesFor(
 
 /** Re-exported so a caller resolving an objective does not have to reach into two layers. */
 export { availableCompetencyIds, isCompetencyAvailable };
+export type { ObjectiveDemand };

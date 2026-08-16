@@ -2,6 +2,8 @@ import { allocateClassCode, generateTeacherKey, isWellFormedClassCode, isWellFor
 import { assignmentIdFor, assignmentsForClass, generateAssignmentId, readAssignmentRequest } from "../src/platform/classes/assignments";
 import { CLASS_RETENTION_DAYS, type Assignment, type AttributedSubmission, type ClassErrorCode, type EvidenceSubmission, type SubmissionRecord } from "../src/platform/classes/types";
 import { EVIDENCE_EVENT_TYPES } from "../src/domain/evidence/types";
+import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
+import { clampCriterion, REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../src/domain/blueprint/reasoning";
 import { challengeById, PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 import type { ClassStore, StoredClass } from "./store";
 
@@ -66,6 +68,28 @@ function readSubmission(body: unknown): EvidenceSubmission | null {
     ...(candidate.assignmentId !== undefined ? { assignmentId: candidate.assignmentId } : {}),
     log: candidate.log,
   };
+}
+
+/**
+ * A person's marks, criterion by criterion, or `undefined` if the request is malformed.
+ *
+ * `null` clears them and reads as "nobody has read this". Every mark is held to its own
+ * maximum here as well as in the screen that collected it, because the screen is not the
+ * only thing that can reach this endpoint.
+ */
+function readReasoningCriteria(value: unknown): ReasoningScores | null | undefined {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "object") return undefined;
+  const candidate = value as Record<string, unknown>;
+  const scores: ReasoningScores = {};
+  for (const key of Object.keys(candidate)) {
+    const criterion = REASONING_CRITERIA.find((entry) => entry.id === key);
+    if (!criterion) return undefined;
+    const mark = candidate[key];
+    if (typeof mark !== "number" || !Number.isFinite(mark)) return undefined;
+    scores[criterion.id] = clampCriterion(criterion.id, mark);
+  }
+  return Object.keys(scores).length > 0 ? scores : null;
 }
 
 async function liveClass(store: ClassStore, code: string, now: number): Promise<StoredClass | ApiResponse> {
@@ -263,11 +287,13 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
 
   // PATCH /classes/:code/submissions/:seat — a person scores the written reasoning.
   if (request.method === "PATCH" && segments.length === 4 && segments[2] === "submissions") {
-    const body = (request.body ?? {}) as { reasoningPoints?: unknown; sessionId?: unknown };
+    const body = (request.body ?? {}) as { reasoningPoints?: unknown; reasoningCriteria?: unknown; sessionId?: unknown };
     const points = body.reasoningPoints;
     if (points !== null && (typeof points !== "number" || !Number.isFinite(points))) {
       return fail(400, "bad_request", "A reasoning score must be a number, or null to clear it.");
     }
+    const criteria = readReasoningCriteria(body.reasoningCriteria);
+    if (criteria === undefined) return fail(400, "bad_request", "Those reasoning marks could not be read.");
     const seatCode = normaliseSeatCode(segments[3] ?? "");
     const submissions = await store.listSubmissions(record.code);
     const target = typeof body.sessionId === "string"
@@ -275,10 +301,16 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       : submissions.filter((item) => item.seatCode === seatCode).at(-1);
     if (!target) return fail(404, "class_not_found", "No submission from that seat.");
     // Clamping lives in the grader too, but a score arriving over the wire has to be
-    // clamped where it is stored or the grader is not the only thing that can set it.
-    const clamped = points === null ? null : Math.min(10, Math.max(0, Math.round(points)));
-    await store.putSubmission({ ...target, reasoningPoints: clamped });
-    return { status: 200, body: { seatCode, reasoningPoints: clamped } };
+    // clamped where it is stored or the grader is not the only thing that can set it. The
+    // total is recomputed from the marks whenever they are sent, so the number a teacher
+    // reads and the marks a competency result rests on cannot say different things.
+    const clamped = criteria ? reasoningTotal(criteria) : points === null ? null : Math.min(REASONING_MAXIMUM, Math.max(0, Math.round(points)));
+    // Clearing the score clears the reading behind it. A stored breakdown under a null total
+    // would let a competency result stand on marks the teacher had withdrawn.
+    const { reasoningCriteria: previous, ...rest } = target;
+    const kept = criteria ?? (points === null ? undefined : previous);
+    await store.putSubmission({ ...rest, reasoningPoints: clamped, ...(kept ? { reasoningCriteria: kept } : {}) });
+    return { status: 200, body: { seatCode, reasoningPoints: clamped, ...(kept ? { reasoningCriteria: kept } : {}) } };
   }
 
   return fail(404, "bad_request", "No such endpoint.");

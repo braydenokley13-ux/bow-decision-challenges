@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
-import { CLASS_ERROR_MESSAGES, isClassError, type ClassRecord, type SubmissionRecord } from "../platform/classes/types";
+import { CLASS_ERROR_MESSAGES, isClassError, type Assignment, type AttributedSubmission, type ClassRecord } from "../platform/classes/types";
+import { reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 import { analyseClass, type ClassAnalysis } from "./analysis";
 import { keyForClass, rememberClass } from "./classMemory";
 
@@ -19,13 +20,13 @@ import { keyForClass, rememberClass } from "./classMemory";
 export type ClassEvidenceState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; record: ClassRecord; submissions: SubmissionRecord[]; analysis: ClassAnalysis };
+  | { status: "ready"; record: ClassRecord; assignments: Assignment[]; submissions: AttributedSubmission[]; analysis: ClassAnalysis };
 
 export function useClassEvidence(code: string | undefined): {
   state: ClassEvidenceState;
   teacherKey: string | null;
   reload: () => void;
-  scoreReasoning: (seatCode: string, sessionId: string, points: number | null) => Promise<boolean>;
+  scoreReasoning: (seatCode: string, sessionId: string, scores: ReasoningScores | null) => Promise<boolean>;
 } {
   const [params] = useSearchParams();
   // The key comes from the link the educator was given, or from this browser if they have
@@ -56,12 +57,13 @@ export function useClassEvidence(code: string | undefined): {
           setFetched({ status: "error", message: isClassError(body) ? CLASS_ERROR_MESSAGES[body.error] : CLASS_ERROR_MESSAGES.unavailable });
           return;
         }
-        const payload = body as { class: ClassRecord; submissions: SubmissionRecord[] };
+        const payload = body as { class: ClassRecord; assignments: Assignment[]; submissions: AttributedSubmission[] };
         // Opening a class from a link is how a teacher on a second device gets it back.
         rememberClass({ code: payload.class.code, label: payload.class.label, teacherKey, createdAt: payload.class.createdAt });
         setFetched({
           status: "ready",
           record: payload.class,
+          assignments: payload.assignments,
           submissions: payload.submissions,
           analysis: analyseClass(payload.submissions),
         });
@@ -75,13 +77,16 @@ export function useClassEvidence(code: string | undefined): {
   const reload = useCallback(() => setNonce((value) => value + 1), []);
 
   const scoreReasoning = useCallback(
-    async (seatCode: string, sessionId: string, points: number | null): Promise<boolean> => {
+    async (seatCode: string, sessionId: string, scores: ReasoningScores | null): Promise<boolean> => {
       if (!code || !teacherKey) return false;
       try {
+        // Both are sent: the marks are what a competency result rests on, and the total is
+        // what the class list reads. The service recomputes the total from the marks, so
+        // the two cannot end up disagreeing about the same piece of writing.
         const response = await fetch(`${CLASS_API_BASE}/classes/${code}/submissions/${seatCode}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
-          body: JSON.stringify({ reasoningPoints: points, sessionId }),
+          body: JSON.stringify({ reasoningPoints: scores ? reasoningTotal(scores) : null, reasoningCriteria: scores, sessionId }),
         });
         if (response.ok) reload();
         return response.ok;

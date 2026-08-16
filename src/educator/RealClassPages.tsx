@@ -10,6 +10,7 @@ import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { STRUCTURED_MICRO_SKILLS } from "../domain/blueprint/microSkills";
 import { STATUS_LABELS, STATUS_ORDER, TRAJECTORY_LABELS } from "./labels";
 import { REASONING_MAXIMUM } from "../domain/evidence/grade";
+import { REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 
 /**
  * The educator's view of a real class.
@@ -259,10 +260,12 @@ export function RealStudentEvidence() {
   );
 }
 
-function StudentPanel({ row, code, keyQuery, onScore }: { row: StudentRow; code: string; keyQuery: string; onScore: (seat: string, session: string, points: number | null) => Promise<boolean> }) {
-  const [scores, setScores] = useState({ workability: 0, priority: 0, tradeoff: 0, numbers: 0 });
+function StudentPanel({ row, code, keyQuery, onScore }: { row: StudentRow; code: string; keyQuery: string; onScore: (seat: string, session: string, scores: ReasoningScores | null) => Promise<boolean> }) {
+  // Opens on whatever a person already recorded, so re-opening a scored student shows
+  // their reading rather than a blank rubric that would overwrite it on the next save.
+  const [scores, setScores] = useState<ReasoningScores>(() => row.reasoningCriteria ?? {});
   const [saved, setSaved] = useState<string | null>(null);
-  const total = Object.values(scores).reduce((sum, value) => sum + value, 0);
+  const total = reasoningTotal(scores);
   const grade = row.result.grade;
 
   return (
@@ -351,17 +354,18 @@ function StudentPanel({ row, code, keyQuery, onScore }: { row: StudentRow; code:
         </div>
         <div className="rubric-panel">
           <p className="eyebrow">{REASONING_MAXIMUM}-point reasoning rubric</p>
-          {([
-            ["workability", "Workability", 2, "Explains why the final plan actually holds"],
-            ["priority", "Protected priority", 2, "Names what they chose to keep, and why"],
-            ["tradeoff", "Tradeoff / opportunity cost", 2, "Names what that choice cost them"],
-            ["numbers", "Numerical evidence", 4, "Two accurate, relevant numbers from their own plan"],
-          ] as const).map(([key, label, max, hint]) => (
-            <div className="rubric-row" key={key}>
-              <div><b>{label}</b><span>{hint}</span></div>
+          {REASONING_CRITERIA.map((criterion) => (
+            <div className="rubric-row" key={criterion.id}>
+              <div><b>{criterion.label}</b><span>{criterion.hint}</span></div>
               <div>
-                {Array.from({ length: max + 1 }, (_, value) => (
-                  <button type="button" key={value} aria-pressed={scores[key] === value} onClick={() => setScores((current) => ({ ...current, [key]: value }))}>{value}</button>
+                {Array.from({ length: criterion.max + 1 }, (_, value) => (
+                  <button
+                    type="button"
+                    key={value}
+                    aria-label={`${criterion.label}: ${value} of ${criterion.max}`}
+                    aria-pressed={scores[criterion.id] === value}
+                    onClick={() => setScores((current) => ({ ...current, [criterion.id]: value }))}
+                  >{value}</button>
                 ))}
               </div>
             </div>
@@ -369,7 +373,7 @@ function StudentPanel({ row, code, keyQuery, onScore }: { row: StudentRow; code:
           <footer>
             <span>Reasoning total</span>
             <strong>{total}/{REASONING_MAXIMUM}</strong>
-            <Button onClick={() => void onScore(row.seatCode, row.sessionId, total).then((ok) => setSaved(ok ? "Saved." : "Could not save that."))}>
+            <Button onClick={() => void onScore(row.seatCode, row.sessionId, scores).then((ok) => setSaved(ok ? "Saved." : "Could not save that."))}>
               Save review
             </Button>
             <span aria-live="polite">{saved}</span>
