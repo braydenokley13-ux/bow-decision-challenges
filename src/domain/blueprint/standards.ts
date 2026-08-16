@@ -1,5 +1,20 @@
 import type { StructuredMicroSkillId } from "./types";
 
+/**
+ * Plan Under Pressure's alignment to five NYSED objectives, as the educator surfaces read
+ * it today.
+ *
+ * **Superseded by `src/domain/standards/`, and still in use.** The framework-scoped layer
+ * carries all 23 objectives, addresses each as `{ frameworkId, code }`, and maps them to
+ * BOW competencies rather than to one challenge's micro-skills. This module stays until
+ * the educator surfaces move onto it, because rewriting them is a different change and
+ * this one was not allowed to alter what a teacher sees.
+ *
+ * While both exist, `nysedWording.test.ts` holds the two copies of the official wording to
+ * being character-identical. Two copies that can disagree are worse than one copy that is
+ * wrong, because only one of them ever gets corrected.
+ */
+
 export type ObjectiveId = "1.1" | "1.2" | "1.3" | "4.1" | "5.1";
 export type AlignmentStrength = "primary" | "supporting" | "partial";
 

@@ -54,11 +54,13 @@ or any view module from `src/domain/**`.
 | Module | Shared shape | PUP-specific content |
 | --- | --- | --- |
 | `core/` | ✅ money, ids | — |
+| `competency/` | ✅ the 21 BOW competencies, their evidence requirements, the common rubric scale, availability | — |
+| `standards/` | ✅ frameworks, standards, mappings, completion rules, framework labels | — |
 | `finance/` | ✅ formulas, load, timeline, resolution, consequences, plan modes | prices arrive as `ScenarioNumbers` |
 | `evidence/` | ✅ envelope, facts, observation, grading | micro-skills are PUP's |
 | `machine/` | ✅ reducer, selectors | stage list is PUP's |
 | `scenario/` | — | **entirely PUP**: numbers, worlds, balance harness |
-| `blueprint/` | — | **entirely PUP**: concepts, micro-skills, standards |
+| `blueprint/` | — | **entirely PUP**: concepts, micro-skills, and the five-objective alignment the educator surfaces still read |
 
 `src/domain/finance/**` additionally may not import a world — it receives `ScenarioNumbers`
 and nothing else. That is what lets the balance harness price hypothetical models.
@@ -72,6 +74,46 @@ rather than about layout, which is why it lives here and not in the stage that r
 `finance/consequences.ts` derives the line under each of the three amounts — what the row
 currently buys, priced by the same model that resolves the season. Nothing in it recommends
 anything; `consequences.test.ts` holds it to that.
+
+#### The academic spine — `competency/` and `standards/`
+
+The permanent internal model, added ahead of the second world because it is cheap now and a
+migration of already-stored student evidence later:
+
+```
+BOW Competency            21 of them. BOW's own words. Unchanged when a state is added.
+  ├─ Evidence Requirements    the unit two different worlds are compared through
+  ├─ Common Rubric            0 / 2 / 3 / 4 / 5 + not observed, support-aware
+  ├─ Assessment Worlds        which competencies a built world can actually produce
+  └─ Standards Mappings       competency → (framework, code, coverage)
+        └─ FrameworkLabels    what this teacher's state calls things
+```
+
+A **competency** is a financial skill in BOW's words — `plan-within-income`. An
+**objective** is a line item in a state's framework, in that state's exact words and
+number — NYSED 1.3. BOW scores competencies and reports them through whichever framework
+the teacher's school uses. `standards/frameworks/nysed-2026.ts` carries all 23 NYSED
+Grades 5–8 objectives verbatim, and `nysedWording.test.ts` asserts each string literally so
+a typo in an official objective fails the build.
+
+**The one-way rule**, enforced by ESLint and by `spineSeparation.test.ts`: competencies
+never reference frameworks, frameworks never reference worlds, and a world never references
+an objective. `mappings/nysed-2026.ts` is the only join, and the only file a second state
+would add to. A standard is addressed as `{ frameworkId, code }` — never as a bare `"1.3"`,
+which is ambiguous the moment New Jersey has one too.
+
+**Coverage is stored, never inferred.** Every mapping is `full`, `partial` or `supporting`,
+written by a person with a rationale and a date. An objective is reported demonstrated only
+from a `full` mapping, or from a `StandardCompletionRule` that names the complete set of
+partials — which is why NYSED 2.1 needs all three of its skills and 4.1 needs insurance
+evidence Basketball does not produce.
+
+**A mapping is not an assessment.** `isAssessable()` additionally requires a built world
+that produces every required evidence requirement, so an objective BOW cannot assess yet
+reads *not yet available* rather than *not yet assessed*. Those are different sentences and
+a district reads them differently. `BUILT_WORLD_COVERAGE` is empty today: Basketball does
+not emit evidence-requirement observations yet, and declaring that it does before wiring it
+would be a claim nothing has verified.
 
 ### `src/educator/` — the educator surface
 
@@ -159,6 +201,11 @@ count an educator reads.
   addressable.
 - A full educator portal, student accounts, or a roster.
 - Challenge #2 itself, and any abstraction it has not yet asked for.
+- A framework loader, a mapping editor, a second state framework, a district service or a
+  research pipeline. The standards layer exists so a second state does not require a
+  rewrite — not to serve a state that has not been sold. Nothing in it is aware another
+  framework is possible, except that no NYSED code appears in a type, a world, a rubric or
+  a scoring function.
 
 **Rule of two with forethought**: nothing here blocks Challenge #2, and nothing here was
 generalised before Challenge #2 could prove what it needs.

@@ -27,9 +27,26 @@ export default tseslint.config(
   {
     files: ["src/domain/**/*.{ts,tsx}"],
     rules: {
+      // Depth-independent on purpose: the patterns used to be written as `../../educator/**`,
+      // which a module three directories under `src/domain` escapes simply by being deeper.
       "no-restricted-imports": ["error", {
         "patterns": [
-          { "group": ["react", "react-dom", "../../components/**", "../../stages/**", "../../educator/**", "../../app/**"], "message": "Domain modules must remain pure and view-independent." }
+          { "group": ["react", "react-dom", "**/components/**", "**/stages/**", "**/educator/**", "**/app/**"], "message": "Domain modules must remain pure and view-independent." }
+        ]
+      }]
+    }
+  },
+  {
+    files: ["src/domain/competency/**/*.ts"],
+    rules: {
+      // The one-way rule. A competency is BOW's own words for a financial skill and does not
+      // know that any state exists; the mapping table joins the two, and it lives on the
+      // standards side. An import in this direction is what makes adding a second state a
+      // rewrite instead of a mapping file.
+      "no-restricted-imports": ["error", {
+        "patterns": [
+          { "group": ["react", "react-dom", "**/components/**", "**/stages/**", "**/educator/**", "**/app/**"], "message": "Domain modules must remain pure and view-independent." },
+          { "group": ["**/standards", "**/standards/**"], "message": "Competencies never reference a state framework. The mapping table joins them, from the standards side." }
         ]
       }]
     }
