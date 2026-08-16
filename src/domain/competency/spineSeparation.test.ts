@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -18,30 +18,35 @@ import { describe, expect, it } from "vitest";
  * violation of it; a string literal or an identifier is.
  */
 
-/** Where a competency and its evidence requirements are actually defined. */
-const CANONICAL_COMPETENCY_SOURCES = [
-  "src/domain/competency/types.ts",
-  "src/domain/competency/competencies.ts",
-];
+/**
+ * Read from disk rather than listed by hand.
+ *
+ * A hand-maintained list rots in the one direction that matters: the next file added to
+ * the competency layer is the file nobody remembers to add to the list, and it is
+ * unscanned from the moment it exists. Globbing means a new module is covered by default
+ * and someone has to deliberately exclude it.
+ */
+function sourcesIn(directory: string): string[] {
+  return readdirSync(directory, { recursive: true, encoding: "utf8" })
+    .filter((entry) => entry.endsWith(".ts") && !entry.endsWith(".test.ts"))
+    .map((entry) => `${directory}/${entry}`)
+    .sort();
+}
+
+const COMPETENCY_SOURCES = sourcesIn("src/domain/competency");
+const STANDARDS_SOURCES = sourcesIn("src/domain/standards");
 
 /**
- * `availability.ts` is the deliberate exception on worlds and only on worlds. §4.5 makes a
+ * Where a competency and its evidence requirements are actually defined.
+ *
+ * `availability.ts` is the deliberate exception on worlds and only on worlds: §4.5 makes a
  * competency's availability depend on whether a world can produce its evidence, so the
- * edge has to exist somewhere; it is confined to that one file — plus `index.ts`, which
- * re-exports it as the layer's public surface — and neither may name a state.
+ * edge has to exist somewhere. It is confined to that one file, plus `index.ts` which
+ * re-exports it as the layer's public surface, and neither may name a state.
  */
-const COMPETENCY_SOURCES = [
-  ...CANONICAL_COMPETENCY_SOURCES,
-  "src/domain/competency/availability.ts",
-  "src/domain/competency/index.ts",
-];
-
-const STANDARDS_SOURCES = [
-  "src/domain/standards/types.ts",
-  "src/domain/standards/index.ts",
-  "src/domain/standards/frameworks/nysed-2026.ts",
-  "src/domain/standards/mappings/nysed-2026.ts",
-];
+const CANONICAL_COMPETENCY_SOURCES = COMPETENCY_SOURCES.filter(
+  (path) => !path.endsWith("availability.ts") && !path.endsWith("index.ts"),
+);
 
 /** `//` is only a comment when it is not the `//` in a URL. */
 function withoutComments(path: string): string {
@@ -56,6 +61,15 @@ const NAMES_A_STATE = /nysed|new york|nysld|\bNY\b/i;
 const IMPORTS = /from\s+"([^"]+)"/g;
 
 describe("the spine stays separated", () => {
+  it("scans every module in both layers, including any added since this test was written", () => {
+    // The assertion that stops the glob quietly matching nothing.
+    expect(COMPETENCY_SOURCES).toContain("src/domain/competency/competencies.ts");
+    expect(COMPETENCY_SOURCES.length).toBeGreaterThanOrEqual(4);
+    expect(STANDARDS_SOURCES).toContain("src/domain/standards/frameworks/nysed-2026.ts");
+    expect(STANDARDS_SOURCES.length).toBeGreaterThanOrEqual(4);
+    expect(CANONICAL_COMPETENCY_SOURCES.length).toBeGreaterThanOrEqual(2);
+  });
+
   it.each(COMPETENCY_SOURCES)("keeps a state's name out of %s", (path) => {
     expect(withoutComments(path)).not.toMatch(NAMES_A_STATE);
   });

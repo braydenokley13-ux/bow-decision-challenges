@@ -198,6 +198,11 @@ export function resolveObjectiveCoverage(
   ref: StandardRef,
   demonstrated: ReadonlySet<CompetencyId>,
 ): ObjectiveCoverageState {
+  // Explicit rather than incidental. An unknown code already falls through to
+  // `not-assessed` because nothing maps to it, but only because the integrity tests
+  // guarantee no orphan mapping exists — which is a fact about a different file.
+  if (standardByRef(ref) === undefined) return "not-assessed";
+
   const rule = completionRuleFor(ref);
   if (rule) {
     const met = rule.requires.filter((competencyId) => demonstrated.has(competencyId));
