@@ -1,6 +1,6 @@
 import type { SnapshotInputs } from "../../domain/finance/types";
 import { SCENARIO_NUMBERS } from "../../domain/scenario/numbers";
-import { availableFor, assigned, exposureFor, lockedFor, balanceOf } from "../../domain/finance/formulas";
+import { availableFor, assigned, conditionalIn, lockedFor, balanceOf } from "../../domain/finance/formulas";
 import { formatDollars } from "../../domain/core/money";
 import { CHOICE_LABELS, CHOICE_ORDER } from "./choices";
 
@@ -25,11 +25,7 @@ export function MoneySplit({ input, onLockedMoveAttempt }: { input: SnapshotInpu
   const committed = locked - week5Bills;
   const assignedTotal = assigned(input.amounts);
   const balance = balanceOf(input, SCENARIO_NUMBERS);
-  const conditional = input.mode === "working"
-    ? exposureFor(input, SCENARIO_NUMBERS)
-    : (input.mode === "week5-first-response" || input.mode === "final") && input.includeCompletion
-      ? SCENARIO_NUMBERS.completionIncome
-      : 0;
+  const conditional = conditionalIn(input, SCENARIO_NUMBERS);
   const certain = Math.max(0, available - conditional);
   const shortfall = Math.max(0, -Number(balance));
   const spare = Math.max(0, Number(balance));

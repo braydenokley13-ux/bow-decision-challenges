@@ -125,6 +125,7 @@
 .given-total { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); min-height: 88px; flex-direction: column; padding: var(--s-4); background: var(--surface-sunken); }
 .given-total span { color: var(--ink-3); font: var(--t-micro); }
 .given-total .money { font: var(--m-lg); font-feature-settings: var(--num); }
+.given-total--terms b { font: var(--t-body-lg); }
 
 /* --- Scene 4a: the two bets ----------------------------------------------- */
 .bets { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-3); align-items: stretch; }
@@ -136,6 +137,17 @@
 .bet__head strong { font: var(--m-md); font-feature-settings: var(--num); }
 .bet__rule { margin: 0 0 auto; color: var(--fin-conditional-ink); font: var(--t-micro); }
 .bet[data-counted="true"] { background: var(--surface-raised); border-color: var(--fin-adjustable); }
+
+/* The same two cards the student pressed, after the money did not come. Nothing is
+   redrawn: the card they counted is struck through where it stands, which is the whole
+   point of keeping them on screen instead of moving to a fresh board. */
+.bets[data-settled="true"] .bets__intro h2 { color: var(--fin-over-ink); }
+.bet[data-struck="true"] { background: var(--fin-over-soft); border: 1px solid var(--fin-over); border-left-width: 4px; border-image: none; }
+.bet[data-struck="true"] .bet__head strong { color: var(--fin-over-ink); text-decoration: line-through; text-decoration-thickness: 2px; }
+.bet[data-struck="true"] .bet__rule { color: var(--fin-over-ink); }
+.bets[data-settled="true"] .bet[data-counted="false"] { opacity: 0.66; }
+.bet__verdict { margin: 0; font: var(--t-ui); }
+.bet[data-struck="true"] .bet__verdict { color: var(--fin-over-ink); font-weight: 600; }
 
 /* --- Scene 4: the money split -------------------------------------------- */
 .split { display: grid; align-content: start; gap: var(--s-4); padding: var(--s-5); background: var(--surface-sunken); border-right: 1px solid var(--border-default); }
@@ -179,7 +191,66 @@
 .plan-board__body { display: grid; grid-template-columns: minmax(300px, 0.85fr) minmax(0, 1.15fr); }
 .plan-board__setup { margin: 0 auto 0 0; padding: var(--s-2) var(--s-3); color: var(--ink-2); background: var(--surface-sunken); border-radius: var(--r-pill); font: var(--t-micro); }
 .choice-stack { display: grid; align-content: start; gap: var(--s-2); padding: var(--s-5); }
-.choice-row { display: grid; grid-template-columns: 6px minmax(0, 1fr) auto auto; align-items: center; gap: var(--s-4); padding: var(--s-4); background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: var(--r-md); }
+
+/* -------------------------------------------------------------------------
+   The adjust panel: the plan being corrected rather than rebuilt.
+
+   It is deliberately not the board. No towers, no second column, one hero
+   number, and a height that fits on a Chromebook without scrolling — because
+   the question it asks is small, and a screen the size of the board would
+   tell a student it was not.
+   ------------------------------------------------------------------------- */
+.adjust { background: var(--surface); border: 1px solid var(--border-default); border-top: 4px solid var(--chapter-accent, var(--world-accent)); }
+.adjust__head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.85fr); gap: var(--s-5) var(--s-7); padding: var(--s-5) var(--s-6); border-bottom: 1px solid var(--border-subtle); }
+.adjust__say .eyebrow { margin-bottom: var(--s-2); }
+.adjust__say h2 { margin: 0 0 var(--s-2); font: var(--t-title1); }
+.adjust__lead { margin: 0; max-width: 46ch; color: var(--ink-2); font: var(--t-ui); }
+.supply-change { display: grid; align-content: start; gap: var(--s-1); margin: 0; padding: 0; list-style: none; }
+.supply-change li { display: grid; grid-template-columns: 1.2em minmax(0, 1fr) auto; align-items: baseline; gap: var(--s-3); padding: var(--s-2) var(--s-3); border-radius: var(--r-xs); }
+.supply-change__sign { font: var(--m-sm); text-align: center; }
+.supply-change__label { font: var(--t-sm); }
+.supply-change strong { font: var(--m-sm); font-feature-settings: var(--num); }
+.supply-change li[data-direction="out"] { color: var(--fin-over-ink); background: var(--fin-over-soft); }
+.supply-change li[data-direction="out"] strong { text-decoration: line-through; text-decoration-thickness: 2px; }
+.supply-change li[data-direction="in"] { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); }
+.supply-change li[data-direction="total"] { margin-top: var(--s-2); padding-top: var(--s-3); color: var(--ink-1); border-top: 1px solid var(--border-default); border-radius: 0; }
+.supply-change li[data-direction="total"] strong { font: var(--m-md); }
+
+/* The one number the whole panel is about. */
+.adjust__countdown { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-5); margin: 0; padding: var(--s-4) var(--s-6); border-bottom: 1px solid var(--border-subtle); }
+.adjust__countdown span { font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.adjust__countdown strong { font: var(--m-hero); font-feature-settings: var(--num); transition: color var(--dur-state) var(--ease-standard); }
+.adjust[data-state="over"] .adjust__countdown { color: var(--fin-over-ink); background: var(--fin-over-soft); }
+.adjust[data-state="unassigned"] .adjust__countdown { color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); }
+.adjust[data-state="balanced"] .adjust__countdown { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); }
+.adjust__rows { display: grid; gap: var(--s-2); padding: var(--s-5) var(--s-6); }
+.adjust .plan-help { margin: 0 var(--s-6) var(--s-5); }
+
+/* -------------------------------------------------------------------------
+   The triage board. Same instrument as the first plan, under different
+   weather: the money is already spoken for and something has to come back out
+   of it, so the board wears the overspend colour rather than the amber of a
+   change that has merely been announced.
+   ------------------------------------------------------------------------- */
+.plan-board[data-variant="triage"] { border-top: 4px solid var(--fin-over); }
+.change-banner[data-variant="triage"] { color: var(--fin-over-ink); background: var(--fin-over-soft); border-bottom-color: var(--fin-over); }
+.plan-board[data-variant="triage"] .choice-row { border-color: var(--border-default); }
+
+/* The two calls, after they have been made. Compact enough that the check below is the
+   thing on screen, present enough to be the reason it is there. */
+.settled-calls { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); margin: 0 0 var(--s-5); }
+.settled-calls > div { padding: var(--s-4) var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-left: 4px solid var(--border-strong); }
+.settled-calls > div[data-alert="true"] { background: var(--fin-conditional-soft); border-color: var(--fin-conditional); border-left-color: var(--fin-conditional-stripe); }
+.settled-calls dt { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.settled-calls dd { margin: var(--s-2) 0 0; font: var(--t-ui); }
+.settled-calls > div[data-alert="true"] dt, .settled-calls > div[data-alert="true"] dd { color: var(--fin-conditional-ink); }
+.choice-row { display: grid; grid-template-columns: 6px minmax(0, 1fr) auto auto auto; align-items: center; gap: var(--s-4); padding: var(--s-4); background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: var(--r-md); }
+
+/* The one tap that does the obvious move for this row. It is a shortcut through the
+   common answer, so it reads as an offer rather than as the only way through — the
+   steppers beside it still reach every amount. */
+.choice-row__action { min-height: var(--tap); padding: 0 var(--s-4); color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); border: 1px solid var(--fin-adjustable); border-radius: var(--r-sm); cursor: pointer; font: var(--t-sm); white-space: nowrap; }
+.choice-row__action:hover { color: var(--ink-invert); background: var(--fin-adjustable); }
 .choice-row__swatch { width: 6px; height: 100%; min-height: 46px; border-radius: var(--r-pill); }
 .choice-row[data-category="goal"] .choice-row__swatch { background: var(--choice-1); }
 .choice-row[data-category="reserve"] .choice-row__swatch { background: var(--choice-2); }
@@ -354,8 +425,16 @@
   .bets { grid-template-columns: 1fr 1fr; }
   .bets__intro { grid-column: 1 / -1; }
   .feed .post:last-child { grid-column: 1 / -1; }
-  .choice-row { grid-template-columns: 6px minmax(0, 1fr) auto; row-gap: var(--s-3); }
-  .choice-row__controls { grid-column: 2 / -1; justify-self: end; }
+
+  /* The board's rows sit in a column beside the towers, so they run out of width long
+     before the adjust panel's do — the adjust panel is a single column and keeps its rows
+     on one line until the viewport is genuinely narrow. The one tap and the steppers then
+     share the second line rather than taking one each, because three rows at two lines
+     apiece pushed the commit bar off a Chromebook screen. */
+  .plan-board .choice-row { grid-template-columns: 6px minmax(0, 1fr) auto; row-gap: var(--s-3); }
+  .plan-board .choice-row__action { grid-column: 2; grid-row: 2; justify-self: start; }
+  .plan-board .choice-row__controls { grid-column: 3; grid-row: 2; justify-self: end; }
+  .adjust__head { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 760px) {
@@ -377,6 +456,13 @@
   .split__line i { display: none; }
   .recap__numbers { grid-template-columns: 1fr; }
   .bulletin { grid-template-columns: 1fr; gap: var(--s-3); }
+  .settled-calls { grid-template-columns: 1fr; }
+  .adjust .choice-row { grid-template-columns: 6px minmax(0, 1fr) auto; row-gap: var(--s-3); }
+  .adjust .choice-row__action { grid-column: 2; grid-row: 2; justify-self: start; }
+  .adjust .choice-row__controls { grid-column: 3; grid-row: 2; justify-self: end; }
+  .adjust__head, .adjust__countdown, .adjust__rows { padding-left: var(--s-4); padding-right: var(--s-4); }
+  .adjust .plan-help { margin-left: var(--s-4); margin-right: var(--s-4); }
+  .adjust__countdown { flex-direction: column; align-items: flex-start; gap: var(--s-2); }
 }
 
 /* ---------------------------------------------------------------------------

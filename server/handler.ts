@@ -83,11 +83,32 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
   const random = options.random ?? Math.random;
   const segments = request.path.split("/").filter(Boolean);
 
-  // GET /health — what a deploy smoke test and a load balancer both ask for, and the one
-  // place the store driver in force is visible without reading the environment.
+  /**
+   * GET /health — what a deploy smoke test and a load balancer both ask for, and the one
+   * place the store in force is visible without reading somebody's environment.
+   *
+   * `classroomReady` is the only field worth reading before a pilot, and it is false unless
+   * a class written now would still be there on Friday. It used to report `ok: true` for
+   * every driver including a serverless disk that keeps nothing, so a deployment one
+   * environment variable away from losing a class looked identical to a working one.
+   */
   if (request.method === "GET" && segments.length === 1 && segments[0] === "health") {
-    return { status: 200, body: { ok: true, store: store.id, challenges: [PLAN_UNDER_PRESSURE.id], at: now } };
+    const classroomReady = store.durable && !store.blockedReason;
+    const reason = store.blockedReason
+      ?? (store.durable
+        ? `Classes are kept in the ${store.id} store for ${CLASS_RETENTION_DAYS} days.`
+        : `The ${store.id} store keeps nothing past this process. Fine for tests and demos, not for a class.`);
+    return {
+      // A deployment that cannot start a class says so in the status line too, so a smoke
+      // test that only checks for 200 still catches it.
+      status: store.blockedReason ? 503 : 200,
+      body: { ok: !store.blockedReason, store: store.id, durable: store.durable, classroomReady, reason, challenges: [PLAN_UNDER_PRESSURE.id], at: now },
+    };
   }
+
+  // Anything past here touches the store. A deployment with nowhere durable to write says
+  // so once, in words, rather than failing later as an unexplained 503.
+  if (store.blockedReason) return fail(503, "unavailable", store.blockedReason);
 
   // POST /classes — an educator creates a class and receives the key that reads it.
   if (request.method === "POST" && segments.length === 1 && segments[0] === "classes") {

@@ -12,6 +12,16 @@ interface AllocationControlProps {
   originalValue?: number | undefined;
   /** When present the row is already committed and cannot be moved; this says why. */
   lockedNote?: string | undefined;
+  /**
+   * One tap that does the whole obvious move for this row — take the rest of a shortfall
+   * out of it, or put the rest of new money into it. The steppers still reach every other
+   * amount, so this is a shortcut through the common case rather than a different model.
+   *
+   * `label` is short because it sits in a row; `spoken` names the row, because three
+   * buttons that all read "Take" and the same amount are not a choice anybody listening
+   * can make.
+   */
+  action?: { label: string; spoken: string; onPress: () => void } | undefined;
   onChange: (value: ReturnType<typeof dollars>) => void;
 }
 
@@ -19,7 +29,7 @@ interface AllocationControlProps {
  * One choice, as a row: the colour block that matches its slice of the tower, what the
  * money is for, what it is worth now, and the two keys that move it.
  */
-export function AllocationControl({ id, label, description, value, step, max, originalValue, lockedNote, onChange }: AllocationControlProps) {
+export function AllocationControl({ id, label, description, value, step, max, originalValue, lockedNote, action, onChange }: AllocationControlProps) {
   const inputId = useId();
   const [raw, setRaw] = useState<string | null>(null);
   const commit = (candidate: string) => {
@@ -60,6 +70,11 @@ export function AllocationControl({ id, label, description, value, step, max, or
         {originalValue !== undefined && originalValue !== value && <small>was {formatDollars(originalValue)}</small>}
       </div>
       <strong className="choice-row__value money">{formatDollars(value)}</strong>
+      {action && (
+        <button type="button" className="choice-row__action" aria-label={action.spoken} onClick={action.onPress}>
+          {action.label}
+        </button>
+      )}
       <div className="choice-row__controls" role="group" aria-label={`${label} allocation`}>
         <button type="button" aria-label={`Decrease ${label} by $${step}`} onClick={() => changeBy(-step)}>−</button>
         <input

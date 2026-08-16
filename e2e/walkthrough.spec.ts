@@ -1,6 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
-import { fillPlanToBalance, week5TotalFor, type PlanContext } from "./plan";
+import { SAVE_LABEL, fillPlanToBalance, savePlan, week5TotalFor, type PlanContext } from "./plan";
 import {
   completeSetupStage,
   createClass,
@@ -74,11 +74,12 @@ for (const size of SIZES) {
     await shoot("05b-count-the-bonuses");
     await fillPlanToBalance(page, "working", context);
     await shoot("06-working-plan");
-    await page.getByRole("button", { name: "Save this version" }).click();
+    await page.getByRole("button", { name: SAVE_LABEL.working }).click();
 
+    await shoot("07a-bonus-pulled");
     await fillPlanToBalance(page, "fallback", context);
     await shoot("07-fallback");
-    await page.getByRole("button", { name: "Save this version" }).click();
+    await page.getByRole("button", { name: SAVE_LABEL.fallback }).click();
     await shoot("08-season-week-1");
 
     for (const week of [2, 3, 4]) {
@@ -95,19 +96,18 @@ for (const size of SIZES) {
     await page.locator(".gap-builder .calculation").getByRole("button", { name: "Check" }).click();
     await shoot("10-first-response");
 
-    await fillPlanToBalance(page, "week5-first-response", context);
-    await page.getByRole("button", { name: "Save this version" }).click();
+    await savePlan(page, "week5-first-response", context);
     await shoot("11-opportunity");
 
     await decideOpportunity(page, { clinics: true, countBonus: true });
     const landed: PlanContext = { ...context, clinics: true, countCompletionFinal: true };
     await fillPlanToBalance(page, "final", landed);
     await shoot("12-final-plan");
-    await page.getByRole("button", { name: "Save final plan" }).click();
+    await page.getByRole("button", { name: SAVE_LABEL.final }).click();
 
     await fillPlanToBalance(page, "remaining-risk", landed);
     await shoot("13-remaining-risk");
-    await page.getByRole("button", { name: "Save preview" }).click();
+    await page.getByRole("button", { name: SAVE_LABEL["remaining-risk"] }).click();
     await shoot("13b-week8-resolution");
 
     await page.getByRole("button", { name: "Explain my plan" }).click();
@@ -122,15 +122,12 @@ for (const size of SIZES) {
       await enterChallenge(page, { classCode: created.code, seatCode: seat });
       await completeSetupStage(page, index);
       await completeWorkingCalcs(page);
-      await fillPlanToBalance(page, "working", other);
-      await page.getByRole("button", { name: "Save this version" }).click();
+      await savePlan(page, "working", other);
       await playSeasonWeeks(page, { deposit: index === 1 });
       await passWeek5Calculation(page, String(week5TotalFor(other)));
-      await fillPlanToBalance(page, "week5-first-response", { ...other, deposit: index === 1 });
-      await page.getByRole("button", { name: "Save this version" }).click();
+      await savePlan(page, "week5-first-response", { ...other, deposit: index === 1 });
       await decideOpportunity(page, { clinics: index === 0, countBonus: false });
-      await fillPlanToBalance(page, "final", { ...other, deposit: index === 1, clinics: index === 0, countCompletionFinal: false });
-      await page.getByRole("button", { name: "Save final plan" }).click();
+      await savePlan(page, "final", { ...other, deposit: index === 1, clinics: index === 0, countCompletionFinal: false });
       await page.getByRole("button", { name: "Explain my plan" }).click();
       await submitDefense(page, `Seat ${seat}: my plan still works because every dollar has a job after Week 5. I protected the course money and gave up part of the reserve.`);
       await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible({ timeout: 15_000 });

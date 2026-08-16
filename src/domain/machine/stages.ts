@@ -10,16 +10,23 @@ export const STAGE_ORDER: readonly StageId[] = [
  * The five chapters a student moves through, and which stages belong to each. Single
  * source of truth so the announced position can never drift from the stage machine.
  */
-export const PROGRESS_STEPS: readonly { label: string; stages: readonly StageId[] }[] = [
-  { label: "The offer", stages: ["the-offer", "role-contract", "setup-comparison"] },
-  { label: "The plan", stages: ["working-plan", "fallback-version", "income-check"] },
-  { label: "Weeks 1–4", stages: ["season-weeks", "week5-transition"] },
-  { label: "Week 5", stages: ["week5-event", "first-response", "opportunity-final-repair", "remaining-risk-preview"] },
-  { label: "Week 8", stages: ["week8-resolution", "defense", "submitted"] },
+export type ChapterId = "offer" | "plan" | "season" | "pressure" | "resolution";
+
+export const PROGRESS_STEPS: readonly { label: string; chapter: ChapterId; stages: readonly StageId[] }[] = [
+  { label: "The offer", chapter: "offer", stages: ["the-offer", "role-contract", "setup-comparison"] },
+  { label: "The plan", chapter: "plan", stages: ["working-plan", "fallback-version", "income-check"] },
+  { label: "Weeks 1–4", chapter: "season", stages: ["season-weeks", "week5-transition"] },
+  { label: "Week 5", chapter: "pressure", stages: ["week5-event", "first-response", "opportunity-final-repair", "remaining-risk-preview"] },
+  { label: "Week 8", chapter: "resolution", stages: ["week8-resolution", "defense", "submitted"] },
 ] as const;
 
 export function progressIndexFor(stage: StageId): number {
   return Math.max(0, PROGRESS_STEPS.findIndex((step) => step.stages.includes(stage)));
+}
+
+/** Which part of the story a stage belongs to, so the room can change with the chapter. */
+export function chapterFor(stage: StageId): ChapterId {
+  return PROGRESS_STEPS[progressIndexFor(stage)]!.chapter;
 }
 
 export const SEASON_WEEKS = 8;

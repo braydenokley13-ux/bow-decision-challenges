@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { fillPlanToBalance, week5TotalFor, type PlanContext } from "./plan";
+import { BACKUP_HEADING, savePlan, week5TotalFor, type PlanContext } from "./plan";
 import {
   completeSetupStage,
   completeWorkingCalcs,
@@ -51,14 +51,12 @@ async function runStudent(page: Page, classCode: string, student: Student): Prom
   await enterChallenge(page, { classCode, seatCode: student.seat });
   await completeSetupStage(page, student.index);
   await completeWorkingCalcs(page, { attendance: student.countBonus });
-  await fillPlanToBalance(page, "working", opening);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "working", opening);
 
   if (student.countBonus) {
     // Counting a bonus means building the version that works without it.
-    await expect(page.getByRole("heading", { name: "What if the bonus never shows up?" })).toBeVisible();
-    await fillPlanToBalance(page, "fallback", opening);
-    await page.getByRole("button", { name: "Save this version" }).click();
+    await expect(page.getByRole("heading", { name: BACKUP_HEADING })).toBeVisible();
+    await savePlan(page, "fallback", opening);
   }
 
   if (student.quirk === "refresh") {
@@ -72,12 +70,10 @@ async function runStudent(page: Page, classCode: string, student: Student): Prom
   await playSeasonWeeks(page, { deposit: student.deposit });
   const afterWeek5: PlanContext = { ...opening, deposit: student.deposit };
   await passWeek5Calculation(page, String(week5TotalFor(opening)));
-  await fillPlanToBalance(page, "week5-first-response", afterWeek5);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "week5-first-response", afterWeek5);
 
   await decideOpportunity(page, { clinics: student.clinics, countBonus: false });
-  await fillPlanToBalance(page, "final", { ...afterWeek5, clinics: student.clinics, countCompletionFinal: false });
-  await page.getByRole("button", { name: "Save final plan" }).click();
+  await savePlan(page, "final", { ...afterWeek5, clinics: student.clinics, countCompletionFinal: false });
   await readWeek8Resolution(page);
 
   if (student.quirk === "network-drop") {
@@ -183,6 +179,9 @@ test("the production build serves the same class path", async ({ browser, reques
     const health = await request.get(`${process.env.PILOT_API_URL ?? "http://127.0.0.1:4180"}/api/health`);
     expect(health.status()).toBe(200);
     expect((await health.json()).ok).toBe(true);
+    // The one field to read before letting a room of students in. A deployment writing to
+    // a disk its platform does not keep answers false here and refuses to open a class.
+    expect(await health.json()).toMatchObject({ store: expect.any(String), durable: expect.any(Boolean), classroomReady: expect.any(Boolean) });
 
     await runStudent(page, created.code, { seat: "31", index: 1, setupId: "teammate-share", clinics: false, deposit: false, countBonus: false });
 

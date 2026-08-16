@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { NUMBERS as N, NO_BONUS_HEADING, fillPlanToBalance, fillPlanLeavingShortfall, money, spendableFor, week5TotalFor, type PlanContext } from "./plan";
+import { NUMBERS as N, BACKUP_HEADING, NO_BONUS_HEADING, TRIAGE_HEADING, fillPlanToBalance, fillPlanLeavingShortfall, money, savePlan, spendableFor, week5TotalFor, type PlanContext } from "./plan";
 import {
   createClass,
   createClassKeyFor,
@@ -82,7 +82,7 @@ studentTest("full conditional path completes through fallback, Week 5, remaining
   await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Save this version" }).click();
 
-  await expect(page.getByRole("heading", { name: "What if the bonus never shows up?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: BACKUP_HEADING })).toBeVisible();
   await fillPlanLeavingShortfall(page, "fallback", context, 900);
   await page.getByRole("button", { name: "Check this plan" }).click();
   await page.getByRole("button", { name: `Save it, ${money(900)} still missing` }).click();
@@ -93,19 +93,16 @@ studentTest("full conditional path completes through fallback, Week 5, remaining
   await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
   await passWeek5Calculation(page, String(week5TotalFor(context)));
 
-  await expect(page.getByRole("heading", { name: "Fix what you can with what Avery has." })).toBeVisible();
-  await fillPlanToBalance(page, "week5-first-response", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await expect(page.getByRole("heading", { name: TRIAGE_HEADING })).toBeVisible();
+  await savePlan(page, "week5-first-response", context);
 
   await expect(page.getByRole("heading", { name: "Two calls, then land the plan." })).toBeVisible();
   await decideOpportunity(page, { clinics: true, countBonus: true });
   const landed: PlanContext = { ...context, clinics: true, countCompletionFinal: true };
-  await fillPlanToBalance(page, "final", landed);
-  await page.getByRole("button", { name: "Save final plan" }).click();
+  await savePlan(page, "final", landed);
 
   await expect(page.getByRole("heading", { name: NO_BONUS_HEADING })).toBeVisible();
-  await fillPlanToBalance(page, "remaining-risk", landed);
-  await page.getByRole("button", { name: "Save preview" }).click();
+  await savePlan(page, "remaining-risk", landed);
 
   await readWeek8Resolution(page);
   await expect(page.getByRole("heading", { name: "Make the case for your plan." })).toBeVisible();
@@ -131,29 +128,25 @@ studentTest("confirmed-only path on the inexpensive setup skips the fallback and
   await completeWorkingCalcs(page); // no bonuses counted
 
   const context: PlanContext = { setupId: "cousin-room" };
-  await fillPlanToBalance(page, "working", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "working", context);
 
   // A plan with no conditional income has no backup version to build, so the season
   // starts straight away instead of on a screen that only says there is nothing to do.
   await expect(page.getByRole("heading", { name: "The season starts." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "What if the bonus never shows up?" })).not.toBeVisible();
+  await expect(page.getByRole("heading", { name: BACKUP_HEADING })).not.toBeVisible();
   await playSeasonWeeks(page);
 
   await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
   await passWeek5Calculation(page, String(week5TotalFor(context)));
 
-  await fillPlanToBalance(page, "week5-first-response", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "week5-first-response", context);
 
   await decideOpportunity(page, { clinics: true, countBonus: true });
   const landed: PlanContext = { ...context, clinics: true, countCompletionFinal: true };
-  await fillPlanToBalance(page, "final", landed);
-  await page.getByRole("button", { name: "Save final plan" }).click();
+  await savePlan(page, "final", landed);
 
   await expect(page.getByRole("heading", { name: NO_BONUS_HEADING })).toBeVisible();
-  await fillPlanToBalance(page, "remaining-risk", landed);
-  await page.getByRole("button", { name: "Save preview" }).click();
+  await savePlan(page, "remaining-risk", landed);
 
   await readWeek8Resolution(page);
   await submitDefense(page, "My plan still works because every dollar has a job after Week 5. I protected the course goal and gave up the $800 bonus in this preview.");
@@ -171,18 +164,15 @@ studentTest("declining the optional weekend clinics still completes the plan", a
   await completeWorkingCalcs(page, { attendance: true });
 
   const context: PlanContext = { setupId: "cousin-room", countCompletion: true };
-  await fillPlanToBalance(page, "working", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "working", context);
 
-  await expect(page.getByRole("heading", { name: "What if the bonus never shows up?" })).toBeVisible();
-  await fillPlanToBalance(page, "fallback", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await expect(page.getByRole("heading", { name: BACKUP_HEADING })).toBeVisible();
+  await savePlan(page, "fallback", context);
 
   await playSeasonWeeks(page);
   await passWeek5Calculation(page, String(week5TotalFor(context)));
 
-  await fillPlanToBalance(page, "week5-first-response", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "week5-first-response", context);
 
   await expect(page.getByRole("heading", { name: "Two calls, then land the plan." })).toBeVisible();
   await decideOpportunity(page, { clinics: false, countBonus: true });
@@ -190,12 +180,10 @@ studentTest("declining the optional weekend clinics still completes the plan", a
   await expect(page.getByRole("button", { name: "Take the clinics" })).toHaveAttribute("aria-pressed", "false");
 
   const landed: PlanContext = { ...context, clinics: false, countCompletionFinal: true };
-  await fillPlanToBalance(page, "final", landed);
-  await page.getByRole("button", { name: "Save final plan" }).click();
+  await savePlan(page, "final", landed);
 
   await expect(page.getByRole("heading", { name: NO_BONUS_HEADING })).toBeVisible();
-  await fillPlanToBalance(page, "remaining-risk", landed);
-  await page.getByRole("button", { name: "Save preview" }).click();
+  await savePlan(page, "remaining-risk", landed);
 
   await readWeek8Resolution(page);
   await submitDefense(page, "My plan still works because I did not take the clinics and still balance at $0. I protected the course goal and gave up nothing extra.");
@@ -213,20 +201,17 @@ studentTest("leaving the $800 bonus out of the final plan skips the remaining-ri
   await completeWorkingCalcs(page); // confirmed-only, keeps the path short
 
   const context: PlanContext = { setupId: "teammate-share" };
-  await fillPlanToBalance(page, "working", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "working", context);
   await playSeasonWeeks(page);
 
   await passWeek5Calculation(page, String(week5TotalFor(context)));
 
-  await fillPlanToBalance(page, "week5-first-response", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "week5-first-response", context);
 
   await decideOpportunity(page, { clinics: true, countBonus: false });
   await expect(page.getByRole("button", { name: "Plan without it" })).toHaveAttribute("aria-pressed", "true");
 
-  await fillPlanToBalance(page, "final", { ...context, clinics: true, countCompletionFinal: false });
-  await page.getByRole("button", { name: "Save final plan" }).click();
+  await savePlan(page, "final", { ...context, clinics: true, countCompletionFinal: false });
 
   // The remaining-risk preview only exists when the final plan still counts the bonus.
   await expect(page.getByRole("heading", { name: NO_BONUS_HEADING })).not.toBeVisible();
@@ -235,6 +220,77 @@ studentTest("leaving the $800 bonus out of the final plan skips the remaining-ri
 
   await submitDefense(page, "My plan still works because it never depended on the $800 bonus in the first place. I protected the course goal and gave up the reserve.");
   await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible();
+});
+
+// ---------------------------------------------------------------------------
+// 5b. The interaction budget. The long path passes through five money moments,
+//     and the design rule is that only two of them are worth the whole board.
+// ---------------------------------------------------------------------------
+
+studentTest("the long path opens the planning board twice and adjusts the plan the other three times", async ({ page, classCode }) => {
+  const board = page.locator(".plan-board");
+  const adjust = page.locator(".adjust");
+  const onlyBoard = async (where: string) => {
+    await expect(board, `${where}: expected the full board`).toHaveCount(1);
+    await expect(adjust, `${where}: expected no adjust panel`).toHaveCount(0);
+  };
+  const onlyAdjust = async (where: string) => {
+    await expect(adjust, `${where}: expected the adjust panel`).toHaveCount(1);
+    await expect(board, `${where}: expected no full board`).toHaveCount(0);
+  };
+
+  await gotoFreshChallenge(page);
+  await enterChallenge(page, { classCode });
+  await completeSetupStage(page, 2);
+  await completeWorkingCalcs(page, { attendance: true, showcase: true });
+
+  const context: PlanContext = { setupId: "cousin-room", countCompletion: true, countOutcome: true };
+  await onlyBoard("the first plan");
+  await savePlan(page, "working", context);
+
+  // The backup version is the same screen reacting: the cards the student pressed are
+  // still there, struck through, and the board has become the compact instrument.
+  await onlyAdjust("the backup version");
+  await expect(page.locator(".bet[data-struck='true']")).toHaveCount(2);
+  await savePlan(page, "fallback", context);
+
+  await playSeasonWeeks(page);
+  await passWeek5Calculation(page, String(week5TotalFor(context)));
+  await onlyBoard("the Week 5 triage");
+  await savePlan(page, "week5-first-response", context);
+
+  await decideOpportunity(page, { clinics: true, countBonus: true });
+  const landed: PlanContext = { ...context, clinics: true, countCompletionFinal: true };
+  await onlyAdjust("the final plan");
+  await savePlan(page, "final", landed);
+
+  // The no-bonus check arrives on the screen where the bonus was counted, with the two
+  // calls that caused it still above it.
+  await onlyAdjust("the no-bonus check");
+  await expect(page.locator(".settled-calls")).toBeVisible();
+  await savePlan(page, "remaining-risk", landed);
+  await readWeek8Resolution(page);
+});
+
+studentTest("the eight-week totals stay off the cards until the student has worked one out", async ({ page, classCode }) => {
+  await gotoFreshChallenge(page);
+  await enterChallenge(page, { classCode });
+  await rankPlacesCorrectly(page);
+
+  // Printing the answer beside the box that asks for it made the only question on this
+  // screen a copying exercise, and the micro-skill behind it worth nothing.
+  const totals = page.locator(".given-total .money");
+  await expect(totals).toHaveCount(0);
+  await expect(page.locator(".given-total--terms")).toHaveCount(3);
+
+  await page.locator(".place-card").nth(1).getByRole("button", { name: "Choose this setup" }).click();
+  await expect(totals).toHaveCount(0);
+  await page.getByLabel(`What the ${SETUP_TITLES["teammate-share"]} costs Avery`).fill(String(N.setupCosts["teammate-share"]));
+  await page.locator(".chosen-total").getByRole("button", { name: "Check" }).click();
+
+  // Working one out reveals all three, which is the payoff for the comparison they just made.
+  await expect(totals).toHaveCount(3);
+  await expect(page.locator(".setup-grid")).toContainText(money(N.setupCosts["gym-sublet"]));
 });
 
 // ---------------------------------------------------------------------------
@@ -249,28 +305,23 @@ studentTest("the expensive setup completes and Week 5 shows only two changed ite
   await completeWorkingCalcs(page, { showcase: true });
 
   const context: PlanContext = { setupId: "gym-sublet", countOutcome: true };
-  await fillPlanToBalance(page, "working", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "working", context);
 
-  await expect(page.getByRole("heading", { name: "What if the bonus never shows up?" })).toBeVisible();
-  await fillPlanToBalance(page, "fallback", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await expect(page.getByRole("heading", { name: BACKUP_HEADING })).toBeVisible();
+  await savePlan(page, "fallback", context);
 
   await playSeasonWeeks(page);
   await expect(page.locator(".gap-tiles button")).toHaveCount(2);
   await passWeek5Calculation(page, String(week5TotalFor(context)));
 
-  await fillPlanToBalance(page, "week5-first-response", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "week5-first-response", context);
 
   await decideOpportunity(page, { clinics: true, countBonus: true });
   const landed: PlanContext = { ...context, clinics: true, countCompletionFinal: true };
-  await fillPlanToBalance(page, "final", landed);
-  await page.getByRole("button", { name: "Save final plan" }).click();
+  await savePlan(page, "final", landed);
 
   await expect(page.getByRole("heading", { name: NO_BONUS_HEADING })).toBeVisible();
-  await fillPlanToBalance(page, "remaining-risk", landed);
-  await page.getByRole("button", { name: "Save preview" }).click();
+  await savePlan(page, "remaining-risk", landed);
 
   await readWeek8Resolution(page);
   await submitDefense(page, "My plan still works because the stable setup has no extra travel cost after Week 5. I protected the course goal and gave up flexible cash.");
@@ -424,19 +475,16 @@ studentTest("key screens have no serious or critical accessibility violations", 
   await completeSetupStage(page, 2);
   await completeWorkingCalcs(page);
   const scanned: PlanContext = { setupId: "cousin-room" };
-  await fillPlanToBalance(page, "working", scanned);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "working", scanned);
   await playSeasonWeeks(page);
   await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
   await noSeriousAxeViolations(page);
 
   // The season review is the last screen a student types on, so it is scanned too.
   await passWeek5Calculation(page, String(week5TotalFor(scanned)));
-  await fillPlanToBalance(page, "week5-first-response", scanned);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "week5-first-response", scanned);
   await decideOpportunity(page, { clinics: false, countBonus: false });
-  await fillPlanToBalance(page, "final", { ...scanned, clinics: false, countCompletionFinal: false });
-  await page.getByRole("button", { name: "Save final plan" }).click();
+  await savePlan(page, "final", { ...scanned, clinics: false, countCompletionFinal: false });
   await expect(page.getByRole("heading", { name: "The season ends." })).toBeVisible();
   await noSeriousAxeViolations(page);
   await page.getByRole("button", { name: "Explain my plan" }).click();
@@ -455,8 +503,7 @@ studentTest("the weeks Avery plays are narrated differently for each housing cho
     await enterChallenge(page, { classCode });
     await completeSetupStage(page, index);
     await completeWorkingCalcs(page);
-    await fillPlanToBalance(page, "working", { setupId: SETUP_ORDER[index] });
-    await page.getByRole("button", { name: "Save this version" }).click();
+    await savePlan(page, "working", { setupId: SETUP_ORDER[index] });
     await expect(page.getByRole("heading", { name: "The season starts." })).toBeVisible();
     await expect(page.locator(".feed")).toContainText(line);
   }
@@ -512,8 +559,7 @@ studentTest("playing Weeks 1 to 4 drains money and piles up hours at the rate th
   await enterChallenge(page, { classCode });
   await completeSetupStage(page, 2); // cousin-room: nearly free, nearly unreachable
   await completeWorkingCalcs(page);
-  await fillPlanToBalance(page, "working", { setupId: "cousin-room" });
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "working", { setupId: "cousin-room" });
 
   const money = page.locator(".season-ledger__row[data-tone='money'] strong");
   const hours = page.locator(".season-ledger__row[data-tone='time'] strong");
@@ -538,8 +584,7 @@ studentTest("a costlier place leaves Avery visibly poorer by Week 4 than a cheap
     await enterChallenge(page, { classCode });
     await completeSetupStage(page, index);
     await completeWorkingCalcs(page);
-    await fillPlanToBalance(page, "working", { setupId });
-    await page.getByRole("button", { name: "Save this version" }).click();
+    await savePlan(page, "working", { setupId });
     for (const week of [2, 3, 4]) await page.getByRole("button", { name: `Play Week ${week}` }).click();
     const text = await page.locator(".season-ledger__row[data-tone='money'] strong").innerText();
     return Number(text.replace(/[^0-9]/g, ""));
@@ -583,8 +628,7 @@ studentTest("reserving the seat locks the course row and pays the course by Week
   await enterChallenge(page, { classCode });
   await completeSetupStage(page, 2);
   await completeWorkingCalcs(page);
-  await fillPlanToBalance(page, "working", { setupId: "cousin-room" });
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "working", { setupId: "cousin-room" });
   await playSeasonWeeks(page, { deposit: true });
 
   await passWeek5Calculation(page, String(week5TotalFor(context)));
@@ -602,8 +646,7 @@ studentTest("Weeks 1 to 4 and the deposit deadline are fully operable from the k
   await enterChallenge(page, { classCode });
   await completeSetupStage(page, 1);
   await completeWorkingCalcs(page);
-  await fillPlanToBalance(page, "working", { setupId: "teammate-share" });
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "working", { setupId: "teammate-share" });
 
   for (const week of [2, 3, 4]) {
     const step = page.getByRole("button", { name: `Play Week ${week}` });
@@ -647,15 +690,12 @@ studentTest("a student's finished work reaches the class it joined", async ({ pa
   await enterChallenge(page, { classCode, seatCode: "21" });
   await completeSetupStage(page, 2);
   await completeWorkingCalcs(page);
-  await fillPlanToBalance(page, "working", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "working", context);
   await playSeasonWeeks(page);
   await passWeek5Calculation(page, String(week5TotalFor(context)));
-  await fillPlanToBalance(page, "week5-first-response", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "week5-first-response", context);
   await decideOpportunity(page, { clinics: false, countBonus: false });
-  await fillPlanToBalance(page, "final", { ...context, clinics: false, countCompletionFinal: false });
-  await page.getByRole("button", { name: "Save final plan" }).click();
+  await savePlan(page, "final", { ...context, clinics: false, countCompletionFinal: false });
   await readWeek8Resolution(page);
   await submitDefense(page, "My plan still works because every dollar has a job after Week 5. I protected the course money and gave up some of the reserve.");
   await waitForDelivery(page);
@@ -689,12 +729,10 @@ studentTest("a student who loses the network keeps their work and can send it ag
   await enterChallenge(page, { classCode, seatCode: "33" });
   await completeSetupStage(page, 0);
   await completeWorkingCalcs(page);
-  await fillPlanToBalance(page, "working", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "working", context);
   await playSeasonWeeks(page);
   await passWeek5Calculation(page, String(week5TotalFor(context)));
-  await fillPlanToBalance(page, "week5-first-response", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "week5-first-response", context);
   await decideOpportunity(page, { clinics: false, countBonus: false });
   await fillPlanToBalance(page, "final", { ...context, clinics: false, countCompletionFinal: false });
 
@@ -752,15 +790,12 @@ studentTest("a real class shows what its own students did, and never a fixture",
     await enterChallenge(page, { classCode, seatCode: run.seat });
     await completeSetupStage(page, run.index);
     await completeWorkingCalcs(page);
-    await fillPlanToBalance(page, "working", context);
-    await page.getByRole("button", { name: "Save this version" }).click();
+    await savePlan(page, "working", context);
     await playSeasonWeeks(page);
     await passWeek5Calculation(page, String(week5TotalFor(context)));
-    await fillPlanToBalance(page, "week5-first-response", context);
-    await page.getByRole("button", { name: "Save this version" }).click();
+    await savePlan(page, "week5-first-response", context);
     await decideOpportunity(page, { clinics: run.clinics, countBonus: false });
-    await fillPlanToBalance(page, "final", { ...context, clinics: run.clinics, countCompletionFinal: false });
-    await page.getByRole("button", { name: "Save final plan" }).click();
+    await savePlan(page, "final", { ...context, clinics: run.clinics, countCompletionFinal: false });
     await readWeek8Resolution(page);
     await submitDefense(page, `Seat ${run.seat}: my plan still works because every dollar has a job after Week 5. I protected the course money and gave up part of the reserve.`);
     await waitForDelivery(page);
@@ -790,15 +825,12 @@ studentTest("an educator reads one student's evidence and scores their writing",
   await enterChallenge(page, { classCode, seatCode: "5" });
   await completeSetupStage(page, 1);
   await completeWorkingCalcs(page);
-  await fillPlanToBalance(page, "working", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "working", context);
   await playSeasonWeeks(page, { deposit: true });
   await passWeek5Calculation(page, String(week5TotalFor(context)));
-  await fillPlanToBalance(page, "week5-first-response", { ...context, deposit: true });
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "week5-first-response", { ...context, deposit: true });
   await decideOpportunity(page, { clinics: false, countBonus: false });
-  await fillPlanToBalance(page, "final", { ...context, deposit: true, clinics: false, countCompletionFinal: false });
-  await page.getByRole("button", { name: "Save final plan" }).click();
+  await savePlan(page, "final", { ...context, deposit: true, clinics: false, countCompletionFinal: false });
   await readWeek8Resolution(page);
   await submitDefense(page, "My plan still works because I reserved the course seat while I could afford it. I protected the course and gave up the flexibility of holding that money.");
   await waitForDelivery(page);
@@ -834,15 +866,12 @@ studentTest("the debrief is built from the class, and says so when there is noth
     await enterChallenge(page, { classCode, seatCode: seat });
     await completeSetupStage(page, index);
     await completeWorkingCalcs(page);
-    await fillPlanToBalance(page, "working", context);
-    await page.getByRole("button", { name: "Save this version" }).click();
+    await savePlan(page, "working", context);
     await playSeasonWeeks(page);
     await passWeek5Calculation(page, String(week5TotalFor(context)));
-    await fillPlanToBalance(page, "week5-first-response", context);
-    await page.getByRole("button", { name: "Save this version" }).click();
+    await savePlan(page, "week5-first-response", context);
     await decideOpportunity(page, { clinics, countBonus: false });
-    await fillPlanToBalance(page, "final", { ...context, clinics, countCompletionFinal: false });
-    await page.getByRole("button", { name: "Save final plan" }).click();
+    await savePlan(page, "final", { ...context, clinics, countCompletionFinal: false });
     await readWeek8Resolution(page);
     await submitDefense(page, `Seat ${seat}: my plan still works because I kept the money that mattered. I gave up what I could afford to lose after Week 5.`);
     await waitForDelivery(page);
@@ -889,8 +918,7 @@ studentTest("a student who over-commits can still land and turn in a plan they c
   await enterChallenge(page, { classCode, seatCode: "17" });
   await completeSetupStage(page, 0);
   await completeWorkingCalcs(page);
-  await fillPlanToBalance(page, "working", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "working", context);
 
   // At Week 4 this looks like a clean conversion, and it is: the course row already held
   // more than the seat costs, so reserving pays it and hands some money back. The squeeze
@@ -927,15 +955,12 @@ studentTest("every educator route passes an accessibility scan, including the re
   await enterChallenge(page, { classCode, seatCode: "6" });
   await completeSetupStage(page, 1);
   await completeWorkingCalcs(page);
-  await fillPlanToBalance(page, "working", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "working", context);
   await playSeasonWeeks(page);
   await passWeek5Calculation(page, String(week5TotalFor(context)));
-  await fillPlanToBalance(page, "week5-first-response", context);
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await savePlan(page, "week5-first-response", context);
   await decideOpportunity(page, { clinics: true, countBonus: false });
-  await fillPlanToBalance(page, "final", { ...context, clinics: true, countCompletionFinal: false });
-  await page.getByRole("button", { name: "Save final plan" }).click();
+  await savePlan(page, "final", { ...context, clinics: true, countCompletionFinal: false });
   await readWeek8Resolution(page);
   await submitDefense(page, "My plan still works because the clinics covered the new rehab bills. I protected the course money and gave up my Saturdays.");
   await waitForDelivery(page);
@@ -977,8 +1002,7 @@ studentTest("the challenge runs with animation turned off and on a short Chromeb
     await enterChallenge(page, { classCode, seatCode: "28" });
     await completeSetupStage(page, 0);
     await completeWorkingCalcs(page);
-    await fillPlanToBalance(page, "working", plan);
-    await page.getByRole("button", { name: "Save this version" }).click();
+    await savePlan(page, "working", plan);
 
     // The season steps and the deadline are both reachable without a mouse wheel fight.
     for (const week of [2, 3, 4]) await page.getByRole("button", { name: `Play Week ${week}` }).click();
@@ -988,11 +1012,9 @@ studentTest("the challenge runs with animation turned off and on a short Chromeb
     await page.getByRole("button", { name: "Lock it in and play Week 5" }).click();
 
     await passWeek5Calculation(page, String(week5TotalFor(plan)));
-    await fillPlanToBalance(page, "week5-first-response", plan);
-    await page.getByRole("button", { name: "Save this version" }).click();
+    await savePlan(page, "week5-first-response", plan);
     await decideOpportunity(page, { clinics: false, countBonus: false });
-    await fillPlanToBalance(page, "final", { ...plan, clinics: false, countCompletionFinal: false });
-    await page.getByRole("button", { name: "Save final plan" }).click();
+    await savePlan(page, "final", { ...plan, clinics: false, countCompletionFinal: false });
     await expect(page.getByRole("heading", { name: "The season ends." })).toBeVisible();
     await noHorizontalOverflow(page);
     await noSeriousAxeViolations(page);

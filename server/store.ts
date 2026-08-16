@@ -17,8 +17,18 @@ export interface StoredClass extends ClassRecord {
   teacherKey: string;
 }
 
+export type StoreId = "memory" | "file" | "redis" | "unconfigured";
+
 export interface ClassStore {
-  readonly id: "memory" | "file" | "redis";
+  readonly id: StoreId;
+  /** Whether a class written here outlives the process that wrote it. */
+  readonly durable: boolean;
+  /**
+   * Why this deployment cannot run a real class, in words an educator can act on. Absent
+   * when it can. A store that carries this refuses every operation rather than accepting
+   * work it is going to lose.
+   */
+  readonly blockedReason?: string;
   getClass(code: string): Promise<StoredClass | null>;
   putClass(record: StoredClass): Promise<void>;
   listSubmissions(code: string): Promise<SubmissionRecord[]>;
@@ -41,6 +51,7 @@ export function memoryStore(): ClassStore {
   const submissions = new Map<string, SubmissionRecord[]>();
   return {
     id: "memory",
+    durable: false,
     getClass: (code) => Promise.resolve(classes.get(code) ?? null),
     putClass: (record) => { classes.set(record.code, record); return Promise.resolve(); },
     listSubmissions: (code) => Promise.resolve(submissions.get(code) ?? []),
@@ -80,6 +91,7 @@ export function fileStore(root: string): ClassStore {
 
   return {
     id: "file",
+    durable: true,
     getClass: (code) => readJson<StoredClass>(classPath(code)),
     putClass: (record) => writeAtomic(classPath(record.code), record),
     listSubmissions: async (code) => {
@@ -121,6 +133,7 @@ export function redisRestStore(url: string, token: string): ClassStore {
 
   return {
     id: "redis",
+    durable: true,
     getClass: async (code) => {
       const raw = await command<string>("GET", `class:${code}`);
       return raw ? (JSON.parse(raw) as StoredClass) : null;
@@ -146,15 +159,64 @@ export function redisRestStore(url: string, token: string): ClassStore {
   };
 }
 
+/** Raised by the unconfigured store so callers can tell "misconfigured" from "unreachable". */
+export class ClassStoreUnconfigured extends Error {
+  constructor(public readonly reason: string) {
+    super(reason);
+    this.name = "ClassStoreUnconfigured";
+  }
+}
+
+/**
+ * The store a deployment gets when it has nowhere durable to write.
+ *
+ * It refuses every operation instead of accepting a class it is going to lose. That is
+ * deliberately louder than the alternative: a serverless deployment writing to a container
+ * disk answers every request successfully and then loses the class the first time the
+ * platform gives it a different container — which, from the front of a classroom, looks
+ * exactly like the product deleting thirty students' work for no reason. A deployment that
+ * cannot keep a class should not be able to start one.
+ */
+export function unconfiguredStore(reason: string): ClassStore {
+  const refuse = (): never => { throw new ClassStoreUnconfigured(reason); };
+  return {
+    id: "unconfigured",
+    durable: false,
+    blockedReason: reason,
+    getClass: refuse,
+    putClass: refuse,
+    listSubmissions: refuse,
+    putSubmission: refuse,
+  };
+}
+
+const NO_DURABLE_STORE =
+  "This deployment has no durable class store. Set KV_REST_API_URL and KV_REST_API_TOKEN "
+  + "(Vercel KV or Upstash) and redeploy. Classes are refused until then so none is lost.";
+
+/**
+ * Hosts whose disk does not survive the request that wrote to it. Vercel and Lambda
+ * announce themselves; anything else self-hosted says so with BOW_EPHEMERAL_DISK.
+ */
+function hasEphemeralDisk(env: Record<string, string | undefined>): boolean {
+  return Boolean(env.VERCEL || env.VERCEL_ENV || env.AWS_LAMBDA_FUNCTION_NAME || env.BOW_EPHEMERAL_DISK === "1");
+}
+
 /**
  * The driver this deployment gets. Redis when a managed store is configured, a disk when
- * one is not, and memory only when explicitly asked for — a deployment that silently fell
- * back to memory would lose a class the first time it scaled.
+ * the host actually keeps one, memory only when explicitly asked for — and nothing at all
+ * when the host keeps no disk and no managed store was configured.
  */
 export function storeFromEnvironment(env: Record<string, string | undefined> = process.env): ClassStore {
   if (env.BOW_CLASS_STORE === "memory") return memoryStore();
   const url = env.KV_REST_API_URL ?? env.UPSTASH_REDIS_REST_URL;
   const token = env.KV_REST_API_TOKEN ?? env.UPSTASH_REDIS_REST_TOKEN;
   if (url && token) return redisRestStore(url, token);
-  return fileStore(env.BOW_CLASS_DIR ?? join(process.cwd(), ".bow-classes"));
+  const disk = fileStore(env.BOW_CLASS_DIR ?? join(process.cwd(), ".bow-classes"));
+  if (!hasEphemeralDisk(env)) return disk;
+  // The escape hatch exists for a throwaway demo on a serverless host, and it is explicit
+  // because the cost of taking it by accident is a lost class. Even then the store reports
+  // itself as non-durable, so nothing downstream can call this deployment classroom-ready.
+  if (env.BOW_ALLOW_EPHEMERAL_STORE !== "1") return unconfiguredStore(NO_DURABLE_STORE);
+  return { ...disk, durable: false };
 }

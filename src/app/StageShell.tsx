@@ -2,7 +2,7 @@ import type { PropsWithChildren } from "react";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { CONDITIONAL_INCOME_KEYS, incomeAmount, RELIABLE_INCOME_KEYS } from "../domain/scenario/expectations";
 import { formatDollars } from "../domain/core/money";
-import { PROGRESS_STEPS, progressIndexFor, seasonPositionFor, type SeasonPosition } from "../domain/machine/stages";
+import { chapterFor, PROGRESS_STEPS, progressIndexFor, seasonPositionFor, type SeasonPosition } from "../domain/machine/stages";
 import type { StageId } from "../domain/evidence/types";
 import { AppMark } from "../components/primitives/AppMark";
 import { SeasonStrip } from "../components/story/SeasonStrip";
@@ -29,7 +29,7 @@ export function StageShell({ stage, title, kicker, position: override, children 
   const position = override ?? seasonPositionFor(stage);
   const announcement = `${position.caption}. Part ${chapter + 1} of ${PROGRESS_STEPS.length}: ${PROGRESS_STEPS[chapter]?.label}.`;
   return (
-    <div className="challenge-shell" data-world={BASKETBALL_SCENARIO.id}>
+    <div className="challenge-shell" data-world={BASKETBALL_SCENARIO.id} data-chapter={chapterFor(stage)}>
       <header className="challenge-topbar">
         <AppMark />
         <SeasonStrip position={position} announcement={announcement} />

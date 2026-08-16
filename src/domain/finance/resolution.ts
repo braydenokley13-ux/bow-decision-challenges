@@ -1,4 +1,4 @@
-import { dollars, type Dollars } from "../core/money";
+import { dollars, formatDollars, type Dollars } from "../core/money";
 import type { ScenarioNumbers } from "../scenario/types";
 import { bonusWeeks } from "../scenario/season";
 import { courseCostFor } from "./formulas";
@@ -98,21 +98,33 @@ function heldWith(final: SnapshotInputs, n: ScenarioNumbers, changed: { clinics?
 function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, bonusLabel: string): RiskVerdict[] {
   const withoutTimeMoney = heldWith(final, n, { timeMoney: dollars(0) });
   const withoutClinics = heldWith(final, n, { clinics: false });
-  const bonus = n.completionIncome;
+  const bonus = formatDollars(n.completionIncome);
+  // What it would have taken to stay under the line, from the same load model. Adding this
+  // much to Avery's week buys back exactly the hours the plan was over by, so the sentence
+  // it goes into is a fact about this student's plan and not a figure of speech.
+  const clearing = formatDollars(
+    loadFor(
+      { setupId: final.setupId, rehabActive: true, clinicsAccepted: final.includeOptionalWork, timeMoney: final.amounts.flexibleCash },
+      n,
+    ).costToClear,
+  );
 
-  return [
+  const verdicts: RiskVerdict[] = [
     {
       id: "attendance-bonus",
       label: `Building the plan around the ${bonusLabel}`,
       taken: final.includeCompletion,
       outcome: !final.includeCompletion ? "no_effect" : held ? "paid_off" : "cost_you",
+      // The verdict that costs the most is the one that most needs the counterfactual: a
+      // student who reads only "the bonus never came" has learned an outcome, and a student
+      // who reads what would have kept it has learned why their plan behaved as it did.
       detail: !final.includeCompletion
         ? held
           ? `Avery made every session, so the bonus arrived anyway. Your plan never needed it — that is ${bonus} more than you planned for.`
           : "Avery missed a session, so the bonus never arrived. Your plan was already built without it."
         : held
           ? "Avery made every session. The money you planned around actually landed."
-          : "Avery missed a session. The money your plan was counting on never came.",
+          : `Avery missed a session, and the money your plan was counting on never came. ${clearing} more in Avery’s week — taken out of one of your other two amounts — would have kept it.`,
     },
     {
       id: "clinics",
@@ -162,7 +174,24 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
         : "Avery waited, kept the money reachable, and pays the full price.",
     },
   ];
+  return verdicts.sort((a, b) => VERDICT_WEIGHT[a.outcome] - VERDICT_WEIGHT[b.outcome]);
 }
+
+/**
+ * The order the verdicts are read in.
+ *
+ * A decision that changed the season goes above one that did not. Listing them in the
+ * order the code happens to build them meant a student whose plan turned on the clinics
+ * could find that verdict third, under two lines saying nothing happened — and the whole
+ * point of this panel is that the student can trace the ending back to the call that
+ * caused it. Ties keep their order, so nothing here is a ranking of how well they did.
+ */
+const VERDICT_WEIGHT: Record<RiskVerdict["outcome"], number> = {
+  cost_you: 0,
+  paid_off: 1,
+  fell_short: 2,
+  no_effect: 3,
+};
 
 export function resolveSeason(final: SnapshotInputs, n: ScenarioNumbers, opening?: PlanAmounts, bonusLabel = "attendance bonus"): SeasonResolution {
   const load = loadFor(

@@ -25,8 +25,19 @@ p { color: var(--ink-2); }
 .disclaimer { max-width: 1000px; margin: var(--s-6) auto 0; color: var(--ink-3); font: var(--t-micro); }
 
 /* Challenge shell */
-.challenge-shell { min-height: 100vh; background: var(--canvas); }
-.challenge-topbar { height: 72px; position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: 220px minmax(0, 1fr) auto; align-items: center; gap: var(--s-5); padding: 0 var(--gutter); background: var(--surface); border-bottom: 1px solid var(--border-default); box-shadow: var(--shadow-rail); }
+.challenge-shell { min-height: 100vh; background: var(--chapter-ground, var(--canvas)); transition: background var(--dur-stage) var(--ease-standard); }
+
+/* The five chapters, each on its own air and under its own rule. A student who looks up
+   from the numbers can tell which part of the story they are in without reading a word. */
+.challenge-shell[data-chapter="offer"] { --chapter-ground: var(--ground-plan); --chapter-accent: var(--ink-1); }
+.challenge-shell[data-chapter="plan"] { --chapter-ground: var(--ground-plan); --chapter-accent: var(--fin-adjustable); }
+.challenge-shell[data-chapter="season"] { --chapter-ground: var(--ground-season); --chapter-accent: var(--fin-reliable); }
+.challenge-shell[data-chapter="pressure"] { --chapter-ground: var(--ground-pressure); --chapter-accent: var(--fin-over); }
+.challenge-shell[data-chapter="resolution"] { --chapter-ground: var(--ground-resolution); --chapter-accent: var(--world-accent); }
+
+/* The chapter's colour is carried on the topbar's own border rather than a pseudo-element,
+   so releasing `position` for a full-page screenshot cannot detach it from the bar. */
+.challenge-topbar { height: 72px; position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: 220px minmax(0, 1fr) auto; align-items: center; gap: var(--s-5); padding: 0 var(--gutter); background: var(--surface); border-bottom: 3px solid var(--chapter-accent, var(--border-default)); box-shadow: var(--shadow-rail); transition: border-color var(--dur-stage) var(--ease-standard); }
 
 /* Season strip — story time, not form time */
 .season-strip { display: flex; align-items: center; gap: var(--s-4); min-width: 0; }
@@ -48,7 +59,7 @@ p { color: var(--ink-2); }
 .contract-drawer dd { margin: 0; font: var(--m-sm); font-feature-settings: var(--num); }
 .contract-drawer__goal { margin: var(--s-4) 0 0; padding: var(--s-3); background: var(--fin-adjustable-soft); color: var(--fin-adjustable-ink); font: var(--t-micro); }
 .stage-main { width: min(var(--w-board), calc(100% - 2 * var(--gutter))); margin: 0 auto; padding: var(--s-7) 0 var(--s-10); }
-.stage-heading { position: relative; margin-bottom: var(--s-6); padding-left: var(--s-5); border-left: 4px solid var(--world-accent); }
+.stage-heading { position: relative; margin-bottom: var(--s-6); padding-left: var(--s-5); border-left: 4px solid var(--chapter-accent, var(--world-accent)); }
 .stage-heading h1 { max-width: 960px; margin: 0; font: var(--t-display2); letter-spacing: var(--display-tracking); }
 
 .stage-action { display: flex; align-items: center; justify-content: space-between; gap: var(--s-6); margin-top: var(--s-6); padding: var(--s-5) 0; border-top: 1px solid var(--border-default); }
@@ -91,6 +102,7 @@ p { color: var(--ink-2); }
 /* Plan Board */
 .plan-board { background: var(--surface); border: 1px solid var(--border-default); }
 .plan-board__header { min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3) var(--s-5); padding: var(--s-4) var(--s-5); border-bottom: 1px solid var(--border-default); }
+.plan-board__header[data-slim="true"] { min-height: 0; padding-top: var(--s-3); padding-bottom: var(--s-3); }
 .plan-board__header .eyebrow { margin-bottom: 2px; }
 .plan-board__header h2 { margin: 0; font: var(--t-title2); }
 .exposure-summary { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin: 0 var(--s-5) var(--s-4); border: 1px solid var(--border-default); }
@@ -106,6 +118,7 @@ p { color: var(--ink-2); }
 .plan-commit--balanced { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); border-color: var(--fin-balanced); }
 .plan-commit--over { color: var(--fin-over-ink); background: var(--fin-over-soft); border-color: var(--fin-over); }
 .plan-commit--unassigned { color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); }
+.plan-commit__read { margin: 0; color: inherit; font: var(--t-ui); }
 .plan-commit__state { display: flex; align-items: baseline; gap: var(--s-3); }
 .plan-commit__state span { font: var(--t-ui); }
 .plan-commit__state strong { font: var(--m-lg); font-feature-settings: var(--num); transition: color var(--dur-state) var(--ease-standard); }
@@ -143,6 +156,10 @@ p { color: var(--ink-2); }
 .opportunity-card { display: flex; flex-direction: column; padding: var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--ink-1); }
 .opportunity-card h2 { margin: 0 0 var(--s-3); font: var(--t-title1); }
 .opportunity-card > p { margin: 0 0 var(--s-4); }
+
+/* The choice sits at the foot of its card, so two cards whose explanations are different
+   lengths — or whose explanation has been spent by making the call — still line up. */
+.opportunity-card > .binary-choice { margin-top: auto; }
 .tradeoff-pair { display: grid; gap: 1px; margin: auto 0 var(--s-5); padding: 1px; background: var(--border-default); }
 .tradeoff-pair > div { display: grid; grid-template-columns: 132px 1fr; align-items: baseline; gap: var(--s-4); padding: var(--s-3) var(--s-4); background: var(--surface-raised); }
 .tradeoff-pair dt { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }

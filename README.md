@@ -11,6 +11,13 @@ concept. The challenge gives students a world in which they have to use it.
 The design sentence is: **Avery has two scarce things — money and the hours in a week — and
 the student decides how to spend both, before knowing which of them Week 5 will take.**
 
+Five moments in that run move money, and each one asks a different question, so each one has
+a different instrument. Two of them — the first plan, and the Week 5 triage — get the full
+board, because both are questions about the whole plan at once. The other three are
+adjustments: the total moved by a known amount and something has to absorb it, which is one
+number to clear and one tap per row. `src/domain/finance/modes.ts` declares which is which,
+and `modes.test.ts` fails the build if a sixth board appears.
+
 This repository is the home of BOW Decision Challenges. Plan Under Pressure is the first
 challenge in it, not the whole of it — see [`ARCHITECTURE.md`](./ARCHITECTURE.md) for what is
 shared, what is challenge-specific, and what a second challenge would have to build.
@@ -57,6 +64,20 @@ assertion suite, so the two cannot describe different products.
 
 On a machine whose Chromium was not installed by Playwright, set `CHROMIUM_PATH`.
 
+## How long it takes
+
+`src/domain/machine/pacing.ts` holds a **design budget** per stage — what the interactions
+on that screen add up to, and what those seconds are made of. The longest route (both
+bonuses counted, the attendance bonus still counted at the end) budgets to **19.8 minutes**;
+the shortest complete route to 18.3. `pacing.test.ts` fails the build if the total leaves
+the band, if a stage grows past a quarter of the run, or if a stage a student never reaches
+is counted in the total.
+
+It aims below the middle of the advertised 20–25 minutes on purpose: a real student is
+slower than a budget. **It is not a measurement.** No test here can be — that takes
+middle-schoolers, a classroom and a clock, and the pilot gate that depends on them is open
+until they exist.
+
 ## The numbers
 
 Every price and threshold lives in `src/domain/scenario/numbers.ts`, and none of them is
@@ -100,7 +121,7 @@ the shape of the evidence before running one.
 ## Main areas
 
 - `src/stages/` — the student flow: `StudentChallenge.tsx`, `SeasonWeeks.tsx`, `Week8Resolution.tsx`
-- `src/components/financial/` — money split, plan board, allocation rows, week meter
+- `src/components/financial/` — money split, plan board, adjust panel, allocation rows, week meter
 - `src/domain/` — world-neutral finance, evidence, scoring and state machine
 - `src/domain/scenario/` — Plan Under Pressure's numbers, world and balance harness
 - `src/platform/` — challenge registry, class codes, evidence transports
@@ -119,9 +140,22 @@ A Vite SPA plus a small class service. `vercel.json` keeps `/api/*` off the SPA 
 routes it to `api/[[...route]].ts`.
 
 Before running a real class on serverless, set `KV_REST_API_URL` and `KV_REST_API_TOKEN`
-(Vercel KV or Upstash). Without them the service falls back to a disk that serverless
-functions do not keep. **`GET /api/health` reports the store driver actually in force — check
-it first after any deploy.**
+(Vercel KV or Upstash). Without them there is nowhere durable to write, and the service
+**refuses to open a class rather than accept one it is going to lose** — a serverless
+deployment writing to a container disk answers every request successfully and then loses the
+class the first time the platform hands it a different container, which happens mid-lesson to
+work students have already turned in.
+
+`GET /api/health` is the one thing to read after a deploy:
+
+```json
+{ "ok": true, "store": "redis", "durable": true, "classroomReady": true, "reason": "…" }
+```
+
+`classroomReady` is false unless a class written now would still be there on Friday. A
+deployment with nowhere durable to write answers `503` with the environment variables to set.
+A throwaway demo can opt out with `BOW_ALLOW_EPHEMERAL_STORE=1`, and still reports
+`durable: false` so nothing can call it classroom-ready.
 
 Self-hosting instead: `npm run api` runs the same service on Node with a file store.
 
