@@ -41,7 +41,7 @@ export function createApiServer(store: ClassStore = storeFromEnvironment()) {
       // actually uses and nothing else.
       const cors = {
         "Access-Control-Allow-Origin": request.headers.origin ?? "*",
-        "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, X-BOW-Teacher-Key",
       };
       if (request.method === "OPTIONS") {

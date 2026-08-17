@@ -131,6 +131,18 @@
   --measure: 62ch;
   --actionbar-h: 64px;
   --gutter: 24px;
+
+  /* Two measures, and only two. Dense evidence pages get the first; anything a person
+     reads in sentences gets the second, and owns its margins rather than stranding a
+     400px column of nothing beside them. */
+  --w-evidence: 1180px;
+  --w-read: 760px;
+
+  /* One vertical rhythm for every educator surface: between sections, between blocks
+     inside one, and between elements inside a block. */
+  --gap-section: 56px;
+  --gap-block: 28px;
+  --gap-element: 14px;
   --tap: 44px;
 
   /* System stacks only. Chromebooks, Windows lab machines, and Macs each resolve a
@@ -146,6 +158,11 @@
   --t-display1: 800 clamp(2.4rem, 4vw, 3.25rem)/0.98 var(--font-display);
   --t-display2: 800 clamp(2rem, 3.2vw, 2.6rem)/1 var(--font-display);
   --t-display3: 800 1.6rem/1.05 var(--font-display);
+
+  /* The step between a page's headline and its section headings. Without it every page
+     read as one giant display line dropping straight to 15px body, which is why nothing
+     could be *second* most important. */
+  --t-section: 700 clamp(1.5rem, 2.2vw, 1.875rem)/1.15 var(--font-display);
   --t-title1: 700 1.5rem/1.15 var(--font-ui);
   --t-title2: 700 1.25rem/1.2 var(--font-ui);
   --t-title3: 700 1.0625rem/1.3 var(--font-ui);

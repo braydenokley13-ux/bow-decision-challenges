@@ -208,7 +208,16 @@ p { color: var(--ink-2); }
 .educator-topbar nav a { padding: var(--s-3) 0; color: var(--ink-3); font: var(--t-ui); text-decoration: none; }
 .educator-topbar nav a.active { color: var(--ink-1); border-bottom: 2px solid var(--ink-1); }
 .demo-pill, .standard-chip, .tag-row span { padding: var(--s-2) var(--s-3); background: var(--surface-sunken); border-radius: var(--r-pill); color: var(--ink-2); font: var(--t-micro); }
-.educator-main { width: min(var(--w-dash), 100%); margin: auto; padding: var(--s-7) var(--gutter) var(--s-9); }
+.educator-main { --measure-page: var(--w-evidence); padding: var(--s-7) 0 var(--s-9); }
+.educator-main > * { width: min(var(--measure-page), 100% - 2 * var(--gutter)); margin-inline: auto; }
+.educator-main > * + * { margin-top: var(--gap-section); }
+
+/* A page made of sentences owns its margins instead of stranding a column of nothing. */
+.educator-main[data-measure="read"] { --measure-page: var(--w-read); }
+
+/* The guide and the companion are full-bleed editorial layouts and predate the measure. */
+.educator-main[data-measure="bleed"] { --measure-page: var(--w-dash); }
+.educator-main[data-measure="bleed"] > * { width: min(var(--w-dash), 100%); }
 .guide-hero { min-height: 590px; display: grid; grid-template-columns: 1.2fr 0.8fr; background: var(--surface); }
 .guide-hero > div { padding: clamp(40px, 7vw, 96px); }
 .guide-hero h1 { margin: 0 0 var(--s-5); font: 600 clamp(3.8rem, 8vw, 7.6rem)/0.88 var(--font-ui); letter-spacing: -0.07em; }
@@ -260,10 +269,14 @@ p { color: var(--ink-2); }
 .launch-guide li::before { content: "0" counter(launch); display: block; margin-bottom: var(--s-5); color: var(--ink-3); font: var(--font-mono); }
 
 /* Teaching companion */
-.page-header { padding: clamp(40px, 6vw, 80px); background: var(--surface); border-bottom: 1px solid var(--border-default); }
-.page-header h1 { max-width: 1050px; margin: 0 0 var(--s-5); font: var(--t-display1); letter-spacing: var(--display-tracking); }
-.page-header > p:last-child { max-width: 800px; font: var(--t-body-lg); }
-.page-header--with-back > a { display: inline-block; margin-bottom: var(--s-7); color: var(--ink-2); font: var(--t-ui); }
+
+/* Hero bands pad by content. The 100-250px of dead cream under every one of them was a
+   min-height nobody had removed. */
+.page-header { padding: var(--gap-block) 0; background: none; border-bottom: 2px solid var(--border-ink); }
+.page-header h1 { max-width: 24ch; margin: 0 0 var(--s-4); font: var(--t-display2); letter-spacing: var(--display-tracking); }
+.page-header > p:last-child { max-width: var(--measure); margin: 0; font: var(--t-body-lg); }
+.page-header--with-back > a { display: inline-block; margin-bottom: var(--s-5); color: var(--ink-2); font: var(--t-ui); }
+.educator-main[data-measure="bleed"] .page-header { padding: clamp(40px, 6vw, 80px); background: var(--surface); }
 .mini-unit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); padding: var(--s-7); }
 .mini-unit-grid > article { background: var(--surface); border: 1px solid var(--border-default); }
 .mini-unit-grid article > header { min-height: 240px; padding: var(--s-6); color: var(--ink-invert); background: var(--bow-brand-strong); }
@@ -275,6 +288,7 @@ p { color: var(--ink-2); }
 .mini-unit-grid li p { margin: var(--s-2) 0; }
 .mini-unit-grid aside { margin: var(--s-5); padding: var(--s-4); background: var(--fin-adjustable-soft); }
 .teaching-boundary { margin: 0 var(--s-7) var(--s-8); padding: var(--s-6); background: var(--surface-sunken); }
+.educator-main[data-measure="bleed"] > .teaching-boundary { width: calc(min(var(--w-dash), 100%) - 2 * var(--s-7)); }
 
 /* Educator dashboard */
 .class-header { display: flex; align-items: end; justify-content: space-between; gap: var(--s-6); padding: var(--s-7); }
@@ -285,7 +299,8 @@ p { color: var(--ink-2); }
 .teach-next > p:not(.eyebrow) { max-width: 820px; font: var(--t-body-lg); }
 .teach-next > div { display: flex; gap: var(--s-3); margin-top: var(--s-5); }
 .teach-next .standard-chip { position: absolute; right: var(--s-6); top: var(--s-6); }
-.dashboard-section { padding: var(--s-7); }
+.dashboard-section { padding: 0; }
+.educator-main[data-measure="bleed"] .dashboard-section { padding: var(--s-7); }
 .concept-matrix, .micro-table, .grade-ledger { width: 100%; border-collapse: collapse; background: var(--surface); }
 .concept-matrix caption { color: var(--ink-3); text-align: left; padding-bottom: var(--s-3); font: var(--t-micro); }
 .concept-matrix th, .concept-matrix td, .micro-table th, .micro-table td, .grade-ledger th, .grade-ledger td { padding: var(--s-4); text-align: left; border-bottom: 1px solid var(--border-default); }
@@ -630,3 +645,166 @@ p { color: var(--ink-2); }
 .assign-steps__settled { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); margin: 0; font: var(--t-ui); }
 .class-form select { min-height: var(--tap); padding: 0 var(--s-4); font: var(--t-body-lg); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
 .class-form__note { max-width: var(--measure); margin: 0; color: var(--ink-3); font: var(--t-micro); }
+
+/* ---------------------------------------------------------------------------
+ * Objective Map. A coverage document, not a dashboard: five bands of ruled
+ * type on the cream, with status carried by the geometry of a mark and by a
+ * word — never by colour alone, so it survives a greyscale printout and a
+ * colour vision difference identically.
+ * ------------------------------------------------------------------------ */
+.map-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-6); padding: var(--s-8) var(--gutter) var(--s-6); border-bottom: 2px solid var(--border-ink); }
+.map-header h1 { margin: 0; font: var(--t-display2); letter-spacing: var(--display-tracking); }
+.map-tally { display: flex; flex-wrap: wrap; gap: var(--s-7); margin: 0; }
+.map-tally div { display: grid; gap: var(--s-1); }
+.map-tally dt { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
+.map-tally dd { margin: 0; font: var(--m-md); font-feature-settings: var(--num); }
+
+.map-controls { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: var(--s-5); padding: var(--s-5) var(--gutter); border-bottom: 1px solid var(--border-default); }
+.map-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-4); }
+.map-filters label { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.map-filters select { min-height: var(--tap); padding: 0 var(--s-3); font: var(--t-ui); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
+.map-required { display: inline-flex; align-items: center; gap: var(--s-2); text-transform: none; letter-spacing: 0; font: var(--t-ui); color: var(--ink-2); }
+.view-switch { display: inline-flex; border: 1px solid var(--border-ink); border-radius: var(--r-sm); overflow: hidden; }
+.view-switch button { min-height: var(--tap); padding: 0 var(--s-5); border: 0; background: var(--surface); color: var(--ink-2); font: var(--t-ui); cursor: pointer; }
+.view-switch button + button { border-left: 1px solid var(--border-ink); }
+.view-switch button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); }
+.map-note { padding: var(--s-5) var(--gutter); }
+
+/* The mark. One ring, four fills, one dashed variant — geometry first. */
+.state-mark { width: 13px; height: 13px; flex: none; display: inline-block; border: 2px solid currentcolor; border-radius: 50%; background: transparent; }
+.state-mark[data-state="not-available"] { border-style: dashed; opacity: 0.65; }
+.state-mark[data-state="taught-not-assessed"] { background: linear-gradient(currentcolor 0 0) 50% / 100% 3px no-repeat; }
+.state-mark[data-state="assigned"] { background: radial-gradient(circle, currentcolor 0 2.5px, transparent 2.5px); }
+.state-mark[data-state="partially-assessed"],
+.state-mark[data-state="too-few-assessed"] { background: linear-gradient(90deg, currentcolor 50%, transparent 50%); }
+.state-mark[data-state="developing"] { background: conic-gradient(currentcolor 0 0.75turn, transparent 0.75turn); }
+.state-mark[data-state="strong"] { background: currentcolor; }
+.state-mark[data-state="needs-attention"] { background: currentcolor; box-shadow: inset 0 0 0 2px var(--surface); }
+
+/* Status colour is the second carrier, applied to the mark and its word together. */
+[data-state="strong"] { --status-ink: var(--fin-balanced-ink); }
+[data-state="developing"] { --status-ink: var(--fin-conditional-ink); }
+[data-state="needs-attention"] { --status-ink: var(--fin-over-ink); }
+[data-state="not-available"] { --status-ink: var(--ink-4); }
+
+.topic-bands { padding: 0 var(--gutter) var(--s-9); }
+.topic-band { padding: var(--s-6) 0; border-bottom: 1px solid var(--border-default); }
+.topic-band h2 { display: flex; align-items: baseline; gap: var(--s-4); margin: 0 0 var(--s-4); font: var(--t-title2); }
+.topic-band__number { min-width: 1.6em; padding-bottom: 2px; border-bottom: 3px solid var(--ink-1); font: var(--m-sm); font-feature-settings: var(--num); }
+.topic-band ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(238px, 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; background: var(--border-subtle); }
+.topic-band li { background: var(--surface); }
+.topic-band a { min-height: 92px; display: grid; grid-template-columns: auto 1fr; grid-template-areas: "code name" "state figure"; align-items: center; gap: var(--s-2) var(--s-4); padding: var(--s-4) var(--s-5); color: var(--ink-1); text-decoration: none; }
+.topic-band a:hover { background: var(--surface-raised); }
+.chip-code { grid-area: code; align-self: start; font: var(--m-sm); font-feature-settings: var(--num); }
+.chip-name { grid-area: name; align-self: start; font: var(--t-ui); }
+.chip-state { grid-area: state; grid-column: 1 / -1; display: inline-flex; align-items: center; gap: var(--s-3); color: var(--status-ink, var(--ink-3)); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
+.chip-figure { grid-area: figure; justify-self: end; display: grid; justify-items: end; font: var(--m-sm); }
+.chip-figure small { color: var(--ink-3); font: var(--t-micro); }
+
+.map-table-wrap { overflow-x: auto; }
+.map-table { width: 100%; border-collapse: collapse; background: var(--surface); }
+.map-table caption { padding-bottom: var(--s-4); color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-align: left; text-transform: uppercase; }
+.map-table th, .map-table td { padding: var(--s-4); text-align: left; vertical-align: top; border-bottom: 1px solid var(--border-default); }
+.map-table thead th { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.map-table tbody th { max-width: 44ch; font: var(--t-ui); font-weight: 400; }
+.map-table tbody th a { color: var(--ink-1); text-decoration: none; }
+.map-table tbody th a:hover { text-decoration: underline; }
+.map-table__code { margin-right: var(--s-3); font: var(--m-xs); font-feature-settings: var(--num); }
+.map-table__wording { display: block; margin-top: var(--s-2); color: var(--ink-3); font: var(--t-micro); }
+.map-table__status { display: inline-flex; align-items: center; gap: var(--s-3); color: var(--status-ink, var(--ink-2)); font: var(--t-sm); white-space: nowrap; }
+.map-table tr[data-stale] td, .map-table tr[data-stale] .map-table__status { color: var(--ink-4); }
+.taught-toggle { display: inline-flex; align-items: center; gap: var(--s-2); font: var(--t-sm); white-space: nowrap; }
+.taught-toggle input { width: 18px; height: 18px; }
+.taught-toggle input:disabled + span { color: var(--ink-4); }
+
+@media (max-width: 700px) {
+  .map-header, .map-controls { padding-left: var(--s-5); padding-right: var(--s-5); }
+  .topic-bands, .map-note { padding-left: var(--s-5); padding-right: var(--s-5); }
+  .topic-band ul { grid-template-columns: 1fr; }
+}
+
+/* The table is a document a department head gets handed. It prints on the paper,
+   without the shell around it, and the marks survive because they are shapes. */
+@media print {
+  .educator-topbar, .map-controls, .view-switch, .map-tally, .taught-toggle input { display: none; }
+  .map-table-wrap { overflow: visible; }
+  .map-table, .map-table th, .map-table td { background: var(--print-paper); border-color: var(--print-rule); }
+  .map-table { font-size: 9pt; }
+  .map-table tbody th { max-width: none; }
+  .map-header { padding: 0 0 8pt; border-bottom: 1pt solid var(--print-rule-strong); }
+  .topic-band a { min-height: 0; }
+  .map-note { padding: 8pt 0 0; }
+}
+
+/* ---------------------------------------------------------------------------
+ * The educator surface, as one system.
+ *
+ * Three container weights and no hairline boxes. The product has two ground
+ * tones and they are what separate things — a border around every block was
+ * doing the job the grounds already do, and gave a footnote the same frame as
+ * a result. `raised` lifts off the ground, `inset` sinks into it, and most
+ * things are neither: they are separated by space alone.
+ * ------------------------------------------------------------------------ */
+.panel { padding: var(--s-6); background: var(--surface); border: 0; }
+.panel--raised { background: var(--surface-raised); box-shadow: var(--shadow-card); }
+.panel--inset { background: var(--surface-sunken); }
+
+/* One heading system: an eyebrow, a section head, and nothing between them. */
+.section-head { margin: 0 0 var(--gap-block); }
+.section-head h2 { margin: 0; font: var(--t-section); letter-spacing: var(--display-tracking); }
+.section-head p { max-width: var(--measure); margin: var(--s-3) 0 0; color: var(--ink-2); font: var(--t-body); }
+
+/* Form controls, styled once, so a native chevron never sits beside a custom button. */
+.field { display: grid; gap: var(--s-2); }
+.field > label, .field-caps { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.field input, .field select, .field textarea,
+.class-form input, .class-form select, .class-form textarea,
+.map-filters select {
+  min-height: var(--tap);
+  padding: 0 var(--s-4);
+  color: var(--ink-1);
+  font: var(--t-ui);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 60%);
+}
+.field select, .class-form select, .map-filters select {
+  padding-right: var(--s-8);
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-2) 50%), linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
+  background-position: right 20px center, right 14px center;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+.field input:focus-visible, .field select:focus-visible,
+.class-form input:focus-visible, .class-form select:focus-visible,
+.map-filters select:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+/* A real segmented control, for the places that were bordered squares. */
+.segmented { display: inline-flex; border: 1px solid var(--border-ink); border-radius: var(--r-sm); overflow: hidden; }
+.segmented button { min-width: var(--tap); min-height: 38px; padding: 0 var(--s-4); border: 0; background: var(--surface-raised); color: var(--ink-2); font: var(--m-xs); font-feature-settings: var(--num); cursor: pointer; }
+.segmented button + button { border-left: 1px solid var(--border-default); }
+.segmented button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); }
+
+/* A row that goes somewhere looks like it does, rather than parking an arrow at the far edge. */
+.row-list { display: grid; gap: 1px; background: var(--border-subtle); }
+.row-list > a { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s-4); padding: var(--s-5); background: var(--surface); color: var(--ink-1); text-decoration: none; }
+.row-list > a:hover { background: var(--surface-raised); }
+.row-list > a::after { content: "→"; color: var(--ink-3); font: var(--t-title2); }
+.row-list h3 { margin: var(--s-1) 0 0; font: var(--t-title3); }
+.row-list small { color: var(--ink-3); font: var(--t-micro); font-feature-settings: var(--num); }
+
+.objective-coming { display: grid; gap: var(--s-4); max-width: var(--measure); }
+.objective-coming p { margin: 0; font: var(--t-body-lg); }
+.objective-coming ul { margin: 0; padding-left: var(--s-6); color: var(--ink-2); font: var(--t-body); }
+.objective-coming__exit { margin-top: var(--s-3); }
+
+/* What BOW cannot assess yet: listed, because a teacher planning a year needs it, and
+   quiet, because absence had been given twenty-two full table rows on the first screen a
+   district ever saw. */
+.coming-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; background: var(--border-subtle); }
+.coming-list li { background: var(--surface); }
+.coming-list a { display: block; padding: var(--s-4) var(--s-5); color: var(--ink-3); font: var(--t-ui); text-decoration: none; }
+.coming-list a:hover { color: var(--ink-1); background: var(--surface-raised); }
+.coming-list__code { display: inline-block; min-width: 3.2em; color: var(--ink-4); font: var(--m-xs); font-feature-settings: var(--num); }

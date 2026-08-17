@@ -977,6 +977,7 @@ studentTest("every educator route passes an accessibility scan, including the re
     "/educator/demo/students/14",
     "/educator/demo/students/14/reasoning",
     "/educator/demo/standards",
+    "/educator/map",
     "/educator/objectives",
     "/educator/objectives/nysed-pf-2026/1.3",
     "/educator/objectives/nysed-pf-2026/4.2",
@@ -1155,13 +1156,15 @@ test("a teacher searches for budget, finds 1.3, and reads its exact wording", as
   await expect(page.getByRole("heading", { name: "What do you want to assess?" })).toBeVisible();
 
   // All 23 are here, and the ones with a world behind them are told apart from the ones
-  // that are only mapped — "coming" and "0% demonstrated" are different sentences.
-  await expect(page.getByRole("row")).toHaveCount(24);
-  await expect(page.locator('.availability-pill[data-ready="true"]')).toHaveCount(1);
-  await expect(page.locator('.availability-pill[data-ready="false"]')).toHaveCount(22);
+  // that are only mapped — "coming" and "0% demonstrated" are different sentences. The two
+  // groups are separate lists rather than one table where absence outnumbers substance.
+  await expect(page.locator(".row-list > a")).toHaveCount(1);
+  await expect(page.locator(".coming-list li")).toHaveCount(22);
+  await expect(page.getByRole("heading", { name: "Ready to assign" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mapped, not yet assessable" })).toBeVisible();
 
   await page.getByLabel("Search objectives").fill("budget");
-  const budget = page.getByRole("link", { name: /1\.3\s+Create a budget/ });
+  const budget = page.locator(".row-list").getByRole("link", { name: /Create a budget/ });
   await expect(budget).toBeVisible();
   await budget.click();
 
@@ -1174,9 +1177,13 @@ test("a teacher searches for budget, finds 1.3, and reads its exact wording", as
 
 test("an objective with no world says so instead of reporting nothing as zero", async ({ page }) => {
   await page.goto("/educator/objectives/nysed-pf-2026/4.2");
-  await expect(page.getByText(/BOW cannot assess this yet/)).toBeVisible();
+  // Authored prose and a way out, rather than a sentence built around a statement that
+  // ended in its own full stop, on a page with no exit.
+  await expect(page.getByText("BOW cannot assess this objective yet.", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Assign this" })).toHaveCount(0);
   await expect(page.getByText("%")).toHaveCount(0);
+  await expect(page.getByText(/\.\s+—\s+and/)).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "See what BOW can assess" })).toBeVisible();
 });
 
 test("a teacher assigns 1.3, three students submit, and the objective reports what they did", async ({ page, browser, request }) => {
@@ -1185,10 +1192,12 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   await page.goto("/educator/objectives/nysed-pf-2026/1.3");
   await page.getByRole("link", { name: "Assign this" }).click();
 
-  // §17.1's target: the objective arrives already chosen and the world step is a line,
-  // because there is one world and a choice of one is not a choice.
+  // §17.1's target: the objective arrives already chosen, and there is no second step —
+  // one world means a step with one answer, which is a step that makes the flow slower to
+  // look thorough. Which world it is belongs in the confirmation, not in a numbered box.
   await expect(page.getByText("1.3 Create a budget")).toBeVisible();
-  await expect(page.getByText(/the only world for this today/)).toBeVisible();
+  await expect(page.locator(".assign-steps > li")).toHaveCount(2);
+  await expect(page.getByText(/Students play Plan Under Pressure/)).toBeVisible();
   await page.getByLabel("New class name").fill("Period 3 · Grade 7");
   await page.getByRole("button", { name: "Assign and get the code" }).click();
 
@@ -1276,4 +1285,76 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   const body = (await room.json()) as { assignments: { id: string; objectiveRef: { code: string } | null }[]; submissions: { assignmentId: string }[] };
   expect(body.assignments[0].objectiveRef?.code).toBe("1.3");
   expect(body.submissions.map((entry) => entry.assignmentId)).toEqual([body.assignments[0].id, body.assignments[0].id, body.assignments[0].id]);
+});
+
+
+// ---------------------------------------------------------------------------
+// 30. The Objective Map. Where a teacher stands against the whole requirement,
+//     in two views, with a coverage mark only a person can set.
+// ---------------------------------------------------------------------------
+
+test("the map shows all 23 objectives in five topics, and says coming rather than zero", async ({ page }) => {
+  await page.goto("/educator/map");
+  await expect(page.getByRole("heading", { name: "Where this class stands." })).toBeVisible();
+
+  // Five topic bands in the framework's own order, and every objective in one of them.
+  await expect(page.locator(".topic-band")).toHaveCount(5);
+  await expect(page.locator(".topic-band li")).toHaveCount(23);
+
+  // Twenty-two have no world. They read "Coming" — never a share, never a zero.
+  await expect(page.locator('.topic-band a[data-state="not-available"]')).toHaveCount(22);
+  await expect(page.locator(".topic-bands")).toContainText("Coming");
+  await expect(page.locator(".topic-bands").getByText("%")).toHaveCount(0);
+
+  // State is never carried by colour alone: every chip prints its word beside a mark whose
+  // geometry differs, so a greyscale printout loses nothing.
+  const marks = page.locator(".topic-band .state-mark");
+  await expect(marks).toHaveCount(23);
+  await expect(page.locator('.topic-band a[data-state="not-taught"] .chip-state')).toContainText("Not taught");
+  await noSeriousAxeViolations(page);
+  await noHorizontalOverflow(page);
+});
+
+test("the map remembers which view the teacher chose", async ({ page }) => {
+  await page.goto("/educator/map");
+  await page.getByRole("button", { name: "Table", exact: true }).click();
+  await expect(page.locator(".map-table tbody tr")).toHaveCount(23);
+  // The framework's exact sentence is in the row, because the table is meant to be printed
+  // and handed over — a code and a three-word handle is not a document.
+  await expect(page.locator(".map-table")).toContainText("Create a budget for a hypothetical income that includes planned expenses and savings.");
+
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Table", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".map-table tbody tr")).toHaveCount(23);
+  await noSeriousAxeViolations(page);
+});
+
+test("the map filters by topic and by status, and records a coverage mark a person set", async ({ page, request }) => {
+  const created = await createClass(request, "Map suite");
+  // Opening the class once is how this browser comes to hold its key, which is the only
+  // way the map can read it — there is no server-side index of a teacher's classes.
+  await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}`);
+  await expect(page.getByRole("heading", { name: "Nothing turned in yet." })).toBeVisible();
+
+  await page.goto("/educator/map");
+  await page.getByLabel("Topic").selectOption("2");
+  await expect(page.locator(".topic-band li")).toHaveCount(4);
+  await page.getByLabel("Topic").selectOption("");
+  await page.getByLabel("Status").selectOption("not-taught");
+  await expect(page.locator(".topic-band li")).toHaveCount(1);
+
+  // Taught is per class per objective, and it is set by a person — never inferred.
+  await page.getByLabel("Status").selectOption("");
+  await page.getByRole("button", { name: "Table", exact: true }).click();
+  await page.getByLabel("Class", { exact: true }).selectOption(created.code);
+  const budgetRow = page.locator(".map-table tbody tr").filter({ hasText: "Create a budget" });
+  await expect(budgetRow).toContainText("Not taught");
+  await budgetRow.getByRole("checkbox").click();
+  await expect(budgetRow).toContainText("Taught");
+
+  // It survives the round trip, because it lives on the class rather than in this browser.
+  await page.reload();
+  const afterReload = page.locator(".map-table tbody tr").filter({ hasText: "Create a budget" });
+  await expect(afterReload).toContainText("Taught");
+  await expect(afterReload.getByRole("checkbox")).toBeChecked();
 });

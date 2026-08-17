@@ -143,3 +143,32 @@ export interface StandardCompletionRule {
  * them — are a later checkpoint, and they sit on top of this rather than replacing it.
  */
 export type ObjectiveCoverageState = "demonstrated" | "partially-assessed" | "not-assessed";
+
+/**
+ * A district's ordering and renaming over a framework (§5.5).
+ *
+ * **A district is not a second standards system.** It teaches somebody else's objectives in
+ * its own order, under its own unit names, and often only some of them — so it is a view
+ * over a framework rather than a framework, and BOW's coverage reporting respects it without
+ * inventing a parallel set of codes to reconcile later.
+ *
+ * No district profile ships. The type exists because the Objective Map's sequence, term and
+ * required-subset filters are driven by one, and a filter with nothing behind it is not
+ * offered rather than offered and empty.
+ */
+export interface DistrictSequenceEntry {
+  standardCode: string;
+  /** The district's own name for a block of its year — "Fall", "Marking period 2". */
+  term: string;
+}
+
+export interface DistrictProfile {
+  id: string;
+  frameworkId: FrameworkId;
+  /** The order this district teaches in, and when. */
+  sequence: readonly DistrictSequenceEntry[];
+  /** The district's own display name per standard, where it has one. */
+  localNames?: Readonly<Record<string, string>>;
+  /** Which standards this district actually requires. */
+  requiredSubset: readonly string[];
+}

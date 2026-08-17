@@ -5,6 +5,7 @@ import { EVIDENCE_EVENT_TYPES } from "../src/domain/evidence/types";
 import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
 import { clampCriterion, REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../src/domain/blueprint/reasoning";
 import { challengeById, PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
+import { standardByRef, type FrameworkId } from "../src/domain/standards";
 import type { ClassStore, StoredClass } from "./store";
 
 /**
@@ -283,6 +284,26 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       status: 200,
       body: { class: record, assignments, submissions: attributed(await store.listSubmissions(record.code), assignments) },
     };
+  }
+
+  // PUT /classes/:code/taught — the teacher records that this class has been taught an
+  // objective, or takes it back. Never derived from anything a student did (§15.3).
+  if (request.method === "PUT" && segments.length === 3 && segments[2] === "taught") {
+    const body = (request.body ?? {}) as { frameworkId?: unknown; standardCode?: unknown; taught?: unknown };
+    if (typeof body.frameworkId !== "string" || typeof body.standardCode !== "string" || typeof body.taught !== "boolean") {
+      return fail(400, "bad_request", "That coverage mark could not be read.");
+    }
+    if (!standardByRef({ frameworkId: body.frameworkId as FrameworkId, code: body.standardCode })) {
+      return fail(400, "bad_request", "No objective in this framework carries that code.");
+    }
+    const others = (record.taughtObjectives ?? []).filter(
+      (marker) => marker.frameworkId !== body.frameworkId || marker.standardCode !== body.standardCode,
+    );
+    const taughtObjectives = body.taught
+      ? [...others, { frameworkId: body.frameworkId, standardCode: body.standardCode, markedAt: now }]
+      : others;
+    await store.putClass({ ...record, taughtObjectives });
+    return { status: 200, body: { taughtObjectives } };
   }
 
   // PATCH /classes/:code/submissions/:seat — a person scores the written reasoning.

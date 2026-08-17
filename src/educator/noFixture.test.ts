@@ -36,6 +36,11 @@ const REAL_CLASS_MODULES = [
   "src/educator/ObjectivePages.tsx",
   "src/educator/objectiveResults.ts",
   "src/educator/useObjectiveEvidence.ts",
+  // The Objective Map and everything it reads. A fixture here would put invented
+  // coverage against a real framework, which is the one claim a district checks.
+  "src/educator/ObjectiveMap.tsx",
+  "src/educator/objectiveMap.ts",
+  "src/educator/useTeacherClasses.ts",
 ];
 
 describe("a real class cannot reach a fixture", () => {

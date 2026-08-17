@@ -7,6 +7,7 @@ import { StudentChallenge } from "./stages/StudentChallenge";
 import { ClassOverview, ConceptDrilldown, EducatorGuide, ReasoningReview, StandardsView, StudentEvidence, TeachingCompanion } from "./educator/EducatorPages";
 import { ClassSetup } from "./educator/ClassSetup";
 import { AssignFlow, ObjectiveDetail, ObjectiveList } from "./educator/ObjectivePages";
+import { ObjectiveMap } from "./educator/ObjectiveMap";
 import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPages";
 import { Debrief } from "./educator/Debrief";
 import { durationLabel, PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
@@ -54,6 +55,7 @@ export function App() {
       <Route path="/educator/classes/new" element={<ClassSetup />} />
       {/* The objective a teacher assigns, the list they find it in, and the flow that
           turns it into a code. Real classes only; there is no demo objective. */}
+      <Route path="/educator/map" element={<ObjectiveMap />} />
       <Route path="/educator/objectives" element={<ObjectiveList />} />
       <Route path="/educator/objectives/:frameworkId/:code" element={<ObjectiveDetail />} />
       <Route path="/educator/assign" element={<AssignFlow />} />

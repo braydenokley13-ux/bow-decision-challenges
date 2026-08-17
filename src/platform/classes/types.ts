@@ -14,6 +14,24 @@ import type { StandardRef } from "../../domain/standards/types";
  * its working for.
  */
 
+/**
+ * A teacher saying they have taught something to this class.
+ *
+ * §15.3 is emphatic that this is set by a person and never inferred, and the reason is that
+ * it is the only thing on the Objective Map that is a claim about *teaching* rather than
+ * about evidence. BOW can see what students did; it cannot see a lesson, and a product that
+ * guessed at one would be reporting a teacher's week back to them as a finding.
+ *
+ * It lives on the class rather than in the browser that ticked it, so a teacher opening
+ * their own class on a second device sees their own coverage record.
+ */
+export interface TaughtMarker {
+  frameworkId: string;
+  standardCode: string;
+  /** When the teacher said so, so a coverage record can be read as a history later. */
+  markedAt: number;
+}
+
 /** A class an educator created. The code is what students type; the key is what an educator keeps. */
 export interface ClassRecord {
   code: string;
@@ -22,6 +40,8 @@ export interface ClassRecord {
   createdAt: number;
   /** When the service will drop this class and everything in it. */
   expiresAt: number;
+  /** What this class has been taught, as its teacher recorded it. Absent until they do. */
+  taughtObjectives?: readonly TaughtMarker[];
 }
 
 /**

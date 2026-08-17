@@ -75,6 +75,7 @@ export function ObjectiveList() {
   const standards = useMemo(() => standardsIn(FRAMEWORK_ID), []);
   const shown = standards.filter((standard) => matches(standard, query));
   const ready = shown.filter((standard) => isAssessable(refOf(standard)));
+  const coming = shown.filter((standard) => !isAssessable(refOf(standard)));
 
   return (
     <EducatorShell>
@@ -106,38 +107,47 @@ export function ObjectiveList() {
       </section>
 
       <section className="dashboard-section">
-        <table className="objective-table">
-          <thead>
-            <tr>
-              <th scope="col">{labels?.unitNounShort}</th>
-              <th scope="col">{labels?.groupNoun}</th>
-              <th scope="col">BOW can assess</th>
-            </tr>
-          </thead>
-          <tbody>
-            {shown.map((standard) => {
-              const assessable = isAssessable(refOf(standard));
-              return (
-                <tr key={standard.code} data-ready={assessable}>
-                  <th scope="row">
-                    <Link to={objectivePath(refOf(standard))}>
-                      <code>{standard.code}</code> {standard.shortLabel}
-                    </Link>
-                  </th>
-                  <td>{standard.topicName}</td>
-                  <td>
-                    <span className="availability-pill" data-ready={assessable}>
-                      {assessable ? "Ready to assign" : "Coming"}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        {shown.length === 0 && <p className="class-state">Nothing matches “{query}”.</p>}
-        <Attribution frameworkId={FRAMEWORK_ID} />
+        <div className="section-head">
+          <h2>Ready to assign</h2>
+          <p>A world exists for {ready.length === 1 ? "this one" : "these"} that produces every piece of evidence the skill asks for.</p>
+        </div>
+        <div className="row-list">
+          {ready.map((standard) => (
+            <Link key={standard.code} to={objectivePath(refOf(standard))}>
+              <div>
+                <small>{standard.code} · {standard.topicName}</small>
+                <h3>{standard.shortLabel}</h3>
+              </div>
+            </Link>
+          ))}
+        </div>
+        {ready.length === 0 && <p className="class-state">Nothing you can assign matches “{query}”.</p>}
       </section>
+
+      {/* The rest are mapped and waiting for a world. They are listed, because a teacher
+          planning a year needs to know what is not here — quietly, because a list of what a
+          product cannot do is not the first thing it should say about itself. */}
+      {coming.length > 0 && (
+        <section className="dashboard-section">
+          <div className="section-head">
+            <h2>Mapped, not yet assessable</h2>
+            <p>
+              BOW knows which skill sits behind {coming.length === 1 ? "this one" : "each of these"} and has no world for
+              {coming.length === 1 ? " it" : " them"} yet. Nothing here reports as 0% — it reports as coming.
+            </p>
+          </div>
+          <ul className="coming-list">
+            {coming.map((standard) => (
+              <li key={standard.code}>
+                <Link to={objectivePath(refOf(standard))}>
+                  <span className="coming-list__code">{standard.code}</span>{standard.shortLabel}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      <Attribution frameworkId={FRAMEWORK_ID} />
     </EducatorShell>
   );
 }
@@ -154,12 +164,22 @@ export function ObjectiveList() {
  * about the twenty-five nobody assessed. Zero submissions reads *not yet assessed* rather
  * than 0%, because nobody failed anything.
  */
-function ResultHeadline({ result }: { result: ObjectiveResult }) {
+function ResultHeadline({ result, submitted, awaitingReading }: { result: ObjectiveResult; submitted: number; awaitingReading: number }) {
   if (result.state === "not-assessed") {
+    // Two different silences, and telling a teacher the wrong one is worse than saying
+    // nothing. Nobody has started, or everybody has and their writing is still on the
+    // teacher's desk — this used to print the first sentence in both cases, directly above
+    // a count of three submissions.
     return (
       <div className="objective-result">
         <strong>Not yet assessed</strong>
-        <span>Nobody has turned work in for this yet.</span>
+        <span>
+          {submitted === 0
+            ? "Nobody has turned work in for this yet."
+            : awaitingReading > 0
+              ? `${submitted} turned in. Nobody is assessed until their writing has been read.`
+              : `${submitted} turned in, and none of it reached this ${"objective"} yet.`}
+        </span>
       </div>
     );
   }
@@ -191,7 +211,7 @@ function ClassResult({ entry }: { entry: ObjectiveClassResult }) {
           <p className="eyebrow">{entry.record.code}</p>
           <h3>{entry.record.label}</h3>
         </div>
-        <ResultHeadline result={entry.result} />
+        <ResultHeadline result={entry.result} submitted={entry.submitted} awaitingReading={entry.awaitingReading} />
       </header>
       <p className="class-state">
         {entry.submitted} turned in
@@ -271,11 +291,21 @@ export function ObjectiveDetail() {
             </p>
           )
           : (
-            <p className="class-state">
-              BOW cannot assess this yet. It rests on{" "}
-              {waiting.map((competency) => competency.statement).join("; ")}
-              {waiting.length > 0 ? " — and no built world produces every piece of evidence that skill asks for." : "."}
-            </p>
+            <div className="objective-coming">
+              {/* Authored prose, not a sentence concatenated around a statement that ends in
+                  its own full stop — which is what produced "…for that situation. — and no
+                  built world…" on every unavailable objective. */}
+              <p>BOW cannot assess this {labels?.unitNounShort.toLowerCase()} yet.</p>
+              {waiting.length > 0 && (
+                <>
+                  <p>It rests on {waiting.length === 1 ? "this skill" : "these skills"}, and no world has been built that produces everything {waiting.length === 1 ? "it" : "they"} ask for:</p>
+                  <ul>{waiting.map((competency) => <li key={competency.id}>{competency.statement}</li>)}</ul>
+                </>
+              )}
+              <p className="objective-coming__exit">
+                <Link className="button button--secondary" to="/educator/map">See what BOW can assess</Link>
+              </p>
+            </div>
           )}
       </header>
 
@@ -430,7 +460,7 @@ export function AssignFlow() {
       <section className="dashboard-section">
         <ol className="assign-steps">
           <li>
-            <p className="field-label">1 · {labels?.unitNounShort}</p>
+            <p className="field-caps">1 · {labels?.unitNounShort}</p>
             {params.get("code") && standard ? (
               <p className="assign-steps__settled">
                 <b>{standard.code} {standard.shortLabel}</b>
@@ -446,17 +476,11 @@ export function AssignFlow() {
             )}
           </li>
           <li>
-            <p className="field-label">2 · World</p>
-            {/* One world exists. §17.2 collapses this step to a line rather than asking a
-                teacher to choose from a list of one. */}
-            <p className="assign-steps__settled"><b>{PLAN_UNDER_PRESSURE.title}</b> — the only world for this today, so there is nothing to choose.</p>
-          </li>
-          <li>
-            <p className="field-label">3 · Class</p>
+            <p className="field-caps">2 · Class</p>
             <div className="class-form">
               {known.length > 0 && (
                 <>
-                  <label htmlFor="assign-class">Choose a class</label>
+                  <label htmlFor="assign-class">Which class</label>
                   <select id="assign-class" value={classCode} onChange={(event) => setClassCode(event.target.value)}>
                     {known.map((entry) => <option key={entry.code} value={entry.code}>{entry.label} · {entry.code}</option>)}
                     <option value="">Create a new class</option>
@@ -479,7 +503,9 @@ export function AssignFlow() {
           </li>
         </ol>
         <div className="stage-action">
-          <p id="assign-status" aria-live="polite">{problem ?? "Students need the code and a seat number. No accounts, no names."}</p>
+          <p id="assign-status" aria-live="polite">
+            {problem ?? `Students play ${PLAN_UNDER_PRESSURE.title} and need the code plus a seat number. No accounts, no names.`}
+          </p>
           <Button aria-disabled={working || !standard} onClick={() => void assign()}>
             {working ? "Assigning…" : "Assign and get the code"}
           </Button>

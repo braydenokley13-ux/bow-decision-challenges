@@ -1,6 +1,6 @@
 import type { MasteryStatus, Trajectory } from "../domain/evidence/types";
 import type { CompetencyResultState } from "../domain/competency/types";
-import type { ObjectiveResultState } from "../domain/competency/objectiveState";
+import type { ObjectiveMapState, ObjectiveResultState } from "../domain/competency/objectiveState";
 import { labelsFor, type FrameworkId } from "../domain/standards";
 
 /** The framework this deployment names in its navigation. One today. */
@@ -71,3 +71,29 @@ export const NAV_LABELS = {
   objectives: `${labelsFor(NAV_FRAMEWORK)?.unitNounShort ?? "Objective"}s`,
   frameworkView: `${labelsFor(NAV_FRAMEWORK)?.frameworkShort ?? "Framework"} view`,
 } as const;
+
+/**
+ * The Objective Map's states, in the words §15.3 defines them by.
+ *
+ * Four of the nine are not claims about students, and their words are chosen to make that
+ * unmistakable on a page next to seven that are. "Coming" is a fact about BOW's coverage;
+ * "Not taught" and "Taught" are a teacher's own record; "Assigned" is work still in flight.
+ * None of them is a score, and none of them may be read as one.
+ */
+export const MAP_STATE_LABELS: Record<ObjectiveMapState, string> = {
+  "not-available": "Coming",
+  "not-taught": "Not taught",
+  "taught-not-assessed": "Taught",
+  assigned: "Assigned",
+  "partially-assessed": "Partly assessed",
+  "too-few-assessed": "Too few assessed",
+  strong: "Strong",
+  developing: "Developing",
+  "needs-attention": "Needs attention",
+};
+
+/** Worst first, because a teacher scanning a filter is looking for what needs them. */
+export const MAP_STATE_ORDER: readonly ObjectiveMapState[] = [
+  "needs-attention", "developing", "strong", "too-few-assessed",
+  "partially-assessed", "assigned", "taught-not-assessed", "not-taught", "not-available",
+];

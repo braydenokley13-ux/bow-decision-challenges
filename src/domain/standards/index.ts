@@ -1,4 +1,4 @@
-import { availableCompetencyIds, isCompetencyAvailable } from "../competency/availability";
+import { availableCompetencyIds, isCompetencyAvailable, worldsAssessing } from "../competency/availability";
 import type { ObjectiveDemand } from "../competency/objectiveState";
 import { competencyById } from "../competency/competencies";
 import type { Competency, CompetencyId } from "../competency/types";
@@ -6,6 +6,7 @@ import { NYSED_2026, NYSED_2026_STANDARDS } from "./frameworks/nysed-2026";
 import { NYSED_2026_COMPLETION_RULES, NYSED_2026_MAPPINGS } from "./mappings/nysed-2026";
 import type {
   Coverage,
+  DistrictProfile,
   Framework,
   FrameworkId,
   FrameworkLabels,
@@ -31,6 +32,8 @@ import type {
 
 export type {
   Coverage,
+  DistrictProfile,
+  DistrictSequenceEntry,
   Framework,
   FrameworkId,
   FrameworkLabels,
@@ -41,8 +44,21 @@ export type {
   StandardCompletionRule,
   StandardRef,
 } from "./types";
+
 export { NYSED_2026, NYSED_2026_STANDARDS, NYSED_2026_TOPICS } from "./frameworks/nysed-2026";
 export { NYSED_2026_COMPLETION_RULES, NYSED_2026_MAPPINGS } from "./mappings/nysed-2026";
+
+/**
+ * The district this deployment reports for, if any.
+ *
+ * None ships, and that is the honest answer rather than a placeholder: a district profile is
+ * a real artefact a real district writes, and inventing one would put a sequence and a
+ * required subset in front of a teacher that nobody at their district agreed to. The
+ * Objective Map offers its term and required-subset filters only when this returns one.
+ */
+export function districtProfile(): DistrictProfile | undefined {
+  return undefined;
+}
 
 /** Every framework BOW carries. NYSED is the first complete one, and today the only one. */
 export const FRAMEWORKS: Record<FrameworkId, Framework> = { "nysed-pf-2026": NYSED_2026 };
@@ -252,5 +268,5 @@ export function missingCompetenciesFor(
 }
 
 /** Re-exported so a caller resolving an objective does not have to reach into two layers. */
-export { availableCompetencyIds, isCompetencyAvailable };
+export { availableCompetencyIds, isCompetencyAvailable, worldsAssessing };
 export type { ObjectiveDemand };
