@@ -27,6 +27,20 @@ const REAL_CLASS_MODULES = [
   "src/educator/Debrief.tsx",
   "src/educator/classMemory.ts",
   "src/educator/labels.ts",
+  // Where a real class is created, and now where its objective is picked. A demo objective
+  // list here would put a code on a whiteboard that no world can assess.
+  "src/educator/ClassSetup.tsx",
+  // The objective surfaces. Everything they render comes from the framework, the mappings
+  // and classes this browser can actually open — a fixture reaching any of them would put
+  // invented students under a real teacher's objective.
+  "src/educator/ObjectivePages.tsx",
+  "src/educator/objectiveResults.ts",
+  "src/educator/useObjectiveEvidence.ts",
+  // The Objective Map and everything it reads. A fixture here would put invented
+  // coverage against a real framework, which is the one claim a district checks.
+  "src/educator/ObjectiveMap.tsx",
+  "src/educator/objectiveMap.ts",
+  "src/educator/useTeacherClasses.ts",
 ];
 
 describe("a real class cannot reach a fixture", () => {

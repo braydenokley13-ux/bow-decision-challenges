@@ -26,7 +26,7 @@ const STUDENT_SOURCES = [
   "src/components/financial/PlanBoard.tsx",
   "src/components/financial/AdjustPanel.tsx",
   "src/components/financial/AllocationControl.tsx",
-  "src/components/financial/MoneySplit.tsx",
+  "src/components/financial/MoneyLedger.tsx",
   "src/components/financial/WeekMeter.tsx",
   // Two domain modules write sentences a student reads: the line under each amount, and
   // the verdict on each decision at Week 8. Being pure does not exempt them.

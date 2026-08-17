@@ -124,7 +124,7 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
           : "Avery missed a session, so the bonus never arrived. Your plan was already built without it."
         : held
           ? "Avery made every session. The money you planned around actually landed."
-          : `Avery missed a session, and the money your plan was counting on never came. ${clearing} more in Avery’s week — taken out of one of your other two amounts — would have kept it.`,
+          : `Avery missed a session, and the money your plan was counting on never came. Putting ${clearing} into rides — taken out of your other two amounts — would have kept it.`,
     },
     {
       id: "clinics",
@@ -143,11 +143,11 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
             ? "The clinics paid, and Avery still made every session."
             // The bonus was already gone at this housing and this spend, so the fee is
             // money the plan would not otherwise have had.
-            : "The clinics paid. Avery was over the line with them or without them, so they cost nothing that was not already lost.",
+            : `The clinics brought in ${formatDollars(n.optionalWorkIncome)} and cost Avery nothing extra — the week was already too full either way.`,
     },
     {
       id: "buying-time",
-      label: "Spending on Avery’s week",
+      label: "Paying for rides",
       taken: final.amounts.flexibleCash > 0,
       outcome: final.amounts.flexibleCash === 0
         ? "no_effect"
@@ -157,21 +157,21 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
             ? "no_effect"
             : "fell_short",
       detail: final.amounts.flexibleCash === 0
-        ? "Avery carried the whole week unaided."
+        ? "Nothing went on rides, so Avery took every bus and every long way round."
         : held && !withoutTimeMoney
-          ? "This is what saved the bonus. Without the hours you bought back, Avery would have gone over the line."
+          ? "This is what saved the bonus. Without the hours you bought back, Avery would have run out of week."
           : held
             ? "Avery would have made every session either way, so this money bought rest rather than the bonus."
-            : `It bought ${loadFor({ setupId: final.setupId, rehabActive: true, clinicsAccepted: final.includeOptionalWork, timeMoney: final.amounts.flexibleCash }, n).bought} hours back, which was not far enough to clear the line.`,
+            : `It bought ${loadFor({ setupId: final.setupId, rehabActive: true, clinicsAccepted: final.includeOptionalWork, timeMoney: final.amounts.flexibleCash }, n).bought} hours back, and Avery still did not have enough week left.`,
     },
     {
       id: "course-deposit",
-      label: "Reserving the course seat early",
+      label: final.depositTaken ? "Reserving the course seat early" : "Not reserving the course seat early",
       taken: final.depositTaken,
       outcome: final.depositTaken ? "paid_off" : "no_effect",
       detail: final.depositTaken
         ? "The seat was held from Week 4, and it cost less than the late price."
-        : "Avery waited, kept the money reachable, and pays the full price.",
+        : "Avery kept the money where it could still move, and paid the full price when the course came round.",
     },
   ];
   return verdicts.sort((a, b) => VERDICT_WEIGHT[a.outcome] - VERDICT_WEIGHT[b.outcome]);

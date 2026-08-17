@@ -72,6 +72,10 @@ for (const size of SIZES) {
     const context: PlanContext = { setupId: "cousin-room", countCompletion: true, countOutcome: true };
     await completeWorkingCalcs(page, { attendance: true, showcase: true });
     await shoot("05b-count-the-bonuses");
+    // The board with money still looking for a job, which is where the one statement this
+    // world records about savings is actually made. Captured before it is filled, because
+    // a balanced board no longer offers it and the review needs to see it offered.
+    await shoot("05c-money-with-no-job-yet");
     await fillPlanToBalance(page, "working", context);
     await shoot("06-working-plan");
     await page.getByRole("button", { name: SAVE_LABEL.working }).click();
@@ -112,7 +116,7 @@ for (const size of SIZES) {
 
     await page.getByRole("button", { name: "Explain my plan" }).click();
     await shoot("14-defense");
-    await submitDefense(page, "My plan still works because it balances after Week 5. I protected the course money and gave up the open Saturdays to take the clinics.");
+    await submitDefense(page, "My plan still balances after Week 5. I kept the full $1,200 for the course and gave up my Saturdays to coach the clinics, which brought in $500.");
     await shoot("15-submitted");
 
     // A second student, so the class views have a class in them.
@@ -129,13 +133,30 @@ for (const size of SIZES) {
       await decideOpportunity(page, { clinics: index === 0, countBonus: false });
       await savePlan(page, "final", { ...other, deposit: index === 1, clinics: index === 0, countCompletionFinal: false });
       await page.getByRole("button", { name: "Explain my plan" }).click();
-      await submitDefense(page, `Seat ${seat}: my plan still works because every dollar has a job after Week 5. I protected the course money and gave up part of the reserve.`);
+      await submitDefense(page, index === 0
+        ? "I kept the $1,200 for the course and took the $700 out of my backup money instead. It still balances, but I have nothing left if something else goes wrong."
+        : "I cut the course down to $500 so I could keep rides and rest. I would rather miss the course than miss practice and lose the $800 bonus.");
       await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible({ timeout: 15_000 });
     }
+
+    // The class the walkthrough created is set the objective, so the objective screens have
+    // a real result behind them rather than an empty state pretending to be one.
+    const set = await request.post(`http://127.0.0.1:4180/api/classes/${created.code}/assignments`, {
+      headers: { "X-BOW-Teacher-Key": created.teacherKey },
+      data: { objectiveRef: { frameworkId: "nysed-pf-2026", code: "1.3" } },
+    });
+    expect(set.status(), await set.text()).toBe(201);
+    // The objective pages read the classes this browser remembers, which is how a teacher
+    // actually reaches them — so the class page is opened once first to record the key.
+    await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}`);
 
     const evidence = `/educator/class/${created.code}?key=${created.teacherKey}`;
     for (const [name, path] of [
       ["15b-class-setup", "/educator/classes/new"],
+      ["15f-objectives", "/educator/objectives"],
+      ["15g-objective-detail", "/educator/objectives/nysed-pf-2026/1.3"],
+      ["15h-objective-coming", "/educator/objectives/nysed-pf-2026/4.2"],
+      ["15i-assign", "/educator/assign?frameworkId=nysed-pf-2026&code=1.3"],
       ["15c-real-class", evidence],
       ["15d-real-student", `/educator/class/${created.code}/students/21?key=${created.teacherKey}`],
       ["15e-debrief", `/educator/class/${created.code}/debrief?key=${created.teacherKey}`],

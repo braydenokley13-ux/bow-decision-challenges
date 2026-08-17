@@ -94,7 +94,7 @@ function BriefAnswers() {
 
 export function EducatorGuide() {
   return (
-    <EducatorShell>
+    <EducatorShell measure="bleed">
       <section className="guide-hero">
         <div><p className="eyebrow">Educator challenge brief · {PLAN_UNDER_PRESSURE.grades}</p><h1>{PLAN_UNDER_PRESSURE.title}</h1><p className="lede">A post-instruction application assessment for adaptive budgeting under uncertainty.</p><div className="guide-meta"><span>{PLAN_UNDER_PRESSURE.grades}</span><span>{durationLabel(PLAN_UNDER_PRESSURE)}</span><span>Basketball · {BASKETBALL_SCENARIO.title}</span><span>{PLAN_UNDER_PRESSURE.placement}</span></div><div className="hero-actions"><Link className="button button--primary" to={PLAN_UNDER_PRESSURE.route}>Try the student challenge</Link><Link className="button button--secondary" to="/educator/classes/new">Create a class</Link><Link className="button button--secondary" to="/educator/demo">See sample evidence</Link></div></div>
         <aside><span className="guide-hero__mark">PUP / 01</span><blockquote>“You teach the concept. BOW gives students a world where they have to use it.”</blockquote><p>No vocabulary quiz. The financial state the student constructs is the answer.</p></aside>
@@ -111,7 +111,7 @@ export function EducatorGuide() {
 
 export function TeachingCompanion() {
   return (
-    <EducatorShell>
+    <EducatorShell measure="bleed">
       <header className="page-header"><p className="eyebrow">Optional educator resource</p><h1>Two-Day Mini-Unit: Budgeting Under Uncertainty</h1><p>Schools may use their own instruction. This sample sequence shows the prerequisite skills students should learn before Plan Under Pressure. It does not pre-teach Avery's answers.</p></header>
       <div className="mini-unit-grid">
         <article><header><span>Day 01</span><h2>Build a plan from dependable money</h2><p>Example context: Jordan is saving for a robotics camp while earning money from neighborhood jobs.</p></header><ol><li><b>Dependable vs conditional income</b><p>Sort a guaranteed allowance from snow-shoveling money that depends on weather.</p></li><li><b>Recurring + one-time full cost</b><p>Calculate six weeks of bus fare plus a one-time registration fee.</p></li><li><b>Basic viable budget</b><p>Give every dollar one job across required costs, a goal, a reserve, and flexible cash.</p></li></ol><aside>Exit prompt: “Which dollars can Jordan count on before the weather is known?”</aside></article>

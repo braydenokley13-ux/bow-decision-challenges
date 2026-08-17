@@ -26,11 +26,11 @@ export function Debrief() {
   const keyQuery = params.get("key") ? `?key=${params.get("key")}` : "";
 
   if (state.status === "loading") {
-    return <EducatorShell><p className="class-state" aria-live="polite">Opening the class…</p></EducatorShell>;
+    return <EducatorShell measure="read"><p className="class-state" aria-live="polite">Opening the class…</p></EducatorShell>;
   }
   if (state.status === "error") {
     return (
-      <EducatorShell>
+      <EducatorShell measure="read">
         <header className="page-header"><p className="eyebrow">Debrief</p><h1>This class did not open.</h1><p>{state.message}</p></header>
       </EducatorShell>
     );
@@ -41,7 +41,7 @@ export function Debrief() {
 
   if (total === 0) {
     return (
-      <EducatorShell>
+      <EducatorShell measure="read">
         <header className="page-header">
           <p className="eyebrow">{record.label} · Debrief</p>
           <h1>There is nothing to debrief yet.</h1>
@@ -55,7 +55,7 @@ export function Debrief() {
   const needingReview = analysis.concepts.filter((concept) => concept.needsFollowUp.length > 0);
 
   return (
-    <EducatorShell>
+    <EducatorShell measure="read">
       <article className="debrief">
         <header className="debrief__head">
           <p className="eyebrow">{record.label} · {BASKETBALL_SCENARIO.title}</p>

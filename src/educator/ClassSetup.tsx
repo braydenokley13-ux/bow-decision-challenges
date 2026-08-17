@@ -5,6 +5,8 @@ import { EducatorShell } from "./EducatorShell";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import { CLASS_ERROR_MESSAGES, CLASS_RETENTION_DAYS, isClassError, type ClassCreation } from "../platform/classes/types";
 import { durationLabel, PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
+import { assessableStandards, FRAMEWORKS, labelsFor } from "../domain/standards";
+import type { FrameworkId } from "../domain/standards";
 import { forgetClass, rememberClass, rememberedClasses } from "./classMemory";
 
 /**
@@ -18,12 +20,31 @@ import { forgetClass, rememberClass, rememberedClasses } from "./classMemory";
  * every student in the room has it — which means it cannot be what opens the evidence. The
  * key in this link is, and it is stored in this browser and shown once.
  */
+/**
+ * The framework this deployment sets work against. One today.
+ *
+ * Named once, here, so the two strings a teacher reads — the word for an objective and the
+ * attribution line — come from the framework rather than from this file. A second state is
+ * then a row in `FRAMEWORKS`, not a rewrite of this screen.
+ */
+const FRAMEWORK_ID: FrameworkId = "nysed-pf-2026";
+
+/** The value the picker uses for "no objective", which is not the same as none existing. */
+const NO_OBJECTIVE = "";
+
 export function ClassSetup() {
   const [label, setLabel] = useState("");
   const [created, setCreated] = useState<ClassCreation | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
   const [known, setKnown] = useState(() => rememberedClasses());
+  // Only objectives a built world can actually assess. An objective BOW has a mapping for
+  // and no world would produce a class code, thirty submissions and no result — which is
+  // the one thing §5.6 says the product may never let a teacher believe.
+  const [objectives] = useState(() => assessableStandards(FRAMEWORK_ID));
+  const [objectiveCode, setObjectiveCode] = useState(() => assessableStandards(FRAMEWORK_ID)[0]?.code ?? NO_OBJECTIVE);
+  const framework = FRAMEWORKS[FRAMEWORK_ID];
+  const labels = labelsFor(FRAMEWORK_ID);
 
   const create = async () => {
     if (working) return;
@@ -41,6 +62,17 @@ export function ClassSetup() {
         return;
       }
       const record = body as ClassCreation;
+      // The assignment is a second call because the class is the thing that must exist:
+      // a code on a whiteboard with nothing behind it is recoverable, and a class that
+      // failed to be created is a room of students who cannot start. If this call fails
+      // the class still opens and reads as the one thing it was implicitly set.
+      if (objectiveCode !== NO_OBJECTIVE) {
+        await fetch(`${CLASS_API_BASE}/classes/${record.code}/assignments`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": record.teacherKey },
+          body: JSON.stringify({ objectiveRef: { frameworkId: FRAMEWORK_ID, code: objectiveCode } }),
+        });
+      }
       rememberClass(record);
       setKnown(rememberedClasses());
       setCreated(record);
@@ -99,7 +131,7 @@ export function ClassSetup() {
         </section>
       ) : (
         <section className="class-form">
-          <label htmlFor="class-label">Class name</label>
+          <label htmlFor="class-label">Name this class</label>
           <input
             id="class-label"
             value={label}
@@ -109,6 +141,23 @@ export function ClassSetup() {
             maxLength={60}
             aria-describedby="class-form-status"
           />
+          <label htmlFor="class-objective">{labels?.unitNounShort ?? "Objective"}</label>
+          <select
+            id="class-objective"
+            value={objectiveCode}
+            onChange={(event) => setObjectiveCode(event.target.value)}
+            aria-describedby="class-objective-note"
+          >
+            {objectives.map((standard) => (
+              <option key={standard.code} value={standard.code}>{standard.code} · {standard.shortLabel}</option>
+            ))}
+            <option value={NO_OBJECTIVE}>Run the challenge without one</option>
+          </select>
+          <p id="class-objective-note" className="class-form__note">
+            {objectiveCode === NO_OBJECTIVE
+              ? "Students still play the challenge and you still see everything they did. Nothing is reported against a state objective."
+              : framework?.labels.attribution}
+          </p>
           <Button type="button" aria-disabled={working} onClick={() => void create()}>
             {working ? "Creating…" : "Create the class"}
           </Button>
@@ -120,19 +169,17 @@ export function ClassSetup() {
 
       {known.length > 0 && (
         <section className="dashboard-section">
-          <div className="section-heading">
-            <p className="eyebrow">On this computer</p>
+          <div className="section-head">
             <h2>Classes you have opened here</h2>
+            <p>Saved in this browser only. Opening a class from its private link on another computer adds it there too.</p>
           </div>
-          <div className="student-worklist">
+          <div className="row-list">
             {known.map((record) => (
               <Link key={record.code} to={evidencePath(record)}>
                 <div>
-                  <span>{record.code}</span>
+                  <small>{record.code} · created {new Date(record.createdAt).toLocaleDateString()}</small>
                   <h3>{record.label}</h3>
-                  <p>Created {new Date(record.createdAt).toLocaleDateString()}</p>
                 </div>
-                <span aria-hidden="true">→</span>
               </Link>
             ))}
           </div>

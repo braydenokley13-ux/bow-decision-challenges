@@ -1,26 +1,37 @@
 /* Shared editorial system */
-h1, h2, h3 { letter-spacing: -0.025em; }
+h1, h2, h3 { letter-spacing: var(--display-tracking); }
 p { color: var(--ink-2); }
-.eyebrow { margin-bottom: var(--s-3); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.12em; text-transform: uppercase; }
-.field-label { display: block; margin: 0 0 var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.07em; text-transform: uppercase; }
+.eyebrow { margin-bottom: var(--s-3); color: var(--bow-brand); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
+.field-label { display: block; margin: 0 0 var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
 .money { font-variant-numeric: tabular-nums slashed-zero lining-nums; font-feature-settings: var(--num); letter-spacing: -0.02em; }
 .stage-heading, .home-page__copy, .role-hero { animation: stage-in var(--dur-stage) var(--ease-exit) both; }
 
 @keyframes stage-in { from { transform: translateY(10px); } to { transform: none; } }
-.button { min-height: var(--tap); display: inline-flex; align-items: center; justify-content: center; gap: var(--s-3); padding: 0 var(--s-5); border: 1px solid var(--border-ink); border-radius: var(--r-sm); cursor: pointer; font: var(--t-ui); text-decoration: none; transition: background var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard); }
+
+/* Squared, ruled, decisive. A pill-shaped button belongs to a different product. */
+.button { min-height: var(--tap); display: inline-flex; align-items: center; justify-content: center; gap: var(--s-3); padding: 0 var(--s-6); border: 1.5px solid var(--border-ink); border-radius: var(--r-sm); cursor: pointer; font: var(--t-ui); font-weight: 700; letter-spacing: 0.01em; text-decoration: none; transition: background var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard); }
 .button:hover { transform: translateY(-1px); }
+
+/* A primary action that is only waiting for an input keeps its outline. Flat grey on grey
+   reads as hardware that has stopped working, and a student decides the page is broken
+   before they decide it is their turn. */
 .button[aria-disabled="true"] { cursor: not-allowed; color: var(--ink-3); background: var(--surface-sunken); border-color: var(--border-default); transform: none; }
-.button--primary { color: var(--ink-invert); background: var(--world-accent, var(--ink-1)); border-color: var(--world-accent, var(--ink-1)); }
+.button--primary[aria-disabled="true"] { color: var(--bow-brand-strong); background: var(--fin-adjustable-soft); border-color: var(--bow-brand); }
+.button--primary { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); }
+.button--primary:hover { background: var(--bow-brand-strong); border-color: var(--bow-brand-strong); }
 .button--secondary { color: var(--ink-1); background: var(--surface-raised); }
-.button--quiet { color: var(--ink-2); background: transparent; border-color: var(--border-default); }
+.button--quiet { color: var(--ink-2); background: transparent; border-color: var(--border-default); border-width: 1px; font-weight: 500; }
 .button--danger { color: var(--fin-over-ink); background: var(--fin-over-soft); border-color: var(--fin-over); }
+
+/* The mark: a blue plate, the wordmark in ink, the product name in BOW blue caps. */
 .app-mark { display: inline-flex; align-items: center; gap: var(--s-3); color: inherit; text-decoration: none; }
-.app-mark__monogram { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: 50%; font: 700 1rem/1 var(--font-ui); }
+.app-mark__monogram { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: var(--r-xs); color: var(--mark-plate-ink, var(--bow-brand-ink)); font: 800 1.05rem/1 var(--font-ui); letter-spacing: -0.02em; }
 .app-mark b, .app-mark small { display: block; }
-.app-mark b { font: 700 0.95rem/1 var(--font-ui); letter-spacing: 0.08em; }
-.app-mark small { margin-top: 3px; color: var(--ink-3); font: var(--t-micro); }
+.app-mark > span { min-width: 0; }
+.app-mark b { font: 800 1rem/1 var(--font-ui); letter-spacing: 0.1em; white-space: nowrap; }
+.app-mark small { margin-top: 4px; font: var(--t-micro); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; }
 .section-heading { max-width: 720px; margin-bottom: var(--s-7); }
-.section-heading h2 { margin: 0; font: var(--t-title1); }
+.section-heading h2 { margin: 0; font: var(--t-display3); letter-spacing: var(--display-tracking); text-transform: uppercase; }
 .stage-deck, .lede { max-width: var(--measure); font: var(--t-body-lg); }
 .disclaimer { max-width: 1000px; margin: var(--s-6) auto 0; color: var(--ink-3); font: var(--t-micro); }
 
@@ -29,28 +40,28 @@ p { color: var(--ink-2); }
 
 /* The five chapters, each on its own air and under its own rule. A student who looks up
    from the numbers can tell which part of the story they are in without reading a word. */
-.challenge-shell[data-chapter="offer"] { --chapter-ground: var(--ground-plan); --chapter-accent: var(--ink-1); }
-.challenge-shell[data-chapter="plan"] { --chapter-ground: var(--ground-plan); --chapter-accent: var(--fin-adjustable); }
-.challenge-shell[data-chapter="season"] { --chapter-ground: var(--ground-season); --chapter-accent: var(--fin-reliable); }
+.challenge-shell[data-chapter="offer"] { --chapter-ground: var(--ground-plan); --chapter-accent: var(--bow-brand); }
+.challenge-shell[data-chapter="plan"] { --chapter-ground: var(--ground-plan); --chapter-accent: var(--bow-brand); }
+.challenge-shell[data-chapter="season"] { --chapter-ground: var(--ground-season); --chapter-accent: var(--bow-brand); }
 .challenge-shell[data-chapter="pressure"] { --chapter-ground: var(--ground-pressure); --chapter-accent: var(--fin-over); }
-.challenge-shell[data-chapter="resolution"] { --chapter-ground: var(--ground-resolution); --chapter-accent: var(--world-accent); }
+.challenge-shell[data-chapter="resolution"] { --chapter-ground: var(--ground-resolution); --chapter-accent: var(--bow-brand-strong); }
 
 /* The chapter's colour is carried on the topbar's own border rather than a pseudo-element,
    so releasing `position` for a full-page screenshot cannot detach it from the bar. */
-.challenge-topbar { height: 72px; position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: 220px minmax(0, 1fr) auto; align-items: center; gap: var(--s-5); padding: 0 var(--gutter); background: var(--surface); border-bottom: 3px solid var(--chapter-accent, var(--border-default)); box-shadow: var(--shadow-rail); transition: border-color var(--dur-stage) var(--ease-standard); }
+.challenge-topbar { height: 72px; position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-5); padding: 0 var(--gutter); background: var(--surface-raised); border-bottom: 3px solid var(--chapter-accent, var(--border-default)); box-shadow: var(--shadow-rail); transition: border-color var(--dur-stage) var(--ease-standard); }
 
-/* Season strip — story time, not form time */
+/* Season strip — eight weeks as a run of ticket stubs, one of which is live. */
 .season-strip { display: flex; align-items: center; gap: var(--s-4); min-width: 0; }
-.season-strip__caption { flex: none; color: var(--ink-1); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.season-strip__caption { flex: none; color: var(--ink-1); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
 .season-strip ol { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; flex: 1; min-width: 0; margin: 0; padding: 0; list-style: none; }
 .season-strip li { display: grid; gap: 4px; color: var(--ink-4); font: var(--t-micro); font-feature-settings: var(--num); text-align: center; }
-.season-strip li i { height: 5px; display: block; background: var(--surface-inset); border-radius: var(--r-pill); transition: background var(--dur-state) var(--ease-standard); }
+.season-strip li i { height: 5px; display: block; background: var(--surface-inset); transition: background var(--dur-state) var(--ease-standard); }
 .season-strip li[data-state="played"] { color: var(--ink-3); }
-.season-strip li[data-state="played"] i { background: var(--fin-reliable); }
-.season-strip li[data-state="current"] { color: var(--ink-1); font-weight: 700; }
-.season-strip li[data-state="current"] i { height: 9px; margin-top: -2px; background: var(--world-accent); }
+.season-strip li[data-state="played"] i { background: var(--bow-brand); }
+.season-strip li[data-state="current"] { color: var(--ink-1); font-weight: 800; }
+.season-strip li[data-state="current"] i { height: 9px; margin-top: -2px; background: var(--chapter-accent, var(--bow-brand)); }
 .contract-drawer { justify-self: end; position: relative; }
-.contract-drawer summary { min-height: 40px; display: grid; place-items: center; padding: 0 var(--s-3); white-space: nowrap; cursor: pointer; font: var(--t-ui); }
+.contract-drawer summary { min-height: 40px; display: flex; align-items: center; gap: var(--s-2); border: 1px solid var(--border-default); padding: 0 var(--s-4); white-space: nowrap; cursor: pointer; color: var(--bow-brand); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
 .contract-drawer > div { width: 360px; position: absolute; right: 0; top: 52px; padding: var(--s-6); background: var(--surface-raised); border: 1px solid var(--border-default); box-shadow: var(--shadow-overlay); }
 .contract-drawer dl { margin: var(--s-4) 0 0; }
 .contract-drawer dl div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--border-subtle); }
@@ -59,18 +70,33 @@ p { color: var(--ink-2); }
 .contract-drawer dd { margin: 0; font: var(--m-sm); font-feature-settings: var(--num); }
 .contract-drawer__goal { margin: var(--s-4) 0 0; padding: var(--s-3); background: var(--fin-adjustable-soft); color: var(--fin-adjustable-ink); font: var(--t-micro); }
 .stage-main { width: min(var(--w-board), calc(100% - 2 * var(--gutter))); margin: 0 auto; padding: var(--s-7) 0 var(--s-10); }
-.stage-heading { position: relative; margin-bottom: var(--s-6); padding-left: var(--s-5); border-left: 4px solid var(--chapter-accent, var(--world-accent)); }
-.stage-heading h1 { max-width: 960px; margin: 0; font: var(--t-display2); letter-spacing: var(--display-tracking); }
 
-.stage-action { display: flex; align-items: center; justify-content: space-between; gap: var(--s-6); margin-top: var(--s-6); padding: var(--s-5) 0; border-top: 1px solid var(--border-default); }
-.stage-action p { max-width: 650px; margin: 0; font: var(--t-ui); }
+/* The masthead of every stage: a blue stamp, a heavy line of caps, a rule under it.
+   Short headlines only — this is set in caps, and caps stop being a voice at two lines. */
+.stage-heading { position: relative; margin-bottom: var(--s-6); padding-bottom: var(--s-4); border-bottom: 2px solid var(--ink-1); }
+.stage-heading h1 { max-width: 22ch; margin: 0; font: var(--t-display1); letter-spacing: var(--display-tracking); text-transform: uppercase; }
+
+/*
+ * The two peaks. Week 5 is where the plan stops working and Week 8 is where the student
+ * finds out what that cost, and both of them arrive on their own ground: the arena at
+ * night, the headline at scene size, and the news inside the same band rather than in a
+ * card underneath it. Everything else in the product is set on cream, which is what makes
+ * these two land.
+ */
+.stage-heading--dark { margin-bottom: var(--s-6); padding: 0; color: var(--world-hero-ink); border: 1px solid var(--world-panel-edge); border-bottom-width: 1px; }
+.stage-heading--dark .stage-heading__say { padding: clamp(28px, 4vw, 52px) clamp(24px, 4vw, 48px) clamp(20px, 3vw, 32px); }
+.stage-heading--dark .eyebrow { color: var(--world-hero-second); }
+.stage-heading--dark h1 { max-width: 16ch; color: var(--world-hero-ink); font: var(--t-scene); letter-spacing: var(--display-tracking-tight); }
+
+.stage-action { display: flex; align-items: center; justify-content: space-between; gap: var(--s-6); margin-top: var(--s-7); padding: var(--s-5) var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-left: 4px solid var(--chapter-accent, var(--bow-brand)); }
+.stage-action p { max-width: 650px; margin: 0; font: var(--t-body-lg); }
 .stage-action__pair { display: flex; flex-wrap: wrap; gap: var(--s-3); }
 
 /* Calculations — a slip Avery has to total, not a form field */
 .calculation { display: grid; gap: var(--s-2); padding: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); box-shadow: var(--shadow-card); }
 .calculation__given { margin: 0; color: var(--ink-1); font: var(--t-body-lg); }
 .calculation .terms { margin: 0; color: var(--ink-3); font: var(--t-micro); }
-.calculation__total { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3); margin-top: var(--s-3); padding-top: var(--s-4); border-top: 2px solid var(--border-ink); }
+.calculation__total { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: var(--s-4); margin-top: var(--s-3); padding-top: var(--s-4); border-top: 2px solid var(--border-ink); }
 .calculation__total > span { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.12em; text-transform: uppercase; }
 .calculation__entry { display: grid; grid-template-columns: auto 110px auto; align-items: center; }
 .calculation__entry > span { height: 44px; display: grid; place-items: center; padding-left: var(--s-3); border: 1px solid var(--border-strong); border-right: 0; background: var(--surface-sunken); font: var(--m-sm); }
@@ -89,39 +115,35 @@ p { color: var(--ink-2); }
 .working-setup { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); margin-bottom: var(--s-6); }
 .board-gate { max-width: var(--measure); margin: 0; padding: var(--s-5) var(--s-6); color: var(--ink-2); background: var(--surface-sunken); border: 1px dashed var(--border-strong); font: var(--t-body-lg); }
 
-/* Once the two amounts are worked out they stop being questions and become a fact strip,
-   so the plan board never shares the screen with the maths that produced it. */
-.counted-strip { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-bottom: var(--s-5); }
-.counted-strip > div { display: flex; align-items: baseline; gap: var(--s-3); padding: var(--s-3) var(--s-5); background: var(--fin-balanced-soft); border-left: 3px solid var(--fin-balanced); }
-.counted-strip span { color: var(--fin-balanced-ink); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
-.counted-strip strong { color: var(--ink-1); font: var(--m-sm); font-feature-settings: var(--num); }
-.staged-reveal { display: grid; gap: var(--s-5); animation: staged-in var(--dur-stage) var(--ease-exit) both; }
+.staged-reveal { display: grid; gap: 0; animation: staged-in var(--dur-stage) var(--ease-exit) both; }
 
 @keyframes staged-in { from { transform: translateY(12px); } to { transform: none; } }
 
-/* Plan Board */
-.plan-board { background: var(--surface); border: 1px solid var(--border-default); }
-.plan-board__header { min-height: 72px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3) var(--s-5); padding: var(--s-4) var(--s-5); border-bottom: 1px solid var(--border-default); }
-.plan-board__header[data-slim="true"] { min-height: 0; padding-top: var(--s-3); padding-bottom: var(--s-3); }
-.plan-board__header .eyebrow { margin-bottom: 2px; }
-.plan-board__header h2 { margin: 0; font: var(--t-title2); }
-.exposure-summary { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin: 0 var(--s-5) var(--s-4); border: 1px solid var(--border-default); }
-.exposure-summary > div { min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-3) var(--s-4); }
-.exposure-summary > div + div { border-left: 1px solid var(--border-default); }
-.exposure-summary span { color: var(--ink-3); font: var(--t-micro); }
-.exposure-summary strong { font: var(--m-sm); }
-.plan-help { display: flex; align-items: start; justify-content: space-between; gap: var(--s-4); margin: 0 var(--s-5) var(--s-4); padding: var(--s-4); background: var(--fin-adjustable-soft); border: 1px solid var(--fin-adjustable); }
+/* ---------------------------------------------------------------------------
+   The plan itself. One document, read down: what there is, what to protect,
+   where the rest goes, and the bar that says whether it holds.
+   --------------------------------------------------------------------------- */
+.plan-board { margin-top: var(--s-5); background: var(--surface); border: 1px solid var(--border-ink); box-shadow: var(--shadow-card); }
+.plan-board__header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3) var(--s-5); padding: var(--s-3) var(--s-6); background: var(--surface-raised); border-bottom: 1px solid var(--border-default); }
+.exposure-summary { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); margin: var(--s-4) 0 0; padding: var(--s-3) var(--s-4); background: var(--surface-sunken); }
+.exposure-summary span { color: var(--ink-2); font: var(--t-ui); }
+.exposure-summary strong { font: var(--m-sm); font-feature-settings: var(--num); }
+.plan-help { display: flex; align-items: start; justify-content: space-between; gap: var(--s-4); margin: 0 var(--s-6) var(--s-5); padding: var(--s-4); background: var(--fin-adjustable-soft); border: 1px solid var(--fin-adjustable); }
 .plan-help > div { display: grid; gap: var(--s-2); font: var(--t-ui); }
 .plan-help ol { margin: 0; padding-left: var(--s-5); color: var(--ink-2); }
 .plan-help li + li { margin-top: var(--s-2); }
-.plan-commit { min-height: var(--actionbar-h); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-3) var(--s-5); border-top: 1px solid; }
+
+/* Step 6, and the only bar on the screen: what the plan is still missing, and the one
+   button that commits it. */
+.plan-commit { min-height: var(--actionbar-h); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-5) var(--s-6); border-top: 3px solid; }
 .plan-commit--balanced { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); border-color: var(--fin-balanced); }
 .plan-commit--over { color: var(--fin-over-ink); background: var(--fin-over-soft); border-color: var(--fin-over); }
 .plan-commit--unassigned { color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); }
 .plan-commit__read { margin: 0; color: inherit; font: var(--t-ui); }
-.plan-commit__state { display: flex; align-items: baseline; gap: var(--s-3); }
-.plan-commit__state span { font: var(--t-ui); }
-.plan-commit__state strong { font: var(--m-lg); font-feature-settings: var(--num); transition: color var(--dur-state) var(--ease-standard); }
+.plan-commit__state { display: grid; align-items: baseline; gap: var(--s-1) var(--s-3); grid-template-columns: auto minmax(0, 1fr); }
+.plan-commit__state > .stamp { grid-column: 1 / -1; color: inherit; opacity: 0.8; }
+.plan-commit__state span { font: var(--t-title3); font-weight: 500; }
+.plan-commit__state strong { font: var(--m-hero); font-feature-settings: var(--num); letter-spacing: var(--display-tracking); transition: color var(--dur-state) var(--ease-standard); }
 .plan-commit__actions { display: flex; flex-wrap: wrap; gap: var(--s-3); }
 
 /* Plan checks and Week 5 */
@@ -136,15 +158,24 @@ p { color: var(--ink-2); }
 .plan-echo dt { color: var(--ink-2); font: var(--t-ui); }
 .plan-echo dd { margin: 0; font: var(--m-sm); font-feature-settings: var(--num); }
 .plan-echo__note { margin: 0; max-width: 30ch; color: var(--ink-3); font: var(--t-micro); text-align: right; }
-.gap-builder { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); align-items: start; gap: var(--s-5) var(--s-6); margin-top: var(--s-5); padding: var(--s-6); background: var(--surface); border: 1px solid var(--border-default); }
-.gap-builder__intro h2 { margin: 0 0 var(--s-3); font: var(--t-title1); }
-.gap-builder__intro p:last-child { margin: 0; }
-.gap-builder__intro > .calculation { margin-top: var(--s-5); }
+
+/* The cards, then the box that totals them. Reading order is the teaching order. */
+.gap-builder { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); align-items: start; gap: var(--s-5) var(--s-6); margin-top: var(--s-5); padding: var(--s-6); background: var(--surface); border: 1px solid var(--border-default); }
+.gap-builder__intro { grid-column: 1 / -1; max-width: 62ch; }
+.gap-builder__intro h2 { margin: 0 0 var(--s-3); font: var(--t-display3); letter-spacing: var(--display-tracking); text-transform: uppercase; }
+.gap-builder__intro p:last-child { margin: 0; font: var(--t-body-lg); }
+.gap-builder__sum { align-self: start; }
 .gap-tiles { display: grid; align-content: start; gap: var(--s-2); }
-.gap-tiles button { display: grid; grid-template-columns: 96px 1fr auto; align-items: center; gap: var(--s-3) var(--s-4); min-height: 66px; padding: var(--s-3) var(--s-4); text-align: left; background: var(--surface-raised); border: 1px solid var(--border-default); border-left: 3px solid var(--border-strong); cursor: pointer; transition: border-color var(--dur-micro) var(--ease-standard), background var(--dur-micro) var(--ease-standard); }
+.gap-tiles button { display: grid; grid-template-columns: auto 96px 1fr auto; align-items: center; gap: var(--s-3) var(--s-4); min-height: 72px; padding: var(--s-4); text-align: left; background: var(--surface-raised); border: 1px solid var(--border-default); border-left: 4px solid var(--border-strong); cursor: pointer; transition: border-color var(--dur-micro) var(--ease-standard), background var(--dur-micro) var(--ease-standard); }
 .gap-tiles button[data-kind="lost"] { border-left-color: var(--fin-conditional); }
 .gap-tiles button[data-kind="bill"] { border-left-color: var(--fin-over); }
 .gap-tiles button[aria-pressed="true"] { background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); border-left-color: var(--fin-adjustable); }
+
+/* Something to press, drawn as something that can be pressed. Without this the first
+   interaction of the hardest chapter is a guess a student has to make about the UI. */
+.gap-tiles__mark, .interview__mark { width: 22px; height: 22px; display: grid; place-items: center; background: var(--surface); border: 2px solid var(--border-strong); border-radius: var(--r-xs); }
+.gap-tiles button[aria-pressed="true"] .gap-tiles__mark, .interview__stats button[aria-pressed="true"] .interview__mark { background: var(--fin-adjustable); border-color: var(--fin-adjustable); }
+.gap-tiles button[aria-pressed="true"] .gap-tiles__mark::after, .interview__stats button[aria-pressed="true"] .interview__mark::after { content: "✓"; color: var(--ink-invert); font: 700 0.85rem/1 var(--font-ui); }
 .gap-tiles__kind { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
 .gap-tiles__label b { display: block; font: var(--t-ui); }
 .gap-tiles__label small { display: block; margin-top: 2px; color: var(--ink-3); font: var(--t-micro); }
@@ -172,19 +203,28 @@ p { color: var(--ink-2); }
 
 /* Educator shell and guide */
 .educator-shell { min-height: 100vh; background: var(--canvas); }
-.educator-topbar { min-height: 72px; display: grid; grid-template-columns: 220px 1fr auto; align-items: center; gap: var(--s-5); padding: 0 var(--s-7); background: var(--surface); border-bottom: 1px solid var(--border-default); }
+.educator-topbar { min-height: 72px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--s-5); padding: 0 var(--s-7); background: var(--surface); border-bottom: 1px solid var(--border-default); }
 .educator-topbar nav { display: flex; justify-content: center; gap: var(--s-5); }
 .educator-topbar nav a { padding: var(--s-3) 0; color: var(--ink-3); font: var(--t-ui); text-decoration: none; }
 .educator-topbar nav a.active { color: var(--ink-1); border-bottom: 2px solid var(--ink-1); }
 .demo-pill, .standard-chip, .tag-row span { padding: var(--s-2) var(--s-3); background: var(--surface-sunken); border-radius: var(--r-pill); color: var(--ink-2); font: var(--t-micro); }
-.educator-main { width: min(var(--w-dash), 100%); margin: auto; padding: var(--s-7) var(--gutter) var(--s-9); }
+.educator-main { --measure-page: var(--w-evidence); padding: var(--s-7) 0 var(--s-9); }
+.educator-main > * { width: min(var(--measure-page), 100% - 2 * var(--gutter)); margin-inline: auto; }
+.educator-main > * + * { margin-top: var(--gap-section); }
+
+/* A page made of sentences owns its margins instead of stranding a column of nothing. */
+.educator-main[data-measure="read"] { --measure-page: var(--w-read); }
+
+/* The guide and the companion are full-bleed editorial layouts and predate the measure. */
+.educator-main[data-measure="bleed"] { --measure-page: var(--w-dash); }
+.educator-main[data-measure="bleed"] > * { width: min(var(--w-dash), 100%); }
 .guide-hero { min-height: 590px; display: grid; grid-template-columns: 1.2fr 0.8fr; background: var(--surface); }
 .guide-hero > div { padding: clamp(40px, 7vw, 96px); }
 .guide-hero h1 { margin: 0 0 var(--s-5); font: 600 clamp(3.8rem, 8vw, 7.6rem)/0.88 var(--font-ui); letter-spacing: -0.07em; }
 .guide-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: var(--s-6) 0; }
 .guide-meta span { padding: var(--s-2) var(--s-3); background: var(--surface-sunken); border-radius: var(--r-pill); font: var(--t-micro); }
 .hero-actions { display: flex; gap: var(--s-3); }
-.guide-hero aside { display: flex; flex-direction: column; justify-content: end; padding: clamp(32px, 6vw, 72px); color: var(--ink-invert); background: var(--ink-1); }
+.guide-hero aside { display: flex; flex-direction: column; justify-content: end; padding: clamp(32px, 6vw, 72px); color: var(--ink-invert); background: var(--bow-brand-strong); }
 .guide-hero aside blockquote { margin: auto 0 var(--s-7); font: 500 clamp(2rem, 4vw, 4rem)/1.03 var(--font-ui); letter-spacing: -0.045em; }
 .guide-hero aside p { color: var(--border-default); }
 .guide-hero__mark { align-self: flex-end; color: var(--fin-conditional); font: var(--font-mono); }
@@ -196,14 +236,14 @@ p { color: var(--ink-2); }
 .brief-answers dd { margin: 0; color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
 .brief-answers__links { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); margin-top: var(--s-5); }
 .brief-answers__links a { color: var(--ink-1); font: var(--t-ui); }
-.guide-section--dark { color: var(--ink-invert); background: var(--ink-1); }
+.guide-section--dark { color: var(--ink-invert); background: var(--bow-brand-strong); }
 .guide-section--dark p { color: var(--border-default); }
-.prerequisite-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; padding: 1px; background: var(--ink-2); list-style: none; }
-.prerequisite-list li { min-height: 150px; display: grid; grid-template-columns: auto 1fr; gap: var(--s-4); align-content: start; padding: var(--s-5); background: var(--ink-1); font: var(--t-body-lg); }
+.prerequisite-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; padding: 1px; background: var(--bow-brand); list-style: none; }
+.prerequisite-list li { min-height: 150px; display: grid; grid-template-columns: auto 1fr; gap: var(--s-4); align-content: start; padding: var(--s-5); background: var(--bow-brand-strong); font: var(--t-body-lg); }
 .prerequisite-list span { color: var(--fin-conditional); font: var(--font-mono); }
 .companion-callout { margin-top: var(--s-6); }
 .companion-callout a { color: var(--ink-invert); }
-.process-line { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--border-ink); }
+.process-line { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--border-ink); }
 .process-line > div { min-height: 190px; padding: var(--s-5); border-right: 1px solid var(--border-default); }
 .process-line span { font: var(--font-mono); }
 .process-line h3 { margin: var(--s-7) 0 var(--s-3); font: var(--t-title2); }
@@ -229,13 +269,17 @@ p { color: var(--ink-2); }
 .launch-guide li::before { content: "0" counter(launch); display: block; margin-bottom: var(--s-5); color: var(--ink-3); font: var(--font-mono); }
 
 /* Teaching companion */
-.page-header { padding: clamp(40px, 6vw, 80px); background: var(--surface); border-bottom: 1px solid var(--border-default); }
-.page-header h1 { max-width: 1050px; margin: 0 0 var(--s-5); font: var(--t-display1); letter-spacing: var(--display-tracking); }
-.page-header > p:last-child { max-width: 800px; font: var(--t-body-lg); }
-.page-header--with-back > a { display: inline-block; margin-bottom: var(--s-7); color: var(--ink-2); font: var(--t-ui); }
+
+/* Hero bands pad by content. The 100-250px of dead cream under every one of them was a
+   min-height nobody had removed. */
+.page-header { padding: var(--gap-block) 0; background: none; border-bottom: 2px solid var(--border-ink); }
+.page-header h1 { max-width: 24ch; margin: 0 0 var(--s-4); font: var(--t-display2); letter-spacing: var(--display-tracking); }
+.page-header > p:last-child { max-width: var(--measure); margin: 0; font: var(--t-body-lg); }
+.page-header--with-back > a { display: inline-block; margin-bottom: var(--s-5); color: var(--ink-2); font: var(--t-ui); }
+.educator-main[data-measure="bleed"] .page-header { padding: clamp(40px, 6vw, 80px); background: var(--surface); }
 .mini-unit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); padding: var(--s-7); }
 .mini-unit-grid > article { background: var(--surface); border: 1px solid var(--border-default); }
-.mini-unit-grid article > header { min-height: 240px; padding: var(--s-6); color: var(--ink-invert); background: var(--ink-1); }
+.mini-unit-grid article > header { min-height: 240px; padding: var(--s-6); color: var(--ink-invert); background: var(--bow-brand-strong); }
 .mini-unit-grid article > header span { color: var(--fin-conditional); font: var(--font-mono); }
 .mini-unit-grid article > header h2 { margin: var(--s-8) 0 var(--s-3); font: var(--t-display2); letter-spacing: var(--display-tracking); }
 .mini-unit-grid article > header p { color: var(--border-default); }
@@ -244,6 +288,7 @@ p { color: var(--ink-2); }
 .mini-unit-grid li p { margin: var(--s-2) 0; }
 .mini-unit-grid aside { margin: var(--s-5); padding: var(--s-4); background: var(--fin-adjustable-soft); }
 .teaching-boundary { margin: 0 var(--s-7) var(--s-8); padding: var(--s-6); background: var(--surface-sunken); }
+.educator-main[data-measure="bleed"] > .teaching-boundary { width: calc(min(var(--w-dash), 100%) - 2 * var(--s-7)); }
 
 /* Educator dashboard */
 .class-header { display: flex; align-items: end; justify-content: space-between; gap: var(--s-6); padding: var(--s-7); }
@@ -254,15 +299,20 @@ p { color: var(--ink-2); }
 .teach-next > p:not(.eyebrow) { max-width: 820px; font: var(--t-body-lg); }
 .teach-next > div { display: flex; gap: var(--s-3); margin-top: var(--s-5); }
 .teach-next .standard-chip { position: absolute; right: var(--s-6); top: var(--s-6); }
-.dashboard-section { padding: var(--s-7); }
+.dashboard-section { padding: 0; }
+.educator-main[data-measure="bleed"] .dashboard-section { padding: var(--s-7); }
 .concept-matrix, .micro-table, .grade-ledger { width: 100%; border-collapse: collapse; background: var(--surface); }
 .concept-matrix caption { color: var(--ink-3); text-align: left; padding-bottom: var(--s-3); font: var(--t-micro); }
 .concept-matrix th, .concept-matrix td, .micro-table th, .micro-table td, .grade-ledger th, .grade-ledger td { padding: var(--s-4); text-align: left; border-bottom: 1px solid var(--border-default); }
 .concept-matrix thead th, .micro-table thead th, .grade-ledger thead th { color: var(--ink-3); font: var(--t-micro); text-transform: uppercase; letter-spacing: 0.06em; }
-.concept-matrix tbody th { width: 270px; }
-.concept-matrix tbody th, .concept-matrix tbody th a { display: grid; grid-template-columns: 40px minmax(0, 1fr); align-items: baseline; gap: var(--s-2); color: var(--ink-1); text-decoration: none; }
-.concept-matrix tbody th span, .grade-ledger th span { color: var(--ink-3); font: var(--font-mono); }
-.concept-matrix tbody td:last-child { width: 110px; }
+
+/* The concept column is a table cell, not a grid. Making it a grid took it out of table
+   layout, and the row then read as a label stranded a third of a screen from its own bar. */
+.concept-matrix tbody th { width: 38%; }
+.concept-matrix tbody th, .concept-matrix tbody th a { color: var(--ink-1); font: var(--t-ui); text-decoration: none; }
+.concept-matrix tbody th a:hover { text-decoration: underline; }
+.concept-matrix tbody th span, .grade-ledger th span { display: inline-block; min-width: 34px; color: var(--ink-3); font: var(--font-mono); }
+.concept-matrix tbody td:last-child { width: 140px; }
 .concept-matrix tr.is-emphasized { background: var(--fin-adjustable-soft); }
 .concept-matrix tr.is-emphasized .matrix-counts, .concept-matrix tr.is-emphasized th span { color: var(--ink-2); }
 .matrix-bar { height: 20px; display: flex; overflow: hidden; background: var(--surface-sunken); }
@@ -285,8 +335,8 @@ p { color: var(--ink-2); }
 .status-key i[data-status="not_observed"] { background: var(--pat-ghost); }
 
 /* Counts a teacher can turn into names. */
-.route-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; padding: 1px; background: var(--ink-2); }
-.route-grid article { display: flex; flex-direction: column; padding: var(--s-5); background: var(--ink-1); }
+.route-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; padding: 1px; background: var(--bow-brand); }
+.route-grid article { display: flex; flex-direction: column; padding: var(--s-5); background: var(--bow-brand-strong); }
 .route-grid b { font: var(--m-hero); font-feature-settings: var(--num); }
 .route-grid article[data-route="still_open"] b { color: var(--fin-conditional); }
 .route-grid h3 { margin: var(--s-2) 0 var(--s-3); font: var(--t-title3); }
@@ -294,11 +344,11 @@ p { color: var(--ink-2); }
 .seat-chips { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: auto; }
 .seat-chips a { min-width: 30px; padding: var(--s-2); color: var(--ink-invert); text-align: center; text-decoration: none; background: rgb(255 255 255 / 12%); border-radius: var(--r-xs); font: var(--t-micro); font-feature-settings: var(--num); }
 .seat-chips a:hover { background: rgb(255 255 255 / 26%); }
-.trajectory-panel { display: grid; grid-template-columns: 0.35fr 1fr; gap: var(--s-6); margin: 0 var(--s-7); padding: var(--s-6); color: var(--ink-invert); background: var(--ink-1); }
+.trajectory-panel { display: grid; grid-template-columns: 0.35fr 1fr; gap: var(--s-6); margin: 0 var(--s-7); padding: var(--s-6); color: var(--ink-invert); background: var(--bow-brand-strong); }
 .trajectory-panel h2 { font: var(--t-title1); }
 .trajectory-panel p { color: var(--ink-muted-invert); }
 .trajectory-strip { display: grid; grid-template-columns: repeat(4, 1fr); }
-.trajectory-strip span { display: flex; flex-direction: column; justify-content: center; padding: var(--s-4); border-left: 1px solid var(--ink-2); color: var(--border-default); font: var(--t-ui); }
+.trajectory-strip span { display: flex; flex-direction: column; justify-content: center; padding: var(--s-4); border-left: 1px solid var(--world-panel-edge); color: var(--ink-muted-invert); font: var(--t-ui); }
 .trajectory-strip b { color: var(--ink-invert); font: var(--m-lg); }
 .student-worklist { background: var(--surface); border-top: 1px solid var(--border-ink); }
 .student-worklist > a { min-height: 106px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s-4); padding: var(--s-4) var(--s-5); color: var(--ink-1); border-bottom: 1px solid var(--border-default); text-decoration: none; }
@@ -324,7 +374,7 @@ p { color: var(--ink-2); }
 .misconception-list b { display: block; font: var(--t-title3); }
 .misconception-list span { display: block; margin-top: var(--s-2); color: var(--ink-3); font: var(--t-micro); }
 .misconception-list__note { max-width: 70ch; margin-bottom: var(--s-5); }
-.reteach-card { align-self: start; position: sticky; top: var(--s-6); padding: var(--s-6); color: var(--ink-invert); background: var(--ink-1); }
+.reteach-card { align-self: start; position: sticky; top: var(--s-6); padding: var(--s-6); color: var(--ink-invert); background: var(--bow-brand-strong); }
 .reteach-card p, .reteach-card li { color: var(--border-default); }
 .reteach-card h2 { margin: var(--s-7) 0 var(--s-4); font: var(--t-display2); letter-spacing: var(--display-tracking); }
 .student-evidence-header { display: grid; grid-template-columns: 1fr auto; gap: var(--s-7); align-items: end; padding: var(--s-7); background: var(--surface); border-bottom: 1px solid var(--border-default); }
@@ -386,7 +436,6 @@ p { color: var(--ink-2); }
 /* Chromebook compaction */
 
 @media (max-width: 1100px) {
-  .challenge-topbar { grid-template-columns: 170px minmax(0, 1fr) auto; }
   .season-strip { gap: var(--s-3); }
   .setup-grid { gap: var(--s-3); }
   .plan-board__body { grid-template-columns: 1fr; }
@@ -410,8 +459,6 @@ p { color: var(--ink-2); }
 @media (max-width: 760px) {
   .guide-hero, .working-setup, .decision-row, .defense-layout, .gap-builder, .evidence-system__grid, .mini-unit-grid, .drill-grid, .student-evidence-header, .evidence-detail-grid, .reasoning-layout { grid-template-columns: 1fr; }
   .opening { min-height: 0; }
-  .opening__story { padding: var(--s-6) var(--s-5); }
-  .opening__facts { grid-template-columns: 1fr; gap: var(--s-3); }
   .season-log li { grid-template-columns: 1fr; gap: var(--s-2); }
   .plan-echo { grid-template-columns: 1fr; }
   .plan-echo dl { grid-auto-flow: row; grid-auto-columns: auto; gap: var(--s-3); }
@@ -448,7 +495,9 @@ p { color: var(--ink-2); }
    Creating a class. The whole setup step: a name in, a code and a private link out.
    --------------------------------------------------------------------------- */
 
-.class-form { display: grid; gap: var(--s-3); max-width: 520px; }
+/* Left-aligned, not centred. This was the one centred block in the product, floating at
+   a different left edge from its own heading. */
+.class-form { display: grid; gap: var(--s-3); max-width: 520px; margin-inline: 0; }
 .class-form label { font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
 .class-form input { min-height: var(--tap); padding: 0 var(--s-4); font: var(--t-body-lg); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
 .class-form__status { margin: 0; color: var(--ink-3); font: var(--t-sm); font-weight: 400; }
@@ -514,7 +563,8 @@ p { color: var(--ink-2); }
 .resolve-changes-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border-default); }
 .resolve-changes-table th, .resolve-changes-table td { padding: var(--s-3) var(--s-5); text-align: right; border-bottom: 1px solid var(--border-subtle); }
 .resolve-changes-table thead th { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
-.resolve-changes-table th:first-child, .resolve-changes-table tbody th { text-align: left; font: var(--t-ui); }
+.resolve-changes-table th:first-child, .resolve-changes-table tbody th { text-align: left; }
+.resolve-changes-table tbody th { font: var(--t-ui); }
 .resolve-changes-table td { font: var(--m-xs); font-feature-settings: var(--num); }
 
 /* ---------------------------------------------------------------------------
@@ -566,4 +616,232 @@ p { color: var(--ink-2); }
   .adaptation-lines, .choice-grid, .debrief__contrast { grid-template-columns: 1fr; }
   .empty-state dl { grid-auto-flow: row; gap: var(--s-3); }
 }
+
+
+/* Objectives — the list, the detail, and the assign flow ------------------- */
+.objective-table { width: 100%; border-collapse: collapse; background: var(--surface); }
+.objective-table th, .objective-table td { padding: var(--s-4); text-align: left; border-bottom: 1px solid var(--border-default); }
+.objective-table thead th { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
+.objective-table tbody th { font: var(--t-ui); font-weight: 400; }
+.objective-table tbody th a { color: var(--ink-1); text-decoration: none; }
+.objective-table tbody th a:hover { text-decoration: underline; }
+.objective-table code { margin-right: var(--s-3); color: var(--ink-3); font: var(--font-mono); }
+.objective-table tr[data-ready="false"] tbody th a, .objective-table tr[data-ready="false"] td { color: var(--ink-3); }
+.availability-pill { display: inline-block; padding: 2px var(--s-3); border-radius: var(--r-pill); color: var(--ink-3); background: var(--surface-sunken); font: var(--t-micro); }
+.availability-pill[data-ready="true"] { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); }
+.objective-wording { max-width: var(--measure); margin: 0 0 var(--s-5); padding-left: var(--s-5); border-left: 3px solid var(--border-ink); font: var(--t-body-lg); }
+.framework-attribution { max-width: var(--measure); margin: 0 0 var(--s-5); color: var(--ink-3); font: var(--t-micro); }
+.objective-class { margin-bottom: var(--s-6); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); }
+.objective-class > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); margin-bottom: var(--s-4); }
+.objective-class h3 { margin: 0; font: var(--t-title2); }
+.objective-class .micro-table { margin: var(--s-4) 0; }
+.objective-class .button { margin-top: var(--s-3); }
+.objective-result { max-width: 40ch; display: grid; gap: var(--s-2); text-align: right; }
+.objective-result strong { font: var(--t-title1); font-feature-settings: var(--num); }
+.objective-result span { color: var(--ink-3); font: var(--t-micro); }
+.objective-result[data-state="strong"] strong { color: var(--fin-balanced-ink); }
+.objective-result[data-state="needs-attention"] strong { color: var(--fin-over-ink); }
+.objective-actions { margin: 0; }
+
+/* The step rules used to stop at 640 while the commit bar under them ran the full
+   width, which put three unrelated right edges on one short page. */
+.assign-steps { margin: 0; padding: 0; list-style: none; }
+.assign-steps .class-form, .assign-steps .assign-steps__settled { max-width: 520px; }
+.assign-steps > li { padding: var(--s-5) 0; border-bottom: 1px solid var(--border-default); }
+.assign-steps__settled { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); margin: 0; font: var(--t-ui); }
+.class-form select { min-height: var(--tap); padding: 0 var(--s-4); font: var(--t-body-lg); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
+.class-form__note { max-width: var(--measure); margin: 0; color: var(--ink-3); font: var(--t-micro); }
+
+/* ---------------------------------------------------------------------------
+ * Objective Map. A coverage document, not a dashboard: five bands of ruled
+ * type on the cream, with status carried by the geometry of a mark and by a
+ * word — never by colour alone, so it survives a greyscale printout and a
+ * colour vision difference identically.
+ * ------------------------------------------------------------------------ */
+.map-header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-6); padding: var(--s-8) var(--gutter) var(--s-6); border-bottom: 2px solid var(--border-ink); }
+.map-header h1 { margin: 0; font: var(--t-display2); letter-spacing: var(--display-tracking); }
+.map-tally { display: flex; flex-wrap: wrap; gap: var(--s-7); margin: 0; }
+.map-tally div { display: grid; gap: var(--s-1); }
+.map-tally dt { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
+.map-tally dd { margin: 0; font: var(--m-md); font-feature-settings: var(--num); }
+
+.map-controls { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: var(--s-5); padding: var(--s-5) var(--gutter); border-bottom: 1px solid var(--border-default); }
+.map-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-4); }
+.map-filters label { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.map-filters select { min-height: var(--tap); padding: 0 var(--s-3); font: var(--t-ui); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
+.map-required { display: inline-flex; align-items: center; gap: var(--s-2); text-transform: none; letter-spacing: 0; font: var(--t-ui); color: var(--ink-2); }
+.view-switch { display: inline-flex; border: 1px solid var(--border-ink); border-radius: var(--r-sm); overflow: hidden; }
+.view-switch button { min-height: var(--tap); padding: 0 var(--s-5); border: 0; background: var(--surface); color: var(--ink-2); font: var(--t-ui); cursor: pointer; }
+.view-switch button + button { border-left: 1px solid var(--border-ink); }
+.view-switch button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); }
+.map-note { padding: var(--s-5) var(--gutter); }
+
+/* The mark. One ring, four fills, one dashed variant — geometry first. */
+.state-mark { width: 13px; height: 13px; flex: none; display: inline-block; border: 2px solid currentcolor; border-radius: 50%; background: transparent; }
+
+/* Not a ring at all. A dashed 13px circle read as a rendering artefact next to eight
+   real ones, and this is the one state that is not on the scale the others sit on — it is
+   a fact about BOW's coverage, not a position a class holds. */
+.state-mark[data-state="not-available"] { width: 11px; height: 0; border-width: 0 0 2px; border-radius: 0; opacity: 0.75; }
+.state-mark[data-state="taught-not-assessed"] { background: linear-gradient(currentcolor 0 0) 50% / 100% 3px no-repeat; }
+.state-mark[data-state="assigned"] { background: radial-gradient(circle, currentcolor 0 2.5px, transparent 2.5px); }
+.state-mark[data-state="partially-assessed"],
+.state-mark[data-state="too-few-assessed"] { background: linear-gradient(90deg, currentcolor 50%, transparent 50%); }
+.state-mark[data-state="developing"] { background: conic-gradient(currentcolor 0 0.75turn, transparent 0.75turn); }
+.state-mark[data-state="strong"] { background: currentcolor; }
+.state-mark[data-state="needs-attention"] { background: currentcolor; box-shadow: inset 0 0 0 2px var(--surface); }
+
+/* Status colour is the second carrier, applied to the mark and its word together. */
+[data-state="strong"] { --status-ink: var(--fin-balanced-ink); }
+[data-state="developing"] { --status-ink: var(--fin-conditional-ink); }
+[data-state="needs-attention"] { --status-ink: var(--fin-over-ink); }
+[data-state="not-available"] { --status-ink: var(--ink-4); }
+
+.topic-bands { padding: 0 var(--gutter) var(--s-9); }
+.topic-band { padding: var(--s-6) 0; border-bottom: 1px solid var(--border-default); }
+.topic-band h2 { display: flex; align-items: baseline; gap: var(--s-4); margin: 0 0 var(--s-4); font: var(--t-title2); }
+.topic-band__number { min-width: 1.6em; padding-bottom: 2px; border-bottom: 3px solid var(--ink-1); font: var(--m-sm); font-feature-settings: var(--num); }
+
+/* The gap used to be a background showing through, which painted the unused cells at the
+   end of a short topic as solid blocks of nothing. */
+.topic-band ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(238px, 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; }
+.topic-band li { background: var(--surface); box-shadow: 0 0 0 1px var(--border-subtle); }
+.topic-band a { min-height: 92px; display: grid; grid-template-columns: auto 1fr; grid-template-areas: "code name" "state figure"; align-items: center; gap: var(--s-2) var(--s-4); padding: var(--s-4) var(--s-5); color: var(--ink-1); text-decoration: none; }
+.topic-band a:hover { background: var(--surface-raised); }
+.chip-code { grid-area: code; align-self: start; font: var(--m-sm); font-feature-settings: var(--num); }
+.chip-name { grid-area: name; align-self: start; font: var(--t-ui); }
+.chip-state { grid-area: state; grid-column: 1 / -1; display: inline-flex; align-items: center; gap: var(--s-3); color: var(--status-ink, var(--ink-3)); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
+.chip-figure { grid-area: figure; justify-self: end; display: grid; justify-items: end; font: var(--m-sm); }
+.chip-figure small { color: var(--ink-3); font: var(--t-micro); }
+
+.map-table-wrap { overflow-x: auto; }
+.map-table { width: 100%; border-collapse: collapse; background: var(--surface); }
+.map-table caption { padding-bottom: var(--s-4); color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-align: left; text-transform: uppercase; }
+.map-table th, .map-table td { padding: var(--s-4); text-align: left; vertical-align: top; border-bottom: 1px solid var(--border-default); }
+.map-table thead th { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.map-table tbody th { max-width: 44ch; font: var(--t-ui); font-weight: 400; }
+.map-table tbody th a { color: var(--ink-1); text-decoration: none; }
+.map-table tbody th a:hover { text-decoration: underline; }
+.map-table__code { margin-right: var(--s-3); font: var(--m-xs); font-feature-settings: var(--num); }
+.map-table__wording { display: block; margin-top: var(--s-2); color: var(--ink-3); font: var(--t-micro); }
+.map-table__status { display: inline-flex; align-items: center; gap: var(--s-3); color: var(--status-ink, var(--ink-2)); font: var(--t-sm); white-space: nowrap; }
+.map-table tr[data-stale] td, .map-table tr[data-stale] .map-table__status { color: var(--ink-4); }
+.taught-toggle { display: inline-flex; align-items: center; gap: var(--s-2); font: var(--t-sm); white-space: nowrap; }
+.taught-toggle input { width: 18px; height: 18px; }
+.taught-toggle input:disabled + span { color: var(--ink-4); }
+
+@media (max-width: 700px) {
+  .map-header, .map-controls { padding-left: var(--s-5); padding-right: var(--s-5); }
+  .topic-bands, .map-note { padding-left: var(--s-5); padding-right: var(--s-5); }
+  .topic-band ul { grid-template-columns: 1fr; }
+}
+
+/* The table is a document a department head gets handed. It prints on the paper,
+   without the shell around it, and the marks survive because they are shapes. */
+@media print {
+  .educator-topbar, .map-controls, .view-switch, .map-tally, .taught-toggle input { display: none; }
+  .map-table-wrap { overflow: visible; }
+  .map-table, .map-table th, .map-table td { background: var(--print-paper); border-color: var(--print-rule); }
+  .map-table { font-size: 9pt; }
+  .map-table tbody th { max-width: none; }
+  .map-header { padding: 0 0 8pt; border-bottom: 1pt solid var(--print-rule-strong); }
+  .topic-band a { min-height: 0; }
+  .map-note { padding: 8pt 0 0; }
+}
+
+/* ---------------------------------------------------------------------------
+ * The educator surface, as one system.
+ *
+ * Three container weights and no hairline boxes. The product has two ground
+ * tones and they are what separate things — a border around every block was
+ * doing the job the grounds already do, and gave a footnote the same frame as
+ * a result. `raised` lifts off the ground, `inset` sinks into it, and most
+ * things are neither: they are separated by space alone.
+ * ------------------------------------------------------------------------ */
+.panel { padding: var(--s-6); background: var(--surface); border: 0; }
+.panel--raised { background: var(--surface-raised); box-shadow: var(--shadow-card); }
+.panel--inset { background: var(--surface-sunken); }
+
+/* One heading system: an eyebrow, a section head, and nothing between them. */
+.section-head { margin: 0 0 var(--gap-block); }
+.section-head h2 { margin: 0; font: var(--t-section); letter-spacing: var(--display-tracking); }
+.section-head p { max-width: var(--measure); margin: var(--s-3) 0 0; color: var(--ink-2); font: var(--t-body); }
+
+/* Form controls, styled once, so a native chevron never sits beside a custom button. */
+.field { display: grid; gap: var(--s-2); }
+.field > label, .field-caps { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.field input, .field select, .field textarea,
+.class-form input, .class-form select, .class-form textarea,
+.map-filters select {
+  min-height: var(--tap);
+  padding: 0 var(--s-4);
+  color: var(--ink-1);
+  font: var(--t-ui);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 60%);
+}
+.field select, .class-form select, .map-filters select {
+  padding-right: var(--s-8);
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink-2) 50%), linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
+  background-position: right 20px center, right 14px center;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+.field input:focus-visible, .field select:focus-visible,
+.class-form input:focus-visible, .class-form select:focus-visible,
+.map-filters select:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+/* A real segmented control, for the places that were bordered squares. */
+.segmented { display: inline-flex; border: 1px solid var(--border-ink); border-radius: var(--r-sm); overflow: hidden; }
+.segmented button { min-width: var(--tap); min-height: 38px; padding: 0 var(--s-4); border: 0; background: var(--surface-raised); color: var(--ink-2); font: var(--m-xs); font-feature-settings: var(--num); cursor: pointer; }
+.segmented button + button { border-left: 1px solid var(--border-default); }
+.segmented button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); }
+
+/* A row that goes somewhere looks like it does, rather than parking an arrow at the far edge. */
+.row-list { display: grid; gap: 1px; background: var(--border-subtle); }
+.row-list > a { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s-4); padding: var(--s-5); background: var(--surface); color: var(--ink-1); text-decoration: none; }
+.row-list > a:hover { background: var(--surface-raised); }
+.row-list > a::after { content: "→"; color: var(--ink-3); font: var(--t-title2); }
+.row-list h3 { margin: var(--s-1) 0 0; font: var(--t-title3); }
+.row-list small { color: var(--ink-3); font: var(--t-micro); font-feature-settings: var(--num); }
+
+.objective-coming { display: grid; gap: var(--s-4); max-width: var(--measure); }
+.objective-coming p { margin: 0; font: var(--t-body-lg); }
+.objective-coming ul { margin: 0; padding-left: var(--s-6); color: var(--ink-2); font: var(--t-body); }
+.objective-coming__exit { margin-top: var(--s-3); }
+
+/* What BOW cannot assess yet: listed, because a teacher planning a year needs it, and
+   quiet, because absence had been given twenty-two full table rows on the first screen a
+   district ever saw. */
+.coming-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; background: var(--border-subtle); }
+.coming-list li { background: var(--surface); }
+.coming-list a { display: block; padding: var(--s-4) var(--s-5); color: var(--ink-3); font: var(--t-ui); text-decoration: none; }
+.coming-list a:hover { color: var(--ink-1); background: var(--surface-raised); }
+.coming-list__code { display: inline-block; min-width: 3.2em; color: var(--ink-4); font: var(--m-xs); font-feature-settings: var(--num); }
+
+/* Where the money moved after Week 5. Sentences, because the season ending is not the
+   place for a four-column table with green deltas in it. */
+.resolve-moves { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.resolve-moves li { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-3); padding-bottom: var(--s-3); border-bottom: 1px solid var(--border-subtle); font: var(--t-body-lg); }
+.resolve-moves b { min-width: 12ch; }
+.resolve-moves span { color: var(--ink-2); }
+.resolve-moves strong { font: var(--m-sm); font-feature-settings: var(--num); }
+.resolve-moves li[data-delta="flat"] { color: var(--ink-3); }
+.resolve-moves li[data-delta="up"] strong { color: var(--fin-balanced-ink); }
+.resolve-moves li[data-delta="down"] strong { color: var(--fin-over-ink); }
+
+/* The full micro-skill trail, one disclosure away. Every structured point stays traceable;
+   eighteen rows of "5/5" is not what a teacher needs on the way in. */
+.micro-trail { margin-top: var(--gap-block); }
+.micro-trail summary { min-height: var(--tap); display: flex; align-items: center; color: var(--ink-2); font: var(--t-ui); cursor: pointer; }
+.micro-trail[open] summary { margin-bottom: var(--s-4); }
+.grade-ledger__how { display: block; margin-top: var(--s-2); color: var(--ink-3); font: var(--t-micro); }
+
+/* How much of an objective a skill covers, said as a value rather than as lowercase prose
+   in a table cell. It is the most load-bearing datum on the page. */
+.coverage-chip { display: inline-block; padding: 2px var(--s-3); border-radius: var(--r-pill); color: var(--ink-2); background: var(--surface-sunken); font: var(--t-micro); letter-spacing: 0.04em; text-transform: uppercase; }
+.coverage-chip[data-coverage="full"] { color: var(--fin-reliable-ink); background: var(--fin-reliable-soft); }
 

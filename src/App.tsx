@@ -6,9 +6,11 @@ import { RosterCard } from "./components/story/RosterCard";
 import { StudentChallenge } from "./stages/StudentChallenge";
 import { ClassOverview, ConceptDrilldown, EducatorGuide, ReasoningReview, StandardsView, StudentEvidence, TeachingCompanion } from "./educator/EducatorPages";
 import { ClassSetup } from "./educator/ClassSetup";
+import { AssignFlow, ObjectiveDetail, ObjectiveList } from "./educator/ObjectivePages";
+import { ObjectiveMap } from "./educator/ObjectiveMap";
 import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPages";
 import { Debrief } from "./educator/Debrief";
-import { durationLabel, PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
+import { PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
 
 function Home() {
   return (
@@ -22,7 +24,7 @@ function Home() {
         <div className="home__copy">
           <p className="eyebrow">Plan Under Pressure · Basketball</p>
           <h1>Eight weeks to the showcase.</h1>
-          <p className="home__deck">Avery Reyes just got the last roster spot with the Harbor City Flight. Some of the money is promised, some has to be earned, and the bills arrive either way. Avery plays. You handle the money.</p>
+          <p className="home__deck">Avery Reyes just got the last roster spot. Avery plays. You handle the money.</p>
           <div className="home__actions">
             <Link className="button button--primary" to={PLAN_UNDER_PRESSURE.route}>Start the challenge</Link>
           </div>
@@ -31,12 +33,6 @@ function Home() {
           <RosterCard note="Eight weeks. One shot at the sports-media course." />
         </aside>
       </section>
-      <footer className="home__foot">
-        <span>{PLAN_UNDER_PRESSURE.grades}</span>
-        <span>{durationLabel(PLAN_UNDER_PRESSURE)}</span>
-        <span>{PLAN_UNDER_PRESSURE.placement}</span>
-        <span>Adaptive budgeting under uncertainty</span>
-      </footer>
     </main>
   );
 }
@@ -51,6 +47,12 @@ export function App() {
       <Route path="/challenge" element={<Navigate to={PLAN_UNDER_PRESSURE.route} replace />} />
       <Route path="/educator/guide" element={<EducatorGuide />} />
       <Route path="/educator/classes/new" element={<ClassSetup />} />
+      {/* The objective a teacher assigns, the list they find it in, and the flow that
+          turns it into a code. Real classes only; there is no demo objective. */}
+      <Route path="/educator/map" element={<ObjectiveMap />} />
+      <Route path="/educator/objectives" element={<ObjectiveList />} />
+      <Route path="/educator/objectives/:frameworkId/:code" element={<ObjectiveDetail />} />
+      <Route path="/educator/assign" element={<AssignFlow />} />
       <Route path="/educator/teaching-companion" element={<TeachingCompanion />} />
       {/* A real class. Everything under here reads submitted evidence and nothing else. */}
       <Route path="/educator/class/:code" element={<RealClassOverview />} />

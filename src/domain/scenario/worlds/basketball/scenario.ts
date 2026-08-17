@@ -1,7 +1,7 @@
-import { formatDollars } from "../../core/money";
-import { SCENARIO_NUMBERS } from "../numbers";
-import { clinicWeeks } from "../season";
-import type { WorldScenario } from "../types";
+import { formatDollars } from "../../../core/money";
+import { SCENARIO_NUMBERS } from "../../numbers";
+import { clinicWeeks } from "../../season";
+import type { WorldScenario } from "../../types";
 
 /** How many Saturdays the clinics actually run, so the copy cannot claim a different four. */
 const CLINIC_SATURDAYS = clinicWeeks(SCENARIO_NUMBERS).length;
@@ -45,6 +45,16 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
       { label: "Player", value: "Avery Reyes · 18 · Guard" },
       { label: "Length", value: "8 weeks" },
       { label: "Ends with", value: "Regional showcase" },
+    ],
+  },
+  invitation: {
+    kicker: "Help Avery",
+    headline: "Make the season work.",
+    role: "Avery plays. You handle the money — eight weeks of it.",
+    decisions: [
+      { title: "Decide what to protect", detail: "Some of this money needs to be kept for later. Say how much." },
+      { title: "Decide what to spend", detail: "Rent, food and getting to practice all come out of the same pot." },
+      { title: "Decide whether to count on the bonuses", detail: "Two payments might arrive. Neither one is promised." },
     ],
   },
   season: [

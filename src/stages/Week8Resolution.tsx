@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { useChallenge } from "../app/ChallengeContext";
 import { StageShell } from "../app/StageShell";
 import { Button } from "../components/primitives/Button";
-import { CourtBackdrop } from "../components/story/CourtBackdrop";
 import { formatDollars } from "../domain/core/money";
 import { resolveSeason, type RiskVerdict } from "../domain/finance/resolution";
 import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
@@ -59,32 +58,38 @@ export function Week8Resolution() {
       : `Every session, all ${decidingWeeks} weeks. The bonus landed exactly like you planned it would.`;
 
   return (
-    <StageShell stage="week8-resolution" kicker={`Week ${SCENARIO_NUMBERS.weeks}`} title="The season ends.">
-      {/* Beat 1: the three weeks that decided the bonus, played out against the line the
-          student's own plan left Avery sitting on. */}
-      <section className="resolve-weeks scene" aria-label="The last weeks">
-        <CourtBackdrop variant="key" />
-        <div className="resolve-weeks__read">
-          <p className="eyebrow">Avery’s week, weeks {resolution.weeks[0]?.week}–{SCENARIO_NUMBERS.weeks}</p>
-          <p className="resolve-weeks__load">
-            <strong>{load.net} hours</strong>
-            <span>against a line at {load.limit}</span>
-          </p>
+    <StageShell
+      stage="week8-resolution"
+      kicker={`Week ${SCENARIO_NUMBERS.weeks}`}
+      title="The season ends."
+      tone="dark"
+      /* Beat 1: the three weeks that decided the bonus, played out against the line the
+         student's own plan left Avery sitting on. */
+      banner={
+        <div className="resolve-weeks" aria-label="The last weeks">
+          <div className="resolve-weeks__read">
+            <p className="eyebrow">Avery’s week, weeks {resolution.weeks[0]?.week}–{SCENARIO_NUMBERS.weeks}</p>
+            <p className="resolve-weeks__load">
+              <strong>{load.net} hours</strong>
+              <span>of getting places every week, and only {load.limit} spare to do it in.</span>
+            </p>
+          </div>
+          <ol className="resolve-weeks__list">
+            {resolution.weeks.map((week) => (
+              <li key={week.week} data-made={week.madeIt}>
+                <span>Week {week.week}</span>
+                <b>{week.madeIt ? "Made every session" : "Missed a session"}</b>
+              </li>
+            ))}
+          </ol>
+          <blockquote className="post__voice post__voice--scene">
+            <span className="post__who" aria-hidden="true">{BASKETBALL_SCENARIO.offer.jersey}</span>
+            <cite>Avery</cite>
+            <p>{averyLine}</p>
+          </blockquote>
         </div>
-        <ol className="resolve-weeks__list">
-          {resolution.weeks.map((week) => (
-            <li key={week.week} data-made={week.madeIt}>
-              <span>Week {week.week}</span>
-              <b>{week.madeIt ? "Every session" : "Over the line"}</b>
-            </li>
-          ))}
-        </ol>
-        <blockquote className="post__voice post__voice--scene">
-          <span className="post__who" aria-hidden="true">{BASKETBALL_SCENARIO.offer.jersey}</span>
-          <p>{averyLine}</p>
-        </blockquote>
-      </section>
-
+      }
+    >
       {/* Beat 2: where the money landed. Only lines that actually happened are drawn, so
           nothing on this panel is a zero standing in for an event that never occurred. */}
       <div className="resolve-grid">
@@ -163,31 +168,36 @@ export function Week8Resolution() {
         <section className="resolve-changes" aria-labelledby="changes-heading">
           <div className="section-heading">
             <p className="eyebrow">Before Week 5 · After Week 5</p>
-            <h2 id="changes-heading">How your plan moved.</h2>
+            <h2 id="changes-heading">What moved after Week 5.</h2>
           </div>
-          <table>
-            <caption className="visually-hidden">Your opening plan compared with the plan you landed</caption>
-            <thead>
-              <tr><th scope="col">Where the money went</th><th scope="col">Opening plan</th><th scope="col">Final plan</th><th scope="col">Change</th></tr>
-            </thead>
-            <tbody>
-              {CHOICE_ORDER.map((category) => {
-                const change = resolution.changes.find((item) => item.category === category)!;
-                return (
-                  <tr key={category}>
-                    <th scope="row">{CHOICE_LABELS[category]}</th>
-                    <td className="money">{formatDollars(change.before)}</td>
-                    <td className="money">{formatDollars(change.after)}</td>
-                    <td className="money" data-delta={change.delta === 0 ? "flat" : change.delta > 0 ? "up" : "down"}>
-                      {change.delta === 0 ? "—" : `${change.delta > 0 ? "+" : "−"}${formatDollars(Math.abs(change.delta))}`}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {/* This was a four-column table with green delta figures — an analytics widget at
+              the emotional end of a season. It is three sentences, and the lines that did
+              not move say so in a word instead of taking a row each. */}
+          <ul className="resolve-moves">
+            {CHOICE_ORDER.map((category) => {
+              const change = resolution.changes.find((item) => item.category === category)!;
+              return (
+                <li key={category} data-delta={change.delta === 0 ? "flat" : change.delta > 0 ? "up" : "down"}>
+                  <b>{CHOICE_LABELS[category]}</b>
+                  {change.delta === 0 ? (
+                    <span>stayed at <strong className="money">{formatDollars(change.after)}</strong></span>
+                  ) : (
+                    <span>
+                      went {change.delta > 0 ? "up" : "down"} to <strong className="money">{formatDollars(change.after)}</strong>
+                      {" "}from {formatDollars(change.before)}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          {/* A plan can finish larger than it started, and a table that shows it growing
+              without saying what paid for the growth reads as a mistake. */}
           <p className="resolve-changes__note">
-            Eight weeks at the {setup.title}. {final.includeOptionalWork ? "Four Saturdays coaching." : "The Saturdays stayed Avery’s."}
+            Eight weeks at the {setup.title}.{" "}
+            {final.includeOptionalWork
+              ? `Coaching the Saturday clinics brought in ${formatDollars(SCENARIO_NUMBERS.optionalWorkIncome)} after Week 5, which is why the final plan holds more than the opening one.`
+              : "The Saturdays stayed Avery’s, so no new money came in after Week 5."}
           </p>
         </section>
       )}

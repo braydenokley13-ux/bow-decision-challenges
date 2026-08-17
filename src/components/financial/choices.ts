@@ -8,11 +8,16 @@ export const CHOICE_ORDER: readonly CategoryId[] = ["goal", "reserve", "flexible
  *
  * The old third category was "Anything else — Avery's to spend", which was mechanically
  * identical to the reserve: two rows, one meaning, over a total forced to balance at zero.
- * Money in Avery's week buys hours back — rides instead of the bus, food that isn't
- * cooked — so the split is future, safety, and present capacity.
+ * This money buys hours back — rides instead of two bus changes, food that isn't cooked,
+ * the physio a tired body needs — so the split is future, safety, and present capacity.
+ *
+ * It was called "Avery's week", which is also the name of the hours meter directly below
+ * it. One name, one screen, dollars in one place and hours in the other: readers could not
+ * tell which of the two the row was, and said so. The row is now named for what the money
+ * buys, and the meter keeps the name of the thing being measured.
  */
 export const CHOICE_LABELS: Record<CategoryId, string> = {
   goal: "Sports-media course",
   reserve: "Backup money",
-  flexibleCash: "Avery’s week",
+  flexibleCash: "Rides and rest",
 };

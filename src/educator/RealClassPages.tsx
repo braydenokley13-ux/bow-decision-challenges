@@ -8,8 +8,10 @@ import { formatDollars } from "../domain/core/money";
 import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { STRUCTURED_MICRO_SKILLS } from "../domain/blueprint/microSkills";
+import { CONCEPTS } from "../domain/blueprint/concepts";
 import { STATUS_LABELS, STATUS_ORDER, TRAJECTORY_LABELS } from "./labels";
 import { REASONING_MAXIMUM } from "../domain/evidence/grade";
+import { REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 
 /**
  * The educator's view of a real class.
@@ -190,15 +192,14 @@ export function RealClassOverview() {
                 <p className="eyebrow">Open these</p>
                 <h2>Every student who turned in</h2>
               </div>
-              <div className="student-worklist">
+              <div className="row-list">
                 {analysis.rows.map((row) => (
                   <Link key={row.sessionId} to={`/educator/class/${code}/students/${row.seatCode}${keyQuery}`}>
                     <div>
-                      <span>Seat {row.seatCode} · {row.result.grade.finalPoints === null ? `${row.result.grade.structuredPoints}/${row.result.grade.structuredMaximum} structured` : `${row.result.grade.finalPoints}/100`}</span>
+                      <small>Seat {row.seatCode} · {row.result.grade.finalPoints === null ? `${row.result.grade.structuredPoints}/${row.result.grade.structuredMaximum} structured` : `${row.result.grade.finalPoints}/100`}</small>
                       <h3>{summarise(row)}</h3>
-                      <p>{row.reasoningPoints === null ? "Written explanation not read yet" : `Reasoning scored ${row.reasoningPoints}/${REASONING_MAXIMUM}`}</p>
+                      <small>{row.reasoningPoints === null ? "Written explanation not read yet" : `Reasoning scored ${row.reasoningPoints}/${REASONING_MAXIMUM}`}</small>
                     </div>
-                    <span aria-hidden="true">→</span>
                   </Link>
                 ))}
               </div>
@@ -259,26 +260,87 @@ export function RealStudentEvidence() {
   );
 }
 
-function StudentPanel({ row, code, keyQuery, onScore }: { row: StudentRow; code: string; keyQuery: string; onScore: (seat: string, session: string, points: number | null) => Promise<boolean> }) {
-  const [scores, setScores] = useState({ workability: 0, priority: 0, tradeoff: 0, numbers: 0 });
+function StudentPanel({ row, code, keyQuery, onScore }: { row: StudentRow; code: string; keyQuery: string; onScore: (seat: string, session: string, scores: ReasoningScores | null) => Promise<boolean> }) {
+  // Opens on whatever a person already recorded, so re-opening a scored student shows
+  // their reading rather than a blank rubric that would overwrite it on the next save.
+  const [scores, setScores] = useState<ReasoningScores>(() => row.reasoningCriteria ?? {});
   const [saved, setSaved] = useState<string | null>(null);
-  const total = Object.values(scores).reduce((sum, value) => sum + value, 0);
+  const total = reasoningTotal(scores);
+  // Every criterion has to have been answered before this is a reading rather than a blank.
+  const complete = REASONING_CRITERIA.every((criterion) => scores[criterion.id] !== undefined);
   const grade = row.result.grade;
 
   return (
     <>
+      {/* The headline used to be "Reasoning not read yet" — the largest thing on the page
+          was the absence of something, on the page a teacher opens to read one student.
+          The seat is who this is about; whether their writing has been read is a fact
+          about the page, and it sits with the numbers where the other facts are. */}
       <header className="student-evidence-header">
         <div>
           <Link to={`/educator/class/${code}${keyQuery}`}>← Class evidence</Link>
-          <p className="eyebrow">Seat {row.seatCode} · turned in {new Date(row.submittedAt).toLocaleString()}</p>
-          <h1>{grade.finalPoints === null ? "Reasoning not read yet" : `${grade.finalPoints}/100`}</h1>
+          <p className="eyebrow">Turned in {new Date(row.submittedAt).toLocaleString()}</p>
+          <h1>Seat {row.seatCode}</h1>
           <p>{summarise(row)}</p>
         </div>
         <div>
           <span>Structured</span><strong>{grade.structuredPoints}/{grade.structuredMaximum}</strong>
           <span>Reasoning</span><strong>{row.reasoningPoints === null ? "Not read" : `${row.reasoningPoints}/${REASONING_MAXIMUM}`}</strong>
+          <span>Together</span><strong>{grade.finalPoints === null ? "—" : `${grade.finalPoints}/100`}</strong>
         </div>
       </header>
+
+      {/* Reading the writing and scoring it is the reason a teacher opens one student, and
+          it used to sit fourteen hundred pixels below the fold under four tables of things
+          BOW had already worked out on its own. */}
+      <section className="reasoning-layout">
+        <div className="student-response">
+          <p className="eyebrow">What they wrote</p>
+          {row.defense && row.defense.text.trim() ? (
+            <blockquote>{row.defense.text}</blockquote>
+          ) : (
+            <p className="class-state">This student turned in no written explanation.</p>
+          )}
+          <p className="response-note">
+            Nothing about this writing is machine-scored, and it is never sent to a model. You read it
+            and you score it — which is what the student was told would happen.
+          </p>
+        </div>
+        <div className="rubric-panel">
+          <p className="eyebrow">{REASONING_MAXIMUM}-point reasoning rubric</p>
+          {REASONING_CRITERIA.map((criterion) => (
+            <div className="rubric-row" key={criterion.id}>
+              <div><b>{criterion.label}</b><span>{criterion.hint}</span></div>
+              <div className="segmented">
+                {Array.from({ length: criterion.max + 1 }, (_, value) => (
+                  <button
+                    type="button"
+                    key={value}
+                    aria-label={`${criterion.label}: ${value} of ${criterion.max}`}
+                    aria-pressed={scores[criterion.id] === value}
+                    onClick={() => setScores((current) => ({ ...current, [criterion.id]: value }))}
+                  >{value}</button>
+                ))}
+              </div>
+            </div>
+          ))}
+          <footer>
+            <span>Reasoning total</span>
+            {/* An unread paragraph and a paragraph a person read and scored zero are
+                different facts, and the panel used to show both as "0/10" with nothing
+                selected — one stray click away from saving a zero nobody meant. */}
+            <strong>{complete ? `${total}/${REASONING_MAXIMUM}` : `—/${REASONING_MAXIMUM}`}</strong>
+            <Button
+              aria-disabled={!complete}
+              onClick={() => complete && void onScore(row.seatCode, row.sessionId, scores).then((ok) => setSaved(ok ? "Saved." : "Could not save that."))}
+            >
+              Save review
+            </Button>
+            <span aria-live="polite">{saved || (complete ? "" : "Score all four to save.")}</span>
+          </footer>
+        </div>
+      </section>
+
 
       <section className="dashboard-section">
         <div className="section-heading">
@@ -286,14 +348,16 @@ function StudentPanel({ row, code, keyQuery, onScore }: { row: StudentRow; code:
           <h2>Every point has a source</h2>
         </div>
         <table className="grade-ledger">
-          <thead><tr><th>Concept</th><th>Status</th><th>Trajectory</th><th>Points</th></tr></thead>
+          <thead><tr><th scope="col">What it shows</th><th scope="col">How it went</th><th scope="col">Points</th></tr></thead>
           <tbody>
             {row.result.concepts.map((result) => (
               <tr key={result.conceptId}>
-                <th>{result.conceptId}</th>
-                <td><span className="status-badge" data-status={result.status}>{STATUS_LABELS[result.status]}</span></td>
-                <td>{TRAJECTORY_LABELS[result.trajectory]}</td>
-                <td>{result.points === null ? "—" : `${result.points}/${result.maxPoints}`}</td>
+                <th scope="row">{CONCEPTS.find((concept) => concept.id === result.conceptId)?.label ?? result.conceptId}</th>
+                <td>
+                  <span className="status-badge" data-status={result.status}>{STATUS_LABELS[result.status]}</span>
+                  <span className="grade-ledger__how">{TRAJECTORY_LABELS[result.trajectory]}</span>
+                </td>
+                <td className="money">{result.points === null ? "—" : `${result.points}/${result.maxPoints}`}</td>
               </tr>
             ))}
           </tbody>
@@ -336,68 +400,64 @@ function StudentPanel({ row, code, keyQuery, onScore }: { row: StudentRow; code:
         </section>
       )}
 
-      <section className="reasoning-layout">
-        <div className="student-response">
-          <p className="eyebrow">What they wrote</p>
-          {row.defense && row.defense.text.trim() ? (
-            <blockquote>{row.defense.text}</blockquote>
-          ) : (
-            <p className="class-state">This student turned in no written explanation.</p>
-          )}
-          <p className="response-note">
-            Nothing about this writing is machine-scored, and it is never sent to a model. You read it
-            and you score it — which is what the student was told would happen.
-          </p>
-        </div>
-        <div className="rubric-panel">
-          <p className="eyebrow">{REASONING_MAXIMUM}-point reasoning rubric</p>
-          {([
-            ["workability", "Workability", 2, "Explains why the final plan actually holds"],
-            ["priority", "Protected priority", 2, "Names what they chose to keep, and why"],
-            ["tradeoff", "Tradeoff / opportunity cost", 2, "Names what that choice cost them"],
-            ["numbers", "Numerical evidence", 4, "Two accurate, relevant numbers from their own plan"],
-          ] as const).map(([key, label, max, hint]) => (
-            <div className="rubric-row" key={key}>
-              <div><b>{label}</b><span>{hint}</span></div>
-              <div>
-                {Array.from({ length: max + 1 }, (_, value) => (
-                  <button type="button" key={value} aria-pressed={scores[key] === value} onClick={() => setScores((current) => ({ ...current, [key]: value }))}>{value}</button>
-                ))}
-              </div>
-            </div>
-          ))}
-          <footer>
-            <span>Reasoning total</span>
-            <strong>{total}/{REASONING_MAXIMUM}</strong>
-            <Button onClick={() => void onScore(row.seatCode, row.sessionId, total).then((ok) => setSaved(ok ? "Saved." : "Could not save that."))}>
-              Save review
-            </Button>
-            <span aria-live="polite">{saved}</span>
-          </footer>
-        </div>
-      </section>
-
       <section className="dashboard-section">
         <div className="section-heading">
           <p className="eyebrow">Micro-skill detail</p>
           <h2>Where the structured points came from</h2>
         </div>
-        <table className="micro-table">
-          <thead><tr><th scope="col">Micro-skill</th><th scope="col">Outcome</th><th scope="col">Why</th></tr></thead>
-          <tbody>
-            {row.result.observations.map((observation) => (
-              <tr key={observation.microSkillId}>
-                <th scope="row">
-                  <code>{observation.microSkillId}</code>
-                  {STRUCTURED_MICRO_SKILLS.find((skill) => skill.id === observation.microSkillId)?.label}
-                </th>
-                <td>{observation.points === null ? "Not observed" : `${observation.points}/5`}</td>
-                <td>{observation.reason}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {/* Eighteen rows reading 5/5 is a loop, not a table. What a teacher needs first is
+            the exceptions; the rest is one sentence, and the whole trail is still one
+            disclosure away because every point in this product has to be traceable. */}
+        <MicroSkillTrail observations={row.result.observations} />
       </section>
+    </>
+  );
+}
+
+/**
+ * The eighteen micro-skills, led by the ones that did not come out full.
+ *
+ * The obligation this page carries is that every structured point can be traced to the
+ * moment it came from — not that all eighteen are on screen at once. So the exceptions are
+ * open, the rest is summarised in a line, and the complete trail is one disclosure away.
+ */
+function MicroSkillTrail({ observations }: { observations: StudentRow["result"]["observations"] }) {
+  const label = (id: string) => STRUCTURED_MICRO_SKILLS.find((skill) => skill.id === id)?.label ?? id;
+  const exceptions = observations.filter((observation) => observation.points !== 5);
+  const table = (rows: typeof observations) => (
+    <table className="micro-table">
+      <thead><tr><th scope="col">Micro-skill</th><th scope="col">Outcome</th><th scope="col">Why</th></tr></thead>
+      <tbody>
+        {rows.map((observation) => (
+          <tr key={observation.microSkillId}>
+            <th scope="row"><code>{observation.microSkillId}</code>{label(observation.microSkillId)}</th>
+            <td>{observation.points === null ? "Not observed" : `${observation.points}/5`}</td>
+            <td>{observation.reason}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+
+  return (
+    <>
+      {exceptions.length === 0 ? (
+        <p className="class-state">
+          All {observations.length} micro-skills came out full marks at the first real opportunity.
+        </p>
+      ) : (
+        <>
+          <p className="class-state">
+            {exceptions.length} of {observations.length} came out below full marks. The rest were full at the first
+            real opportunity.
+          </p>
+          {table(exceptions)}
+        </>
+      )}
+      <details className="micro-trail">
+        <summary>Show all {observations.length}</summary>
+        {table(observations)}
+      </details>
     </>
   );
 }

@@ -1,5 +1,8 @@
+import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { dollars } from "../core/money";
+import { observeCompetencies } from "../competency/observe";
+import type { EvidenceRequirementObservation } from "../competency/types";
 import type { AssessmentFacts, AlternateStateEvidence, PlanSnapshot } from "./types";
 import { observeStructured } from "./observe";
 
@@ -107,6 +110,66 @@ describe("choice-neutral scoring", () => {
     cutTheGoal.opening!.snapshot.inputs.amounts = { goal: dollars(200), reserve: dollars(700), flexibleCash: dollars(1500) };
     cutSpendingMoney.opening!.snapshot.inputs.amounts = { goal: dollars(1200), reserve: dollars(200), flexibleCash: dollars(1000) };
     expect(scores(cutTheGoal, ["C5.6"])).toEqual(scores(cutSpendingMoney, ["C5.6"]));
+  });
+});
+
+/**
+ * The same rule, one layer up: the engine that turns observations into competency results
+ * does not know which world produced them.
+ *
+ * Choice-neutrality inside one world stops a scenario from having a right answer.
+ * World-neutrality in the engine is what makes two worlds comparable at all — an engine
+ * that could see which world it was scoring could roll the same evidence up two different
+ * ways, and "Maya demonstrated 1.3" would mean something different depending on which story
+ * she picked. That is the failure the whole multiple-world model is built to avoid, so it is
+ * asserted the only way it can be: on the source, because a behavioural test cannot prove
+ * the absence of a branch nobody has written yet.
+ *
+ * This lives here rather than in a second file because it is the same invariant. Two
+ * neutrality tests would be two places to look and one place to forget.
+ */
+function competencySources(): string[] {
+  return readdirSync("src/domain/competency", { recursive: true, encoding: "utf8" })
+    .filter((entry) => entry.endsWith(".ts") && !entry.endsWith(".test.ts"))
+    .map((entry) => `src/domain/competency/${entry}`)
+    .sort();
+}
+
+/** Comments are stripped: a comment explaining the boundary is not a violation of it. */
+function withoutComments(path: string): string {
+  return readFileSync(path, "utf8")
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+}
+
+const ENGINE_SOURCES = competencySources().filter((path) => !path.endsWith("availability.ts") && !path.endsWith("index.ts"));
+
+describe("the shared engine cannot tell which world it is scoring", () => {
+  it("scans every module that scores, including any added since this test was written", () => {
+    expect(ENGINE_SOURCES).toContain("src/domain/competency/observe.ts");
+    expect(ENGINE_SOURCES).toContain("src/domain/competency/objectiveState.ts");
+  });
+
+  it.each(ENGINE_SOURCES)("takes no world and reads none in %s", (path) => {
+    // `availability.ts` is the one file in the layer that names worlds at all — §4.5 makes
+    // a competency's availability depend on whether some world can produce its evidence —
+    // and it is excluded above. It answers "does a world exist for this"; it never scores.
+    expect(withoutComments(path), path).not.toMatch(/world/i);
+  });
+
+  it("gives the same result to the same evidence however it was labelled", () => {
+    // The behavioural half. Two observations that differ only in which events they point
+    // at — a different world's ids — have to roll up identically.
+    const observation = (ref: string): EvidenceRequirementObservation[] => [
+      { evidenceRequirementId: "adapt-a-plan.er1", kind: "decision", level: 5, supportLevel: "standard_access", evidenceRefs: [`${ref}:1`], reason: ref },
+      { evidenceRequirementId: "adapt-a-plan.er2", kind: "decision", level: 4, supportLevel: "standard_access", evidenceRefs: [`${ref}:2`], reason: ref },
+      { evidenceRequirementId: "adapt-a-plan.er3", kind: "decision", level: 5, supportLevel: "standard_access", evidenceRefs: [`${ref}:3`], reason: ref },
+      { evidenceRequirementId: "adapt-a-plan.er4", kind: "decision", level: 4, supportLevel: "standard_access", evidenceRefs: [`${ref}:4`], reason: ref },
+    ];
+    const fromOne = observeCompetencies(observation("basketball"), { submitted: true });
+    const fromAnother = observeCompetencies(observation("food-truck"), { submitted: true });
+    expect(fromOne).toEqual(fromAnother);
+    expect(fromOne[0]?.state).toBe("demonstrated");
   });
 });
 

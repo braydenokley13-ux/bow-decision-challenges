@@ -14,7 +14,7 @@ import { CHOICE_LABELS } from "../src/components/financial/choices";
 export const money = formatDollars;
 export const COMPLETION_LABEL = BASKETBALL_SCENARIO.incomeCopy.completion.label;
 export const NO_BONUS_HEADING = `Now show it works without the ${money(N.completionIncome)}.`;
-export const COUNT_BONUS_BUTTON = `Count the ${money(N.completionIncome)}`;
+export const COUNT_BONUS_BUTTON = "Yes — count on it";
 export const BACKUP_HEADING = "That money never arrives.";
 export const TRIAGE_HEADING = "Something has to give.";
 

@@ -1,4 +1,4 @@
-import type { CalcId, SetupId } from "../core/ids";
+import type { CalcId, CategoryId, SetupId } from "../core/ids";
 import { dollars } from "../core/money";
 import { SCENARIO_NUMBERS } from "../scenario/numbers";
 import type { ScenarioNumbers } from "../scenario/types";
@@ -121,6 +121,20 @@ export function deriveFacts(log: EvidenceEvent[], n: ScenarioNumbers = SCENARIO_
       return payload.selected ? [...new Set([...selected, payload.tileId])] : selected.filter((id) => id !== payload.tileId);
     }, []),
     applicableGapTiles,
+    // Recorded for every mode the control appears on, in the order the student said them.
+    // Which of them means anything is the world observer's decision, not this file's.
+    remainderChoices: eventsOf(log, "PLAN_REMAINDER_ASSIGNED").map((event) => {
+      const payload = eventPayload<{ mode: PlanMode; category: CategoryId; amount: number; remaining: number }>(event);
+      return {
+        mode: payload.mode,
+        category: payload.category,
+        amount: dollars(payload.amount),
+        remaining: dollars(payload.remaining),
+        sequence: event.sequence,
+        supportLevel: event.supportLevel,
+        evidenceRef: event.id,
+      };
+    }),
     defenseSubmitted: eventsOf(log, "DEFENSE_SUBMITTED").length > 0,
   };
   if (openingSaved) {

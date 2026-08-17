@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { CHOICE_LABELS } from "../src/components/financial/choices";
 import { NUMBERS as N, BACKUP_HEADING, NO_BONUS_HEADING, TRIAGE_HEADING, fillPlanToBalance, fillPlanLeavingShortfall, money, savePlan, spendableFor, week5TotalFor, type PlanContext } from "./plan";
 import {
   createClass,
@@ -96,7 +97,7 @@ studentTest("full conditional path completes through fallback, Week 5, remaining
   await expect(page.getByRole("heading", { name: TRIAGE_HEADING })).toBeVisible();
   await savePlan(page, "week5-first-response", context);
 
-  await expect(page.getByRole("heading", { name: "Two calls, then land the plan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Two more calls to make." })).toBeVisible();
   await decideOpportunity(page, { clinics: true, countBonus: true });
   const landed: PlanContext = { ...context, clinics: true, countCompletionFinal: true };
   await savePlan(page, "final", landed);
@@ -105,7 +106,7 @@ studentTest("full conditional path completes through fallback, Week 5, remaining
   await savePlan(page, "remaining-risk", landed);
 
   await readWeek8Resolution(page);
-  await expect(page.getByRole("heading", { name: "Make the case for your plan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Explain your plan." })).toBeVisible();
   await submitDefense(page, "My plan still works because it balances at $0 after the update. I protected $800 for the course and gave up the open rest block to take the clinics.");
 
   await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible();
@@ -174,7 +175,7 @@ studentTest("declining the optional weekend clinics still completes the plan", a
 
   await savePlan(page, "week5-first-response", context);
 
-  await expect(page.getByRole("heading", { name: "Two calls, then land the plan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Two more calls to make." })).toBeVisible();
   await decideOpportunity(page, { clinics: false, countBonus: true });
   await expect(page.getByRole("button", { name: "Keep the Saturdays" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: "Take the clinics" })).toHaveAttribute("aria-pressed", "false");
@@ -216,7 +217,7 @@ studentTest("leaving the $800 bonus out of the final plan skips the remaining-ri
   // The remaining-risk preview only exists when the final plan still counts the bonus.
   await expect(page.getByRole("heading", { name: NO_BONUS_HEADING })).not.toBeVisible();
   await readWeek8Resolution(page);
-  await expect(page.getByRole("heading", { name: "Make the case for your plan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Explain your plan." })).toBeVisible();
 
   await submitDefense(page, "My plan still works because it never depended on the $800 bonus in the first place. I protected the course goal and gave up the reserve.");
   await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible();
@@ -342,7 +343,7 @@ studentTest("refreshing mid-challenge preserves stage, setup, and entered plan n
   await page.waitForTimeout(600); // let the debounced localStorage save land
   await page.reload();
 
-  await expect(page.getByRole("heading", { name: "Every dollar gets a job." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Build Avery’s plan." })).toBeVisible();
   await expect(page.getByRole("spinbutton", { name: "Sports-media course" })).toHaveValue("900");
   await expect(page.getByText("Teammate Share")).toBeVisible();
 });
@@ -403,7 +404,7 @@ studentTest("the opening screens work with a keyboard only", async ({ page, clas
   const dealButton = page.getByRole("button", { name: "Find Avery a place" });
   await dealButton.focus();
   await dealButton.press("Enter");
-  await expect(page.getByRole("heading", { name: "Cheaper rent costs something else." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Which place costs the least?" })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -467,7 +468,7 @@ studentTest("key screens have no serious or critical accessibility violations", 
   await noSeriousAxeViolations(page);
 
   await reachWorkingBoard(page, classCode);
-  await expect(page.getByRole("heading", { name: "Every dollar gets a job." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Build Avery’s plan." })).toBeVisible();
   await noSeriousAxeViolations(page);
 
   await gotoFreshChallenge(page);
@@ -608,7 +609,7 @@ studentTest("the course deposit deadline says what reserving would do before the
   await setAmount(page, "Sports-media course", "0");
   const spendable = spendableFor("working", { setupId: "cousin-room" });
   await setAmount(page, "Backup money", String(spendable));
-  await setAmount(page, "Avery’s week", "0");
+  await setAmount(page, CHOICE_LABELS.flexibleCash, "0");
   await page.getByRole("button", { name: "Save this version" }).click();
   for (const week of [2, 3, 4]) await page.getByRole("button", { name: `Play Week ${week}` }).click();
 
@@ -671,7 +672,7 @@ studentTest("Weeks 1 to 4 and the deposit deadline are fully operable from the k
 
 test("a facilitator creates a class and gets a code plus a private link", async ({ page }) => {
   await page.goto("/educator/classes/new");
-  await page.getByLabel("Class name").fill("Period 3 · Grade 7");
+  await page.getByLabel("Name this class").fill("Period 3 · Grade 7");
   await page.getByRole("button", { name: "Create the class" }).click();
 
   const code = page.locator(".class-created__code strong");
@@ -766,7 +767,7 @@ studentTest("a refresh mid-challenge does not lose the class the student joined"
   await page.waitForTimeout(600);
   await page.reload();
 
-  await expect(page.getByRole("heading", { name: "Every dollar gets a job." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Build Avery’s plan." })).toBeVisible();
   // The class travels with the attempt, so a resumed session still turns in to the right room.
   const stored = await page.evaluate(() => localStorage.getItem("bow.attempt.v2.plan-under-pressure"));
   expect(stored).toContain(classCode);
@@ -836,20 +837,27 @@ studentTest("an educator reads one student's evidence and scores their writing",
   await waitForDelivery(page);
 
   await page.goto(`/educator/class/${classCode}/students/5?key=${key}`);
-  await expect(page.getByRole("heading", { name: "Reasoning not read yet" })).toBeVisible();
+  // The page is about a student, not about what has not happened to them yet: the headline
+  // names the seat, and whether their writing has been read sits with the other figures.
+  await expect(page.getByRole("heading", { name: "Seat 5", exact: true })).toBeVisible();
+  await expect(page.locator(".student-evidence-header")).toContainText("Not read");
   await expect(page.locator(".student-response blockquote")).toContainText("reserved the course seat");
 
-  // A person scores it, and only then does a final grade exist.
-  await page.locator(".rubric-row").nth(0).getByRole("button", { name: "2", exact: true }).click();
-  await page.locator(".rubric-row").nth(1).getByRole("button", { name: "2", exact: true }).click();
-  await page.locator(".rubric-row").nth(2).getByRole("button", { name: "1", exact: true }).click();
-  await page.locator(".rubric-row").nth(3).getByRole("button", { name: "3", exact: true }).click();
+  // A person scores it, and only then does a final grade exist. Each mark names its own
+  // criterion, because four rows of bare 0-1-2 buttons are not a rubric anybody listening
+  // to the page can fill in.
+  await page.getByRole("button", { name: "Workability: 2 of 2" }).click();
+  await page.getByRole("button", { name: "Protected priority: 2 of 2" }).click();
+  await page.getByRole("button", { name: "Tradeoff / opportunity cost: 1 of 2" }).click();
+  await page.getByRole("button", { name: "Numerical evidence: 3 of 4" }).click();
   await expect(page.locator(".rubric-panel footer strong")).toContainText("8/10");
   await page.getByRole("button", { name: "Save review" }).click();
   await expect(page.getByText("Saved.")).toBeVisible();
 
   await page.reload();
-  await expect(page.locator(".student-evidence-header h1")).toContainText("/100");
+  // The together-figure only exists once a person has read the writing, and it sits
+  // with the other two rather than replacing the student it is about.
+  await expect(page.locator(".student-evidence-header")).toContainText("/100");
   await noSeriousAxeViolations(page);
 });
 
@@ -930,13 +938,13 @@ studentTest("a student who over-commits can still land and turn in a plan they c
 
   await passWeek5Calculation(page, String(week5TotalFor(context)));
   // Everything adjustable goes, and the plan is still under water.
-  for (const label of ["Backup money", "Avery’s week"]) await setAmount(page, label, "0");
+  for (const label of [CHOICE_LABELS.reserve, CHOICE_LABELS.flexibleCash]) await setAmount(page, label, "0");
   await expect(page.locator(".plan-commit--over")).toBeVisible();
   await page.getByRole("button", { name: "Check this plan" }).click();
   await page.getByRole("button", { name: /^Save it, .* still missing$/ }).click();
 
   // Naming the exact amount still missing is a real answer, and the run completes.
-  await expect(page.getByRole("heading", { name: "Two calls, then land the plan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Two more calls to make." })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -974,6 +982,11 @@ studentTest("every educator route passes an accessibility scan, including the re
     "/educator/demo/students/14",
     "/educator/demo/students/14/reasoning",
     "/educator/demo/standards",
+    "/educator/map",
+    "/educator/objectives",
+    "/educator/objectives/nysed-pf-2026/1.3",
+    "/educator/objectives/nysed-pf-2026/4.2",
+    "/educator/assign?frameworkId=nysed-pf-2026&code=1.3",
     `/educator/class/${classCode}?key=${key}`,
     `/educator/class/${classCode}/students/6?key=${key}`,
     `/educator/class/${classCode}/debrief?key=${key}`,
@@ -1021,4 +1034,357 @@ studentTest("the challenge runs with animation turned off and on a short Chromeb
   } finally {
     await context.close();
   }
+});
+
+// ---------------------------------------------------------------------------
+// 27. Closing the opening plan by naming the row that takes the rest — the one
+//     statement in this world that is evidence about whether savings was
+//     planned. It has to work with a mouse, work from a keyboard, say which row
+//     it is talking about out loud, and reach the same balanced plan the
+//     steppers reach.
+// ---------------------------------------------------------------------------
+
+studentTest("the opening plan can be closed by naming the row that takes the rest", async ({ page, classCode }) => {
+  await reachWorkingBoard(page, classCode);
+  const spendable = spendableFor("working", { setupId: "cousin-room" });
+
+  await setAmount(page, "Sports-media course", String(N.course.fullPrice));
+  await setAmount(page, "Backup money", "300");
+
+  // The button names the amount and the row, because three buttons reading "Put the rest
+  // here" are not a choice anybody listening to the page can make.
+  const rest = spendable - N.course.fullPrice - 300;
+  const intoWeek = page.getByRole("button", { name: `Put ${money(rest)} into ${CHOICE_LABELS.flexibleCash}` });
+  await expect(intoWeek).toBeVisible();
+  await noSeriousAxeViolations(page);
+  await intoWeek.click();
+
+  await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("spinbutton", { name: CHOICE_LABELS.flexibleCash })).toHaveValue(String(rest));
+  // Nothing left to place, so the offer withdraws rather than sitting there doing nothing.
+  await expect(page.getByRole("button", { name: /^Put \$/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "Save this version" }).click();
+  await expect(page.getByRole("heading", { name: "The season starts." })).toBeVisible();
+});
+
+studentTest("naming the row is operable from the keyboard and never overfills the course", async ({ page, classCode }) => {
+  await reachWorkingBoard(page, classCode);
+  const spendable = spendableFor("working", { setupId: "cousin-room" });
+
+  // The course row is capped at what the course costs, so the offer on that row is only
+  // ever the headroom — it can never propose paying $3,000 for a $1,200 course.
+  const courseOffer = page.getByRole("button", { name: `Put ${money(N.course.fullPrice)} into Sports-media course` });
+  await expect(courseOffer).toBeVisible();
+  await courseOffer.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("spinbutton", { name: "Sports-media course" })).toHaveValue(String(N.course.fullPrice));
+
+  // And what is left is still looking for a job, on the two rows that have no cap.
+  const remaining = spendable - N.course.fullPrice;
+  await page.getByRole("button", { name: `Put ${money(remaining)} into Backup money` }).click();
+  await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
+  await noSeriousAxeViolations(page);
+});
+
+// ---------------------------------------------------------------------------
+// 28. A teacher creates a class against an objective, a student joins with the
+//     code, and the evidence that comes back knows what it was for.
+// ---------------------------------------------------------------------------
+
+test("a teacher creates a class with an objective and a student joins with the code", async ({ page, request }) => {
+  await page.goto("/educator/classes/new");
+  await noSeriousAxeViolations(page);
+
+  // Only objectives a built world can actually assess are offered, so a code on a
+  // whiteboard always has something behind it.
+  const objective = page.getByLabel("Objective");
+  await expect(objective).toHaveValue("1.3");
+  await page.getByLabel("Name this class").fill("Assignment browser suite");
+  await page.getByRole("button", { name: "Create the class" }).click();
+
+  const code = (await page.locator(".class-created__code strong").innerText()).trim();
+  // Scoped to the panel the class was just created in: the same label also appears in the
+  // "classes you have opened here" list once this browser remembers it.
+  await expect(page.locator(".class-created__body").getByRole("heading", { name: "Assignment browser suite" })).toBeVisible();
+  // The key is shown once, inside the private link, and never again — so the test reads it
+  // the same way the teacher does.
+  const privateLink = await page.locator(".class-created__key code").innerText();
+  const teacherKey = new URL(privateLink).searchParams.get("key") ?? "";
+  expect(teacherKey.length).toBeGreaterThan(16);
+
+  const assignments = await request.get(`http://127.0.0.1:4180/api/classes/${code}/assignments`);
+  expect(assignments.status()).toBe(200);
+  const set = (await assignments.json()) as { assignments: { id: string; objectiveRef: { code: string } | null; competencyIds: string[] }[] };
+  expect(set.assignments).toHaveLength(1);
+  expect(set.assignments[0].objectiveRef?.code).toBe("1.3");
+  expect(set.assignments[0].competencyIds).toEqual(["plan-within-income"]);
+
+  // The class code alone still opens nothing: assignments are what a student needs, and
+  // evidence is what only the key reads.
+  const withCodeOnly = await request.get(`http://127.0.0.1:4180/api/classes/${code}/submissions`, {
+    headers: { "X-BOW-Teacher-Key": code },
+  });
+  expect(withCodeOnly.status()).toBe(403);
+
+  const plan: PlanContext = { setupId: "cousin-room" };
+  await gotoFreshChallenge(page);
+  await enterChallenge(page, { classCode: code, seatCode: "9" });
+  await completeSetupStage(page, 2);
+  await completeWorkingCalcs(page);
+  await savePlan(page, "working", plan);
+  await playSeasonWeeks(page);
+  await passWeek5Calculation(page, String(week5TotalFor(plan)));
+  await savePlan(page, "week5-first-response", plan);
+  await decideOpportunity(page, { clinics: false, countBonus: false });
+  await savePlan(page, "final", { ...plan, clinics: false, countCompletionFinal: false });
+  await readWeek8Resolution(page);
+  await submitDefense(page, "I kept the course line where I set it and paid for the brace out of Avery’s week instead.");
+  await waitForDelivery(page);
+
+  const room = await request.get(`http://127.0.0.1:4180/api/classes/${code}/submissions`, {
+    headers: { "X-BOW-Teacher-Key": teacherKey },
+  });
+  expect(room.status()).toBe(200);
+  const body = (await room.json()) as { submissions: { seatCode: string; assignmentId: string }[] };
+  expect(body.submissions).toHaveLength(1);
+  expect(body.submissions[0].assignmentId).toBe(set.assignments[0].id);
+});
+
+// ---------------------------------------------------------------------------
+// 29. The teacher's whole loop: find the objective, assign it, and read back
+//     what the class actually demonstrated against it. This is the first
+//     checkpoint a teacher can use, so it is asserted the way they would use it.
+// ---------------------------------------------------------------------------
+
+test("a teacher searches for budget, finds 1.3, and reads its exact wording", async ({ page }) => {
+  await page.goto("/educator/objectives");
+  await expect(page.getByRole("heading", { name: "What do you want to assess?" })).toBeVisible();
+
+  // All 23 are here, and the ones with a world behind them are told apart from the ones
+  // that are only mapped — "coming" and "0% demonstrated" are different sentences. The two
+  // groups are separate lists rather than one table where absence outnumbers substance.
+  await expect(page.locator(".row-list > a")).toHaveCount(1);
+  await expect(page.locator(".coming-list li")).toHaveCount(22);
+  await expect(page.getByRole("heading", { name: "Ready to assign" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mapped, not yet assessable" })).toBeVisible();
+
+  await page.getByLabel("Search objectives").fill("budget");
+  const budget = page.locator(".row-list").getByRole("link", { name: /Create a budget/ });
+  await expect(budget).toBeVisible();
+  await budget.click();
+
+  // The official sentence, character for character, and the attribution beside it.
+  await expect(page.getByText("Create a budget for a hypothetical income that includes planned expenses and savings.", { exact: true })).toBeVisible();
+  await expect(page.locator(".framework-attribution")).toContainText("not reviewed or endorsed");
+  await expect(page.getByRole("link", { name: "Assign this" })).toBeVisible();
+  await noSeriousAxeViolations(page);
+});
+
+test("the objective screens name one set of skills and one grammatical sentence", async ({ page }) => {
+  // Three defects a cold read found, pinned. The coverage table said "full" on a page
+  // headed "BOW cannot assess this yet"; the class breakdown listed skills the objective
+  // does not rest on, so the page named two at the top and different ones underneath; and
+  // the coming page shipped "everything it ask for" above the fold.
+  await page.goto("/educator/objectives/nysed-pf-2026/4.2");
+  await expect(page.getByText("everything it asks for", { exact: false })).toBeVisible();
+  await expect(page.getByText(/it ask for/)).toHaveCount(0);
+  // Coverage and assessability are different claims and both are on screen.
+  const row = page.locator(".micro-table tbody tr").first();
+  await expect(row).toContainText("full");
+  await expect(row).toContainText("None yet");
+
+  await page.goto("/educator/objectives/nysed-pf-2026/1.3");
+  const skills = page.locator(".micro-table tbody th code");
+  await expect(skills).toHaveCount(2);
+});
+
+test("an objective with no world says so instead of reporting nothing as zero", async ({ page }) => {
+  await page.goto("/educator/objectives/nysed-pf-2026/4.2");
+  // Authored prose and a way out, rather than a sentence built around a statement that
+  // ended in its own full stop, on a page with no exit.
+  await expect(page.getByText("BOW cannot assess this objective yet.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Assign this" })).toHaveCount(0);
+  await expect(page.getByText("%")).toHaveCount(0);
+  await expect(page.getByText(/\.\s+—\s+and/)).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "See what BOW can assess" })).toBeVisible();
+});
+
+test("a teacher assigns 1.3, three students submit, and the objective reports what they did", async ({ page, browser, request }) => {
+  test.setTimeout(180_000);
+
+  await page.goto("/educator/objectives/nysed-pf-2026/1.3");
+  await page.getByRole("link", { name: "Assign this" }).click();
+
+  // §17.1's target: the objective arrives already chosen, and there is no second step —
+  // one world means a step with one answer, which is a step that makes the flow slower to
+  // look thorough. Which world it is belongs in the confirmation, not in a numbered box.
+  await expect(page.getByText("1.3 Create a budget")).toBeVisible();
+  await expect(page.locator(".assign-steps > li")).toHaveCount(2);
+  await expect(page.getByText(/Students play Plan Under Pressure/)).toBeVisible();
+  await page.getByLabel("New class name").fill("Period 3 · Grade 7");
+  await page.getByRole("button", { name: "Assign and get the code" }).click();
+
+  await expect(page.getByRole("heading", { name: "Assigned. Here is the code." })).toBeVisible();
+  const code = (await page.locator(".class-created__code strong").innerText()).trim();
+  const teacherKey = new URL(await page.locator(".class-created__key code").innerText()).searchParams.get("key") ?? "";
+  await noSeriousAxeViolations(page);
+
+  // Nobody has played it yet: not assessed, and never 0%.
+  await page.goto("/educator/objectives/nysed-pf-2026/1.3");
+  await expect(page.getByText("Not yet assessed")).toBeVisible();
+  await expect(page.getByText("%")).toHaveCount(0);
+
+  // The students are on their own devices, which is also the only way this test can be
+  // written: joining a class clears the browser's saved attempt, and the teacher's saved
+  // classes live in the same storage.
+  const plan: PlanContext = { setupId: "cousin-room" };
+  for (const seat of ["7", "8", "9"]) {
+    const context = await browser.newContext();
+    const student = await context.newPage();
+    try {
+      await gotoFreshChallenge(student);
+      await enterChallenge(student, { classCode: code, seatCode: seat });
+      await completeSetupStage(student, 2);
+      await completeWorkingCalcs(student);
+      // Closed by naming the row that takes the rest, which is what makes the savings figure
+      // evidence rather than arithmetic.
+      await setAmount(student, "Sports-media course", String(N.course.fullPrice));
+      await student.getByRole("button", { name: new RegExp(`Put \\$.* into ${CHOICE_LABELS.flexibleCash}`) }).click();
+      await student.getByRole("button", { name: "Save this version" }).click();
+      await playSeasonWeeks(student);
+      await passWeek5Calculation(student, String(week5TotalFor(plan)));
+      await savePlan(student, "week5-first-response", plan);
+      await decideOpportunity(student, { clinics: false, countBonus: false });
+      await savePlan(student, "final", { ...plan, clinics: false, countCompletionFinal: false });
+      await readWeek8Resolution(student);
+      await submitDefense(student, `Seat ${seat}: I set $1,200 for the course first and put the last $600 into Avery's week. I gave up rest to keep the course funded.`);
+      await waitForDelivery(student);
+    } finally {
+      await context.close();
+    }
+  }
+
+  // Three submissions, and none of their writing has been read — so nobody is assessed yet,
+  // and that reads as an absence rather than as three failures.
+  await page.goto(`/educator/objectives/nysed-pf-2026/1.3?t=${Date.now()}`);
+  await expect(page.getByText("Period 3 · Grade 7")).toBeVisible();
+  await expect(page.getByText("3 turned in · 3 written explanations still to read.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Not yet assessed")).toBeVisible();
+
+  // A person reads all three. Marks are recorded criterion by criterion, which is what lets
+  // the explanation requirement stand on a judgement somebody actually made.
+  for (const seat of ["7", "8", "9"]) {
+    await page.goto(`/educator/class/${code}/students/${seat}?key=${teacherKey}`);
+    // An unread paragraph is not a paragraph somebody scored zero. Until all four criteria
+    // are answered the total refuses to be a number and the save refuses to run, so a stray
+    // click cannot record a zero nobody meant.
+    if (seat === "7") {
+      await expect(page.locator(".rubric-panel footer strong")).toContainText("—/10");
+      await expect(page.getByRole("button", { name: "Save review" })).toHaveAttribute("aria-disabled", "true");
+    }
+    for (const [label, mark] of [["Workability", 2], ["Protected priority", 2], ["Tradeoff / opportunity cost", 2], ["Numerical evidence", 4]] as const) {
+      await page.getByRole("button", { name: `${label}: ${mark} of ${mark}` }).click();
+    }
+    await page.getByRole("button", { name: "Save review" }).click();
+    await expect(page.getByText("Saved.")).toBeVisible();
+  }
+
+  // Now three students have a usable result — and three is still below the denominator a
+  // class state needs, so BOW shows the count and refuses the state.
+  await page.goto(`/educator/objectives/nysed-pf-2026/1.3?t=${Date.now()}`);
+  await expect(page.getByText("3 of 3 assessed")).toBeVisible();
+  await expect(page.getByText(/BOW shows the count and not a\s+class state/)).toBeVisible();
+  for (const state of ["Strong", "Developing", "Needs attention"]) {
+    await expect(page.getByText(state, { exact: true })).toHaveCount(0);
+  }
+  // The skill 1.3 actually rests on leads the breakdown, and it is the one that moved.
+  const planRow = page.locator(".objective-class tr").filter({ hasText: "gives savings a planned amount" });
+  await expect(planRow).toContainText("3 demonstrated");
+  await noSeriousAxeViolations(page);
+  await noHorizontalOverflow(page);
+
+  // And the evidence behind the number is one click away.
+  await page.getByRole("link", { name: "Open this class’s evidence" }).click();
+  await expect(page.getByRole("heading", { name: "What the class did" })).toBeVisible();
+  await expect(page.locator(".class-header")).toContainText("Period 3 · Grade 7");
+  await expect(page.locator(".class-header")).toContainText("3 submissions");
+
+  const room = await request.get(`http://127.0.0.1:4180/api/classes/${code}/submissions`, {
+    headers: { "X-BOW-Teacher-Key": teacherKey },
+  });
+  const body = (await room.json()) as { assignments: { id: string; objectiveRef: { code: string } | null }[]; submissions: { assignmentId: string }[] };
+  expect(body.assignments[0].objectiveRef?.code).toBe("1.3");
+  expect(body.submissions.map((entry) => entry.assignmentId)).toEqual([body.assignments[0].id, body.assignments[0].id, body.assignments[0].id]);
+});
+
+
+// ---------------------------------------------------------------------------
+// 30. The Objective Map. Where a teacher stands against the whole requirement,
+//     in two views, with a coverage mark only a person can set.
+// ---------------------------------------------------------------------------
+
+test("the map shows all 23 objectives in five topics, and says coming rather than zero", async ({ page }) => {
+  await page.goto("/educator/map");
+  await expect(page.getByRole("heading", { name: "Where this class stands." })).toBeVisible();
+
+  // Five topic bands in the framework's own order, and every objective in one of them.
+  await expect(page.locator(".topic-band")).toHaveCount(5);
+  await expect(page.locator(".topic-band li")).toHaveCount(23);
+
+  // Twenty-two have no world. They read "Coming" — never a share, never a zero.
+  await expect(page.locator('.topic-band a[data-state="not-available"]')).toHaveCount(22);
+  await expect(page.locator(".topic-bands")).toContainText("Coming");
+  await expect(page.locator(".topic-bands").getByText("%")).toHaveCount(0);
+
+  // State is never carried by colour alone: every chip prints its word beside a mark whose
+  // geometry differs, so a greyscale printout loses nothing.
+  const marks = page.locator(".topic-band .state-mark");
+  await expect(marks).toHaveCount(23);
+  await expect(page.locator('.topic-band a[data-state="not-taught"] .chip-state')).toContainText("Not taught");
+  await noSeriousAxeViolations(page);
+  await noHorizontalOverflow(page);
+});
+
+test("the map remembers which view the teacher chose", async ({ page }) => {
+  await page.goto("/educator/map");
+  await page.getByRole("button", { name: "Table", exact: true }).click();
+  await expect(page.locator(".map-table tbody tr")).toHaveCount(23);
+  // The framework's exact sentence is in the row, because the table is meant to be printed
+  // and handed over — a code and a three-word handle is not a document.
+  await expect(page.locator(".map-table")).toContainText("Create a budget for a hypothetical income that includes planned expenses and savings.");
+
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Table", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".map-table tbody tr")).toHaveCount(23);
+  await noSeriousAxeViolations(page);
+});
+
+test("the map filters by topic and by status, and records a coverage mark a person set", async ({ page, request }) => {
+  const created = await createClass(request, "Map suite");
+  // Opening the class once is how this browser comes to hold its key, which is the only
+  // way the map can read it — there is no server-side index of a teacher's classes.
+  await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}`);
+  await expect(page.getByRole("heading", { name: "Nothing turned in yet." })).toBeVisible();
+
+  await page.goto("/educator/map");
+  await page.getByLabel("Topic").selectOption("2");
+  await expect(page.locator(".topic-band li")).toHaveCount(4);
+  await page.getByLabel("Topic").selectOption("");
+  await page.getByLabel("Status").selectOption("not-taught");
+  await expect(page.locator(".topic-band li")).toHaveCount(1);
+
+  // Taught is per class per objective, and it is set by a person — never inferred.
+  await page.getByLabel("Status").selectOption("");
+  await page.getByRole("button", { name: "Table", exact: true }).click();
+  await page.getByLabel("Class", { exact: true }).selectOption(created.code);
+  const budgetRow = page.locator(".map-table tbody tr").filter({ hasText: "Create a budget" });
+  await expect(budgetRow).toContainText("Not taught");
+  await budgetRow.getByRole("checkbox").click();
+  await expect(budgetRow).toContainText("Taught");
+
+  // It survives the round trip, because it lives on the class rather than in this browser.
+  await page.reload();
+  const afterReload = page.locator(".map-table tbody tr").filter({ hasText: "Create a budget" });
+  await expect(afterReload).toContainText("Taught");
+  await expect(afterReload.getByRole("checkbox")).toBeChecked();
 });

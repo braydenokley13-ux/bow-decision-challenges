@@ -19,6 +19,12 @@ export interface ChallengeState {
     classCode: string;
     seatCode: string;
     challengeId: string;
+    /**
+     * What this run was set, when a class said. Empty when nothing did — a challenge opened
+     * outside a class has no assignment, and inventing one would file the evidence under a
+     * decision no teacher made.
+     */
+    assignmentId: string;
     /** The registry's version at the moment the attempt started. */
     challengeVersion: string;
     worldId: WorldId;
@@ -54,6 +60,7 @@ export function createInitialState(now = 1): ChallengeState {
       classCode: "",
       seatCode: "",
       challengeId: PLAN_UNDER_PRESSURE.id,
+      assignmentId: "",
       challengeVersion: PLAN_UNDER_PRESSURE.version,
       worldId: "basketball",
       startedAt: now,

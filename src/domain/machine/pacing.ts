@@ -30,7 +30,7 @@ export const STAGE_BUDGET: Partial<Record<StageId, StageBudget>> = {
   entry: { seconds: 55, basis: "Read the offer and the roster card, then type a class code and a seat number." },
   "role-contract": { seconds: 40, basis: "Read four contract lines split into safe and conditional, then continue." },
   "setup-comparison": { seconds: 115, basis: "Order three places by full cost, choose one, and total it across the season." },
-  "working-plan": { seconds: 165, basis: "Two calculations, two decisions about conditional income, then split what is left to zero." },
+  "working-plan": { seconds: 165, basis: "Two calculations, two decisions about conditional income, then split what is left and say which row takes the rest." },
   "fallback-version": { seconds: 50, basis: "One number to clear on a plan already built: one to three taps, or the steppers." },
   "season-weeks": { seconds: 145, basis: "Play three more weeks, read what each one costs, then answer the deposit deadline." },
   "week5-event": { seconds: 110, basis: "Read two bulletins and Avery's line, select the components that moved, total them." },

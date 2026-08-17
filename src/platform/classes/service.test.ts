@@ -3,7 +3,8 @@ import { handleApiRequest } from "../../../server/handler";
 import { memoryStore, type ClassStore } from "../../../server/store";
 import { PLAN_UNDER_PRESSURE } from "../challenges/registry";
 import { allocateClassCode, CODE_ALPHABET, generateClassCode, isWellFormedClassCode, isWellFormedSeatCode, normaliseClassCode, normaliseSeatCode } from "./codes";
-import { CLASS_RETENTION_DAYS, type ClassCreation, type SubmissionRecord } from "./types";
+import { CLASS_RETENTION_DAYS, type Assignment, type AttributedSubmission, type ClassCreation, type SubmissionRecord } from "./types";
+import { assignmentIdFor, assignmentsForClass, legacyAssignmentId } from "./assignments";
 import type { EvidenceEvent } from "../../domain/evidence/types";
 
 const NOW = 1_770_000_000_000;
@@ -17,7 +18,7 @@ function api(store: ClassStore, now = NOW) {
 }
 
 const log: EvidenceEvent[] = [
-  { id: "event-1", sequence: 1, timestamp: NOW, type: "SESSION_STARTED", stage: "entry", challengeId: PLAN_UNDER_PRESSURE.id, challengeVersion: PLAN_UNDER_PRESSURE.version, sessionId: "session-aaaaaaaa", worldId: "basketball", conceptIds: [], payload: {}, supportLevel: "standard_access" },
+  { id: "event-1", sequence: 1, timestamp: NOW, type: "SESSION_STARTED", stage: "entry", challengeId: PLAN_UNDER_PRESSURE.id, challengeVersion: PLAN_UNDER_PRESSURE.version, sessionId: "session-aaaaaaaa", worldId: "basketball", conceptIds: [], competencyIds: [], evidenceRequirementIds: [], payload: {}, supportLevel: "standard_access" },
 ];
 
 const submission = {
@@ -32,6 +33,18 @@ const submission = {
 async function makeClass(store: ClassStore, now = NOW): Promise<ClassCreation> {
   const created = await api(store, now)("POST", "/classes", { label: "Period 3", challengeId: PLAN_UNDER_PRESSURE.id });
   return created.body as ClassCreation;
+}
+
+/** The objective a built world can actually assess, so these tests set real work. */
+const BUDGET_OBJECTIVE = { frameworkId: "nysed-pf-2026", code: "1.3" };
+
+async function setWork(store: ClassStore, created: ClassCreation, body: unknown = { objectiveRef: BUDGET_OBJECTIVE }) {
+  return api(store)("POST", `/classes/${created.code}/assignments`, body, created.teacherKey);
+}
+
+async function assignmentsOf(store: ClassStore, code: string): Promise<Assignment[]> {
+  const result = await api(store)("GET", `/classes/${code}/assignments`);
+  return (result.body as { assignments: Assignment[] }).assignments;
 }
 
 describe("class codes survive being read aloud and typed by a room", () => {
@@ -246,5 +259,185 @@ describe("only the educator can read the room", () => {
 
     await api(store)("PATCH", `/classes/${created.code}/submissions/7`, { reasoningPoints: null }, created.teacherKey);
     expect((await store.listSubmissions(created.code))[0]!.reasoningPoints).toBeNull();
+  });
+});
+
+/**
+ * A class can now hold more than one thing, and a submission knows what it was for.
+ *
+ * The half of this that matters most is the half that is not new: every class created
+ * before assignments existed still opens, still shows its submissions, and reports the one
+ * thing it was implicitly set. Nothing is migrated, so there is no migration to get wrong.
+ */
+describe("a class holds the work it was set", () => {
+  it("stores what the teacher chose and what is actually measured, and they are different things", async () => {
+    const store = memoryStore();
+    const created = await makeClass(store);
+    const result = await setWork(store, created);
+    expect(result.status).toBe(201);
+    const assignment = result.body as Assignment;
+    expect(assignment.objectiveRef).toEqual(BUDGET_OBJECTIVE);
+    // Resolved from the mapping, not accepted from the request. 1.3 is `full`-mapped to one
+    // competency, and `save-toward-a-goal` is a partial on it — a partial is not what the
+    // assignment measures, so it is not recorded as what it measures.
+    expect(assignment.competencyIds).toEqual(["plan-within-income"]);
+    expect(assignment.classId).toBe(created.code);
+    expect(assignment.allowedWorldIds).toEqual(["basketball"]);
+    expect(assignment.studentChoosesWorld).toBe(false);
+    expect(assignment.format).toBe("decision-challenge");
+    expect(assignment.assignedStudentIds).toBeNull();
+  });
+
+  it("holds several, oldest first", async () => {
+    const store = memoryStore();
+    const created = await makeClass(store);
+    const first = (await setWork(store, created)).body as Assignment;
+    const second = (await api(store, NOW + 60_000)(
+      "POST", `/classes/${created.code}/assignments`,
+      { objectiveRef: BUDGET_OBJECTIVE, assignedStudentIds: ["7", "14"], attemptOf: first.id },
+      created.teacherKey,
+    )).body as Assignment;
+
+    expect(second.attemptOf).toBe(first.id);
+    expect(second.assignedStudentIds).toEqual(["7", "14"]);
+    expect((await assignmentsOf(store, created.code)).map((entry) => entry.id)).toEqual([first.id, second.id]);
+  });
+
+  it("refuses an objective, a world, a format or a reassessment target that is not real", async () => {
+    const store = memoryStore();
+    const created = await makeClass(store);
+    const bad = [
+      { objectiveRef: { frameworkId: "nysed-pf-2026", code: "1.7" } },
+      { objectiveRef: { frameworkId: "made-up-2030", code: "1.3" } },
+      { objectiveRef: BUDGET_OBJECTIVE, allowedWorldIds: ["fashion"] },
+      { objectiveRef: BUDGET_OBJECTIVE, allowedWorldIds: [] },
+      { objectiveRef: BUDGET_OBJECTIVE, format: "essay" },
+      { objectiveRef: BUDGET_OBJECTIVE, attemptOf: "assignment-nobody-has" },
+    ];
+    for (const body of bad) {
+      expect((await setWork(store, created, body)).status, JSON.stringify(body)).toBe(400);
+    }
+    expect(await assignmentsOf(store, created.code)).toHaveLength(1);
+  });
+
+  it("lets a teacher set work with no objective rather than making one up", async () => {
+    // Not every class is run against a state. A teacher who just wants the challenge gets
+    // an assignment with a null objective — which is a recorded absence, not a guess.
+    const store = memoryStore();
+    const created = await makeClass(store);
+    const assignment = (await setWork(store, created, {})).body as Assignment;
+    expect(assignment.objectiveRef).toBeNull();
+    expect(assignment.competencyIds.length).toBeGreaterThan(0);
+  });
+
+  it("tells a student what they were set, and still never hands over the key", async () => {
+    const store = memoryStore();
+    const created = await makeClass(store);
+    const assignment = (await setWork(store, created)).body as Assignment;
+    const joined = await api(store)("GET", `/classes/${created.code}`);
+    expect(joined.status).toBe(200);
+    expect(joined.body).not.toHaveProperty("teacherKey");
+    expect((joined.body as { assignments: Assignment[] }).assignments.map((entry) => entry.id)).toEqual([assignment.id]);
+  });
+
+  it("takes a submission that names its assignment, and refuses one that names somebody else's", async () => {
+    const store = memoryStore();
+    const created = await makeClass(store);
+    const assignment = (await setWork(store, created)).body as Assignment;
+
+    const accepted = await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code, assignmentId: assignment.id });
+    expect(accepted.status).toBe(202);
+    expect((await store.listSubmissions(created.code))[0]!.assignmentId).toBe(assignment.id);
+
+    const other = await makeClass(memoryStore());
+    const refused = await api(store)("POST", `/classes/${created.code}/submissions`, {
+      ...submission, classCode: created.code, seatCode: "8", assignmentId: legacyAssignmentId(other.code),
+    });
+    expect(refused.status).toBe(404);
+    expect((refused.body as { error: string }).error).toBe("assignment_not_found");
+    expect(await store.listSubmissions(created.code)).toHaveLength(1);
+  });
+
+  it("keeps the evidence room shut to the class code once there is work in it", async () => {
+    // The one thing this checkpoint could quietly break. Assignments are readable with the
+    // code because a student needs them; evidence still is not.
+    const store = memoryStore();
+    const created = await makeClass(store);
+    await setWork(store, created);
+    await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code });
+
+    expect((await api(store)("GET", `/classes/${created.code}/submissions`)).status).toBe(403);
+    expect((await api(store)("GET", `/classes/${created.code}/submissions`, undefined, created.code)).status).toBe(403);
+    expect((await api(store)("POST", `/classes/${created.code}/assignments`, { objectiveRef: BUDGET_OBJECTIVE })).status).toBe(403);
+    expect((await api(store)("POST", `/classes/${created.code}/assignments`, { objectiveRef: BUDGET_OBJECTIVE }, created.code)).status).toBe(403);
+    expect((await api(store)("GET", `/classes/${created.code}/submissions`, undefined, created.teacherKey)).status).toBe(200);
+  });
+});
+
+describe("a class created before any of this still works", () => {
+  /** A class written by the previous build: no assignments anywhere, and evidence in it. */
+  async function preAssignmentClass(store: ClassStore) {
+    const created = await makeClass(store);
+    await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code });
+    expect(await store.listAssignments(created.code)).toHaveLength(0);
+    return created;
+  }
+
+  it("opens, shows its submissions, and reports exactly one assignment", async () => {
+    const store = memoryStore();
+    const created = await preAssignmentClass(store);
+    const room = await api(store)("GET", `/classes/${created.code}/submissions`, undefined, created.teacherKey);
+    expect(room.status).toBe(200);
+    const body = room.body as { assignments: Assignment[]; submissions: AttributedSubmission[] };
+    expect(body.submissions).toHaveLength(1);
+    expect(body.assignments).toHaveLength(1);
+    expect(body.assignments[0]!.id).toBe(legacyAssignmentId(created.code));
+  });
+
+  it("says nobody chose an objective, because nobody did", async () => {
+    // The field §17.3 defines as *what the teacher chose*. These teachers chose a challenge;
+    // no objective was ever put in front of them, and writing a code in here would
+    // manufacture a selection that reporting would then speak from.
+    const store = memoryStore();
+    const created = await preAssignmentClass(store);
+    const [synthesised] = await assignmentsOf(store, created.code);
+    expect(synthesised?.objectiveRef).toBeNull();
+    expect(synthesised?.allowedWorldIds).toEqual(["basketball"]);
+    expect(synthesised?.studentChoosesWorld).toBe(false);
+    expect(synthesised?.assignedStudentIds).toBeNull();
+    expect(synthesised?.createdAt).toBe(NOW);
+  });
+
+  it("attributes a submission that names nothing to it", async () => {
+    const store = memoryStore();
+    const created = await preAssignmentClass(store);
+    const room = await api(store)("GET", `/classes/${created.code}/submissions`, undefined, created.teacherKey);
+    const body = room.body as { submissions: AttributedSubmission[] };
+    expect(body.submissions[0]!.assignmentId).toBe(legacyAssignmentId(created.code));
+    // Derived on read. Nothing was written back onto the stored record, so a rollback loses
+    // nothing and no student's evidence was edited to add a field.
+    expect((await store.listSubmissions(created.code))[0]!.assignmentId).toBeUndefined();
+  });
+
+  it("stops synthesising the moment the class is set something real", async () => {
+    const store = memoryStore();
+    const created = await preAssignmentClass(store);
+    const assignment = (await setWork(store, created)).body as Assignment;
+    const assignments = await assignmentsOf(store, created.code);
+    expect(assignments.map((entry) => entry.id)).toEqual([assignment.id]);
+    // And last month's evidence goes to the oldest assignment the class has, not the newest
+    // — a teacher setting a second thing must not silently re-file the first thing's work.
+    expect(assignmentIdFor((await store.listSubmissions(created.code))[0]!, assignments)).toBe(assignment.id);
+  });
+
+  it("gives the same synthesised id every time it is read", async () => {
+    // Re-derived on every read, so an id that moved between reads would move a student's
+    // evidence between assignments.
+    const store = memoryStore();
+    const created = await preAssignmentClass(store);
+    const first = await assignmentsOf(store, created.code);
+    const second = await assignmentsOf(store, created.code);
+    expect(first).toEqual(second);
+    expect(assignmentsForClass(created, []).map((entry) => entry.id)).toEqual(first.map((entry) => entry.id));
   });
 });

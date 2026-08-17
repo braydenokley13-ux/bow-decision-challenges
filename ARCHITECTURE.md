@@ -19,6 +19,7 @@ would destroy student work.
 | `challenges/registry.ts` | What a challenge *is*: id, version, title, pillar, grades, concepts, duration, route, placement. Also the per-challenge persistence key. |
 | `classes/types.ts` | The class-service contract, read by both the client and the server. |
 | `classes/codes.ts` | Class and seat codes: alphabet, folding, validation, collision-safe allocation, teacher keys. |
+| `classes/assignments.ts` | What a class was set (§17.3), how a pre-assignment class synthesises one on read, and which assignment a submission belongs to. |
 | `evidence/transport.ts` | The `EvidenceTransport` boundary and the delivery retry schedule. |
 | `evidence/transports.ts` | The three drivers: `classService`, `fileHandoff`, `localOnly`. |
 
@@ -54,11 +55,13 @@ or any view module from `src/domain/**`.
 | Module | Shared shape | PUP-specific content |
 | --- | --- | --- |
 | `core/` | ✅ money, ids | — |
+| `competency/` | ✅ the 21 BOW competencies, their evidence requirements, the common rubric scale, availability | — |
+| `standards/` | ✅ frameworks, standards, mappings, completion rules, framework labels | — |
 | `finance/` | ✅ formulas, load, timeline, resolution, consequences, plan modes | prices arrive as `ScenarioNumbers` |
 | `evidence/` | ✅ envelope, facts, observation, grading | micro-skills are PUP's |
 | `machine/` | ✅ reducer, selectors | stage list is PUP's |
 | `scenario/` | — | **entirely PUP**: numbers, worlds, balance harness |
-| `blueprint/` | — | **entirely PUP**: concepts, micro-skills, standards |
+| `blueprint/` | — | **entirely PUP**: concepts, micro-skills, and the five-objective alignment the educator surfaces still read |
 
 `src/domain/finance/**` additionally may not import a world — it receives `ScenarioNumbers`
 and nothing else. That is what lets the balance harness price hypothetical models.
@@ -73,20 +76,171 @@ rather than about layout, which is why it lives here and not in the stage that r
 currently buys, priced by the same model that resolves the season. Nothing in it recommends
 anything; `consequences.test.ts` holds it to that.
 
+#### The academic spine — `competency/` and `standards/`
+
+The permanent internal model, added ahead of the second world because it is cheap now and a
+migration of already-stored student evidence later:
+
+```
+BOW Competency            21 of them. BOW's own words. Unchanged when a state is added.
+  ├─ Evidence Requirements    the unit two different worlds are compared through
+  ├─ Common Rubric            0 / 2 / 3 / 4 / 5 + not observed, support-aware
+  ├─ Assessment Worlds        which competencies a built world can actually produce
+  └─ Standards Mappings       competency → (framework, code, coverage)
+        └─ FrameworkLabels    what this teacher's state calls things
+```
+
+A **competency** is a financial skill in BOW's words — `plan-within-income`. An
+**objective** is a line item in a state's framework, in that state's exact words and
+number — NYSED 1.3. BOW scores competencies and reports them through whichever framework
+the teacher's school uses. `standards/frameworks/nysed-2026.ts` carries all 23 NYSED
+Grades 5–8 objectives verbatim, and `nysedWording.test.ts` asserts each string literally so
+a typo in an official objective fails the build.
+
+**The one-way rule**, enforced by ESLint and by `spineSeparation.test.ts`: competencies
+never reference frameworks, frameworks never reference worlds, and a world never references
+an objective. `mappings/nysed-2026.ts` is the only join, and the only file a second state
+would add to. A standard is addressed as `{ frameworkId, code }` — never as a bare `"1.3"`,
+which is ambiguous the moment New Jersey has one too.
+
+**Coverage is stored, never inferred.** Every mapping is `full`, `partial` or `supporting`,
+written by a person with a rationale and a date. An objective is reported demonstrated only
+from a `full` mapping, or from a `StandardCompletionRule` that names the complete set of
+partials — which is why NYSED 2.1 needs all three of its skills and 4.1 needs insurance
+evidence Basketball does not produce.
+
+**A mapping is not an assessment.** `isAssessable()` additionally requires a built world
+that produces every required evidence requirement, so an objective BOW cannot assess yet
+reads *not yet available* rather than *not yet assessed*. Those are different sentences and
+a district reads them differently.
+
+`BUILT_WORLD_COVERAGE` today records Basketball producing all five requirements of
+`adapt-a-plan` and all five of `plan-within-income`. **One NYSED objective is assessable —
+1.3, and only 1.3.** Every other objective has a mapping and no world.
+
+`plan-within-income.er3` — *savings is a planned amount, not the remainder* — is the one that
+took a world change rather than a wiring change. Nothing in the log could tell a student who
+set the course line first from one who typed the leftovers into it, and reading the size of
+the line instead would have made one set of priorities the right answer in a scenario
+`balance.ts` sweeps to prove has none. What closed it is a statement the student now makes:
+the opening board offers each row a one-tap *"put $X here"*, and the move that leaves nothing
+unassigned is the student naming the line that took the leftovers. It is neutral about
+amounts — planning $0 for the course is still planning it — it adds no plan the steppers
+could not already reach, and an attempt saved before it existed contains no such statement
+and scores `null`.
+
+### The teacher's loop
+
+Four screens, and they are the first thing in this product a teacher can use end to end:
+
+| Route | What it answers |
+| --- | --- |
+| `/educator/map` | "Where do I stand across the whole requirement?" — all 23 in five topic bands, two views, and the choice remembered. |
+| `/educator/objectives` | "What can I assess?" — all 23, searchable, with the ones a built world can actually assess told apart from the ones that are only mapped. |
+| `/educator/objectives/:frameworkId/:code` | "What is this, and what did my class do?" — the framework's exact wording, its attribution, the skills behind it, and one result block per class that was set it. |
+| `/educator/assign` | "Give me a code." — §17.2's four steps with the two that have one answer collapsed to a line each. |
+
+**Every teacher-facing word that names a framework or one of its parts is composed from
+`FrameworkLabels`.** `frameworkNaming.test.ts` scans every surface source and fails on a
+literal, so a New Jersey deployment reads New Jersey's nouns without a component changing.
+Students see none of it: nothing under `/educator` is on a student route, and no student
+screen mentions a standard.
+
+**The Objective Map's nine states** are §15.3's, and they live in `objectiveState.ts` beside
+the thresholds they read. The order they are decided in is the correctness: availability
+first, so an objective BOW cannot assess never reads as one a class did badly at; a bundled
+objective held at *partly assessed* until every part of its completion rule is in; the
+denominator guard before the thresholds. Four of the nine are not claims about students at
+all, and `isResultState` is what any surface asks before treating one as one.
+
+State is never carried by colour alone — every objective shows a mark whose geometry differs
+and its word beside it, so the table survives a greyscale printout and a colour vision
+difference identically. The table prints as a document: shell, filters and controls drop
+away and the framework's exact sentence stays in the row.
+
+*Taught* is a teacher's own record. It is stored on the class rather than in the browser that
+ticked it, it is true across several classes only when it is true of all of them, and it is
+never inferred from anything a student did — a lesson is not something BOW can see.
+
+Marking period and the district-required subset are driven by a `DistrictProfile`. None ships,
+so those two filters are tested and not rendered: a filter with nothing behind it is a dead
+end, and inventing a district's sequence would put an ordering in front of a teacher that
+nobody at their district agreed to.
+
+**What the results may say** is the same set of rules everywhere: never a percentage without
+its denominator, *not yet assessed* rather than 0% when nobody has submitted, the count and
+no class state below `MINIMUM_ASSESSED_FOR_A_STATE`, and a missing piece of evidence rendered
+as an absence rather than a failure. The last one does the most work: `plan-within-income`
+requires a written explanation, BOW never scores writing, so a student whose paragraph nobody
+has read is *incomplete* and stays out of the denominator entirely.
+
+`blueprint/reasoning.ts` holds the four criteria a person marks the writing against, and
+`worlds/basketball/writtenDefense.ts` restates those marks on the common rubric, criterion by
+criterion. It scores nothing: every level it emits comes from a number a teacher typed after
+reading the student's own words. Marking criterion by criterion rather than banding the
+ten-point total is what lets two requirements that ask for different things read differently
+from the same paragraph.
+
+There is no server-side index of "classes set 1.3", and V1 will not have one — a class is a
+code and a key, the key never leaves the educator's browser, and listing a teacher's classes
+would take an account to list them for. So the objective screens read whatever classes this
+browser remembers. That limit is stated on the screen rather than hidden.
+
 ### `src/educator/` — the educator surface
 
 `analysis.ts` turns submitted evidence into what a class did. It is the **only** thing that
 feeds a real class view, and `noFixture.test.ts` enforces that structurally: the real-class
 modules cannot import a fixture, and every fixture page is mounted under `/educator/demo`.
 
+### The design system, and what it is enforced by
+
+Two grounds and three container weights do the separating. Hairline borders around every
+block gave a footnote the same frame as a result, so they are gone: `panel--raised` lifts off
+the ground, `panel--inset` sinks into it, and most things are separated by space alone.
+
+One measure per page — `evidence` for dense pages, `read` for pages made of sentences,
+`bleed` for the two editorial layouts composed for full width — set on the shell, so a page
+has one left edge including its footers. One vertical rhythm: `--gap-section`, `--gap-block`,
+`--gap-element`. Form controls are styled once, so a native chevron never sits beside a custom
+button, and the type scale carries a section step between the display line and body text —
+without it every page read as one giant headline dropping straight to 15px.
+
+**What keeps it honest is that the reviews are blind.** Screenshots go to reviewers who are
+told nothing about intent, and what they find is treated as findings rather than opinions.
+Three of the last round's were defects, not taste: a grammar error shipped above the fold on
+twenty-two objectives, a coverage table reading "full" on a page headed "BOW cannot assess
+this yet", and a rubric that defaulted to a saveable zero with no visible selection — one
+stray click from recording a zero nobody meant, in a gradebook. Each is pinned by a test now.
+
 ### `src/design/` — three layers, deliberately separate
 
-- `tokens.css` — platform primitives: spacing, type scale, financial colour semantics, print
-- `brand.css` — the BOW / Decision Challenges layer: the mark, educator chrome, display voice
+- `tokens.css` — platform primitives: spacing, type scale, financial colour semantics, ticket geometry, print
+- `brand.css` — the BOW / Decision Challenges layer: the mark, the display voice, the ticket, educator chrome
 - `worlds.css` — Avery's basketball art direction
 
 Challenge #2 gets its own block in `worlds.css` and touches neither of the others. Raw hex is
 allowed only in those three files, enforced by stylelint.
+
+**The identity is BOW's own: deep athletic blue on warm cream, set in near-black ink, with the
+geometry of an admissions pass.** The palette is deliberately four colours with fixed meanings —
+money that arrives is blue, money with a condition on it is amber and striped, a plan that
+balances is green, a plan that is short is rust — so a student who learns them in the first
+thirty seconds can read every screen after it without a legend. The ticket vocabulary (the cut
+edge, the perforation, the stamp) is used where a surface genuinely *is* a pass or a stub: the
+class-code card, the plan, the class code itself. Not on everything rectangular.
+
+Two rules follow from that and are worth stating because breaking either is invisible until a
+student is confused:
+
+- **Dark is a peak, not a default.** The arena at night belongs to Week 5 and Week 8, which is
+  where the plan stops working and where the student finds out what that cost. Everything else
+  is on cream. The opening screen used to be the same full-volume navy, which left the two
+  moments the story actually turns on with nowhere louder to go.
+- **A ground change is a contrast change.** Moving the educator panels from near-black to BOW
+  blue in Checkpoint 4.5 silently broke the amber marker on them (4.24:1). The fix is a token
+  override on the ground — `--fin-conditional: var(--bow-accent-on-brand)` — rather than a
+  colour per element, so a component that lands on a brand panel later inherits a value that
+  has been checked against it. The axe pass in `e2e/bow.spec.ts` is what caught it.
 
 ---
 
@@ -115,6 +269,28 @@ server rejects a submission carrying an unknown one.
 
 There is deliberately no mouse tracking, no clickstream, no keystroke capture and no
 hesitation telemetry.
+
+## Assignments, and the classes that predate them
+
+A class used to hold exactly one thing — `ClassRecord.challengeId` — and a submission belonged
+to the class rather than to anything a teacher had decided. An `Assignment` now sits between
+them: what objective was chosen, what competencies that resolves to, which worlds are offered,
+who it was set for, and what it is a reassessment of.
+
+**Both halves of the claim are stored, and they are different claims.** `objectiveRef` is what
+the teacher picked and the only language reporting may speak to them in. `competencyIds` is
+what BOW actually measured, resolved from the mapping at the moment the assignment was set, so
+a framework revision rewrites the first and cannot touch the second.
+
+Nothing is migrated. A class with no stored assignments **synthesises** one on every read, and
+a submission naming no assignment is attributed to the oldest one the class has. Both are
+derivations: no stored record is altered, no field is back-filled, and a rollback loses
+nothing. The synthesised assignment's `objectiveRef` is `null` — those teachers chose a
+challenge, no objective was ever put in front of them, and writing a code there would
+manufacture a selection that reporting would then speak from.
+
+Assignments are readable with the class code, because a student needs to know what they were
+set. Evidence still is not.
 
 ## Security model
 
@@ -159,6 +335,11 @@ count an educator reads.
   addressable.
 - A full educator portal, student accounts, or a roster.
 - Challenge #2 itself, and any abstraction it has not yet asked for.
+- A framework loader, a mapping editor, a second state framework, a district service or a
+  research pipeline. The standards layer exists so a second state does not require a
+  rewrite — not to serve a state that has not been sold. Nothing in it is aware another
+  framework is possible, except that no NYSED code appears in a type, a world, a rubric or
+  a scoring function.
 
 **Rule of two with forethought**: nothing here blocks Challenge #2, and nothing here was
 generalised before Challenge #2 could prove what it needs.
@@ -168,7 +349,7 @@ generalised before Challenge #2 could prove what it needs.
 The registry and routing; persistence keying; the whole class service and its three stores;
 the transport boundary and its three drivers; the evidence envelope, facts derivation,
 observation scoring, support caps and grading; the plan board, the adjust panel, the
-allocation control, the money split and the week meter; the educator shell, the class hook,
+allocation control, the money ledger and the week meter; the educator shell, the class hook,
 the no-fixture invariant; the brand and token layers; the balance-harness *pattern*.
 
 ## What Challenge #2 would have to build

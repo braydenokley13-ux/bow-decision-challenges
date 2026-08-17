@@ -20,7 +20,7 @@ export default async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const cors: Record<string, string> = {
     "Access-Control-Allow-Origin": request.headers.get("origin") ?? "*",
-    "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, X-BOW-Teacher-Key",
   };
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
