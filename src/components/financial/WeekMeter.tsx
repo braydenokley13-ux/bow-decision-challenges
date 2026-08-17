@@ -33,9 +33,15 @@ export function WeekMeter({ load, parts, atStake, rate }: WeekMeterProps) {
     <section className="week-meter" data-state={state}>
       <header className="week-meter__head">
         <p className="field-label">Avery’s week</p>
+        {/* The bar is drawn to `demand`, so the reading above it is `demand` too. It used
+            to say `net`, which is the number the bar deliberately does not show — the paid-for
+            hours are measured under it — and a reader who checked the two disagreed with us. */}
         <p className="week-meter__read">
-          <strong>{load.net} hours</strong>
-          <span>of every week go on getting places, outside practice, games and school</span>
+          <strong>{load.demand} hours</strong>
+          <span>
+            a week of getting places, outside practice, games and school
+            {load.bought > 0 ? ` — ${load.bought} paid for, ${load.net} still on Avery` : ""}
+          </span>
         </p>
       </header>
 

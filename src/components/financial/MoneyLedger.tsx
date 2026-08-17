@@ -50,7 +50,7 @@ export function MoneyLedger({ input, setupTitle, onLockedMoveAttempt }: {
   const lines = [
     { key: "certain", tone: "certain", sign: "+", label: ledger.arrives, amount: certain, locked: false },
     ...(conditional > 0 ? [{ key: "conditional", tone: "conditional", sign: "+", label: ledger.maybe, amount: conditional, locked: false }] : []),
-    { key: "setup", tone: "locked", sign: "−", label: `Where Avery lives · ${setupTitle}`, amount: Number(n.setupCosts[input.setupId]), locked: true },
+    { key: "setup", tone: "locked", sign: "−", label: `Where Avery lives · ${setupTitle} · ${n.weeks} weeks`, amount: Number(n.setupCosts[input.setupId]), locked: true },
     { key: "essentials", tone: "locked", sign: "−", label: `Food, phone and laundry · ${n.weeks} weeks`, amount: Number(n.essentialsTotal), locked: true },
     ...(input.depositTaken ? [{ key: "deposit", tone: "locked", sign: "−", label: "Course seat, reserved and paid", amount: Number(n.course.depositPrice), locked: true }] : []),
     ...(input.includeOptionalWork ? [{ key: "clinic-cost", tone: "locked", sign: "−", label: "Getting to the Saturday clinics", amount: Number(n.optionalWorkCost), locked: true }] : []),

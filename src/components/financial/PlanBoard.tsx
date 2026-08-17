@@ -139,20 +139,20 @@ export function PlanBoard({
 
   return (
     <div className="plan-composition">
-      <section className="plan-board" data-variant={variant} aria-labelledby="plan-board-title">
+      <section className="plan-board" data-variant={variant} aria-label="Avery’s plan">
         {change && (
           <div className="change-banner" data-variant={variant}>
-            <b id="plan-board-title">{change.headline}</b>
+            <b>{change.headline}</b>
             <ul>{change.items.map((item) => <li key={item}>{item}</li>)}</ul>
           </div>
         )}
-        {!change && (
+        {/* The masthead exists only when there is something in it. It used to carry a label
+            the ledger directly under it repeats, over an empty strip. */}
+        {!change && reference && onApplyReference && CHOICE_ORDER.some((category) => reference[category] !== input.amounts[category]) && (
           <header className="plan-board__header">
-            <h2 id="plan-board-title" className="stamp">Avery’s plan</h2>
             {/* Only offered once the board differs from what the student saved; otherwise
                 the control does nothing and reads as a step they have missed. */}
-            {reference && onApplyReference && CHOICE_ORDER.some((category) => reference[category] !== input.amounts[category])
-              && <Button variant="quiet" type="button" onClick={() => onApplyReference()}>Put my saved numbers back</Button>}
+            <Button variant="quiet" type="button" onClick={() => onApplyReference()}>Put my saved numbers back</Button>
           </header>
         )}
 

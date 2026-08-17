@@ -115,6 +115,17 @@ function OpeningStage() {
               <li key={decision.title}><b>{decision.title}</b><span>{decision.detail}</span></li>
             ))}
           </ol>
+        </section>
+        {/* Avery, and the one thing Avery is playing for. The arena stays behind the person
+            rather than behind the whole screen. */}
+        <aside className="opening__side scene">
+          <CourtBackdrop />
+          <RosterCard />
+          <div className="goal-strip">
+            <strong className="money">{formatDollars(numbers.goalCap)}</strong>
+            <div><b>{offer.want}</b><span>{offer.wantDetail}</span></div>
+          </div>
+          <p className="opening__span">Eight weeks · ends at the regional showcase</p>
           <div className="opening__job">
             <p className="stamp">Your class code gets you in</p>
             <div className="opening__codes">
@@ -157,17 +168,6 @@ function OpeningStage() {
             </p>
             <p className="privacy-note">{STUDENT_COPY.join.privacy}</p>
           </div>
-        </section>
-        {/* Avery, and the one thing Avery is playing for. The arena stays behind the person
-            rather than behind the whole screen. */}
-        <aside className="opening__side scene">
-          <CourtBackdrop />
-          <RosterCard />
-          <div className="goal-strip">
-            <strong className="money">{formatDollars(numbers.goalCap)}</strong>
-            <div><b>{offer.want}</b><span>{offer.wantDetail}</span></div>
-          </div>
-          <p className="opening__span">Eight weeks · ends at the regional showcase</p>
         </aside>
       </div>
     </div>

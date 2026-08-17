@@ -16,7 +16,7 @@ p { color: var(--ink-2); }
    reads as hardware that has stopped working, and a student decides the page is broken
    before they decide it is their turn. */
 .button[aria-disabled="true"] { cursor: not-allowed; color: var(--ink-3); background: var(--surface-sunken); border-color: var(--border-default); transform: none; }
-.button--primary[aria-disabled="true"] { color: var(--bow-brand); background: transparent; border-color: var(--bow-brand); border-style: dashed; }
+.button--primary[aria-disabled="true"] { color: var(--bow-brand-strong); background: var(--fin-adjustable-soft); border-color: var(--bow-brand); }
 .button--primary { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); }
 .button--primary:hover { background: var(--bow-brand-strong); border-color: var(--bow-brand-strong); }
 .button--secondary { color: var(--ink-1); background: var(--surface-raised); }
@@ -61,7 +61,7 @@ p { color: var(--ink-2); }
 .season-strip li[data-state="current"] { color: var(--ink-1); font-weight: 800; }
 .season-strip li[data-state="current"] i { height: 9px; margin-top: -2px; background: var(--chapter-accent, var(--bow-brand)); }
 .contract-drawer { justify-self: end; position: relative; }
-.contract-drawer summary { min-height: 40px; display: grid; place-items: center; padding: 0 var(--s-4); white-space: nowrap; cursor: pointer; color: var(--bow-brand); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
+.contract-drawer summary { min-height: 40px; display: flex; align-items: center; gap: var(--s-2); border: 1px solid var(--border-default); padding: 0 var(--s-4); white-space: nowrap; cursor: pointer; color: var(--bow-brand); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
 .contract-drawer > div { width: 360px; position: absolute; right: 0; top: 52px; padding: var(--s-6); background: var(--surface-raised); border: 1px solid var(--border-default); box-shadow: var(--shadow-overlay); }
 .contract-drawer dl { margin: var(--s-4) 0 0; }
 .contract-drawer dl div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--border-subtle); }

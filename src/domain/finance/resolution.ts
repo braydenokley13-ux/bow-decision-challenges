@@ -124,7 +124,7 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
           : "Avery missed a session, so the bonus never arrived. Your plan was already built without it."
         : held
           ? "Avery made every session. The money you planned around actually landed."
-          : `Avery missed a session, and the money your plan was counting on never came. ${clearing} more in Avery’s week — taken out of your other two amounts — would have kept it.`,
+          : `Avery missed a session, and the money your plan was counting on never came. Putting ${clearing} into rides — taken out of your other two amounts — would have kept it.`,
     },
     {
       id: "clinics",
@@ -143,7 +143,7 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
             ? "The clinics paid, and Avery still made every session."
             // The bonus was already gone at this housing and this spend, so the fee is
             // money the plan would not otherwise have had.
-            : "The clinics paid, and they cost Avery nothing extra — the week was already too full either way.",
+            : `The clinics brought in ${formatDollars(n.optionalWorkIncome)} and cost Avery nothing extra — the week was already too full either way.`,
     },
     {
       id: "buying-time",

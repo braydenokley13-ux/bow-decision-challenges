@@ -59,7 +59,7 @@ export function planConsequences(input: SnapshotInputs, n: ScenarioNumbers): Rec
       ? `Nothing paid for rides. Getting everywhere still takes Avery ${load.net} hours a week.`
       // Hours come in whole blocks, so money that does not reach the next one buys nothing.
       // Saying so is the difference between a plan that balances and a plan that works.
-      : `Pays for rides. Avery gets ${load.bought} hour${load.bought === 1 ? "" : "s"} a week back, and still spends ${load.net}.${
+      : `Pays for rides. Avery gets ${load.bought} hour${load.bought === 1 ? "" : "s"} a week back, and still spends ${load.net} hours.${
           idleTimeMoney > 0 ? ` The last ${formatDollars(idleTimeMoney)} is not enough for another hour.` : ""
         }`,
   };

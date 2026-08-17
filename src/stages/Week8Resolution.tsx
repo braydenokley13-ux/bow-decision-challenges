@@ -191,8 +191,13 @@ export function Week8Resolution() {
               })}
             </tbody>
           </table>
+          {/* A plan can finish larger than it started, and a table that shows it growing
+              without saying what paid for the growth reads as a mistake. */}
           <p className="resolve-changes__note">
-            Eight weeks at the {setup.title}. {final.includeOptionalWork ? "Four Saturdays coaching." : "The Saturdays stayed Avery’s."}
+            Eight weeks at the {setup.title}.{" "}
+            {final.includeOptionalWork
+              ? `Coaching the Saturday clinics brought in ${formatDollars(SCENARIO_NUMBERS.optionalWorkIncome)} after Week 5, which is why the final plan holds more than the opening one.`
+              : "The Saturdays stayed Avery’s, so no new money came in after Week 5."}
           </p>
         </section>
       )}

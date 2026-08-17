@@ -84,10 +84,10 @@
 
 /* The pass a student is handed at the door: cream card, torn edge, two codes. It is the
    one place the ticket geometry is literal, because this genuinely is admission. */
-.opening__job { position: relative; margin-top: var(--s-7); padding: var(--s-6); background: var(--surface-raised); border: 1px solid var(--border-ink); box-shadow: var(--shadow-card); }
+.opening__job { position: relative; margin-top: var(--s-3); padding: var(--s-6); background: var(--surface-raised); border: 1px solid var(--border-ink); box-shadow: var(--shadow-card); }
 .opening__job .perf-rule { margin: var(--s-5) 0 var(--s-4); }
 .opening__job > .stamp { margin: 0 0 var(--s-4); }
-.opening__codes { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: var(--s-4); margin: 0 0 var(--s-5); }
+.opening__codes { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: var(--s-4); margin: 0 0 var(--s-5); }
 .opening__job label { display: grid; gap: var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
 .opening__job input { min-height: 52px; padding: 0 var(--s-4); color: var(--ink-1); background: var(--surface); border: 1.5px solid var(--border-ink); border-radius: var(--r-sm); font: var(--m-md); font-feature-settings: var(--num); letter-spacing: 0.14em; text-transform: uppercase; }
 .opening__job input:focus-visible { border-color: var(--bow-brand); }
@@ -316,6 +316,7 @@
 .post[data-state="next"] { background: var(--surface-sunken); border-style: dashed; border-top: 3px solid var(--world-accent); }
 .post[data-state="next"] .post__tag { color: var(--world-accent); }
 .post__voice--scene { grid-column: 1 / -1; margin: 0 clamp(24px, 4vw, 48px) clamp(20px, 3vw, 32px); background: var(--world-panel); border: 1px solid var(--world-panel-edge); }
+.resolve-weeks .post__voice--scene { margin: 0; }
 .post__voice--scene p { color: var(--world-hero-ink); }
 
 /* ---------------------------------------------------------------------------
@@ -553,8 +554,8 @@
   background: var(--surface);
 }
 
-.week-meter__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; }
-.week-meter__read { display: flex; align-items: baseline; gap: var(--s-2); margin: 0; flex-wrap: wrap; }
+.week-meter__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-2) var(--s-5); flex-wrap: wrap; }
+.week-meter__read { display: flex; align-items: baseline; gap: var(--s-2); margin: 0; flex-wrap: wrap; max-width: 68ch; }
 .week-meter__read strong { font: var(--m-sm); font-feature-settings: var(--num); }
 .week-meter__read span { color: var(--ink-2); font: var(--t-sm); }
 
@@ -660,9 +661,8 @@
 .resolve-weeks {
   display: grid;
   gap: var(--s-5);
-  padding: 0 clamp(24px, 4vw, 48px) clamp(24px, 4vw, 40px);
+  padding: clamp(20px, 3vw, 32px) clamp(24px, 4vw, 48px) clamp(20px, 3vw, 30px);
   border-top: 1px solid var(--world-hero-line);
-  padding-top: clamp(20px, 3vw, 32px);
 }
 
 .resolve-weeks__read { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
@@ -769,3 +769,11 @@
 .plan-running[data-state="balanced"] { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); border-color: var(--fin-balanced); }
 .plan-running[data-state="over"] { color: var(--fin-over-ink); background: var(--fin-over-soft); border-color: var(--fin-over); }
 .plan-running[data-state="unassigned"] { color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); }
+
+/* The pass is a cream card sitting inside a dark scene, so the scene's own text colours —
+   which are `.scene p`, and therefore beat a single class — have to be handed back. */
+.opening__job, .opening__job p { color: var(--ink-1); }
+.opening__job .stamp { color: var(--bow-brand); }
+.opening__job .join-status { color: var(--ink-2); }
+.opening__job .join-status--problem { color: var(--fin-over-ink); }
+.opening__job .privacy-note { color: var(--ink-3); }

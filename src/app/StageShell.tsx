@@ -48,7 +48,7 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
         <AppMark />
         <SeasonStrip position={position} announcement={announcement} />
         <details className="contract-drawer">
-          <summary>Avery’s money</summary>
+          <summary>Avery’s money<span aria-hidden="true">▾</span></summary>
           <div>
             <h2>Where Avery’s money comes from</h2>
             <p>The first two arrive no matter what. The last two only arrive if their rule is met.</p>
