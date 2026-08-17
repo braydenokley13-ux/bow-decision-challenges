@@ -7,6 +7,8 @@ import type { EvidenceRequirementId, RubricLevel } from "../src/domain/competenc
 import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
 import { clampCriterion, REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../src/domain/blueprint/reasoning";
 import { challengeById, PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
+import { contractFor } from "../src/domain/scenario/contracts";
+import { DEFAULT_WORLD_ID } from "../src/domain/scenario/registry";
 import { standardByRef, type FrameworkId } from "../src/domain/standards";
 import type { ClassStore, StoredClass } from "./store";
 
@@ -343,6 +345,15 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       ? submissions.find((item) => item.seatCode === seatCode && item.sessionId === body.sessionId)
       : submissions.filter((item) => item.seatCode === seatCode).at(-1);
     if (!target) return fail(404, "class_not_found", "No submission from that seat.");
+    // Only requirements this attempt actually put in front of BOW can be overruled. The
+    // model declaring a requirement is not enough: an override on one this world's observer
+    // never produced would be a judgement about nothing, unreadable from the trail and
+    // unattached to any moment a second teacher could check.
+    const contract = contractFor(target.log[0]?.worldId ?? DEFAULT_WORLD_ID);
+    const produced = contract ? contract.observe(target.log, { reasoningCriteria: target.reasoningCriteria }) : [];
+    if (!produced.some((observation) => observation.evidenceRequirementId === override.evidenceRequirementId)) {
+      return fail(400, "bad_request", "That attempt never raised that requirement, so there is no judgement to read differently.");
+    }
     // Appended, never replaced. The machine judgement is in the log and stays there; a
     // second thought writes a second row rather than editing the first.
     const overrides = [...(target.overrides ?? []), override];

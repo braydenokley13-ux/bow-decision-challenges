@@ -232,8 +232,13 @@ export function StudentSummary({ submission }: { submission: SubmissionRecord })
   const trail = evidenceTrail(submission.log, competencyObservationsFor(submission));
   const standing = judgementsOf(trail).filter((judgement) => !judgement.superseded);
   const overrides = submission.overrides ?? [];
-  const readAs = (judgement: TrailJudgement) =>
-    overrides.filter((entry) => entry.evidenceRequirementId === judgement.evidenceRequirementId).at(-1)?.level ?? judgement.level;
+  // A standing override replaces the machine level even when it says `null` — a teacher
+  // recording "the run never really showed this" has withdrawn the judgement, and folding
+  // that back to BOW's number would put the summary at odds with the trail one tab over.
+  const readAs = (judgement: TrailJudgement) => {
+    const standing = overrides.filter((entry) => entry.evidenceRequirementId === judgement.evidenceRequirementId).at(-1);
+    return standing ? standing.level : judgement.level;
+  };
 
   const strengths = standing.filter((judgement) => { const level = readAs(judgement); return level !== null && level >= 4; });
   const needs = standing.filter((judgement) => { const level = readAs(judgement); return level === 0 || level === 2; });

@@ -106,6 +106,31 @@ describe("a teacher override", () => {
     expect((await override({ ...GOOD, evidenceRequirementId: "made-up.er2", sessionId: built.sessionId })).status).toBe(400);
   });
 
+  it("refuses a requirement the model declares but this attempt never raised", async () => {
+    // `use-insurance.er1` is real — the model carries it — but no basketball run produces an
+    // observation for it. An override here would be a judgement floating free of any moment
+    // a second teacher could check, so it must not land.
+    const { built, read, override } = await room();
+    const response = await override({ ...GOOD, evidenceRequirementId: "use-insurance.er1", sessionId: built.sessionId });
+    expect(response.status).toBe(400);
+    expect((await read()).overrides ?? []).toHaveLength(0);
+  });
+
+  it("still accepts every requirement this attempt actually produced", async () => {
+    // The guard must reject orphans without narrowing what a teacher could already do:
+    // anything the world observed on this run — including requirements it observed as
+    // never-came-up — remains overrulable.
+    const { built, read, override } = await room();
+    const { competencyObservationsFor } = await import("./objectiveResults");
+    const produced = competencyObservationsFor({ ...built });
+    expect(produced.length).toBeGreaterThan(0);
+    for (const observation of produced) {
+      const response = await override({ ...GOOD, evidenceRequirementId: observation.evidenceRequirementId, sessionId: built.sessionId });
+      expect(response.status).toBe(201);
+    }
+    expect((await read()).overrides).toHaveLength(produced.length);
+  });
+
   it("cannot be recorded with the class code alone", async () => {
     const store = memoryStore();
     const options = { store, now: () => NOW };

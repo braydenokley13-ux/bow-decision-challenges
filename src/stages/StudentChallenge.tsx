@@ -25,6 +25,7 @@ import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { amountsFor, meaningfulAttempts, snapshotForMode } from "../domain/machine/selectors";
 import { STUDENT_COPY } from "../content/studentCopy";
 import { CODE_LENGTH, isWellFormedClassCode, isWellFormedSeatCode, normaliseSeatCode } from "../platform/classes/codes";
+import { planPosition, railStop, seedVisited, type PlanPosition } from "./planNavigation";
 import { SeasonWeeks } from "./SeasonWeeks";
 import { Week8Resolution } from "./Week8Resolution";
 
@@ -551,16 +552,19 @@ const BETS = [
  * — the evidence, the grader and the educator view all depend on that — but it is no
  * longer a separate screen.
  */
-/** The four questions, as a rail a student can read their position off and walk back down. */
-function PlanProgress({ at, furthest, onGo }: { at: number; furthest: number; onGo: (index: number) => void }) {
+/** The four questions, as a rail a student can read their position off and walk back down.
+ *  Only questions they have opened read as done or clickable, plus the one real next
+ *  question — a rail that marked unreached questions finished would be lying about where
+ *  the student is, in the one place they look to find out. */
+function PlanProgress({ position, onGo }: { position: PlanPosition; onGo: (index: number) => void }) {
   return (
     <ol className="plan-progress" aria-label="The four questions in this plan">
       {PLAN_COPY.map.map((name, index) => {
-        const state = index === at ? "current" : index < furthest || (index < at) ? "done" : "todo";
+        const stop = railStop(index, position);
         const body = <><span className="plan-progress__number" aria-hidden="true">{index + 1}</span>{name}</>;
         return (
-          <li key={name} data-state={state} {...(index === at ? { "aria-current": "step" as const } : {})}>
-            {index !== at && index <= furthest
+          <li key={name} data-state={stop.state} {...(index === position.at ? { "aria-current": "step" as const } : {})}>
+            {stop.open
               ? <button type="button" onClick={() => onGo(index)}>{body}</button>
               : <span>{body}</span>}
           </li>
@@ -576,14 +580,21 @@ function WorkingStage() {
   const floorReady = state.calculations["reliable-floor"]?.correct === true;
   const essentialsReady = state.calculations["essentials-total"]?.correct === true;
   // Where the student has got to, read off their own answers rather than off a counter, so
-  // a refresh lands them back on the question they were actually looking at.
-  // Question 2 asks for a decision whose standing answer is already "leave it out", so it
-  // opens question 3 by being reached rather than by being answered. Only the two totals
-  // gate anything, because only they can be got wrong.
+  // a refresh lands them back on the question they were actually looking at. From there,
+  // `visited` grows only by actually opening a question — the answers open the door to the
+  // next one, they do not walk through it.
   const bonusesAnswered = state.log.some((event) => event.type === "INCOME_SOURCE_TOGGLED");
-  const furthest = essentialsReady ? 3 : floorReady ? 2 : 0;
-  const [wanted, setWanted] = useState(essentialsReady ? 3 : floorReady ? (bonusesAnswered ? 2 : 1) : 0);
-  const at = Math.min(wanted, furthest);
+  const seed = seedVisited({ floorReady, essentialsReady, bonusesAnswered });
+  const [visited, setVisited] = useState(seed);
+  const [wanted, setWanted] = useState(seed);
+  const gates = { floorReady, essentialsReady };
+  const position = planPosition({ wanted, visited, gates, questions: PLAN_COPY.map.length });
+  const at = position.at;
+  const go = (index: number) => {
+    const target = Math.max(0, Math.min(index, position.reachable));
+    setWanted(target);
+    setVisited((current) => Math.max(current, target));
+  };
   // The screen does not change when the bonus is pulled, so the moment it happens has to
   // bring itself into view — otherwise a student who saved from the bottom of the board is
   // left staring at a footer while the drama happens above them.
@@ -688,7 +699,7 @@ function WorkingStage() {
           />
         )}
       >
-        <PlanProgress at={at} furthest={furthest} onGo={setWanted} />
+        <PlanProgress position={position} onGo={go} />
         <p className="question__ask">{asked}</p>
 
         {at === 0 && (
@@ -753,9 +764,9 @@ function WorkingStage() {
         )}
 
         <div className="question-nav">
-          {at > 0 ? <Button variant="quiet" type="button" onClick={() => setWanted(at - 1)}>{question.back}</Button> : <span />}
+          {at > 0 ? <Button variant="quiet" type="button" onClick={() => go(at - 1)}>{question.back}</Button> : <span />}
           {at < PLAN_COPY.map.length - 1 && ready && (
-            <Button type="button" onClick={() => setWanted(at + 1)}>{nextLabel}</Button>
+            <Button type="button" onClick={() => go(at + 1)}>{nextLabel}</Button>
           )}
         </div>
       </PlanScene>
