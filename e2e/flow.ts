@@ -121,26 +121,35 @@ export async function completeSetupStage(page: Page, chosenIndex: 0 | 1 | 2, onC
   await page.getByRole("button", { name: "Build the plan" }).click();
 }
 
-/** What the planning screen calls each of its first three steps. */
+/** What the planning screen calls each of its four questions, and how it moves between them. */
 export const PLAN_STEP = {
   countOn: "What Avery can count on",
   bonuses: "Bonuses that might happen",
   committed: "Money already spoken for",
   countBonus: "Yes — count on it",
   leaveBonus: "No — leave it out",
+  toBonuses: "Next — the two bonuses",
+  toCommitted: "Next — what Avery already owes",
+  toPlan: "Now decide what Avery protects",
 } as const;
 
 /**
- * Steps 1 to 3 of the plan. They are revealed in order — step 3 does not exist until
- * step 1 is right — so this walks them rather than filling a form.
+ * Questions 1 to 3 of the plan, walked one screen at a time.
+ *
+ * They used to be three stacked sections on one page revealed in order. They are now three
+ * screens under one stage, so the suite presses the same buttons a student does rather than
+ * filling a form that happens to be taller than the window.
  */
 export async function completeWorkingCalcs(page: Page, opts: { attendance?: boolean; showcase?: boolean } = {}) {
   await page.getByLabel(PLAN_STEP.countOn).fill(String(N.savings + N.basePay));
-  await page.locator(".calculation").first().getByRole("button", { name: "Check" }).click();
-  await page.getByLabel(PLAN_STEP.committed).fill(String(N.essentialsTotal));
-  await page.locator(".calculation").last().getByRole("button", { name: "Check" }).click();
+  await page.locator(".calculation").getByRole("button", { name: "Check" }).click();
+  await page.getByRole("button", { name: PLAN_STEP.toBonuses }).click();
   if (opts.attendance) await page.locator(".bet").first().getByRole("button", { name: PLAN_STEP.countBonus }).click();
   if (opts.showcase) await page.locator(".bet").nth(1).getByRole("button", { name: PLAN_STEP.countBonus }).click();
+  await page.getByRole("button", { name: PLAN_STEP.toCommitted }).click();
+  await page.getByLabel(PLAN_STEP.committed).fill(String(N.essentialsTotal));
+  await page.locator(".calculation").getByRole("button", { name: "Check" }).click();
+  await page.getByRole("button", { name: PLAN_STEP.toPlan }).click();
 }
 
 /**

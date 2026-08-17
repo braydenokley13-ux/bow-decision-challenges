@@ -54,13 +54,13 @@ export function planConsequences(input: SnapshotInputs, n: ScenarioNumbers): Rec
         ? uncovered > 0
           ? `Covers ${formatDollars(input.amounts.reserve)} of the ${formatDollars(conditional)} this plan is counting on.`
           : `Covers the whole ${formatDollars(conditional)} this plan is counting on.`
-        : `${formatDollars(input.amounts.reserve)} put by for something going wrong.`,
+        : `${formatDollars(input.amounts.reserve)} kept aside in case something goes wrong.`,
     flexibleCash: load.bought === 0
-      ? `Nothing paid for rides. Getting everywhere still takes Avery ${load.net} hours a week.`
+      ? `Nothing paid for rides or the physio a tired body needs. Getting everywhere still takes Avery ${load.net} hours a week.`
       // Hours come in whole blocks, so money that does not reach the next one buys nothing.
       // Saying so is the difference between a plan that balances and a plan that works.
       : `Pays for rides. Avery gets ${load.bought} hour${load.bought === 1 ? "" : "s"} a week back, and still spends ${load.net} hours.${
-          idleTimeMoney > 0 ? ` The last ${formatDollars(idleTimeMoney)} is not enough for another hour.` : ""
+          idleTimeMoney > 0 ? ` ${formatDollars(idleTimeMoney)} of that is not enough to buy another hour.` : ""
         }`,
   };
 }

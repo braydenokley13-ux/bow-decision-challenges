@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useChallenge } from "../app/ChallengeContext";
 import { StageShell } from "../app/StageShell";
 import { AppMark } from "../components/primitives/AppMark";
@@ -6,6 +6,8 @@ import { Button } from "../components/primitives/Button";
 import { CalculationInput } from "../components/primitives/CalculationInput";
 import { MoneyAmount } from "../components/primitives/MoneyAmount";
 import { PlanBoard, type BoardVariant } from "../components/financial/PlanBoard";
+import { PlanScene } from "../components/financial/PlanScene";
+import { PlanLedger, type LedgerKnown } from "../components/financial/PlanLedger";
 import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
 import { AdjustPanel, type SupplyChange } from "../components/financial/AdjustPanel";
 import { CourtBackdrop } from "../components/story/CourtBackdrop";
@@ -435,30 +437,51 @@ function usePlanWiring(mode: PlanMode) {
     supplyOneBalancedPlan,
     commit: (acknowledgedResidual?: Dollars) =>
       dispatch({ type: "PLAN_SAVE_REQUESTED", mode, ...(acknowledgedResidual !== undefined ? { acknowledgedResidual } : {}) }),
-    lockedMove: (lockedCardId: string) => dispatch({ type: "LOCKED_MOVE_ATTEMPTED", mode, lockedCardId }),
     scaffold: () => dispatch({ type: "SCAFFOLD_OPENED", interactionId: mode }),
   };
 }
 
 const CHOICE_KEYS = ["goal", "reserve", "flexibleCash"] as const;
 
+/**
+ * Avery's money, standing beside whatever is being decided.
+ *
+ * Every planning moment gets the same rail in the same place. It used to live inside two of
+ * the five boards, which meant three of them asked a student to move money without showing
+ * them any, and the two that did show it put it behind two thousand pixels of form.
+ */
+function PlanLedgerFor({ mode, known, placing }: { mode: PlanMode; known?: LedgerKnown; placing?: boolean }) {
+  const { state, dispatch } = useChallenge();
+  const input = snapshotForMode(state, mode);
+  if (!input || !state.setupId) return null;
+  const setupTitle = BASKETBALL_SCENARIO.setups.find((setup) => setup.id === state.setupId)?.title ?? "Selected setup";
+  return (
+    <PlanLedger
+      input={input}
+      setupTitle={setupTitle}
+      onLockedMoveAttempt={(lockedCardId) => dispatch({ type: "LOCKED_MOVE_ATTEMPTED", mode, lockedCardId })}
+      {...(known ? { known } : {})}
+      {...(placing !== undefined ? { placing } : {})}
+    />
+  );
+}
+
 /** The full board. Only the first plan and the Week 5 triage get one. */
-function BoardForMode({ mode, variant, commitLabel, change, stepFrom }: {
+function BoardForMode({ mode, variant, commitLabel, lead, change }: {
   mode: PlanMode;
   variant: BoardVariant;
   commitLabel: string;
+  lead: string;
   change?: { headline: string; items: readonly string[] };
-  stepFrom?: number;
 }) {
   const wiring = usePlanWiring(mode);
   const { input, notes, state } = wiring;
   if (!input || !notes || !state.setupId) return null;
-  const setupTitle = BASKETBALL_SCENARIO.setups.find((setup) => setup.id === state.setupId)?.title ?? "Selected setup";
   return (
     <PlanBoard
       input={input}
       variant={variant}
-      setupTitle={setupTitle}
+      lead={lead}
       baseline={wiring.baseline}
       reference={variant === "triage" ? wiring.baseline : undefined}
       attempts={wiring.attempts}
@@ -466,12 +489,10 @@ function BoardForMode({ mode, variant, commitLabel, change, stepFrom }: {
       commitLabel={commitLabel}
       onAmountChange={wiring.setAmount}
       onAssignRemainder={wiring.assignRemainder}
-      onLockedMoveAttempt={wiring.lockedMove}
       onCommit={wiring.commit}
       onScaffold={wiring.scaffold}
       onShowAndContinue={wiring.supplyOneBalancedPlan}
       {...(change ? { change } : {})}
-      {...(stepFrom !== undefined ? { stepFrom } : {})}
       {...(variant === "triage" ? { onApplyReference: wiring.restore } : {})}
     />
   );
@@ -530,17 +551,22 @@ const BETS = [
  * — the evidence, the grader and the educator view all depend on that — but it is no
  * longer a separate screen.
  */
-function PlanStep({ number, name, ask, why, children, tone }: PropsWithChildren<{ number: number; name: string; ask?: string; why?: string; tone?: string }>) {
+/** The four questions, as a rail a student can read their position off and walk back down. */
+function PlanProgress({ at, furthest, onGo }: { at: number; furthest: number; onGo: (index: number) => void }) {
   return (
-    <section className="plan-step" data-tone={tone}>
-      <header className="plan-step__head">
-        <p className="stamp">Step {number}</p>
-        <h2>{name}</h2>
-        {ask && <p className="plan-step__ask">{ask}</p>}
-        {why && <p className="plan-step__why">{why}</p>}
-      </header>
-      {children}
-    </section>
+    <ol className="plan-progress" aria-label="The four questions in this plan">
+      {PLAN_COPY.map.map((name, index) => {
+        const state = index === at ? "current" : index < furthest || (index < at) ? "done" : "todo";
+        const body = <><span className="plan-progress__number" aria-hidden="true">{index + 1}</span>{name}</>;
+        return (
+          <li key={name} data-state={state} {...(index === at ? { "aria-current": "step" as const } : {})}>
+            {index !== at && index <= furthest
+              ? <button type="button" onClick={() => onGo(index)}>{body}</button>
+              : <span>{body}</span>}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
 
@@ -549,9 +575,15 @@ function WorkingStage() {
   const backup = state.stage === "fallback-version";
   const floorReady = state.calculations["reliable-floor"]?.correct === true;
   const essentialsReady = state.calculations["essentials-total"]?.correct === true;
-  const counted = floorReady && essentialsReady;
-  const middleRef = useRevealOnce(floorReady);
-  const revealRef = useRevealOnce(counted);
+  // Where the student has got to, read off their own answers rather than off a counter, so
+  // a refresh lands them back on the question they were actually looking at.
+  // Question 2 asks for a decision whose standing answer is already "leave it out", so it
+  // opens question 3 by being reached rather than by being answered. Only the two totals
+  // gate anything, because only they can be got wrong.
+  const bonusesAnswered = state.log.some((event) => event.type === "INCOME_SOURCE_TOGGLED");
+  const furthest = essentialsReady ? 3 : floorReady ? 2 : 0;
+  const [wanted, setWanted] = useState(essentialsReady ? 3 : floorReady ? (bonusesAnswered ? 2 : 1) : 0);
+  const at = Math.min(wanted, furthest);
   // The screen does not change when the bonus is pulled, so the moment it happens has to
   // bring itself into view — otherwise a student who saved from the bottom of the board is
   // left staring at a footer while the drama happens above them.
@@ -587,7 +619,10 @@ function WorkingStage() {
             <p className="bet__rule">Avery only gets this if {BASKETBALL_SCENARIO.incomeCopy[key].rule}</p>
             {/* The card says which answer is standing, so a student scanning the screen reads
                 the state of their plan rather than working it back from which button is dark. */}
-            <p className="bet__state" data-counted={included}>{included ? PLAN_COPY.steps.bonuses.counted : PLAN_COPY.steps.bonuses.left}</p>
+            {/* Only where it is still the answer. On the backup screen the verdict below says
+                what happened to this money, and a chip still reading "in the plan" over the
+                sentence telling a student to take it out is the screen arguing with itself. */}
+            {!backup && <p className="bet__state" data-counted={included}>{included ? PLAN_COPY.steps.bonuses.counted : PLAN_COPY.steps.bonuses.left}</p>}
             {backup ? (
               <p className="bet__verdict">{included ? "You counted on it. Take it back out of the plan." : "You left it out, so nothing here changes."}</p>
             ) : (
@@ -607,71 +642,123 @@ function WorkingStage() {
 
   if (backup) {
     return (
-      <StageShell stage="fallback-version" kicker="The same plan, without the bonus" title="That money never arrives.">
-        <p className="stage-deck">
-          {formatDollars(removed.reduce((sum, item) => sum + item.amount, 0))} you were counting on is gone. Everything Avery
-          owes is exactly where it was. Only your three amounts can move.
-        </p>
-        {bonusCards}
-        <AdjustForMode
-          mode="fallback"
-          eyebrow="Backup plan"
-          headline="Put the plan back together without it."
-          lead="Rent, the weekly basics and where Avery lives do not change. Only your three amounts can move."
-          changes={removed}
-          commitLabel="Save the backup plan"
-        />
+      <StageShell stage="fallback-version" kicker={`The same plan, without ${removed.length > 1 ? "the bonuses" : "the bonus"}`} title="That money never arrives.">
+        <PlanScene ledger={<PlanLedgerFor mode="fallback" />}>
+          <p className="stage-deck">
+            {formatDollars(removed.reduce((sum, item) => sum + item.amount, 0))} you were counting on is gone. Everything Avery
+            owes is exactly where it was. Only your three amounts can move.
+          </p>
+          {bonusCards}
+          <AdjustForMode
+            mode="fallback"
+            eyebrow="Backup plan"
+            headline="Put the plan back together without it."
+            lead="Rent, the weekly basics and where Avery lives do not change. Only your three amounts can move."
+            changes={removed}
+            commitLabel="Save the backup plan"
+          />
+        </PlanScene>
       </StageShell>
     );
   }
 
+  const question = PLAN_COPY.steps;
+  // A question whose total is not worked out yet offers no onward button at all. It used to
+  // offer a greyed one, which a cold reader read as an application that had stopped working
+  // rather than as their turn — and under a cursor it painted its own label in its own
+  // background and vanished entirely.
+  const ready = at === 0 ? floorReady : at === 2 ? essentialsReady : true;
+  const nextLabel = at === 0 ? question.countOn.next : at === 1 ? question.bonuses.next : question.committed.next;
+  const titled = [question.countOn.title, question.bonuses.title, question.committed.title, question.decide.title][at]!;
+  const asked = [question.countOn.ask, question.bonuses.ask, question.committed.ask, question.decide.ask][at]!;
+
   return (
-    <StageShell stage="working-plan" kicker="Build the plan" title={PLAN_COPY.title}>
-      <p className="stage-deck">{PLAN_COPY.deck}</p>
+    <StageShell
+      stage="working-plan"
+      kicker={`${PLAN_COPY.title.replace(/\.$/, "")} · Question ${at + 1} of ${PLAN_COPY.map.length}`}
+      title={titled}
+      focusKey={at}
+    >
+      <PlanScene
+        ledger={(
+          <PlanLedgerFor
+            mode="working"
+            known={{ certain: floorReady, bonuses: at >= 1, essentials: essentialsReady }}
+            placing={at >= 3}
+          />
+        )}
+      >
+        <PlanProgress at={at} furthest={furthest} onGo={setWanted} />
+        <p className="question__ask">{asked}</p>
 
-      <PlanStep number={1} name={PLAN_COPY.steps.countOn.name} ask={PLAN_COPY.steps.countOn.ask} why={PLAN_COPY.steps.countOn.why}>
-        <CalculationInput
-          calcId="reliable-floor"
-          label={PLAN_COPY.steps.countOn.name}
-          labelHidden
-          prompt={`${formatDollars(SCENARIO_NUMBERS.savings)} already saved + ${formatDollars(SCENARIO_NUMBERS.basePay)} of pay across the ${SCENARIO_NUMBERS.weeks} weeks`}
-          terms="Do not add either bonus yet. Those are not certain."
-          expected={reliableFloorExpectation(SCENARIO_NUMBERS)}
-          priorAttempts={state.calculations["reliable-floor"]?.attempts}
-          onSubmit={(raw, value, correct) => submitCalculation(dispatch, "reliable-floor", raw, value, correct)}
-          scaffold={`Add the two amounts that always arrive: ${formatDollars(SCENARIO_NUMBERS.savings)} + ${formatDollars(SCENARIO_NUMBERS.basePay)}.`}
-          {...calculationSupport(dispatch, "reliable-floor")}
-        />
-      </PlanStep>
+        {at === 0 && (
+          <div className="question">
+            <p className="question__why">{question.countOn.why}</p>
+            {floorReady ? (
+              <p className="question__settled">
+                {question.countOn.settled} Avery can count on <b className="money">{formatDollars(reliableFloorExpectation(SCENARIO_NUMBERS))}</b> whatever
+                happens on the court. It is the first line of Avery’s money.
+              </p>
+            ) : (
+              <CalculationInput
+                calcId="reliable-floor"
+                label={question.countOn.name}
+                labelHidden
+                prompt={`${formatDollars(SCENARIO_NUMBERS.savings)} already saved + ${formatDollars(SCENARIO_NUMBERS.basePay)} of pay across the ${SCENARIO_NUMBERS.weeks} weeks`}
+                terms="Do not add either bonus yet. Those are not certain."
+                expected={reliableFloorExpectation(SCENARIO_NUMBERS)}
+                priorAttempts={state.calculations["reliable-floor"]?.attempts}
+                onSubmit={(raw, value, correct) => submitCalculation(dispatch, "reliable-floor", raw, value, correct)}
+                scaffold={`Add the two amounts that always arrive: ${formatDollars(SCENARIO_NUMBERS.savings)} + ${formatDollars(SCENARIO_NUMBERS.basePay)}.`}
+                {...calculationSupport(dispatch, "reliable-floor")}
+              />
+            )}
+          </div>
+        )}
 
-      {floorReady && (
-        <div ref={middleRef} className="staged-reveal">
-          <PlanStep number={2} name={PLAN_COPY.steps.bonuses.name} why={PLAN_COPY.steps.bonuses.why} tone="conditional">
+        {at === 1 && (
+          <div className="question">
+            <p className="question__why">{question.bonuses.why}</p>
             {bonusCards}
-          </PlanStep>
+          </div>
+        )}
 
-          <PlanStep number={3} name={PLAN_COPY.steps.committed.name} ask={PLAN_COPY.steps.committed.ask} why={PLAN_COPY.steps.committed.why}>
-            <CalculationInput
-              calcId="essentials-total"
-              label={PLAN_COPY.steps.committed.name}
-              labelHidden
-              prompt={`${formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)} a week for food, phone and laundry × ${SCENARIO_NUMBERS.weeks} weeks`}
-              terms="Rent is on top of this. It comes out of the plan automatically."
-              expected={essentialsExpectation(SCENARIO_NUMBERS)}
-              priorAttempts={state.calculations["essentials-total"]?.attempts}
-              onSubmit={(raw, value, correct) => submitCalculation(dispatch, "essentials-total", raw, value, correct)}
-              scaffold={`Multiply ${formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)} by ${SCENARIO_NUMBERS.weeks} weeks. Think: ${Array.from({ length: SCENARIO_NUMBERS.weeks }, () => formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)).join(" + ")}.`}
-              {...calculationSupport(dispatch, "essentials-total")}
-            />
-          </PlanStep>
-        </div>
-      )}
+        {at === 2 && (
+          <div className="question">
+            <p className="question__why">{question.committed.why}</p>
+            {essentialsReady ? (
+              <p className="question__settled">
+                {question.committed.settled} <b className="money">{formatDollars(essentialsExpectation(SCENARIO_NUMBERS))}</b> of Avery’s
+                money is gone on food, phone and laundry before Avery chooses anything. Rent is on top of it, and both are on the right.
+              </p>
+            ) : (
+              <CalculationInput
+                calcId="essentials-total"
+                label={question.committed.name}
+                labelHidden
+                prompt={`${formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)} a week for food, phone and laundry × ${SCENARIO_NUMBERS.weeks} weeks`}
+                terms="Rent is on top of this. It comes out of the plan automatically."
+                expected={essentialsExpectation(SCENARIO_NUMBERS)}
+                priorAttempts={state.calculations["essentials-total"]?.attempts}
+                onSubmit={(raw, value, correct) => submitCalculation(dispatch, "essentials-total", raw, value, correct)}
+                scaffold={`Multiply ${formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)} by ${SCENARIO_NUMBERS.weeks} weeks. Think: ${Array.from({ length: SCENARIO_NUMBERS.weeks }, () => formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)).join(" + ")}.`}
+                {...calculationSupport(dispatch, "essentials-total")}
+              />
+            )}
+          </div>
+        )}
 
-      {counted && (
-        <div ref={revealRef} className="staged-reveal">
-          <BoardForMode mode="working" variant="build" commitLabel="Save this version" stepFrom={4} />
+        {at === 3 && (
+          <BoardForMode mode="working" variant="build" commitLabel="Save this version" lead={question.decide.why} />
+        )}
+
+        <div className="question-nav">
+          {at > 0 ? <Button variant="quiet" type="button" onClick={() => setWanted(at - 1)}>{question.back}</Button> : <span />}
+          {at < PLAN_COPY.map.length - 1 && ready && (
+            <Button type="button" onClick={() => setWanted(at + 1)}>{nextLabel}</Button>
+          )}
         </div>
-      )}
+      </PlanScene>
     </StageShell>
   );
 }
@@ -737,7 +824,7 @@ function Week5EventStage() {
             </section>
           ))}
           <blockquote className="post__voice post__voice--scene">
-            <span className="post__who" aria-hidden="true">{BASKETBALL_SCENARIO.offer.jersey}</span>
+            <span className="post__who" aria-hidden="true">#{BASKETBALL_SCENARIO.offer.jersey}</span>
             <cite>Avery</cite>
             <p>{BASKETBALL_SCENARIO.disruption.voice[setup.id]}</p>
           </blockquote>
@@ -797,18 +884,21 @@ function TriageStage() {
   const outcomeLabel = BASKETBALL_SCENARIO.incomeCopy.outcome.label;
   return (
     <StageShell stage="first-response" kicker="Week 5 · First response" title="Something has to give.">
-      <BoardForMode
-        mode="week5-first-response"
-        variant="triage"
-        commitLabel="Lock in what Avery gives up"
-        change={{
-          headline: "Week 5 landed on the plan you built.",
-          items: [
-            ...(state.income.includeOutcome ? [`The ${formatDollars(SCENARIO_NUMBERS.outcomeIncome)} ${outcomeLabel} is gone`] : []),
-            `${formatDollars(week5Bills)} of brace, rehab and travel is now locked in`,
-          ],
-        }}
-      />
+      <PlanScene ledger={<PlanLedgerFor mode="week5-first-response" />}>
+        <BoardForMode
+          mode="week5-first-response"
+          variant="triage"
+          commitLabel="Lock in what Avery gives up"
+          lead="Every amount below is money you already promised somewhere else. The bar at the bottom says how much is missing. Take it out of whichever ones Avery can do without."
+          change={{
+            headline: "Week 5 landed on the plan you built.",
+            items: [
+              ...(state.income.includeOutcome ? [`The ${formatDollars(SCENARIO_NUMBERS.outcomeIncome)} ${outcomeLabel} is gone`] : []),
+              `${BASKETBALL_SCENARIO.disruption.requiredCostLabel}, and the travel it takes: ${formatDollars(week5Bills)}, now locked in`,
+            ],
+          }}
+        />
+      </PlanScene>
     </StageShell>
   );
 }
@@ -872,6 +962,7 @@ function FinalRepairStage() {
       kicker={preview ? "Week 5 · Last check" : "Week 5 · Two calls"}
       title={preview ? `Now show it works without the ${formatDollars(SCENARIO_NUMBERS.completionIncome)}.` : "Two more calls to make."}
     >
+      <PlanScene ledger={<PlanLedgerFor mode={preview ? "remaining-risk" : "final"} placing={preview || ready} />}>
       {preview ? (
         <dl ref={checkRef} className="settled-calls" aria-label="The two calls you made">
           <div>
@@ -897,7 +988,7 @@ function FinalRepairStage() {
                 <b className="scale__money money">+{formatDollars(SCENARIO_NUMBERS.optionalWorkIncome)}</b>
               </div>
               <div className="scale__side">
-                <span>Avery gives up</span>
+                <span>What happens to Avery’s Saturdays</span>
                 <SaturdayBlocks decision={state.income.includeOptionalWork} />
                 <small>{opportunity.timeCost}</small>
               </div>
@@ -949,6 +1040,7 @@ function FinalRepairStage() {
       ) : (
         <p className="board-gate">Make both calls above, and the money moves.</p>
       )}
+      </PlanScene>
     </StageShell>
   );
 }
@@ -963,7 +1055,7 @@ function DefenseStage() {
   // Every chip is derived from the student's own saved plan, and any chip worth $0
   // is dropped rather than offered as misleading evidence.
   const tiles = [
-    { id: "final-funds", label: "Money Avery had to work with", value: finalInput ? availableFor(finalInput, SCENARIO_NUMBERS) : 0 },
+    { id: "final-funds", label: "Money your plan was built on", value: finalInput ? availableFor(finalInput, SCENARIO_NUMBERS) : 0 },
     { id: "week5-cost", label: "New bills from Week 5", value: state.setupId ? SCENARIO_NUMBERS.requiredWeek5Cost + SCENARIO_NUMBERS.setupEventCosts[state.setupId] : SCENARIO_NUMBERS.requiredWeek5Cost },
     { id: "course", label: "Saved for the course", value: final.goal },
     { id: "reserve", label: "Backup money kept", value: final.reserve },

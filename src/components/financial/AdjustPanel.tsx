@@ -2,12 +2,17 @@ import { useState } from "react";
 import type { CategoryId } from "../../domain/core/ids";
 import { dollars, formatDollars } from "../../domain/core/money";
 import { SCENARIO_NUMBERS } from "../../domain/scenario/numbers";
-import { assigned, availableFor, balanceOf, courseRowCapFor } from "../../domain/finance/formulas";
+import { assigned, balanceOf, courseRowCapFor } from "../../domain/finance/formulas";
+import { loadDemand, loadFor } from "../../domain/finance/load";
 import { PLAN_MODES } from "../../domain/finance/modes";
 import type { PlanAmounts, SnapshotInputs } from "../../domain/finance/types";
+import { STUDENT_COPY } from "../../content/studentCopy";
 import { Button } from "../primitives/Button";
 import { AllocationControl } from "./AllocationControl";
+import { WeekMeter } from "./WeekMeter";
 import { CHOICE_LABELS, CHOICE_ORDER } from "./choices";
+
+const { balance: BALANCE_COPY } = STUDENT_COPY.plan;
 
 /** One line of the strip above the rows: money that left the plan, or money that joined it. */
 export interface SupplyChange {
@@ -47,11 +52,14 @@ interface AdjustPanelProps {
  *
  * The decision at those three moments is not "how should this money be split" — the
  * student answered that on the board already. It is "the total just moved by this much;
- * which of your three commitments absorbs it". So that is what this asks: one number to
- * clear, the three amounts they chose, and one tap per row that takes or gives the whole
- * remainder. The steppers are the same control the board uses, so every split the board
- * could reach is still reachable and the arithmetic is unchanged — but the fast path
- * through the common answer is a single press, and the screen is a third of the height.
+ * which of your three commitments absorbs it". So that is what this asks: what moved, the
+ * three amounts they chose, and one tap per row that takes or gives the whole remainder.
+ * The steppers are the same control the board uses, so every split the board could reach is
+ * still reachable and the arithmetic is unchanged.
+ *
+ * The live figure is not here. It is on the rail beside this panel, in the same place it
+ * sits at every other planning moment, so a student learns one place to look rather than
+ * five.
  */
 export function AdjustPanel({
   input, baseline, changes, eyebrow, headline, lead, notes, commitLabel, attempts,
@@ -64,7 +72,6 @@ export function AdjustPanel({
   const toPlace = Math.max(0, Number(balance));
   const courseCap = courseRowCapFor(input, SCENARIO_NUMBERS);
   const ceiling = Math.max(courseCap, assigned(input.amounts) + toPlace);
-  const available = availableFor(input, SCENARIO_NUMBERS);
   const touched = CHOICE_ORDER.some((category) => input.amounts[category] !== baseline[category]);
 
   // The one tap each row offers: take the whole shortfall out of it, or put the whole
@@ -98,20 +105,33 @@ export function AdjustPanel({
   };
 
   const state = balance === 0 ? "balanced" : residual > 0 ? "over" : "unassigned";
-  const countdown = balance === 0
-    ? { label: "Every dollar has a job", amount: 0 }
-    : residual > 0
-      ? { label: "Still to take out", amount: residual }
-      : { label: "Still to give a job", amount: toPlace };
+
+  // Avery's week, on the adjustments that actually move it. Taking the clinics adds hours
+  // and the rides row buys them back, so the panel that decides both used to be the one
+  // screen in the plan where the hours were named in the row copy and drawn nowhere.
+  const load = loadFor(
+    { setupId: input.setupId, rehabActive: input.week5Applied, clinicsAccepted: input.includeOptionalWork, timeMoney: input.amounts.flexibleCash },
+    SCENARIO_NUMBERS,
+  );
+  const loadParts = [
+    { id: "commute", label: "Travel to practice", blocks: SCENARIO_NUMBERS.load.commuteBlocks[input.setupId] },
+    { id: "rehab", label: "Rehab", blocks: input.week5Applied ? SCENARIO_NUMBERS.load.rehabBlocks + SCENARIO_NUMBERS.load.rehabTravelBlocks[input.setupId] : 0 },
+    { id: "clinics", label: "Clinics", blocks: input.week5Applied && input.includeOptionalWork ? SCENARIO_NUMBERS.load.clinicBlocks : 0 },
+  ].map((part) => ({ ...part, blocks: Math.max(0, part.blocks) }));
+  const showMeter = loadDemand(
+    { setupId: input.setupId, rehabActive: input.week5Applied, clinicsAccepted: input.includeOptionalWork },
+    SCENARIO_NUMBERS,
+  ) > 0;
 
   return (
     <section className="adjust" data-state={state} aria-labelledby="adjust-title">
       <header className="adjust__head">
-        <div className="adjust__say">
-          <p className="eyebrow">{eyebrow}</p>
-          <h2 id="adjust-title">{headline}</h2>
-          <p className="adjust__lead">{lead}</p>
-        </div>
+        <p className="eyebrow">{eyebrow}</p>
+        <h2 id="adjust-title">{headline}</h2>
+        <p className="adjust__lead">{lead}</p>
+      </header>
+
+      {changes.length > 0 && (
         <ul className="supply-change" aria-label="What changed">
           {changes.map((change) => (
             <li key={change.id} data-direction={change.direction}>
@@ -120,18 +140,8 @@ export function AdjustPanel({
               <strong className="money">{formatDollars(change.amount)}</strong>
             </li>
           ))}
-          <li data-direction="total">
-            <span className="supply-change__sign" aria-hidden="true">=</span>
-            <span className="supply-change__label">Avery has</span>
-            <strong className="money">{formatDollars(available)}</strong>
-          </li>
         </ul>
-      </header>
-
-      <p className="adjust__countdown" aria-live="polite">
-        <span>{countdown.label}</span>
-        <strong className="money">{formatDollars(countdown.amount)}</strong>
-      </p>
+      )}
 
       <div className="adjust__rows">
         {CHOICE_ORDER.map((category) => (
@@ -153,11 +163,15 @@ export function AdjustPanel({
         ))}
       </div>
 
+      {showMeter && (
+        <WeekMeter load={load} parts={loadParts} rate={SCENARIO_NUMBERS.load.blockBuybackCost} atStake={`the ${formatDollars(SCENARIO_NUMBERS.completionIncome)} attendance bonus`} />
+      )}
+
       {attempts >= 2 && balance !== 0 && (
         <section className="plan-help" aria-label="Step-by-step help">
           {!showHelp
             ? <Button type="button" variant="quiet" onClick={() => { setShowHelp(true); onScaffold?.(); }}>Show me how this works</Button>
-            : <div role="note"><strong>One step at a time:</strong><ol><li>Read the number beside “{countdown.label}”.</li><li>Press the button on whichever row you are willing to move.</li><li>Repeat until that number reaches <b>$0</b>.</li></ol></div>}
+            : <div role="note"><strong>One step at a time:</strong><ol><li>Read the number at the bottom of Avery’s money.</li><li>Press the button on whichever row you are willing to move.</li><li>Repeat until that number reaches <b>$0</b>.</li></ol></div>}
           {attempts >= 3 && (
             <div className="plan-help__supply">
               <Button type="button" variant="quiet" onClick={onShowAndContinue}>Fill in one plan that balances</Button>
@@ -167,24 +181,23 @@ export function AdjustPanel({
         </section>
       )}
 
-      {/* The countdown above is already the number, so this bar says what it means rather
-          than printing it a second time in a bigger font. */}
       <footer className={`plan-commit plan-commit--${state}`}>
-        <p className="plan-commit__read">
+        {/* The figure is its own element so the narrow layout can drop it: down there the
+            money strip is pinned to the bottom of the screen holding the same number. */}
+        <p className="plan-commit__read" aria-live="polite">
           {balance === 0
-            ? "Nothing left to move."
-            : residual > 0
-              ? "The plan still spends more than Avery has."
-              : "Some of Avery’s money has nothing to do yet."}
+            ? BALANCE_COPY.balanced
+            : <><span className="plan-commit__figure money">{formatDollars(residual > 0 ? residual : toPlace)}</span>{" "}
+              {residual > 0 ? BALANCE_COPY.over : BALANCE_COPY.unassigned}</>}
         </p>
         <div className="plan-commit__actions">
-          {touched && <Button type="button" variant="quiet" onClick={onRestore}>Start over</Button>}
-          <Button type="button" onClick={() => onCommit()}>{balance === 0 ? commitLabel : "Check this plan"}</Button>
+          {touched && <Button type="button" variant="quiet" onClick={onRestore}>Put my saved numbers back</Button>}
           {residual > 0 && attempts > 0 && (
             <Button type="button" variant="quiet" onClick={() => onCommit(dollars(residual))}>
               Save it, {formatDollars(residual)} still missing
             </Button>
           )}
+          <Button type="button" onClick={() => onCommit()}>{balance === 0 ? commitLabel : "Check this plan"}</Button>
         </div>
       </footer>
     </section>

@@ -83,7 +83,7 @@ export function Week8Resolution() {
             ))}
           </ol>
           <blockquote className="post__voice post__voice--scene">
-            <span className="post__who" aria-hidden="true">{BASKETBALL_SCENARIO.offer.jersey}</span>
+            <span className="post__who" aria-hidden="true">#{BASKETBALL_SCENARIO.offer.jersey}</span>
             <cite>Avery</cite>
             <p>{averyLine}</p>
           </blockquote>

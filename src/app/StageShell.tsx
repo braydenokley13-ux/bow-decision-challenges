@@ -1,4 +1,4 @@
-import type { PropsWithChildren, ReactNode } from "react";
+import { useEffect, useRef, type PropsWithChildren, type ReactNode } from "react";
 import { CourtBackdrop } from "../components/story/CourtBackdrop";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { CONDITIONAL_INCOME_KEYS, incomeAmount, RELIABLE_INCOME_KEYS } from "../domain/scenario/expectations";
@@ -31,24 +31,37 @@ const MONEY_SHEET = [...RELIABLE_INCOME_KEYS, ...CONDITIONAL_INCOME_KEYS].map((k
  * student is unmistakably somewhere else, which is the point of a peak. `banner` is what
  * sits inside it: the news, or the result.
  */
-export function StageShell({ stage, title, kicker, position: override, tone = "standard", banner, children }: PropsWithChildren<{
+export function StageShell({ stage, title, kicker, position: override, tone = "standard", banner, focusKey, children }: PropsWithChildren<{
   stage: StageId;
   title: string;
   kicker?: string;
   position?: SeasonPosition;
   tone?: "standard" | "dark";
   banner?: ReactNode;
+  /**
+   * A stage that asks several questions under one stage id changes its own headline. When
+   * this value changes the heading takes focus, so a keyboard or screen-reader user is
+   * moved to the new question rather than left at the bottom of the answered one.
+   */
+  focusKey?: string | number;
 }>) {
   const chapter = progressIndexFor(stage);
   const position = override ?? seasonPositionFor(stage);
   const announcement = `${position.caption}. Part ${chapter + 1} of ${PROGRESS_STEPS.length}: ${PROGRESS_STEPS[chapter]?.label}.`;
+  const heading = useRef<HTMLElement>(null);
+  const first = useRef(true);
+  useEffect(() => {
+    if (focusKey === undefined) return;
+    if (first.current) { first.current = false; return; }
+    heading.current?.focus();
+  }, [focusKey]);
   return (
     <div className="challenge-shell" data-world={BASKETBALL_SCENARIO.id} data-chapter={chapterFor(stage)}>
       <header className="challenge-topbar">
         <AppMark />
         <SeasonStrip position={position} announcement={announcement} />
         <details className="contract-drawer">
-          <summary>Avery’s money<span aria-hidden="true">▾</span></summary>
+          <summary>The four payments<span aria-hidden="true">▾</span></summary>
           <div>
             <h2>Where Avery’s money comes from</h2>
             <p>The first two arrive no matter what. The last two only arrive if their rule is met.</p>
@@ -65,7 +78,7 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
         </details>
       </header>
       <main className="stage-main" data-tone={tone}>
-        <header className={`stage-heading${tone === "dark" ? " stage-heading--dark scene" : ""}`} tabIndex={-1}>
+        <header ref={heading} className={`stage-heading${tone === "dark" ? " stage-heading--dark scene" : ""}`} tabIndex={-1}>
           {tone === "dark" && <CourtBackdrop variant="key" />}
           <div className="stage-heading__say">
             {kicker && <p className="eyebrow">{kicker}</p>}

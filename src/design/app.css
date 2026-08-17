@@ -15,8 +15,14 @@ p { color: var(--ink-2); }
 /* A primary action that is only waiting for an input keeps its outline. Flat grey on grey
    reads as hardware that has stopped working, and a student decides the page is broken
    before they decide it is their turn. */
-.button[aria-disabled="true"] { cursor: not-allowed; color: var(--ink-3); background: var(--surface-sunken); border-color: var(--border-default); transform: none; }
-.button--primary[aria-disabled="true"] { color: var(--bow-brand-strong); background: var(--fin-adjustable-soft); border-color: var(--bow-brand); }
+.button[aria-disabled="true"], .button[aria-disabled="true"]:hover { cursor: not-allowed; color: var(--ink-3); background: var(--surface-sunken); border-color: var(--border-default); transform: none; }
+
+/* The hover state has to be refused explicitly. `.button--primary:hover` and
+   `.button--primary[aria-disabled="true"]` carry the same specificity, so the later rule won
+   the background while the earlier one still owned the colour — and a waiting primary under
+   a cursor painted its own label in its own background, which reads as a button with no
+   text on it at all. */
+.button--primary[aria-disabled="true"], .button--primary[aria-disabled="true"]:hover { color: var(--bow-brand-strong); background: var(--fin-adjustable-soft); border-color: var(--bow-brand); }
 .button--primary { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); }
 .button--primary:hover { background: var(--bow-brand-strong); border-color: var(--bow-brand-strong); }
 .button--secondary { color: var(--ink-1); background: var(--surface-raised); }
@@ -115,36 +121,30 @@ p { color: var(--ink-2); }
 .working-setup { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); margin-bottom: var(--s-6); }
 .board-gate { max-width: var(--measure); margin: 0; padding: var(--s-5) var(--s-6); color: var(--ink-2); background: var(--surface-sunken); border: 1px dashed var(--border-strong); font: var(--t-body-lg); }
 
-.staged-reveal { display: grid; gap: 0; animation: staged-in var(--dur-stage) var(--ease-exit) both; }
-
-@keyframes staged-in { from { transform: translateY(12px); } to { transform: none; } }
-
 /* ---------------------------------------------------------------------------
-   The plan itself. One document, read down: what there is, what to protect,
-   where the rest goes, and the bar that says whether it holds.
+   The plan itself: three amounts, what each currently buys, and the bar that
+   says whether it holds. It carries no frame of its own — it is the answer to
+   the question in the headline above it, not a document inside a document.
    --------------------------------------------------------------------------- */
-.plan-board { margin-top: var(--s-5); background: var(--surface); border: 1px solid var(--border-ink); box-shadow: var(--shadow-card); }
-.plan-board__header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3) var(--s-5); padding: var(--s-3) var(--s-6); background: var(--surface-raised); border-bottom: 1px solid var(--border-default); }
+.plan-board { display: grid; align-content: start; gap: var(--s-5); }
+.plan-board__lead { max-width: var(--measure); margin: 0; color: var(--ink-2); font: var(--t-body-lg); }
 .exposure-summary { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); margin: var(--s-4) 0 0; padding: var(--s-3) var(--s-4); background: var(--surface-sunken); }
 .exposure-summary span { color: var(--ink-2); font: var(--t-ui); }
 .exposure-summary strong { font: var(--m-sm); font-feature-settings: var(--num); }
-.plan-help { display: flex; align-items: start; justify-content: space-between; gap: var(--s-4); margin: 0 var(--s-6) var(--s-5); padding: var(--s-4); background: var(--fin-adjustable-soft); border: 1px solid var(--fin-adjustable); }
+.plan-help { display: flex; align-items: start; justify-content: space-between; gap: var(--s-4); margin: 0; padding: var(--s-4); background: var(--fin-adjustable-soft); border-left: 4px solid var(--fin-adjustable); }
 .plan-help > div { display: grid; gap: var(--s-2); font: var(--t-ui); }
 .plan-help ol { margin: 0; padding-left: var(--s-5); color: var(--ink-2); }
 .plan-help li + li { margin-top: var(--s-2); }
 
-/* Step 6, and the only bar on the screen: what the plan is still missing, and the one
-   button that commits it. */
-.plan-commit { min-height: var(--actionbar-h); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-5) var(--s-6); border-top: 3px solid; }
+/* Where the plan is committed. The rail carries the live figure; this bar says what
+   it means, in the same words, beside the button that acts on it. */
+.plan-commit { min-height: var(--actionbar-h); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-5) var(--s-6); border-left: 4px solid; }
 .plan-commit--balanced { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); border-color: var(--fin-balanced); }
 .plan-commit--over { color: var(--fin-over-ink); background: var(--fin-over-soft); border-color: var(--fin-over); }
 .plan-commit--unassigned { color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); }
-.plan-commit__read { margin: 0; color: inherit; font: var(--t-ui); }
-.plan-commit__state { display: grid; align-items: baseline; gap: var(--s-1) var(--s-3); grid-template-columns: auto minmax(0, 1fr); }
-.plan-commit__state > .stamp { grid-column: 1 / -1; color: inherit; opacity: 0.8; }
-.plan-commit__state span { font: var(--t-title3); font-weight: 500; }
-.plan-commit__state strong { font: var(--m-hero); font-feature-settings: var(--num); letter-spacing: var(--display-tracking); transition: color var(--dur-state) var(--ease-standard); }
-.plan-commit__actions { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.plan-commit__read { margin: 0; color: inherit; font: var(--t-title2); }
+.plan-commit__figure { font-feature-settings: var(--num); }
+.plan-commit__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
 
 /* Plan checks and Week 5 */
 
@@ -199,6 +199,10 @@ p { color: var(--ink-2); }
 .binary-choice { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
 .binary-choice button { min-height: 52px; padding: var(--s-2) var(--s-3); background: var(--surface-raised); border: 1.5px solid var(--border-ink); cursor: pointer; font: var(--t-ui); }
 .binary-choice button[aria-pressed="true"] { color: var(--ink-invert); background: var(--ink-1); }
+
+/* The answer that is standing carries a tick as well as a fill. Weight and colour alone
+   left a reader unable to say whether a choice had been made or merely styled. */
+.binary-choice button[aria-pressed="true"]::before { content: "\2713"; margin-right: var(--s-2); font-weight: 700; }
 .decision-note { margin: var(--s-3) 0 0; color: var(--ink-3); font: var(--t-micro); }
 
 /* Educator shell and guide */
@@ -438,7 +442,6 @@ p { color: var(--ink-2); }
 @media (max-width: 1100px) {
   .season-strip { gap: var(--s-3); }
   .setup-grid { gap: var(--s-3); }
-  .plan-board__body { grid-template-columns: 1fr; }
   .alignment-grid, .brief-answers dl { grid-template-columns: repeat(2, 1fr); }
   .process-line, .launch-guide ol { grid-template-columns: repeat(3, 1fr); }
   .concept-matrix tbody th { width: 220px; }
@@ -446,13 +449,12 @@ p { color: var(--ink-2); }
 }
 
 @media (max-height: 650px) and (min-width: 900px) {
+  .plan-rail { top: calc(58px + var(--s-4)); }
   .challenge-topbar { height: 58px; }
   .stage-main { padding-top: var(--s-5); }
   .stage-heading { margin-bottom: var(--s-4); }
   .stage-heading h1 { font-size: 2rem; }
   .calculation--compact { padding: var(--s-3); }
-  .plan-board__header { min-height: 58px; }
-  .plan-board__body { padding-top: var(--s-3); padding-bottom: var(--s-3); }
   .choice-row { padding: var(--s-3) var(--s-4); }
 }
 
@@ -526,6 +528,7 @@ p { color: var(--ink-2); }
    A real class. Every number on these surfaces is derived from submitted work,
    and the empty state is a first-class state rather than a blank page.
    --------------------------------------------------------------------------- */
+
 
 .class-state { margin: var(--s-6) 0; color: var(--ink-3); font: var(--t-body-lg); }
 

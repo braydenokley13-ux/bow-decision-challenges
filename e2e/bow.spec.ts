@@ -343,7 +343,9 @@ studentTest("refreshing mid-challenge preserves stage, setup, and entered plan n
   await page.waitForTimeout(600); // let the debounced localStorage save land
   await page.reload();
 
-  await expect(page.getByRole("heading", { name: "Build Avery’s plan." })).toBeVisible();
+  // The plan asks one question at a time, and a refresh lands the student back on the
+  // question they were actually answering rather than at the top of the sequence.
+  await expect(page.getByRole("heading", { name: "What does Avery do with the rest?" })).toBeVisible();
   await expect(page.getByRole("spinbutton", { name: "Sports-media course" })).toHaveValue("900");
   await expect(page.getByText("Teammate Share")).toBeVisible();
 });
@@ -468,7 +470,7 @@ studentTest("key screens have no serious or critical accessibility violations", 
   await noSeriousAxeViolations(page);
 
   await reachWorkingBoard(page, classCode);
-  await expect(page.getByRole("heading", { name: "Build Avery’s plan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What does Avery do with the rest?" })).toBeVisible();
   await noSeriousAxeViolations(page);
 
   await gotoFreshChallenge(page);
@@ -767,7 +769,7 @@ studentTest("a refresh mid-challenge does not lose the class the student joined"
   await page.waitForTimeout(600);
   await page.reload();
 
-  await expect(page.getByRole("heading", { name: "Build Avery’s plan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What does Avery do with the rest?" })).toBeVisible();
   // The class travels with the attempt, so a resumed session still turns in to the right room.
   const stored = await page.evaluate(() => localStorage.getItem("bow.attempt.v2.plan-under-pressure"));
   expect(stored).toContain(classCode);
