@@ -1,8 +1,28 @@
 import { isKnownWorld, type WorldId } from "../core/ids";
-import type { ChallengeState } from "../machine/state";
-import { STAGE_ORDER } from "../machine/stages";
-import { DEFAULT_WORLD_ID, isPlayableWorld } from "../scenario/registry";
+import type { StageId } from "../evidence/types";
+import { DEFAULT_WORLD_ID, isPlayableWorld, stagesFor } from "../scenario/registry";
 import { attemptKeyFor, PLAN_UNDER_PRESSURE } from "../../platform/challenges/registry";
+
+/**
+ * The part of an attempt the store has to understand, whatever world wrote it.
+ *
+ * A world's state is the world's own — Basketball's carries setups and plan modes, Run the
+ * Pop-Up's carries trays and Saturdays — and the store has no business knowing either. What it
+ * checks is the envelope: which challenge, which world, which screen, and that the two arrays
+ * every world keeps are arrays. Anything narrower would mean the store could only ever hold
+ * the shape it was written against.
+ */
+export interface PersistedAttempt {
+  meta: {
+    schemaVersion: 1;
+    challengeId: string;
+    worldId: WorldId;
+    assignmentId?: string;
+  };
+  stage: StageId;
+  log: unknown[];
+  snapshots: unknown[];
+}
 
 /**
  * Where a student's in-progress attempt lives between page loads.
@@ -34,24 +54,26 @@ const LEGACY_ATTEMPT_KEY = "bow.student.v1.attempt";
 /** Which world the student was last in. A single id; never state, never work. */
 const LAST_WORLD_KEY = `${attemptKeyFor(PLAN_UNDER_PRESSURE)}.world`;
 
-export function isValidPersistedAttempt(value: unknown, worldId?: WorldId): value is ChallengeState {
+export function isValidPersistedAttempt(value: unknown, worldId?: WorldId): value is PersistedAttempt {
   if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<ChallengeState>;
-  return candidate.meta?.schemaVersion === 1
-    && candidate.meta.challengeId === PLAN_UNDER_PRESSURE.id
-    // An attempt from another world is not this world's attempt. It is somebody's real
-    // work, so it is left exactly where it is rather than restored or backed up.
-    && (worldId === undefined || candidate.meta.worldId === worldId)
-    // A stage the current build does not know how to render would leave the student
-    // on a blank screen, so an attempt carrying one is treated as unreadable and
-    // backed up rather than restored.
-    && typeof candidate.stage === "string"
-    && STAGE_ORDER.includes(candidate.stage)
-    && Array.isArray(candidate.log)
-    && Array.isArray(candidate.snapshots);
+  const candidate = value as Partial<PersistedAttempt>;
+  if (candidate.meta?.schemaVersion !== 1) return false;
+  if (candidate.meta.challengeId !== PLAN_UNDER_PRESSURE.id) return false;
+  // An attempt from another world is not this world's attempt. It is somebody's real work, so
+  // it is left exactly where it is rather than restored or backed up.
+  if (worldId !== undefined && candidate.meta.worldId !== worldId) return false;
+  if (typeof candidate.stage !== "string") return false;
+  // A stage the current build does not know how to render would leave the student on a blank
+  // screen, so an attempt carrying one is treated as unreadable and backed up rather than
+  // restored. The list is the world's own: checking a second world's attempt against the first
+  // world's screens would quarantine real work for being in a different story.
+  const storedWorld: string = candidate.meta.worldId;
+  const known = isKnownWorld(storedWorld) ? stagesFor(storedWorld) : [];
+  if (!known.includes(candidate.stage)) return false;
+  return Array.isArray(candidate.log) && Array.isArray(candidate.snapshots);
 }
 
-function readFrom(storage: Pick<Storage, "getItem" | "setItem">, key: string, worldId?: WorldId): ChallengeState | null {
+function readFrom(storage: Pick<Storage, "getItem" | "setItem">, key: string, worldId?: WorldId): PersistedAttempt | null {
   const raw = storage.getItem(key);
   if (!raw) return null;
   try {
@@ -83,24 +105,44 @@ export function lastWorldPlayed(storage: Pick<Storage, "getItem"> = window.local
   return stored !== null && isKnownWorld(stored) ? stored : DEFAULT_WORLD_ID;
 }
 
-/** One world's attempt, and nothing from any other world. */
-export function loadAttemptFor(worldId: WorldId, storage: Pick<Storage, "getItem" | "setItem"> = window.localStorage): ChallengeState | null {
+/**
+ * One world's attempt, and nothing from any other world.
+ *
+ * The type parameter is how a caller says which world's interior it is expecting. The
+ * envelope has been checked — challenge, world, a stage that world knows, the two arrays —
+ * and the interior belongs to the world, so only that world's own shell asks for it. A caller
+ * that names the wrong world gets `null`, because the world id is checked before anything is
+ * handed back.
+ */
+export function loadAttemptFor<T extends PersistedAttempt = PersistedAttempt>(
+  worldId: WorldId,
+  storage: Pick<Storage, "getItem" | "setItem"> = window.localStorage,
+): T | null {
   // A world this build cannot render is a world whose attempt must not be restored: the
   // student would land on a board with no story behind it, priced by a fallback economy.
   if (!isPlayableWorld(worldId)) return null;
   const current = readFrom(storage, attemptKeyForWorld(worldId), worldId);
-  if (current) return current;
+  if (current) return current as T;
   // The two pre-world keys belong to Basketball, because Basketball is the only world that
   // existed when they were written. A second world may not inherit them.
   if (worldId !== DEFAULT_WORLD_ID) return null;
-  return readFrom(storage, ATTEMPT_KEY, worldId) ?? readFrom(storage, LEGACY_ATTEMPT_KEY, worldId);
+  return (readFrom(storage, ATTEMPT_KEY, worldId) ?? readFrom(storage, LEGACY_ATTEMPT_KEY, worldId)) as T | null;
 }
 
-export function loadAttempt(storage: Pick<Storage, "getItem" | "setItem"> = window.localStorage): ChallengeState | null {
+/**
+ * Whatever world the student was last in.
+ *
+ * It returns the envelope rather than a particular world's state, and that is not a
+ * convenience: with two worlds in one browser, a shell that assumed the answer was
+ * Basketball's would hand a food-truck attempt to Basketball's reducer — the same board,
+ * priced by the wrong economy, writing evidence about a game nobody played. A caller reads
+ * `meta.worldId` first and then asks for that world's own shape.
+ */
+export function loadAttempt(storage: Pick<Storage, "getItem" | "setItem"> = window.localStorage): PersistedAttempt | null {
   return loadAttemptFor(lastWorldPlayed(storage), storage);
 }
 
-export function saveAttempt(state: ChallengeState, storage: Pick<Storage, "setItem"> = window.localStorage): void {
+export function saveAttempt(state: PersistedAttempt, storage: Pick<Storage, "setItem"> = window.localStorage): void {
   storage.setItem(attemptKeyForWorld(state.meta.worldId), JSON.stringify(state));
   storage.setItem(LAST_WORLD_KEY, state.meta.worldId);
 }

@@ -5,6 +5,7 @@ import { createInitialState, type ChallengeState } from "../machine/state";
 import type { ChallengeAction } from "../machine/actions";
 import { CONCEPTS } from "../blueprint/concepts";
 import { evidenceRequirementById } from "../competency/competencies";
+import { PLAN_UNDER_PRESSURE_LAUNCH } from "../scenario/registry";
 import { BASKETBALL_EVIDENCE_ROUTES } from "../scenario/worlds/basketball/observer";
 import { EVIDENCE_EVENT_TYPES } from "./types";
 import { deriveGrade, REASONING_MAXIMUM, STRUCTURED_MAXIMUM } from "./grade";
@@ -123,9 +124,15 @@ describe("the shared evidence envelope", () => {
   });
 
   it("records reaching a screen as its own fact", () => {
+    // Stage progression is recorded, not inferred: a student who reached a screen and did
+    // nothing has to be distinguishable from one who never got there. Where the session
+    // opens depends on the launch — straight into Avery's deal until the world picker
+    // ships, onto the choice once it has — and the log says whichever actually happened.
     const entered = log.filter((event) => event.type === "STAGE_ENTERED");
     expect(entered.length).toBeGreaterThan(0);
-    expect(entered.map((event) => (event.payload as { stage: string }).stage)).toContain("role-contract");
+    expect(entered.map((event) => (event.payload as { stage: string }).stage))
+      .toContain(PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? "choose-world" : "role-contract");
+    expect(entered.map((event) => (event.payload as { from: string }).from)).toContain("entry");
   });
 
   it("writes only the event types the data doctrine allows", () => {

@@ -3,7 +3,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useReducer,
 import { challengeReducer } from "../domain/machine/reducer";
 import { createInitialState, type ChallengeState } from "../domain/machine/state";
 import type { ChallengeAction } from "../domain/machine/actions";
-import { ATTEMPT_KEY, loadAttempt, saveAttempt } from "../domain/io/persistence";
+import { ATTEMPT_KEY, loadAttemptFor, saveAttempt } from "../domain/io/persistence";
+import { DEFAULT_WORLD_ID } from "../domain/scenario/registry";
 import { deliverWithRetry, type DeliveryState, type EvidenceTransport } from "../platform/evidence/transport";
 import { transportFromEnvironment } from "../platform/evidence/transports";
 
@@ -24,7 +25,15 @@ const ChallengeContext = createContext<ChallengeContextValue | null>(null);
 const DEFAULT_TRANSPORT = transportFromEnvironment();
 
 export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT }: PropsWithChildren<{ transport?: EvidenceTransport }>) {
-  const [state, rawDispatch] = useReducer(challengeReducer, undefined, () => loadAttempt() ?? createInitialState(Date.now()));
+  // Basketball's attempt, by name. This provider holds Basketball's reducer, and with a second
+  // world in the browser "whatever was open last" is no longer the same question as "what does
+  // this reducer understand" — handing a food-truck attempt to this one would price another
+  // world's board with this world's economy.
+  const [state, rawDispatch] = useReducer(
+    challengeReducer,
+    undefined,
+    () => loadAttemptFor<ChallengeState>(DEFAULT_WORLD_ID) ?? createInitialState(Date.now()),
+  );
   const timer = useRef<number | null>(null);
   const [delivery, setDelivery] = useState<DeliveryState>({ status: "idle" });
 

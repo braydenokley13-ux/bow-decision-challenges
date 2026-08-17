@@ -121,14 +121,17 @@ describe("what BOW may claim about an objective", () => {
   });
 
   describe("assessability requires a built world, not a mapping", () => {
-    it("counts exactly what Basketball can produce every requirement of", () => {
-      // Basketball's observer produces all five of `adapt-a-plan` and, since the opening
-      // plan started recording which row takes the leftovers, all five of
-      // `plan-within-income`. Both are whole, so both are available. Nothing else is: the
-      // other nineteen competencies have a mapping and no world.
+    it("counts exactly what a built world can produce every requirement of", () => {
+      // Two worlds now produce all five of `adapt-a-plan` and all five of
+      // `plan-within-income`, and that is the point of §9.1 — a student who picks the night
+      // market instead of the season is measured on the same named things. Nothing else is
+      // available: the other nineteen competencies have a mapping and no world.
       expect(availableCompetencyIds()).toEqual(new Set(["adapt-a-plan", "plan-within-income"]));
-      expect(worldsAssessing("adapt-a-plan")).toEqual(["basketball"]);
-      expect(worldsAssessing("plan-within-income")).toEqual(["basketball"]);
+      expect(worldsAssessing("adapt-a-plan")).toEqual(["basketball", "food-truck"]);
+      expect(worldsAssessing("plan-within-income")).toEqual(["basketball", "food-truck"]);
+      // Neither world produces this one, and both say why in their own route tables. A gap in
+      // both is honest; closing it in one would mean the choice of story changed what was
+      // measured.
       expect(worldsAssessing("save-toward-a-goal")).toEqual([]);
     });
 

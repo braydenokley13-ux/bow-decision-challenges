@@ -1,5 +1,6 @@
 import type { Dollars } from "../core/money";
 import type { SetupId, WorldId } from "../core/ids";
+import type { StageId } from "../evidence/types";
 
 /**
  * Avery's week, in blocks.
@@ -151,10 +152,40 @@ export interface WorldScenario {
   opportunity: { from: string; title: string; body: string; timeCost: string };
 }
 
-export interface WorldRegistryEntry {
+/**
+ * What every world's story declares, whatever else it carries.
+ *
+ * §7.1 — a world has a contract and an interior, and the interior is its own. Basketball's
+ * `WorldScenario` above is Basketball's shape: eight weeks, three places to live, a course
+ * seat and a set of bonuses. Run the Pop-Up's is four Saturdays, three booths, trays of food
+ * and a rented generator, and forcing one of those two shapes over both would produce two
+ * worlds with the same interior wearing different pictures.
+ *
+ * So the registry knows three things about a story — which world it is, what it is called and
+ * the line that goes on its card — and a world's own module is what knows the rest.
+ */
+export interface WorldStory {
   id: WorldId;
   title: string;
   subtitle: string;
+}
+
+export interface WorldRegistryEntry {
+  id: WorldId;
+  title: string;
+  /** The card blurb, in the world's own voice (§13.3). */
+  subtitle: string;
+  /** What a teacher is told to allow for, in minutes. */
+  durationMinutes: { min: number; max: number };
   availability: "available";
-  scenario: WorldScenario;
+  /**
+   * Every stage this world's own machine can be in.
+   *
+   * Persistence reads it. A restored attempt used to be checked against Basketball's stage
+   * list, which was the only list there was; checking a second world's attempt against it
+   * would have quarantined real work as unreadable for the crime of being in a different
+   * story.
+   */
+  stages: readonly StageId[];
+  scenario: WorldStory;
 }

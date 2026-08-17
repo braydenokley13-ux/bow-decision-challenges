@@ -6,6 +6,10 @@ import type { EvidenceEvent } from "../evidence/types";
 import { observeBasketballFromLog } from "./worlds/basketball/observer";
 import { scoredExplanationsFrom } from "./worlds/basketball/writtenDefense";
 import { BASKETBALL_DEMAND } from "./worlds/basketball/demand";
+import { observePopUpFromLog } from "./worlds/food-truck/observer";
+import { popUpScoredExplanationsFrom } from "./worlds/food-truck/writtenAnswer";
+import { POP_UP_DEMAND } from "./worlds/food-truck/demand";
+import { POP_UP_COVERAGE } from "./worlds/food-truck/coverage";
 import { BUILT_WORLD_COVERAGE } from "../competency/availability";
 import type { DemandProfile } from "./demand";
 
@@ -59,8 +63,28 @@ const BASKETBALL: WorldContract = {
   demandProfile: BASKETBALL_DEMAND,
 };
 
+/**
+ * Run the Pop-Up.
+ *
+ * The two contracts are the same three fields and share not one line of implementation. That
+ * is the whole thesis in one object: the observers read completely different logs by
+ * completely different rules, and what comes out of both is the same named evidence about the
+ * same two competencies, on the same rubric, which the engine below rolls up without ever
+ * learning which world it is holding.
+ */
+const FOOD_TRUCK: WorldContract = {
+  id: "food-truck",
+  observe: (log, options) => {
+    const scored = popUpScoredExplanationsFrom(options?.reasoningCriteria);
+    return observePopUpFromLog(log, { ...(scored ? { scoredExplanations: scored } : {}) });
+  },
+  coverage: POP_UP_COVERAGE,
+  demandProfile: POP_UP_DEMAND,
+};
+
 export const WORLD_CONTRACTS: Partial<Record<WorldId, WorldContract>> = {
   basketball: BASKETBALL,
+  "food-truck": FOOD_TRUCK,
 };
 
 export const CONTRACTED_WORLDS: readonly WorldContract[] = Object.values(WORLD_CONTRACTS);

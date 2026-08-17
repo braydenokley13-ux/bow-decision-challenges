@@ -86,6 +86,35 @@ export const BUILT_WORLD_COVERAGE: readonly WorldEvidenceCoverage[] = [
       "plan-within-income.er5",
     ],
   },
+  // Run the Pop-Up produces the same two competencies from a completely different world: a
+  // night market, four Saturdays, trays of food that spoil, and a rented generator that dies
+  // with the biggest Saturday still ahead. The rows below match Basketball's exactly, and that
+  // is the point of §9.1 — the story changes and what is measured does not.
+  //
+  // `save-toward-a-goal` is absent from both, for the same reason in both. See the note in
+  // `worlds/food-truck/coverage.ts`.
+  {
+    worldId: "food-truck",
+    competencyId: "adapt-a-plan",
+    producedEvidenceRequirementIds: [
+      "adapt-a-plan.er1",
+      "adapt-a-plan.er2",
+      "adapt-a-plan.er3",
+      "adapt-a-plan.er4",
+      "adapt-a-plan.er5",
+    ],
+  },
+  {
+    worldId: "food-truck",
+    competencyId: "plan-within-income",
+    producedEvidenceRequirementIds: [
+      "plan-within-income.er1",
+      "plan-within-income.er2",
+      "plan-within-income.er3",
+      "plan-within-income.er4",
+      "plan-within-income.er5",
+    ],
+  },
 ] as const;
 
 /**

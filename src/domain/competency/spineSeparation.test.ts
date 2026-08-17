@@ -53,13 +53,23 @@ const WORLD_SOURCES = [
  * depend on the measurement rather than the other way round.
  *
  * The edge is named rather than matched on a filename, so adding a file to it is a decision
- * somebody writes down here. It is two files: the observer, which maps what the world scored
- * onto evidence requirements, and the written-defense module, which does the same job for the
- * half of the evidence a person scores rather than the world.
+ * somebody writes down here. Per world it is the observer, which maps what the world saw onto
+ * evidence requirements, and the written-answer module, which does the same job for the half
+ * of the evidence a person scores rather than the world.
+ *
+ * Run the Pop-Up adds two more: the table that says which of its moments are evidence about
+ * which requirement, and its end of the coverage claim. Both are edge files by the same test —
+ * they exist to state what this world produces, and they are the only files in it that name a
+ * requirement. Its scenario, numbers, machine, ledger and balance harness name none, which is
+ * the property this scan is actually protecting.
  */
 const WORLD_ASSESSMENT_EDGE = [
   "src/domain/scenario/worlds/basketball/observer.ts",
   "src/domain/scenario/worlds/basketball/writtenDefense.ts",
+  "src/domain/scenario/worlds/food-truck/observer.ts",
+  "src/domain/scenario/worlds/food-truck/writtenAnswer.ts",
+  "src/domain/scenario/worlds/food-truck/eventEvidence.ts",
+  "src/domain/scenario/worlds/food-truck/coverage.ts",
 ];
 
 const WORLD_STORY_SOURCES = WORLD_SOURCES.filter((path) => !WORLD_ASSESSMENT_EDGE.includes(path));
@@ -144,13 +154,18 @@ describe("the spine stays separated", () => {
 
   it("scans every file in every world, including any added since this test was written", () => {
     expect(WORLD_SOURCES).toContain("src/domain/scenario/worlds/basketball/scenario.ts");
+    expect(WORLD_SOURCES).toContain("src/domain/scenario/worlds/food-truck/scenario.ts");
     for (const path of WORLD_ASSESSMENT_EDGE) {
       expect(WORLD_SOURCES, `${path} is not in the scan`).toContain(path);
       expect(WORLD_STORY_SOURCES).not.toContain(path);
     }
-    // The edge is exactly these two. A third file reaching for the competency layer has to
-    // be argued for here rather than added quietly to make a failing scan go green.
-    expect(WORLD_ASSESSMENT_EDGE).toHaveLength(2);
+    // A world's edge is small and it is argued for here rather than grown quietly to make a
+    // failing scan go green. Basketball needs two files; Run the Pop-Up needs four, because it
+    // states its own event tagging and its own coverage claim instead of leaving both in the
+    // shared layer. Every other file in both worlds is story, and names no requirement at all.
+    expect(WORLD_ASSESSMENT_EDGE.filter((path) => path.includes("/basketball/"))).toHaveLength(2);
+    expect(WORLD_ASSESSMENT_EDGE.filter((path) => path.includes("/food-truck/"))).toHaveLength(4);
+    expect(WORLD_ASSESSMENT_EDGE).toHaveLength(6);
   });
 
   it.each(WORLD_SOURCES)("keeps the standards layer out of %s", (path) => {

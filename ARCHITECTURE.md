@@ -59,8 +59,8 @@ or any view module from `src/domain/**`.
 | `standards/` | ✅ frameworks, standards, mappings, completion rules, framework labels | — |
 | `finance/` | ✅ formulas, load, timeline, resolution, consequences, plan modes | prices arrive as `ScenarioNumbers` |
 | `evidence/` | ✅ envelope, facts, observation, grading | micro-skills are PUP's |
-| `machine/` | ✅ reducer, selectors | stage list is PUP's |
-| `scenario/` | — | **entirely PUP**: numbers, worlds, balance harness |
+| `machine/` | ✅ reducer, selectors | stage list is Basketball's; Run the Pop-Up ships its own machine |
+| `scenario/` | ✅ world registry, world contracts, demand profiles, the reading ruler | each world's numbers, story, machine, observer and balance harness are its own |
 | `blueprint/` | — | **entirely PUP**: concepts, micro-skills, and the five-objective alignment the educator surfaces still read |
 
 `src/domain/finance/**` additionally may not import a world — it receives `ScenarioNumbers`
@@ -114,9 +114,29 @@ that produces every required evidence requirement, so an objective BOW cannot as
 reads *not yet available* rather than *not yet assessed*. Those are different sentences and
 a district reads them differently.
 
-`BUILT_WORLD_COVERAGE` today records Basketball producing all five requirements of
-`adapt-a-plan` and all five of `plan-within-income`. **One NYSED objective is assessable —
-1.3, and only 1.3.** Every other objective has a mapping and no world.
+`BUILT_WORLD_COVERAGE` today records **two** worlds producing all five requirements of
+`adapt-a-plan` and all five of `plan-within-income` — Basketball and Run the Pop-Up. **One
+NYSED objective is assessable — 1.3, and only 1.3.** Every other objective has a mapping and
+no world.
+
+Both worlds leave `save-toward-a-goal` uncovered, and they leave it uncovered for the same
+reason: in each of them the target, the deadline and whether the savings line survives are the
+*student's strategy*, and each world's balance harness exists to prove no strategy is the right
+one. Closing that gap in one world and not the other is the failure §9.1 is about — a student
+who picked the other story would be measured on less — so the honest move is a gap in both.
+
+### The second world — `worlds/food-truck/`
+
+Run the Pop-Up is four Saturdays at a night market, and it shares an envelope with Basketball
+and nothing else. Its constraint is **spoilage** rather than time: the supplier sells by the
+tray, no crowd is a round number of trays, and stock nobody buys is money in the bin. It has
+its own numbers, story, stage machine, ledger, observer and balance harness, and its economy is
+deliberately not `ScenarioNumbers` — §7.1's split is what stops two worlds becoming one
+interior wearing two pictures.
+
+What it shares is the part that has to be shared: the evidence envelope, the four support
+levels, the common rubric, the mastery rules, and the named evidence requirements. The rubric
+engine took no change to admit it and takes no world id, which is the whole claim.
 
 `plan-within-income.er3` — *savings is a planned amount, not the remainder* — is the one that
 took a world change rather than a wiring change. Nothing in the log could tell a student who
@@ -248,14 +268,23 @@ student is confused:
 
 | What | Where | Key |
 | --- | --- | --- |
-| A student's in-progress attempt | `localStorage` | `bow.attempt.v2.<challengeId>` |
+| A student's in-progress attempt | `localStorage` | `bow.attempt.v2.<challengeId>.<worldId>` |
 | Classes an educator opened here | `localStorage` | `bow.educator.v1.classes` |
 | A class and its submissions | the class store | `class:<CODE>` / `submissions:<CODE>` |
 
-The attempt key is **per challenge**. A single global key meant Challenge #2 would open
-Plan Under Pressure's attempt, fail to recognise it, and back it up as unreadable —
-destroying work belonging to a challenge the student was not playing. The pre-namespaced key
-is still read once so an attempt in flight survives the change.
+The attempt key is **per challenge and per world**, and both halves were learned the same way.
+A single global key meant Challenge #2 would open Plan Under Pressure's attempt, fail to
+recognise it, and back it up as unreadable — destroying work belonging to a challenge the
+student was not playing. Keying only by challenge left the identical trap one level down: two
+worlds under one challenge share a challenge id, so a student who started Basketball and then
+opened the food truck would have been handed the Basketball attempt back. Same key, same
+challenge id, valid shape, wrong world — a board priced by one world's economy while the story
+on screen came from another's.
+
+A restored attempt is checked against **its own world's** stage list, which each world declares
+in `WORLD_REGISTRY`. Checking a second world's attempt against the first world's screens would
+quarantine real work for the crime of being in a different story. The two pre-world keys are
+still read once, for Basketball only, so an attempt in flight survives the change.
 
 ## Evidence envelope
 

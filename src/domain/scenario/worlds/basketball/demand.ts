@@ -21,7 +21,11 @@ import type { DemandProfile } from "../../demand";
  * a checkable fact about the world into a claim about children.
  */
 export const BASKETBALL_DEMAND: DemandProfile = {
-  readingGradeLevel: 5.4,
+  // Re-measured with `scenario/readability.ts` — the one ruler both worlds' copy goes
+  // through — when the second world shipped its own. The original 5.4 came from an
+  // instrument this repository does not contain, and a declared fact §9.2 calls checkable
+  // has to come from the ruler that checks it.
+  readingGradeLevel: 4.2,
   totalWordsStudentReads: 1180,
   arithmeticOperations: 4,
   arithmeticComplexity: "multiply",

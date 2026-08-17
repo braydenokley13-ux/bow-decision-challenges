@@ -9,10 +9,26 @@ export type MasteryStatus = "demonstrated_independently" | "demonstrated_with_su
 export type Trajectory = "independent_first_opportunity" | "corrected_after_consequence" | "corrected_after_scaffold" | "new_difficulty_during_adaptation" | "persistent_gap" | "insufficient_evidence";
 export type C4ObservationContext = "opening_income_fallback" | "week5_cost_response";
 
+/**
+ * Every screen any world can be on.
+ *
+ * The three at the top belong to the platform — a student joins and picks a world before any
+ * world's story starts. Everything after them belongs to one world and is named for it, so
+ * the union reads as what it is: two worlds' interiors, side by side, sharing an envelope and
+ * nothing else. A world does not inherit another world's stages, and `WorldRegistryEntry`
+ * declares which of these each one can actually be in — a restored attempt is checked against
+ * its own world's list rather than against all of them.
+ */
 export type StageId =
-  | "entry" | "join" | "choose-world" | "the-offer" | "role-contract" | "setup-comparison" | "working-plan"
+  | "entry" | "join" | "choose-world"
+  // Plan Under Pressure, in the basketball world.
+  | "the-offer" | "role-contract" | "setup-comparison" | "working-plan"
   | "fallback-version" | "income-check" | "season-weeks" | "week5-transition" | "week5-event" | "first-response"
-  | "opportunity-final-repair" | "remaining-risk-preview" | "week8-resolution" | "defense" | "submitted";
+  | "opportunity-final-repair" | "remaining-risk-preview" | "week8-resolution" | "defense" | "submitted"
+  // Run the Pop-Up, at the Riverside Night Market.
+  | "popup-pitch" | "popup-spot" | "popup-money" | "popup-plan" | "popup-first-saturday"
+  | "popup-standing-order" | "popup-generator" | "popup-repair" | "popup-settle"
+  | "popup-writeup" | "popup-submitted";
 
 export interface PlanSnapshot {
   id: string;
@@ -39,20 +55,33 @@ export interface PlanSnapshot {
  * an event type appears that is not on this list.
  */
 export type EvidenceEventType =
-  | "SESSION_STARTED" | "WORLD_CONFIRMED" | "STAGE_ENTERED" | "CALCULATION_SUBMITTED" | "SETUP_RANKED" | "SETUP_SELECTED"
+  // The platform's own moments, and the two supports. Every world writes these.
+  | "SESSION_STARTED" | "WORLD_CONFIRMED" | "STAGE_ENTERED" | "SCAFFOLD_OPENED" | "SHOW_AND_CONTINUE_USED"
+  // Plan Under Pressure, in the basketball world.
+  | "CALCULATION_SUBMITTED" | "SETUP_RANKED" | "SETUP_SELECTED"
   | "COURSE_DEPOSIT_DECIDED"
   | "INCOME_SOURCE_TOGGLED" | "PLAN_SAVE_REQUESTED" | "PLAN_SAVED" | "PLAN_REMAINDER_ASSIGNED" | "LOCKED_MOVE_ATTEMPTED"
   | "WEEK5_ADVANCE_CONFIRMED" | "GAP_TILE_TOGGLED" | "OPTIONAL_WORK_DECIDED"
-  | "COMPLETION_INCOME_DECIDED" | "SCAFFOLD_OPENED" | "SHOW_AND_CONTINUE_USED"
-  | "DEFENSE_SUBMITTED";
+  | "COMPLETION_INCOME_DECIDED"
+  | "DEFENSE_SUBMITTED"
+  // Run the Pop-Up, at the Riverside Night Market.
+  | "POPUP_SUM_SUBMITTED" | "POPUP_SPOT_SELECTED" | "POPUP_CONDITIONAL_MONEY_DECIDED" | "POPUP_COVER_LINE_NAMED"
+  | "POPUP_PLAN_SAVE_REQUESTED" | "POPUP_PLAN_SAVED" | "POPUP_REMAINDER_ASSIGNED" | "POPUP_LOCKED_MOVE_ATTEMPTED"
+  | "POPUP_STOCK_ORDERED" | "POPUP_HELPER_DECIDED" | "POPUP_SATURDAY_PLAYED"
+  | "POPUP_WRITEUP_SUBMITTED";
 
 export const EVIDENCE_EVENT_TYPES: readonly EvidenceEventType[] = [
-  "SESSION_STARTED", "WORLD_CONFIRMED", "STAGE_ENTERED", "CALCULATION_SUBMITTED", "SETUP_RANKED", "SETUP_SELECTED",
+  "SESSION_STARTED", "WORLD_CONFIRMED", "STAGE_ENTERED", "SCAFFOLD_OPENED", "SHOW_AND_CONTINUE_USED",
+  "CALCULATION_SUBMITTED", "SETUP_RANKED", "SETUP_SELECTED",
   "COURSE_DEPOSIT_DECIDED",
   "INCOME_SOURCE_TOGGLED", "PLAN_SAVE_REQUESTED", "PLAN_SAVED", "PLAN_REMAINDER_ASSIGNED", "LOCKED_MOVE_ATTEMPTED",
   "WEEK5_ADVANCE_CONFIRMED", "GAP_TILE_TOGGLED", "OPTIONAL_WORK_DECIDED",
-  "COMPLETION_INCOME_DECIDED", "SCAFFOLD_OPENED", "SHOW_AND_CONTINUE_USED",
+  "COMPLETION_INCOME_DECIDED",
   "DEFENSE_SUBMITTED",
+  "POPUP_SUM_SUBMITTED", "POPUP_SPOT_SELECTED", "POPUP_CONDITIONAL_MONEY_DECIDED", "POPUP_COVER_LINE_NAMED",
+  "POPUP_PLAN_SAVE_REQUESTED", "POPUP_PLAN_SAVED", "POPUP_REMAINDER_ASSIGNED", "POPUP_LOCKED_MOVE_ATTEMPTED",
+  "POPUP_STOCK_ORDERED", "POPUP_HELPER_DECIDED", "POPUP_SATURDAY_PLAYED",
+  "POPUP_WRITEUP_SUBMITTED",
 ] as const;
 
 /**

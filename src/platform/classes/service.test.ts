@@ -282,7 +282,9 @@ describe("a class holds the work it was set", () => {
     // assignment measures, so it is not recorded as what it measures.
     expect(assignment.competencyIds).toEqual(["plan-within-income"]);
     expect(assignment.classId).toBe(created.code);
-    expect(assignment.allowedWorldIds).toEqual(["basketball"]);
+    // A request that names no world gets every world that is actually built. Two are now, and
+    // choice is still off, because a teacher who did not ask for it has not asked for it.
+    expect(assignment.allowedWorldIds).toEqual(["basketball", "food-truck"]);
     expect(assignment.studentChoosesWorld).toBe(false);
     expect(assignment.format).toBe("decision-challenge");
     expect(assignment.assignedStudentIds).toBeNull();
