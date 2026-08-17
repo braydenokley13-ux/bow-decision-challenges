@@ -50,6 +50,9 @@ const SEASON_POSITIONS: Partial<Record<StageId, SeasonPosition>> = {
   "working-plan": { caption: "Before the season", played: 0, current: null },
   "fallback-version": { caption: "Before the season", played: 0, current: null },
   "income-check": { caption: "Before the season", played: 0, current: null },
+  // The four weeks resolve together rather than one press at a time, so the strip reads the
+  // same on the screen that plays them as on the deadline that closes them.
+  "season-weeks": { caption: "Weeks 1–4", played: 4, current: null },
   "week5-transition": { caption: "Weeks 1–4 played", played: 4, current: null },
   "week5-event": { caption: "Week 5", played: 4, current: 5 },
   "first-response": { caption: "Week 5", played: 4, current: 5 },

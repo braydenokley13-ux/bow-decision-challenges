@@ -32,8 +32,15 @@ export const STAGE_BUDGET: Partial<Record<StageId, StageBudget>> = {
   "setup-comparison": { seconds: 115, basis: "Order three places by full cost, choose one, and total it across the season." },
   "working-plan": { seconds: 165, basis: "Two calculations, two decisions about conditional income, then split what is left and say which row takes the rest." },
   "fallback-version": { seconds: 50, basis: "One number to clear on a plan already built: one to three taps, or the steppers." },
-  "season-weeks": { seconds: 145, basis: "Play three more weeks, read what each one costs, then answer the deposit deadline." },
-  "week5-event": { seconds: 110, basis: "Read two bulletins and Avery's line, select the components that moved, total them." },
+  // Was 145, covering three "Play Week N" presses and a deposit deadline buried under them.
+  // The weeks now resolve together, so what is left is reading four short weeks against one
+  // running figure — three presses and their re-renders are gone, and the decision that used
+  // to sit under them has its own budget below.
+  "season-weeks": { seconds: 75, basis: "Read four weeks of the plan draining at the rate this housing charges, and what is left in hand." },
+  "week5-transition": { seconds: 55, basis: "Read two prices for the same seat and what each does to the movable money, pick one, read the effect, commit." },
+  // Was 110. The card set now includes committed lines Week 5 does not move, so each card is
+  // read against the plan rather than tapped, and the app no longer prints the running sum.
+  "week5-event": { seconds: 125, basis: "Read two bulletins and Avery's line, judge four to six cards against the plan, total the ones that moved." },
   "first-response": { seconds: 115, basis: "Triage: read what each amount currently buys, then cut until the shortfall clears." },
   "opportunity-final-repair": { seconds: 100, basis: "Two decisions with their tradeoffs, then place what those decisions moved." },
   "remaining-risk-preview": { seconds: 40, basis: "The same move as the backup version, on a plan the student now knows well." },
@@ -49,7 +56,7 @@ export const STAGE_BUDGET: Partial<Record<StageId, StageBudget>> = {
  */
 export const LONGEST_PATH: readonly StageId[] = [
   "entry", "role-contract", "setup-comparison", "working-plan", "fallback-version",
-  "season-weeks", "week5-event", "first-response", "opportunity-final-repair",
+  "season-weeks", "week5-transition", "week5-event", "first-response", "opportunity-final-repair",
   "remaining-risk-preview", "week8-resolution", "defense", "submitted",
 ] as const;
 

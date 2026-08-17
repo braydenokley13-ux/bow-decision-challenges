@@ -112,11 +112,12 @@
 .contract__rule { grid-column: 1 / -1; display: inline-flex; align-items: baseline; gap: var(--s-2); margin-top: var(--s-2); color: var(--ink-2); font: var(--t-micro); }
 .contract__rule em { color: var(--fin-conditional-ink); font: var(--t-label); font-style: normal; letter-spacing: 0.1em; }
 .contract__column[data-tone="safe"] .contract__rule em { color: var(--fin-reliable-ink); }
-.contract__foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-6); padding: var(--s-4) var(--s-5); background: var(--surface-sunken); border-top: 1px solid var(--border-default); }
-.contract__foot p { margin: 0; font: var(--t-ui); }
-.contract__foot i { width: 22px; height: 10px; display: inline-block; margin-right: var(--s-2); vertical-align: -1px; }
-.contract__foot i[data-tone="safe"] { background: var(--fin-reliable); }
-.contract__foot i[data-tone="maybe"] { background: var(--pat-conditional); }
+
+/* What it costs the season when the rule is not met. The legend that used to close this
+   card — "solid means the money arrives, striped means it might not" — explained a texture
+   the eye can barely see, for a distinction the two column headings already state in words. */
+.contract__ifnot { grid-column: 1 / -1; display: inline-flex; align-items: baseline; gap: var(--s-2); margin-top: var(--s-2); color: var(--ink-2); font: var(--t-sm); }
+.contract__ifnot em { flex: none; color: var(--fin-over-ink); font: var(--t-label); font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; }
 
 /* --- Scene 3: housing ----------------------------------------------------- */
 .setup-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4); margin-top: var(--s-6); }
@@ -149,10 +150,7 @@
 .bet__head strong { color: var(--fin-conditional-ink); font: var(--m-lg); font-feature-settings: var(--num); }
 .bet__rule { margin: 0; max-width: 42ch; color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
 
-/* Which answer is standing, said rather than implied by which button went dark. */
-.bet__state { display: inline-flex; align-self: flex-start; margin: 0 0 auto; padding: var(--s-2) var(--s-3); color: var(--ink-3); background: var(--surface-sunken); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
-.bet__state[data-counted="true"] { color: var(--ink-invert); background: var(--fin-adjustable); }
-.bet__ask { margin: var(--s-2) 0 0; color: var(--ink-1); font: var(--t-title3); }
+.bet .binary-choice { margin-top: auto; }
 .bet[data-counted="true"] { background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); border-left-color: var(--fin-adjustable); }
 
 /* The same two cards the student pressed, after the money did not come. Nothing is
@@ -274,23 +272,17 @@
 
 /* The one statement this world records about savings, asked as a question with three
    answers rather than tucked into a row as a shortcut. */
-.closer { display: grid; gap: var(--s-3); padding: var(--s-5); background: var(--surface-raised); border-left: 4px solid var(--fin-adjustable); }
-.closer h3 { margin: 0; font: var(--t-title2); }
-.closer p { margin: 0; color: var(--ink-2); font: var(--t-sm); }
-.closer-choice { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
-.closer-choice button { display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: start; gap: var(--s-2) var(--s-3); min-height: var(--tap); padding: var(--s-4) var(--s-5); text-align: left; color: var(--ink-1); background: var(--surface-raised); border: 1.5px solid var(--border-ink); border-left-width: 6px; box-shadow: var(--shadow-card); cursor: pointer; transition: background var(--dur-micro) var(--ease-standard), color var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard); }
-
-/* A card with no mark on it is a card nobody knows they can press — the same finding the
-   Week 5 tiles were given a mark for. */
-.closer-choice__mark { grid-row: 1 / span 2; align-self: center; color: var(--bow-brand); font: var(--m-md); }
+.closer { display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-5); background: var(--surface-raised); border-left: 4px solid var(--fin-adjustable); }
+.closer h3 { margin: 0; color: var(--ink-2); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.closer p { margin: 0; color: var(--ink-3); font: var(--t-micro); }
+.closer-choice { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.closer-choice button { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); min-height: var(--tap); padding: var(--s-2) var(--s-4); text-align: left; color: var(--ink-1); background: var(--surface); border: 1.5px solid var(--border-ink); border-left-width: 5px; border-radius: var(--r-sm); cursor: pointer; font: var(--t-ui); transition: background var(--dur-micro) var(--ease-standard), color var(--dur-micro) var(--ease-standard); }
+.closer-choice button small { color: var(--ink-3); font: var(--t-micro); font-feature-settings: var(--num); }
 .closer-choice button[data-category="goal"] { border-left-color: var(--choice-1); }
 .closer-choice button[data-category="reserve"] { border-left-color: var(--choice-2); }
 .closer-choice button[data-category="flexibleCash"] { border-left-color: var(--choice-3); }
-.closer-choice button:hover { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); transform: translateY(-1px); }
-.closer-choice button:hover .closer-choice__mark { color: inherit; }
-.closer-choice__row { grid-column: 2; font: var(--t-title2); }
-.closer-choice span.money { grid-column: 2; color: var(--ink-2); font: var(--t-sm); font-feature-settings: var(--num); }
-.closer-choice button:hover span.money { color: inherit; }
+.closer-choice button:hover { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); }
+.closer-choice button:hover small { color: inherit; }
 
 /* -------------------------------------------------------------------------
    The adjust panel: the plan being corrected rather than rebuilt.
@@ -525,7 +517,7 @@
   .reel article:last-child { grid-column: 1 / -1; }
   .feed { grid-template-columns: 1fr; }
   .change-banner { grid-template-columns: 1fr; }
-  .bets, .closer-choice { grid-template-columns: 1fr; }
+  .bets { grid-template-columns: 1fr; }
   .setup-grid { grid-template-columns: 1fr; }
   .scale { grid-template-columns: 1fr; }
   .ledger { padding: var(--s-4); }
@@ -550,24 +542,32 @@
  */
 @media (max-width: 980px) {
   .plan-scene { grid-template-columns: minmax(0, 1fr); gap: 0; }
-  .plan-scene__work { grid-column: 1; grid-row: 1; padding-bottom: var(--s-8); }
+
+  /* Room for the pinned strip. It used to be a fixed step that the strip outgrew, so the
+     bottom row's own description — "Getting everywhere still takes Avery 14 hours a week" —
+     was cut through the middle by the thing sitting on top of it. */
+  .plan-scene__work { grid-column: 1; grid-row: 1; padding-bottom: calc(var(--rail-idle) + var(--s-6)); }
   .plan-rail { grid-column: 1; grid-row: 2; position: sticky; bottom: 0; z-index: 15; }
   .plan-progress { font-size: 0.95em; }
 
   /* Stacked, the receipt would sit two thousand pixels under the question it belongs to.
      So it does not stack: it pins itself to the bottom of the decision as one line the
-     student can read without moving, and opens when they want the whole thing. */
-  .ledger { gap: var(--s-3); padding: var(--s-4); border: 0; border-top: 3px solid var(--ink-1); box-shadow: 0 -10px 24px -18px rgb(12 21 40 / 55%); }
-  .ledger__head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s-2) var(--s-4); }
-  .ledger__head > .stamp { grid-column: 1; }
-  .ledger__glance { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); grid-column: 1; grid-row: 2; margin: 0; }
+     student can read without moving, and opens when they want the whole thing.
+     Idle, it used to spend about 90px saying "Avery's money / not worked out yet" — with the
+     top chrome, close to a quarter of a 640-wide screen given over to furniture. The title,
+     the figure and the control now share one line, and the padding is the tighter step. */
+  :root { --rail-idle: 68px; }
+
+  .ledger { gap: var(--s-2); padding: var(--s-2) var(--s-4); border: 0; border-top: 3px solid var(--ink-1); box-shadow: 0 -10px 24px -18px rgb(12 21 40 / 55%); }
+  .ledger__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-4); min-height: var(--tap); }
+  .ledger__head > .stamp { flex: none; margin: 0; }
+  .ledger__glance { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); flex: 1 1 auto; min-width: 0; margin: 0; }
   .ledger__glance span { color: var(--ink-2); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
-  .ledger__glance strong { color: var(--ink-1); font: var(--m-md); font-feature-settings: var(--num); }
+  .ledger__glance strong { color: var(--ink-1); font: var(--m-sm); font-feature-settings: var(--num); }
   .ledger[data-state="over"] .ledger__glance strong { color: var(--fin-over-ink); }
-  .ledger__toggle { display: inline-flex; align-items: center; grid-column: 2; grid-row: 1 / span 2; min-height: var(--tap); padding: 0 var(--s-4); color: var(--ink-1); background: var(--surface-raised); border: 1.5px solid var(--border-ink); border-radius: var(--r-sm); cursor: pointer; font: var(--t-sm); font-weight: 700; }
+  .ledger__toggle { display: inline-flex; align-items: center; flex: none; margin-left: auto; min-height: var(--tap); padding: 0 var(--s-3); color: var(--ink-1); background: var(--surface-raised); border: 1.5px solid var(--border-ink); border-radius: var(--r-sm); cursor: pointer; font: var(--t-sm); font-weight: 700; }
   .ledger__body { display: none; }
   .ledger[data-open="true"] .ledger__body { display: grid; max-height: 52vh; overflow-y: auto; }
-
 }
 
 /* ---------------------------------------------------------------------------
@@ -623,6 +623,15 @@
 
 .rank-list__controls button[aria-disabled="true"] { color: var(--ink-4); cursor: default; }
 .rank-list__controls button:not([aria-disabled="true"]):hover { background: var(--surface-sunken); }
+
+/* An order that did not hold up says so by changing, not by swapping one grey sentence for
+   another in the same bar. The list is marked as the thing to look at again, and the panel
+   under it takes the state — which is the difference between feedback and a paragraph. */
+.rank-list[data-checked="wrong"] li { border-left-color: var(--fin-over); background: var(--fin-over-soft); }
+.rank-list[data-checked="wrong"] .rank-list__place { color: var(--fin-over-ink); background: var(--surface); box-shadow: inset 0 0 0 2px var(--fin-over); }
+.stage-action[data-state="wrong"] { background: var(--fin-over-soft); border-color: var(--fin-over); border-left-color: var(--fin-over); }
+.stage-action[data-state="wrong"] p { color: var(--fin-over-ink); }
+.stage-action[data-state="wrong"] b { display: block; font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
 
 .chosen-total { margin-top: var(--s-5); max-width: 34rem; }
 
@@ -843,7 +852,9 @@
 
 /* The receipt on the way out: what was written, and what the plan finally said. */
 .handed-in__record { margin-top: var(--s-6); padding: var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-left: 4px solid var(--bow-brand); }
-.handed-in__record blockquote { max-width: 70ch; margin: var(--s-4) 0; color: var(--ink-1); font: var(--t-body-lg); font-style: italic; }
+.handed-in__record blockquote { max-width: 70ch; margin: var(--s-3) 0 var(--s-5); color: var(--ink-1); font: var(--t-body-lg); font-style: italic; }
+.handed-in__said { margin: var(--s-5) 0 0; color: var(--ink-2); font: var(--t-ui); }
+.handed-in__reader { max-width: 66ch; margin: 0; padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
 .handed-in__numbers { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-7); margin: 0; padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); list-style: none; }
 .handed-in__numbers li { display: flex; align-items: baseline; gap: var(--s-3); }
 .handed-in__numbers span { color: var(--ink-2); font: var(--t-ui); }

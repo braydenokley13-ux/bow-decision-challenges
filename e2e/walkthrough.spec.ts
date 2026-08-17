@@ -15,6 +15,8 @@ import {
   decideOpportunity,
   gotoFreshChallenge,
   submitDefense,
+  MOVED_TILES,
+  TO_DEPOSIT,
 } from "./flow";
 
 /**
@@ -109,17 +111,16 @@ for (const size of SIZES) {
     await fillPlanToBalance(page, "fallback", context);
     await shoot("07-fallback");
     await page.getByRole("button", { name: SAVE_LABEL.fallback }).click();
-    await shoot("08-season-week-1");
+    await shoot("08-season-weeks");
 
-    for (const week of [2, 3, 4]) {
-      await page.getByRole("button", { name: `Play Week ${week}` }).click();
-      if (week === 4) await shoot("08b-season-week-4");
-    }
-    await page.getByRole("button", { name: "Wait and decide later" }).click();
+    await page.getByRole("button", { name: TO_DEPOSIT }).click();
     await shoot("08c-deposit-deadline");
+    await page.getByRole("button", { name: "Wait and decide later" }).click();
+    await shoot("08d-deposit-chosen");
     await page.getByRole("button", { name: "Lock it in and play Week 5" }).click();
     await shoot("09-week5-reveal");
-    const tiles = page.locator(".gap-tiles button");
+    // Only the cards Week 5 actually moved: the strip also carries committed lines it does not.
+    const tiles = page.locator(MOVED_TILES);
     for (let index = 0; index < (await tiles.count()); index += 1) await tiles.nth(index).click();
     await page.getByLabel("Total change to Avery’s money").fill(String(week5TotalFor(context)));
     await page.locator(".gap-builder .calculation").getByRole("button", { name: "Check" }).click();

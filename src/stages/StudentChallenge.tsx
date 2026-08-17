@@ -13,6 +13,7 @@ import { AdjustPanel, type SupplyChange } from "../components/financial/AdjustPa
 import { CourtBackdrop } from "../components/story/CourtBackdrop";
 import { RosterCard } from "../components/story/RosterCard";
 import { dollars, formatDollars, type Dollars } from "../domain/core/money";
+import { hours, hoursPerWeek } from "../domain/core/units";
 import type { CalcId, CategoryId, SetupId } from "../domain/core/ids";
 import type { PlanMode } from "../domain/finance/types";
 import { availableFor, lockedFor, week5Change } from "../domain/finance/formulas";
@@ -26,7 +27,7 @@ import { amountsFor, meaningfulAttempts, snapshotForMode } from "../domain/machi
 import { STUDENT_COPY } from "../content/studentCopy";
 import { CODE_LENGTH, isWellFormedClassCode, isWellFormedSeatCode, normaliseSeatCode } from "../platform/classes/codes";
 import { planPosition, railStop, seedVisited, type PlanPosition } from "./planNavigation";
-import { SeasonWeeks } from "./SeasonWeeks";
+import { DepositDeadline, SeasonWeeks } from "./SeasonWeeks";
 import { Week8Resolution } from "./Week8Resolution";
 import { WorldChoice } from "./WorldChoice";
 import { worldOffer } from "./worldOffer";
@@ -192,42 +193,72 @@ function OpeningStage() {
   );
 }
 
-/** Beat 2. The contract itself, with the difference between the two halves left visible. */
+/**
+ * Beat 2. The contract, and the two payments that come with a rule attached.
+ *
+ * This screen used to be a slide: four payments in two columns, every one of them already
+ * available from "The four payments" in the top bar at any moment of the run, plus a legend
+ * explaining a texture the eye could barely see. There was nothing on it a student could not
+ * read somewhere else, which is the definition of a corridor.
+ *
+ * What the top bar cannot carry is the half of a conditional payment that matters: what has
+ * to happen, and what it means for the season if it does not. So that is what this screen is
+ * now — the certain money in one line, and the two conditions with their consequences stated,
+ * which is the thing Question 2 will ask the student to take a position on.
+ */
 function DealStage() {
   const { dispatch } = useChallenge();
   const { offer, incomeCopy, numbers } = BASKETBALL_SCENARIO;
   const weekly = Math.round(numbers.basePay / numbers.weeks / 10) * 10;
-  const lines = [
-    { tone: "safe", key: "savings" as const, rule: "In the account", detail: "Avery has it now." },
-    { tone: "safe", key: "base" as const, rule: `Across the ${numbers.weeks} weeks`, detail: `About ${formatDollars(weekly)} a week, win or lose.` },
-    { tone: "maybe", key: "completion" as const, rule: "Only if", detail: incomeCopy.completion.rule ?? "" },
-    { tone: "maybe", key: "outcome" as const, rule: "Only if", detail: incomeCopy.outcome.rule ?? "" },
+  const certain = [
+    { key: "savings" as const, when: "In the account", detail: "Avery has it now." },
+    { key: "base" as const, when: `Across the ${numbers.weeks} weeks`, detail: `About ${formatDollars(weekly)} a week, win or lose.` },
   ].map((line) => ({ ...line, label: incomeCopy[line.key].label, amount: formatDollars(incomeAmount(numbers, line.key)) }));
+  const conditional = (["completion", "outcome"] as const).map((key) => ({
+    key,
+    label: incomeCopy[key].label,
+    amount: formatDollars(incomeAmount(numbers, key)),
+    rule: incomeCopy[key].rule ?? "",
+    ifNot: incomeCopy[key].ifNot ?? "",
+  }));
   return (
-    <StageShell stage="role-contract" kicker="The terms" title="What the eight weeks pay.">
-      <p className="stage-deck">Four payments, one contract. Two of them come with a condition attached.</p>
+    <StageShell stage="role-contract" kicker="The terms" title="Two of these payments have a rule.">
+      <p className="stage-deck">
+        Four payments in the contract. Two arrive whatever happens on the court. Two only arrive
+        if something else does.
+      </p>
       <div className="contract">
         <div className="contract__head">
-          <b>{offer.team} · 8-week terms</b>
+          <b>{offer.team} · {numbers.weeks}-week terms</b>
           <span>Avery Reyes #{offer.jersey} · {offer.position}</span>
         </div>
         <div className="contract__columns">
-          {(["safe", "maybe"] as const).map((tone) => (
-            <section key={tone} className="contract__column" data-tone={tone}>
-              <p className="contract__tag">{tone === "safe" ? "Avery will have this" : "Depends on something happening"}</p>
-              {lines.filter((line) => line.tone === tone).map((line) => (
-                <div key={line.key} className="contract__line">
-                  <b>{line.label}</b>
-                  <strong className="money">{line.amount}</strong>
-                  <span className="contract__rule"><em>{line.rule}</em>{line.detail}</span>
-                </div>
-              ))}
-            </section>
-          ))}
-        </div>
-        <div className="contract__foot">
-          <p><i data-tone="safe" aria-hidden="true" />Solid means the money arrives.</p>
-          <p><i data-tone="maybe" aria-hidden="true" />Striped means it might not.</p>
+          {/* The certain money, stated once and briefly. It is the base the whole plan is
+              built on and the student works out its total two screens from here, so the
+              screen names the two payments and never adds them up. */}
+          <section className="contract__column" data-tone="safe">
+            <p className="contract__tag">Avery will have this</p>
+            {certain.map((line) => (
+              <div key={line.key} className="contract__line">
+                <b>{line.label}</b>
+                <strong className="money">{line.amount}</strong>
+                <span className="contract__rule"><em>{line.when}</em>{line.detail}</span>
+              </div>
+            ))}
+          </section>
+          {/* The conditions, and what each one costs the season when it is not met. This is
+              the only place either sentence appears. */}
+          <section className="contract__column" data-tone="maybe">
+            <p className="contract__tag">Depends on something happening</p>
+            {conditional.map((line) => (
+              <div key={line.key} className="contract__line">
+                <b>{line.label}</b>
+                <strong className="money">{line.amount}</strong>
+                <span className="contract__rule"><em>Only if</em>{line.rule}</span>
+                <span className="contract__ifnot"><em>If it does not</em>{line.ifNot}</span>
+              </div>
+            ))}
+          </section>
         </div>
       </div>
       <div className="stage-action">
@@ -287,7 +318,7 @@ function SetupStage() {
             Three places, three ways of paying. Put them in order, cheapest first —
             <strong> over all eight weeks</strong>, not per week.
           </p>
-          <ol className="rank-list">
+          <ol className="rank-list" data-checked={state.setupRanking ? (state.setupRanking.correct ? "right" : "wrong") : "unchecked"}>
             {order.map((id, index) => {
               const setup = byId(id);
               return (
@@ -305,11 +336,20 @@ function SetupStage() {
               );
             })}
           </ol>
-          <div className="stage-action">
+          {/* A wrong order used to answer with the same bar, the same colour and the same
+              position as the neutral hint it replaced — a twelve-year-old would not notice
+              anything had happened. The panel changes state, the list is marked as needing
+              another look, and the line says something true without naming the row. */}
+          <div className="stage-action" data-state={state.setupRanking && !state.setupRanking.correct ? "wrong" : "neutral"}>
             {state.setupRanking && !state.setupRanking.correct
-              ? <p aria-live="polite">Not yet. One of these costs less over eight weeks than its weekly price suggests.</p>
+              ? (
+                <p aria-live="assertive">
+                  <b>Not that order.</b> One of these prices is for the whole eight weeks, not
+                  for one week. Work out what each place costs across all {SCENARIO_NUMBERS.weeks} of them.
+                </p>
+              )
               : <p>Cheapest over eight weeks goes first.</p>}
-            <Button type="button" onClick={checkOrder}>Check the order</Button>
+            <Button type="button" onClick={checkOrder}>{state.setupRanking && !state.setupRanking.correct ? "Check it again" : "Check the order"}</Button>
           </div>
         </>
       ) : (
@@ -346,7 +386,9 @@ function SetupStage() {
                   </div>
                   <p className="trip__read">
                     <span>{setup.commute}</span>
-                    <b>{SCENARIO_NUMBERS.load.commuteBlocks[setup.id]} hours a week</b>
+                    {/* The Gym District Sublet costs exactly one hour a week, so a hard-coded
+                        "hours" here is a bug with a specific option's name on it. */}
+                    <b>{hoursPerWeek(SCENARIO_NUMBERS.load.commuteBlocks[setup.id])}</b>
                   </p>
                 </div>
                 <p className="place-card__tradeoff">{setup.tradeoff}</p>
@@ -371,7 +413,7 @@ function SetupStage() {
           )}
           <div className="stage-action">
             {chosen
-              ? <p aria-live="polite"><strong>{chosen.title}.</strong> {formatDollars(chosen.total)} of Avery’s money is spoken for, and {SCENARIO_NUMBERS.load.commuteBlocks[chosen.id]} hours of every week belong to the trip.</p>
+              ? <p aria-live="polite"><strong>{chosen.title}.</strong> {formatDollars(chosen.total)} of Avery’s money is spoken for, and {hours(SCENARIO_NUMBERS.load.commuteBlocks[chosen.id])} of every week belong to the trip.</p>
               : <p>Each place asks for something different. Pick the one you want to build the plan around.</p>}
             <Button aria-disabled={!ready} onClick={() => ready && dispatch({ type: "GO_TO_STAGE", stage: "working-plan" })}>
               {ready ? "Build the plan" : chosen ? "Work out the eight-week cost to continue" : "Pick a place to continue"}
@@ -643,22 +685,17 @@ function WorkingStage() {
               <strong className="money">{formatDollars(incomeAmount(SCENARIO_NUMBERS, key))}</strong>
             </div>
             <p className="bet__rule">Avery only gets this if {BASKETBALL_SCENARIO.incomeCopy[key].rule}</p>
-            {/* The card says which answer is standing, so a student scanning the screen reads
-                the state of their plan rather than working it back from which button is dark. */}
-            {/* Only where it is still the answer. On the backup screen the verdict below says
-                what happened to this money, and a chip still reading "in the plan" over the
-                sentence telling a student to take it out is the screen arguing with itself. */}
-            {!backup && <p className="bet__state" data-counted={included}>{included ? PLAN_COPY.steps.bonuses.counted : PLAN_COPY.steps.bonuses.left}</p>}
             {backup ? (
               <p className="bet__verdict">{included ? "You counted on it. Take it back out of the plan." : "You left it out, so nothing here changes."}</p>
             ) : (
-              <>
-                <p className="bet__ask">{PLAN_COPY.steps.bonuses.ask}</p>
-                <div className="binary-choice">
-                  <button type="button" aria-pressed={included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: true })}>{PLAN_COPY.steps.bonuses.yes}</button>
-                  <button type="button" aria-pressed={!included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: false })}>{PLAN_COPY.steps.bonuses.no}</button>
-                </div>
-              </>
+              /* The question is asked once, at the head of the screen. It used to be printed
+                 again inside each card, and a chip repeated whichever button was already
+                 pressed — one question and one answer, said three times each. The pressed
+                 button carries the state, which is what a pressed button is for. */
+              <div className="binary-choice">
+                <button type="button" aria-pressed={included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: true })}>{PLAN_COPY.steps.bonuses.yes}</button>
+                <button type="button" aria-pressed={!included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: false })}>{PLAN_COPY.steps.bonuses.no}</button>
+              </div>
             )}
           </article>
         );
@@ -726,16 +763,24 @@ function WorkingStage() {
                 happens on the court. It is the first line of Avery’s money.
               </p>
             ) : (
+              /* The prompt used to print the two amounts with a plus sign between them,
+                 directly above the box asking for their total, which left the question with
+                 no arithmetic in it. Both amounts are reachable from this screen — the
+                 contract opens from the top bar at every moment — so the prompt names the two
+                 payments and the student finds them. The step-by-step hint still assembles
+                 the sum, and opening it is recorded as help. */
               <CalculationInput
                 calcId="reliable-floor"
                 label={question.countOn.name}
                 labelHidden
-                prompt={`${formatDollars(SCENARIO_NUMBERS.savings)} already saved + ${formatDollars(SCENARIO_NUMBERS.basePay)} of pay across the ${SCENARIO_NUMBERS.weeks} weeks`}
+                prompt="Avery’s savings, plus base pay for every week of the season."
                 terms="Do not add either bonus yet. Those are not certain."
                 expected={reliableFloorExpectation(SCENARIO_NUMBERS)}
                 priorAttempts={state.calculations["reliable-floor"]?.attempts}
                 onSubmit={(raw, value, correct) => submitCalculation(dispatch, "reliable-floor", raw, value, correct)}
-                scaffold={`Add the two amounts that always arrive: ${formatDollars(SCENARIO_NUMBERS.savings)} + ${formatDollars(SCENARIO_NUMBERS.basePay)}.`}
+                low="Too low. Both payments count — the money already saved and the base pay."
+                high="Too high. Only two payments are certain. A bonus has gone into this total."
+                scaffold={`Open “The four payments” at the top of the screen. Add the two that arrive no matter what: ${formatDollars(SCENARIO_NUMBERS.savings)} + ${formatDollars(SCENARIO_NUMBERS.basePay)}.`}
                 {...calculationSupport(dispatch, "reliable-floor")}
               />
             )}
@@ -758,16 +803,21 @@ function WorkingStage() {
                 money is gone on food, phone and laundry before Avery chooses anything. Rent is on top of it, and both are on the right.
               </p>
             ) : (
+              /* Same fix as question one: the weekly amount is on the rail beside this
+                 question, on the food, phone and laundry line. The multiplication is the
+                 question, so the question no longer shows it done. */
               <CalculationInput
                 calcId="essentials-total"
                 label={question.committed.name}
                 labelHidden
-                prompt={`${formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)} a week for food, phone and laundry × ${SCENARIO_NUMBERS.weeks} weeks`}
+                prompt={`What food, phone and laundry cost each week, for all ${SCENARIO_NUMBERS.weeks} weeks.`}
                 terms="Rent is on top of this. It comes out of the plan automatically."
                 expected={essentialsExpectation(SCENARIO_NUMBERS)}
                 priorAttempts={state.calculations["essentials-total"]?.attempts}
                 onSubmit={(raw, value, correct) => submitCalculation(dispatch, "essentials-total", raw, value, correct)}
-                scaffold={`Multiply ${formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)} by ${SCENARIO_NUMBERS.weeks} weeks. Think: ${Array.from({ length: SCENARIO_NUMBERS.weeks }, () => formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)).join(" + ")}.`}
+                low={`Too low. That is fewer than ${SCENARIO_NUMBERS.weeks} weeks of it.`}
+                high="Too high. Rent is not part of this one — the plan takes rent out on its own."
+                scaffold={`The weekly amount is on Avery’s money, on the food, phone and laundry line. Multiply ${formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)} by ${SCENARIO_NUMBERS.weeks} weeks. Think: ${Array.from({ length: SCENARIO_NUMBERS.weeks }, () => formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)).join(" + ")}.`}
                 {...calculationSupport(dispatch, "essentials-total")}
               />
             )}
@@ -810,28 +860,60 @@ function PlanEcho({ mode, label, note }: { mode: PlanMode; label: string; note?:
   );
 }
 
-/** Beat 7. Two pieces of news, then the student works out what they cost. */
+/**
+ * Beat 7. Two pieces of news, then the student works out what they cost.
+ *
+ * The cards used to be a transcription exercise wearing the best screen in the product: three
+ * tiles, all three belonging, the app printing their running sum, and a box beside the sum
+ * asking for it. There was nothing on the screen to judge.
+ *
+ * Now the card set is built from the whole of *this* student's season, not only from the parts
+ * of it Week 5 moved. Rent, the weekly basics, a seat already reserved and a bonus they chose
+ * to leave out are all real amounts out of their own plan that Week 5 does not touch — so
+ * tapping is a reading of their plan rather than tapping everything on screen. The app no
+ * longer adds anything up: the student assembles the total themselves and the existing attempt
+ * flow handles a miss.
+ *
+ * The calculation id, the expected value and the applicable set are all unchanged, so a log
+ * written before the decoys existed scores exactly as it did — and a decoy tapped now is a
+ * component selection this world already scores as incomplete, with no new event and no new
+ * rule.
+ */
 function Week5EventStage() {
   const { state, dispatch } = useChallenge();
   if (!state.setupId) return null;
   const expected = week5Change({ includeOutcome: state.income.includeOutcome, setupId: state.setupId }, SCENARIO_NUMBERS);
   const setup = BASKETBALL_SCENARIO.setups.find((item) => item.id === state.setupId)!;
-  // Only changes that actually moved money appear. A setup with no extra travel cost
-  // produces no card, so nothing here is worth $0.
-  // Every card answers the same question — does this move the money in your plan? — so the
-  // three used to give three different reasons and left no consistent way to decide.
-  const changes = [
+  const outcomeLabel = BASKETBALL_SCENARIO.incomeCopy.outcome.label;
+  // What Week 5 actually did to this plan. Only changes that moved money appear, so a setup
+  // with no extra travel cost produces no card and nothing here is worth $0. These three ids
+  // are the ones the component-selection observation has always read.
+  const moved = [
     ...(state.income.includeOutcome
-      ? [{ id: "lost-outcome", kind: "lost" as const, label: BASKETBALL_SCENARIO.incomeCopy.outcome.label, detail: "Your plan counted on this money. It is not coming.", amount: SCENARIO_NUMBERS.outcomeIncome as number }]
+      ? [{ id: "lost-outcome", kind: "lost" as const, tag: "Money gone", label: outcomeLabel, detail: "Your plan counted on this money. It is not coming.", amount: SCENARIO_NUMBERS.outcomeIncome as number }]
       : []),
-    { id: "required-cost", kind: "bill" as const, label: BASKETBALL_SCENARIO.disruption.requiredCostLabel, detail: "A new bill. Avery has to pay it either way.", amount: SCENARIO_NUMBERS.requiredWeek5Cost as number },
+    { id: "required-cost", kind: "bill" as const, tag: "New bill", label: BASKETBALL_SCENARIO.disruption.requiredCostLabel, detail: "A new bill. Avery has to pay it either way.", amount: SCENARIO_NUMBERS.requiredWeek5Cost as number },
     ...(setup.eventCost > 0
-      ? [{ id: "setup-cost", kind: "bill" as const, label: "Extra travel to rehab", detail: `A new bill, because Avery lives at the ${setup.title}.`, amount: setup.eventCost as number }]
+      ? [{ id: "setup-cost", kind: "bill" as const, tag: "New bill", label: "Extra travel to rehab", detail: `A new bill, because Avery lives at the ${setup.title}.`, amount: setup.eventCost as number }]
       : []),
   ];
-  const selectedTotal = changes
-    .filter((change) => state.selectedGapTiles.includes(change.id))
-    .reduce((sum, change) => sum + change.amount, 0);
+  // Real amounts out of this student's own season that Week 5 leaves exactly where they were.
+  // Each one is a line they set or agreed themselves, stated as what it is rather than as a
+  // verdict on whether it belongs — working that out is the whole of the task.
+  const held = [
+    { id: "decoy-rent", kind: "committed" as const, tag: "Already promised", label: "Where Avery lives", detail: `${SCENARIO_NUMBERS.weeks} weeks at the ${setup.title}, agreed before the season.`, amount: Number(SCENARIO_NUMBERS.setupCosts[state.setupId]) },
+    ...(state.income.includeOutcome
+      ? []
+      : [{ id: "decoy-outcome", kind: "uncounted" as const, tag: "Never counted", label: outcomeLabel, detail: "You left this out when you built the plan.", amount: SCENARIO_NUMBERS.outcomeIncome as number }]),
+    ...(state.depositTaken
+      ? [{ id: "decoy-deposit", kind: "committed" as const, tag: "Already paid", label: "Course seat", detail: `Paid at the Week ${SCENARIO_NUMBERS.course.depositDeadlineWeek} deadline to hold the place.`, amount: Number(SCENARIO_NUMBERS.course.depositPrice) }]
+      : []),
+    { id: "decoy-essentials", kind: "committed" as const, tag: "Already promised", label: "Food, phone and laundry", detail: `${formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)} a week, all ${SCENARIO_NUMBERS.weeks} weeks.`, amount: Number(SCENARIO_NUMBERS.essentialsTotal) },
+  ];
+  // Interleaved to a fixed order rather than shuffled: the run has to be reproducible from the
+  // log, and a set where every card that counts sits at the top is a set nobody has to read.
+  const ORDER = ["decoy-rent", "lost-outcome", "decoy-outcome", "required-cost", "decoy-deposit", "setup-cost", "decoy-essentials"];
+  const changes = [...moved, ...held].sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id));
   return (
     <StageShell
       stage="week5-event"
@@ -865,7 +947,7 @@ function Week5EventStage() {
         <div className="gap-builder__intro">
           <p className="eyebrow">What this costs Avery</p>
           <h2>Work out what Week 5 just did to the plan.</h2>
-          <p>Tap each card that hits the plan you built. Then add them up and type the total.</p>
+          <p>Some of these changed this week. Some of them did not. Tap the ones that changed, add them up, and type the total.</p>
         </div>
         <div className="gap-tiles">
           {changes.map((change) => {
@@ -875,18 +957,32 @@ function Week5EventStage() {
                 onClick={() => dispatch({ type: "GAP_TILE_TOGGLED", tileId: change.id, selected: !selected })}>
                 {/* A card with no mark on it is a card nobody knows they can press. */}
                 <span className="gap-tiles__mark" aria-hidden="true" />
-                <span className="gap-tiles__kind">{change.kind === "lost" ? "Money gone" : "New bill"}</span>
+                <span className="gap-tiles__kind">{change.tag}</span>
                 <span className="gap-tiles__label"><b>{change.label}</b><small>{change.detail}</small></span>
                 <strong className="money">{formatDollars(change.amount)}</strong>
               </button>
             );
           })}
-          <p className="gap-tiles__running" aria-live="polite">
-            <span>The cards you tapped add up to</span><strong className="money">{formatDollars(selectedTotal)}</strong>
-          </p>
         </div>
         <div className="gap-builder__sum">
-          <CalculationInput calcId="week5-change" label="Total change to Avery’s money" prompt="Money that disappeared + new bills that must be paid" terms="Type it as a plain amount — no minus sign." expected={expected} priorAttempts={state.calculations["week5-change"]?.attempts} onSubmit={(raw, value, correct) => submitCalculation(dispatch, "week5-change", raw, value, correct)} onCorrect={() => dispatch({ type: "GO_TO_STAGE", stage: "first-response" })} scaffold="Add the dollar amounts on the cards you tapped. Money lost and new bills both make the same size hole." {...calculationSupport(dispatch, "week5-change")} />
+          {/* No running sum. The app used to print the total of the tapped cards an inch from
+              the box asking for it, which made the only question on the screen a copying
+              exercise. The step-by-step hint below carries the method and how many cards
+              moved, and opening it is recorded as help, as it is everywhere else. */}
+          <CalculationInput
+            calcId="week5-change"
+            label="Total change to Avery’s money"
+            prompt="Everything Week 5 took away, plus every new bill it added."
+            terms="Type it as a plain amount — no minus sign."
+            expected={expected}
+            priorAttempts={state.calculations["week5-change"]?.attempts}
+            onSubmit={(raw, value, correct) => submitCalculation(dispatch, "week5-change", raw, value, correct)}
+            onCorrect={() => dispatch({ type: "GO_TO_STAGE", stage: "first-response" })}
+            low="Too low. One of the cards that changed this week is missing from your total."
+            high="Too high. Something in your total was already promised before Week 5, so it did not change."
+            scaffold={`Take one card at a time and ask whether Week 5 changed that number. ${moved.length} of the ${changes.length} cards changed; money lost and a new bill make the same size hole, so add them together.`}
+            {...calculationSupport(dispatch, "week5-change")}
+          />
         </div>
       </section>
     </StageShell>
@@ -1064,7 +1160,13 @@ function FinalRepairStage() {
           />
         </div>
       ) : (
-        <p className="board-gate">Make both calls above, and the money moves.</p>
+        /* A dashed outline around a sentence reads as a control that has stopped working.
+           It is a status, so it is written as one. */
+        <p className="board-waiting" aria-live="polite">
+          {state.income.includeOptionalWork === null && !completionDecided
+            ? "Two calls still to make. The plan moves once both are answered."
+            : "One call still to make. The plan moves once both are answered."}
+        </p>
       )}
       </PlanScene>
     </StageShell>
@@ -1105,6 +1207,7 @@ function DefenseStage() {
               discovering that the core control of the page is a control at all. */}
           <div className="interview__stats">
             <p className="field-label">Tap 2 or 3 of your own numbers</p>
+            {/* Named where they are, not where the layout happens to put them. */}
             {tiles.map((tile) => (
               <button key={tile.id} type="button" aria-pressed={selected.includes(tile.id)} onClick={() => toggle(tile.id)}>
                 <span className="interview__mark" aria-hidden="true" />
@@ -1126,8 +1229,10 @@ function DefenseStage() {
               just been told to write sentences, and start that count at "2 more" when they
               had picked none. */}
           <footer>
+            {/* "On the left" was true at a laptop width and false at 640, where the numbers
+                stack above the box. The instruction names what to tap, not where it sits. */}
             <p aria-live="polite">
-              {stillToPick > 0 ? `Tap ${stillToPick} more number${stillToPick === 1 ? "" : "s"} on the left. ` : "Numbers ready. "}
+              {stillToPick > 0 ? `Tap ${stillToPick} more of Avery’s number${stillToPick === 1 ? "" : "s"}. ` : "Numbers ready. "}
               {text.trim().length < 40 ? "Then write two to four sentences." : "Long enough to turn in."}
             </p>
             <Button aria-disabled={!canSubmit} onClick={() => canSubmit && dispatch({ type: "DEFENSE_SUBMITTED", tileIds: selected, text })}>Turn in my plan</Button>
@@ -1188,25 +1293,29 @@ function SubmittedStage() {
             {delivery.status === "failed" && delivery.retryable && (
               <Button type="button" variant="secondary" onClick={() => void deliver()}>Try sending again</Button>
             )}
-            <p>
-              Your explanation goes to a person, not a computer. Software can check whether the money
-              works. It should not decide whether your thinking makes sense.
-            </p>
           </div>
         </div>
       </section>
 
-      {/* What was actually sent. A confirmation screen that shows nothing of the work is a
-          receipt with no items on it — and this is the last chance a student has to read
-          back their own answer. */}
+      {/* What was actually sent, in one block. A confirmation screen that shows nothing of the
+          work is a receipt with no items on it, and this is the last chance a student has to
+          read back their own answer. It says what went, where it went, and who reads which
+          part — and it says nothing about how any of it did, because nothing has been read
+          yet and a number here would be an answer to a question nobody has asked. */}
       <section className="handed-in__record">
         <p className="stamp">What you turned in</p>
-        <blockquote>{state.defense.text}</blockquote>
         <ul className="handed-in__numbers">
+          {setup && <li><span>Where Avery lived</span><strong>{setup.title}</strong></li>}
           {CHOICE_ORDER.map((category) => (
             <li key={category}><span>{CHOICE_LABELS[category]}</span><strong className="money">{formatDollars(finalAmounts[category])}</strong></li>
           ))}
         </ul>
+        <p className="handed-in__said">Your {state.defense.tileIds.length} numbers, and what you said about them:</p>
+        <blockquote>{state.defense.text}</blockquote>
+        <p className="handed-in__reader">
+          A person reads the writing. Software can check whether the money works; it should not
+          decide whether your thinking makes sense. Nothing here has been read yet.
+        </p>
       </section>
 
       <div className="stage-action">
@@ -1245,9 +1354,11 @@ function BasketballStages({ stage }: { stage: StageId }) {
       // The backup version is the working plan with its bonus money taken out, so it is the
       // same screen reacting rather than a second board.
       case "working-plan": case "fallback-version": return <WorkingStage />;
-      // Retired as their own screens — a plan with no bonus money starts the season
-      // directly, and the passive Weeks 1–4 feed is now a season the student plays.
-      case "income-check": case "week5-transition": case "season-weeks": return <SeasonWeeks />;
+      // Retired as its own screen — a plan with no bonus money starts the season directly.
+      case "income-check": case "season-weeks": return <SeasonWeeks />;
+      // The course deposit is the pivot of the design, so it gets the screen it was buried at
+      // the bottom of. The stage id already existed and already meant "Weeks 1–4 played".
+      case "week5-transition": return <DepositDeadline />;
       case "week5-event": return <Week5EventStage />;
       case "first-response": return <TriageStage />;
       // The no-bonus check happens on the screen where the bonus was counted.

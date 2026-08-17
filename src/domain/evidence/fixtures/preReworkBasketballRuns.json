@@ -1,0 +1,3633 @@
+[
+  {
+    "name": "plain",
+    "options": {
+      "seatCode": "7"
+    },
+    "log": [
+      {
+        "id": "event-1",
+        "sequence": 1,
+        "timestamp": 1770000001000,
+        "type": "SESSION_STARTED",
+        "stage": "entry",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "SESSION_STARTED",
+          "sessionId": "session-00000007",
+          "classCode": "H4KVW",
+          "seatCode": "7",
+          "at": 1770000001000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-2",
+        "sequence": 2,
+        "timestamp": 1770000001000,
+        "type": "STAGE_ENTERED",
+        "stage": "choose-world",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "choose-world",
+          "from": "entry"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:choose-world"
+      },
+      {
+        "id": "event-3",
+        "sequence": 3,
+        "timestamp": 1770000002000,
+        "type": "STAGE_ENTERED",
+        "stage": "setup-comparison",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "setup-comparison",
+          "from": "choose-world"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:setup-comparison"
+      },
+      {
+        "id": "event-4",
+        "sequence": 4,
+        "timestamp": 1770000003000,
+        "type": "SETUP_RANKED",
+        "stage": "setup-comparison",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "full-cost"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "SETUP_RANKED",
+          "order": [
+            "cousin-room",
+            "teammate-share",
+            "gym-sublet"
+          ],
+          "correct": true,
+          "at": 1770000003000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-5",
+        "sequence": 5,
+        "timestamp": 1770000004000,
+        "type": "SETUP_SELECTED",
+        "stage": "setup-comparison",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "full-cost"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "SETUP_SELECTED",
+          "setupId": "cousin-room",
+          "at": 1770000004000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-6",
+        "sequence": 6,
+        "timestamp": 1770000005000,
+        "type": "CALCULATION_SUBMITTED",
+        "stage": "setup-comparison",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "full-cost"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "CALCULATION_SUBMITTED",
+          "calcId": "chosen-setup-total",
+          "raw": "300",
+          "value": 300,
+          "correct": true,
+          "at": 1770000005000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-7",
+        "sequence": 7,
+        "timestamp": 1770000006000,
+        "type": "STAGE_ENTERED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "working-plan",
+          "from": "setup-comparison"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:working-plan"
+      },
+      {
+        "id": "event-8",
+        "sequence": 8,
+        "timestamp": 1770000007000,
+        "type": "CALCULATION_SUBMITTED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "income-reliability"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "type": "CALCULATION_SUBMITTED",
+          "calcId": "reliable-floor",
+          "raw": "5000",
+          "value": 5000,
+          "correct": true,
+          "at": 1770000007000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-9",
+        "sequence": 9,
+        "timestamp": 1770000008000,
+        "type": "CALCULATION_SUBMITTED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er2"
+        ],
+        "payload": {
+          "type": "CALCULATION_SUBMITTED",
+          "calcId": "essentials-total",
+          "raw": "1600",
+          "value": 1600,
+          "correct": true,
+          "at": 1770000008000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-10",
+        "sequence": 10,
+        "timestamp": 1770000011000,
+        "type": "PLAN_REMAINDER_ASSIGNED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er3"
+        ],
+        "payload": {
+          "type": "PLAN_REMAINDER_ASSIGNED",
+          "mode": "working",
+          "category": "flexibleCash",
+          "amount": 1000,
+          "at": 1770000011000,
+          "remaining": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-11",
+        "sequence": 11,
+        "timestamp": 1770000012000,
+        "type": "PLAN_SAVE_REQUESTED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er2",
+          "plan-within-income.er4"
+        ],
+        "payload": {
+          "mode": "working",
+          "inputs": {
+            "mode": "working",
+            "amounts": {
+              "goal": 1200,
+              "reserve": 900,
+              "flexibleCash": 1000
+            },
+            "includeCompletion": false,
+            "includeOutcome": false,
+            "includeOptionalWork": false,
+            "setupId": "cousin-room",
+            "week5Applied": false,
+            "depositTaken": false,
+            "numbersVersion": "pup-numbers-2"
+          },
+          "balance": 0,
+          "residual": 0,
+          "unassigned": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-12",
+        "sequence": 12,
+        "timestamp": 1770000012000,
+        "type": "PLAN_SAVED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er2",
+          "plan-within-income.er4"
+        ],
+        "payload": {
+          "mode": "working",
+          "snapshot": {
+            "id": "snapshot-12",
+            "sequence": 12,
+            "inputs": {
+              "mode": "working",
+              "amounts": {
+                "goal": 1200,
+                "reserve": 900,
+                "flexibleCash": 1000
+              },
+              "includeCompletion": false,
+              "includeOutcome": false,
+              "includeOptionalWork": false,
+              "setupId": "cousin-room",
+              "week5Applied": false,
+              "depositTaken": false,
+              "numbersVersion": "pup-numbers-2"
+            },
+            "readout": {
+              "available": 5000,
+              "locked": 1900,
+              "assignedTotal": 3100,
+              "balance": 0,
+              "residual": 0,
+              "unassigned": 0,
+              "exposure": 0
+            }
+          },
+          "balance": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-13",
+        "sequence": 13,
+        "timestamp": 1770000012000,
+        "type": "STAGE_ENTERED",
+        "stage": "season-weeks",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "season-weeks",
+          "from": "working-plan"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:season-weeks"
+      },
+      {
+        "id": "event-14",
+        "sequence": 14,
+        "timestamp": 1770000013000,
+        "type": "COURSE_DEPOSIT_DECIDED",
+        "stage": "season-weeks",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget",
+          "contingency"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "COURSE_DEPOSIT_DECIDED",
+          "taken": false,
+          "at": 1770000013000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-15",
+        "sequence": 15,
+        "timestamp": 1770000014000,
+        "type": "WEEK5_ADVANCE_CONFIRMED",
+        "stage": "season-weeks",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "WEEK5_ADVANCE_CONFIRMED",
+          "at": 1770000014000
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "week5-applied"
+      },
+      {
+        "id": "event-16",
+        "sequence": 16,
+        "timestamp": 1770000014000,
+        "type": "STAGE_ENTERED",
+        "stage": "week5-event",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "week5-event",
+          "from": "season-weeks"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:week5-event"
+      },
+      {
+        "id": "event-17",
+        "sequence": 17,
+        "timestamp": 1770000015000,
+        "type": "GAP_TILE_TOGGLED",
+        "stage": "week5-event",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er1"
+        ],
+        "payload": {
+          "type": "GAP_TILE_TOGGLED",
+          "tileId": "required-cost",
+          "selected": true,
+          "at": 1770000015000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-18",
+        "sequence": 18,
+        "timestamp": 1770000016000,
+        "type": "GAP_TILE_TOGGLED",
+        "stage": "week5-event",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er1"
+        ],
+        "payload": {
+          "type": "GAP_TILE_TOGGLED",
+          "tileId": "setup-cost",
+          "selected": true,
+          "at": 1770000016000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-19",
+        "sequence": 19,
+        "timestamp": 1770000017000,
+        "type": "CALCULATION_SUBMITTED",
+        "stage": "week5-event",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er1"
+        ],
+        "payload": {
+          "type": "CALCULATION_SUBMITTED",
+          "calcId": "week5-change",
+          "raw": "1000",
+          "value": 1000,
+          "correct": true,
+          "at": 1770000017000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-20",
+        "sequence": 20,
+        "timestamp": 1770000018000,
+        "type": "STAGE_ENTERED",
+        "stage": "first-response",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "first-response",
+          "from": "week5-event"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:first-response"
+      },
+      {
+        "id": "event-21",
+        "sequence": 21,
+        "timestamp": 1770000022000,
+        "type": "PLAN_SAVE_REQUESTED",
+        "stage": "first-response",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er2",
+          "adapt-a-plan.er3"
+        ],
+        "payload": {
+          "mode": "week5-first-response",
+          "inputs": {
+            "mode": "week5-first-response",
+            "amounts": {
+              "goal": 850,
+              "reserve": 650,
+              "flexibleCash": 600
+            },
+            "includeCompletion": false,
+            "includeOutcome": false,
+            "includeOptionalWork": false,
+            "setupId": "cousin-room",
+            "week5Applied": true,
+            "depositTaken": false,
+            "numbersVersion": "pup-numbers-2"
+          },
+          "balance": 0,
+          "residual": 0,
+          "unassigned": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-22",
+        "sequence": 22,
+        "timestamp": 1770000022000,
+        "type": "PLAN_SAVED",
+        "stage": "first-response",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er2",
+          "adapt-a-plan.er3"
+        ],
+        "payload": {
+          "mode": "week5-first-response",
+          "snapshot": {
+            "id": "snapshot-22",
+            "sequence": 22,
+            "inputs": {
+              "mode": "week5-first-response",
+              "amounts": {
+                "goal": 850,
+                "reserve": 650,
+                "flexibleCash": 600
+              },
+              "includeCompletion": false,
+              "includeOutcome": false,
+              "includeOptionalWork": false,
+              "setupId": "cousin-room",
+              "week5Applied": true,
+              "depositTaken": false,
+              "numbersVersion": "pup-numbers-2"
+            },
+            "readout": {
+              "available": 5000,
+              "locked": 2900,
+              "assignedTotal": 2100,
+              "balance": 0,
+              "residual": 0,
+              "unassigned": 0,
+              "exposure": 0
+            }
+          },
+          "balance": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-23",
+        "sequence": 23,
+        "timestamp": 1770000022000,
+        "type": "STAGE_ENTERED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "opportunity-final-repair",
+          "from": "first-response"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:opportunity-final-repair"
+      },
+      {
+        "id": "event-24",
+        "sequence": 24,
+        "timestamp": 1770000023000,
+        "type": "OPTIONAL_WORK_DECIDED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "OPTIONAL_WORK_DECIDED",
+          "accepted": false,
+          "at": 1770000023000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-25",
+        "sequence": 25,
+        "timestamp": 1770000024000,
+        "type": "COMPLETION_INCOME_DECIDED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "income-reliability",
+          "adaptation"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "type": "COMPLETION_INCOME_DECIDED",
+          "included": false,
+          "at": 1770000024000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-26",
+        "sequence": 26,
+        "timestamp": 1770000028000,
+        "type": "PLAN_SAVE_REQUESTED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation",
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er2",
+          "adapt-a-plan.er4"
+        ],
+        "payload": {
+          "mode": "final",
+          "inputs": {
+            "mode": "final",
+            "amounts": {
+              "goal": 850,
+              "reserve": 650,
+              "flexibleCash": 600
+            },
+            "includeCompletion": false,
+            "includeOutcome": false,
+            "includeOptionalWork": false,
+            "setupId": "cousin-room",
+            "week5Applied": true,
+            "depositTaken": false,
+            "numbersVersion": "pup-numbers-2"
+          },
+          "balance": 0,
+          "residual": 0,
+          "unassigned": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-27",
+        "sequence": 27,
+        "timestamp": 1770000028000,
+        "type": "PLAN_SAVED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation",
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er2",
+          "adapt-a-plan.er4"
+        ],
+        "payload": {
+          "mode": "final",
+          "snapshot": {
+            "id": "snapshot-27",
+            "sequence": 27,
+            "inputs": {
+              "mode": "final",
+              "amounts": {
+                "goal": 850,
+                "reserve": 650,
+                "flexibleCash": 600
+              },
+              "includeCompletion": false,
+              "includeOutcome": false,
+              "includeOptionalWork": false,
+              "setupId": "cousin-room",
+              "week5Applied": true,
+              "depositTaken": false,
+              "numbersVersion": "pup-numbers-2"
+            },
+            "readout": {
+              "available": 5000,
+              "locked": 2900,
+              "assignedTotal": 2100,
+              "balance": 0,
+              "residual": 0,
+              "unassigned": 0,
+              "exposure": 0
+            }
+          },
+          "balance": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-28",
+        "sequence": 28,
+        "timestamp": 1770000028000,
+        "type": "STAGE_ENTERED",
+        "stage": "week8-resolution",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "week8-resolution",
+          "from": "opportunity-final-repair"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:week8-resolution"
+      },
+      {
+        "id": "event-29",
+        "sequence": 29,
+        "timestamp": 1770000029000,
+        "type": "STAGE_ENTERED",
+        "stage": "defense",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "defense",
+          "from": "week8-resolution"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:defense"
+      },
+      {
+        "id": "event-30",
+        "sequence": 30,
+        "timestamp": 1770000030000,
+        "type": "DEFENSE_SUBMITTED",
+        "stage": "defense",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [
+          "financial-defense"
+        ],
+        "competencyIds": [
+          "plan-within-income",
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er5",
+          "adapt-a-plan.er5"
+        ],
+        "payload": {
+          "type": "DEFENSE_SUBMITTED",
+          "tileIds": [
+            "final-funds",
+            "reserve"
+          ],
+          "text": "My plan still works because every dollar has a job after Week 5. I protected the course money and gave up part of the reserve.",
+          "at": 1770000030000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-31",
+        "sequence": 31,
+        "timestamp": 1770000030000,
+        "type": "STAGE_ENTERED",
+        "stage": "submitted",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000007",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "submitted",
+          "from": "defense"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:submitted"
+      }
+    ],
+    "microSkills": [
+      {
+        "id": "C1.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C1.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C1.3",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C2.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C2.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C3.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C3.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C3.3",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C4.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C4.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C4.3",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C4.4",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.3",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.4",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.5",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.6",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      }
+    ],
+    "requirements": [
+      {
+        "id": "plan-within-income.er1",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "plan-within-income.er2",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "plan-within-income.er3",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "plan-within-income.er4",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "plan-within-income.er5",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er1",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er2",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er3",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er4",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er5",
+        "level": null,
+        "support": "standard_access"
+      }
+    ]
+  },
+  {
+    "name": "both-bonuses-clinics-deposit",
+    "options": {
+      "seatCode": "8",
+      "setupId": "teammate-share",
+      "countCompletion": true,
+      "countOutcome": true,
+      "reserveSeat": true,
+      "takeClinics": true,
+      "countCompletionFinal": true,
+      "closeOpeningInto": "goal"
+    },
+    "log": [
+      {
+        "id": "event-1",
+        "sequence": 1,
+        "timestamp": 1770000001000,
+        "type": "SESSION_STARTED",
+        "stage": "entry",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "SESSION_STARTED",
+          "sessionId": "session-00000008",
+          "classCode": "H4KVW",
+          "seatCode": "8",
+          "at": 1770000001000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-2",
+        "sequence": 2,
+        "timestamp": 1770000001000,
+        "type": "STAGE_ENTERED",
+        "stage": "choose-world",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "choose-world",
+          "from": "entry"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:choose-world"
+      },
+      {
+        "id": "event-3",
+        "sequence": 3,
+        "timestamp": 1770000002000,
+        "type": "STAGE_ENTERED",
+        "stage": "setup-comparison",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "setup-comparison",
+          "from": "choose-world"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:setup-comparison"
+      },
+      {
+        "id": "event-4",
+        "sequence": 4,
+        "timestamp": 1770000003000,
+        "type": "SETUP_RANKED",
+        "stage": "setup-comparison",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "full-cost"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "SETUP_RANKED",
+          "order": [
+            "cousin-room",
+            "teammate-share",
+            "gym-sublet"
+          ],
+          "correct": true,
+          "at": 1770000003000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-5",
+        "sequence": 5,
+        "timestamp": 1770000004000,
+        "type": "SETUP_SELECTED",
+        "stage": "setup-comparison",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "full-cost"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "SETUP_SELECTED",
+          "setupId": "teammate-share",
+          "at": 1770000004000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-6",
+        "sequence": 6,
+        "timestamp": 1770000005000,
+        "type": "CALCULATION_SUBMITTED",
+        "stage": "setup-comparison",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "full-cost"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "CALCULATION_SUBMITTED",
+          "calcId": "chosen-setup-total",
+          "raw": "1000",
+          "value": 1000,
+          "correct": true,
+          "at": 1770000005000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-7",
+        "sequence": 7,
+        "timestamp": 1770000006000,
+        "type": "STAGE_ENTERED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "working-plan",
+          "from": "setup-comparison"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:working-plan"
+      },
+      {
+        "id": "event-8",
+        "sequence": 8,
+        "timestamp": 1770000007000,
+        "type": "CALCULATION_SUBMITTED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "income-reliability"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "type": "CALCULATION_SUBMITTED",
+          "calcId": "reliable-floor",
+          "raw": "5000",
+          "value": 5000,
+          "correct": true,
+          "at": 1770000007000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-9",
+        "sequence": 9,
+        "timestamp": 1770000008000,
+        "type": "CALCULATION_SUBMITTED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er2"
+        ],
+        "payload": {
+          "type": "CALCULATION_SUBMITTED",
+          "calcId": "essentials-total",
+          "raw": "1600",
+          "value": 1600,
+          "correct": true,
+          "at": 1770000008000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-10",
+        "sequence": 10,
+        "timestamp": 1770000009000,
+        "type": "INCOME_SOURCE_TOGGLED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "income-reliability"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "type": "INCOME_SOURCE_TOGGLED",
+          "sourceId": "completion-800",
+          "included": true,
+          "at": 1770000009000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-11",
+        "sequence": 11,
+        "timestamp": 1770000010000,
+        "type": "INCOME_SOURCE_TOGGLED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "income-reliability"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "type": "INCOME_SOURCE_TOGGLED",
+          "sourceId": "outcome-1000",
+          "included": true,
+          "at": 1770000010000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-12",
+        "sequence": 12,
+        "timestamp": 1770000013000,
+        "type": "PLAN_REMAINDER_ASSIGNED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er3"
+        ],
+        "payload": {
+          "type": "PLAN_REMAINDER_ASSIGNED",
+          "mode": "working",
+          "category": "goal",
+          "amount": 1200,
+          "at": 1770000013000,
+          "remaining": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-13",
+        "sequence": 13,
+        "timestamp": 1770000014000,
+        "type": "PLAN_SAVE_REQUESTED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er2",
+          "plan-within-income.er4"
+        ],
+        "payload": {
+          "mode": "working",
+          "inputs": {
+            "mode": "working",
+            "amounts": {
+              "goal": 1200,
+              "reserve": 1300,
+              "flexibleCash": 1700
+            },
+            "includeCompletion": true,
+            "includeOutcome": true,
+            "includeOptionalWork": false,
+            "setupId": "teammate-share",
+            "week5Applied": false,
+            "depositTaken": false,
+            "numbersVersion": "pup-numbers-2"
+          },
+          "balance": 0,
+          "residual": 0,
+          "unassigned": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-14",
+        "sequence": 14,
+        "timestamp": 1770000014000,
+        "type": "PLAN_SAVED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er2",
+          "plan-within-income.er4"
+        ],
+        "payload": {
+          "mode": "working",
+          "snapshot": {
+            "id": "snapshot-14",
+            "sequence": 14,
+            "inputs": {
+              "mode": "working",
+              "amounts": {
+                "goal": 1200,
+                "reserve": 1300,
+                "flexibleCash": 1700
+              },
+              "includeCompletion": true,
+              "includeOutcome": true,
+              "includeOptionalWork": false,
+              "setupId": "teammate-share",
+              "week5Applied": false,
+              "depositTaken": false,
+              "numbersVersion": "pup-numbers-2"
+            },
+            "readout": {
+              "available": 6800,
+              "locked": 2600,
+              "assignedTotal": 4200,
+              "balance": 0,
+              "residual": 0,
+              "unassigned": 0,
+              "exposure": 1800
+            }
+          },
+          "balance": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-15",
+        "sequence": 15,
+        "timestamp": 1770000014000,
+        "type": "STAGE_ENTERED",
+        "stage": "fallback-version",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "fallback-version",
+          "from": "working-plan"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:fallback-version"
+      },
+      {
+        "id": "event-16",
+        "sequence": 16,
+        "timestamp": 1770000018000,
+        "type": "PLAN_SAVE_REQUESTED",
+        "stage": "fallback-version",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "contingency",
+          "income-reliability"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "mode": "fallback",
+          "inputs": {
+            "mode": "fallback",
+            "amounts": {
+              "goal": 1000,
+              "reserve": 700,
+              "flexibleCash": 700
+            },
+            "includeCompletion": true,
+            "includeOutcome": true,
+            "includeOptionalWork": false,
+            "setupId": "teammate-share",
+            "week5Applied": false,
+            "depositTaken": false,
+            "numbersVersion": "pup-numbers-2"
+          },
+          "balance": 0,
+          "residual": 0,
+          "unassigned": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-17",
+        "sequence": 17,
+        "timestamp": 1770000018000,
+        "type": "PLAN_SAVED",
+        "stage": "fallback-version",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "contingency",
+          "income-reliability"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "mode": "fallback",
+          "snapshot": {
+            "id": "snapshot-17",
+            "sequence": 17,
+            "inputs": {
+              "mode": "fallback",
+              "amounts": {
+                "goal": 1000,
+                "reserve": 700,
+                "flexibleCash": 700
+              },
+              "includeCompletion": true,
+              "includeOutcome": true,
+              "includeOptionalWork": false,
+              "setupId": "teammate-share",
+              "week5Applied": false,
+              "depositTaken": false,
+              "numbersVersion": "pup-numbers-2"
+            },
+            "readout": {
+              "available": 5000,
+              "locked": 2600,
+              "assignedTotal": 2400,
+              "balance": 0,
+              "residual": 0,
+              "unassigned": 0,
+              "exposure": 0
+            }
+          },
+          "balance": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-18",
+        "sequence": 18,
+        "timestamp": 1770000018000,
+        "type": "STAGE_ENTERED",
+        "stage": "season-weeks",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "season-weeks",
+          "from": "fallback-version"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:season-weeks"
+      },
+      {
+        "id": "event-19",
+        "sequence": 19,
+        "timestamp": 1770000019000,
+        "type": "COURSE_DEPOSIT_DECIDED",
+        "stage": "season-weeks",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget",
+          "contingency"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "COURSE_DEPOSIT_DECIDED",
+          "taken": true,
+          "at": 1770000019000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-20",
+        "sequence": 20,
+        "timestamp": 1770000020000,
+        "type": "WEEK5_ADVANCE_CONFIRMED",
+        "stage": "season-weeks",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "WEEK5_ADVANCE_CONFIRMED",
+          "at": 1770000020000
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "week5-applied"
+      },
+      {
+        "id": "event-21",
+        "sequence": 21,
+        "timestamp": 1770000020000,
+        "type": "STAGE_ENTERED",
+        "stage": "week5-event",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "week5-event",
+          "from": "season-weeks"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:week5-event"
+      },
+      {
+        "id": "event-22",
+        "sequence": 22,
+        "timestamp": 1770000021000,
+        "type": "GAP_TILE_TOGGLED",
+        "stage": "week5-event",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er1"
+        ],
+        "payload": {
+          "type": "GAP_TILE_TOGGLED",
+          "tileId": "lost-outcome",
+          "selected": true,
+          "at": 1770000021000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-23",
+        "sequence": 23,
+        "timestamp": 1770000022000,
+        "type": "GAP_TILE_TOGGLED",
+        "stage": "week5-event",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er1"
+        ],
+        "payload": {
+          "type": "GAP_TILE_TOGGLED",
+          "tileId": "required-cost",
+          "selected": true,
+          "at": 1770000022000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-24",
+        "sequence": 24,
+        "timestamp": 1770000023000,
+        "type": "GAP_TILE_TOGGLED",
+        "stage": "week5-event",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er1"
+        ],
+        "payload": {
+          "type": "GAP_TILE_TOGGLED",
+          "tileId": "setup-cost",
+          "selected": true,
+          "at": 1770000023000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-25",
+        "sequence": 25,
+        "timestamp": 1770000024000,
+        "type": "CALCULATION_SUBMITTED",
+        "stage": "week5-event",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er1"
+        ],
+        "payload": {
+          "type": "CALCULATION_SUBMITTED",
+          "calcId": "week5-change",
+          "raw": "1850",
+          "value": 1850,
+          "correct": true,
+          "at": 1770000024000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-26",
+        "sequence": 26,
+        "timestamp": 1770000025000,
+        "type": "STAGE_ENTERED",
+        "stage": "first-response",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "first-response",
+          "from": "week5-event"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:first-response"
+      },
+      {
+        "id": "event-27",
+        "sequence": 27,
+        "timestamp": 1770000029000,
+        "type": "PLAN_SAVE_REQUESTED",
+        "stage": "first-response",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er2",
+          "adapt-a-plan.er3"
+        ],
+        "payload": {
+          "mode": "week5-first-response",
+          "inputs": {
+            "mode": "week5-first-response",
+            "amounts": {
+              "goal": 0,
+              "reserve": 400,
+              "flexibleCash": 950
+            },
+            "includeCompletion": true,
+            "includeOutcome": true,
+            "includeOptionalWork": false,
+            "setupId": "teammate-share",
+            "week5Applied": true,
+            "depositTaken": true,
+            "numbersVersion": "pup-numbers-2"
+          },
+          "balance": 0,
+          "residual": 0,
+          "unassigned": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-28",
+        "sequence": 28,
+        "timestamp": 1770000029000,
+        "type": "PLAN_SAVED",
+        "stage": "first-response",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er2",
+          "adapt-a-plan.er3"
+        ],
+        "payload": {
+          "mode": "week5-first-response",
+          "snapshot": {
+            "id": "snapshot-28",
+            "sequence": 28,
+            "inputs": {
+              "mode": "week5-first-response",
+              "amounts": {
+                "goal": 0,
+                "reserve": 400,
+                "flexibleCash": 950
+              },
+              "includeCompletion": true,
+              "includeOutcome": true,
+              "includeOptionalWork": false,
+              "setupId": "teammate-share",
+              "week5Applied": true,
+              "depositTaken": true,
+              "numbersVersion": "pup-numbers-2"
+            },
+            "readout": {
+              "available": 5800,
+              "locked": 4450,
+              "assignedTotal": 1350,
+              "balance": 0,
+              "residual": 0,
+              "unassigned": 0,
+              "exposure": 0
+            }
+          },
+          "balance": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-29",
+        "sequence": 29,
+        "timestamp": 1770000029000,
+        "type": "STAGE_ENTERED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "opportunity-final-repair",
+          "from": "first-response"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:opportunity-final-repair"
+      },
+      {
+        "id": "event-30",
+        "sequence": 30,
+        "timestamp": 1770000030000,
+        "type": "OPTIONAL_WORK_DECIDED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "OPTIONAL_WORK_DECIDED",
+          "accepted": true,
+          "at": 1770000030000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-31",
+        "sequence": 31,
+        "timestamp": 1770000031000,
+        "type": "COMPLETION_INCOME_DECIDED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "income-reliability",
+          "adaptation"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "type": "COMPLETION_INCOME_DECIDED",
+          "included": true,
+          "at": 1770000031000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-32",
+        "sequence": 32,
+        "timestamp": 1770000035000,
+        "type": "PLAN_SAVE_REQUESTED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation",
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er2",
+          "adapt-a-plan.er4"
+        ],
+        "payload": {
+          "mode": "final",
+          "inputs": {
+            "mode": "final",
+            "amounts": {
+              "goal": 0,
+              "reserve": 550,
+              "flexibleCash": 1200
+            },
+            "includeCompletion": true,
+            "includeOutcome": true,
+            "includeOptionalWork": true,
+            "setupId": "teammate-share",
+            "week5Applied": true,
+            "depositTaken": true,
+            "numbersVersion": "pup-numbers-2"
+          },
+          "balance": 0,
+          "residual": 0,
+          "unassigned": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-33",
+        "sequence": 33,
+        "timestamp": 1770000035000,
+        "type": "PLAN_SAVED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation",
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er2",
+          "adapt-a-plan.er4"
+        ],
+        "payload": {
+          "mode": "final",
+          "snapshot": {
+            "id": "snapshot-33",
+            "sequence": 33,
+            "inputs": {
+              "mode": "final",
+              "amounts": {
+                "goal": 0,
+                "reserve": 550,
+                "flexibleCash": 1200
+              },
+              "includeCompletion": true,
+              "includeOutcome": true,
+              "includeOptionalWork": true,
+              "setupId": "teammate-share",
+              "week5Applied": true,
+              "depositTaken": true,
+              "numbersVersion": "pup-numbers-2"
+            },
+            "readout": {
+              "available": 6300,
+              "locked": 4550,
+              "assignedTotal": 1750,
+              "balance": 0,
+              "residual": 0,
+              "unassigned": 0,
+              "exposure": 0
+            }
+          },
+          "balance": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-34",
+        "sequence": 34,
+        "timestamp": 1770000035000,
+        "type": "STAGE_ENTERED",
+        "stage": "remaining-risk-preview",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "remaining-risk-preview",
+          "from": "opportunity-final-repair"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:remaining-risk-preview"
+      },
+      {
+        "id": "event-35",
+        "sequence": 35,
+        "timestamp": 1770000039000,
+        "type": "PLAN_SAVE_REQUESTED",
+        "stage": "remaining-risk-preview",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation",
+          "contingency"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "mode": "remaining-risk",
+          "inputs": {
+            "mode": "remaining-risk",
+            "amounts": {
+              "goal": 0,
+              "reserve": 300,
+              "flexibleCash": 650
+            },
+            "includeCompletion": true,
+            "includeOutcome": true,
+            "includeOptionalWork": true,
+            "setupId": "teammate-share",
+            "week5Applied": true,
+            "depositTaken": true,
+            "numbersVersion": "pup-numbers-2"
+          },
+          "balance": 0,
+          "residual": 0,
+          "unassigned": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-36",
+        "sequence": 36,
+        "timestamp": 1770000039000,
+        "type": "PLAN_SAVED",
+        "stage": "remaining-risk-preview",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation",
+          "contingency"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "mode": "remaining-risk",
+          "snapshot": {
+            "id": "snapshot-36",
+            "sequence": 36,
+            "inputs": {
+              "mode": "remaining-risk",
+              "amounts": {
+                "goal": 0,
+                "reserve": 300,
+                "flexibleCash": 650
+              },
+              "includeCompletion": true,
+              "includeOutcome": true,
+              "includeOptionalWork": true,
+              "setupId": "teammate-share",
+              "week5Applied": true,
+              "depositTaken": true,
+              "numbersVersion": "pup-numbers-2"
+            },
+            "readout": {
+              "available": 5500,
+              "locked": 4550,
+              "assignedTotal": 950,
+              "balance": 0,
+              "residual": 0,
+              "unassigned": 0,
+              "exposure": 0
+            }
+          },
+          "balance": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-37",
+        "sequence": 37,
+        "timestamp": 1770000039000,
+        "type": "STAGE_ENTERED",
+        "stage": "week8-resolution",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "week8-resolution",
+          "from": "remaining-risk-preview"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:week8-resolution"
+      },
+      {
+        "id": "event-38",
+        "sequence": 38,
+        "timestamp": 1770000040000,
+        "type": "STAGE_ENTERED",
+        "stage": "defense",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "defense",
+          "from": "week8-resolution"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:defense"
+      },
+      {
+        "id": "event-39",
+        "sequence": 39,
+        "timestamp": 1770000041000,
+        "type": "DEFENSE_SUBMITTED",
+        "stage": "defense",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [
+          "financial-defense"
+        ],
+        "competencyIds": [
+          "plan-within-income",
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er5",
+          "adapt-a-plan.er5"
+        ],
+        "payload": {
+          "type": "DEFENSE_SUBMITTED",
+          "tileIds": [
+            "final-funds",
+            "reserve"
+          ],
+          "text": "My plan still works because every dollar has a job after Week 5. I protected the course money and gave up part of the reserve.",
+          "at": 1770000041000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-40",
+        "sequence": 40,
+        "timestamp": 1770000041000,
+        "type": "STAGE_ENTERED",
+        "stage": "submitted",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000008",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "submitted",
+          "from": "defense"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:submitted"
+      }
+    ],
+    "microSkills": [
+      {
+        "id": "C1.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C1.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C1.3",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C2.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C2.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C3.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C3.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C3.3",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C4.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C4.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C4.3",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C4.4",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.3",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.4",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.5",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.6",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      }
+    ],
+    "requirements": [
+      {
+        "id": "plan-within-income.er1",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "plan-within-income.er2",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "plan-within-income.er3",
+        "level": 0,
+        "support": "standard_access"
+      },
+      {
+        "id": "plan-within-income.er4",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "plan-within-income.er5",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er1",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er2",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er3",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er4",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er5",
+        "level": null,
+        "support": "standard_access"
+      }
+    ]
+  },
+  {
+    "name": "sublet-outcome-only",
+    "options": {
+      "seatCode": "9",
+      "setupId": "gym-sublet",
+      "countOutcome": true,
+      "split": {
+        "goal": 0.5,
+        "reserve": 0.2
+      }
+    },
+    "log": [
+      {
+        "id": "event-1",
+        "sequence": 1,
+        "timestamp": 1770000001000,
+        "type": "SESSION_STARTED",
+        "stage": "entry",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "SESSION_STARTED",
+          "sessionId": "session-00000009",
+          "classCode": "H4KVW",
+          "seatCode": "9",
+          "at": 1770000001000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-2",
+        "sequence": 2,
+        "timestamp": 1770000001000,
+        "type": "STAGE_ENTERED",
+        "stage": "choose-world",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "choose-world",
+          "from": "entry"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:choose-world"
+      },
+      {
+        "id": "event-3",
+        "sequence": 3,
+        "timestamp": 1770000002000,
+        "type": "STAGE_ENTERED",
+        "stage": "setup-comparison",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "setup-comparison",
+          "from": "choose-world"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:setup-comparison"
+      },
+      {
+        "id": "event-4",
+        "sequence": 4,
+        "timestamp": 1770000003000,
+        "type": "SETUP_RANKED",
+        "stage": "setup-comparison",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "full-cost"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "SETUP_RANKED",
+          "order": [
+            "cousin-room",
+            "teammate-share",
+            "gym-sublet"
+          ],
+          "correct": true,
+          "at": 1770000003000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-5",
+        "sequence": 5,
+        "timestamp": 1770000004000,
+        "type": "SETUP_SELECTED",
+        "stage": "setup-comparison",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "full-cost"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "SETUP_SELECTED",
+          "setupId": "gym-sublet",
+          "at": 1770000004000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-6",
+        "sequence": 6,
+        "timestamp": 1770000005000,
+        "type": "CALCULATION_SUBMITTED",
+        "stage": "setup-comparison",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "full-cost"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "CALCULATION_SUBMITTED",
+          "calcId": "chosen-setup-total",
+          "raw": "1800",
+          "value": 1800,
+          "correct": true,
+          "at": 1770000005000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-7",
+        "sequence": 7,
+        "timestamp": 1770000006000,
+        "type": "STAGE_ENTERED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "working-plan",
+          "from": "setup-comparison"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:working-plan"
+      },
+      {
+        "id": "event-8",
+        "sequence": 8,
+        "timestamp": 1770000007000,
+        "type": "CALCULATION_SUBMITTED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "income-reliability"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "type": "CALCULATION_SUBMITTED",
+          "calcId": "reliable-floor",
+          "raw": "5000",
+          "value": 5000,
+          "correct": true,
+          "at": 1770000007000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-9",
+        "sequence": 9,
+        "timestamp": 1770000008000,
+        "type": "CALCULATION_SUBMITTED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er2"
+        ],
+        "payload": {
+          "type": "CALCULATION_SUBMITTED",
+          "calcId": "essentials-total",
+          "raw": "1600",
+          "value": 1600,
+          "correct": true,
+          "at": 1770000008000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-10",
+        "sequence": 10,
+        "timestamp": 1770000009000,
+        "type": "INCOME_SOURCE_TOGGLED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "income-reliability"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "type": "INCOME_SOURCE_TOGGLED",
+          "sourceId": "outcome-1000",
+          "included": true,
+          "at": 1770000009000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-11",
+        "sequence": 11,
+        "timestamp": 1770000012000,
+        "type": "PLAN_REMAINDER_ASSIGNED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er3"
+        ],
+        "payload": {
+          "type": "PLAN_REMAINDER_ASSIGNED",
+          "mode": "working",
+          "category": "flexibleCash",
+          "amount": 900,
+          "at": 1770000012000,
+          "remaining": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-12",
+        "sequence": 12,
+        "timestamp": 1770000013000,
+        "type": "PLAN_SAVE_REQUESTED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er2",
+          "plan-within-income.er4"
+        ],
+        "payload": {
+          "mode": "working",
+          "inputs": {
+            "mode": "working",
+            "amounts": {
+              "goal": 1200,
+              "reserve": 500,
+              "flexibleCash": 900
+            },
+            "includeCompletion": false,
+            "includeOutcome": true,
+            "includeOptionalWork": false,
+            "setupId": "gym-sublet",
+            "week5Applied": false,
+            "depositTaken": false,
+            "numbersVersion": "pup-numbers-2"
+          },
+          "balance": 0,
+          "residual": 0,
+          "unassigned": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-13",
+        "sequence": 13,
+        "timestamp": 1770000013000,
+        "type": "PLAN_SAVED",
+        "stage": "working-plan",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er2",
+          "plan-within-income.er4"
+        ],
+        "payload": {
+          "mode": "working",
+          "snapshot": {
+            "id": "snapshot-13",
+            "sequence": 13,
+            "inputs": {
+              "mode": "working",
+              "amounts": {
+                "goal": 1200,
+                "reserve": 500,
+                "flexibleCash": 900
+              },
+              "includeCompletion": false,
+              "includeOutcome": true,
+              "includeOptionalWork": false,
+              "setupId": "gym-sublet",
+              "week5Applied": false,
+              "depositTaken": false,
+              "numbersVersion": "pup-numbers-2"
+            },
+            "readout": {
+              "available": 6000,
+              "locked": 3400,
+              "assignedTotal": 2600,
+              "balance": 0,
+              "residual": 0,
+              "unassigned": 0,
+              "exposure": 1000
+            }
+          },
+          "balance": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-14",
+        "sequence": 14,
+        "timestamp": 1770000013000,
+        "type": "STAGE_ENTERED",
+        "stage": "fallback-version",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "fallback-version",
+          "from": "working-plan"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:fallback-version"
+      },
+      {
+        "id": "event-15",
+        "sequence": 15,
+        "timestamp": 1770000017000,
+        "type": "PLAN_SAVE_REQUESTED",
+        "stage": "fallback-version",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "contingency",
+          "income-reliability"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "mode": "fallback",
+          "inputs": {
+            "mode": "fallback",
+            "amounts": {
+              "goal": 800,
+              "reserve": 300,
+              "flexibleCash": 500
+            },
+            "includeCompletion": false,
+            "includeOutcome": true,
+            "includeOptionalWork": false,
+            "setupId": "gym-sublet",
+            "week5Applied": false,
+            "depositTaken": false,
+            "numbersVersion": "pup-numbers-2"
+          },
+          "balance": 0,
+          "residual": 0,
+          "unassigned": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-16",
+        "sequence": 16,
+        "timestamp": 1770000017000,
+        "type": "PLAN_SAVED",
+        "stage": "fallback-version",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "contingency",
+          "income-reliability"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "mode": "fallback",
+          "snapshot": {
+            "id": "snapshot-16",
+            "sequence": 16,
+            "inputs": {
+              "mode": "fallback",
+              "amounts": {
+                "goal": 800,
+                "reserve": 300,
+                "flexibleCash": 500
+              },
+              "includeCompletion": false,
+              "includeOutcome": true,
+              "includeOptionalWork": false,
+              "setupId": "gym-sublet",
+              "week5Applied": false,
+              "depositTaken": false,
+              "numbersVersion": "pup-numbers-2"
+            },
+            "readout": {
+              "available": 5000,
+              "locked": 3400,
+              "assignedTotal": 1600,
+              "balance": 0,
+              "residual": 0,
+              "unassigned": 0,
+              "exposure": 0
+            }
+          },
+          "balance": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-17",
+        "sequence": 17,
+        "timestamp": 1770000017000,
+        "type": "STAGE_ENTERED",
+        "stage": "season-weeks",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "season-weeks",
+          "from": "fallback-version"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:season-weeks"
+      },
+      {
+        "id": "event-18",
+        "sequence": 18,
+        "timestamp": 1770000018000,
+        "type": "COURSE_DEPOSIT_DECIDED",
+        "stage": "season-weeks",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "viable-budget",
+          "contingency"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "COURSE_DEPOSIT_DECIDED",
+          "taken": false,
+          "at": 1770000018000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-19",
+        "sequence": 19,
+        "timestamp": 1770000019000,
+        "type": "WEEK5_ADVANCE_CONFIRMED",
+        "stage": "season-weeks",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "WEEK5_ADVANCE_CONFIRMED",
+          "at": 1770000019000
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "week5-applied"
+      },
+      {
+        "id": "event-20",
+        "sequence": 20,
+        "timestamp": 1770000019000,
+        "type": "STAGE_ENTERED",
+        "stage": "week5-event",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "week5-event",
+          "from": "season-weeks"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:week5-event"
+      },
+      {
+        "id": "event-21",
+        "sequence": 21,
+        "timestamp": 1770000020000,
+        "type": "GAP_TILE_TOGGLED",
+        "stage": "week5-event",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er1"
+        ],
+        "payload": {
+          "type": "GAP_TILE_TOGGLED",
+          "tileId": "lost-outcome",
+          "selected": true,
+          "at": 1770000020000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-22",
+        "sequence": 22,
+        "timestamp": 1770000021000,
+        "type": "GAP_TILE_TOGGLED",
+        "stage": "week5-event",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er1"
+        ],
+        "payload": {
+          "type": "GAP_TILE_TOGGLED",
+          "tileId": "required-cost",
+          "selected": true,
+          "at": 1770000021000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-23",
+        "sequence": 23,
+        "timestamp": 1770000022000,
+        "type": "CALCULATION_SUBMITTED",
+        "stage": "week5-event",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er1"
+        ],
+        "payload": {
+          "type": "CALCULATION_SUBMITTED",
+          "calcId": "week5-change",
+          "raw": "1700",
+          "value": 1700,
+          "correct": true,
+          "at": 1770000022000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-24",
+        "sequence": 24,
+        "timestamp": 1770000023000,
+        "type": "STAGE_ENTERED",
+        "stage": "first-response",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "first-response",
+          "from": "week5-event"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:first-response"
+      },
+      {
+        "id": "event-25",
+        "sequence": 25,
+        "timestamp": 1770000027000,
+        "type": "PLAN_SAVE_REQUESTED",
+        "stage": "first-response",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er2",
+          "adapt-a-plan.er3"
+        ],
+        "payload": {
+          "mode": "week5-first-response",
+          "inputs": {
+            "mode": "week5-first-response",
+            "amounts": {
+              "goal": 450,
+              "reserve": 200,
+              "flexibleCash": 250
+            },
+            "includeCompletion": false,
+            "includeOutcome": true,
+            "includeOptionalWork": false,
+            "setupId": "gym-sublet",
+            "week5Applied": true,
+            "depositTaken": false,
+            "numbersVersion": "pup-numbers-2"
+          },
+          "balance": 0,
+          "residual": 0,
+          "unassigned": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-26",
+        "sequence": 26,
+        "timestamp": 1770000027000,
+        "type": "PLAN_SAVED",
+        "stage": "first-response",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er2",
+          "adapt-a-plan.er3"
+        ],
+        "payload": {
+          "mode": "week5-first-response",
+          "snapshot": {
+            "id": "snapshot-26",
+            "sequence": 26,
+            "inputs": {
+              "mode": "week5-first-response",
+              "amounts": {
+                "goal": 450,
+                "reserve": 200,
+                "flexibleCash": 250
+              },
+              "includeCompletion": false,
+              "includeOutcome": true,
+              "includeOptionalWork": false,
+              "setupId": "gym-sublet",
+              "week5Applied": true,
+              "depositTaken": false,
+              "numbersVersion": "pup-numbers-2"
+            },
+            "readout": {
+              "available": 5000,
+              "locked": 4100,
+              "assignedTotal": 900,
+              "balance": 0,
+              "residual": 0,
+              "unassigned": 0,
+              "exposure": 0
+            }
+          },
+          "balance": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-27",
+        "sequence": 27,
+        "timestamp": 1770000027000,
+        "type": "STAGE_ENTERED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "opportunity-final-repair",
+          "from": "first-response"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:opportunity-final-repair"
+      },
+      {
+        "id": "event-28",
+        "sequence": 28,
+        "timestamp": 1770000028000,
+        "type": "OPTIONAL_WORK_DECIDED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation"
+        ],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "type": "OPTIONAL_WORK_DECIDED",
+          "accepted": false,
+          "at": 1770000028000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-29",
+        "sequence": 29,
+        "timestamp": 1770000029000,
+        "type": "COMPLETION_INCOME_DECIDED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "income-reliability",
+          "adaptation"
+        ],
+        "competencyIds": [
+          "plan-within-income"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er1"
+        ],
+        "payload": {
+          "type": "COMPLETION_INCOME_DECIDED",
+          "included": false,
+          "at": 1770000029000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-30",
+        "sequence": 30,
+        "timestamp": 1770000033000,
+        "type": "PLAN_SAVE_REQUESTED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation",
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er2",
+          "adapt-a-plan.er4"
+        ],
+        "payload": {
+          "mode": "final",
+          "inputs": {
+            "mode": "final",
+            "amounts": {
+              "goal": 450,
+              "reserve": 200,
+              "flexibleCash": 250
+            },
+            "includeCompletion": false,
+            "includeOutcome": true,
+            "includeOptionalWork": false,
+            "setupId": "gym-sublet",
+            "week5Applied": true,
+            "depositTaken": false,
+            "numbersVersion": "pup-numbers-2"
+          },
+          "balance": 0,
+          "residual": 0,
+          "unassigned": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-31",
+        "sequence": 31,
+        "timestamp": 1770000033000,
+        "type": "PLAN_SAVED",
+        "stage": "opportunity-final-repair",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "adaptation",
+          "viable-budget"
+        ],
+        "competencyIds": [
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "adapt-a-plan.er2",
+          "adapt-a-plan.er4"
+        ],
+        "payload": {
+          "mode": "final",
+          "snapshot": {
+            "id": "snapshot-31",
+            "sequence": 31,
+            "inputs": {
+              "mode": "final",
+              "amounts": {
+                "goal": 450,
+                "reserve": 200,
+                "flexibleCash": 250
+              },
+              "includeCompletion": false,
+              "includeOutcome": true,
+              "includeOptionalWork": false,
+              "setupId": "gym-sublet",
+              "week5Applied": true,
+              "depositTaken": false,
+              "numbersVersion": "pup-numbers-2"
+            },
+            "readout": {
+              "available": 5000,
+              "locked": 4100,
+              "assignedTotal": 900,
+              "balance": 0,
+              "residual": 0,
+              "unassigned": 0,
+              "exposure": 0
+            }
+          },
+          "balance": 0
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-32",
+        "sequence": 32,
+        "timestamp": 1770000033000,
+        "type": "STAGE_ENTERED",
+        "stage": "week8-resolution",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "week8-resolution",
+          "from": "opportunity-final-repair"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:week8-resolution"
+      },
+      {
+        "id": "event-33",
+        "sequence": 33,
+        "timestamp": 1770000034000,
+        "type": "STAGE_ENTERED",
+        "stage": "defense",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "defense",
+          "from": "week8-resolution"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:defense"
+      },
+      {
+        "id": "event-34",
+        "sequence": 34,
+        "timestamp": 1770000035000,
+        "type": "DEFENSE_SUBMITTED",
+        "stage": "defense",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [
+          "financial-defense"
+        ],
+        "competencyIds": [
+          "plan-within-income",
+          "adapt-a-plan"
+        ],
+        "evidenceRequirementIds": [
+          "plan-within-income.er5",
+          "adapt-a-plan.er5"
+        ],
+        "payload": {
+          "type": "DEFENSE_SUBMITTED",
+          "tileIds": [
+            "final-funds",
+            "reserve"
+          ],
+          "text": "My plan still works because every dollar has a job after Week 5. I protected the course money and gave up part of the reserve.",
+          "at": 1770000035000
+        },
+        "supportLevel": "standard_access"
+      },
+      {
+        "id": "event-35",
+        "sequence": 35,
+        "timestamp": 1770000035000,
+        "type": "STAGE_ENTERED",
+        "stage": "submitted",
+        "challengeId": "plan-under-pressure",
+        "challengeVersion": "2.2.0",
+        "sessionId": "session-00000009",
+        "worldId": "basketball",
+        "conceptIds": [],
+        "competencyIds": [],
+        "evidenceRequirementIds": [],
+        "payload": {
+          "stage": "submitted",
+          "from": "defense"
+        },
+        "supportLevel": "standard_access",
+        "dedupeKey": "stage:submitted"
+      }
+    ],
+    "microSkills": [
+      {
+        "id": "C1.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C1.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C1.3",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C2.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C2.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C3.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C3.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C3.3",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C4.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C4.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C4.3",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C4.4",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.1",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.2",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.3",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.4",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.5",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      },
+      {
+        "id": "C5.6",
+        "points": 5,
+        "outcome": "demonstrated",
+        "support": "standard_access"
+      }
+    ],
+    "requirements": [
+      {
+        "id": "plan-within-income.er1",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "plan-within-income.er2",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "plan-within-income.er3",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "plan-within-income.er4",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "plan-within-income.er5",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er1",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er2",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er3",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er4",
+        "level": 5,
+        "support": "standard_access"
+      },
+      {
+        "id": "adapt-a-plan.er5",
+        "level": null,
+        "support": "standard_access"
+      }
+    ]
+  }
+]

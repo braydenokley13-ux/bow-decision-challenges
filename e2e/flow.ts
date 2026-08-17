@@ -2,7 +2,6 @@ import { expect, type APIRequestContext, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { COUNT_BONUS_BUTTON, NUMBERS as N } from "./plan";
 import { PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
-import { weeksBeforeDisruption } from "../src/domain/scenario/season";
 import type { ClassCreation } from "../src/platform/classes/types";
 import { buildSubmission } from "../src/test/runChallenge";
 import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
@@ -205,14 +204,19 @@ export async function completeWorkingCalcs(page: Page, opts: { attendance?: bool
   await page.getByRole("button", { name: PLAN_STEP.toPlan }).click();
 }
 
+/** What the season screen calls the button that opens the course-deposit decision. */
+export const TO_DEPOSIT = `Week ${N.course.depositDeadlineWeek} · the course office is calling`;
+
 /**
- * Plays Weeks 1–4 one at a time and answers the course-deposit deadline that closes them.
- * The weeks are stepped rather than skipped because stepping is what a student does.
+ * Reads the four weeks and answers the course-deposit deadline that follows them.
+ *
+ * Weeks 1–4 used to be four presses of "Play Week N" charging the same rent and taking the
+ * same hours every time, and the deadline was a panel at the bottom of that page. The weeks
+ * now resolve together and the deadline is its own screen, so this is one press to leave the
+ * season and one decision on the screen after it.
  */
 export async function playSeasonWeeks(page: Page, opts: { deposit?: boolean } = {}) {
-  for (const week of weeksBeforeDisruption(N).slice(1)) {
-    await page.getByRole("button", { name: `Play Week ${week}` }).click();
-  }
+  await page.getByRole("button", { name: TO_DEPOSIT }).click();
   await page.getByRole("button", { name: opts.deposit ? "Reserve it now" : "Wait and decide later" }).click();
   await page.getByRole("button", { name: "Lock it in and play Week 5" }).click();
 }
@@ -225,9 +229,17 @@ export async function setAmount(page: Page, label: string, value: string) {
 
 
 
-/** Selects every gap tile shown (they are exactly the components of the expected total) and checks the sum. */
+/**
+ * The cards Week 5 actually moved. The strip also carries committed lines the week leaves
+ * alone — rent, the weekly basics, a seat already reserved, a bonus the student left out —
+ * so selecting every card on screen is now a wrong answer rather than the whole task.
+ */
+export const MOVED_TILES = ".gap-tiles button[data-kind='lost'], .gap-tiles button[data-kind='bill']";
+export const HELD_TILES = ".gap-tiles button[data-kind='committed'], .gap-tiles button[data-kind='uncounted']";
+
+/** Selects the gap tiles that belong to this student's plan and checks the sum. */
 export async function passWeek5Calculation(page: Page, total: string) {
-  const tiles = page.locator(".gap-tiles button");
+  const tiles = page.locator(MOVED_TILES);
   const count = await tiles.count();
   for (let i = 0; i < count; i += 1) await tiles.nth(i).click();
   await page.getByLabel("Total change to Avery’s money").fill(total);

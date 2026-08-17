@@ -97,9 +97,12 @@ export function PlanBoard({
   const takeFrom = (category: CategoryId) => {
     const value = input.amounts[category];
     const take = Math.min(value, residual);
+    // The row is named in the label, not only in the spoken one. Three buttons carrying the
+    // same verb and the same amount are three buttons a student has to tell apart by where
+    // they happen to sit on the page.
     return take > 0
       ? {
-          label: `Take ${formatDollars(take)} out`,
+          label: `Take ${formatDollars(take)} from ${CHOICE_LABELS[category]}`,
           spoken: `Take ${formatDollars(take)} out of ${CHOICE_LABELS[category]}`,
           onPress: () => onAmountChange(category, dollars(value - take)),
         }
@@ -185,11 +188,14 @@ export function PlanBoard({
       {/* The one-tap close, offered only while there is money with no job. It used to hold
           its place on the board once the plan balanced, printing a heading over nothing so
           a screen that promised six steps could still show six. The rail says the plan
-          balances; a second empty section saying it too was a box for the sake of a box. */}
+          balances; a second empty section saying it too was a box for the sake of a box.
+          It is also deliberately quiet now: three tall cards restating the three row names in
+          title type made this read as a second, competing way to do the same job. The rows
+          above are the way a plan gets built; this is one press that closes it, and the press
+          it records is the only statement this world makes about savings. */}
       {closers.length > 0 && (
         <section className="closer" aria-labelledby="plan-rest">
-          <h3 id="plan-rest">{`Send the last ${formatDollars(balance)} to one row`}</h3>
-          <p>{steps.rest.shortcut}</p>
+          <h3 id="plan-rest">{`Or send the last ${formatDollars(balance)} to one row`}</h3>
           <div className="closer-choice">
             {closers.map(({ category, offer }) => (
               <button
@@ -199,12 +205,12 @@ export function PlanBoard({
                 aria-label={`Put ${formatDollars(offer!.amount)} into ${CHOICE_LABELS[category]}`}
                 onClick={offer!.onPress}
               >
-                <span className="closer-choice__mark" aria-hidden="true">→</span>
-                <strong className="closer-choice__row">{CHOICE_LABELS[category]}</strong>
-                <span className="money">takes {formatDollars(offer!.amount)}{offer!.capped ? " — all it can hold" : ""}</span>
+                {CHOICE_LABELS[category]}
+                {offer!.capped && <small>{formatDollars(offer!.amount)} — all it can hold</small>}
               </button>
             ))}
           </div>
+          <p>{steps.rest.shortcut}</p>
         </section>
       )}
 

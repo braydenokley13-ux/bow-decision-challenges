@@ -32,7 +32,7 @@ const MONEY_SHEET = [...RELIABLE_INCOME_KEYS, ...CONDITIONAL_INCOME_KEYS].map((k
  * student is unmistakably somewhere else, which is the point of a peak. `banner` is what
  * sits inside it: the news, or the result.
  */
-export function StageShell({ stage, title, kicker, position: override, tone = "standard", banner, focusKey, children }: PropsWithChildren<{
+export function StageShell({ stage, title, kicker, position: override, tone = "standard", banner, focusKey, focusOnArrival = false, children }: PropsWithChildren<{
   stage: StageId;
   title: string;
   kicker?: string;
@@ -45,6 +45,13 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
    * moved to the new question rather than left at the bottom of the answered one.
    */
   focusKey?: string | number;
+  /**
+   * A screen that arrives because the last one asked for it, rather than because the student
+   * chose to go there. The deposit deadline is the case: the control the student just pressed
+   * is gone and a decision has taken its place, so a keyboard or screen-reader user is put on
+   * the new heading instead of being left at a button that no longer exists.
+   */
+  focusOnArrival?: boolean;
 }>) {
   const chapter = progressIndexFor(stage);
   const position = override ?? seasonPositionFor(stage);
@@ -60,6 +67,9 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
     if (first.current) { first.current = false; return; }
     heading.current?.focus();
   }, [focusKey]);
+  useEffect(() => {
+    if (focusOnArrival) heading.current?.focus();
+  }, [focusOnArrival]);
   return (
     <div className="challenge-shell" data-world={world} data-chapter={chapterFor(stage)}>
       <header className="challenge-topbar">

@@ -3,7 +3,8 @@ import { useChallenge } from "../app/ChallengeContext";
 import { StageShell } from "../app/StageShell";
 import { Button } from "../components/primitives/Button";
 import { formatDollars } from "../domain/core/money";
-import { resolveSeason, type RiskVerdict } from "../domain/finance/resolution";
+import { resolveSeason, type RiskVerdict, type Week5Pressure } from "../domain/finance/resolution";
+import { assigned, balanceOf, residualOf } from "../domain/finance/formulas";
 import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
@@ -37,10 +38,28 @@ export function Week8Resolution() {
   const { state, dispatch } = useChallenge();
   const final = snapshotForMode(state, "final");
   const opening = amountsFor(state, state.saved.fallback ? "fallback" : "working");
+  const response = snapshotForMode(state, "week5-first-response");
   const bonusLabel = BASKETBALL_SCENARIO.incomeCopy.completion.label;
+  /**
+   * What Week 5 asked of the plan Avery walked into it with, and what was left that could
+   * still move. Both are read off plans the student saved — the shortfall is this world's own
+   * pricing of their pre-Week-5 amounts against the Week 5 board, and the movable money is
+   * what those amounts held. A reserved seat has already emptied the course line, so the same
+   * sum is the right one either way.
+   */
+  const pressure = useMemo<Week5Pressure | undefined>(
+    () => (response
+      ? {
+          shortfall: residualOf(balanceOf({ ...response, amounts: opening }, SCENARIO_NUMBERS)),
+          movable: assigned(opening),
+          courseLineCut: final ? final.amounts.goal < opening.goal : false,
+        }
+      : undefined),
+    [response, opening, final],
+  );
   const resolution = useMemo(
-    () => (final ? resolveSeason(final, SCENARIO_NUMBERS, opening, bonusLabel) : null),
-    [final, opening, bonusLabel],
+    () => (final ? resolveSeason(final, SCENARIO_NUMBERS, opening, bonusLabel, pressure) : null),
+    [final, opening, bonusLabel, pressure],
   );
   if (!final || !resolution) return null;
 
@@ -134,6 +153,14 @@ export function Week8Resolution() {
         <section className="resolve-card" data-tone="neutral">
           <p className="field-label">What Avery ends with</p>
           <strong className="money">{formatDollars(resolution.endCash)}</strong>
+          {/* A headline number with nothing to read it against tells a student nothing: $250
+              is either a good season or a bad one and the figure alone cannot say which. The
+              two lines it is actually measured against are what the season started with and
+              what this plan set aside to survive on. */}
+          <dl className="resolve-card__lines">
+            <div><dt>Avery started the eight weeks with</dt><dd className="money">{formatDollars(SCENARIO_NUMBERS.savings)}</dd></div>
+            <div><dt>Backup money this plan kept</dt><dd className="money">{formatDollars(resolution.bufferHeld)}</dd></div>
+          </dl>
           <p>
             {resolution.spentOnTime > 0
               ? `${formatDollars(resolution.spentOnTime)} of the plan went into Avery’s week and bought ${load.bought} hours back.`

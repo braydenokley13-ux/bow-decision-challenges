@@ -147,6 +147,10 @@ export const STUDENT_COPY = {
       placedNone: "Nothing yet.",
       unplaced: "Still to give a job",
       overspent: "Over by",
+      /* The same state, on the boards where a bill landed rather than where the student
+         overspent. The bar under the plan calls it this, and the rail used to call it
+         something else two inches away. */
+      stillToFind: "Still to find",
       settled: "Nothing left to place",
       /* The collapsed rail, where the whole receipt will not fit. */
       open: "See where the money goes",

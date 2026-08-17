@@ -37,7 +37,23 @@ export interface ChallengeDefinition {
 
 export const PLAN_UNDER_PRESSURE: ChallengeDefinition = {
   id: "plan-under-pressure",
-  version: "2.2.0",
+  /**
+   * 2.3.0 — one bump for the season rework.
+   *
+   * Three moments changed what they mean, and none of them changed what is recorded. Week 5's
+   * card set now includes committed lines the week does not move, so selecting is a judgement
+   * about the student's own plan rather than tapping everything on screen, and the app no
+   * longer prints the running sum. Weeks 1–4 resolve together and the course deposit is its
+   * own decision rather than a panel under a feed. Questions one and three stopped printing
+   * the sum they ask for.
+   *
+   * The event vocabulary, the expected totals, the applicable component set and every scoring
+   * rule are untouched — `oldLogs.regression.test.ts` pins three finished attempts captured
+   * before the rework and fails if any of them would now be read differently. The version
+   * moves because what a student was asked at those moments is not the same question, and an
+   * attempt has to record which question it answered.
+   */
+  version: "2.3.0",
   title: "Plan Under Pressure",
   subtitle: "Eight weeks to the showcase.",
   pillar: "Financial Literacy",

@@ -24,11 +24,13 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
       label: "Perfect Attendance Bonus",
       note: "Payment tied to making every practice and game.",
       rule: "Avery makes every practice and every game.",
+      ifNot: "Miss one session and the whole payment is gone. Nothing is paid for missing fewer.",
     },
     outcome: {
       label: "Making the Cut Bonus",
       note: "Payment tied to reaching the showcase.",
       rule: "The Flight qualifies for the showcase.",
+      ifNot: "Avery cannot decide this one. Eleven other players and a bracket do.",
     },
     optionalWork: { label: "Saturday clinics", note: "Coaching fee for the last four Saturdays." },
   },

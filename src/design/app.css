@@ -79,7 +79,17 @@ p { color: var(--ink-2); }
 
 /* The masthead of every stage: a blue stamp, a heavy line of caps, a rule under it.
    Short headlines only — this is set in caps, and caps stop being a voice at two lines. */
-.stage-heading { position: relative; margin-bottom: var(--s-6); padding-bottom: var(--s-4); border-bottom: 2px solid var(--ink-1); }
+
+/* The topbar is sticky, so anything that scrolls the heading into view — a stage arriving, a
+   question changing, the heading taking focus — has to leave room for it or the first line of
+   the headline lands underneath the chrome. */
+.stage-heading { position: relative; margin-bottom: var(--s-6); padding-bottom: var(--s-4); border-bottom: 2px solid var(--ink-1); scroll-margin-top: calc(72px + var(--s-4)); }
+
+/* The heading takes focus on arrival and on restore, which is right; painting a 3px ring
+   around a full-width block is not — it reads as a broken control rather than as a place. The
+   marker goes on the words, which is what the student was moved to. */
+.stage-heading:focus-visible { outline: none; box-shadow: none; }
+.stage-heading:focus-visible h1 { outline: 3px solid var(--focus-ring); outline-offset: 6px; }
 .stage-heading h1 { max-width: 22ch; margin: 0; font: var(--t-display1); letter-spacing: var(--display-tracking); text-transform: uppercase; }
 
 /*
@@ -119,7 +129,11 @@ p { color: var(--ink-2); }
 .calculation-help > div span { color: var(--ink-2); }
 .calculation--compact .calculation-help { flex-direction: column; }
 .working-setup { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); margin-bottom: var(--s-6); }
-.board-gate { max-width: var(--measure); margin: 0; padding: var(--s-5) var(--s-6); color: var(--ink-2); background: var(--surface-sunken); border: 1px dashed var(--border-strong); font: var(--t-body-lg); }
+
+/* A status, drawn as one. This used to be a dashed-outline bar the width of the column, which
+   is what a disabled control looks like — so the screen read as broken while it was simply
+   waiting for the student. */
+.board-waiting { max-width: var(--measure); margin: 0; padding-left: var(--s-4); border-left: 3px solid var(--border-strong); color: var(--ink-2); font: var(--t-ui); }
 
 /* ---------------------------------------------------------------------------
    The plan itself: three amounts, what each currently buys, and the bar that
@@ -166,9 +180,14 @@ p { color: var(--ink-2); }
 .gap-builder__intro p:last-child { margin: 0; font: var(--t-body-lg); }
 .gap-builder__sum { align-self: start; }
 .gap-tiles { display: grid; align-content: start; gap: var(--s-2); }
-.gap-tiles button { display: grid; grid-template-columns: auto 96px 1fr auto; align-items: center; gap: var(--s-3) var(--s-4); min-height: 72px; padding: var(--s-4); text-align: left; background: var(--surface-raised); border: 1px solid var(--border-default); border-left: 4px solid var(--border-strong); cursor: pointer; transition: border-color var(--dur-micro) var(--ease-standard), background var(--dur-micro) var(--ease-standard); }
+.gap-tiles button { display: grid; grid-template-columns: auto 112px 1fr auto; align-items: center; gap: var(--s-3) var(--s-4); min-height: 72px; padding: var(--s-4); text-align: left; background: var(--surface-raised); border: 1px solid var(--border-default); border-left: 4px solid var(--border-strong); cursor: pointer; transition: border-color var(--dur-micro) var(--ease-standard), background var(--dur-micro) var(--ease-standard); }
 .gap-tiles button[data-kind="lost"] { border-left-color: var(--fin-conditional); }
 .gap-tiles button[data-kind="bill"] { border-left-color: var(--fin-over); }
+
+/* The cards Week 5 does not move. They are real lines out of this student's own plan, so
+   they are drawn as the committed money they are rather than as wrong answers. */
+.gap-tiles button[data-kind="committed"] { border-left-color: var(--fin-locked); }
+.gap-tiles button[data-kind="uncounted"] { border-left-color: var(--border-strong); }
 .gap-tiles button[aria-pressed="true"] { background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); border-left-color: var(--fin-adjustable); }
 
 /* Something to press, drawn as something that can be pressed. Without this the first
@@ -180,9 +199,6 @@ p { color: var(--ink-2); }
 .gap-tiles__label b { display: block; font: var(--t-ui); }
 .gap-tiles__label small { display: block; margin-top: 2px; color: var(--ink-3); font: var(--t-micro); }
 .gap-tiles strong { font: var(--m-sm); font-feature-settings: var(--num); }
-.gap-tiles__running { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); margin: var(--s-2) 0 0; padding: var(--s-3) var(--s-4); background: var(--surface-sunken); }
-.gap-tiles__running span { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
-.gap-tiles__running strong { font: var(--m-md); font-feature-settings: var(--num); }
 .decision-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); margin-bottom: var(--s-5); }
 .opportunity-card { display: flex; flex-direction: column; padding: var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--ink-1); }
 .opportunity-card h2 { margin: 0 0 var(--s-3); font: var(--t-title1); }
@@ -450,6 +466,10 @@ p { color: var(--ink-2); }
   .gap-tiles__kind { grid-column: 1 / -1; }
   .tradeoff-pair > div { grid-template-columns: 1fr; gap: var(--s-1); }
   .challenge-topbar { height: auto; min-height: 64px; grid-template-columns: 1fr auto; padding: var(--s-3); }
+
+  /* Two rows of top chrome down here, and the strip can wrap to three. The heading has to
+     clear all of it: "WHICH PLACE COSTS THE" used to arrive sliced through the middle. */
+  .stage-heading { scroll-margin-top: 140px; }
   .season-strip { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; }
   .season-strip ol { flex-basis: 100%; }
   .contract-drawer { grid-column: 2; grid-row: 1; }

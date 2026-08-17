@@ -17,6 +17,9 @@ import {
   gotoFreshChallenge,
   playSeasonWeeks,
   readWeek8Resolution,
+  HELD_TILES,
+  MOVED_TILES,
+  TO_DEPOSIT,
   noHorizontalOverflow,
   noSeriousAxeViolations,
   noStaleCopy,
@@ -314,7 +317,11 @@ studentTest("the expensive setup completes and Week 5 shows only two changed ite
   await savePlan(page, "fallback", context);
 
   await playSeasonWeeks(page);
-  await expect(page.locator(".gap-tiles button")).toHaveCount(2);
+  // Two cards moved: the bonus this plan counted on, and the required bill. There is no
+  // extra-travel card at this setup, and there is no reserved seat, so the cards Week 5
+  // leaves alone are rent and the weekly basics.
+  await expect(page.locator(MOVED_TILES)).toHaveCount(2);
+  await expect(page.locator(HELD_TILES)).toHaveCount(2);
   await passWeek5Calculation(page, String(week5TotalFor(context)));
 
   await savePlan(page, "week5-first-response", context);
@@ -555,32 +562,33 @@ studentTest("student entry screens do not spill sideways at a 640px-wide viewpor
 });
 
 // ---------------------------------------------------------------------------
-// 19. Weeks 1–4 spend. The season stage is the beat that makes the plan feel like
-//     a commitment, so what it claims to spend has to actually move on screen.
+// 19. Weeks 1–4 spend. The four weeks used to be four presses that charged the
+//     same rent and took the same hours every time; they now resolve together,
+//     so what the screen has to prove is that the drain is this student's own.
 // ---------------------------------------------------------------------------
 
-studentTest("playing Weeks 1 to 4 drains money and piles up hours at the rate the housing charges", async ({ page, classCode }) => {
+studentTest("Weeks 1 to 4 resolve on one screen and show the drain at the rate this housing charges", async ({ page, classCode }) => {
   await gotoFreshChallenge(page);
   await enterChallenge(page, { classCode });
   await completeSetupStage(page, 2); // cousin-room: nearly free, nearly unreachable
   await completeWorkingCalcs(page);
   await savePlan(page, "working", { setupId: "cousin-room" });
 
-  const money = page.locator(".season-ledger__row[data-tone='money'] strong");
-  const hours = page.locator(".season-ledger__row[data-tone='time'] strong");
-  const read = async (locator: typeof money) => Number((await locator.innerText()).replace(/[^0-9]/g, ""));
+  const read = async (selector: string) => Number((await page.locator(selector).innerText()).replace(/[^0-9]/g, ""));
 
-  const startMoney = await read(money);
-  const startHours = await read(hours);
-  expect(startHours).toBe(N.load.commuteBlocks["cousin-room"]);
+  // Four weeks, all of them resolved, and no press between them.
+  await expect(page.locator(".feed--season > li")).toHaveCount(4);
+  await expect(page.getByRole("button", { name: /Play Week/ })).toHaveCount(0);
 
-  for (const week of [2, 3, 4]) await page.getByRole("button", { name: `Play Week ${week}` }).click();
+  // Four weeks of the trip at this housing's rate, and four weeks of money gone.
+  expect(await read(".season-ledger__row[data-tone='time'] strong")).toBe(N.load.commuteBlocks["cousin-room"] * 4);
+  expect(await read(".season-ledger__row[data-tone='money'] strong")).toBeGreaterThan(0);
 
-  // Four weeks of rent and essentials have gone out, and four weeks of the trip.
-  expect(await read(hours)).toBe(N.load.commuteBlocks["cousin-room"] * 4);
-  const endMoney = await read(money);
-  expect(endMoney).toBeGreaterThan(0);
-  expect(endMoney).not.toBe(startMoney);
+  // The drain itself: what was left in hand falls week on week rather than holding still.
+  const inHand = await page.locator(".post__hand strong").allInnerTexts();
+  const series = inHand.map((text) => Number(text.replace(/[^0-9]/g, "")));
+  expect(series).toHaveLength(4);
+  expect(series[3]).toBeLessThan(series[0]);
 });
 
 studentTest("a costlier place leaves Avery visibly poorer by Week 4 than a cheaper one", async ({ page, classCode }) => {
@@ -590,7 +598,6 @@ studentTest("a costlier place leaves Avery visibly poorer by Week 4 than a cheap
     await completeSetupStage(page, index);
     await completeWorkingCalcs(page);
     await savePlan(page, "working", { setupId });
-    for (const week of [2, 3, 4]) await page.getByRole("button", { name: `Play Week ${week}` }).click();
     const text = await page.locator(".season-ledger__row[data-tone='money'] strong").innerText();
     return Number(text.replace(/[^0-9]/g, ""));
   };
@@ -615,7 +622,17 @@ studentTest("the course deposit deadline says what reserving would do before the
   await setAmount(page, "Backup money", String(spendable));
   await setAmount(page, CHOICE_LABELS.flexibleCash, "0");
   await page.getByRole("button", { name: "Save this version" }).click();
-  for (const week of [2, 3, 4]) await page.getByRole("button", { name: `Play Week ${week}` }).click();
+  await page.getByRole("button", { name: TO_DEPOSIT }).click();
+
+  // Its own screen now, not a panel under four weeks of feed.
+  await expect(page.getByRole("heading", { name: "Hold the seat now, or pay full price later?" })).toBeVisible();
+
+  // Both sides of the trade are stated before either is picked: the two prices, and what
+  // committing does to the money that still has to survive the rest of the season.
+  const trade = page.locator(".deposit-call__trade");
+  await expect(trade).toContainText(money(N.course.depositPrice));
+  await expect(trade).toContainText(money(N.course.fullPrice));
+  await expect(trade).toContainText(money(spendable));
 
   const effect = page.locator(".deposit-call__effect");
   await expect(effect).toContainText(money(0));
@@ -653,11 +670,13 @@ studentTest("Weeks 1 to 4 and the deposit deadline are fully operable from the k
   await completeWorkingCalcs(page);
   await savePlan(page, "working", { setupId: "teammate-share" });
 
-  for (const week of [2, 3, 4]) {
-    const step = page.getByRole("button", { name: `Play Week ${week}` });
-    await step.focus();
-    await step.press("Enter");
-  }
+  const toDeposit = page.getByRole("button", { name: TO_DEPOSIT });
+  await toDeposit.focus();
+  await toDeposit.press("Enter");
+  // The control the student just pressed is gone and a decision has taken its place, so the
+  // new heading is where a keyboard user is put rather than at the bottom of the last screen.
+  await expect(page.locator(".stage-heading")).toBeFocused();
+
   const reserve = page.getByRole("button", { name: "Reserve it now" });
   await reserve.focus();
   await reserve.press("Enter");
@@ -1143,7 +1162,7 @@ studentTest("a student who over-commits can still land and turn in a plan they c
   // At Week 4 this looks like a clean conversion, and it is: the course row already held
   // more than the seat costs, so reserving pays it and hands some money back. The squeeze
   // is Week 5's doing, which is exactly the uncertainty the decision is made under.
-  for (const week of [2, 3, 4]) await page.getByRole("button", { name: `Play Week ${week}` }).click();
+  await page.getByRole("button", { name: TO_DEPOSIT }).click();
   await page.getByRole("button", { name: "Reserve it now" }).click();
   await expect(page.locator(".deposit-call__effect")).toContainText("the course is paid");
   await page.getByRole("button", { name: "Lock it in and play Week 5" }).click();
@@ -1234,8 +1253,8 @@ studentTest("the challenge runs with animation turned off and on a short Chromeb
     await completeWorkingCalcs(page);
     await savePlan(page, "working", plan);
 
-    // The season steps and the deadline are both reachable without a mouse wheel fight.
-    for (const week of [2, 3, 4]) await page.getByRole("button", { name: `Play Week ${week}` }).click();
+    // The season and the deadline are both reachable without a mouse wheel fight.
+    await page.getByRole("button", { name: TO_DEPOSIT }).click();
     await expect(page.getByRole("heading", { name: "Hold the seat now, or pay full price later?" })).toBeVisible();
     await noHorizontalOverflow(page);
     await page.getByRole("button", { name: "Wait and decide later" }).click();

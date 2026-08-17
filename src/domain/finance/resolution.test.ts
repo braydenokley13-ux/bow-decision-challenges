@@ -244,6 +244,85 @@ describe("the season says which risk paid off and which one cost", () => {
     }
   });
 
+  /**
+   * The defect this pins is the one a publication gate exists to catch: the deposit verdict
+   * used to be `depositTaken ? "paid_off" : "no_effect"`, so reserving won on every season
+   * ever played and waiting registered as nothing on every season ever played. A trade-off
+   * whose verdict cannot change is a right answer wearing a choice's clothes.
+   */
+  describe("the course seat is judged by what the season did with the money it tied up", () => {
+    const pressure = (shortfall: number, movable: number, courseLineCut = false) => ({
+      shortfall: dollars(shortfall),
+      movable: dollars(movable),
+      courseLineCut,
+    });
+    const deposit = (over: Parameters<typeof plan>[0], week5: ReturnType<typeof pressure>) =>
+      verdict(resolveSeason(plan(over), N, undefined, "attendance bonus", week5), "course-deposit");
+
+    it("reads the same reserved seat two ways on two seasons", () => {
+      // Same call, same everything else: the movable lines held Week 5 on one season and did
+      // not on the other, and that is the whole difference.
+      const absorbed = deposit({ depositTaken: true }, pressure(500, 1900));
+      const squeezed = deposit({ depositTaken: true }, pressure(500, 400));
+      expect(absorbed.outcome).toBe("paid_off");
+      expect(squeezed.outcome).toBe("cost_you");
+      expect(absorbed.outcome).not.toBe(squeezed.outcome);
+    });
+
+    it("calls a reserved seat costly when the course line had to come down to cover Week 5", () => {
+      // Movable money was enough, but the plan paid for Week 5 by cutting what it was saving.
+      const cut = deposit({ depositTaken: true }, pressure(500, 1900, true));
+      expect(cut.outcome).toBe("cost_you");
+      expect(cut.detail).toContain("stopped being money Avery could move");
+    });
+
+    it("reads waiting three ways, depending on what the movable money was asked for", () => {
+      const covered = deposit({}, pressure(1000, 3100));
+      const notEnough = deposit({}, pressure(1000, 400));
+      const untested = deposit({}, pressure(0, 3100));
+      expect(covered.outcome).toBe("paid_off");
+      expect(notEnough.outcome).toBe("fell_short");
+      expect(untested.outcome).toBe("no_effect");
+      expect(new Set([covered.outcome, notEnough.outcome, untested.outcome]).size).toBe(3);
+    });
+
+    it("names the price difference on every season, whichever way the call went", () => {
+      const premium = formatDollars(N.course.fullPrice - N.course.depositPrice);
+      for (const depositTaken of [false, true]) {
+        for (const week5 of [pressure(0, 3100), pressure(500, 1900), pressure(1200, 400), pressure(500, 1900, true)]) {
+          const read = deposit({ depositTaken }, week5);
+          expect(read.detail, `${String(depositTaken)} / ${week5.shortfall} of ${week5.movable}`).toContain(premium);
+          expect(read.detail).toContain(formatDollars(N.course.depositPrice));
+          expect(read.detail).toContain(formatDollars(N.course.fullPrice));
+        }
+      }
+    });
+
+    it("leaves no verdict on this decision constant across seasons", () => {
+      // Read the way the publication gate reads the rest of the model: sweep the space and
+      // check that neither answer owns one outcome.
+      const seasons = [pressure(0, 3100), pressure(500, 1900), pressure(1200, 400), pressure(500, 1900, true)];
+      for (const depositTaken of [false, true]) {
+        const outcomes = new Set(seasons.map((week5) => deposit({ depositTaken }, week5).outcome));
+        expect(outcomes.size, `depositTaken=${String(depositTaken)}`).toBeGreaterThan(1);
+      }
+    });
+  });
+
+  /**
+   * The clinics cost hours whatever else happened. The "cost Avery nothing extra" line this
+   * replaces un-said the tiredness the Week 5 screen had just insisted on.
+   */
+  it("states both the money and the hours on every season the clinics were taken", () => {
+    for (const setupId of ["gym-sublet", "teammate-share", "cousin-room"] as const) {
+      const resolution = resolveSeason(plan({ setupId, includeCompletion: true, includeOptionalWork: true }), N);
+      const clinics = verdict(resolution, "clinics");
+      expect(clinics.detail, setupId).toContain(formatDollars(N.optionalWorkIncome));
+      expect(clinics.detail, setupId).toContain(`${N.load.clinicBlocks} hours a week`);
+      expect(clinics.detail, setupId).not.toContain("nothing extra");
+    }
+  });
+
   it("marks a risk the student never took as having had no effect", () => {
     const cautious = resolveSeason(plan({ setupId: "gym-sublet" }), N);
     expect(verdict(cautious, "clinics").taken).toBe(false);

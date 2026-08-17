@@ -1,7 +1,7 @@
 import { dollars, formatDollars, type Dollars } from "../core/money";
 import type { ScenarioNumbers } from "../scenario/types";
 import { bonusWeeks } from "../scenario/season";
-import { courseCostFor } from "./formulas";
+import { assigned, courseCostFor } from "./formulas";
 import { loadFor, type LoadReadout } from "./load";
 import type { PlanAmounts, SnapshotInputs } from "./types";
 
@@ -42,6 +42,29 @@ export interface ResolvedWeek {
   week: number;
   /** Avery made every session that week. */
   madeIt: boolean;
+}
+
+/**
+ * What Week 5 actually asked of the plan, and what the plan still had that could move.
+ *
+ * The deposit verdict is the one call in this world whose whole point is the trade between a
+ * cheaper price and money that stays reachable, and it used to be reported as a constant:
+ * reserving was always "paid off" and waiting was always "no effect", on every season, for
+ * every plan. A trade-off with a fixed verdict is a hidden right answer, which is the thing
+ * `balance.ts` exists to prevent everywhere else in the model.
+ *
+ * These three facts are what make the same decision read differently for two students. They
+ * are read off the plan the student carried into Week 5 and the bill that landed on it — the
+ * caller already holds both — and nothing here is rolled or scored. This is the narrative on
+ * the Week 8 ledger; no observation is produced from it.
+ */
+export interface Week5Pressure {
+  /** What the plan was over by the moment Week 5's bills landed on it. */
+  shortfall: Dollars;
+  /** Money sitting in lines the student could still move when it landed. */
+  movable: Dollars;
+  /** The course line finished lower than the plan Avery carried into Week 5. */
+  courseLineCut: boolean;
 }
 
 export interface PlanChange {
@@ -95,10 +118,69 @@ function heldWith(final: SnapshotInputs, n: ScenarioNumbers, changed: { clinics?
   ).attendanceHolds;
 }
 
-function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, bonusLabel: string): RiskVerdict[] {
+/**
+ * The course seat, judged by what the season did with the money it tied up.
+ *
+ * The premium is named in every branch, because it is the half of the trade that is true
+ * whatever happened: reserving early cost less than paying later, and waiting cost more. What
+ * varies is the other half — whether the flexibility that reserving gave up, or that waiting
+ * kept, was the flexibility Week 5 turned out to need.
+ *
+ * Neither answer wins on every season. Reserving reads as "paid off" on a plan whose movable
+ * lines absorbed Week 5 anyway, and as "cost you" on a plan that could not cover the bill out
+ * of what was left or that had to take the course line down to do it. Waiting reads as "paid
+ * off" when the money it kept reachable is what covered Week 5, "fell short" when even that
+ * was not enough, and "no effect" on a season that never asked the movable money for anything
+ * — a real third state, not a default, and the premium is still on the page.
+ */
+function depositVerdict(final: SnapshotInputs, n: ScenarioNumbers, pressure: Week5Pressure): RiskVerdict {
+  const premium = formatDollars(n.course.fullPrice - n.course.depositPrice);
+  const early = formatDollars(n.course.depositPrice);
+  const full = formatDollars(n.course.fullPrice);
+  const week = n.course.depositDeadlineWeek;
+  const asked = formatDollars(pressure.shortfall);
+  const movable = formatDollars(pressure.movable);
+  // A season that never put the plan under is a season where the trade was never tested. It
+  // is not the same as the trade going well, and saying so is what stops "no effect" from
+  // being the answer waiting always gets.
+  const tested = pressure.shortfall > 0;
+  const held = pressure.shortfall <= pressure.movable;
+
+  if (final.depositTaken) {
+    const strained = tested && (!held || pressure.courseLineCut);
+    const priced = `The seat was held from Week ${week} for ${early} instead of ${full}, so the course cost ${premium} less.`;
+    return {
+      id: "course-deposit",
+      label: "Reserving the course seat early",
+      taken: true,
+      outcome: strained ? "cost_you" : "paid_off",
+      detail: strained
+        ? `${priced} It also stopped being money Avery could move, and Week 5 asked for ${asked} out of the ${movable} that still could.`
+        : tested
+          ? `${priced} Week 5 asked for ${asked}, and the ${movable} still free to move covered it.`
+          : `${priced} Week 5 asked nothing of the money left movable, so committing early cost Avery no room.`,
+    };
+  }
+
+  const priced = `The course cost the full ${full} rather than the ${early} it took at Week ${week}, so Avery paid ${premium} more.`;
+  return {
+    id: "course-deposit",
+    label: "Not reserving the course seat early",
+    taken: false,
+    outcome: !tested ? "no_effect" : held ? "paid_off" : "fell_short",
+    detail: !tested
+      ? `${priced} Week 5 asked nothing of the money Avery kept reachable, so the room it bought was never used.`
+      : held
+        ? `${priced} Week 5 asked for ${asked}, and it came out of the ${movable} Avery had kept reachable.`
+        : `${priced} Week 5 asked for ${asked} and only ${movable} could move, so keeping it reachable was not enough on its own.`,
+  };
+}
+
+function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, bonusLabel: string, pressure: Week5Pressure): RiskVerdict[] {
   const withoutTimeMoney = heldWith(final, n, { timeMoney: dollars(0) });
   const withoutClinics = heldWith(final, n, { clinics: false });
   const bonus = formatDollars(n.completionIncome);
+  const clinicHours = n.load.clinicBlocks;
   // What it would have taken to stay under the line, from the same load model. Adding this
   // much to Avery's week buys back exactly the hours the plan was over by, so the sentence
   // it goes into is a fact about this student's plan and not a figure of speech.
@@ -135,15 +217,19 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
         : withoutClinics && !held
           ? "cost_you"
           : "paid_off",
+      // Both currencies, in every branch. This used to close with "cost Avery nothing extra"
+      // on the seasons where the bonus was already gone, which retroactively zeroed the hours
+      // the Week 5 screen had just insisted were real. The clinics always cost those hours;
+      // what changes between seasons is whether they are why the bonus went.
       detail: !final.includeOptionalWork
         ? "Avery kept the Saturdays. No extra money, and no extra hours."
         : withoutClinics && !held
-          ? "The clinics paid, but they are the reason Avery went over the line. Without them the bonus would have held."
+          ? `The clinics brought in ${formatDollars(n.optionalWorkIncome)} and took ${clinicHours} hours a week. Those hours are why Avery went over the line — without them the bonus would have held.`
           : held
-            ? "The clinics paid, and Avery still made every session."
-            // The bonus was already gone at this housing and this spend, so the fee is
-            // money the plan would not otherwise have had.
-            : `The clinics brought in ${formatDollars(n.optionalWorkIncome)} and cost Avery nothing extra — the week was already too full either way.`,
+            ? `The clinics brought in ${formatDollars(n.optionalWorkIncome)} and took ${clinicHours} hours a week. Avery made every session anyway.`
+            // The bonus was already gone at this housing and this spend, so the fee is money
+            // the plan would not otherwise have had — and the hours were still spent.
+            : `The clinics brought in ${formatDollars(n.optionalWorkIncome)} and took ${clinicHours} hours a week. The week was already over the line without them, so they are not why the bonus went.`,
     },
     {
       id: "buying-time",
@@ -164,15 +250,7 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
             ? "Avery would have made every session either way, so this money bought rest rather than the bonus."
             : `It bought ${loadFor({ setupId: final.setupId, rehabActive: true, clinicsAccepted: final.includeOptionalWork, timeMoney: final.amounts.flexibleCash }, n).bought} hours back, and Avery still did not have enough week left.`,
     },
-    {
-      id: "course-deposit",
-      label: final.depositTaken ? "Reserving the course seat early" : "Not reserving the course seat early",
-      taken: final.depositTaken,
-      outcome: final.depositTaken ? "paid_off" : "no_effect",
-      detail: final.depositTaken
-        ? "The seat was held from Week 4, and it cost less than the late price."
-        : "Avery kept the money where it could still move, and paid the full price when the course came round.",
-    },
+    depositVerdict(final, n, pressure),
   ];
   return verdicts.sort((a, b) => VERDICT_WEIGHT[a.outcome] - VERDICT_WEIGHT[b.outcome]);
 }
@@ -193,7 +271,23 @@ const VERDICT_WEIGHT: Record<RiskVerdict["outcome"], number> = {
   no_effect: 3,
 };
 
-export function resolveSeason(final: SnapshotInputs, n: ScenarioNumbers, opening?: PlanAmounts, bonusLabel = "attendance bonus"): SeasonResolution {
+export function resolveSeason(
+  final: SnapshotInputs,
+  n: ScenarioNumbers,
+  opening?: PlanAmounts,
+  bonusLabel = "attendance bonus",
+  week5?: Week5Pressure,
+): SeasonResolution {
+  /**
+   * Absent, the season is read as one Week 5 never put under: no shortfall, and whatever the
+   * final plan still holds counted as movable. A caller that knows what the week asked passes
+   * it, and every real run does.
+   */
+  const pressure: Week5Pressure = week5 ?? {
+    shortfall: dollars(0),
+    movable: assigned(final.amounts),
+    courseLineCut: opening ? final.amounts.goal < opening.goal : false,
+  };
   const load = loadFor(
     {
       setupId: final.setupId,
@@ -240,7 +334,7 @@ export function resolveSeason(final: SnapshotInputs, n: ScenarioNumbers, opening
     courseShort,
     endCash: dollars(bufferHeld - absorbed + unplannedGain),
     spentOnTime: final.amounts.flexibleCash,
-    risks: riskVerdicts(final, n, attendanceHeld, bonusLabel),
+    risks: riskVerdicts(final, n, attendanceHeld, bonusLabel, pressure),
     changes: opening
       ? (["goal", "reserve", "flexibleCash"] as const).map((category) => ({
           category,

@@ -95,6 +95,12 @@ export interface IncomeLineCopy {
   note: string;
   /** The condition attached, for the payments that carry one. */
   rule?: string;
+  /**
+   * What it means for the season if the condition is not met, for the payments that carry
+   * one. It is the half of a conditional payment the always-open money sheet in the top bar
+   * cannot show, and the reason the terms screen is a screen rather than a slide repeating it.
+   */
+  ifNot?: string;
 }
 
 export interface WorldScenario {
