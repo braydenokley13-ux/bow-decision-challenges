@@ -175,6 +175,14 @@ export interface WorldRegistryEntry {
   title: string;
   /** The card blurb, in the world's own voice (§13.3). */
   subtitle: string;
+  /**
+   * Who the student is in this world, in one line (§7.2, §13.3).
+   *
+   * It sits on the registry rather than inside a world's own scenario shape because the world
+   * choice screen draws two cards side by side and has to ask both worlds the same question.
+   * The line itself is the world's — read off its own copy, never written here.
+   */
+  role: string;
   /** What a teacher is told to allow for, in minutes. */
   durationMinutes: { min: number; max: number };
   availability: "available";

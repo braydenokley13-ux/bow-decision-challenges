@@ -28,6 +28,11 @@ import { CODE_LENGTH, isWellFormedClassCode, isWellFormedSeatCode, normaliseSeat
 import { planPosition, railStop, seedVisited, type PlanPosition } from "./planNavigation";
 import { SeasonWeeks } from "./SeasonWeeks";
 import { Week8Resolution } from "./Week8Resolution";
+import { WorldChoice } from "./WorldChoice";
+import { worldOffer } from "./worldOffer";
+import { DEFAULT_WORLD_ID, PLAYABLE_WORLDS, WORLD_CHOICE_UI_READY } from "../domain/scenario/registry";
+import { PopUpChallenge } from "./popup/PopUpChallenge";
+import type { StageId } from "../domain/evidence/types";
 
 const BONUS_WEEKS = bonusWeeks(SCENARIO_NUMBERS);
 const CLINIC_WEEKS = clinicWeeks(SCENARIO_NUMBERS);
@@ -61,7 +66,7 @@ function useRevealOnce<T extends HTMLElement = HTMLDivElement>(active: boolean) 
  * to Avery while entering the two codes, so nothing stands between the URL and the story.
  */
 function OpeningStage() {
-  const { state, dispatch, transport } = useChallenge();
+  const { state, dispatch, transport, setOffer } = useChallenge();
   const { offer, invitation, numbers } = BASKETBALL_SCENARIO;
   const [classCode, setClassCode] = useState("");
   const [seatCode, setSeatCode] = useState("");
@@ -84,11 +89,19 @@ function OpeningStage() {
       return;
     }
     setJoinedLabel(result.joined.record?.label ?? null);
-    // One assignment per class today, so there is nothing to choose between and no screen
-    // asking a question with one answer. Which one this seat is doing still gets recorded,
-    // because the class knows and the submission is where that has to survive.
-    const assignment = result.joined.assignments.find((entry) => entry.allowedWorldIds.includes(state.meta.worldId))
-      ?? result.joined.assignments[0];
+    // The oldest assignment the class holds, which is the same one the service attributes a
+    // submission to when a client names none. It used to be whichever assignment mentioned
+    // Basketball — a rule that quietly answered the world question before the student had
+    // been asked it.
+    const assignment = result.joined.assignments[0];
+    // What this class was set, carried to the picker so it does not have to ask again.
+    setOffer(worldOffer({
+      allowedWorldIds: assignment?.allowedWorldIds ?? [],
+      assignmentAllowsChoice: assignment?.studentChoosesWorld ?? true,
+      playableWorldIds: PLAYABLE_WORLDS.map((world) => world.id),
+      pickerReady: WORLD_CHOICE_UI_READY,
+      defaultWorldId: DEFAULT_WORLD_ID,
+    }));
     dispatch({
       type: "SESSION_STARTED",
       sessionId: crypto.randomUUID(),
@@ -104,21 +117,10 @@ function OpeningStage() {
         <AppMark />
         <span>Plan Under Pressure</span>
       </div>
+      {/* The join card comes first in the source and stays on the right at laptop widths.
+          Below 760px the columns stack in source order, which is the fix for the one screen
+          where the thing a student has to do was entirely below the fold. */}
       <div className="opening__grid">
-        {/* Cream, not navy. The dark arena is now what Week 5 and Week 8 are made of, and a
-            product whose first screen is already at full volume has nowhere left to go when
-            the season actually turns. */}
-        <section className="opening__story">
-          <p className="eyebrow">{invitation.kicker}</p>
-          <h1>{invitation.headline}</h1>
-          <p className="opening__lede"><strong>{offer.headline}</strong> {offer.body}</p>
-          <p className="opening__role">{invitation.role}</p>
-          <ol className="opening__decisions">
-            {invitation.decisions.map((decision) => (
-              <li key={decision.title}><b>{decision.title}</b><span>{decision.detail}</span></li>
-            ))}
-          </ol>
-        </section>
         {/* Avery, and the one thing Avery is playing for. The arena stays behind the person
             rather than behind the whole screen. */}
         <aside className="opening__side scene">
@@ -169,9 +171,22 @@ function OpeningStage() {
                 ? "Your teacher gives you the class code and your seat number."
                 : transport.promise)}
             </p>
+            {/* A student who found BOW without a code used to meet a form they could not
+                fill in and nothing else. One line, and it says where the code comes from. */}
+            <p className="no-code">{STUDENT_COPY.join.noCode}</p>
             <p className="privacy-note">{STUDENT_COPY.join.privacy}</p>
           </div>
         </aside>
+        {/* The story. It used to open with an 01/02/03 list of the decisions ahead — a
+            syllabus handed over before any of it meant anything, and the thing that pushed
+            the join card off a 640px screen. The card above says what the student is being
+            asked to do; this says who they are doing it for. */}
+        <section className="opening__story">
+          <p className="eyebrow">{invitation.kicker}</p>
+          <h1>{invitation.headline}</h1>
+          <p className="opening__lede"><strong>{offer.headline}</strong> {offer.body}</p>
+          <p className="opening__role">{invitation.role}</p>
+        </section>
       </div>
     </div>
   );
@@ -1210,12 +1225,19 @@ function SubmittedStage() {
 }
 
 export function StudentChallenge() {
-  const { state } = useChallenge();
+  const { state, activeWorldId } = useChallenge();
+  // A second world means a second machine, and the shell picks between them before it picks
+  // a screen. Basketball's stage ids and the pop-up's do not overlap, but reading them off
+  // one switch would still mean one reducer's state deciding what another reducer draws.
+  if (activeWorldId === "food-truck") return <PopUpChallenge />;
+  return <BasketballStages stage={state.stage} />;
+}
+
+function BasketballStages({ stage }: { stage: StageId }) {
   return useMemo(() => {
-    switch (state.stage) {
+    switch (stage) {
       case "entry": case "join": return <OpeningStage />;
-      // Restored only when a second world ships; the reducer routes past it today.
-      case "choose-world": return <OpeningStage />;
+      case "choose-world": return <WorldChoice />;
       // Retired as its own screen — resumed sessions saved on it land on the deal.
       case "the-offer": return <DealStage />;
       case "role-contract": return <DealStage />;
@@ -1233,6 +1255,8 @@ export function StudentChallenge() {
       case "week8-resolution": return <Week8Resolution />;
       case "defense": return <DefenseStage />;
       case "submitted": return <SubmittedStage />;
+      // Run the Pop-Up's own screens. Reached through its own machine, never through this one.
+      default: return null;
     }
-  }, [state.stage]);
+  }, [stage]);
 }

@@ -111,5 +111,8 @@ describe("the same actions produce the same market", () => {
     expect(second.sweep).toEqual(first.sweep);
     expect(second.totalStates).toBe(first.totalStates);
     expect(second.dominatedSpots).toEqual(first.dominatedSpots);
-  });
+    // Two full sweeps of ~168,000 states. It clears five seconds on an idle machine and does
+    // not when the rest of the suite is running beside it, which was a flake rather than a
+    // finding — the assertion is unchanged and only the clock it is given moved.
+  }, 30_000);
 });

@@ -66,6 +66,191 @@ export interface PopUpScenario {
   };
   settle: { title: string; note: string };
   writeUp: { kicker: string; prompt: string; note: string };
+  /**
+   * Every other sentence the eleven screens put in front of a student.
+   *
+   * It lives here rather than in the screens for the reason the demand profile exists: §9.2
+   * calls the word count and the reading grade facts about the world, checkable by reading
+   * it. Prose written into JSX is prose nothing measures, and the declaration quietly becomes
+   * a claim. Only numbers are interpolated by a screen; every word is in this file.
+   */
+  screens: PopUpScreenCopy;
+}
+
+export interface PopUpSumCopy {
+  /** What the figure is called. The field's accessible name. */
+  label: string;
+  /** What the student is being asked for, without doing the sum for them. */
+  prompt: string;
+  terms: string;
+  /** The step-by-step help, opened after two attempts and recorded as support. */
+  scaffold: string;
+  low: string;
+  high: string;
+}
+
+export interface PopUpScreenCopy {
+  pitch: { action: string };
+  spot: {
+    kicker: string;
+    title: string;
+    deck: string;
+    permit: { label: string; note: string };
+    crowdLabel: string;
+    take: string;
+    /** What taking a booth just did, said once the student has taken one. */
+    after: string;
+    taken: string;
+    owed: PopUpSumCopy;
+    action: string;
+    gate: string;
+  };
+  money: {
+    kicker: string;
+    title: string;
+    deck: string;
+    ask: string;
+    yes: string;
+    no: string;
+    counted: string;
+    left: string;
+    toPlan: PopUpSumCopy;
+    action: string;
+    gate: string;
+  };
+  plan: {
+    kicker: string;
+    title: string;
+    lead: string;
+    closer: { title: string; note: string };
+    /** What each line is doing at the amount it currently holds. */
+    lineNotes: { stockOne: string; stock: string; cushion: string; cut: string };
+    toPlanLabel: string;
+    placedLabel: string;
+    leftLabel: string;
+    balanced: string;
+    unassigned: string;
+    over: string;
+    commit: string;
+    check: string;
+    help: { open: string; steps: string; supply: string; supplyNote: string };
+  };
+  saturday: {
+    trayLabel: string;
+    trayHint: string;
+    cooked: string;
+    willSell: string;
+    willBin: string;
+    crowd: string;
+    order: PopUpSumCopy;
+    /** The ceiling on the order, said as a fact about their own plan. */
+    affordable: string;
+    bothNights: string;
+    open: string;
+    gate: string;
+  };
+  night: {
+    cooked: string;
+    sold: string;
+    binned: string;
+    takings: string;
+    soldOut: string;
+    someLeft: string;
+    nothingBinned: string;
+    binnedTrays: string;
+    turnedAway: string;
+  };
+  first: { kicker: string; title: string; deck: string };
+  standing: {
+    kicker: string;
+    title: string;
+    rebateEarnedPlanned: string;
+    rebateEarnedWindfall: string;
+    rebateMissedPlanned: string;
+    rebateMissedFree: string;
+    next: string;
+    nextNote: string;
+    helperAsk: string;
+    helperBooked: string;
+    helperAlone: string;
+    book: string;
+    alone: string;
+    gate: string;
+    action: string;
+  };
+  generator: {
+    kicker: string;
+    recap: string;
+    cateringMissedPlanned: string;
+    cateringMissedFree: string;
+    coverNamed: string;
+    coverUnnamed: string;
+    coverShort: string;
+    gap: PopUpSumCopy;
+    action: string;
+  };
+  repair: {
+    kicker: string;
+    title: string;
+    billLabel: string;
+    freedLabel: string;
+    stillLabel: string;
+    locked: string;
+    lockedPermit: string;
+    lockedBooth: string;
+    lockedCooked: string;
+    lockedHelper: string;
+    settled: string;
+    short: string;
+    spare: string;
+    commit: string;
+    acknowledge: string;
+    lastKicker: string;
+    lastTitle: string;
+    lastNote: string;
+    noLast: string;
+    noLastAction: string;
+  };
+  settle: {
+    kicker: string;
+    saturdayLabel: string;
+    platesSold: string;
+    inTheBin: string;
+    takingsLabel: string;
+    bankedLabel: string;
+    inHandLabel: string;
+    startedWith: string;
+    missedLast: string;
+    ranOut: string;
+    spoilage: string;
+    noSpoilage: string;
+    capped: string;
+    handOff: string;
+    action: string;
+  };
+  writeUp: {
+    title: string;
+    tiles: string;
+    tileLabels: { takings: string; binned: string; banked: string; plates: string; swap: string; cushion: string };
+    field: string;
+    starters: readonly string[];
+    pickMoreOne: string;
+    pickMore: string;
+    ready: string;
+    write: string;
+    longEnough: string;
+    submit: string;
+  };
+  submitted: {
+    sent: string;
+    saving: string;
+    failed: string;
+    person: string;
+    retry: string;
+    record: string;
+    again: string;
+    againNote: string;
+  };
 }
 
 const trayNote = `Ramos Foods sells to the market by the tray, and a tray is ${N.platesPerTray} plates. Every tray costs you ${formatDollars(N.trayCost)}, and every plate you hand over the counter sells for ${formatDollars(N.platePrice)}. Trays do not come in halves, so you will almost never match the crowd exactly.`;
@@ -174,12 +359,264 @@ export const POP_UP_SCENARIO: PopUpScenario = {
     prompt: "Tell me how you would run it next season. What would you keep the same, and what would you do differently?",
     note: "A person reads this and writes back, so use your own numbers and say what you were thinking.",
   },
+  screens: {
+    pitch: { action: "Pick your booth" },
+    spot: {
+      kicker: "Three booths left",
+      title: "Where do you set up?",
+      deck: "The organiser prices a booth by the crowd that walks past it. Take one.",
+      permit: { label: "City permit", note: `${formatDollars(N.permit)} for the four Saturdays. Every stall pays it.` },
+      crowdLabel: "The crowd",
+      take: "Take this booth",
+      taken: "Booked",
+      owed: {
+        label: "What you owe before you open",
+        prompt: "The permit and the booth are both paid before you sell a plate.",
+        terms: "Neither one comes back.",
+        scaffold: `The city wants ${formatDollars(N.permit)}. Your booth is priced on the card you took. Add the two.`,
+        low: "Too low. One of the two is missing.",
+        high: "Too high. Only the permit and the booth are owed yet.",
+      },
+      after: "That money is gone before you sell a single plate.",
+      action: "See what is left",
+      gate: "Take a booth to carry on",
+    },
+    money: {
+      kicker: "Money with a rule on it",
+      title: "Two amounts might turn up.",
+      deck: "Neither one is promised. Say whether your plan counts on it.",
+      ask: "Plan as if this money arrives?",
+      yes: "Yes — count it in",
+      no: "No — leave it out",
+      counted: "Counted. It is money your plan can spend.",
+      left: "Left out. Your plan does not need it.",
+      toPlan: {
+        label: "What is left to plan with",
+        prompt: "The truck's account, once the permit and the booth are paid.",
+        terms: "Money with a rule on it is not in this figure.",
+        scaffold: `Start with the ${formatDollars(N.startCash)} in the account. Take out what you owe before you open.`,
+        low: "Too low. Only the permit and the booth come out.",
+        high: "Too high. The permit and the booth are both gone already.",
+      },
+      action: "Split the money",
+      gate: "Answer both before you carry on",
+    },
+    plan: {
+      kicker: "The opening plan",
+      title: "Give every dollar a job.",
+      lead: "Three lines. All of the money has to land on them, and the market starts the moment it does.",
+      closer: { title: "Send the rest to one line", note: "The line you name takes whatever is left over." },
+      lineNotes: {
+        stockOne: "tray of food to cook and sell.",
+        stock: "trays of food to cook and sell.",
+        cushion: "Cash in the box, and not spent yet.",
+        cut: "Yours at the end of the run, if nothing eats it.",
+      },
+      toPlanLabel: "To plan with",
+      placedLabel: "On the three lines",
+      leftLabel: "Still to place",
+      balanced: "Every dollar has a job.",
+      unassigned: "still has no job.",
+      over: "more than you have.",
+      commit: "Lock the plan in",
+      check: "Check this plan",
+      help: {
+        open: "Show me how this works",
+        steps: "Move money with − and + until nothing is left over.",
+        supply: "Fill in one split that adds up",
+        supplyNote: "This spreads the money evenly. It is one way to do it, not the right one.",
+      },
+    },
+    saturday: {
+      trayLabel: "Trays to cook",
+      trayHint: `One tray is ${N.platesPerTray} plates and costs ${formatDollars(N.trayCost)}.`,
+      cooked: "plates cooked",
+      willSell: "You would sell",
+      willBin: "would go in the bin",
+      crowd: "plates is what this booth can shift tonight",
+      order: {
+        label: "What the order costs",
+        prompt: "The trays you are about to cook, at what Ramos Foods charges for one.",
+        terms: "You pay for a tray whether the plates sell or not.",
+        scaffold: `Count your trays. Multiply by ${formatDollars(N.trayCost)}.`,
+        low: "Too low. Count every tray you ordered.",
+        high: "Too high. Check how many trays you actually ordered.",
+      },
+      affordable: "is all your stock line pays for.",
+      bothNights: "for both nights",
+      open: "Open the doors",
+      gate: "Price the order to carry on",
+    },
+    night: {
+      cooked: "Cooked",
+      sold: "Sold",
+      binned: "In the bin",
+      takings: "Takings",
+      soldOut: "You sold every plate you cooked.",
+      someLeft: "You cooked more than the crowd bought.",
+      nothingBinned: "Nothing went in the bin.",
+      binnedTrays: "of food went in the bin.",
+      turnedAway: "More people wanted a plate than two hands could hand over.",
+    },
+    first: {
+      kicker: "Saturday 1",
+      title: "How much do you cook?",
+      deck: "Order the food before the doors open. Whatever the crowd does not buy is money in the bin.",
+    },
+    standing: {
+      kicker: "Saturday 1 is done",
+      title: "The first night is in.",
+      rebateEarnedPlanned: "You sold out, so the rebate is yours. Your plan already spent it.",
+      rebateEarnedWindfall: "You sold out, so the rebate is yours. Your plan never counted on it, and it goes in the cushion.",
+      rebateMissedPlanned: "You did not sell out. The rebate is not coming, and your plan counted on it.",
+      rebateMissedFree: "You did not sell out, so there is no rebate. Your plan never counted on it.",
+      next: "The next two Saturdays",
+      nextNote: "One order covers both nights. You cook the same again on Saturday 3.",
+      helperAsk: "Book her for the last Saturday?",
+      helperBooked: "Booked. The money is spent whatever happens.",
+      helperAlone: "You work the window on your own.",
+      book: "Book Marisol",
+      alone: "Work it alone",
+      gate: "Answer Marisol to carry on",
+      action: "Cook both nights",
+    },
+    generator: {
+      kicker: "Saturday 3, closing",
+      recap: "The last two Saturdays",
+      cateringMissedPlanned: "Sunrise Yoga never confirmed. That money is not coming, and your plan counted on it.",
+      cateringMissedFree: "Sunrise Yoga never confirmed. Your plan never counted on it.",
+      coverNamed: "You said this line would give it back:",
+      coverUnnamed: "You did not say where it would come from, so it came out of the cushion.",
+      coverShort: "The line you named could not give all of it back.",
+      gap: {
+        label: "What you still owe on the swap",
+        prompt: "The replacement generator, once Ramos puts your deposit against it.",
+        terms: "Both amounts are in the message above.",
+        scaffold: `Take the ${formatDollars(N.generator.deposit)} deposit off the ${formatDollars(N.generator.replacement)} replacement.`,
+        low: "Too low. The deposit does not cover the whole swap.",
+        high: "Too high. Ramos still holds your deposit against it.",
+      },
+      action: "Find the money",
+    },
+    repair: {
+      kicker: "The swap",
+      title: "Where does the money come from?",
+      billLabel: "The shop wants",
+      freedLabel: "Freed so far",
+      stillLabel: "Still to find",
+      locked: "Already spent",
+      lockedPermit: "Paid to the city before you opened.",
+      lockedBooth: "Paid to the organiser before you opened.",
+      lockedCooked: "Food you already cooked and sold.",
+      lockedHelper: "Marisol turned down another shift for you.",
+      settled: "The shop takes the money and the generator goes in the truck.",
+      short: "still missing",
+      spare: "more than the shop wants, and no line to put it on.",
+      commit: "Pay the shop",
+      acknowledge: "Save it, and say what is missing",
+      lastKicker: "Saturday 4",
+      lastTitle: "The last one, and the biggest.",
+      lastNote: "Fireworks off the bridge at nine, and half the city comes down to watch them.",
+      noLast: "No generator means no cooking. There is no last Saturday.",
+      noLastAction: "See how it came out",
+    },
+    settle: {
+      kicker: "The market is over",
+      saturdayLabel: "Saturday",
+      platesSold: "Plates sold",
+      inTheBin: "Money in the bin",
+      takingsLabel: "Takings",
+      bankedLabel: "Your cut, banked",
+      inHandLabel: "Money in hand",
+      startedWith: "The account started at",
+      missedLast: "The truck sat dark on the biggest night of the run.",
+      ranOut: "You ran out of food on a night that still had people queuing.",
+      spoilage: "of the food you bought was never sold.",
+      noSpoilage: "Every plate you cooked went over the counter.",
+      capped: "The crowd was bigger than the window could serve.",
+      handOff: "Nadia Okafor ran the market. She has one question for every stall that took a booth.",
+      action: "Answer the organiser",
+    },
+    writeUp: {
+      title: "How would you run it again?",
+      tiles: "Pick two or three of your own numbers",
+      tileLabels: {
+        takings: "What the market paid you",
+        binned: "Money you threw away",
+        banked: "Your cut, banked",
+        plates: "Plates you sold",
+        swap: "What the new generator cost you",
+        cushion: "Cash left in the box",
+      },
+      field: "Two to four sentences",
+      starters: ["I would keep…", "I would change…", "The money went…"],
+      pickMoreOne: "more number to pick.",
+      pickMore: "more numbers to pick.",
+      ready: "Numbers ready.",
+      write: "Now write two to four sentences.",
+      longEnough: "Long enough to turn in.",
+      submit: "Turn in my answer",
+    },
+    submitted: {
+      sent: "Your answer is with your teacher.",
+      saving: "Sending your answer…",
+      failed: "Your answer is saved, but not sent yet.",
+      person: "A person reads what you wrote. Software can check whether the money adds up. It should not decide whether your thinking makes sense.",
+      retry: "Try sending again",
+      record: "What you turned in",
+      again: "Run the market again",
+      againNote: "Four different Saturdays would come out differently. Starting again does not take this run back.",
+    },
+  },
 };
+
+/** Every sentence one of the eleven screens can put on a student's screen. */
+function screenCopy(s: PopUpScreenCopy): readonly string[] {
+  const sums = [s.spot.owed, s.money.toPlan, s.saturday.order, s.generator.gap];
+  return [
+    s.pitch.action,
+    s.spot.kicker, s.spot.title, s.spot.deck, s.spot.permit.label, s.spot.permit.note,
+    s.spot.crowdLabel, s.spot.take, s.spot.taken, s.spot.after, s.spot.action, s.spot.gate,
+    s.money.kicker, s.money.title, s.money.deck, s.money.ask, s.money.yes, s.money.no,
+    s.money.counted, s.money.left, s.money.action, s.money.gate,
+    ...sums.flatMap((sum) => [sum.label, sum.prompt, sum.terms, sum.scaffold, sum.low, sum.high]),
+    s.plan.kicker, s.plan.title, s.plan.lead, s.plan.closer.title, s.plan.closer.note,
+    s.plan.lineNotes.stockOne, s.plan.lineNotes.stock, s.plan.lineNotes.cushion, s.plan.lineNotes.cut,
+    s.plan.toPlanLabel, s.plan.placedLabel, s.plan.leftLabel,
+    s.plan.balanced, s.plan.unassigned, s.plan.over, s.plan.commit, s.plan.check,
+    s.plan.help.open, s.plan.help.steps, s.plan.help.supply, s.plan.help.supplyNote,
+    s.saturday.trayLabel, s.saturday.trayHint, s.saturday.cooked, s.saturday.willSell,
+    s.saturday.willBin, s.saturday.crowd, s.saturday.affordable, s.saturday.bothNights,
+    s.saturday.open, s.saturday.gate,
+    s.night.cooked, s.night.sold, s.night.binned, s.night.takings, s.night.soldOut,
+    s.night.someLeft, s.night.nothingBinned, s.night.binnedTrays, s.night.turnedAway,
+    s.first.kicker, s.first.title, s.first.deck,
+    s.standing.kicker, s.standing.title, s.standing.rebateEarnedPlanned, s.standing.rebateEarnedWindfall,
+    s.standing.rebateMissedPlanned, s.standing.rebateMissedFree, s.standing.next, s.standing.nextNote,
+    s.standing.helperAsk, s.standing.helperBooked, s.standing.helperAlone, s.standing.book,
+    s.standing.alone, s.standing.gate, s.standing.action,
+    s.generator.kicker, s.generator.recap, s.generator.cateringMissedPlanned, s.generator.cateringMissedFree,
+    s.generator.coverNamed, s.generator.coverUnnamed, s.generator.coverShort, s.generator.action,
+    s.repair.kicker, s.repair.title, s.repair.billLabel, s.repair.freedLabel, s.repair.stillLabel,
+    s.repair.locked, s.repair.lockedPermit, s.repair.lockedBooth, s.repair.lockedCooked,
+    s.repair.lockedHelper, s.repair.settled, s.repair.short, s.repair.spare, s.repair.commit, s.repair.acknowledge,
+    s.repair.lastKicker, s.repair.lastTitle, s.repair.lastNote, s.repair.noLast, s.repair.noLastAction,
+    s.settle.kicker, s.settle.saturdayLabel, s.settle.platesSold, s.settle.inTheBin,
+    s.settle.takingsLabel, s.settle.bankedLabel, s.settle.inHandLabel, s.settle.startedWith,
+    s.settle.missedLast, s.settle.ranOut,
+    s.settle.spoilage, s.settle.noSpoilage, s.settle.capped, s.settle.handOff, s.settle.action,
+    s.writeUp.title, s.writeUp.tiles, ...Object.values(s.writeUp.tileLabels), s.writeUp.field, ...s.writeUp.starters,
+    s.writeUp.pickMoreOne, s.writeUp.pickMore, s.writeUp.ready, s.writeUp.write, s.writeUp.longEnough, s.writeUp.submit,
+    s.submitted.sent, s.submitted.saving, s.submitted.failed, s.submitted.person, s.submitted.retry,
+    s.submitted.record, s.submitted.again, s.submitted.againNote,
+  ];
+}
 
 /** Every sentence a student reads, in one list, so the demand profile can be measured. */
 export function popUpStudentCopy(scenario: PopUpScenario = POP_UP_SCENARIO): readonly string[] {
   const { pitch, breakdown } = scenario;
   return [
+    ...screenCopy(scenario.screens),
     scenario.subtitle,
     scenario.role.description,
     pitch.kicker, pitch.headline, pitch.body, pitch.role,

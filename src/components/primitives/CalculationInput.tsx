@@ -1,10 +1,18 @@
 import { useId, useState } from "react";
 import { parseDollars } from "../../domain/core/money";
-import type { CalcId } from "../../domain/core/ids";
 import { Button } from "./Button";
 
 interface CalculationInputProps {
-  calcId: CalcId;
+  /**
+   * Which figure this is, in the calling world's own vocabulary.
+   *
+   * A string rather than one world's union: Basketball's `CalcId` and the pop-up's
+   * `PopUpSumId` are different sets of ids belonging to different machines, and a shared
+   * primitive that named one of them would be a shared primitive that only one world could
+   * use. Nothing here reads the value — the caller records it — so widening costs no safety
+   * that was not already the caller's to keep.
+   */
+  calcId: string;
   label: string;
   prompt: string;
   terms?: string;
@@ -20,11 +28,21 @@ interface CalculationInputProps {
    */
   labelHidden?: boolean;
   scaffold?: string;
+  /**
+   * What to say when the answer is under or over, for this figure.
+   *
+   * One string used to serve every calculation in the product — "check that you counted every
+   * week and every extra cost" — and it appeared on sums with no weeks and no extra costs in
+   * them. A hint that describes a different problem is worse than no hint, so a caller that
+   * knows what its own sum is made of says so, and the general line stays as the fallback.
+   */
+  low?: string;
+  high?: string;
   onScaffold?: () => void;
   onShowAndContinue?: () => void;
 }
 
-export function CalculationInput({ label, prompt, terms, expected, onSubmit, onCorrect, priorAttempts = 0, compact = false, labelHidden = false, scaffold, onScaffold, onShowAndContinue }: CalculationInputProps) {
+export function CalculationInput({ label, prompt, terms, expected, onSubmit, onCorrect, priorAttempts = 0, compact = false, labelHidden = false, scaffold, low, high, onScaffold, onShowAndContinue }: CalculationInputProps) {
   const id = useId();
   const [raw, setRaw] = useState("");
   const [verdict, setVerdict] = useState<"idle" | "correct" | "low" | "high" | "invalid">("idle");
@@ -80,8 +98,8 @@ export function CalculationInput({ label, prompt, terms, expected, onSubmit, onC
       </div>
       <p id={`${id}-feedback`} className={`inline-feedback inline-feedback--${verdict}`} aria-live="polite">
         {verdict === "correct" && "That's the full amount."}
-        {verdict === "low" && "Too low. Check that you counted every week and every extra cost."}
-        {verdict === "high" && "Too high. Check whether something got counted twice."}
+        {verdict === "low" && (low ?? "Too low. Check that you counted every amount.")}
+        {verdict === "high" && (high ?? "Too high. Check whether something got counted twice.")}
         {verdict === "invalid" && "Enter a whole dollar amount, like 1400. No dollar sign needed."}
         {verdict === "idle" && priorAttempts >= 2 && "Stuck? Open the step-by-step hint below."}
       </p>

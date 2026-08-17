@@ -1,13 +1,18 @@
 import { useId, useState } from "react";
-import type { CategoryId } from "../../domain/core/ids";
 import { dollars, formatDollars, parseDollars } from "../../domain/core/money";
 
 interface AllocationControlProps {
-  id: CategoryId;
+  /**
+   * The line this row moves, named in the calling world's own vocabulary. It reaches the DOM
+   * as `data-category` and nothing here reads it, so a second world's line ids theme the same
+   * row without the primitive learning either world's nouns.
+   */
+  id: string;
   label: string;
   description: string;
   value: number;
-  step: 50 | 100;
+  /** The step both keys move by. Each world sets its own; nothing here assumes a size. */
+  step: number;
   max: number;
   originalValue?: number | undefined;
   /** When present the row is already committed and cannot be moved; this says why. */

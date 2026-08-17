@@ -23,6 +23,7 @@ export const WORLD_REGISTRY: Partial<Record<WorldId, WorldRegistryEntry>> = {
     id: "basketball",
     title: BASKETBALL_SCENARIO.title,
     subtitle: "Step into Avery's eight-week run.",
+    role: BASKETBALL_SCENARIO.invitation.role,
     durationMinutes: { min: 20, max: 25 },
     availability: "available",
     stages: STAGE_ORDER,
@@ -32,6 +33,7 @@ export const WORLD_REGISTRY: Partial<Record<WorldId, WorldRegistryEntry>> = {
     id: "food-truck",
     title: POP_UP_SCENARIO.title,
     subtitle: POP_UP_SCENARIO.subtitle,
+    role: POP_UP_SCENARIO.pitch.role,
     durationMinutes: { min: 18, max: 24 },
     availability: "available",
     // Plus the two screens that belong to the platform rather than to either world: an
@@ -105,7 +107,7 @@ export function usesSharedBoard(worldId: WorldId): boolean {
  * and a screen that does not exist cannot be where a session starts. The UI phase flips this
  * with the screen in the same change.
  */
-export const WORLD_CHOICE_UI_READY = false;
+export const WORLD_CHOICE_UI_READY = true;
 
 /**
  * Students pick a world only once more than one is finished and the picker itself is built.

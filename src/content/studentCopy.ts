@@ -22,6 +22,29 @@
 export const STUDENT_COPY = {
   join: {
     privacy: "No name, no email, nothing about your real money. Your seat code is how your work gets back to your teacher.",
+    /* A student who arrived without a code used to meet a form they could not fill in and no
+       way forward. One line, stated as a fact rather than an apology. */
+    noCode: "No code? Your teacher gives it out at the start of the lesson.",
+  },
+
+  /**
+   * The world choice (§13.3).
+   *
+   * The heading is in the student's voice and the context line is deliberately phrased as
+   * what the teacher wants to see rather than as what is being measured — it is the closest
+   * the student flow comes to naming the thing at all. The cards carry a title, a hook, the
+   * role and how long it takes, in a stable order, and nothing else: no difficulty label, no
+   * stars, no badge saying one of them is recommended. A student picking the story they like
+   * must not be picking the story BOW likes.
+   */
+  choose: {
+    title: "Pick a world. Make it count.",
+    deck: "Your teacher wants to see that you can build a budget that works. Choose the challenge you want to try.",
+    role: "You are",
+    length: "How long",
+    minutes: "minutes",
+    start: "Start this one",
+    checking: "Finding what your class was set…",
   },
 
   /**

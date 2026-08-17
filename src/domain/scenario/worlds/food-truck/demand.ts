@@ -5,11 +5,28 @@ import type { DemandProfile } from "../../demand";
  *
  * - **Reading grade** measured on `scenario.ts` with the ruler in `scenario/readability.ts`,
  *   which is the same ruler `worldParity.test.ts` measures Basketball's copy with. The two
- *   worlds' copy sits about one grade apart under it, well inside the 1.5-grade band, and the
- *   test fails if new copy drifts either of them out.
+ *   worlds' copy sits well inside the 1.5-grade band, and the test fails if new copy drifts
+ *   either of them out.
  * - **Words** counted across the copy a student passes through on the one complete path this
  *   world has. There is no branch that skips a screen here, which is a real difference from
  *   Basketball and not one the profile equalises.
+ *
+ * **Both numbers moved when the screens shipped, and it is worth saying why rather than
+ * leaving a diff to explain it.** The declaration used to describe the story alone: 961 words
+ * of market prose reading 5.17. The screens then put another nine hundred words in front of
+ * the student — what each control is called, what a night did, what the shop wants — and the
+ * handoff rule is that all of it lives in `scenario.ts` and is measured. So the count rose to
+ * what a student actually reads, and the grade fell to 3.5, because a screen speaks in short
+ * fragments and Flesch–Kincaid reads a four-word status line as a very easy sentence. The
+ * story's own prose still measures 5.2; the whole world measures 3.5, and the whole world is
+ * what the profile is about.
+ *
+ * Two consequences are deliberate. The count includes every branch a student *could* read —
+ * all four rebate verdicts, all four step-by-step hints — where only one of each is on any one
+ * run, so the figure overstates rather than understates the load, which is the safe direction
+ * for a comparability claim. And Basketball's 1180 counts its story only, because its screen
+ * copy lives in JSX and `studentCopy.ts` where no ruler reaches it; the two are still inside
+ * the §9.2 band, but the pair is not measuring quite the same thing yet and should be.
  * - **Arithmetic**: four sums the student types unaided — what the permit and the booth come
  *   to, what is left to plan with, what a tray order costs, and what is still owed on the
  *   generator once the deposit is put against it. The tray order is a multiply; the rest are
@@ -31,8 +48,8 @@ import type { DemandProfile } from "../../demand";
  * checkable fact about the world into a claim about children.
  */
 export const POP_UP_DEMAND: DemandProfile = {
-  readingGradeLevel: 5.2,
-  totalWordsStudentReads: 1020,
+  readingGradeLevel: 3.5,
+  totalWordsStudentReads: 1866,
   arithmeticOperations: 4,
   arithmeticComplexity: "multiply",
   decisionsRequired: 8,
