@@ -6,6 +6,7 @@ import { formatDollars } from "../domain/core/money";
 import { chapterFor, PROGRESS_STEPS, progressIndexFor, seasonPositionFor, type SeasonPosition } from "../domain/machine/stages";
 import type { StageId } from "../domain/evidence/types";
 import { AppMark } from "../components/primitives/AppMark";
+import { useChallenge } from "./ChallengeContext";
 import { SeasonStrip } from "../components/story/SeasonStrip";
 
 const { numbers, incomeCopy, goalLabel } = BASKETBALL_SCENARIO;
@@ -48,6 +49,10 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
   const chapter = progressIndexFor(stage);
   const position = override ?? seasonPositionFor(stage);
   const announcement = `${position.caption}. Part ${chapter + 1} of ${PROGRESS_STEPS.length}: ${PROGRESS_STEPS[chapter]?.label}.`;
+  // The art direction comes from the world the attempt says it is in, so a second world
+  // themes the same components by adding a block to `worlds.css` and nothing else.
+  const { state } = useChallenge();
+  const world = state.meta.worldId;
   const heading = useRef<HTMLElement>(null);
   const first = useRef(true);
   useEffect(() => {
@@ -56,7 +61,7 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
     heading.current?.focus();
   }, [focusKey]);
   return (
-    <div className="challenge-shell" data-world={BASKETBALL_SCENARIO.id} data-chapter={chapterFor(stage)}>
+    <div className="challenge-shell" data-world={world} data-chapter={chapterFor(stage)}>
       <header className="challenge-topbar">
         <AppMark />
         <SeasonStrip position={position} announcement={announcement} />

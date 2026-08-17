@@ -60,7 +60,7 @@ function useRevealOnce<T extends HTMLElement = HTMLDivElement>(active: boolean) 
  * to Avery while entering the two codes, so nothing stands between the URL and the story.
  */
 function OpeningStage() {
-  const { dispatch, transport } = useChallenge();
+  const { state, dispatch, transport } = useChallenge();
   const { offer, invitation, numbers } = BASKETBALL_SCENARIO;
   const [classCode, setClassCode] = useState("");
   const [seatCode, setSeatCode] = useState("");
@@ -86,7 +86,7 @@ function OpeningStage() {
     // One assignment per class today, so there is nothing to choose between and no screen
     // asking a question with one answer. Which one this seat is doing still gets recorded,
     // because the class knows and the submission is where that has to survive.
-    const assignment = result.joined.assignments.find((entry) => entry.allowedWorldIds.includes("basketball"))
+    const assignment = result.joined.assignments.find((entry) => entry.allowedWorldIds.includes(state.meta.worldId))
       ?? result.joined.assignments[0];
     dispatch({
       type: "SESSION_STARTED",
@@ -98,7 +98,7 @@ function OpeningStage() {
   };
 
   return (
-    <div className="opening" data-world="basketball">
+    <div className="opening" data-world={state.meta.worldId}>
       <div className="opening__bar">
         <AppMark />
         <span>Plan Under Pressure</span>

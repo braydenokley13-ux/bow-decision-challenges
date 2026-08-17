@@ -3,8 +3,8 @@ import { objectiveResultFrom, studentOutcomeFor, type ObjectiveResult, type Stud
 import { teachNextFrom, type TeachNextReading } from "../domain/competency/teachNext";
 import type { CompetencyId, CompetencyResult, CompetencyResultState, EvidenceRequirementObservation } from "../domain/competency/types";
 import { spotlightFor, type MisconceptionSpotlight, type SeatResults } from "./misconceptions";
-import { observeBasketballFromLog } from "../domain/scenario/worlds/basketball/observer";
-import { scoredExplanationsFrom } from "../domain/scenario/worlds/basketball/writtenDefense";
+import { contractFor } from "../domain/scenario/contracts";
+import { DEFAULT_WORLD_ID } from "../domain/scenario/registry";
 import { demandFor, type StandardRef } from "../domain/standards";
 import type { Assignment, AttributedSubmission, ClassRecord, SubmissionRecord } from "../platform/classes/types";
 
@@ -66,15 +66,27 @@ const EMPTY_COUNTS: Record<CompetencyResultState, number> = {
 };
 
 /**
+ * Which world produced this submission, read off the student's own events.
+ *
+ * The log is the record. A submission has no top-level world because the events carry one
+ * each, stamped when they were written — so this cannot disagree with the evidence the way a
+ * second, separately-stored field could.
+ */
+export function worldOfSubmission(submission: SubmissionRecord) {
+  return submission.log[0]?.worldId ?? DEFAULT_WORLD_ID;
+}
+
+/**
  * One student's competency results, from the log they turned in.
  *
- * The world is named here because there is one. Checkpoint 8 replaces this line with the
- * world contract's own observer lookup; until a second world exists, pretending to dispatch
- * would be a layer with one case in it.
+ * Dispatched through the world's own contract rather than importing one world's observer.
+ * A world with no contract produces nothing at all — not a fallback to somebody else's
+ * rules, which would publish a judgement about a game the student never played.
  */
 export function competencyObservationsFor(submission: SubmissionRecord): readonly EvidenceRequirementObservation[] {
-  const scored = scoredExplanationsFrom(submission.reasoningCriteria);
-  return observeBasketballFromLog(submission.log, scored ? { scoredExplanations: scored } : {});
+  const contract = contractFor(worldOfSubmission(submission));
+  if (!contract) return [];
+  return contract.observe(submission.log, { reasoningCriteria: submission.reasoningCriteria });
 }
 
 export function competencyResultsFor(submission: AttributedSubmission): readonly CompetencyResult[] {

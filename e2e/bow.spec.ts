@@ -771,8 +771,11 @@ studentTest("a refresh mid-challenge does not lose the class the student joined"
 
   await expect(page.getByRole("heading", { name: "What does Avery do with the rest?" })).toBeVisible();
   // The class travels with the attempt, so a resumed session still turns in to the right room.
-  const stored = await page.evaluate(() => localStorage.getItem("bow.attempt.v2.plan-under-pressure"));
+  // Keyed by challenge and by world: two worlds under one challenge would otherwise share
+  // a key, and a student who opened the second would be handed the first one's board back.
+  const stored = await page.evaluate(() => localStorage.getItem("bow.attempt.v2.plan-under-pressure.basketball"));
   expect(stored).toContain(classCode);
+  expect(await page.evaluate(() => localStorage.getItem("bow.attempt.v2.plan-under-pressure.world"))).toBe("basketball");
 });
 
 // ---------------------------------------------------------------------------
