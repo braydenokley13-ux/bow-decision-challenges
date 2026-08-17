@@ -6,20 +6,26 @@ import { balanceOf, amountFreed, assigned, courseRowCapFor } from "../../domain/
 import { PLAN_MODES } from "../../domain/finance/modes";
 import type { PlanAmounts, SnapshotInputs } from "../../domain/finance/types";
 import { loadDemand, loadFor } from "../../domain/finance/load";
+import { STUDENT_COPY } from "../../content/studentCopy";
 import { Button } from "../primitives/Button";
 import { CHOICE_LABELS, CHOICE_ORDER } from "./choices";
-import { MoneySplit } from "./MoneySplit";
+import { MoneyLedger } from "./MoneyLedger";
 import { AllocationControl } from "./AllocationControl";
 import { WeekMeter } from "./WeekMeter";
+
+const { steps, balance: BALANCE_COPY, running: RUNNING_COPY } = STUDENT_COPY.plan;
 
 /**
  * The two moments that earn the whole board.
  *
- * `build` is the first plan: the student has never split this money before and needs the
- * towers, the meter and three rows that move freely. `triage` is Week 5: the money is
- * already committed, a bill has landed on it, and the job is to decide what Avery gives
- * up. They share the towers because both are about the whole plan at once — everything
- * after them is an adjustment, and adjustments have their own, much smaller instrument.
+ * `build` is the first plan: the student has never split this money before. `triage` is
+ * Week 5: the money is already committed, a bill has landed on it, and the job is to decide
+ * what Avery gives up. Everything after them is an adjustment, and adjustments have their
+ * own, much smaller instrument.
+ *
+ * The two variants no longer look alike, because they are not alike. `build` is a sequence
+ * of numbered steps that only ever asks one question at a time; `triage` is a single
+ * question asked of three rows at once, which is exactly what makes it hard.
  */
 export type BoardVariant = "build" | "triage";
 
@@ -32,6 +38,8 @@ interface PlanBoardProps {
   attempts: number;
   /** What each row costs Avery at the amount it currently holds. Derived, never decorative. */
   notes: Record<CategoryId, string>;
+  /** Where this board's steps sit in the screen's own numbering. Omitted where there is none. */
+  stepFrom?: number | undefined;
   onAmountChange: (category: CategoryId, amount: ReturnType<typeof dollars>) => void;
   /**
    * The student says which row takes the money still unassigned. Only on `build`, because
@@ -49,7 +57,7 @@ interface PlanBoardProps {
 }
 
 export function PlanBoard({
-  input, variant, setupTitle, baseline, reference, attempts, notes,
+  input, variant, setupTitle, baseline, reference, attempts, notes, stepFrom,
   onAmountChange, onAssignRemainder, onLockedMoveAttempt, onCommit, onApplyReference, onScaffold, onShowAndContinue, change, commitLabel,
 }: PlanBoardProps) {
   const [showHelp, setShowHelp] = useState(false);
@@ -60,6 +68,7 @@ export function PlanBoard({
   const courseCap = courseRowCapFor(input, SCENARIO_NUMBERS);
   const max = Math.max(courseCap, assigned(input.amounts) + Math.max(0, balance));
   const triage = variant === "triage";
+  const step = (offset: number) => (stepFrom === undefined ? undefined : `Step ${stepFrom + offset}`);
 
   // Avery's week only starts costing more than the commute once rehab begins, so before
   // Week 5 the meter shows the choice the student has already made and its consequence.
@@ -68,7 +77,7 @@ export function PlanBoard({
     SCENARIO_NUMBERS,
   );
   const loadParts = [
-    { id: "commute", label: "Getting there", blocks: SCENARIO_NUMBERS.load.commuteBlocks[input.setupId] },
+    { id: "commute", label: "Travel to practice", blocks: SCENARIO_NUMBERS.load.commuteBlocks[input.setupId] },
     {
       id: "rehab",
       label: "Rehab",
@@ -102,10 +111,13 @@ export function PlanBoard({
   };
 
   /**
-   * The other end of the same idea: money with no job yet, and one tap that says which row
-   * it belongs to. Everything the steppers can reach it can reach, so it is a shortcut
-   * through the ordinary way a plan gets closed rather than a different way of closing one —
-   * but it is a shortcut the student takes on purpose, and saying so is the point.
+   * The other end of the same idea, and the one statement this world records about savings:
+   * money with no job yet, and the student naming the row it belongs to.
+   *
+   * It is its own step rather than a button tucked into a row, because what it records is a
+   * decision and a decision deserves to be asked. Everything the steppers can reach it can
+   * reach, so it is a shortcut through the ordinary way a plan gets closed rather than a
+   * different way of closing one — but it is a shortcut the student takes on purpose.
    *
    * The label states the amount rather than saying "the rest", because on the course row it
    * is not always the rest: that row is capped at what the course costs, so the offer there
@@ -118,19 +130,12 @@ export function PlanBoard({
     const value = input.amounts[category];
     const headroom = category === "goal" ? Math.max(0, courseCap - value) : balance;
     const give = Math.min(balance, headroom);
-    return give > 0
-      ? {
-          label: `Put ${formatDollars(give)} here`,
-          spoken: `Put ${formatDollars(give)} into ${CHOICE_LABELS[category]}`,
-          onPress: () => onAssignRemainder(category, dollars(give)),
-        }
-      : undefined;
+    return give > 0 ? { amount: give, onPress: () => onAssignRemainder(category, dollars(give)) } : undefined;
   };
 
-  const actionFor = (category: CategoryId) => {
-    if (triage) return residual > 0 ? takeFrom(category) : undefined;
-    return balance > 0 ? putRestInto(category) : undefined;
-  };
+  const closers = triage || balance <= 0
+    ? []
+    : CHOICE_ORDER.map((category) => ({ category, offer: putRestInto(category) })).filter((entry) => entry.offer);
 
   return (
     <div className="plan-composition">
@@ -141,21 +146,32 @@ export function PlanBoard({
             <ul>{change.items.map((item) => <li key={item}>{item}</li>)}</ul>
           </div>
         )}
-        {/* Where the banner already carries the headline, the header is only the two
-            controls — a second full-height strip under it was empty space announcing
-            nothing. */}
-        <header className="plan-board__header" data-slim={Boolean(change)}>
-          {!change && <h2 id="plan-board-title">Split what is left</h2>}
-          <p className="plan-board__setup">{setupTitle}</p>
-          {/* Only offered once the board differs from what the student saved; otherwise
-              the control does nothing and reads as a step they have missed. */}
-          {reference && onApplyReference && CHOICE_ORDER.some((category) => reference[category] !== input.amounts[category])
-            && <Button variant="quiet" type="button" onClick={() => onApplyReference()}>Put my saved numbers back</Button>}
-        </header>
-        <div className="plan-board__body">
-          <MoneySplit input={input} onLockedMoveAttempt={onLockedMoveAttempt} />
+        {!change && (
+          <header className="plan-board__header">
+            <h2 id="plan-board-title" className="stamp">Avery’s plan</h2>
+            {/* Only offered once the board differs from what the student saved; otherwise
+                the control does nothing and reads as a step they have missed. */}
+            {reference && onApplyReference && CHOICE_ORDER.some((category) => reference[category] !== input.amounts[category])
+              && <Button variant="quiet" type="button" onClick={() => onApplyReference()}>Put my saved numbers back</Button>}
+          </header>
+        )}
+
+        <MoneyLedger input={input} setupTitle={setupTitle} onLockedMoveAttempt={onLockedMoveAttempt} />
+
+        <section className="plan-step" aria-labelledby="plan-step-decide">
+          <header className="plan-step__head">
+            {step(0) && <p className="stamp">{step(0)}</p>}
+            <h3 id="plan-step-decide">{triage ? "Something has to come back out." : steps.decide.name}</h3>
+            <p className="plan-step__why">{triage ? "Every amount below is money you already promised somewhere else. Take the shortfall out of whichever ones Avery can do without." : steps.decide.why}</p>
+          </header>
+          {/* The number the rows are being driven to, beside the rows. The bar at the foot
+              of the board is the one that commits; on a long screen it is also the one that
+              has scrolled away by the time a student is pressing the keys. */}
+          <p className="plan-running" data-state={balance === 0 ? "balanced" : balance < 0 ? "over" : "unassigned"} aria-live="polite">
+            <strong className="money">{formatDollars(Math.abs(balance))}</strong>
+            <span>{balance === 0 ? RUNNING_COPY.balanced : balance < 0 ? (triage ? RUNNING_COPY.short : RUNNING_COPY.over) : RUNNING_COPY.unassigned}</span>
+          </p>
           <div className="choice-stack">
-            <p className="field-label">{triage ? "Where the money comes from" : "Your choices"}</p>
             {CHOICE_ORDER.map((category) => (
               <AllocationControl
                 key={category}
@@ -166,28 +182,62 @@ export function PlanBoard({
                 step={mode.increment}
                 max={category === "goal" ? courseCap : max}
                 originalValue={baseline?.[category]}
-                action={actionFor(category)}
+                {...(triage ? { action: takeFrom(category) } : {})}
                 {...(category === "goal" && input.depositTaken
                   ? { lockedNote: `Seat reserved for ${formatDollars(SCENARIO_NUMBERS.course.depositPrice)}. That money is already committed.` }
                   : {})}
                 onChange={(amount) => onAmountChange(category, amount)}
               />
             ))}
-            {showMeter && (
-              <WeekMeter load={load} parts={loadParts} atStake={`the ${formatDollars(SCENARIO_NUMBERS.completionIncome)} attendance bonus`} />
-            )}
-            {/* Only where an earlier plan exists to compare against, and only once something
-                has actually moved — a $0 here would read as a real measurement. */}
-            {freed !== undefined && freed > 0 && (
-              <div className="exposure-summary" aria-live="polite">
-                <div><span>Cut from your earlier plan</span><strong className="money">{formatDollars(freed)}</strong></div>
-              </div>
-            )}
           </div>
-        </div>
+          {showMeter && (
+            <WeekMeter load={load} parts={loadParts} rate={SCENARIO_NUMBERS.load.blockBuybackCost} atStake={`the ${formatDollars(SCENARIO_NUMBERS.completionIncome)} attendance bonus`} />
+          )}
+          {/* Only where an earlier plan exists to compare against, and only once something
+              has actually moved — a $0 here would read as a real measurement. */}
+          {freed !== undefined && freed > 0 && (
+            <p className="exposure-summary" aria-live="polite">
+              <span>Cut from your earlier plan</span><strong className="money">{formatDollars(freed)}</strong>
+            </p>
+          )}
+        </section>
+
+        {/* Step 5 keeps its place on the board even once there is nothing left to place.
+            It used to disappear the moment the plan balanced, so a screen that had opened
+            by promising six steps then showed four — and a student who had done everything
+            right was left looking for the two that had gone missing. */}
+        {!triage && (
+          <section className="plan-step plan-step--closer" aria-labelledby="plan-step-rest">
+            <header className="plan-step__head">
+              {step(1) && <p className="stamp">{step(1)}</p>}
+              <h3 id="plan-step-rest">{steps.rest.name}</h3>
+              <p className="plan-step__why">{closers.length > 0 ? steps.rest.ask : steps.rest.done}</p>
+            </header>
+            {closers.length > 0 && (
+              <>
+                <div className="closer-choice">
+                  {closers.map(({ category, offer }) => (
+                    <button
+                      key={category}
+                      type="button"
+                      data-category={category}
+                      aria-label={`Put ${formatDollars(offer!.amount)} into ${CHOICE_LABELS[category]}`}
+                      onClick={offer!.onPress}
+                    >
+                      <span className="closer-choice__row">{CHOICE_LABELS[category]}</span>
+                      <strong className="money">Put {formatDollars(offer!.amount)} here</strong>
+                    </button>
+                  ))}
+                </div>
+                <p className="plan-step__why">{steps.rest.why}</p>
+              </>
+            )}
+          </section>
+        )}
+
         {attempts >= 2 && balance !== 0 && (
           <section className="plan-help" aria-label="Step-by-step help">
-            {!showHelp ? <Button type="button" variant="quiet" onClick={() => { setShowHelp(true); onScaffold?.(); }}>Show me how this board works</Button> : <div role="note"><strong>One step at a time:</strong><ol><li>Read the number in the bar at the bottom.</li><li>Use − and + on any of the three rows above.</li><li>Keep going until that number reaches <b>$0</b>.</li></ol></div>}
+            {!showHelp ? <Button type="button" variant="quiet" onClick={() => { setShowHelp(true); onScaffold?.(); }}>Show me how this works</Button> : <div role="note"><strong>One step at a time:</strong><ol><li>Read the number in the bar at the bottom.</li><li>Use − and + on any of the three rows above.</li><li>Keep going until that number reaches <b>$0</b>.</li></ol></div>}
             {attempts >= 3 && (
               <div className="plan-help__supply">
                 <Button type="button" variant="quiet" onClick={onShowAndContinue}>Fill in one plan that balances</Button>
@@ -196,10 +246,12 @@ export function PlanBoard({
             )}
           </section>
         )}
+
         <footer className={`plan-commit plan-commit--${balance === 0 ? "balanced" : balance < 0 ? "over" : "unassigned"}`}>
           <div className="plan-commit__state" aria-live="polite">
+            {step(2) && <p className="stamp">{step(2)} · {steps.review.name}</p>}
             <strong className="money">{formatDollars(Math.abs(balance))}</strong>
-            <span>{balance === 0 ? "Every dollar has a job." : balance < 0 ? (triage ? "still to find." : "more than Avery has.") : "still needs a job."}</span>
+            <span>{balance === 0 ? BALANCE_COPY.balanced : balance < 0 ? (triage ? BALANCE_COPY.short : BALANCE_COPY.over) : BALANCE_COPY.unassigned}</span>
           </div>
           <div className="plan-commit__actions">
             <Button type="button" onClick={() => onCommit()}>{balance === 0 ? commitLabel : "Check this plan"}</Button>

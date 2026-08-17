@@ -118,6 +118,22 @@ export interface WorldScenario {
     facts: readonly { label: string; value: string }[];
   };
   /**
+   * The invitation, as a job rather than as news.
+   *
+   * The opening used to lead on the story — "Avery got the call." — at scene size, with the
+   * sentence that says what the student is actually for ("Avery plays. You handle the
+   * money.") in small type off to one side. Readers came away knowing something had
+   * happened to a stranger and not knowing what they had been asked to do. The headline is
+   * now the ask, the story is the paragraph under it, and the three decisions are named
+   * before a student has spent a dollar.
+   */
+  invitation: {
+    kicker: string;
+    headline: string;
+    role: string;
+    decisions: readonly { title: string; detail: string }[];
+  };
+  /**
    * Weeks the student does not play through, so the jump to Week 5 still feels earned.
    * `voice` is Avery's own line for that week, and it differs by where the student put
    * Avery — the housing choice is felt every week, not only when it bills.

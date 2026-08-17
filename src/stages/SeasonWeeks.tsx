@@ -118,6 +118,7 @@ export function SeasonWeeks() {
                   </p>
                   <blockquote className="post__voice">
                     <span className="post__who" aria-hidden="true">{BASKETBALL_SCENARIO.offer.jersey}</span>
+            <cite>Avery</cite>
                     <p>{entry.voice[setupId]}</p>
                   </blockquote>
                 </article>

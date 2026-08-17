@@ -50,33 +50,47 @@
 .home__actions .button--secondary { color: var(--world-hero-ink); background: transparent; border-color: var(--world-hero-edge); }
 .home__foot { display: flex; flex-wrap: wrap; gap: var(--s-3) clamp(16px, 3vw, 48px); align-items: center; padding: var(--s-4) clamp(20px, 4vw, 56px); color: var(--world-hero-muted); border-top: 1px solid var(--world-hero-line); font: var(--t-micro); letter-spacing: 0.1em; text-transform: uppercase; }
 
-/* --- Scene 1: the opening ------------------------------------------------- */
-.opening { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; }
-.opening__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-5); padding: var(--s-4) clamp(20px, 4vw, 56px); border-bottom: 1px solid var(--world-hero-line); }
-.opening__bar .app-mark { color: var(--world-hero-ink); }
-.opening__bar .app-mark small { color: var(--world-hero-muted); }
-.opening__bar > span { color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.18em; text-transform: uppercase; }
-.opening__grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr); align-items: center; gap: clamp(28px, 5vw, 72px); padding: clamp(24px, 4vw, 56px) clamp(20px, 4vw, 56px); }
+/* ---------------------------------------------------------------------------
+   Scene 1: the invitation.
+
+   Cream, and deliberately so. The opening used to be the same full-volume navy
+   arena that Week 5 and Week 8 are made of, which left the two moments the story
+   actually turns on with nowhere louder to go. The dark panel here is Avery —
+   one card, one goal — and everything the student is being asked to do is set on
+   the product's own ground.
+   --------------------------------------------------------------------------- */
+.opening { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; background: var(--canvas); }
+.opening__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-5); padding: var(--s-4) clamp(20px, 4vw, 56px); background: var(--surface-raised); border-bottom: 3px solid var(--bow-brand); }
+.opening__bar > span { color: var(--ink-3); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
+.opening__grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr); align-items: stretch; gap: clamp(28px, 5vw, 64px); width: min(1360px, 100%); margin: 0 auto; padding: clamp(28px, 4vw, 56px) clamp(20px, 4vw, 56px); }
 .opening__story { animation: stage-in var(--dur-stage) var(--ease-exit) both; }
-.opening__story h1 { max-width: 11ch; margin: var(--s-3) 0 var(--s-5); font: var(--t-scene); letter-spacing: var(--display-tracking-tight); }
-.opening__lede { max-width: 44ch; margin: 0; font: 400 clamp(1.02rem, 1.4vw, 1.22rem)/1.5 var(--font-ui); }
-.opening__weeks { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; margin-top: clamp(20px, 3vw, 36px); padding-top: var(--s-5); border-top: 1px solid var(--world-hero-line); }
-.opening__weeks li { display: grid; gap: var(--s-2); color: var(--world-hero-muted); font: var(--t-micro); font-feature-settings: var(--num); }
-.opening__weeks li i { height: 4px; display: block; background: var(--world-hero-line); border-radius: var(--r-pill); }
-.opening__weeks li:last-child { color: var(--world-hero-second); }
-.opening__weeks li:last-child i { background: var(--world-flare); }
-.opening__weeks + p { margin: var(--s-3) 0 0; color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.12em; text-transform: uppercase; }
-.opening__side { display: grid; gap: var(--s-3); }
-.goal-strip { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--s-4); padding: var(--s-4) var(--s-5); background: var(--world-panel); border: 1px solid var(--world-panel-edge); border-left: 4px solid var(--fin-conditional); }
-.goal-strip strong { color: var(--fin-conditional); font: var(--m-lg); font-feature-settings: var(--num); }
+.opening__story h1 { max-width: 12ch; margin: var(--s-3) 0 var(--s-5); color: var(--ink-1); font: var(--t-scene); letter-spacing: var(--display-tracking-tight); text-transform: uppercase; }
+.opening__lede { max-width: 52ch; margin: 0; color: var(--ink-2); font: var(--t-body-lg); }
+.opening__lede strong { color: var(--ink-1); }
+.opening__role { max-width: 44ch; margin: var(--s-5) 0 0; padding-left: var(--s-5); border-left: 4px solid var(--bow-brand); color: var(--ink-1); font: var(--t-title2); }
+
+/* The three decisions, named before a dollar has moved. */
+.opening__decisions { display: grid; gap: var(--s-3); margin: var(--s-6) 0 0; padding: 0; list-style: none; counter-reset: decision; }
+.opening__decisions li { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: baseline; gap: var(--s-2) var(--s-4); padding-bottom: var(--s-3); border-bottom: 1px solid var(--border-subtle); counter-increment: decision; }
+.opening__decisions li::before { content: "0" counter(decision); color: var(--bow-brand); font: var(--t-label); font-family: var(--font-mono); }
+.opening__decisions b { color: var(--ink-1); font: var(--t-title3); }
+.opening__decisions span { grid-column: 2; color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
+.opening__side { display: grid; gap: var(--s-3); align-content: space-between; padding: var(--s-5); }
+.opening__span { margin: 0; color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.12em; text-transform: uppercase; }
+.goal-strip { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--s-4); padding: var(--s-4) var(--s-5); background: var(--world-panel); border: 1px solid var(--world-panel-edge); border-left: 4px solid var(--world-flare); }
+.goal-strip strong { color: var(--world-flare); font: var(--m-lg); font-feature-settings: var(--num); }
 .goal-strip b { display: block; color: var(--world-hero-ink); font: var(--t-title3); }
 .goal-strip span { display: block; margin-top: var(--s-1); color: var(--world-hero-body); font: var(--t-micro); }
-.opening__job { padding: var(--s-5); background: var(--surface); border-top: 4px solid var(--world-accent); }
-.opening__job > p { margin: 0; color: var(--ink-2); font: var(--t-ui); }
-.opening__job > p strong { color: var(--ink-1); }
-.opening__codes { display: grid; grid-template-columns: 1fr 92px; gap: var(--s-3); margin: var(--s-4) 0; }
-.opening__job label { display: grid; gap: var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
-.opening__job input { min-height: 46px; padding: 0 var(--s-4); color: var(--ink-1); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); font: var(--m-sm); font-feature-settings: var(--num); text-transform: uppercase; }
+
+/* The pass a student is handed at the door: cream card, torn edge, two codes. It is the
+   one place the ticket geometry is literal, because this genuinely is admission. */
+.opening__job { position: relative; margin-top: var(--s-7); padding: var(--s-6); background: var(--surface-raised); border: 1px solid var(--border-ink); box-shadow: var(--shadow-card); }
+.opening__job .perf-rule { margin: var(--s-5) 0 var(--s-4); }
+.opening__job > .stamp { margin: 0 0 var(--s-4); }
+.opening__codes { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: var(--s-4); margin: 0 0 var(--s-5); }
+.opening__job label { display: grid; gap: var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
+.opening__job input { min-height: 52px; padding: 0 var(--s-4); color: var(--ink-1); background: var(--surface); border: 1.5px solid var(--border-ink); border-radius: var(--r-sm); font: var(--m-md); font-feature-settings: var(--num); letter-spacing: 0.14em; text-transform: uppercase; }
+.opening__job input:focus-visible { border-color: var(--bow-brand); }
 .opening__job .button { width: 100%; }
 .privacy-note { margin: var(--s-3) 0 0; color: var(--ink-3); font: var(--t-micro); }
 
@@ -127,58 +141,61 @@
 .given-total .money { font: var(--m-lg); font-feature-settings: var(--num); }
 .given-total--terms b { font: var(--t-body-lg); }
 
-/* --- Scene 4a: the two bets ----------------------------------------------- */
-.bets { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-3); align-items: stretch; }
-.bets__intro { align-self: center; }
-.bets__intro h2 { margin: 0; max-width: 24ch; font: var(--t-title3); }
-.bet { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-4); background: var(--fin-conditional-soft); border: 1px solid var(--fin-conditional); border-left: 4px solid transparent; border-image: var(--pat-conditional) 4; border-image-slice: 4; }
+/* --- The two bonuses, as a question with two answers ---------------------- */
+.bets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); align-items: stretch; }
+.bet { position: relative; display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); border-left: 6px solid var(--fin-conditional-stripe); }
 .bet__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
-.bet__head b { font: var(--t-title3); }
-.bet__head strong { font: var(--m-md); font-feature-settings: var(--num); }
-.bet__rule { margin: 0 0 auto; color: var(--fin-conditional-ink); font: var(--t-micro); }
-.bet[data-counted="true"] { background: var(--surface-raised); border-color: var(--fin-adjustable); }
+.bet__head b { font: var(--t-title2); }
+.bet__head strong { color: var(--fin-conditional-ink); font: var(--m-lg); font-feature-settings: var(--num); }
+.bet__rule { margin: 0; max-width: 42ch; color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
+
+/* Which answer is standing, said rather than implied by which button went dark. */
+.bet__state { display: inline-flex; align-self: flex-start; margin: 0 0 auto; padding: var(--s-2) var(--s-3); color: var(--ink-3); background: var(--surface-sunken); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
+.bet__state[data-counted="true"] { color: var(--ink-invert); background: var(--fin-adjustable); }
+.bet__ask { margin: var(--s-2) 0 0; color: var(--ink-1); font: var(--t-title3); }
+.bet[data-counted="true"] { background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); border-left-color: var(--fin-adjustable); }
 
 /* The same two cards the student pressed, after the money did not come. Nothing is
    redrawn: the card they counted is struck through where it stands, which is the whole
    point of keeping them on screen instead of moving to a fresh board. */
-.bets[data-settled="true"] .bets__intro h2 { color: var(--fin-over-ink); }
-.bet[data-struck="true"] { background: var(--fin-over-soft); border: 1px solid var(--fin-over); border-left-width: 4px; border-image: none; }
-.bet[data-struck="true"] .bet__head strong { color: var(--fin-over-ink); text-decoration: line-through; text-decoration-thickness: 2px; }
-.bet[data-struck="true"] .bet__rule { color: var(--fin-over-ink); }
-.bets[data-settled="true"] .bet[data-counted="false"] { opacity: 0.66; }
+.bet[data-struck="true"] { background: var(--fin-over-soft); border: 1px solid var(--fin-over); border-left: 6px solid var(--fin-over); }
+.bet[data-struck="true"] .bet__head strong { color: var(--fin-over-ink); text-decoration: line-through; text-decoration-thickness: 3px; }
+.bets[data-settled="true"] .bet[data-counted="false"] { opacity: 0.6; }
 .bet__verdict { margin: 0; font: var(--t-ui); }
-.bet[data-struck="true"] .bet__verdict { color: var(--fin-over-ink); font-weight: 600; }
+.bet[data-struck="true"] .bet__verdict { color: var(--fin-over-ink); font-weight: 700; }
 
-/* --- Scene 4: the money split -------------------------------------------- */
-.split { display: grid; align-content: start; gap: var(--s-4); padding: var(--s-5); background: var(--surface-sunken); border-right: 1px solid var(--border-default); }
-.split__head { display: grid; gap: var(--s-2); }
-.split__total { display: flex; align-items: baseline; gap: var(--s-3); }
-.split__total span { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
-.split__total strong { font: var(--m-lg); font-feature-settings: var(--num); }
-.split__legend { margin: 0; max-width: 34ch; color: var(--ink-3); font: var(--t-micro); }
-.split__caps { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); padding-right: 96px; }
-.split__cap { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
-.split__plot { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); height: var(--split-h, 280px); margin-top: var(--s-2); padding-right: 96px; }
-.split__tower { display: grid; min-width: 0; }
-.split__stack { display: flex; flex-direction: column; justify-content: flex-end; gap: 2px; min-width: 0; background: var(--surface-inset); border-radius: var(--r-xs); overflow: hidden; }
-.split__seg { min-height: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 var(--s-3); overflow: hidden; color: var(--ink-invert); text-align: left; border: 0; border-radius: 2px; transition: height var(--dur-move) var(--ease-standard); }
-.split__seg i { overflow: hidden; font: var(--t-micro); font-style: normal; white-space: nowrap; text-overflow: ellipsis; }
-.split__seg b { font: var(--m-xs); font-feature-settings: var(--num); white-space: nowrap; }
-.split__seg[data-density="tight"] i, .split__seg[data-density="bare"] i { display: none; }
-.split__seg[data-density="bare"] b { display: none; }
-.split__seg[data-tone="reliable"] { background: var(--fin-reliable); }
-.split__seg[data-tone="conditional"] { color: var(--fin-conditional-ink); background: var(--pat-conditional); }
-.split__seg[data-tone="locked"] { color: var(--fin-locked-ink); background: var(--fin-locked); cursor: default; }
-.split__seg[data-tone="event"] { color: var(--ink-invert); background: var(--fin-locked-ink); cursor: default; }
-.split__seg[data-tone="choice-goal"] { background: var(--choice-1); }
-.split__seg[data-tone="choice-reserve"] { background: var(--choice-2); }
-.split__seg[data-tone="choice-flexibleCash"] { color: var(--ink-1); background: var(--choice-3); }
-.split__seg--open { color: var(--ink-2); background: transparent; border: 1px dashed var(--border-strong); }
-.split__line { position: absolute; left: 0; right: 96px; height: 0; border-top: 2px solid var(--ink-1); pointer-events: none; }
-.split__line i { position: absolute; left: calc(100% + 8px); top: -0.75em; width: 88px; color: var(--ink-2); font: var(--t-micro); font-style: normal; }
-.split__line--certain { border-top: 2px dashed var(--fin-conditional-stripe); opacity: 0.75; }
-.split__line--certain i { color: var(--fin-conditional-ink); }
-.split__over { position: absolute; right: 96px; width: calc(50% - var(--s-2)); background: var(--pat-over); opacity: 0.3; border-bottom: 2px solid var(--fin-over); pointer-events: none; }
+/* ---------------------------------------------------------------------------
+   The money, read top to bottom like a receipt.
+
+   This replaced a two-tower stacked chart. Every relationship the chart asked a
+   student to derive from a picture — two axes, a hatched band, a dashed line
+   called "certain without the bonus" — is a line of type here, and the only
+   figure the rest of the screen is about is the one under the tear.
+   --------------------------------------------------------------------------- */
+
+.ledger { display: grid; align-content: start; gap: var(--s-3); padding: var(--s-5) var(--s-6); background: var(--surface-sunken); border-bottom: 1px solid var(--border-default); }
+.ledger__lines { display: grid; gap: var(--s-1); margin: 0; padding: 0; list-style: none; }
+.ledger__lines li { display: grid; grid-template-columns: 1.25em minmax(0, 1fr) auto auto; align-items: baseline; gap: var(--s-3); padding: var(--s-3) var(--s-3) var(--s-3) 0; border-bottom: 1px solid var(--border-subtle); }
+.ledger__sign { color: var(--ink-3); font: var(--m-sm); text-align: center; }
+.ledger__label { grid-column: 2; color: var(--ink-1); font: var(--t-body); text-align: left; }
+.ledger__tag { grid-column: 3; justify-self: end; padding: 2px var(--s-3); color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); border: 1px solid var(--fin-conditional); font: var(--t-micro); white-space: nowrap; }
+.ledger__tag--locked { color: var(--ink-3); background: var(--surface-inset); border-color: var(--border-default); }
+.ledger__lines strong { grid-column: 4; color: var(--ink-1); font: var(--m-md); font-feature-settings: var(--num); }
+.ledger__lines li[data-tone="certain"] .ledger__sign, .ledger__lines li[data-tone="certain"] strong { color: var(--fin-reliable-ink); }
+.ledger__lines li[data-tone="conditional"] .ledger__sign, .ledger__lines li[data-tone="conditional"] strong { color: var(--fin-conditional-ink); }
+.ledger__lines li[data-tone="locked"], .ledger__lines li[data-tone="event"] { color: var(--ink-2); }
+.ledger__lines li[data-tone="event"] strong { color: var(--fin-over-ink); }
+
+/* A promised cost answers when a student presses it rather than sitting there inert. */
+.ledger__label--locked { padding: 0; text-align: left; background: none; border: 0; color: inherit; font: var(--t-body); cursor: help; }
+.ledger__left { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); margin: 0; padding-top: var(--s-1); }
+.ledger__left span { color: var(--ink-1); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
+.ledger__left strong { color: var(--ink-1); font: var(--m-hero); font-feature-settings: var(--num); letter-spacing: var(--display-tracking); }
+.ledger__spend { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); margin: 0; padding-top: var(--s-3); border-top: 1px solid var(--border-default); }
+.ledger__spend span { color: var(--ink-2); font: var(--t-ui); }
+.ledger__spend strong { color: var(--ink-1); font: var(--m-md); font-feature-settings: var(--num); }
+.ledger__warning { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2); margin: 0; padding: var(--s-3) var(--s-4); color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); border-left: 4px solid var(--fin-conditional-stripe); font: var(--t-ui); }
+.ledger__warning strong { font: var(--m-sm); font-feature-settings: var(--num); }
 
 /* What moved since the last save, named on the board that has to absorb it. */
 .change-banner { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: var(--s-3) var(--s-5); padding: var(--s-4) var(--s-5); color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); border-bottom: 1px solid var(--fin-conditional); }
@@ -187,10 +204,32 @@
 .change-banner li { position: relative; padding-left: var(--s-4); font: var(--t-ui); }
 .change-banner li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 6px; height: 6px; background: currentcolor; border-radius: 50%; }
 
-/* --- Scene 4: the three choices ------------------------------------------ */
-.plan-board__body { display: grid; grid-template-columns: minmax(300px, 0.85fr) minmax(0, 1.15fr); }
-.plan-board__setup { margin: 0 auto 0 0; padding: var(--s-2) var(--s-3); color: var(--ink-2); background: var(--surface-sunken); border-radius: var(--r-pill); font: var(--t-micro); }
-.choice-stack { display: grid; align-content: start; gap: var(--s-2); padding: var(--s-5); }
+/* ---------------------------------------------------------------------------
+   The plan, as steps. Each one asks a single question, says why it is being
+   asked, and hands over. Nothing on the screen competes with the step the
+   student is on.
+   --------------------------------------------------------------------------- */
+
+.plan-step { padding: var(--s-6); border-top: 1px solid var(--border-subtle); }
+.plan-step:first-of-type { border-top: 0; }
+.plan-step__head { max-width: 60ch; margin-bottom: var(--s-5); }
+.plan-step__head h2, .plan-step__head h3 { margin: var(--s-2) 0 0; font: var(--t-display3); letter-spacing: var(--display-tracking); text-transform: uppercase; }
+.plan-step__ask { margin: var(--s-3) 0 0; color: var(--ink-1); font: var(--t-body-lg); }
+.plan-step__why { margin: var(--s-2) 0 0; color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
+.plan-step[data-tone="conditional"] .stamp { color: var(--fin-conditional-ink); }
+.choice-stack { display: grid; align-content: start; gap: var(--s-3); }
+
+/* Step 5. The one statement this world records about savings, asked as a question
+   with three answers rather than tucked into a row as a shortcut. */
+.plan-step--closer { background: var(--surface-raised); border-top: 2px solid var(--fin-adjustable); }
+.closer-choice { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
+.closer-choice button { display: grid; align-content: space-between; gap: var(--s-4); min-height: 104px; padding: var(--s-4) var(--s-5); text-align: left; color: var(--ink-1); background: var(--surface); border: 1.5px solid var(--border-ink); border-left-width: 6px; cursor: pointer; transition: background var(--dur-micro) var(--ease-standard), color var(--dur-micro) var(--ease-standard); }
+.closer-choice button[data-category="goal"] { border-left-color: var(--choice-1); }
+.closer-choice button[data-category="reserve"] { border-left-color: var(--choice-2); }
+.closer-choice button[data-category="flexibleCash"] { border-left-color: var(--choice-3); }
+.closer-choice button:hover { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); }
+.closer-choice__row { font: var(--t-title3); }
+.closer-choice strong { font: var(--m-sm); font-feature-settings: var(--num); }
 
 /* -------------------------------------------------------------------------
    The adjust panel: the plan being corrected rather than rebuilt.
@@ -260,7 +299,7 @@
 .choice-row small { display: block; margin-top: 2px; color: var(--ink-3); font: var(--t-micro); }
 .choice-row__value { font: var(--m-md); font-feature-settings: var(--num); }
 .choice-row__controls { display: grid; grid-template-columns: var(--tap) 74px var(--tap); }
-.choice-row__controls button, .choice-row__controls input { min-height: var(--tap); border: 1px solid var(--border-strong); background: var(--surface); }
+.choice-row__controls button, .choice-row__controls input { min-height: var(--tap); min-width: var(--tap); border: 1px solid var(--border-strong); background: var(--surface); }
 .choice-row__controls button { cursor: pointer; font: var(--t-title2); }
 .choice-row__controls button:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
 .choice-row__controls button:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
@@ -336,6 +375,7 @@
 .reel article[data-state="next"] b { color: var(--world-accent); }
 .reel b { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
 .reel p { margin: 0; font: var(--t-ui); font-weight: 400; }
+.bulletins { border-top: 1px solid var(--world-hero-line); }
 .bulletin { position: relative; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: clamp(20px, 4vw, 48px); padding: clamp(20px, 3vw, 36px) clamp(24px, 4vw, 48px); animation: reveal-in var(--dur-stage) var(--ease-exit) both; }
 .bulletin + .bulletin { border-top: 1px solid var(--world-hero-line); }
 .bulletin__day { color: var(--world-flare); font: 700 clamp(1.9rem, 3.6vw, 2.9rem)/0.85 var(--font-display); letter-spacing: -0.04em; }
@@ -367,12 +407,12 @@
 .interview__ask > p { max-width: 42ch; margin: 0; }
 .interview__stats { display: grid; gap: var(--s-2); margin-top: var(--s-6); }
 .interview__stats .field-label { color: var(--world-hero-muted); }
-.interview__stats button { min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-3) var(--s-4); color: var(--world-hero-ink); text-align: left; background: var(--world-panel); border: 1px solid var(--world-panel-edge); border-radius: var(--r-sm); cursor: pointer; font: var(--t-ui); transition: background var(--dur-micro) var(--ease-standard), border-color var(--dur-micro) var(--ease-standard); }
+.interview__stats button { min-height: var(--tap); display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-4); padding: var(--s-3) var(--s-4); color: var(--world-hero-ink); text-align: left; background: var(--world-panel); border: 1px solid var(--world-panel-edge); border-radius: var(--r-sm); cursor: pointer; font: var(--t-ui); transition: background var(--dur-micro) var(--ease-standard), border-color var(--dur-micro) var(--ease-standard); }
 .interview__stats button .money { font: var(--m-sm); font-feature-settings: var(--num); }
 .interview__stats button[aria-pressed="true"] { color: var(--ink-1); background: var(--surface-raised); border-color: var(--world-accent); box-shadow: inset 4px 0 0 var(--world-accent); }
 .interview__answer { display: flex; flex-direction: column; padding: clamp(20px, 3vw, 32px); background: var(--surface); border: 1px solid var(--border-default); }
 .interview__answer label { display: block; margin-bottom: var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
-.interview__answer textarea { width: 100%; flex: 1; min-height: 180px; padding: var(--s-4); resize: vertical; color: var(--ink-1); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); font: var(--t-body); }
+.interview__answer textarea { width: 100%; flex: 1; min-height: 150px; max-height: 320px; padding: var(--s-4); resize: vertical; color: var(--ink-1); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); font: var(--t-body); }
 .interview__answer footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3); margin-top: var(--s-4); }
 .interview__answer footer p { margin: 0; color: var(--ink-3); font: var(--t-micro); }
 .sentence-starters { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0 0 var(--s-4); }
@@ -411,55 +451,32 @@
 .recap__decisions li { display: grid; gap: var(--s-1); padding-bottom: var(--s-3); border-bottom: 1px solid var(--world-hero-line); color: var(--world-hero-ink); font: var(--t-ui); }
 .recap__decisions span { color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.08em; text-transform: uppercase; }
 
-@media (max-height: 720px) and (min-width: 900px) {
-  .split { --split-h: 220px; }
-}
-
 @media (max-width: 1100px) {
-  .split__plot { padding-right: 76px; }
-  .split__line { right: 76px; }
-  .split__over { right: 76px; }
-  .split__line i { width: 70px; }
-  .plan-board__body { grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr); }
   .feed { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .bets { grid-template-columns: 1fr 1fr; }
-  .bets__intro { grid-column: 1 / -1; }
   .feed .post:last-child { grid-column: 1 / -1; }
-
-  /* The board's rows sit in a column beside the towers, so they run out of width long
-     before the adjust panel's do — the adjust panel is a single column and keeps its rows
-     on one line until the viewport is genuinely narrow. The one tap and the steppers then
-     share the second line rather than taking one each, because three rows at two lines
-     apiece pushed the commit bar off a Chromebook screen. */
-  .plan-board .choice-row { grid-template-columns: 6px minmax(0, 1fr) auto; row-gap: var(--s-3); }
-  .plan-board .choice-row__action { grid-column: 2; grid-row: 2; justify-self: start; }
-  .plan-board .choice-row__controls { grid-column: 3; grid-row: 2; justify-self: end; }
   .adjust__head { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 760px) {
   .opening { min-height: 0; }
-  .home__grid, .opening__grid, .contract__columns, .plan-board__body, .recap__grid, .interview { grid-template-columns: 1fr; }
+  .home__grid, .opening__grid, .contract__columns, .recap__grid, .interview { grid-template-columns: 1fr; }
   .home { min-height: 0; }
-  .opening__weeks { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .contract__column + .contract__column { border-left: 0; border-top: 1px solid var(--border-default); }
   .reel { grid-template-columns: 1fr 1fr; }
   .reel article:last-child { grid-column: 1 / -1; }
   .feed { grid-template-columns: 1fr; }
   .change-banner { grid-template-columns: 1fr; }
-  .bets { grid-template-columns: 1fr; }
+  .bets, .closer-choice { grid-template-columns: 1fr; }
   .setup-grid { grid-template-columns: 1fr; }
   .scale { grid-template-columns: 1fr; }
-  .split { border-right: 0; border-bottom: 1px solid var(--border-default); }
-  .split__caps, .split__plot { padding-right: 0; }
-  .split__line, .split__over { right: 0; }
-  .split__line i { display: none; }
+  .ledger { padding: var(--s-5) var(--s-4); }
+  .plan-step { padding: var(--s-5) var(--s-4); }
   .recap__numbers { grid-template-columns: 1fr; }
   .bulletin { grid-template-columns: 1fr; gap: var(--s-3); }
   .settled-calls { grid-template-columns: 1fr; }
-  .adjust .choice-row { grid-template-columns: 6px minmax(0, 1fr) auto; row-gap: var(--s-3); }
-  .adjust .choice-row__action { grid-column: 2; grid-row: 2; justify-self: start; }
-  .adjust .choice-row__controls { grid-column: 3; grid-row: 2; justify-self: end; }
+  .choice-row { grid-template-columns: 6px minmax(0, 1fr) auto; row-gap: var(--s-3); }
+  .choice-row__action { grid-column: 2; grid-row: 2; justify-self: start; }
+  .choice-row__controls { grid-column: 3; grid-row: 2; justify-self: end; }
   .adjust__head, .adjust__countdown, .adjust__rows { padding-left: var(--s-4); padding-right: var(--s-4); }
   .adjust .plan-help { margin-left: var(--s-4); margin-right: var(--s-4); }
   .adjust__countdown { flex-direction: column; align-items: flex-start; gap: var(--s-2); }
@@ -568,14 +585,17 @@
 .week-meter__limit { position: absolute; inset-block: -6px; width: 0; border-left: 2px dashed var(--ink-1); }
 .week-meter__limit b {
   position: absolute;
-  top: -1.35em;
+  top: -1.5em;
   left: 0;
   transform: translateX(-50%);
+  white-space: nowrap;
   font-size: 0.72rem;
+  font-weight: 700;
   font-feature-settings: var(--num);
 }
 
 .week-meter__state { margin: 0; font: var(--t-sm); font-weight: 400; }
+.week-meter__rate { margin: 0; padding-top: var(--s-3); border-top: 1px solid var(--border-subtle); color: var(--ink-2); font: var(--t-sm); font-weight: 400; font-feature-settings: var(--num); }
 .week-meter[data-state="quiet"] .week-meter__state { color: var(--ink-2); }
 .week-meter[data-state="safe"] .week-meter__state { color: var(--fin-balanced-ink); }
 .week-meter[data-state="over"] { border-top-color: var(--time-over); }
@@ -643,9 +663,9 @@
 .resolve-weeks {
   display: grid;
   gap: var(--s-5);
-  padding: clamp(24px, 4vw, 40px);
-  background: var(--world-deep);
-  border: 1px solid var(--world-panel-edge);
+  padding: 0 clamp(24px, 4vw, 48px) clamp(24px, 4vw, 40px);
+  border-top: 1px solid var(--world-hero-line);
+  padding-top: clamp(20px, 3vw, 32px);
 }
 
 .resolve-weeks__read { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
@@ -712,8 +732,8 @@
 
 
 /* Joining a class, and getting the finished work back out of the room. */
-.join-status { margin: var(--s-3) 0 0; color: var(--world-hero-body); font: var(--t-sm); font-weight: 400; }
-.join-status--problem { color: var(--world-hero-second); font-weight: 600; }
+.join-status { margin: var(--s-3) 0 0; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.join-status--problem { color: var(--fin-over-ink); font-weight: 700; }
 .delivery { margin: 0; font: var(--t-sm); font-weight: 400; }
 .delivery--sending, .delivery--idle { color: var(--world-hero-muted); }
 .delivery--delivered { color: var(--world-hero-body); }
@@ -732,3 +752,23 @@
   .rank-list__body { grid-area: body; }
   .rank-list__controls { grid-area: controls; }
 }
+
+/* Who is speaking. A jersey number in a circle names nobody. */
+.post__voice cite { grid-column: 2; margin-top: var(--s-2); color: var(--world-hero-muted); font: var(--t-micro); font-style: normal; letter-spacing: 0.14em; text-transform: uppercase; }
+.post__voice:not(.post__voice--scene) cite { color: var(--ink-3); }
+
+/* The receipt on the way out: what was written, and what the plan finally said. */
+.handed-in__record { margin-top: var(--s-6); padding: var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-left: 4px solid var(--bow-brand); }
+.handed-in__record blockquote { max-width: 70ch; margin: var(--s-4) 0; color: var(--ink-1); font: var(--t-body-lg); font-style: italic; }
+.handed-in__numbers { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-7); margin: 0; padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); list-style: none; }
+.handed-in__numbers li { display: flex; align-items: baseline; gap: var(--s-3); }
+.handed-in__numbers span { color: var(--ink-2); font: var(--t-ui); }
+.handed-in__numbers strong { font: var(--m-sm); font-feature-settings: var(--num); }
+
+/* The running number, beside the controls that move it. */
+.plan-running { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-3); margin: 0 0 var(--s-4); padding: var(--s-3) var(--s-4); border-left: 4px solid; }
+.plan-running strong { font: var(--m-lg); font-feature-settings: var(--num); }
+.plan-running span { font: var(--t-ui); }
+.plan-running[data-state="balanced"] { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); border-color: var(--fin-balanced); }
+.plan-running[data-state="over"] { color: var(--fin-over-ink); background: var(--fin-over-soft); border-color: var(--fin-over); }
+.plan-running[data-state="unassigned"] { color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); }

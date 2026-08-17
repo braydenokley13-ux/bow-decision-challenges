@@ -172,12 +172,33 @@ modules cannot import a fixture, and every fixture page is mounted under `/educa
 
 ### `src/design/` — three layers, deliberately separate
 
-- `tokens.css` — platform primitives: spacing, type scale, financial colour semantics, print
-- `brand.css` — the BOW / Decision Challenges layer: the mark, educator chrome, display voice
+- `tokens.css` — platform primitives: spacing, type scale, financial colour semantics, ticket geometry, print
+- `brand.css` — the BOW / Decision Challenges layer: the mark, the display voice, the ticket, educator chrome
 - `worlds.css` — Avery's basketball art direction
 
 Challenge #2 gets its own block in `worlds.css` and touches neither of the others. Raw hex is
 allowed only in those three files, enforced by stylelint.
+
+**The identity is BOW's own: deep athletic blue on warm cream, set in near-black ink, with the
+geometry of an admissions pass.** The palette is deliberately four colours with fixed meanings —
+money that arrives is blue, money with a condition on it is amber and striped, a plan that
+balances is green, a plan that is short is rust — so a student who learns them in the first
+thirty seconds can read every screen after it without a legend. The ticket vocabulary (the cut
+edge, the perforation, the stamp) is used where a surface genuinely *is* a pass or a stub: the
+class-code card, the plan, the class code itself. Not on everything rectangular.
+
+Two rules follow from that and are worth stating because breaking either is invisible until a
+student is confused:
+
+- **Dark is a peak, not a default.** The arena at night belongs to Week 5 and Week 8, which is
+  where the plan stops working and where the student finds out what that cost. Everything else
+  is on cream. The opening screen used to be the same full-volume navy, which left the two
+  moments the story actually turns on with nowhere louder to go.
+- **A ground change is a contrast change.** Moving the educator panels from near-black to BOW
+  blue in Checkpoint 4.5 silently broke the amber marker on them (4.24:1). The fix is a token
+  override on the ground — `--fin-conditional: var(--bow-accent-on-brand)` — rather than a
+  colour per element, so a component that lands on a brand panel later inherits a value that
+  has been checked against it. The axe pass in `e2e/bow.spec.ts` is what caught it.
 
 ---
 
@@ -286,7 +307,7 @@ generalised before Challenge #2 could prove what it needs.
 The registry and routing; persistence keying; the whole class service and its three stores;
 the transport boundary and its three drivers; the evidence envelope, facts derivation,
 observation scoring, support caps and grading; the plan board, the adjust panel, the
-allocation control, the money split and the week meter; the educator shell, the class hook,
+allocation control, the money ledger and the week meter; the educator shell, the class hook,
 the no-fixture invariant; the brand and token layers; the balance-harness *pattern*.
 
 ## What Challenge #2 would have to build

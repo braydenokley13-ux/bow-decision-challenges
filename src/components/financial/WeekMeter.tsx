@@ -7,6 +7,8 @@ interface WeekMeterProps {
   parts: readonly { id: string; label: string; blocks: number }[];
   /** Named so the meter can say what the line is actually protecting. */
   atStake: string;
+  /** What one hour costs, so the row can be reasoned about rather than nudged. */
+  rate: number;
 }
 
 /**
@@ -16,7 +18,7 @@ interface WeekMeterProps {
  * cost that is not money is visible while they are spending the money, and so the line the
  * attendance bonus depends on is a place on the screen rather than a sentence.
  */
-export function WeekMeter({ load, parts, atStake }: WeekMeterProps) {
+export function WeekMeter({ load, parts, atStake, rate }: WeekMeterProps) {
   const scale = Math.max(load.capacity, load.demand);
   const width = (blocks: number) => `${(blocks / scale) * 100}%`;
   const state = !load.atRisk ? "quiet" : load.attendanceHolds ? "safe" : "over";
@@ -27,7 +29,7 @@ export function WeekMeter({ load, parts, atStake }: WeekMeterProps) {
         <p className="field-label">Avery’s week</p>
         <p className="week-meter__read">
           <strong>{load.net} hours</strong>
-          <span>outside practice, games and school</span>
+          <span>of every week go on getting places, outside practice, games and school</span>
         </p>
       </header>
 
@@ -39,12 +41,14 @@ export function WeekMeter({ load, parts, atStake }: WeekMeterProps) {
         ))}
         {load.bought > 0 && (
           <span className="week-meter__bought" style={{ width: width(load.bought) }}>
-            <i>Bought back</i>
+            <i>Paid for rides</i>
           </span>
         )}
+        {/* The line used to be a bare numeral over a dotted rule. A number with no noun is
+            not a limit, it is a riddle — so it now says what it is a limit on. */}
         {load.atRisk && (
           <span className="week-meter__limit" style={{ left: width(load.limit) }}>
-            <b>{load.limit}</b>
+            <b>{load.limit} hours is all Avery has</b>
           </span>
         )}
       </div>
@@ -53,12 +57,15 @@ export function WeekMeter({ load, parts, atStake }: WeekMeterProps) {
         {!load.atRisk
           ? "This is what the trip alone takes. Rehab and anything else Avery takes on would come out of the same week."
           : load.attendanceHolds
-            ? `Under the line. Avery makes every session, so ${atStake} still arrives.`
-            : `${load.overBy} hour${load.overBy === 1 ? "" : "s"} over. Avery misses a session, and ${atStake} does not arrive.`}
+            ? `Avery can fit it all in, makes every session, and ${atStake} still arrives.`
+            : `${load.overBy} hour${load.overBy === 1 ? "" : "s"} more than Avery has. Something gets missed, and ${atStake} does not arrive.`}
         {load.atRisk && !load.attendanceHolds && (
-          <> Another <strong className="money">{formatDollars(load.costToClear)}</strong> in Avery’s week would clear it.</>
+          <> Another <strong className="money">{formatDollars(load.costToClear)}</strong> on rides would cover it.</>
         )}
       </p>
+      {/* The exchange rate, stated. Without it the + key is trial and error rather than a
+          decision, which is the opposite of what this row is here to teach. */}
+      <p className="week-meter__rate">Every {formatDollars(rate)} spent on rides buys back one hour a week.</p>
     </section>
   );
 }

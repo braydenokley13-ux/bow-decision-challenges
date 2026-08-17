@@ -47,6 +47,16 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
       { label: "Ends with", value: "Regional showcase" },
     ],
   },
+  invitation: {
+    kicker: "Help Avery",
+    headline: "Make the season work.",
+    role: "Avery plays. You handle the money — eight weeks of it.",
+    decisions: [
+      { title: "Decide what to protect", detail: "Some of this money has a job to do later. Say how much." },
+      { title: "Decide what to spend", detail: "Rent, food and getting to practice all come out of the same pot." },
+      { title: "Decide whether to count on the bonuses", detail: "Two payments might arrive. Neither one is promised." },
+    ],
+  },
   season: [
     {
       week: "Week 1",

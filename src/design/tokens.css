@@ -1,76 +1,104 @@
+/*
+ * Platform primitives: the ground, the ink, the financial colour semantics, the type
+ * scale, and the ticket geometry every surface is cut from.
+ *
+ * The palette is BOW's own — deep athletic blue on warm cream, set in near-black ink. It
+ * is deliberately small. Money that arrives is blue, money that might not is amber, a plan
+ * that balances is green, a plan that is short is rust, and nothing else is coloured at
+ * all. A student who learns those four in the first thirty seconds can read every screen
+ * after it without a legend.
+ */
 :root {
   color-scheme: light;
-  --canvas: #f2f1ec;
-  --surface: #fbfaf7;
-  --surface-raised: #ffffff;
-  --surface-sunken: #e9e7e0;
-  --surface-inset: #dfddd4;
-  --ink-1: #14171c;
-  --ink-2: #3f4750;
+
+  /* Warm cream, not grey. The product is printed on card, not rendered in a dashboard. */
+  --canvas: #f0e9db;
+  --surface: #faf6ec;
+  --surface-raised: #fffdf6;
+  --surface-sunken: #e7dfcd;
+  --surface-inset: #ded5c0;
+
+  --ink-1: #12151b;
+  --ink-2: #383e47;
 
   /* Meets AA against every surface token, including surface-sunken and surface-inset. */
-  --ink-3: #5a626c;
-
-  /* Was #8a9099, which failed AA against every light surface it sat on. */
-  --ink-4: #6b727c;
+  --ink-3: #4e545d;
+  --ink-4: #565c66;
 
   /* Muted text on the dark panels. One token cannot clear AA against both a near-white
      surface and a near-black one, so the dark scenes get their own. */
-  --ink-muted-invert: #b9bfc8;
+  --ink-muted-invert: #b6c1d6;
   --ink-invert: #ffffff;
-  --border-subtle: #e3e0d8;
-  --border-default: #d0ccc1;
-  --border-strong: #ada89a;
-  --border-ink: #14171c;
-  --fin-reliable: #14596b;
-  --fin-reliable-soft: #d9e7eb;
-  --fin-reliable-ink: #0e4353;
-  --fin-conditional: #e9a93c;
-  --fin-conditional-soft: #fbebcb;
 
-  /* On the striped conditional band this used to be 2.04:1. */
-  --fin-conditional-ink: #3d2503;
-  --fin-conditional-stripe: #b87914;
-  --fin-locked: #c9c7c0;
-  --fin-locked-ink: #4a515c;
-  --fin-adjustable: #4a44a8;
+  --border-subtle: #e2d9c7;
+  --border-default: #cfc4ac;
+  --border-strong: #a89a7c;
+  --border-ink: #12151b;
 
-  /* The three things a student can move. They read as one family, but adjacent slices
-     have to be separable as graphical objects too: --choice-1 against --choice-2 used to
-     be 1.41:1, so the two largest allocations merged into one block in the chart. */
-  --choice-1: #2b2668;
-  --choice-2: #6f68c9;
-  --choice-3: #c3bff0;
-  --fin-adjustable-soft: #e6e4f7;
-  --fin-adjustable-ink: #35317f;
-  --fin-balanced: #1e7a49;
-  --fin-balanced-soft: #dceee2;
-  --fin-balanced-ink: #14603a;
-  --fin-over: #c22b2b;
-  --fin-over-soft: #fae0de;
-  --fin-over-ink: #92201f;
+  /*
+   * Money that arrives is BOW blue. Money that has a condition on it is amber and carries
+   * a stripe, so the difference survives greyscale and colour blindness alike.
+   */
+  --fin-reliable: #123a8f;
+  --fin-reliable-soft: #e0e7f6;
+  --fin-reliable-ink: #0d2c6d;
+  --fin-conditional: #b8801b;
+  --fin-conditional-soft: #f7ecd3;
+  --fin-conditional-ink: #563a06;
+  --fin-conditional-stripe: #8f6210;
+  --fin-locked: #c6bda8;
+  --fin-locked-ink: #474d55;
+
+  /* What the student can move. Same blue as money that arrives, because a dollar the
+     student has placed is a dollar that is certainly going somewhere. */
+  --fin-adjustable: #123a8f;
+  --fin-adjustable-soft: #e0e7f6;
+  --fin-adjustable-ink: #0d2c6d;
+
+  /*
+   * The three jobs a dollar can take. They are not a ramp of one hue: each is the colour
+   * of what it protects — the course is BOW blue, the buffer is the green of a plan that
+   * holds, and Avery's week is the brown the time meter already uses.
+   */
+  --choice-1: #123a8f;
+  --choice-2: #1c6b45;
+  --choice-3: #8a5a2b;
+
+  --fin-balanced: #1c6b45;
+  --fin-balanced-soft: #dcece2;
+  --fin-balanced-ink: #14512f;
+  --fin-over: #a8321f;
+  --fin-over-soft: #f8e2dd;
+  --fin-over-ink: #7d2113;
+
   --pat-conditional: repeating-linear-gradient(45deg, var(--fin-conditional) 0 6px, var(--fin-conditional-stripe) 6px 10px);
   --pat-over: repeating-linear-gradient(45deg, var(--fin-over-soft) 0 4px, var(--fin-over) 4px 8px);
   --pat-ghost: repeating-linear-gradient(45deg, var(--surface-inset) 0 3px, var(--surface-sunken) 3px 6px);
 
   /* Avery's week. Time is the second currency, so it gets its own family rather than
      borrowing one of the money colours. */
-  --time-commute: #7a5c3a;
-  --time-rehab: #a8452e;
-  --time-clinics: #b8862b;
-  --time-bought: #d8d4cb;
-  --time-over: #c22b2b;
+  --time-commute: #8a5a2b;
+  --time-rehab: #a8321f;
+  --time-clinics: #b8801b;
+  --time-bought: #d7cdb8;
+  --time-over: #a8321f;
 
-  /* Chapter grounds. The five parts of the story sit on visibly different air, and each
-     takes its accent from the financial meaning of that chapter rather than from a new
-     decorative palette: choosing is indigo, money arriving is teal, the week that goes
-     wrong is the overspend red, and the ending is the world's own accent. The grounds
+  /*
+   * Ticket geometry. The identity is an admissions pass, so the product has one cut edge,
+   * one perforation and one notch — used where a surface genuinely is a stub or a pass,
+   * never as decoration on everything that happens to be rectangular.
+   */
+  --rule-perf: repeating-linear-gradient(90deg, var(--border-strong) 0 5px, transparent 5px 11px);
+  --rule-perf-v: repeating-linear-gradient(180deg, var(--border-strong) 0 5px, transparent 5px 11px);
+  --notch: 13px;
+
+  /* Chapter grounds. The five parts of the story sit on visibly different air. The grounds
      move only a few percent — enough that a student feels the room change, not enough to
      put any text on a surface its contrast was not checked against. */
-  --ground-plan: #f2f1ec;
-  --ground-season: #eef1ef;
-  --ground-pressure: #ecebe5;
-  --ground-resolution: #f3f0e9;
+  --ground-plan: #f0e9db;
+  --ground-season: #eee9de;
+  --ground-pressure: #eae2d3;
+  --ground-resolution: #f2ecdf;
 
   /* Print. A debrief on paper has no surfaces to sit on, so it gets its own ink and
      rules rather than borrowing screen tokens that assume a coloured ground. */
@@ -78,12 +106,12 @@
   --print-rule: #999999;
   --print-rule-strong: #333333;
 
-  --focus-ring: #1552e0;
+  --focus-ring: #123a8f;
   --focus-halo: #ffffff;
-  --shadow-rail: 0 1px 0 var(--border-default), 0 8px 18px -16px rgb(14 20 28 / 45%);
-  --shadow-card: 0 1px 2px rgb(14 20 28 / 6%), 0 12px 28px -20px rgb(14 20 28 / 40%);
-  --shadow-lift: 0 2px 4px rgb(14 20 28 / 8%), 0 22px 44px -28px rgb(14 20 28 / 50%);
-  --shadow-overlay: 0 24px 48px -24px rgb(14 20 28 / 34%), 0 2px 6px -3px rgb(14 20 28 / 16%);
+  --shadow-rail: 0 1px 0 var(--border-default), 0 8px 18px -16px rgb(12 21 40 / 45%);
+  --shadow-card: 0 1px 2px rgb(12 21 40 / 7%), 0 12px 28px -20px rgb(12 21 40 / 40%);
+  --shadow-lift: 0 2px 4px rgb(12 21 40 / 9%), 0 22px 44px -28px rgb(12 21 40 / 50%);
+  --shadow-overlay: 0 24px 48px -24px rgb(12 21 40 / 34%), 0 2px 6px -3px rgb(12 21 40 / 16%);
   --s-1: 2px;
   --s-2: 4px;
   --s-3: 8px;
@@ -92,10 +120,11 @@
   --s-6: 24px;
   --s-7: 32px;
   --s-8: 40px;
+  --s-9: 56px;
   --s-10: 72px;
-  --r-xs: 4px;
-  --r-sm: 8px;
-  --r-md: 10px;
+  --r-xs: 3px;
+  --r-sm: 4px;
+  --r-md: 5px;
   --r-pill: 999px;
   --w-board: 1200px;
   --w-dash: 1400px;
@@ -113,24 +142,24 @@
 
   /* Numbers carry the product, so they always align in columns and never read as letters. */
   --num: "tnum" 1, "lnum" 1, "zero" 1, "ss01" 1;
-  --t-scene: 700 clamp(2.6rem, 5vw, 4.4rem)/0.94 var(--font-display);
-  --t-display1: 600 3.25rem/1.02 var(--font-display);
-  --t-display2: 600 2.5rem/1.06 var(--font-display);
-  --t-display3: 600 2rem/1.1 var(--font-display);
-  --t-title1: 600 1.75rem/1.2 var(--font-ui);
-  --t-title2: 600 1.375rem/1.25 var(--font-ui);
-  --t-title3: 600 1.125rem/1.3 var(--font-ui);
+  --t-scene: 800 clamp(2.5rem, 4.8vw, 4.2rem)/0.92 var(--font-display);
+  --t-display1: 800 clamp(2.4rem, 4vw, 3.25rem)/0.98 var(--font-display);
+  --t-display2: 800 clamp(2rem, 3.2vw, 2.6rem)/1 var(--font-display);
+  --t-display3: 800 1.6rem/1.05 var(--font-display);
+  --t-title1: 700 1.5rem/1.15 var(--font-ui);
+  --t-title2: 700 1.25rem/1.2 var(--font-ui);
+  --t-title3: 700 1.0625rem/1.3 var(--font-ui);
   --t-body-lg: 400 1.0625rem/1.55 var(--font-ui);
-  --t-body: 400 1rem/1.5 var(--font-ui);
-  --t-ui: 500 0.9375rem/1.4 var(--font-ui);
+  --t-body: 400 1rem/1.55 var(--font-ui);
+  --t-ui: 500 0.9375rem/1.45 var(--font-ui);
   --t-sm: 500 0.875rem/1.45 var(--font-ui);
-  --t-label: 600 0.8125rem/1.3 var(--font-ui);
-  --t-micro: 500 0.75rem/1.35 var(--font-ui);
-  --m-hero: 640 2.75rem/1 var(--font-ui);
-  --m-lg: 620 1.75rem/1.1 var(--font-ui);
-  --m-md: 600 1.25rem/1.2 var(--font-ui);
-  --m-sm: 600 1rem/1.2 var(--font-ui);
-  --m-xs: 600 0.875rem/1.2 var(--font-ui);
+  --t-label: 700 0.75rem/1.3 var(--font-ui);
+  --t-micro: 500 0.75rem/1.4 var(--font-ui);
+  --m-hero: 700 2.75rem/1 var(--font-ui);
+  --m-lg: 700 1.75rem/1.1 var(--font-ui);
+  --m-md: 700 1.25rem/1.2 var(--font-ui);
+  --m-sm: 700 1rem/1.2 var(--font-ui);
+  --m-xs: 700 0.875rem/1.2 var(--font-ui);
 }
 
 @media (max-height: 760px) {

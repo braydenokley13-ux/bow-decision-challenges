@@ -1,20 +1,27 @@
 /* Each world themes the shared components through these variables only. Adding a world
-   means adding a block here — no component needs to know which story it is rendering. */
+   means adding a block here — no component needs to know which story it is rendering.
+
+   Basketball's art direction is the arena at night: layered navy, court line work at low
+   contrast, cream type, and one warm flare reserved for the thing that is live right now.
+   The accent on light surfaces is BOW's own blue, so a student never has to learn a second
+   colour language when the story moves indoors. */
 [data-world="basketball"] {
-  --world-accent: #b8431a;
-  --world-accent-soft: #f7e5da;
-  --world-hero-bg: #0b1b33;
-  --world-hero-ink: #f4f1ea;
-  --world-hero-second: #e0672e;
-  --world-hero-line: #1d3355;
-  --world-hero-body: #c8cedb;
-  --world-hero-muted: #8f9bb0;
-  --world-hero-edge: #46587a;
+  --world-accent: #123a8f;
+  --world-accent-soft: #e0e7f6;
+  --world-hero-bg: #0d2148;
+  --world-hero-ink: #f6f1e5;
+  --world-hero-second: #9dbaf0;
+  --world-hero-line: #22406f;
+  --world-hero-body: #ccd6e8;
+  --world-hero-muted: #9aa8c2;
+  --world-hero-edge: #3a5c96;
 
   /* Arena surfaces: the dark scenes are layered, not one flat navy. */
-  --world-deep: #061020;
-  --world-panel: #11253f;
-  --world-panel-edge: #24406a;
-  --world-court: #1b3a63;
-  --world-flare: #e0672e;
+  --world-deep: #071433;
+  --world-panel: #12294f;
+  --world-panel-edge: #2a4a80;
+  --world-court: #1c3866;
+
+  /* The one warm mark in the world. Jersey number, live week, nothing else. */
+  --world-flare: #e8b33d;
 }

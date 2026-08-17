@@ -31,7 +31,7 @@ describe("what each row currently buys", () => {
     const short = planConsequences(inputs("working", { amounts: { goal: dollars(400), reserve: dollars(0), flexibleCash: dollars(0) } }), N);
     expect(short.goal).toContain(String(N.course.fullPrice - 400));
     const covered = planConsequences(inputs("working", { amounts: { goal: N.course.fullPrice, reserve: dollars(0), flexibleCash: dollars(0) } }), N);
-    expect(covered.goal).toMatch(/Enough for/);
+    expect(covered.goal).toMatch(/Enough to pay/);
   });
 
   it("stops asking for course money once the seat is paid for", () => {
@@ -58,7 +58,7 @@ describe("what each row currently buys", () => {
 
   it("says nothing is put by when nothing is, in every mode", () => {
     for (const mode of ["working", "fallback", "week5-first-response", "final", "remaining-risk"] as const) {
-      expect(planConsequences(inputs(mode), N).reserve, mode).toMatch(/Nothing put by/);
+      expect(planConsequences(inputs(mode), N).reserve, mode).toMatch(/Nothing kept back/);
     }
   });
 
@@ -67,7 +67,7 @@ describe("what each row currently buys", () => {
     const line = planConsequences(inputs("final", { amounts: { goal: dollars(0), reserve: dollars(0), flexibleCash: spend } }), N);
     expect(blocksBoughtBy(spend, N)).toBe(3);
     expect(line.flexibleCash).toContain("3 hour");
-    expect(planConsequences(inputs("final"), N).flexibleCash).toMatch(/Nothing spent/);
+    expect(planConsequences(inputs("final"), N).flexibleCash).toMatch(/Nothing paid for rides/);
   });
 
   it("reads one hour as an hour", () => {

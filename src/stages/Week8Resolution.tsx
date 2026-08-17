@@ -2,7 +2,6 @@ import { useMemo } from "react";
 import { useChallenge } from "../app/ChallengeContext";
 import { StageShell } from "../app/StageShell";
 import { Button } from "../components/primitives/Button";
-import { CourtBackdrop } from "../components/story/CourtBackdrop";
 import { formatDollars } from "../domain/core/money";
 import { resolveSeason, type RiskVerdict } from "../domain/finance/resolution";
 import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
@@ -59,32 +58,38 @@ export function Week8Resolution() {
       : `Every session, all ${decidingWeeks} weeks. The bonus landed exactly like you planned it would.`;
 
   return (
-    <StageShell stage="week8-resolution" kicker={`Week ${SCENARIO_NUMBERS.weeks}`} title="The season ends.">
-      {/* Beat 1: the three weeks that decided the bonus, played out against the line the
-          student's own plan left Avery sitting on. */}
-      <section className="resolve-weeks scene" aria-label="The last weeks">
-        <CourtBackdrop variant="key" />
-        <div className="resolve-weeks__read">
-          <p className="eyebrow">Avery’s week, weeks {resolution.weeks[0]?.week}–{SCENARIO_NUMBERS.weeks}</p>
-          <p className="resolve-weeks__load">
-            <strong>{load.net} hours</strong>
-            <span>against a line at {load.limit}</span>
-          </p>
+    <StageShell
+      stage="week8-resolution"
+      kicker={`Week ${SCENARIO_NUMBERS.weeks}`}
+      title="The season ends."
+      tone="dark"
+      /* Beat 1: the three weeks that decided the bonus, played out against the line the
+         student's own plan left Avery sitting on. */
+      banner={
+        <div className="resolve-weeks" aria-label="The last weeks">
+          <div className="resolve-weeks__read">
+            <p className="eyebrow">Avery’s week, weeks {resolution.weeks[0]?.week}–{SCENARIO_NUMBERS.weeks}</p>
+            <p className="resolve-weeks__load">
+              <strong>{load.net} hours</strong>
+              <span>of getting places every week, and only {load.limit} spare to do it in</span>
+            </p>
+          </div>
+          <ol className="resolve-weeks__list">
+            {resolution.weeks.map((week) => (
+              <li key={week.week} data-made={week.madeIt}>
+                <span>Week {week.week}</span>
+                <b>{week.madeIt ? "Made every session" : "Missed a session"}</b>
+              </li>
+            ))}
+          </ol>
+          <blockquote className="post__voice post__voice--scene">
+            <span className="post__who" aria-hidden="true">{BASKETBALL_SCENARIO.offer.jersey}</span>
+            <cite>Avery</cite>
+            <p>{averyLine}</p>
+          </blockquote>
         </div>
-        <ol className="resolve-weeks__list">
-          {resolution.weeks.map((week) => (
-            <li key={week.week} data-made={week.madeIt}>
-              <span>Week {week.week}</span>
-              <b>{week.madeIt ? "Every session" : "Over the line"}</b>
-            </li>
-          ))}
-        </ol>
-        <blockquote className="post__voice post__voice--scene">
-          <span className="post__who" aria-hidden="true">{BASKETBALL_SCENARIO.offer.jersey}</span>
-          <p>{averyLine}</p>
-        </blockquote>
-      </section>
-
+      }
+    >
       {/* Beat 2: where the money landed. Only lines that actually happened are drawn, so
           nothing on this panel is a zero standing in for an event that never occurred. */}
       <div className="resolve-grid">

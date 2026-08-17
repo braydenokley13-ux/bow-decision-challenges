@@ -42,17 +42,17 @@ export function planConsequences(input: SnapshotInputs, n: ScenarioNumbers): Rec
     goal: input.depositTaken
       ? `The seat is held. Nothing else is owed on the course.`
       : courseShort > 0
-        ? `${formatDollars(courseShort)} short of the ${formatDollars(coursePrice)} place.`
-        : `Enough for the ${formatDollars(coursePrice)} place.`,
+        ? `${formatDollars(courseShort)} short of the ${formatDollars(coursePrice)} the course costs.`
+        : `Enough to pay the ${formatDollars(coursePrice)} the course costs.`,
     reserve: input.amounts.reserve === 0
-      ? "Nothing put by. Anything that goes wrong comes out of the plan."
+      ? "Nothing kept back. If anything goes wrong, it comes out of the rest of the plan."
       : conditional > 0
         ? uncovered > 0
           ? `Covers ${formatDollars(input.amounts.reserve)} of the ${formatDollars(conditional)} this plan is counting on.`
           : `Covers the whole ${formatDollars(conditional)} this plan is counting on.`
         : `${formatDollars(input.amounts.reserve)} put by for something going wrong.`,
     flexibleCash: load.bought === 0
-      ? `Nothing spent on the trip. Avery carries all ${load.net} hours.`
-      : `Buys back ${load.bought} hour${load.bought === 1 ? "" : "s"} a week. Avery still carries ${load.net}.`,
+      ? `Nothing paid for rides. Getting everywhere still takes Avery ${load.net} hours a week.`
+      : `Pays for rides. Avery gets ${load.bought} hour${load.bought === 1 ? "" : "s"} a week back, and still spends ${load.net}.`,
   };
 }

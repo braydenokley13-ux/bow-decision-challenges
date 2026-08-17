@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { CHOICE_LABELS } from "../src/components/financial/choices";
 import { NUMBERS as N, BACKUP_HEADING, NO_BONUS_HEADING, TRIAGE_HEADING, fillPlanToBalance, fillPlanLeavingShortfall, money, savePlan, spendableFor, week5TotalFor, type PlanContext } from "./plan";
 import {
   createClass,
@@ -96,7 +97,7 @@ studentTest("full conditional path completes through fallback, Week 5, remaining
   await expect(page.getByRole("heading", { name: TRIAGE_HEADING })).toBeVisible();
   await savePlan(page, "week5-first-response", context);
 
-  await expect(page.getByRole("heading", { name: "Two calls, then land the plan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Two more calls to make." })).toBeVisible();
   await decideOpportunity(page, { clinics: true, countBonus: true });
   const landed: PlanContext = { ...context, clinics: true, countCompletionFinal: true };
   await savePlan(page, "final", landed);
@@ -105,7 +106,7 @@ studentTest("full conditional path completes through fallback, Week 5, remaining
   await savePlan(page, "remaining-risk", landed);
 
   await readWeek8Resolution(page);
-  await expect(page.getByRole("heading", { name: "Make the case for your plan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Explain your plan." })).toBeVisible();
   await submitDefense(page, "My plan still works because it balances at $0 after the update. I protected $800 for the course and gave up the open rest block to take the clinics.");
 
   await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible();
@@ -174,7 +175,7 @@ studentTest("declining the optional weekend clinics still completes the plan", a
 
   await savePlan(page, "week5-first-response", context);
 
-  await expect(page.getByRole("heading", { name: "Two calls, then land the plan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Two more calls to make." })).toBeVisible();
   await decideOpportunity(page, { clinics: false, countBonus: true });
   await expect(page.getByRole("button", { name: "Keep the Saturdays" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: "Take the clinics" })).toHaveAttribute("aria-pressed", "false");
@@ -216,7 +217,7 @@ studentTest("leaving the $800 bonus out of the final plan skips the remaining-ri
   // The remaining-risk preview only exists when the final plan still counts the bonus.
   await expect(page.getByRole("heading", { name: NO_BONUS_HEADING })).not.toBeVisible();
   await readWeek8Resolution(page);
-  await expect(page.getByRole("heading", { name: "Make the case for your plan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Explain your plan." })).toBeVisible();
 
   await submitDefense(page, "My plan still works because it never depended on the $800 bonus in the first place. I protected the course goal and gave up the reserve.");
   await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible();
@@ -342,7 +343,7 @@ studentTest("refreshing mid-challenge preserves stage, setup, and entered plan n
   await page.waitForTimeout(600); // let the debounced localStorage save land
   await page.reload();
 
-  await expect(page.getByRole("heading", { name: "Every dollar gets a job." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Build Avery’s plan." })).toBeVisible();
   await expect(page.getByRole("spinbutton", { name: "Sports-media course" })).toHaveValue("900");
   await expect(page.getByText("Teammate Share")).toBeVisible();
 });
@@ -467,7 +468,7 @@ studentTest("key screens have no serious or critical accessibility violations", 
   await noSeriousAxeViolations(page);
 
   await reachWorkingBoard(page, classCode);
-  await expect(page.getByRole("heading", { name: "Every dollar gets a job." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Build Avery’s plan." })).toBeVisible();
   await noSeriousAxeViolations(page);
 
   await gotoFreshChallenge(page);
@@ -608,7 +609,7 @@ studentTest("the course deposit deadline says what reserving would do before the
   await setAmount(page, "Sports-media course", "0");
   const spendable = spendableFor("working", { setupId: "cousin-room" });
   await setAmount(page, "Backup money", String(spendable));
-  await setAmount(page, "Avery’s week", "0");
+  await setAmount(page, CHOICE_LABELS.flexibleCash, "0");
   await page.getByRole("button", { name: "Save this version" }).click();
   for (const week of [2, 3, 4]) await page.getByRole("button", { name: `Play Week ${week}` }).click();
 
@@ -766,7 +767,7 @@ studentTest("a refresh mid-challenge does not lose the class the student joined"
   await page.waitForTimeout(600);
   await page.reload();
 
-  await expect(page.getByRole("heading", { name: "Every dollar gets a job." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Build Avery’s plan." })).toBeVisible();
   // The class travels with the attempt, so a resumed session still turns in to the right room.
   const stored = await page.evaluate(() => localStorage.getItem("bow.attempt.v2.plan-under-pressure"));
   expect(stored).toContain(classCode);
@@ -932,13 +933,13 @@ studentTest("a student who over-commits can still land and turn in a plan they c
 
   await passWeek5Calculation(page, String(week5TotalFor(context)));
   // Everything adjustable goes, and the plan is still under water.
-  for (const label of ["Backup money", "Avery’s week"]) await setAmount(page, label, "0");
+  for (const label of [CHOICE_LABELS.reserve, CHOICE_LABELS.flexibleCash]) await setAmount(page, label, "0");
   await expect(page.locator(".plan-commit--over")).toBeVisible();
   await page.getByRole("button", { name: "Check this plan" }).click();
   await page.getByRole("button", { name: /^Save it, .* still missing$/ }).click();
 
   // Naming the exact amount still missing is a real answer, and the run completes.
-  await expect(page.getByRole("heading", { name: "Two calls, then land the plan." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Two more calls to make." })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -1047,13 +1048,13 @@ studentTest("the opening plan can be closed by naming the row that takes the res
   // The button names the amount and the row, because three buttons reading "Put the rest
   // here" are not a choice anybody listening to the page can make.
   const rest = spendable - N.course.fullPrice - 300;
-  const intoWeek = page.getByRole("button", { name: `Put ${money(rest)} into Avery’s week` });
+  const intoWeek = page.getByRole("button", { name: `Put ${money(rest)} into ${CHOICE_LABELS.flexibleCash}` });
   await expect(intoWeek).toBeVisible();
   await noSeriousAxeViolations(page);
   await intoWeek.click();
 
   await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
-  await expect(page.getByRole("spinbutton", { name: "Avery’s week" })).toHaveValue(String(rest));
+  await expect(page.getByRole("spinbutton", { name: CHOICE_LABELS.flexibleCash })).toHaveValue(String(rest));
   // Nothing left to place, so the offer withdraws rather than sitting there doing nothing.
   await expect(page.getByRole("button", { name: /^Put \$/ })).toHaveCount(0);
   await page.getByRole("button", { name: "Save this version" }).click();
@@ -1216,7 +1217,7 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
       // Closed by naming the row that takes the rest, which is what makes the savings figure
       // evidence rather than arithmetic.
       await setAmount(student, "Sports-media course", String(N.course.fullPrice));
-      await student.getByRole("button", { name: /Put \$.* into Avery’s week/ }).click();
+      await student.getByRole("button", { name: new RegExp(`Put \\$.* into ${CHOICE_LABELS.flexibleCash}`) }).click();
       await student.getByRole("button", { name: "Save this version" }).click();
       await playSeasonWeeks(student);
       await passWeek5Calculation(student, String(week5TotalFor(plan)));

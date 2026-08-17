@@ -143,11 +143,11 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
             ? "The clinics paid, and Avery still made every session."
             // The bonus was already gone at this housing and this spend, so the fee is
             // money the plan would not otherwise have had.
-            : "The clinics paid. Avery was over the line with them or without them, so they cost nothing that was not already lost.",
+            : "The clinics paid. Avery ran out of week with them or without them, so they cost nothing that was not already lost.",
     },
     {
       id: "buying-time",
-      label: "Spending on Avery’s week",
+      label: "Paying for rides",
       taken: final.amounts.flexibleCash > 0,
       outcome: final.amounts.flexibleCash === 0
         ? "no_effect"
@@ -157,16 +157,16 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
             ? "no_effect"
             : "fell_short",
       detail: final.amounts.flexibleCash === 0
-        ? "Avery carried the whole week unaided."
+        ? "Nothing went on rides, so Avery took every bus and every long way round."
         : held && !withoutTimeMoney
-          ? "This is what saved the bonus. Without the hours you bought back, Avery would have gone over the line."
+          ? "This is what saved the bonus. Without the hours you bought back, Avery would have run out of week."
           : held
             ? "Avery would have made every session either way, so this money bought rest rather than the bonus."
-            : `It bought ${loadFor({ setupId: final.setupId, rehabActive: true, clinicsAccepted: final.includeOptionalWork, timeMoney: final.amounts.flexibleCash }, n).bought} hours back, which was not far enough to clear the line.`,
+            : `It bought ${loadFor({ setupId: final.setupId, rehabActive: true, clinicsAccepted: final.includeOptionalWork, timeMoney: final.amounts.flexibleCash }, n).bought} hours back, and Avery still did not have enough week left.`,
     },
     {
       id: "course-deposit",
-      label: "Reserving the course seat early",
+      label: final.depositTaken ? "Reserving the course seat early" : "Not reserving the course seat early",
       taken: final.depositTaken,
       outcome: final.depositTaken ? "paid_off" : "no_effect",
       detail: final.depositTaken

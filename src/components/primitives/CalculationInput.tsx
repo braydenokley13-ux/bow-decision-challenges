@@ -13,12 +13,18 @@ interface CalculationInputProps {
   onCorrect?: () => void;
   priorAttempts?: number | undefined;
   compact?: boolean;
+  /**
+   * Where the step around it already carries the same words, the label stays as the field's
+   * accessible name and stops being printed twice. A heading and a caption saying the same
+   * thing two lines apart is noise a student has to read before finding out it was nothing.
+   */
+  labelHidden?: boolean;
   scaffold?: string;
   onScaffold?: () => void;
   onShowAndContinue?: () => void;
 }
 
-export function CalculationInput({ label, prompt, terms, expected, onSubmit, onCorrect, priorAttempts = 0, compact = false, scaffold, onScaffold, onShowAndContinue }: CalculationInputProps) {
+export function CalculationInput({ label, prompt, terms, expected, onSubmit, onCorrect, priorAttempts = 0, compact = false, labelHidden = false, scaffold, onScaffold, onShowAndContinue }: CalculationInputProps) {
   const id = useId();
   const [raw, setRaw] = useState("");
   const [verdict, setVerdict] = useState<"idle" | "correct" | "low" | "high" | "invalid">("idle");
@@ -52,7 +58,7 @@ export function CalculationInput({ label, prompt, terms, expected, onSubmit, onC
 
   return (
     <div className={`calculation ${compact ? "calculation--compact" : ""}`}>
-      <span className="field-label">{label}</span>
+      {!labelHidden && <span className="field-label">{label}</span>}
       <p className="calculation__given" id={`${id}-prompt`}>{prompt}</p>
       {terms && <p className="terms">{terms}</p>}
       <div className="calculation__total">
