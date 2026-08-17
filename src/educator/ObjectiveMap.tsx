@@ -219,6 +219,7 @@ export function ObjectiveMap() {
                 <th scope="col">Demonstrated</th>
                 <th scope="col">Worlds</th>
                 <th scope="col">Last assessed</th>
+                <th scope="col">Next</th>
                 <th scope="col">Taught</th>
               </tr>
             </thead>
@@ -276,6 +277,14 @@ function TableRow({ row, classCode, onTaught }: {
       <td className="money">{demonstratedLabel(row)}</td>
       <td className="money">{row.worlds}</td>
       <td>{lastAssessedLabel(row)}</td>
+      {/* The map says where the class stands; the objective says what to do about it. A row
+          that has a result carries the way through, so "needs attention" is a link to a
+          lesson rather than a colour a teacher is left holding. */}
+      <td>
+        {isResultState(row.state) || row.state === "too-few-assessed"
+          ? <Link className="map-table__next" to={`/educator/objectives/${standard.frameworkId}/${standard.code}`}>What to teach next →</Link>
+          : <span className="map-table__none">—</span>}
+      </td>
       <td>
         {/* Per class, so it is meaningless without one — and it is a teacher's own record,
             never derived from anything a student did (§15.3).

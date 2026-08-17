@@ -144,23 +144,30 @@ for (const size of SIZES) {
     await submitDefense(page, "My plan still balances after Week 5. I kept the full $1,200 for the course and gave up my Saturdays to coach the clinics, which brought in $500.");
     await shoot("15-submitted");
 
-    // A second student, so the class views have a class in them.
-    for (const [seat, index] of [["21", 0], ["22", 1]] as const) {
+    // Four more students, so the class clears the denominator a class state needs and the
+    // results page can be captured as a teacher actually meets it. Three of them let the
+    // leftovers land on the course, which is the misconception the model exists to catch.
+    for (const [seat, index] of [["21", 0], ["22", 1], ["23", 2], ["24", 0]] as const) {
       const other: PlanContext = { setupId: SETUP_ORDER[index] };
       await gotoFreshChallenge(page);
       await enterChallenge(page, { classCode: created.code, seatCode: seat });
       await completeSetupStage(page, index);
       await completeWorkingCalcs(page);
-      await closeOpeningByNamingTheRest(page, other, "flexibleCash");
+      await closeOpeningByNamingTheRest(page, other, seat === "24" ? "flexibleCash" : "goal");
       await playSeasonWeeks(page, { deposit: index === 1 });
       await passWeek5Calculation(page, String(week5TotalFor(other)));
       await savePlan(page, "week5-first-response", { ...other, deposit: index === 1 });
       await decideOpportunity(page, { clinics: index === 0, countBonus: false });
       await savePlan(page, "final", { ...other, deposit: index === 1, clinics: index === 0, countCompletionFinal: false });
       await page.getByRole("button", { name: "Explain my plan" }).click();
-      await submitDefense(page, index === 0
-        ? "I kept the $1,200 for the course and took the $700 out of my backup money instead. It still balances, but I have nothing left if something else goes wrong."
-        : "I cut the course down to $500 so I could keep rides and rest. I would rather miss the course than miss practice and lose the $800 bonus.");
+      // Four different students wrote four different things. Two identical paragraphs in a
+      // spotlight would make the class's own work look like sample text.
+      await submitDefense(page, {
+        "21": "I kept the $1,200 for the course and took the $700 out of my backup money instead. It still balances, but I have nothing left if something else goes wrong.",
+        "22": "I cut the course down to $500 so I could keep rides and rest. I would rather miss the course than miss practice and lose the $800 bonus.",
+        "23": "I put whatever was left into the course at the end. It worked out to $900, so I think I can still pay for it if nothing else goes wrong.",
+        "24": "I decided the course money first and then split the rest. Week 5 cost me my backup money but the course was never at risk.",
+      }[seat]);
       await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible({ timeout: 15_000 });
     }
 
@@ -171,6 +178,21 @@ for (const size of SIZES) {
       data: { objectiveRef: { frameworkId: "nysed-pf-2026", code: "1.3" } },
     });
     expect(set.status(), await set.text()).toBe(201);
+    // A person reads the three written explanations. Without that nobody is assessed, and
+    // the results page would be captured in its "nothing to read yet" state — which is a
+    // real state, and not the one this artefact exists to show.
+    const room = await request.get(`http://127.0.0.1:4180/api/classes/${created.code}/submissions`, {
+      headers: { "X-BOW-Teacher-Key": created.teacherKey },
+    });
+    const roster = (await room.json()) as { submissions: { seatCode: string; sessionId: string }[] };
+    for (const entry of roster.submissions) {
+      const scored = await request.patch(`http://127.0.0.1:4180/api/classes/${created.code}/submissions/${entry.seatCode}`, {
+        headers: { "X-BOW-Teacher-Key": created.teacherKey },
+        data: { sessionId: entry.sessionId, reasoningPoints: 10, reasoningCriteria: { "C6.1": 2, "C6.2": 2, "C6.3": 2, "C6.4": 4 } },
+      });
+      expect(scored.status(), await scored.text()).toBe(200);
+    }
+
     // The objective pages read the classes this browser remembers, which is how a teacher
     // actually reaches them — so the class page is opened once first to record the key.
     await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}`);

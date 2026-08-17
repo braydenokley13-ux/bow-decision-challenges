@@ -25,6 +25,7 @@ import { rememberClass, rememberedClasses } from "./classMemory";
 import { useObjectiveEvidence } from "./useObjectiveEvidence";
 import type { ObjectiveClassResult } from "./objectiveResults";
 import { COMPETENCY_STATE_LABELS, OBJECTIVE_STATE_LABELS } from "./labels";
+import { TeachNext } from "./TeachNext";
 
 /**
  * The teacher's way in: find the objective, see what it would assess, set it, read it back.
@@ -238,6 +239,9 @@ function ClassResult({ entry, onThisObjective }: { entry: ObjectiveClassResult; 
           </tbody>
         </table>
       )}
+      {/* §18.1, in order: the number, then what the class could do, then the misconception,
+          then the action, then the students. Never any of them without the ones above. */}
+      <TeachNext entry={entry} teacherKey={rememberedClasses().find((known) => known.code === entry.record.code)?.teacherKey ?? ""} />
       <Link className="button button--quiet" to={`/educator/class/${entry.record.code}${keyQuery}`}>Open this class’s evidence</Link>
     </article>
   );

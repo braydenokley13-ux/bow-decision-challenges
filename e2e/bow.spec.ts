@@ -1272,6 +1272,9 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   await expect(page.getByText("Period 3 · Grade 7")).toBeVisible();
   await expect(page.getByText("3 turned in · 3 written explanations still to read.", { exact: false })).toBeVisible();
   await expect(page.getByText("Not yet assessed")).toBeVisible();
+  // Nobody is assessed, so there is nothing to teach next and the block is absent rather
+  // than present and empty.
+  await expect(page.locator(".next-lesson")).toHaveCount(0);
 
   // A person reads all three. Marks are recorded criterion by criterion, which is what lets
   // the explanation requirement stand on a judgement somebody actually made.
@@ -1302,6 +1305,19 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   // The skill 1.3 actually rests on leads the breakdown, and it is the one that moved.
   const planRow = page.locator(".objective-class tr").filter({ hasText: "gives savings a planned amount" });
   await expect(planRow).toContainText("3 demonstrated");
+
+  // §18: the same denominator governs the recommendation. Three students is below it, so
+  // BOW shows the counts it can stand behind and refuses to name a lesson — and refuses the
+  // misconception spotlight with it, because a spotlight without a recommendation is BOW
+  // pointing at children for a reason it declined to state.
+  await expect(page.locator(".next-lesson")).toHaveAttribute("data-state", "too-few-assessed");
+  await expect(page.getByText(/BOW does not recommend a lesson from fewer than 5/)).toBeVisible();
+  await expect(page.locator(".spotlight")).toHaveCount(0);
+  await expect(page.locator(".next-lesson__action")).toHaveCount(0);
+  // The counts it can stand behind are shown, with their denominator, and never as a share.
+  const gapRow = page.locator(".next-lesson__gaps tbody tr").first();
+  await expect(gapRow).toContainText("of 3");
+  await expect(page.locator(".next-lesson__gaps")).not.toContainText("%");
   await noSeriousAxeViolations(page);
   await noHorizontalOverflow(page);
 
