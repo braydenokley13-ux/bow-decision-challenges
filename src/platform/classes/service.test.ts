@@ -309,7 +309,7 @@ describe("a class holds the work it was set", () => {
     const bad = [
       { objectiveRef: { frameworkId: "nysed-pf-2026", code: "1.7" } },
       { objectiveRef: { frameworkId: "made-up-2030", code: "1.3" } },
-      { objectiveRef: BUDGET_OBJECTIVE, allowedWorldIds: ["fashion"] },
+      { objectiveRef: BUDGET_OBJECTIVE, allowedWorldIds: ["a-world-nobody-built"] },
       { objectiveRef: BUDGET_OBJECTIVE, allowedWorldIds: [] },
       { objectiveRef: BUDGET_OBJECTIVE, format: "essay" },
       { objectiveRef: BUDGET_OBJECTIVE, attemptOf: "assignment-nobody-has" },

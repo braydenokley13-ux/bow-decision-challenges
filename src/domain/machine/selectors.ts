@@ -1,8 +1,13 @@
 import { dollars } from "../core/money";
-import { SCENARIO_NUMBERS } from "../scenario/numbers";
+import { numbersFor } from "../scenario/registry";
 import { availableFor, balanceOf, exposureFor, lockedFor, readoutFor } from "../finance/formulas";
 import type { PlanAmounts, PlanMode, SnapshotInputs } from "../finance/types";
 import { EMPTY_AMOUNTS, type ChallengeState } from "./state";
+
+/** The economy this attempt is priced against. Read off the attempt, never imported. */
+function numbersOf(state: ChallengeState) {
+  return numbersFor(state.meta.worldId);
+}
 
 export function snapshotForMode(state: ChallengeState, mode: PlanMode): SnapshotInputs | null {
   if (!state.setupId) return null;
@@ -24,32 +29,32 @@ export function snapshotForMode(state: ChallengeState, mode: PlanMode): Snapshot
     setupId: state.setupId,
     week5Applied: mode === "week5-first-response" || mode === "final" || mode === "remaining-risk",
     depositTaken: state.depositTaken === true,
-    numbersVersion: SCENARIO_NUMBERS.version,
+    numbersVersion: numbersOf(state).version,
   };
 }
 
 export function modeReadout(state: ChallengeState, mode: PlanMode) {
   const input = snapshotForMode(state, mode);
-  return input ? readoutFor(input, SCENARIO_NUMBERS) : null;
+  return input ? readoutFor(input, numbersOf(state)) : null;
 }
 
 export function exposure(state: ChallengeState) {
   const input = snapshotForMode(state, "working");
-  return input ? exposureFor(input, SCENARIO_NUMBERS) : dollars(0);
+  return input ? exposureFor(input, numbersOf(state)) : dollars(0);
 }
 
 export function setupLockedAmount(state: ChallengeState) {
-  return state.setupId ? SCENARIO_NUMBERS.setupCosts[state.setupId] : dollars(0);
+  return state.setupId ? numbersOf(state).setupCosts[state.setupId] : dollars(0);
 }
 
 export function availableFutureMoney(state: ChallengeState, mode: PlanMode) {
   const input = snapshotForMode(state, mode);
-  return input ? dollars(availableFor(input, SCENARIO_NUMBERS) - lockedFor(input, SCENARIO_NUMBERS)) : dollars(0);
+  return input ? dollars(availableFor(input, numbersOf(state)) - lockedFor(input, numbersOf(state))) : dollars(0);
 }
 
 export function balance(state: ChallengeState, mode: PlanMode) {
   const input = snapshotForMode(state, mode);
-  return input ? balanceOf(input, SCENARIO_NUMBERS) : dollars(0);
+  return input ? balanceOf(input, numbersOf(state)) : dollars(0);
 }
 
 export function amountsFor(state: ChallengeState, mode: PlanMode): PlanAmounts {

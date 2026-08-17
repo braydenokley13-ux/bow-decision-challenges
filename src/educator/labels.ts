@@ -1,5 +1,5 @@
 import type { MasteryStatus, Trajectory } from "../domain/evidence/types";
-import type { CompetencyResultState } from "../domain/competency/types";
+import type { CompetencyResultState, SupportLevel } from "../domain/competency/types";
 import type { ObjectiveMapState, ObjectiveResultState } from "../domain/competency/objectiveState";
 import { labelsFor, type FrameworkId } from "../domain/standards";
 
@@ -97,3 +97,68 @@ export const MAP_STATE_ORDER: readonly ObjectiveMapState[] = [
   "needs-attention", "developing", "strong", "too-few-assessed",
   "partially-assessed", "assigned", "taught-not-assessed", "not-taught", "not-available",
 ];
+
+/**
+ * The rubric, in the words a teacher reads rather than as a bare digit.
+ *
+ * `null` is the one that matters. It is not a zero and it is not a failure — it is the run
+ * never having asked, and a page that printed it as "0" would be reporting a fact about a
+ * world's coverage as a fact about a child.
+ */
+export const LEVEL_LABELS: Record<0 | 2 | 3 | 4 | 5 | "null", string> = {
+  5: "Independently",
+  4: "Corrected it",
+  3: "After a hint",
+  2: "Partly",
+  0: "Not demonstrated",
+  null: "Never came up",
+};
+
+/** What was on screen when the student did it, said as the reason a level is capped. */
+export const SUPPORT_LABELS: Record<SupportLevel, string> = {
+  standard_access: "the tools every student has",
+  natural_consequence: "seeing what happened",
+  direct_scaffold: "a hint that named the problem",
+  answer_supplied: "the answer being supplied",
+};
+
+/**
+ * Teacher-facing names for the moments an evidence trail is built out of.
+ *
+ * The stage and event ids are the product's internal vocabulary. A trail printed in that
+ * vocabulary would be a log file with a heading on it, so every id a teacher can reach is
+ * named here, and anything unnamed falls back to its id rather than to a blank.
+ */
+export const MOMENT_LABELS: { stage: Record<string, string>; event: Record<string, string> } = {
+  stage: {
+    "role-contract": "The terms",
+    "setup-comparison": "Choosing where to live",
+    "working-plan": "The first plan",
+    "fallback-version": "The plan without the bonus",
+    "season-weeks": "Weeks 1–4",
+    "week5-event": "Week 5 · the news",
+    "first-response": "Week 5 · first response",
+    "opportunity-final-repair": "Week 5 · the two calls",
+    "remaining-risk-preview": "Week 5 · the last check",
+    "week8-resolution": "Week 8",
+    defense: "Explaining the plan",
+    submitted: "Turned in",
+  },
+  event: {
+    CALCULATION_SUBMITTED: "Worked out a total",
+    SETUP_RANKED: "Ordered the places by cost",
+    SETUP_SELECTED: "Chose a place to live",
+    COURSE_DEPOSIT_DECIDED: "Decided about the course seat",
+    INCOME_SOURCE_TOGGLED: "Decided about a bonus",
+    PLAN_SAVE_REQUESTED: "Checked the plan",
+    PLAN_SAVED: "Saved the plan",
+    PLAN_REMAINDER_ASSIGNED: "Named the row that takes the rest",
+    LOCKED_MOVE_ATTEMPTED: "Tried to move committed money",
+    GAP_TILE_TOGGLED: "Counted up what Week 5 cost",
+    OPTIONAL_WORK_DECIDED: "Decided about the Saturday clinics",
+    COMPLETION_INCOME_DECIDED: "Decided about the attendance bonus",
+    SCAFFOLD_OPENED: "Opened a hint",
+    SHOW_AND_CONTINUE_USED: "Was shown the answer",
+    DEFENSE_SUBMITTED: "Wrote the explanation",
+  },
+};

@@ -75,7 +75,7 @@ export function CalculationInput({ label, prompt, terms, expected, onSubmit, onC
             onChange={(event) => { setRaw(event.target.value); setVerdict("idle"); }}
             onKeyDown={(event) => { if (event.key === "Enter") submit(); }}
           />
-          <Button type="button" variant="secondary" onClick={submit}>Check</Button>
+          <Button type="button" onClick={submit}>Check</Button>
         </div>
       </div>
       <p id={`${id}-feedback`} className={`inline-feedback inline-feedback--${verdict}`} aria-live="polite">

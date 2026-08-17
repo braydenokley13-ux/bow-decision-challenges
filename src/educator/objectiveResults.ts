@@ -1,10 +1,12 @@
 import { observeCompetencies } from "../domain/competency/observe";
 import { objectiveResultFrom, studentOutcomeFor, type ObjectiveResult, type StudentObjectiveOutcome } from "../domain/competency/objectiveState";
-import type { CompetencyId, CompetencyResult, CompetencyResultState } from "../domain/competency/types";
-import { observeBasketballFromLog } from "../domain/scenario/worlds/basketball/observer";
-import { scoredExplanationsFrom } from "../domain/scenario/worlds/basketball/writtenDefense";
+import { teachNextFrom, type TeachNextReading } from "../domain/competency/teachNext";
+import type { CompetencyId, CompetencyResult, CompetencyResultState, EvidenceRequirementObservation } from "../domain/competency/types";
+import { spotlightFor, type MisconceptionSpotlight, type SeatResults } from "./misconceptions";
+import { contractFor } from "../domain/scenario/contracts";
+import { DEFAULT_WORLD_ID } from "../domain/scenario/registry";
 import { demandFor, type StandardRef } from "../domain/standards";
-import type { Assignment, AttributedSubmission, ClassRecord } from "../platform/classes/types";
+import type { Assignment, AttributedSubmission, ClassRecord, SubmissionRecord } from "../platform/classes/types";
 
 /**
  * One class's evidence, against one objective a teacher assigned.
@@ -40,6 +42,18 @@ export interface ObjectiveClassResult {
   result: ObjectiveResult;
   competencies: readonly CompetencyBreakdownRow[];
   lastSubmittedAt: number | null;
+  /**
+   * What to teach next, from the same evidence and the same denominator (§18.2). It refuses
+   * a recommendation wherever the result refuses a state, so the two can never disagree
+   * about whether this class has been assessed.
+   */
+  teachNext: TeachNextReading;
+  /**
+   * The class's own work behind the gap being recommended (§18.3). `null` wherever there is
+   * no recommendation — a spotlight without a teach-next card would be BOW pointing at
+   * students for a reason it declined to state.
+   */
+  spotlight: MisconceptionSpotlight | null;
 }
 
 const EMPTY_COUNTS: Record<CompetencyResultState, number> = {
@@ -52,16 +66,31 @@ const EMPTY_COUNTS: Record<CompetencyResultState, number> = {
 };
 
 /**
+ * Which world produced this submission, read off the student's own events.
+ *
+ * The log is the record. A submission has no top-level world because the events carry one
+ * each, stamped when they were written — so this cannot disagree with the evidence the way a
+ * second, separately-stored field could.
+ */
+export function worldOfSubmission(submission: SubmissionRecord) {
+  return submission.log[0]?.worldId ?? DEFAULT_WORLD_ID;
+}
+
+/**
  * One student's competency results, from the log they turned in.
  *
- * The world is named here because there is one. Checkpoint 8 replaces this line with the
- * world contract's own observer lookup; until a second world exists, pretending to dispatch
- * would be a layer with one case in it.
+ * Dispatched through the world's own contract rather than importing one world's observer.
+ * A world with no contract produces nothing at all — not a fallback to somebody else's
+ * rules, which would publish a judgement about a game the student never played.
  */
+export function competencyObservationsFor(submission: SubmissionRecord): readonly EvidenceRequirementObservation[] {
+  const contract = contractFor(worldOfSubmission(submission));
+  if (!contract) return [];
+  return contract.observe(submission.log, { reasoningCriteria: submission.reasoningCriteria });
+}
+
 export function competencyResultsFor(submission: AttributedSubmission): readonly CompetencyResult[] {
-  const scored = scoredExplanationsFrom(submission.reasoningCriteria);
-  const observations = observeBasketballFromLog(submission.log, scored ? { scoredExplanations: scored } : {});
-  return observeCompetencies(observations, { submitted: true });
+  return observeCompetencies(competencyObservationsFor(submission), { submitted: true });
 }
 
 /**
@@ -86,16 +115,25 @@ export function objectiveResultForClass(input: {
   const demand = demandFor(input.ref);
   const outcomes: StudentObjectiveOutcome[] = [];
   const counts = new Map<CompetencyId, Record<CompetencyResultState, number>>();
+  const perStudent: (readonly CompetencyResult[])[] = [];
+  // Only seats with a usable result reach the spotlight, for the same reason only they
+  // reach the denominator: a student nobody assessed is an absence, not a data point.
+  const assessedSeats: SeatResults[] = [];
 
   for (const submission of mine) {
     const results = competencyResultsFor(submission);
-    outcomes.push(studentOutcomeFor(results, demand));
+    const outcome = studentOutcomeFor(results, demand);
+    outcomes.push(outcome);
+    perStudent.push(results);
+    if (outcome.assessed) assessedSeats.push({ seatCode: submission.seatCode, submission, results });
     for (const result of results) {
       const row = counts.get(result.competencyId) ?? { ...EMPTY_COUNTS };
       row[result.state] += 1;
       counts.set(result.competencyId, row);
     }
   }
+
+  const teachNext = teachNextFrom(perStudent, demand);
 
   // Ordered by the demand rather than by whichever competency happened to be observed
   // first, so the skill the objective actually rests on is the row a teacher reads first.
@@ -111,5 +149,7 @@ export function objectiveResultForClass(input: {
       return row ? [{ competencyId, counts: row }] : [];
     }),
     lastSubmittedAt: mine.reduce<number | null>((latest, submission) => Math.max(latest ?? 0, submission.submittedAt), null),
+    teachNext,
+    spotlight: teachNext.top ? spotlightFor(teachNext.top.evidenceRequirementId, assessedSeats) : null,
   };
 }

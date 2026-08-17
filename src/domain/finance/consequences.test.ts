@@ -52,7 +52,7 @@ describe("what each row currently buys", () => {
     for (const mode of ["fallback", "remaining-risk"] as const) {
       const noBonus = planConsequences(inputs(mode, { includeCompletion: true, amounts: { goal: dollars(0), reserve: dollars(200), flexibleCash: dollars(0) } }), N);
       expect(noBonus.reserve, mode).not.toContain(String(N.completionIncome));
-      expect(noBonus.reserve, mode).toMatch(/put by/);
+      expect(noBonus.reserve, mode).toMatch(/kept aside/);
     }
   });
 

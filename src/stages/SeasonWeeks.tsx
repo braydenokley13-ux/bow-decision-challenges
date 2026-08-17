@@ -117,7 +117,7 @@ export function SeasonWeeks() {
                     <span>{week.hoursThisWeek}h on the road</span>
                   </p>
                   <blockquote className="post__voice">
-                    <span className="post__who" aria-hidden="true">{BASKETBALL_SCENARIO.offer.jersey}</span>
+                    <span className="post__who" aria-hidden="true">#{BASKETBALL_SCENARIO.offer.jersey}</span>
             <cite>Avery</cite>
                     <p>{entry.voice[setupId]}</p>
                   </blockquote>

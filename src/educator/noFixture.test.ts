@@ -36,6 +36,13 @@ const REAL_CLASS_MODULES = [
   "src/educator/ObjectivePages.tsx",
   "src/educator/objectiveResults.ts",
   "src/educator/useObjectiveEvidence.ts",
+  // Teach-next and the misconception spotlight. A fixture reaching either would put an
+  // invented wrong idea, and invented children showing it, on a real teacher's screen.
+  "src/educator/TeachNext.tsx",
+  "src/educator/misconceptions.ts",
+  // One student's evidence, and the place a teacher disagrees with it. A fixture reaching
+  // either would put a conclusion under a real child's seat that no child produced.
+  "src/educator/EvidenceTrailPanel.tsx",
   // The Objective Map and everything it reads. A fixture here would put invented
   // coverage against a real framework, which is the one claim a district checks.
   "src/educator/ObjectiveMap.tsx",

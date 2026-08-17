@@ -15,8 +15,14 @@ p { color: var(--ink-2); }
 /* A primary action that is only waiting for an input keeps its outline. Flat grey on grey
    reads as hardware that has stopped working, and a student decides the page is broken
    before they decide it is their turn. */
-.button[aria-disabled="true"] { cursor: not-allowed; color: var(--ink-3); background: var(--surface-sunken); border-color: var(--border-default); transform: none; }
-.button--primary[aria-disabled="true"] { color: var(--bow-brand-strong); background: var(--fin-adjustable-soft); border-color: var(--bow-brand); }
+.button[aria-disabled="true"], .button[aria-disabled="true"]:hover { cursor: not-allowed; color: var(--ink-3); background: var(--surface-sunken); border-color: var(--border-default); transform: none; }
+
+/* The hover state has to be refused explicitly. `.button--primary:hover` and
+   `.button--primary[aria-disabled="true"]` carry the same specificity, so the later rule won
+   the background while the earlier one still owned the colour — and a waiting primary under
+   a cursor painted its own label in its own background, which reads as a button with no
+   text on it at all. */
+.button--primary[aria-disabled="true"], .button--primary[aria-disabled="true"]:hover { color: var(--bow-brand-strong); background: var(--fin-adjustable-soft); border-color: var(--bow-brand); }
 .button--primary { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); }
 .button--primary:hover { background: var(--bow-brand-strong); border-color: var(--bow-brand-strong); }
 .button--secondary { color: var(--ink-1); background: var(--surface-raised); }
@@ -115,36 +121,30 @@ p { color: var(--ink-2); }
 .working-setup { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); margin-bottom: var(--s-6); }
 .board-gate { max-width: var(--measure); margin: 0; padding: var(--s-5) var(--s-6); color: var(--ink-2); background: var(--surface-sunken); border: 1px dashed var(--border-strong); font: var(--t-body-lg); }
 
-.staged-reveal { display: grid; gap: 0; animation: staged-in var(--dur-stage) var(--ease-exit) both; }
-
-@keyframes staged-in { from { transform: translateY(12px); } to { transform: none; } }
-
 /* ---------------------------------------------------------------------------
-   The plan itself. One document, read down: what there is, what to protect,
-   where the rest goes, and the bar that says whether it holds.
+   The plan itself: three amounts, what each currently buys, and the bar that
+   says whether it holds. It carries no frame of its own — it is the answer to
+   the question in the headline above it, not a document inside a document.
    --------------------------------------------------------------------------- */
-.plan-board { margin-top: var(--s-5); background: var(--surface); border: 1px solid var(--border-ink); box-shadow: var(--shadow-card); }
-.plan-board__header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3) var(--s-5); padding: var(--s-3) var(--s-6); background: var(--surface-raised); border-bottom: 1px solid var(--border-default); }
+.plan-board { display: grid; align-content: start; gap: var(--s-5); }
+.plan-board__lead { max-width: var(--measure); margin: 0; color: var(--ink-2); font: var(--t-body-lg); }
 .exposure-summary { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); margin: var(--s-4) 0 0; padding: var(--s-3) var(--s-4); background: var(--surface-sunken); }
 .exposure-summary span { color: var(--ink-2); font: var(--t-ui); }
 .exposure-summary strong { font: var(--m-sm); font-feature-settings: var(--num); }
-.plan-help { display: flex; align-items: start; justify-content: space-between; gap: var(--s-4); margin: 0 var(--s-6) var(--s-5); padding: var(--s-4); background: var(--fin-adjustable-soft); border: 1px solid var(--fin-adjustable); }
+.plan-help { display: flex; align-items: start; justify-content: space-between; gap: var(--s-4); margin: 0; padding: var(--s-4); background: var(--fin-adjustable-soft); border-left: 4px solid var(--fin-adjustable); }
 .plan-help > div { display: grid; gap: var(--s-2); font: var(--t-ui); }
 .plan-help ol { margin: 0; padding-left: var(--s-5); color: var(--ink-2); }
 .plan-help li + li { margin-top: var(--s-2); }
 
-/* Step 6, and the only bar on the screen: what the plan is still missing, and the one
-   button that commits it. */
-.plan-commit { min-height: var(--actionbar-h); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-5) var(--s-6); border-top: 3px solid; }
+/* Where the plan is committed. The rail carries the live figure; this bar says what
+   it means, in the same words, beside the button that acts on it. */
+.plan-commit { min-height: var(--actionbar-h); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-5) var(--s-6); border-left: 4px solid; }
 .plan-commit--balanced { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); border-color: var(--fin-balanced); }
 .plan-commit--over { color: var(--fin-over-ink); background: var(--fin-over-soft); border-color: var(--fin-over); }
 .plan-commit--unassigned { color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); }
-.plan-commit__read { margin: 0; color: inherit; font: var(--t-ui); }
-.plan-commit__state { display: grid; align-items: baseline; gap: var(--s-1) var(--s-3); grid-template-columns: auto minmax(0, 1fr); }
-.plan-commit__state > .stamp { grid-column: 1 / -1; color: inherit; opacity: 0.8; }
-.plan-commit__state span { font: var(--t-title3); font-weight: 500; }
-.plan-commit__state strong { font: var(--m-hero); font-feature-settings: var(--num); letter-spacing: var(--display-tracking); transition: color var(--dur-state) var(--ease-standard); }
-.plan-commit__actions { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.plan-commit__read { margin: 0; color: inherit; font: var(--t-title2); }
+.plan-commit__figure { font-feature-settings: var(--num); }
+.plan-commit__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
 
 /* Plan checks and Week 5 */
 
@@ -199,6 +199,10 @@ p { color: var(--ink-2); }
 .binary-choice { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
 .binary-choice button { min-height: 52px; padding: var(--s-2) var(--s-3); background: var(--surface-raised); border: 1.5px solid var(--border-ink); cursor: pointer; font: var(--t-ui); }
 .binary-choice button[aria-pressed="true"] { color: var(--ink-invert); background: var(--ink-1); }
+
+/* The answer that is standing carries a tick as well as a fill. Weight and colour alone
+   left a reader unable to say whether a choice had been made or merely styled. */
+.binary-choice button[aria-pressed="true"]::before { content: "\2713"; margin-right: var(--s-2); font-weight: 700; }
 .decision-note { margin: var(--s-3) 0 0; color: var(--ink-3); font: var(--t-micro); }
 
 /* Educator shell and guide */
@@ -438,7 +442,6 @@ p { color: var(--ink-2); }
 @media (max-width: 1100px) {
   .season-strip { gap: var(--s-3); }
   .setup-grid { gap: var(--s-3); }
-  .plan-board__body { grid-template-columns: 1fr; }
   .alignment-grid, .brief-answers dl { grid-template-columns: repeat(2, 1fr); }
   .process-line, .launch-guide ol { grid-template-columns: repeat(3, 1fr); }
   .concept-matrix tbody th { width: 220px; }
@@ -446,13 +449,12 @@ p { color: var(--ink-2); }
 }
 
 @media (max-height: 650px) and (min-width: 900px) {
+  .plan-rail { top: calc(58px + var(--s-4)); }
   .challenge-topbar { height: 58px; }
   .stage-main { padding-top: var(--s-5); }
   .stage-heading { margin-bottom: var(--s-4); }
   .stage-heading h1 { font-size: 2rem; }
   .calculation--compact { padding: var(--s-3); }
-  .plan-board__header { min-height: 58px; }
-  .plan-board__body { padding-top: var(--s-3); padding-bottom: var(--s-3); }
   .choice-row { padding: var(--s-3) var(--s-4); }
 }
 
@@ -481,6 +483,10 @@ p { color: var(--ink-2); }
   .trajectory-strip { grid-template-columns: 1fr 1fr; }
   .route-grid { grid-template-columns: 1fr; }
   .concept-matrix { display: block; overflow-x: auto; }
+  .judgement { grid-template-columns: minmax(0, 1fr); }
+  .judgement__verdicts { justify-items: start; }
+  .judgement__machine, .judgement__override { justify-items: start; text-align: left; }
+  .trail > li { grid-template-columns: minmax(0, 1fr); }
   .educator-topbar { grid-template-columns: 1fr auto; padding: var(--s-3); }
   .educator-topbar nav { grid-column: 1 / -1; flex-wrap: wrap; justify-content: start; }
   .demo-pill { grid-column: 2; grid-row: 1; }
@@ -526,6 +532,132 @@ p { color: var(--ink-2); }
    A real class. Every number on these surfaces is derived from submitted work,
    and the empty state is a first-class state rather than a blank page.
    --------------------------------------------------------------------------- */
+
+
+/* ---------------------------------------------------------------------------
+   Results — "what should I teach next?" (§18).
+
+   Read in one fixed order and drawn as one block, because the order is the
+   argument: the number, what the class could do, the wrong idea with the
+   class's own work under it, the lesson, and the students. A layout that let a
+   teacher meet the recommendation first would let BOW skip its own reasoning.
+   --------------------------------------------------------------------------- */
+.map-table__next { white-space: nowrap; font: var(--t-sm); }
+.map-table__none { color: var(--ink-3); }
+.next-lesson { display: grid; gap: var(--s-5); margin-top: var(--s-6); padding-top: var(--s-5); border-top: 2px solid var(--ink-1); }
+.next-lesson > .eyebrow { margin: 0; }
+
+/* The two refusals. They are the same weight as a recommendation on purpose: "not enough
+   students yet" and "nothing stands out" are answers, not empty states. */
+.next-lesson__refusal { max-width: var(--measure); margin: 0; padding: var(--s-4) var(--s-5); color: var(--ink-1); background: var(--surface-sunken); border-left: 4px solid var(--border-strong); font: var(--t-body-lg); }
+.next-lesson__gaps th small { display: block; margin-top: 2px; color: var(--ink-3); font: var(--t-micro); font-weight: 400; }
+.next-lesson__gaps td { font: var(--m-xs); font-feature-settings: var(--num); white-space: nowrap; }
+.next-lesson__gaps td small { display: block; margin-top: 2px; color: var(--ink-3); font: var(--t-micro); font-weight: 500; }
+
+/* The misconception, and the class's own work under it. */
+.spotlight { display: grid; gap: var(--s-3); padding: var(--s-5); background: var(--fin-conditional-soft); border-left: 4px solid var(--fin-conditional-stripe); }
+.spotlight > .eyebrow { margin: 0; color: var(--fin-conditional-ink); }
+.spotlight h4 { margin: 0; color: var(--fin-conditional-ink); font: var(--t-title1); }
+.spotlight__rule { margin: 0; max-width: var(--measure); color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
+.spotlight .field-label { margin: var(--s-3) 0 0; }
+.spotlight__work { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.spotlight__work li { padding: var(--s-4); background: var(--surface-raised); border: 1px solid var(--border-default); }
+.spotlight__work blockquote { margin: 0; color: var(--ink-1); font: var(--t-body); }
+.spotlight__work cite { display: block; margin-top: var(--s-3); color: var(--ink-3); font: var(--t-micro); font-style: normal; }
+.spotlight__none { margin: 0; color: var(--ink-2); font: var(--t-ui); }
+
+/* The line that keeps an absence out of the finding. */
+.spotlight__absence { margin: 0; padding: var(--s-3) var(--s-4); color: var(--ink-2); background: var(--surface); border: 1px dashed var(--border-strong); font: var(--t-sm); }
+.spotlight__absence strong { color: var(--ink-1); }
+
+.next-lesson__action { display: grid; gap: var(--s-3); padding: var(--s-5); color: var(--ink-invert); background: var(--bow-brand-strong); }
+.next-lesson__action > .eyebrow { margin: 0; color: var(--bow-brand-ink-muted); }
+.next-lesson__action h4 { margin: 0; color: var(--ink-invert); font: var(--t-title1); }
+.next-lesson__focus { margin: 0; max-width: var(--measure); color: var(--bow-brand-ink-muted); font: var(--t-body-lg); }
+.next-lesson__moves { display: grid; gap: var(--s-2); margin: 0; padding-left: var(--s-6); color: var(--bow-brand-ink-muted); font: var(--t-ui); font-weight: 400; }
+.next-lesson__minutes { margin: 0; color: var(--bow-brand-ink-muted); font: var(--t-micro); }
+.next-lesson__why { margin: var(--s-2) 0 0; padding-top: var(--s-3); border-top: 1px solid rgb(255 255 255 / 22%); color: var(--ink-invert); font: var(--t-ui); font-weight: 400; }
+.next-lesson__students ul { display: flex; flex-wrap: wrap; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.next-lesson__students li { display: grid; gap: 2px; padding: var(--s-3) var(--s-4); background: var(--surface-raised); border: 1px solid var(--border-default); font: var(--t-ui); }
+.next-lesson__students small { color: var(--ink-3); font: var(--t-micro); }
+.next-lesson__working summary { padding: var(--s-3) 0; color: var(--ink-2); cursor: pointer; font: var(--t-sm); }
+.next-lesson__working[open] summary { margin-bottom: var(--s-3); }
+
+/* ---------------------------------------------------------------------------
+   §19 — one student, and the chain a teacher can follow.
+
+   Four tabs, because the chain has four things in it a teacher does; and one
+   row per judgement, because a conclusion whose evidence is a screen away is a
+   conclusion that gets taken on trust or not at all.
+   --------------------------------------------------------------------------- */
+.student-tabs { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: var(--s-6) 0 var(--s-5); border-bottom: 2px solid var(--border-default); }
+.student-tabs button { min-height: var(--tap); padding: 0 var(--s-5); color: var(--ink-2); background: transparent; border: 0; border-bottom: 3px solid transparent; margin-bottom: -2px; cursor: pointer; font: var(--t-ui); font-weight: 700; }
+.student-tabs button:hover { color: var(--ink-1); }
+.student-tabs button[aria-selected="true"] { color: var(--ink-1); border-bottom-color: var(--bow-brand); }
+
+.judgement-group + .judgement-group { margin-top: var(--s-6); }
+.judgement-group h3 { max-width: var(--measure); margin: 0 0 var(--s-4); font: var(--t-title2); }
+.judgement-list { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.judgement { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-3) var(--s-5); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-left: 4px solid var(--border-strong); }
+.judgement[data-level="5"], .judgement[data-level="4"] { border-left-color: var(--fin-balanced); }
+.judgement[data-level="3"], .judgement[data-level="2"] { border-left-color: var(--fin-conditional); }
+.judgement[data-level="0"] { border-left-color: var(--fin-over); }
+.judgement[data-level="none"] { border-left-style: dashed; }
+.judgement__say b { display: block; font: var(--t-title3); }
+.judgement__rule { display: block; margin-top: 2px; color: var(--ink-3); font: var(--t-micro); }
+.judgement__reason { margin: var(--s-3) 0 0; max-width: var(--measure); color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
+
+/* Whose doing the level is. "They needed a hint" and "they could not do it" are different
+   sentences and the rubric is the only thing that can tell them apart. */
+.judgement__cap { margin: var(--s-2) 0 0; padding: var(--s-2) var(--s-3); color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); font: var(--t-micro); }
+.judgement__verdicts { display: grid; gap: var(--s-2); align-content: start; justify-items: end; }
+.judgement__machine, .judgement__override { display: grid; gap: 2px; justify-items: end; margin: 0; text-align: right; }
+.judgement__machine span, .judgement__override span { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.judgement__machine strong { font: var(--m-xs); }
+.judgement__override strong { color: var(--bow-brand-strong); font: var(--m-xs); }
+.judgement__history { grid-column: 1 / -1; display: grid; gap: var(--s-2); margin: 0; padding: var(--s-3) var(--s-4); background: var(--surface-sunken); list-style: none; }
+.judgement__history li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: var(--s-3); font: var(--t-sm); }
+.judgement__history q { color: var(--ink-2); }
+.judgement__history time { color: var(--ink-3); font: var(--t-micro); }
+.judgement__act { grid-column: 1 / -1; display: grid; gap: var(--s-2); }
+.judgement__saved { color: var(--fin-balanced-ink); font: var(--t-micro); }
+.override-form { display: grid; gap: var(--s-4); padding: var(--s-4); background: var(--surface-raised); border: 1px solid var(--border-ink); }
+.override-form fieldset { margin: 0; padding: 0; border: 0; }
+.segmented--wide { flex-wrap: wrap; }
+.segmented--wide button { flex: 1 1 auto; min-width: 9ch; padding: 0 var(--s-3); }
+.override-form legend { padding: 0 0 var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
+.override-form label { display: grid; gap: var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
+.override-form textarea { padding: var(--s-3); color: var(--ink-1); background: var(--surface); border: 1.5px solid var(--border-ink); font: var(--t-body); }
+.override-form__act { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--s-3); }
+.override-form__note { margin: 0; color: var(--ink-3); font: var(--t-micro); }
+
+/* The timeline. One row per moment in the log, and every judgement sits under the moment
+   that settled it — which is the whole of "a teacher can see what BOW saw". */
+.trail { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.trail > li { display: grid; grid-template-columns: minmax(180px, 220px) minmax(0, 1fr); gap: var(--s-4); padding: var(--s-4) 0; border-top: 1px solid var(--border-subtle); }
+.trail__when { display: grid; gap: 2px; align-content: start; }
+.trail__when b { font: var(--t-title3); }
+.trail__when span { color: var(--ink-2); font: var(--t-sm); }
+.trail__when code { color: var(--ink-3); font: var(--t-micro); font-family: var(--font-mono); }
+.trail__judgements { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.trail__judgements li { display: grid; gap: 2px; padding-left: var(--s-4); border-left: 3px solid var(--border-default); }
+.trail__judgements li[data-superseded="true"] { border-left-style: dotted; opacity: 0.75; }
+.trail__judgements b { font: var(--t-ui); }
+.trail__judgements span { color: var(--ink-2); font: var(--t-sm); }
+.trail__level { font-weight: 700; }
+.trail__judgements em { color: var(--ink-3); font: var(--t-micro); font-style: normal; }
+.trail__absent { margin-top: var(--s-5); padding: var(--s-4); background: var(--surface-sunken); border: 1px dashed var(--border-strong); }
+.trail__absent ul { display: grid; gap: var(--s-2); margin: 0 0 var(--s-3); padding: 0; list-style: none; }
+.trail__absent li { display: grid; gap: 2px; font: var(--t-sm); }
+.trail__absent p:last-child { margin: 0; color: var(--ink-2); font: var(--t-micro); }
+
+.student-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s-6); margin-bottom: var(--s-5); }
+.student-summary__list { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.student-summary__list li { padding-left: var(--s-5); position: relative; font: var(--t-ui); }
+.student-summary__list li::before { position: absolute; left: 0; font-weight: 700; }
+.student-summary__list[data-tone="good"] li::before { content: "\2713"; color: var(--fin-balanced-ink); }
+.student-summary__list[data-tone="supported"] li::before { content: "\2713"; color: var(--fin-conditional-ink); }
+.student-summary__list[data-tone="gap"] li::before { content: "\2717"; color: var(--fin-over-ink); }
 
 .class-state { margin: var(--s-6) 0; color: var(--ink-3); font: var(--t-body-lg); }
 

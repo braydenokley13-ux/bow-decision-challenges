@@ -1,5 +1,5 @@
 import type { ReasoningScores } from "../../domain/blueprint/reasoning";
-import type { CompetencyId } from "../../domain/competency/types";
+import type { CompetencyId, EvidenceRequirementId, RubricLevel } from "../../domain/competency/types";
 import type { WorldId } from "../../domain/core/ids";
 import type { EvidenceEvent } from "../../domain/evidence/types";
 import type { StandardRef } from "../../domain/standards/types";
@@ -97,6 +97,26 @@ export interface Assignment {
   attemptOf?: string;
 }
 
+/**
+ * A teacher disagreeing with one machine judgement, on the record (§19.4).
+ *
+ * Stored **alongside** the judgement it disagrees with, never in place of it. Both are kept
+ * and both are shown, for two reasons that are not the same: a teacher has to be able to see
+ * what BOW saw before deciding it was wrong, and how often teachers overrule a rule is one
+ * of the few signals that tells us whether the rule is any good (§23.3).
+ *
+ * The note is required. An override with no reason is a number that changed and nothing
+ * anybody can learn from — including the person who wrote it, three months later.
+ */
+export interface TeacherOverride {
+  evidenceRequirementId: EvidenceRequirementId;
+  /** What the teacher says it is. `null` where they say the run never showed it at all. */
+  level: RubricLevel | null;
+  /** Why. Never optional, never blank. */
+  note: string;
+  at: number;
+}
+
 export interface SubmissionRecord {
   classCode: string;
   seatCode: string;
@@ -123,6 +143,14 @@ export interface SubmissionRecord {
    * derives a level when it is missing.
    */
   reasoningCriteria?: ReasoningScores;
+  /**
+   * Every override a teacher has recorded on this attempt, oldest first.
+   *
+   * Append-only. Changing your mind writes a second entry rather than editing the first, so
+   * the record reads as a history a person can follow rather than as a single number whose
+   * provenance has been overwritten.
+   */
+  overrides?: readonly TeacherOverride[];
   log: EvidenceEvent[];
 }
 

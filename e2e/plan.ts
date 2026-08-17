@@ -119,6 +119,40 @@ export async function fillPlanToBalance(page: Page, mode: PlanMode, context: Pla
 }
 
 /**
+ * Closes the opening plan the way the board asks for it: two rows set by hand, and the
+ * third named as the one that takes what is left.
+ *
+ * That press is the one statement this world records about savings, so a suite that only
+ * ever typed three exact numbers produced runs whose savings requirement was never observed
+ * — which is a true reading of those runs and a useless one for anything downstream.
+ * `leftoversInto` is which row is named: the goal row is the "savings is whatever is left"
+ * behaviour, and the time row is a deliberate figure set before it.
+ */
+export async function closeOpeningByNamingTheRest(page: Page, context: PlanContext, leftoversInto: "goal" | "flexibleCash") {
+  const spendable = spendableFor("working", context);
+  const step = N.openingIncrement;
+  const cap = Number(N.course.fullPrice);
+  const down = (value: number) => Math.max(0, Math.floor(value / step) * step);
+  // What the named row is left holding. The course row is capped at what the course costs,
+  // so the amount it can be handed has to fit inside that or the one press cannot close the
+  // plan at all.
+  const rest = leftoversInto === "goal" ? Math.min(cap, down(spendable / 3)) : down(spendable / 3);
+  const others = spendable - rest;
+  if (leftoversInto === "goal") {
+    const reserve = down(others / 2);
+    await setAmount(page, CHOICE_LABELS.reserve, reserve);
+    await setAmount(page, CHOICE_LABELS.flexibleCash, others - reserve);
+  } else {
+    const goal = Math.min(cap, down(others / 2));
+    await setAmount(page, CHOICE_LABELS.goal, goal);
+    await setAmount(page, CHOICE_LABELS.reserve, others - goal);
+  }
+  const named = leftoversInto === "goal" ? CHOICE_LABELS.goal : CHOICE_LABELS.flexibleCash;
+  await page.getByRole("button", { name: `Put ${money(rest)} into ${named}` }).click();
+  await page.getByRole("button", { name: SAVE_LABEL.working }).click();
+}
+
+/**
  * Fills the fallback board so a known amount is still missing, which is what the "save it
  * anyway and say so" path is for.
  */

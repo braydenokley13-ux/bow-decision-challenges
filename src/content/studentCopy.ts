@@ -25,35 +25,52 @@ export const STUDENT_COPY = {
   },
 
   /**
-   * The planning screen, as six things that happen in order. The step names are the whole
-   * mental model, so they are short, they are verbs, and they never use a word a student
-   * would have to be taught first.
+   * The planning screen, as four questions asked one at a time.
+   *
+   * It used to be six numbered steps stacked down a single page nearly three thousand
+   * pixels tall: a student met every question in the challenge at once, before they had
+   * answered any of them. The questions have not changed and neither has the arithmetic.
+   * What changed is that only one of them is ever on screen, and Avery's money is beside
+   * all four of them so the answer to "how much do I have" is never more than a glance.
    */
   plan: {
     title: "Build Avery’s plan.",
-    deck: "Six steps. Take them in order and the plan builds itself.",
+    deck: "Four questions, one at a time. Avery’s money stays beside you the whole way.",
+    /** What the rail calls each question, in order. Short enough to read at a glance. */
+    map: ["Money coming in", "The two bonuses", "Money already owed", "What Avery does with the rest"],
     steps: {
       countOn: {
         name: "What Avery can count on",
+        /* The headline. Set in caps, so it has to hold one line at a laptop width — a
+           two-line question in caps stops being a voice and becomes a wall. */
+        title: "What can Avery count on?",
         ask: "How much money will Avery definitely have?",
         why: "This money arrives whatever happens on the court.",
+        settled: "You worked this out.",
+        next: "Next — the two bonuses",
       },
       bonuses: {
         name: "Bonuses that might happen",
+        title: "Which bonuses go in the plan?",
         ask: "Plan as if Avery gets this?",
         why: "Say yes and the money is in the plan — and the plan breaks if it never comes.",
         yes: "Yes — count on it",
         no: "No — leave it out",
-        counted: "In the plan",
-        left: "Left out",
+        counted: "Counted in this plan",
+        left: "Not counted",
+        next: "Next — what Avery already owes",
       },
       committed: {
         name: "Money already spoken for",
+        title: "What does Avery already owe?",
         ask: "How much is gone before Avery chooses anything?",
         why: "You already worked out what the room costs. This is everything else Avery owes every week.",
+        settled: "You worked this out.",
+        next: "Now decide what Avery protects",
       },
       decide: {
         name: "Decide what to protect",
+        title: "What does Avery do with the rest?",
         ask: "Give each part of the plan an amount.",
         why: "There is no right split. There is only what Avery will be glad of in eight weeks.",
       },
@@ -61,14 +78,19 @@ export const STUDENT_COPY = {
         name: "Say where the rest goes",
         ask: "One of these takes what is left over. Which one?",
         why: "Whatever is left over goes to the one you pick.",
+        /* Said as what it is. A row of marked cards under a question reads as a choice the
+           screen is waiting on, and a reader who thinks the plan cannot be checked until
+           they answer it is a reader the shortcut has cost time rather than saved it. */
+        shortcut: "A shortcut. Or use − and + above to split it your own way.",
         done: "Nothing is left over. Every dollar already has a job.",
       },
       review: {
         name: "Check it and save it",
         ask: "Does every dollar have a job?",
       },
+      back: "Back",
     },
-    /** The one number the board is about, in each of its three states. */
+    /** The one number the plan is about, in each of its three states. */
     balance: {
       balanced: "Every dollar has a job.",
       unassigned: "still has no job.",
@@ -76,18 +98,36 @@ export const STUDENT_COPY = {
       short: "still to find.",
     },
     /**
-     * The same number, said beside the controls rather than at the foot of the board. It
-     * There is exactly one live number on a board. There used to be two, worded differently
-     * so they would not read as the same sentence twice — which they did anyway, and a cold
-     * reader counted three bands of alarm colour on the Week 5 screen saying one thing.
+     * The rail. It is on screen at every moment of planning, and it is the only place the
+     * live number lives — the commit bar under the plan says what that number *means* and
+     * offers the action, rather than printing the same figure a second time in a bigger
+     * font, which is how one screen came to carry three bands of alarm colour saying one
+     * thing.
+     *
+     * Lines appear as the student establishes them. A ledger that opened with the answer
+     * to the first question printed at the top would be handing over the one number the
+     * screen is about to ask for.
      */
     ledger: {
       title: "Avery’s money",
       arrives: "Arrives no matter what",
       maybe: "Only if a bonus rule is met",
+      /* Before question two the rule has not been explained, so the line names the question
+         it is waiting on rather than a rule the student has never been shown. */
+      maybePending: "Bonuses that might happen",
+      noBonus: "No bonus money counted",
       week5: "New bills from Week 5",
       left: "Left for Avery to decide",
-      spend: "Your plan spends",
+      leftPending: "Not worked out yet.",
+      pending: "not worked out yet",
+      placed: "Where you have put it",
+      placedNone: "Nothing yet.",
+      unplaced: "Still to give a job",
+      overspent: "Over by",
+      settled: "Nothing left to place",
+      /* The collapsed rail, where the whole receipt will not fit. */
+      open: "See where the money goes",
+      close: "Hide the detail",
     },
   },
 

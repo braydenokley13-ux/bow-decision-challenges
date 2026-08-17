@@ -74,7 +74,7 @@ export function WeekMeter({ load, parts, atStake, rate }: WeekMeterProps) {
           ? "This is what the trip alone takes. Rehab and anything else Avery takes on would come out of the same week."
           : load.attendanceHolds
             ? `Avery can fit it all in, makes every session, and ${atStake} still arrives.`
-            : `${load.overBy} hour${load.overBy === 1 ? "" : "s"} more than Avery has. Something gets missed, and ${atStake} does not arrive.`}
+            : `${load.overBy} hour${load.overBy === 1 ? "" : "s"} more than Avery has. Leave the plan like this and something gets missed — and then ${atStake} does not arrive.`}
         {load.atRisk && !load.attendanceHolds && (
           <> Another <strong className="money">{formatDollars(load.costToClear)}</strong> on rides would cover it.</>
         )}

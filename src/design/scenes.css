@@ -165,37 +165,69 @@
 .bet[data-struck="true"] .bet__verdict { color: var(--fin-over-ink); font-weight: 700; }
 
 /* ---------------------------------------------------------------------------
-   The money, read top to bottom like a receipt.
+   Avery's money, as a rail that never leaves.
 
-   This replaced a two-tower stacked chart. Every relationship the chart asked a
-   student to derive from a picture — two axes, a hatched band, a dashed line
-   called "certain without the bonus" — is a line of type here, and the only
-   figure the rest of the screen is about is the one under the tear.
+   This replaced a two-tower stacked chart, then a receipt at the head of the
+   planning board. The chart asked a student to derive every relationship from a
+   picture; the receipt was accurate and two thousand pixels away from three of
+   the five moments that needed it. Here it stands beside the decision at all
+   five, and it is the only place the live figure lives.
    --------------------------------------------------------------------------- */
 
-.ledger { display: grid; align-content: start; gap: var(--s-3); padding: var(--s-5) var(--s-6); background: var(--surface-sunken); border-bottom: 1px solid var(--border-default); }
-.ledger__lines { display: grid; gap: var(--s-1); margin: 0; padding: 0; list-style: none; }
-.ledger__lines li { display: grid; grid-template-columns: 1.25em minmax(0, 1fr) auto auto; align-items: baseline; gap: var(--s-3); padding: var(--s-3) var(--s-3) var(--s-3) 0; border-bottom: 1px solid var(--border-subtle); }
-.ledger__sign { color: var(--ink-3); font: var(--m-sm); text-align: center; }
-.ledger__label { grid-column: 2; color: var(--ink-1); font: var(--t-body); text-align: left; }
-.ledger__tag { grid-column: 3; justify-self: end; padding: 2px var(--s-3); color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); border: 1px solid var(--fin-conditional); font: var(--t-micro); white-space: nowrap; }
-.ledger__tag--locked { color: var(--ink-3); background: var(--surface-inset); border-color: var(--border-default); }
-.ledger__lines strong { grid-column: 4; color: var(--ink-1); font: var(--m-md); font-feature-settings: var(--num); }
+.ledger { display: grid; align-content: start; gap: var(--s-4); padding: var(--s-5); background: var(--surface-sunken); border: 1px solid var(--border-default); border-top: 3px solid var(--ink-1); }
+.ledger__head > .stamp { margin: 0; }
+
+/* The collapsed strip and its switch exist only where the rail cannot stand beside the
+   decision. Above that width the receipt is simply open, so neither is drawn. */
+.ledger__glance, .ledger__toggle { display: none; }
+.ledger__body { display: grid; gap: var(--s-4); }
+.ledger__lines { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.ledger__lines li { display: grid; grid-template-columns: 1.1em minmax(0, 1fr) auto; align-items: baseline; gap: 0 var(--s-3); padding: var(--s-3) 0; border-bottom: 1px solid var(--border-subtle); }
+.ledger__sign { color: var(--ink-3); font: var(--m-xs); text-align: center; }
+.ledger__label { grid-column: 2; color: var(--ink-1); font: var(--t-sm); font-weight: 500; text-align: left; }
+.ledger__note { grid-column: 2; margin-top: 2px; color: var(--ink-3); font: var(--t-micro); }
+.ledger__note--locked { color: var(--fin-locked-ink); font-weight: 700; }
+.ledger__lines strong { grid-column: 3; grid-row: 1; color: var(--ink-1); font: var(--m-sm); font-feature-settings: var(--num); white-space: nowrap; }
 .ledger__lines li[data-tone="certain"] .ledger__sign, .ledger__lines li[data-tone="certain"] strong { color: var(--fin-reliable-ink); }
 .ledger__lines li[data-tone="conditional"] .ledger__sign, .ledger__lines li[data-tone="conditional"] strong { color: var(--fin-conditional-ink); }
+.ledger__lines li[data-tone="conditional"] .ledger__label { padding-left: var(--s-3); border-left: 3px solid transparent; border-image: var(--pat-conditional) 3; }
 .ledger__lines li[data-tone="locked"], .ledger__lines li[data-tone="event"] { color: var(--ink-2); }
 .ledger__lines li[data-tone="event"] strong { color: var(--fin-over-ink); }
 
+/* A line the student has not worked out yet keeps its place and says so, rather than
+   appearing from nowhere later or quietly handing over the answer now. */
+.ledger__waiting { grid-column: 3; color: var(--ink-3); font: var(--t-micro); font-style: normal; text-align: right; }
+.ledger__lines li[data-known="false"] .ledger__label { color: var(--ink-3); }
+
 /* A promised cost answers when a student presses it rather than sitting there inert. */
-.ledger__label--locked { padding: 0; text-align: left; background: none; border: 0; color: inherit; font: var(--t-body); cursor: help; }
-.ledger__left { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); margin: 0; padding-top: var(--s-1); }
+.ledger__label--locked { padding: 0; text-align: left; background: none; border: 0; color: inherit; font: inherit; cursor: help; text-decoration: underline dotted var(--border-strong); text-underline-offset: 3px; }
+.ledger__lines li[data-tone="conditional"] .ledger__label--locked { padding-left: var(--s-3); }
+
+/* The one figure on the rail set large: what the whole plan is built against. */
+.ledger__left { display: grid; gap: var(--s-1); margin: 0; }
 .ledger__left span { color: var(--ink-1); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
-.ledger__left strong { color: var(--ink-1); font: var(--m-hero); font-feature-settings: var(--num); letter-spacing: var(--display-tracking); }
-.ledger__spend { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); margin: 0; padding-top: var(--s-3); border-top: 1px solid var(--border-default); }
-.ledger__spend span { color: var(--ink-2); font: var(--t-ui); }
-.ledger__spend strong { color: var(--ink-1); font: var(--m-md); font-feature-settings: var(--num); }
-.ledger__warning { margin: 0; padding: var(--s-3) var(--s-4); color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); border-left: 4px solid var(--fin-conditional-stripe); font: var(--t-ui); }
-.ledger__warning strong { font: var(--m-sm); font-feature-settings: var(--num); }
+.ledger__left strong { color: var(--ink-1); font: var(--m-lg); font-feature-settings: var(--num); letter-spacing: var(--display-tracking); }
+.ledger__left em { color: var(--ink-3); font: var(--t-micro); font-style: normal; }
+.ledger__warning { margin: 0; padding: var(--s-3) var(--s-4); color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); border-left: 4px solid var(--fin-conditional-stripe); font: var(--t-sm); }
+.ledger__warning strong { font: var(--m-xs); font-feature-settings: var(--num); }
+
+/* What the student has protected, row by row, and the live remainder as a row rather than
+   a second hero — before a dollar is placed the two carry the same figure. */
+.ledger__placed { display: grid; gap: var(--s-3); padding-top: var(--s-4); border-top: 2px solid var(--border-strong); }
+.ledger__placed .field-label { margin: 0; }
+.ledger__placed ul { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.ledger__placed li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: var(--s-3); padding-left: var(--s-3); border-left: 4px solid var(--border-default); font: var(--t-sm); }
+.ledger__placed li[data-category="goal"] { border-left-color: var(--choice-1); }
+.ledger__placed li[data-category="reserve"] { border-left-color: var(--choice-2); }
+.ledger__placed li[data-category="flexibleCash"] { border-left-color: var(--choice-3); }
+.ledger__placed li strong { font: var(--m-xs); font-feature-settings: var(--num); }
+.ledger__none { margin: 0; color: var(--ink-3); font: var(--t-sm); }
+.ledger__live { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-3); margin: 0; padding: var(--s-3) var(--s-4); }
+.ledger__live span { font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.ledger__live strong { font: var(--m-sm); font-feature-settings: var(--num); transition: color var(--dur-state) var(--ease-standard); }
+.ledger__live[data-state="settled"] { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); }
+.ledger__live[data-state="over"] { color: var(--fin-over-ink); background: var(--fin-over-soft); }
+.ledger__live[data-state="unplaced"] { color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); }
 
 /* What moved since the last save, named on the board that has to absorb it. */
 .change-banner { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: var(--s-3) var(--s-5); padding: var(--s-4) var(--s-5); color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); border-bottom: 1px solid var(--fin-conditional); }
@@ -205,31 +237,60 @@
 .change-banner li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 6px; height: 6px; background: currentcolor; border-radius: 50%; }
 
 /* ---------------------------------------------------------------------------
-   The plan, as steps. Each one asks a single question, says why it is being
-   asked, and hands over. Nothing on the screen competes with the step the
-   student is on.
+   One question at a time, with Avery's money beside it.
+
+   The plan used to be six numbered steps stacked down a single column nearly
+   three thousand pixels tall: a student met every question in the challenge
+   before answering any of them, and the money they were answering about was
+   two thirds of the way down. Now the questions are a rail they walk, only one
+   of them is on screen, and the money is a column that never moves.
    --------------------------------------------------------------------------- */
 
-.plan-step { padding: var(--s-6); border-top: 1px solid var(--border-subtle); }
-.plan-step:first-of-type { border-top: 0; }
-.plan-step__head { max-width: 60ch; margin-bottom: var(--s-5); }
-.plan-step__head h2, .plan-step__head h3 { margin: var(--s-2) 0 0; font: var(--t-display3); letter-spacing: var(--display-tracking); text-transform: uppercase; }
-.plan-step__ask { margin: var(--s-3) 0 0; color: var(--ink-1); font: var(--t-body-lg); }
-.plan-step__why { margin: var(--s-2) 0 0; color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
-.plan-step[data-tone="conditional"] .stamp { color: var(--fin-conditional-ink); }
+.plan-scene { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); align-items: start; gap: var(--s-6) var(--s-7); }
+.plan-scene__work { display: grid; align-content: start; gap: var(--s-5); min-width: 0; grid-column: 1; grid-row: 1; }
+.plan-rail { grid-column: 2; grid-row: 1; position: sticky; top: calc(72px + var(--s-5)); }
+
+/* The four questions, so a student can see how far in they are and walk back to
+   anything they have already answered. */
+.plan-progress { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); margin: 0; padding: 0; list-style: none; }
+.plan-progress li { min-width: 0; }
+.plan-progress li > * { display: inline-flex; align-items: center; gap: var(--s-3); min-height: 34px; padding: 0 var(--s-4) 0 var(--s-3); color: var(--ink-3); background: transparent; border: 1px solid var(--border-default); border-radius: var(--r-pill); font: var(--t-micro); text-align: left; }
+.plan-progress button { cursor: pointer; }
+.plan-progress button:hover { color: var(--ink-1); border-color: var(--ink-1); }
+.plan-progress__number { width: 20px; height: 20px; display: grid; place-items: center; background: var(--surface-inset); border-radius: 50%; font: var(--t-micro); font-weight: 700; }
+.plan-progress li[data-state="current"] > * { color: var(--ink-invert); background: var(--ink-1); border-color: var(--ink-1); font-weight: 700; }
+.plan-progress li[data-state="current"] .plan-progress__number { color: var(--ink-1); background: var(--surface-raised); }
+.plan-progress li[data-state="done"] > * { color: var(--fin-reliable-ink); background: var(--fin-reliable-soft); border-color: var(--fin-reliable); }
+
+/* The question itself. No card, no border, no second heading — the stage headline
+   already asked it, so what is left here is the reason and the control. */
+.question { display: grid; gap: var(--s-4); }
+.question__why { max-width: var(--measure); margin: 0; color: var(--ink-2); font: var(--t-body-lg); }
+.question__settled { max-width: var(--measure); margin: 0; padding: var(--s-5); color: var(--ink-1); background: var(--fin-balanced-soft); border-left: 4px solid var(--fin-balanced); font: var(--t-body-lg); }
+.question__settled b { font-feature-settings: var(--num); }
+.question__ask { max-width: var(--measure); margin: 0; color: var(--ink-1); font: var(--t-title2); }
+.question-nav { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--border-subtle); }
 .choice-stack { display: grid; align-content: start; gap: var(--s-3); }
 
-/* Step 5. The one statement this world records about savings, asked as a question
-   with three answers rather than tucked into a row as a shortcut. */
-.plan-step--closer { background: var(--surface-raised); border-top: 2px solid var(--fin-adjustable); }
+/* The one statement this world records about savings, asked as a question with three
+   answers rather than tucked into a row as a shortcut. */
+.closer { display: grid; gap: var(--s-3); padding: var(--s-5); background: var(--surface-raised); border-left: 4px solid var(--fin-adjustable); }
+.closer h3 { margin: 0; font: var(--t-title2); }
+.closer p { margin: 0; color: var(--ink-2); font: var(--t-sm); }
 .closer-choice { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
-.closer-choice button { display: grid; align-content: start; gap: var(--s-3); min-height: var(--tap); padding: var(--s-4) var(--s-5); text-align: left; color: var(--ink-1); background: var(--surface); border: 1.5px solid var(--border-ink); border-left-width: 6px; cursor: pointer; transition: background var(--dur-micro) var(--ease-standard), color var(--dur-micro) var(--ease-standard); }
+.closer-choice button { display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: start; gap: var(--s-2) var(--s-3); min-height: var(--tap); padding: var(--s-4) var(--s-5); text-align: left; color: var(--ink-1); background: var(--surface-raised); border: 1.5px solid var(--border-ink); border-left-width: 6px; box-shadow: var(--shadow-card); cursor: pointer; transition: background var(--dur-micro) var(--ease-standard), color var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard); }
+
+/* A card with no mark on it is a card nobody knows they can press — the same finding the
+   Week 5 tiles were given a mark for. */
+.closer-choice__mark { grid-row: 1 / span 2; align-self: center; color: var(--bow-brand); font: var(--m-md); }
 .closer-choice button[data-category="goal"] { border-left-color: var(--choice-1); }
 .closer-choice button[data-category="reserve"] { border-left-color: var(--choice-2); }
 .closer-choice button[data-category="flexibleCash"] { border-left-color: var(--choice-3); }
-.closer-choice button:hover { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); }
-.closer-choice__row { font: var(--t-title3); }
-.closer-choice strong { font: var(--m-sm); font-feature-settings: var(--num); }
+.closer-choice button:hover { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); transform: translateY(-1px); }
+.closer-choice button:hover .closer-choice__mark { color: inherit; }
+.closer-choice__row { grid-column: 2; font: var(--t-title2); }
+.closer-choice span.money { grid-column: 2; color: var(--ink-2); font: var(--t-sm); font-feature-settings: var(--num); }
+.closer-choice button:hover span.money { color: inherit; }
 
 /* -------------------------------------------------------------------------
    The adjust panel: the plan being corrected rather than rebuilt.
@@ -240,28 +301,20 @@
    tell a student it was not.
    ------------------------------------------------------------------------- */
 .adjust { background: var(--surface); border: 1px solid var(--border-default); border-top: 4px solid var(--chapter-accent, var(--world-accent)); }
-.adjust__head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 0.85fr); gap: var(--s-5) var(--s-7); padding: var(--s-5) var(--s-6); border-bottom: 1px solid var(--border-subtle); }
-.adjust__say .eyebrow { margin-bottom: var(--s-2); }
-.adjust__say h2 { margin: 0 0 var(--s-2); font: var(--t-title1); }
-.adjust__lead { margin: 0; max-width: 46ch; color: var(--ink-2); font: var(--t-ui); }
-.supply-change { display: grid; align-content: start; gap: var(--s-1); margin: 0; padding: 0; list-style: none; }
+.adjust__head { padding: var(--s-5) var(--s-6); border-bottom: 1px solid var(--border-subtle); }
+.adjust__head .eyebrow { margin-bottom: var(--s-2); }
+.adjust__head h2 { margin: 0 0 var(--s-2); font: var(--t-title1); }
+.adjust__lead { margin: 0; max-width: var(--measure); color: var(--ink-2); font: var(--t-ui); }
+.supply-change { display: grid; align-content: start; gap: var(--s-1); margin: 0; padding: var(--s-4) var(--s-6) 0; list-style: none; }
 .supply-change li { display: grid; grid-template-columns: 1.2em minmax(0, 1fr) auto; align-items: baseline; gap: var(--s-3); padding: var(--s-2) var(--s-3); border-radius: var(--r-xs); }
 .supply-change__sign { font: var(--m-sm); text-align: center; }
 .supply-change__label { font: var(--t-sm); }
 .supply-change strong { font: var(--m-sm); font-feature-settings: var(--num); }
 .supply-change li[data-direction="out"] { color: var(--fin-over-ink); background: var(--fin-over-soft); }
-.supply-change li[data-direction="out"] strong { text-decoration: line-through; text-decoration-thickness: 2px; }
 .supply-change li[data-direction="in"] { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); }
 .supply-change li[data-direction="total"] { margin-top: var(--s-2); padding-top: var(--s-3); color: var(--ink-1); border-top: 1px solid var(--border-default); border-radius: 0; }
 .supply-change li[data-direction="total"] strong { font: var(--m-md); }
 
-/* The one number the whole panel is about. */
-.adjust__countdown { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-5); margin: 0; padding: var(--s-4) var(--s-6); border-bottom: 1px solid var(--border-subtle); }
-.adjust__countdown span { font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
-.adjust__countdown strong { font: var(--m-hero); font-feature-settings: var(--num); transition: color var(--dur-state) var(--ease-standard); }
-.adjust[data-state="over"] .adjust__countdown { color: var(--fin-over-ink); background: var(--fin-over-soft); }
-.adjust[data-state="unassigned"] .adjust__countdown { color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); }
-.adjust[data-state="balanced"] .adjust__countdown { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); }
 .adjust__rows { display: grid; gap: var(--s-2); padding: var(--s-5) var(--s-6); }
 .adjust .plan-help { margin: 0 var(--s-6) var(--s-5); }
 
@@ -384,16 +437,21 @@
 .bulletin__text { max-width: 58ch; margin: 0; color: var(--world-hero-ink); font: 500 clamp(1.05rem, 1.8vw, 1.4rem)/1.4 var(--font-display); letter-spacing: -0.02em; }
 
 /* The tradeoff, weighed: money on one side, four Saturdays on the other. */
+.plan-scene__work .scale { grid-template-columns: minmax(0, 1fr); }
 .scale { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: var(--s-5); margin: var(--s-4) 0 var(--s-5); padding: var(--s-4) var(--s-5); background: var(--surface-sunken); }
 .scale__side { display: grid; gap: var(--s-2); }
 .scale__side > span { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
 .scale__money { color: var(--fin-balanced-ink); font: var(--m-hero); font-feature-settings: var(--num); }
 .scale__side small { display: block; margin-top: var(--s-3); color: var(--ink-2); font: var(--t-micro); }
 .scale__versus { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
-.saturdays { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+
+/* Four Saturdays, and they wrap rather than squeeze. Beside the money rail the column is
+   narrower than it was, and `minmax(0, 1fr)` let each block shrink until its own date ran
+   out of the side of it. */
+.saturdays { display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
 .saturdays li { display: grid; gap: var(--s-2); padding: var(--s-3); text-align: center; background: var(--surface-raised); border: 1px solid var(--border-default); border-radius: var(--r-sm); transition: background var(--dur-state) var(--ease-standard), border-color var(--dur-state) var(--ease-standard); }
-.saturdays li span { color: var(--ink-3); font: var(--t-micro); }
-.saturdays li b { font: var(--t-ui); }
+.saturdays li span { color: var(--ink-3); font: var(--t-micro); overflow-wrap: anywhere; }
+.saturdays li b { font: var(--t-ui); overflow-wrap: anywhere; }
 .saturdays li[data-state="clinic"] { color: var(--fin-reliable-ink); background: var(--fin-reliable-soft); border-color: var(--fin-reliable); }
 .saturdays li[data-state="clinic"] span { color: var(--fin-reliable-ink); }
 .saturdays li[data-state="rest"] { color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); }
@@ -470,17 +528,46 @@
   .bets, .closer-choice { grid-template-columns: 1fr; }
   .setup-grid { grid-template-columns: 1fr; }
   .scale { grid-template-columns: 1fr; }
-  .ledger { padding: var(--s-5) var(--s-4); }
-  .plan-step { padding: var(--s-5) var(--s-4); }
+  .ledger { padding: var(--s-4); }
   .recap__numbers { grid-template-columns: 1fr; }
   .bulletin { grid-template-columns: 1fr; gap: var(--s-3); }
   .settled-calls { grid-template-columns: 1fr; }
   .choice-row { grid-template-columns: 6px minmax(0, 1fr) auto; row-gap: var(--s-3); }
   .choice-row__action { grid-column: 2; grid-row: 2; justify-self: start; }
   .choice-row__controls { grid-column: 3; grid-row: 2; justify-self: end; }
-  .adjust__head, .adjust__countdown, .adjust__rows { padding-left: var(--s-4); padding-right: var(--s-4); }
+  .adjust__head, .adjust__rows, .supply-change { padding-left: var(--s-4); padding-right: var(--s-4); }
   .adjust .plan-help { margin-left: var(--s-4); margin-right: var(--s-4); }
-  .adjust__countdown { flex-direction: column; align-items: flex-start; gap: var(--s-2); }
+  .closer { padding: var(--s-4); }
+}
+
+/*
+ * One column, and the question comes first.
+ *
+ * A stacked rail above the question would be the old problem with the order
+ * reversed — a screen that opens on a receipt. Below the two-column breakpoint
+ * the money moves under the decision, where the commit bar is already saying the
+ * same live figure in words, and the itemised lines are one short scroll away.
+ */
+@media (max-width: 980px) {
+  .plan-scene { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .plan-scene__work { grid-column: 1; grid-row: 1; padding-bottom: var(--s-8); }
+  .plan-rail { grid-column: 1; grid-row: 2; position: sticky; bottom: 0; z-index: 15; }
+  .plan-progress { font-size: 0.95em; }
+
+  /* Stacked, the receipt would sit two thousand pixels under the question it belongs to.
+     So it does not stack: it pins itself to the bottom of the decision as one line the
+     student can read without moving, and opens when they want the whole thing. */
+  .ledger { gap: var(--s-3); padding: var(--s-4); border: 0; border-top: 3px solid var(--ink-1); box-shadow: 0 -10px 24px -18px rgb(12 21 40 / 55%); }
+  .ledger__head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s-2) var(--s-4); }
+  .ledger__head > .stamp { grid-column: 1; }
+  .ledger__glance { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); grid-column: 1; grid-row: 2; margin: 0; }
+  .ledger__glance span { color: var(--ink-2); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+  .ledger__glance strong { color: var(--ink-1); font: var(--m-md); font-feature-settings: var(--num); }
+  .ledger[data-state="over"] .ledger__glance strong { color: var(--fin-over-ink); }
+  .ledger__toggle { display: inline-flex; align-items: center; grid-column: 2; grid-row: 1 / span 2; min-height: var(--tap); padding: 0 var(--s-4); color: var(--ink-1); background: var(--surface-raised); border: 1.5px solid var(--border-ink); border-radius: var(--r-sm); cursor: pointer; font: var(--t-sm); font-weight: 700; }
+  .ledger__body { display: none; }
+  .ledger[data-open="true"] .ledger__body { display: grid; max-height: 52vh; overflow-y: auto; }
+
 }
 
 /* ---------------------------------------------------------------------------

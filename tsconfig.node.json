@@ -9,6 +9,7 @@
     "strict": true
   },
   // The browser suite reads the scenario's own numbers, so the domain it imports is
-  // part of this project too.
-  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "eslint.config.js", "e2e/**/*.ts", "server/**/*.ts", "api/**/*.ts", "src/domain/**/*.ts", "src/platform/**/*.ts", "src/components/financial/choices.ts"]
+  // part of this project too — and so is the headless run harness, which is how a domain
+  // test gets a log that a real student could have produced rather than one it typed.
+  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "eslint.config.js", "e2e/**/*.ts", "server/**/*.ts", "api/**/*.ts", "src/domain/**/*.ts", "src/platform/**/*.ts", "src/test/**/*.ts", "src/components/financial/choices.ts"]
 }

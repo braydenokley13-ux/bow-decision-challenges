@@ -1,6 +1,5 @@
 import { dollars } from "../core/money";
-import { SCENARIO_NUMBERS } from "../scenario/numbers";
-import { DEFAULT_WORLD_ID, PLAN_UNDER_PRESSURE_LAUNCH } from "../scenario/registry";
+import { DEFAULT_WORLD_ID, numbersFor, PLAN_UNDER_PRESSURE_LAUNCH } from "../scenario/registry";
 import { balanceOf, readoutFor, residualOf, unassignedOf } from "../finance/formulas";
 import type { PlanMode, SnapshotInputs } from "../finance/types";
 import type { EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../evidence/types";
@@ -68,6 +67,18 @@ function defaultAmountsFor(state: ChallengeState, mode: PlanMode) {
   return EMPTY_AMOUNTS;
 }
 
+/**
+ * The economy this attempt is priced against, taken from the world the attempt says it is
+ * in rather than from a module-level import.
+ *
+ * It is a one-line function and it is the difference between a second world being possible
+ * and being dangerous: a reducer that always reaches for one world's numbers would price a
+ * different world's plan with them and write the result into a student's permanent record.
+ */
+function numbersOf(state: ChallengeState) {
+  return numbersFor(state.meta.worldId);
+}
+
 function snapshotInputs(state: ChallengeState, mode: PlanMode): SnapshotInputs | null {
   if (!state.setupId) return null;
   return {
@@ -79,7 +90,7 @@ function snapshotInputs(state: ChallengeState, mode: PlanMode): SnapshotInputs |
     setupId: state.setupId,
     week5Applied: mode === "week5-first-response" || mode === "final" || mode === "remaining-risk",
     depositTaken: state.depositTaken === true,
-    numbersVersion: SCENARIO_NUMBERS.version,
+    numbersVersion: numbersOf(state).version,
   };
 }
 
@@ -159,19 +170,19 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
       // it is the difference between the two things this move can mean: a row that took the
       // last of the money closed the plan, and a row that hit its own cap on the way past
       // did not. Only the first is a statement about where the leftovers went.
-      const remaining = unassignedOf(balanceOf(after, SCENARIO_NUMBERS));
+      const remaining = unassignedOf(balanceOf(after, numbersOf(moved)));
       return append(moved, action.type, { ...action, remaining }, supportFor(state, action.mode), undefined, at);
     }
     case "PLAN_SAVE_REQUESTED": {
       const inputs = snapshotInputs(state, action.mode);
       if (!inputs) return state;
-      const balance = balanceOf(inputs, SCENARIO_NUMBERS);
+      const balance = balanceOf(inputs, numbersOf(state));
       let next = append(state, action.type, { mode: action.mode, inputs, balance, residual: residualOf(balance), unassigned: unassignedOf(balance), acknowledgedResidual: action.acknowledgedResidual }, supportFor(state, action.mode), undefined, at);
       if (balance !== 0 && action.acknowledgedResidual === undefined) return next;
       const sequence = next.log.length + 1;
       // The readout is frozen onto the snapshot here, priced with the numbers in force at
       // save time, so a later re-balancing of the scenario cannot rewrite this result.
-      const snapshot = { id: `snapshot-${sequence}`, sequence, inputs, readout: readoutFor(inputs, SCENARIO_NUMBERS), ...(action.acknowledgedResidual !== undefined ? { acknowledgedResidual: action.acknowledgedResidual } : {}) };
+      const snapshot = { id: `snapshot-${sequence}`, sequence, inputs, readout: readoutFor(inputs, numbersOf(state)), ...(action.acknowledgedResidual !== undefined ? { acknowledgedResidual: action.acknowledgedResidual } : {}) };
       next = { ...next, snapshots: [...next.snapshots, snapshot], saved: { ...next.saved, [action.mode]: snapshot.id } };
       next = append(next, "PLAN_SAVED", { mode: action.mode, snapshot, balance }, supportFor(state, action.mode), undefined, at);
       // A plan built on no conditional income has no lower-resource version to build,
