@@ -4,6 +4,9 @@ import { COUNT_BONUS_BUTTON, NUMBERS as N } from "./plan";
 import { PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 import { weeksBeforeDisruption } from "../src/domain/scenario/season";
 import type { ClassCreation } from "../src/platform/classes/types";
+import { buildSubmission } from "../src/test/runChallenge";
+import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
+import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
 
 /**
  * One driver for both the assertion suite and the screenshot walkthrough.
@@ -65,6 +68,56 @@ export function createClassKeyFor(code: string): string {
   const known = CREATED_KEYS.get(code);
   if (!known) throw new Error(`No teacher key recorded for class ${code}.`);
   return known;
+}
+
+/**
+ * Extra finished runs, posted through the real submission endpoint.
+ *
+ * Every log here is produced by driving the real reducer through a real run — the same
+ * module the unit suite uses — so what the service stores and what the educator surface
+ * reads is indistinguishable from a browser's. It exists because some educator behaviour
+ * only appears at a class-sized denominator: the minimum-n guard opens at five runs, and
+ * walking five students through the whole challenge in a browser to assert one heading is
+ * ten minutes of test for a rule that does not depend on the clicking.
+ */
+export async function seedRuns(
+  request: APIRequestContext,
+  classCode: string,
+  seats: readonly { seat: string; savingsAsLeftovers?: boolean }[],
+): Promise<void> {
+  for (const entry of seats) {
+    const built = buildSubmission({
+      seatCode: entry.seat,
+      closeOpeningInto: entry.savingsAsLeftovers === false ? "flexibleCash" : "goal",
+      defenseText: `Seat ${entry.seat}: I kept the course money where it was and gave up part of the reserve after Week 5.`,
+    });
+    const response = await request.post(`http://127.0.0.1:4180/api/classes/${classCode}/submissions`, {
+      data: {
+        classCode,
+        seatCode: built.seatCode,
+        sessionId: built.sessionId,
+        challengeId: built.challengeId,
+        challengeVersion: built.challengeVersion,
+        log: built.log,
+      },
+    });
+    expect(response.status(), await response.text()).toBe(202);
+  }
+}
+
+/** A person's marks on one seat's writing, through the endpoint the reading queue uses. */
+export async function scoreWriting(
+  request: APIRequestContext,
+  classCode: string,
+  teacherKey: string,
+  seat: string,
+): Promise<void> {
+  const scores = Object.fromEntries(REASONING_CRITERIA.map((criterion) => [criterion.id, criterion.max]));
+  const response = await request.patch(`http://127.0.0.1:4180/api/classes/${classCode}/submissions/${seat}`, {
+    headers: { "X-BOW-Teacher-Key": teacherKey },
+    data: { reasoningPoints: REASONING_MAXIMUM, reasoningCriteria: scores },
+  });
+  expect(response.status(), await response.text()).toBe(200);
 }
 
 export async function gotoFreshChallenge(page: Page) {

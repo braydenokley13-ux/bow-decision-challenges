@@ -97,25 +97,31 @@ export function ObjectiveMap() {
   );
   const shown = applyMapFilters(rows, filters, district);
   const byCode = new Map(shown.map((row) => [row.standard.code, row]));
+  // What a teacher can act on, and what is only on the list. The map leads with the first.
+  const working = shown.filter((row) => row.available || row.markedTaught || row.submitted > 0);
+  const waiting = shown.filter((row) => !working.includes(row));
 
-  const covered = rows.filter((row) => row.markedTaught || row.submitted > 0).length;
+  const taught = rows.filter((row) => row.markedTaught).length;
+  const assessed = rows.filter((row) => row.result.assessed > 0).length;
   const needing = rows.filter((row) => row.state === "needs-attention").length;
-  const coming = rows.filter((row) => !row.available).length;
+  const assessable = rows.filter((row) => row.available).length;
 
   const unit = labels?.unitNounShort.toLowerCase() ?? "objective";
 
   return (
     <EducatorShell>
+      {/* The hero used to open with COVERED 0 of 23 and BOW CANNOT ASSESS YET 22 — a
+          product's coverage gap, in the largest type on the first screen a teacher saw. What
+          belongs here is their own record: what they have taught, and what has come back. */}
       <header className="map-header">
         <div>
           <p className="eyebrow">{labels?.frameworkShort} · {framework?.version}</p>
-          <h1>Where this class stands.</h1>
+          <h1>What your classes have covered.</h1>
         </div>
-        {/* The four questions the map exists to answer, answered before it is read. */}
         <dl className="map-tally">
-          <div><dt>Covered</dt><dd>{covered} of {rows.length}</dd></div>
+          <div><dt>Marked taught</dt><dd>{taught} of {rows.length}</dd></div>
+          <div><dt>Assessed</dt><dd>{assessed} of {assessable}</dd></div>
           <div><dt>Need attention</dt><dd>{needing}</dd></div>
-          <div><dt>BOW cannot assess yet</dt><dd>{coming}</dd></div>
         </dl>
       </header>
 
@@ -176,34 +182,62 @@ export function ObjectiveMap() {
       )}
 
       {view === "map" ? (
-        <section className="topic-bands" aria-label={`${labels?.unitNounShort} map`}>
-          {NYSED_2026_TOPICS.map((topic) => {
-            const inTopic = shown.filter((row) => row.standard.topicCode === topic.code);
-            if (inTopic.length === 0) return null;
-            return (
-              <section key={topic.code} className="topic-band">
-                <h2><span className="topic-band__number">{topic.code}</span>{topic.name}</h2>
-                <ul>
-                  {inTopic.map((row) => (
-                    <li key={row.standard.code}>
-                      <Link to={`/educator/objectives/${row.standard.frameworkId}/${row.standard.code}`} data-state={row.state}>
-                        <span className="chip-code">{row.standard.code}</span>
-                        <span className="chip-name">{displayNameFor(row.standard, district)}</span>
-                        <span className="chip-state"><StateMark state={row.state} />{MAP_STATE_LABELS[row.state]}</span>
-                        {isResultState(row.state) && row.result.percentDemonstrated !== null && (
-                          <span className="chip-figure money">{row.result.percentDemonstrated}%<small>{row.result.demonstrated} of {row.result.assessed}</small></span>
-                        )}
-                        {row.state === "too-few-assessed" && (
-                          <span className="chip-figure money">{row.result.demonstrated} of {row.result.assessed}<small>under {MINIMUM_ASSESSED_FOR_A_STATE} assessed</small></span>
-                        )}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            );
-          })}
-        </section>
+        <>
+          <section className="topic-bands" aria-label={`${labels?.unitNounShort} map`}>
+            {NYSED_2026_TOPICS.map((topic) => {
+              const inTopic = working.filter((row) => row.standard.topicCode === topic.code);
+              if (inTopic.length === 0) return null;
+              return (
+                <section key={topic.code} className="topic-band">
+                  <h2><span className="topic-band__number">{topic.code}</span>{topic.name}</h2>
+                  <ul>
+                    {inTopic.map((row) => (
+                      <li key={row.standard.code}>
+                        <Link to={`/educator/objectives/${row.standard.frameworkId}/${row.standard.code}`} data-state={row.state}>
+                          <span className="chip-code">{row.standard.code}</span>
+                          <span className="chip-name">{displayNameFor(row.standard, district)}</span>
+                          <span className="chip-state"><StateMark state={row.state} />{MAP_STATE_LABELS[row.state]}</span>
+                          {isResultState(row.state) && row.result.percentDemonstrated !== null && (
+                            <span className="chip-figure money">{row.result.percentDemonstrated}%<small>{row.result.demonstrated} of {row.result.assessed}</small></span>
+                          )}
+                          {row.state === "too-few-assessed" && (
+                            <span className="chip-figure money">{row.result.demonstrated} of {row.result.assessed}<small>under {MINIMUM_ASSESSED_FOR_A_STATE} assessed</small></span>
+                          )}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              );
+            })}
+            {working.length === 0 && <p className="class-state">No {unit} matches those filters.</p>}
+          </section>
+
+          {/* Mapped, and nothing can observe them yet. A teacher planning a year needs to
+              know what is not here; it is not what the page is about. */}
+          {waiting.length > 0 && (
+            <section className="dashboard-section map-waiting">
+              <div className="section-head">
+                <h2>Not yet assessable</h2>
+                <p>
+                  {waiting.length} {waiting.length === 1 ? `${unit} is` : `${unit}s are`} matched to a skill BOW cannot
+                  observe yet. {waiting.length === 1 ? "It reports" : "They report"} as coming, never as nobody having
+                  demonstrated {waiting.length === 1 ? "it" : "them"}.
+                </p>
+              </div>
+              <ul className="coming-list">
+                {waiting.map((row) => (
+                  <li key={row.standard.code}>
+                    <Link to={`/educator/objectives/${row.standard.frameworkId}/${row.standard.code}`} data-state={row.state}>
+                      <span className="coming-list__code">{row.standard.code}</span>
+                      {displayNameFor(row.standard, district)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </>
       ) : (
         <section className="dashboard-section map-table-wrap">
           <table className="map-table">

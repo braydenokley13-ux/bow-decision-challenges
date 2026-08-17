@@ -18,14 +18,15 @@ export function EducatorShell({ children, demo = false, measure = "evidence" }: 
     <div className="educator-shell">
       <header className="educator-topbar">
         <AppMark />
+        {/* Four items, and the first one is the room a teacher is running.
+            The demo used to sit here at the same weight as a real class, one row away from a
+            teacher projecting fabricated student records; it is reached from the guide and
+            from the empty states now, framed as the sample it is. */}
         <nav aria-label="Educator navigation">
-          <NavLink to="/educator/map">Map</NavLink>
+          <NavLink to="/educator/classes">My classes</NavLink>
           <NavLink to="/educator/objectives">{NAV_LABELS.objectives}</NavLink>
-          <NavLink to="/educator/guide">Challenge brief</NavLink>
-          <NavLink to="/educator/classes/new">My classes</NavLink>
-          <NavLink to="/educator/demo">Demo evidence</NavLink>
-          <NavLink to="/educator/demo/standards">{NAV_LABELS.frameworkView}</NavLink>
-          <NavLink to="/educator/teaching-companion">Teaching companion</NavLink>
+          <NavLink to="/educator/map">Map</NavLink>
+          <NavLink to="/educator/guide">Guide</NavLink>
         </nav>
         {demo && <span className="demo-pill">{DEMO_LABEL}</span>}
       </header>

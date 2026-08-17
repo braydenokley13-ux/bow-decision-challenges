@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { MINIMUM_ASSESSED_FOR_A_STATE } from "../domain/competency/objectiveState";
 import { GAP_THRESHOLD_PERCENT, type RequirementGap, type TeachNextReading } from "../domain/competency/teachNext";
 import type { MisconceptionSpotlight } from "./misconceptions";
-import type { ObjectiveClassResult } from "./objectiveResults";
 
 /**
  * "What should I teach next?" — §18, rendered in the order §18.1 fixes and in no other.
@@ -19,6 +18,10 @@ import type { ObjectiveClassResult } from "./objectiveResults";
  * Nothing here is generated. Every sentence is a fixed template filled with a count that
  * came from real submissions, and every state that refuses to make a claim says why it is
  * refusing rather than going quiet.
+ *
+ * It takes a reading rather than a page's own data, because the class page and the objective
+ * page render the same one. Two copies of this component would be two answers to "what
+ * should I teach next?" for the same class.
  */
 
 /** The counts behind every required requirement. The audit trail for the card above it. */
@@ -169,9 +172,12 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
   );
 }
 
-export function TeachNext({ entry, teacherKey }: { entry: ObjectiveClassResult; teacherKey: string }) {
-  const { teachNext: reading, spotlight } = entry;
-
+export function TeachNext({ reading, spotlight, classCode, teacherKey }: {
+  reading: TeachNextReading;
+  spotlight: MisconceptionSpotlight | null;
+  classCode: string;
+  teacherKey: string;
+}) {
   // Nothing to read. The headline above already said whether anybody has turned work in,
   // and repeating it here as a second empty state would be the page saying it twice.
   if (reading.state === "not-assessed") return null;
@@ -207,8 +213,8 @@ export function TeachNext({ entry, teacherKey }: { entry: ObjectiveClassResult; 
   return (
     <section className="next-lesson" data-state={reading.state}>
       <p className="eyebrow">What should I teach next?</p>
-      {spotlight && <Spotlight spotlight={spotlight} classCode={entry.record.code} teacherKey={teacherKey} />}
-      <Action reading={reading} spotlight={spotlight} classCode={entry.record.code} teacherKey={teacherKey} />
+      {spotlight && <Spotlight spotlight={spotlight} classCode={classCode} teacherKey={teacherKey} />}
+      <Action reading={reading} spotlight={spotlight} classCode={classCode} teacherKey={teacherKey} />
       <details className="next-lesson__working">
         <summary>Every requirement behind this {reading.assessed}-student result</summary>
         <GapTable gaps={reading.gaps} assessed={reading.assessed} />

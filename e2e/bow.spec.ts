@@ -4,6 +4,8 @@ import { NUMBERS as N, BACKUP_HEADING, NO_BONUS_HEADING, TRIAGE_HEADING, fillPla
 import {
   createClass,
   createClassKeyFor,
+  seedRuns,
+  scoreWriting,
   waitForDelivery,
   SETUP_ORDER,
   SETUP_TITLES,
@@ -416,7 +418,7 @@ studentTest("the opening screens work with a keyboard only", async ({ page, clas
 test("educator deep links render directly on a fresh navigation", async ({ page }) => {
   const routes: Array<[string, string]> = [
     ["/educator/guide", "Plan Under Pressure"],
-    ["/educator/demo", "Basketball evidence room"],
+    ["/educator/demo", "Sample class"],
     ["/educator/demo/concepts/contingency", "Build an executable contingency"],
     ["/educator/demo/students/14", "94/100"],
     ["/educator/demo/students/14/reasoning", "Score the financial defense."],
@@ -808,13 +810,19 @@ studentTest("a real class shows what its own students did, and never a fixture",
   }
 
   await page.goto(`/educator/class/${classCode}?key=${key}`);
-  await expect(page.getByRole("heading", { name: "What the class did" })).toBeVisible();
-  await expect(page.getByText("3 submissions")).toBeVisible();
+  // Three runs is not a class. §15.3 and §18.4: counts and individual work, and no sentence
+  // about the room — this is the state a teacher hits mid-lesson, not an edge case.
+  await expect(page.getByRole("heading", { name: "Nobody is assessed yet." })).toBeVisible();
+  await expect(page.locator(".class-guard")).toContainText("3 turned in — individual work below");
+  await expect(page.locator(".choice-dist")).toHaveCount(0);
+  await expect(page.locator(".next-lesson")).toHaveCount(0);
+  await expect(page.getByText("%")).toHaveCount(0);
 
-  // The housing split is real: three students, three different places.
-  const housing = page.locator(".choice-dist").first();
-  await expect(housing).toContainText("Where did they put Avery?");
-  for (const run of runs) await expect(housing).toContainText(run.seat);
+  // Every student who turned in, led by what their evidence shows rather than by a score.
+  const rows = page.locator(".row-list > a");
+  await expect(rows).toHaveCount(3);
+  for (const run of runs) await expect(page.locator(".row-list")).toContainText(`Seat ${run.seat}`);
+  await expect(rows.first()).not.toContainText("/100");
 
   // The fixture class is 28 students with a seat 14 golden case. None of it may appear.
   const body = page.locator("body");
@@ -822,6 +830,119 @@ studentTest("a real class shows what its own students did, and never a fixture",
   await expect(body).not.toContainText("Hypothetical demo data");
   await expect(body).not.toContainText("94/100");
   await noSeriousAxeViolations(page);
+});
+
+// ---------------------------------------------------------------------------
+// 23b. The same surface at a class-sized denominator. The runs are posted through
+//      the real submission endpoint from the real reducer, because what this
+//      asserts is the guard opening — not the clicking, which 23 already covers.
+// ---------------------------------------------------------------------------
+
+studentTest("a class of five is described as a class, and the lesson is on the class page", async ({ page, request, classCode }) => {
+  const key = createClassKeyFor(classCode);
+  const seats = ["2", "4", "6", "8", "10"];
+
+  // Four runs. Still not a class: counts and individual work, and nothing about the room.
+  await seedRuns(request, classCode, seats.slice(0, 4).map((seat) => ({ seat })));
+  await page.goto(`/educator/class/${classCode}?key=${key}`);
+  await expect(page.locator(".class-guard")).toContainText("4 turned in — individual work below");
+  await expect(page.locator(".choice-dist")).toHaveCount(0);
+  await expect(page.locator(".next-lesson")).toHaveCount(0);
+  await expect(page.getByText("%")).toHaveCount(0);
+  await expect(page.locator(".row-list > a")).toHaveCount(4);
+
+  // The fifth arrives and the guard opens: what they decided, and what to teach next.
+  await seedRuns(request, classCode, [{ seat: "10" }]);
+  await page.goto(`/educator/class/${classCode}?key=${key}&t=${Date.now()}`);
+  await expect(page.locator(".class-guard")).toHaveCount(0);
+  await expect(page.locator(".choice-dist").first()).toContainText("Where did they put Avery?");
+  await expect(page.locator(".class-header h1")).toContainText("% demonstrated");
+  await expect(page.locator(".class-header")).toContainText("of 5 assessed");
+
+  // §18.1 on the surface a teacher actually lands on, rather than under a different nav item.
+  const lesson = page.locator(".next-lesson");
+  await expect(lesson).toHaveAttribute("data-state", "one-gap");
+  await expect(lesson).toContainText("of 5 assessed students");
+  const spotlight = page.locator(".spotlight");
+  await expect(spotlight).toBeVisible();
+  // Nobody's writing has been read, and that is stated as an absence rather than counted.
+  await expect(spotlight).toContainText("writing has been read yet, so there is nothing to quote");
+  // The reading queue is a link from this page, not a sentence.
+  await expect(page.getByRole("link", { name: "5 awaiting your reading" })).toBeVisible();
+  await noSeriousAxeViolations(page);
+  await noHorizontalOverflow(page);
+
+  // A person reads all five, and the class's own words appear under the misconception.
+  for (const seat of seats) await scoreWriting(request, classCode, key, seat);
+  await page.goto(`/educator/class/${classCode}?key=${key}&t=${Date.now()}`);
+  await expect(page.locator(".spotlight__work blockquote").first()).toContainText("I kept the course money");
+  await expect(page.getByRole("link", { name: /awaiting your reading/ })).toHaveCount(0);
+
+  // And the debrief says the same thing, from the same reading, with the same numbers.
+  // This is the contradiction that made the product not worth believing: "nothing here needs
+  // reteaching" on one surface and a named gap on another, for the same class.
+  const why = await page.locator(".next-lesson__why").innerText();
+  const named = why.match(/(\d+) of (\d+) assessed students[\s\S]*did not show \u201c(.+?)\u201d/);
+  expect(named, `teach-next did not name a requirement: ${why}`).not.toBeNull();
+  const [, struggled, assessed, requirement] = named!;
+
+  await page.goto(`/educator/class/${classCode}/debrief?key=${key}`);
+  await expect(page.getByRole("heading", { name: "Debrief" })).toBeVisible();
+  const review = page.locator(".debrief__section").filter({ hasText: "What to review" });
+  await expect(review).toContainText(`${struggled} of ${assessed}`);
+  await expect(review).toContainText(String(requirement));
+  await expect(review).not.toContainText("Nothing here needs reteaching");
+});
+
+// ---------------------------------------------------------------------------
+// 23c. The reading queue: one surface for the largest job the product creates.
+// ---------------------------------------------------------------------------
+
+studentTest("a teacher reads and scores a whole class from one keyboard-operable queue", async ({ page, request, classCode }) => {
+  const key = createClassKeyFor(classCode);
+  await seedRuns(request, classCode, [{ seat: "3" }, { seat: "5" }, { seat: "9" }]);
+
+  await page.goto(`/educator/class/${classCode}?key=${key}`);
+  await page.getByRole("link", { name: "3 awaiting your reading" }).click();
+  await expect(page.getByRole("heading", { name: "Read and score the explanations." })).toBeVisible();
+  await expect(page.locator(".page-header")).toContainText("3 turned in · 3 still unread");
+
+  // Unread first, in seat order, and the position always carries its denominator.
+  await expect(page.locator(".reading-queue__bar p")).toContainText("1 of 3 · Seat 3 · unread");
+  await expect(page.getByRole("heading", { name: "Seat 3" })).toBeVisible();
+  await expect(page.locator(".student-response blockquote")).toContainText("Seat 3:");
+  await noSeriousAxeViolations(page);
+
+  // Nothing is stored until all four criteria are answered.
+  await expect(page.locator(".rubric-panel footer strong")).toContainText("\u2014/10");
+  await expect(page.getByRole("button", { name: "Save and read the next" })).toHaveAttribute("aria-disabled", "true");
+
+  // Scored from the keyboard, and saving moves the queue on and takes focus with it.
+  for (const [label, mark, max] of [["Workability", 2, 2], ["Protected priority", 2, 2], ["Tradeoff / opportunity cost", 1, 2], ["Numerical evidence", 3, 4]] as const) {
+    const button = page.getByRole("button", { name: `${label}: ${mark} of ${max}` });
+    await button.focus();
+    await page.keyboard.press("Enter");
+  }
+  await expect(page.locator(".rubric-panel footer strong")).toContainText("8/10");
+  const save = page.getByRole("button", { name: "Save and read the next" });
+  await save.focus();
+  await page.keyboard.press("Enter");
+
+  await expect(page.locator(".reading-queue__bar p")).toContainText("2 of 3 · Seat 5");
+  await expect(page.locator("h2:focus")).toHaveText("Seat 5");
+
+  // Previous goes back to the seat just scored, and its marks are the ones recorded.
+  await page.getByRole("button", { name: "← Previous" }).click();
+  await expect(page.locator(".reading-queue__bar p")).toContainText("1 of 3 · Seat 3 · scored 8/10");
+  await expect(page.locator(".rubric-panel footer strong")).toContainText("8/10");
+
+  // And it is on the record rather than in this tab.
+  const room = await request.get(`http://127.0.0.1:4180/api/classes/${classCode}/submissions`, {
+    headers: { "X-BOW-Teacher-Key": key },
+  });
+  const body = (await room.json()) as { submissions: { seatCode: string; reasoningPoints: number | null }[] };
+  expect(body.submissions.find((entry) => entry.seatCode === "3")?.reasoningPoints).toBe(8);
+  expect(body.submissions.find((entry) => entry.seatCode === "5")?.reasoningPoints).toBeNull();
 });
 
 studentTest("an educator reads one student's evidence and scores their writing", async ({ page, classCode }) => {
@@ -842,10 +963,19 @@ studentTest("an educator reads one student's evidence and scores their writing",
   await waitForDelivery(page);
 
   await page.goto(`/educator/class/${classCode}/students/5?key=${key}`);
-  // The page is about a student, not about what has not happened to them yet: the headline
-  // names the seat, and whether their writing has been read sits with the other figures.
+  // The page is about a student, and it leads with what their evidence shows. The points
+  // total used to be the largest thing here, two hundred pixels above a red "Not
+  // demonstrated" it never reconciled with; it is one labelled line at the bottom now.
   await expect(page.getByRole("heading", { name: "Seat 5", exact: true })).toBeVisible();
-  await expect(page.locator(".student-evidence-header")).toContainText("Not read");
+  const lead = page.locator(".student-lead");
+  await expect(lead).toBeVisible();
+  await expect(lead).toContainText("What the evidence shows");
+  await expect(page.locator(".student-evidence-header")).not.toContainText("/100");
+  await expect(page.locator(".student-evidence-header")).not.toContainText("90");
+  // Nobody has read the writing, so the evidence is not all in and the page says which piece.
+  await expect(lead).toContainText("Not assessed yet");
+  await expect(lead).toContainText("written explanation has not been read");
+  await expect(page.locator(".gradebook")).toContainText("structured");
 
   // §19.2. The page opens on the trail, because the reason to open one student is to check a
   // conclusion — and every judgement on it points at a moment in this student's own log.
@@ -874,9 +1004,11 @@ studentTest("an educator reads one student's evidence and scores their writing",
   await expect(page.getByText("Saved.")).toBeVisible();
 
   await page.reload();
-  // The together-figure only exists once a person has read the writing, and it sits
-  // with the other two rather than replacing the student it is about.
-  await expect(page.locator(".student-evidence-header")).toContainText("/100");
+  // The together-figure only exists once a person has read the writing, and it is a
+  // gradebook line at the bottom of the page that says what it counts.
+  await expect(page.locator(".gradebook")).toContainText("of 100");
+  await expect(page.locator(".gradebook")).toContainText("It counts marks.");
+  await expect(page.locator(".student-evidence-header")).not.toContainText("of 100");
   await noSeriousAxeViolations(page);
 });
 
@@ -936,7 +1068,8 @@ studentTest("the debrief is built from the class, and says so when there is noth
 
   // Before anybody submits, the debrief refuses to invent one.
   await page.goto(`/educator/class/${classCode}/debrief?key=${key}`);
-  await expect(page.getByRole("heading", { name: "There is nothing to debrief yet." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Nothing to debrief yet." })).toBeVisible();
+  await expect(page.getByText("No runs turned in yet. The debrief opens when work arrives.")).toBeVisible();
 
   for (const [seat, index, setupId, clinics] of [["2", 0, "gym-sublet", true], ["7", 2, "cousin-room", false]] as const) {
     const context: PlanContext = { setupId };
@@ -961,7 +1094,16 @@ studentTest("the debrief is built from the class, and says so when there is noth
   // Two real plans, side by side, and the students' own words.
   await expect(page.locator(".debrief__plan")).toHaveCount(2);
   await expect(page.locator(".debrief__quotes blockquote").first()).toContainText("my plan still works");
-  await expect(page.locator(".debrief__prompts li").first()).toBeVisible();
+
+  // Two students is not a class. The debrief opens on their two plans rather than on a
+  // sentence about the room, and §4 refuses a lesson instead of inventing one — this page
+  // used to print "Nothing here needs reteaching" whatever the evidence said.
+  await expect(page.locator(".debrief__prompts")).toHaveCount(0);
+  await expect(page.locator(".debrief__section").first()).toContainText("opens on the plans below");
+  const review = page.locator(".debrief__section").filter({ hasText: "What to review" });
+  await expect(review).toContainText("nothing to review from");
+  await expect(review).toContainText("still to read");
+  await expect(review).not.toContainText("Nothing here needs reteaching");
   await noSeriousAxeViolations(page);
 });
 
@@ -1024,6 +1166,9 @@ studentTest("a student who over-commits can still land and turn in a plan they c
 // ---------------------------------------------------------------------------
 
 studentTest("every educator route passes an accessibility scan, including the real class", async ({ page, request, classCode }) => {
+  // One student run, then twenty-one routes, each scanned and each checked for sideways
+  // spill. It is a sweep rather than a test of one thing, and it does not fit the default.
+  test.setTimeout(120_000);
   const key = createClassKeyFor(classCode);
   // A class with work in it and a class with none are different pages; both are scanned.
   const empty = await createClass(request, "Empty class");
@@ -1045,6 +1190,7 @@ studentTest("every educator route passes an accessibility scan, including the re
 
   for (const path of [
     "/educator/guide",
+    "/educator/classes",
     "/educator/classes/new",
     "/educator/teaching-companion",
     "/educator/demo",
@@ -1059,6 +1205,7 @@ studentTest("every educator route passes an accessibility scan, including the re
     "/educator/assign?frameworkId=nysed-pf-2026&code=1.3",
     `/educator/class/${classCode}?key=${key}`,
     `/educator/class/${classCode}/students/6?key=${key}`,
+    `/educator/class/${classCode}/reading?key=${key}`,
     `/educator/class/${classCode}/debrief?key=${key}`,
     `/educator/class/${empty.code}?key=${empty.teacherKey}`,
     `/educator/class/${empty.code}/debrief?key=${empty.teacherKey}`,
@@ -1226,6 +1373,28 @@ test("a teacher creates a class with an objective and a student joins with the c
 //     checkpoint a teacher can use, so it is asserted the way they would use it.
 // ---------------------------------------------------------------------------
 
+test("an objective can be set for a class a teacher already has, from the classes page", async ({ page, request }) => {
+  const created = await createClass(request, "Second period");
+  // Opening the class once is how this browser comes to hold its key. There is no
+  // server-side index of a teacher's classes, so this is also how they reach it.
+  await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}`);
+  await expect(page.getByRole("heading", { name: "Nothing turned in yet." })).toBeVisible();
+
+  // The one path to assigning: the objective travels in the URL from its own page.
+  await page.goto("/educator/objectives/nysed-pf-2026/1.3");
+  await page.getByRole("link", { name: "Assign this" }).click();
+  await expect(page.getByRole("heading", { name: /Set 1\.3 .* for a class you already have/ })).toBeVisible();
+  await page.getByRole("button", { name: "Set it" }).click();
+  await expect(page.getByText(`Set. Students use code ${created.code}.`)).toBeVisible();
+
+  const assignments = await request.get(`http://127.0.0.1:4180/api/classes/${created.code}/assignments`);
+  const set = (await assignments.json()) as { assignments: { objectiveRef: { code: string } | null; competencyIds: string[] }[] };
+  expect(set.assignments).toHaveLength(1);
+  expect(set.assignments[0].objectiveRef?.code).toBe("1.3");
+  expect(set.assignments[0].competencyIds).toEqual(["plan-within-income"]);
+  await noSeriousAxeViolations(page);
+});
+
 test("a teacher searches for budget, finds 1.3, and reads its exact wording", async ({ page }) => {
   await page.goto("/educator/objectives");
   await expect(page.getByRole("heading", { name: "What do you want to assess?" })).toBeVisible();
@@ -1251,32 +1420,39 @@ test("a teacher searches for budget, finds 1.3, and reads its exact wording", as
 });
 
 test("the objective screens name one set of skills and one grammatical sentence", async ({ page }) => {
-  // Three defects a cold read found, pinned. The coverage table said "full" on a page
-  // headed "BOW cannot assess this yet"; the class breakdown listed skills the objective
+  // Two defects a cold read found, pinned. The class breakdown listed skills the objective
   // does not rest on, so the page named two at the top and different ones underneath; and
   // the coming page shipped "everything it ask for" above the fold.
   await page.goto("/educator/objectives/nysed-pf-2026/4.2");
   await expect(page.getByText("everything it asks for", { exact: false })).toBeVisible();
   await expect(page.getByText(/it ask for/)).toHaveCount(0);
-  // Coverage and assessability are different claims and both are on screen.
-  const row = page.locator(".micro-table tbody tr").first();
-  await expect(row).toContainText("full");
-  await expect(row).toContainText("None yet");
 
   await page.goto("/educator/objectives/nysed-pf-2026/1.3");
   const skills = page.locator(".micro-table tbody th code");
   await expect(skills).toHaveCount(2);
+  // Coverage and assessability are different claims, and both are on the page a teacher can
+  // actually act on. "full" alone would read as "BOW can assess this".
+  const row = page.locator(".micro-table tbody tr").first();
+  await expect(row).toContainText("full");
+  await expect(row).toContainText("Built");
 });
 
-test("an objective with no world says so instead of reporting nothing as zero", async ({ page }) => {
+test("an objective with no world is a short honest page, not a dashboard of empty sections", async ({ page }) => {
   await page.goto("/educator/objectives/nysed-pf-2026/4.2");
-  // Authored prose and a way out, rather than a sentence built around a statement that
-  // ended in its own full stop, on a page with no exit.
+  // What it is, its framework's own sentence, the fact that BOW cannot assess it, and a way
+  // out. Twenty-two of these exist; none of them is a results page with nothing in it.
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.locator(".objective-wording")).not.toBeEmpty();
   await expect(page.getByText("BOW cannot assess this objective yet.", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Assign this" })).toHaveCount(0);
   await expect(page.getByText("%")).toHaveCount(0);
   await expect(page.getByText(/\.\s+—\s+and/)).toHaveCount(0);
   await expect(page.getByRole("link", { name: "See what BOW can assess" })).toBeVisible();
+  // The sections that could only ever be empty here are gone: no skills table, no results
+  // block explaining that no class has been set something no class can be set.
+  await expect(page.locator(".micro-table")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Your classes" })).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText("has been set this objective");
 });
 
 test("a teacher assigns 1.3, three students submit, and the objective reports what they did", async ({ page, browser, request }) => {
@@ -1285,16 +1461,15 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   await page.goto("/educator/objectives/nysed-pf-2026/1.3");
   await page.getByRole("link", { name: "Assign this" }).click();
 
-  // §17.1's target: the objective arrives already chosen, and there is no second step —
-  // one world means a step with one answer, which is a step that makes the flow slower to
-  // look thorough. Which world it is belongs in the confirmation, not in a numbered box.
-  await expect(page.getByText("1.3 Create a budget")).toBeVisible();
-  await expect(page.locator(".assign-steps > li")).toHaveCount(2);
-  await expect(page.getByText(/Students play Plan Under Pressure/)).toBeVisible();
-  await page.getByLabel("New class name").fill("Period 3 · Grade 7");
-  await page.getByRole("button", { name: "Assign and get the code" }).click();
+  // §17.1's target, and one path to it: assigning is creating the class that will do it, or
+  // setting it for one that already exists. The objective travels in the URL and arrives
+  // already chosen. There is no second screen that also creates classes.
+  await expect(page).toHaveURL(/\/educator\/classes\?objective=1\.3/);
+  await expect(page.getByLabel("Objective")).toHaveValue("1.3");
+  await page.getByLabel("Name this class").fill("Period 3 · Grade 7");
+  await page.getByRole("button", { name: "Create the class" }).click();
 
-  await expect(page.getByRole("heading", { name: "Assigned. Here is the code." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Here is the code." })).toBeVisible();
   const code = (await page.locator(".class-created__code strong").innerText()).trim();
   const teacherKey = new URL(await page.locator(".class-created__key code").innerText()).searchParams.get("key") ?? "";
   await noSeriousAxeViolations(page);
@@ -1392,11 +1567,13 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   await noSeriousAxeViolations(page);
   await noHorizontalOverflow(page);
 
-  // And the evidence behind the number is one click away.
+  // And the evidence behind the number is one click away, on a page that refuses the same
+  // claims from the same three students.
   await page.getByRole("link", { name: "Open this class’s evidence" }).click();
-  await expect(page.getByRole("heading", { name: "What the class did" })).toBeVisible();
   await expect(page.locator(".class-header")).toContainText("Period 3 · Grade 7");
-  await expect(page.locator(".class-header")).toContainText("3 submissions");
+  await expect(page.locator(".class-header")).toContainText("3 turned in");
+  await expect(page.locator(".class-guard")).toContainText("fewer than 5 runs");
+  await expect(page.locator(".class-header h1")).toContainText("3 of 3 assessed showed the skill");
 
   const room = await request.get(`http://127.0.0.1:4180/api/classes/${code}/submissions`, {
     headers: { "X-BOW-Teacher-Key": teacherKey },
@@ -1412,24 +1589,27 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
 //     in two views, with a coverage mark only a person can set.
 // ---------------------------------------------------------------------------
 
-test("the map shows all 23 objectives in five topics, and says coming rather than zero", async ({ page }) => {
+test("the map leads with what a class can be assessed on, and keeps the rest quiet", async ({ page }) => {
   await page.goto("/educator/map");
-  await expect(page.getByRole("heading", { name: "Where this class stands." })).toBeVisible();
+  // The hero is a teacher's own coverage record. It used to read COVERED 0 of 23 and BOW
+  // CANNOT ASSESS YET 22 — a product's gap, in the largest type on the first educator screen.
+  await expect(page.getByRole("heading", { name: "What your classes have covered." })).toBeVisible();
+  await expect(page.locator(".map-tally")).toContainText("Marked taught");
+  await expect(page.locator(".map-tally")).toContainText("Assessed");
+  await expect(page.locator(".map-tally")).not.toContainText("cannot assess");
 
-  // Five topic bands in the framework's own order, and every objective in one of them.
-  await expect(page.locator(".topic-band")).toHaveCount(5);
-  await expect(page.locator(".topic-band li")).toHaveCount(23);
-
-  // Twenty-two have no world. They read "Coming" — never a share, never a zero.
-  await expect(page.locator('.topic-band a[data-state="not-available"]')).toHaveCount(22);
-  await expect(page.locator(".topic-bands")).toContainText("Coming");
+  // What BOW can assess leads, in its own topic band, with its state in words beside a mark.
+  await expect(page.locator(".topic-band li")).toHaveCount(1);
+  await expect(page.locator(".topic-band .state-mark")).toHaveCount(1);
+  await expect(page.locator('.topic-band a[data-state="not-taught"] .chip-state')).toContainText("Not taught");
   await expect(page.locator(".topic-bands").getByText("%")).toHaveCount(0);
 
-  // State is never carried by colour alone: every chip prints its word beside a mark whose
-  // geometry differs, so a greyscale printout loses nothing.
-  const marks = page.locator(".topic-band .state-mark");
-  await expect(marks).toHaveCount(23);
-  await expect(page.locator('.topic-band a[data-state="not-taught"] .chip-state')).toContainText("Not taught");
+  // The other twenty-two are still here, still linked, still saying coming rather than zero —
+  // in a quiet section under it rather than as twenty-two of the twenty-three chips.
+  const waiting = page.locator(".map-waiting");
+  await expect(waiting).toContainText("Not yet assessable");
+  await expect(waiting.locator("li")).toHaveCount(22);
+  await expect(waiting).toContainText("never as nobody having demonstrated them");
   await noSeriousAxeViolations(page);
   await noHorizontalOverflow(page);
 });
@@ -1454,13 +1634,20 @@ test("the map filters by topic and by status, and records a coverage mark a pers
   // way the map can read it — there is no server-side index of a teacher's classes.
   await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}`);
   await expect(page.getByRole("heading", { name: "Nothing turned in yet." })).toBeVisible();
+  // In a classroom this screen's job is the code on a projector, with the address beside it.
+  await expect(page.locator(".class-created__code strong")).toHaveText(created.code);
+  await expect(page.locator(".join-address")).toContainText("/challenges/plan-under-pressure");
 
   await page.goto("/educator/map");
+  // Topic 2 has no assessable objective, so the band is empty and all four are in the quiet
+  // list. The filter applies to both halves of the page.
   await page.getByLabel("Topic").selectOption("2");
-  await expect(page.locator(".topic-band li")).toHaveCount(4);
+  await expect(page.locator(".topic-band li")).toHaveCount(0);
+  await expect(page.locator(".map-waiting li")).toHaveCount(4);
   await page.getByLabel("Topic").selectOption("");
   await page.getByLabel("Status").selectOption("not-taught");
   await expect(page.locator(".topic-band li")).toHaveCount(1);
+  await expect(page.locator(".map-waiting li")).toHaveCount(0);
 
   // Taught is per class per objective, and it is set by a person — never inferred.
   await page.getByLabel("Status").selectOption("");

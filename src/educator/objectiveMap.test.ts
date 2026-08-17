@@ -99,8 +99,11 @@ describe("the whole framework, every time", () => {
   });
 
   it("counts the worlds behind an objective rather than claiming one", () => {
+    // Two worlds produce every requirement of the competency 1.3 is fully mapped to, so a
+    // teacher sees two. 4.2 has a mapping and nothing built, and reads as zero rather than as
+    // a class that did badly at it.
     const all = rows([]);
-    expect(rowFor(all, "1.3")?.worlds).toBe(1);
+    expect(rowFor(all, "1.3")?.worlds).toBe(2);
     expect(rowFor(all, "4.2")?.worlds).toBe(0);
   });
 });

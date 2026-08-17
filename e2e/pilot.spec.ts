@@ -10,6 +10,7 @@ import {
   passWeek5Calculation,
   playSeasonWeeks,
   readWeek8Resolution,
+  seedRuns,
   submitDefense,
   waitForDelivery,
 } from "./flow";
@@ -124,20 +125,25 @@ test("a whole class runs end to end across separate devices and the educator rea
   const page = await context.newPage();
   try {
     await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}`);
-    await expect(page.getByRole("heading", { name: "What the class did" })).toBeVisible();
-    await expect(page.getByText("3 submissions")).toBeVisible();
+    await expect(page.locator(".class-header")).toContainText("3 turned in");
+    // Three runs is not a class: counts and individual work, and nothing about the room.
+    await expect(page.locator(".class-guard")).toContainText("individual work below");
+    await expect(page.locator(".choice-dist")).toHaveCount(0);
 
     // Every seat that ran, and no seat that did not.
     const body = page.locator("body");
     for (const student of STUDENTS) await expect(body).toContainText(student.seat);
 
-    // Each of the three chose a different place, so the housing distribution has to show
-    // three ones rather than a shape borrowed from anywhere.
+    // Two more runs, posted the way a student's device posts them, and the same page
+    // describes the class: the decisions, with the seats behind every count.
+    await seedRuns(request, created.code, [{ seat: "22" }, { seat: "27" }]);
+    await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}&t=${Date.now()}`);
+    await expect(page.locator(".class-guard")).toHaveCount(0);
     const housing = page.locator(".choice-dist").first();
     await expect(housing).toContainText("Where did they put Avery?");
-    await expect(housing.locator("li b")).toHaveText(["1", "1", "1"]);
+    await expect(housing.locator("li b").first()).not.toBeEmpty();
 
-    // The one who reserved the seat is the only one who did.
+    // The one who reserved the seat is still the only one who did.
     const deposit = page.locator(".choice-dist").filter({ hasText: "When did they commit to the course?" });
     await expect(deposit).toContainText("seat 19");
 
@@ -149,10 +155,10 @@ test("a whole class runs end to end across separate devices and the educator rea
     // The debrief is built from the same three runs.
     await page.goto(`/educator/class/${created.code}/debrief?key=${created.teacherKey}`);
     await expect(page.getByRole("heading", { name: "Debrief" })).toBeVisible();
-    await expect(page.getByText("3 students finished")).toBeVisible();
+    await expect(page.getByText("5 students finished")).toBeVisible();
     await expect(page.locator(".debrief__plan")).toHaveCount(2);
     const quotes = page.locator(".debrief__quotes blockquote");
-    await expect(quotes).toHaveCount(3);
+    await expect(quotes).toHaveCount(4);
     for (const student of STUDENTS) {
       await expect(page.locator(".debrief__quotes")).toContainText(`Seat ${student.seat}:`);
     }
@@ -186,9 +192,8 @@ test("the production build serves the same class path", async ({ browser, reques
     await runStudent(page, created.code, { seat: "31", index: 1, setupId: "teammate-share", clinics: false, deposit: false, countBonus: false });
 
     await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}`);
-    await expect(page.getByRole("heading", { name: "What the class did" })).toBeVisible();
-    await expect(page.getByText("1 submission")).toBeVisible();
-    await expect(page.locator("body")).toContainText("seat 31");
+    await expect(page.locator(".class-header")).toContainText("1 turned in");
+    await expect(page.locator(".row-list")).toContainText("Seat 31");
   } finally {
     await context.close();
   }

@@ -50,6 +50,22 @@ export const COMPETENCY_STATE_LABELS: Record<CompetencyResultState, string> = {
   incomplete: "still incomplete",
 };
 
+/**
+ * The same six states as a heading rather than as the tail of a sentence.
+ *
+ * The student page leads with one of these, so it is written as a status a teacher reads in
+ * one glance. The two absences say what they are: *incomplete* is evidence that is not all
+ * in yet, and the page says which piece is missing underneath.
+ */
+export const COMPETENCY_STATE_HEADLINES: Record<CompetencyResultState, string> = {
+  demonstrated: "Demonstrated",
+  "demonstrated-with-support": "Demonstrated with support",
+  developing: "Developing",
+  "not-yet-demonstrated": "Not yet demonstrated",
+  "not-observed": "Not observed in this run",
+  incomplete: "Not assessed yet",
+};
+
 /** The class-level states, for the sentence that sits beside the number (§10.7). */
 export const OBJECTIVE_STATE_LABELS: Record<ObjectiveResultState, string> = {
   strong: "Strong",
@@ -60,16 +76,19 @@ export const OBJECTIVE_STATE_LABELS: Record<ObjectiveResultState, string> = {
 };
 
 /**
- * The two nav labels that name a framework, composed rather than typed.
+ * The nav label that names a framework, composed rather than typed.
  *
- * "NYSED view" was a literal in the shell. A New Jersey deployment would have shown a New
- * York acronym in its own navigation, and nobody would have found it by reading a component
- * that had no other framework in it. `frameworkNaming.test.ts` fails the build if a
- * framework's short name appears in a teacher-facing string anywhere outside this file.
+ * A New Jersey deployment must not read a New York acronym in its own navigation, and
+ * nobody would find it by reading a component that had no other framework in it.
+ * `frameworkNaming.test.ts` fails the build if a framework's short name appears in a
+ * teacher-facing string anywhere outside this file.
+ *
+ * The second entry here was "NYSED view", the nav item that dropped a teacher into
+ * fabricated student records from the row beside their real class. It is reached from the
+ * sample class now, so the label went with it.
  */
 export const NAV_LABELS = {
   objectives: `${labelsFor(NAV_FRAMEWORK)?.unitNounShort ?? "Objective"}s`,
-  frameworkView: `${labelsFor(NAV_FRAMEWORK)?.frameworkShort ?? "Framework"} view`,
 } as const;
 
 /**
@@ -112,6 +131,22 @@ export const LEVEL_LABELS: Record<0 | 2 | 3 | 4 | 5 | "null", string> = {
   2: "Partly",
   0: "Not demonstrated",
   null: "Never came up",
+};
+
+/**
+ * What each level means, in the words a teacher would use to a colleague.
+ *
+ * Six one-word labels are a glossary a teacher does not have. They are shown beside the
+ * labels wherever a person is asked to pick one, because "Partly" and "After a hint" are BOW's
+ * distinctions and nobody outside this codebase has agreed to them.
+ */
+export const LEVEL_DESCRIPTIONS: Record<0 | 2 | 3 | 4 | 5 | "null", string> = {
+  5: "Did it unaided, the first time it mattered.",
+  4: "Got it wrong, saw what that cost, and fixed it themselves.",
+  3: "Did it after a hint that named the problem.",
+  2: "Part of it, not all of it.",
+  0: "Did not do it.",
+  null: "The run never asked this of them.",
 };
 
 /** What was on screen when the student did it, said as the reason a level is capped. */

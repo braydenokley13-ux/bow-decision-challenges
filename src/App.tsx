@@ -5,10 +5,11 @@ import { CourtBackdrop } from "./components/story/CourtBackdrop";
 import { RosterCard } from "./components/story/RosterCard";
 import { StudentChallenge } from "./stages/StudentChallenge";
 import { ClassOverview, ConceptDrilldown, EducatorGuide, ReasoningReview, StandardsView, StudentEvidence, TeachingCompanion } from "./educator/EducatorPages";
-import { ClassSetup } from "./educator/ClassSetup";
+import { MyClasses } from "./educator/MyClasses";
 import { AssignFlow, ObjectiveDetail, ObjectiveList } from "./educator/ObjectivePages";
 import { ObjectiveMap } from "./educator/ObjectiveMap";
 import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPages";
+import { ReadingQueue } from "./educator/ReadingQueue";
 import { Debrief } from "./educator/Debrief";
 import { PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
 
@@ -45,18 +46,25 @@ export function App() {
       {/* The route this shipped on. Class codes and bookmarks already point at it, so it
           redirects rather than 404s — and keeps redirecting after Challenge #2 lands. */}
       <Route path="/challenge" element={<Navigate to={PLAN_UNDER_PRESSURE.route} replace />} />
+      {/* An educator lands on their own classes. The map is a click away in the nav; it is
+          a year-planning surface, not the thing a teacher opens mid-week. */}
+      <Route path="/educator" element={<Navigate to="/educator/classes" replace />} />
+      <Route path="/educator/classes" element={<MyClasses />} />
+      <Route path="/educator/classes/new" element={<MyClasses />} />
       <Route path="/educator/guide" element={<EducatorGuide />} />
-      <Route path="/educator/classes/new" element={<ClassSetup />} />
-      {/* The objective a teacher assigns, the list they find it in, and the flow that
-          turns it into a code. Real classes only; there is no demo objective. */}
+      {/* The objective a teacher assigns and the list they find it in. Real classes only;
+          there is no demo objective. */}
       <Route path="/educator/map" element={<ObjectiveMap />} />
       <Route path="/educator/objectives" element={<ObjectiveList />} />
       <Route path="/educator/objectives/:frameworkId/:code" element={<ObjectiveDetail />} />
+      {/* One path to assigning work, and it is the classes page. This is the URL the old
+          second path shipped on. */}
       <Route path="/educator/assign" element={<AssignFlow />} />
       <Route path="/educator/teaching-companion" element={<TeachingCompanion />} />
       {/* A real class. Everything under here reads submitted evidence and nothing else. */}
       <Route path="/educator/class/:code" element={<RealClassOverview />} />
       <Route path="/educator/class/:code/students/:seatCode" element={<RealStudentEvidence />} />
+      <Route path="/educator/class/:code/reading" element={<ReadingQueue />} />
       <Route path="/educator/class/:code/debrief" element={<Debrief />} />
       {/* The fixture class, behind a route that says so. It exists to show an educator the
           shape of the evidence before they run one, and it can never be reached from a

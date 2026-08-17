@@ -5,8 +5,12 @@ import { seatList, type StudentRow } from "./analysis";
 import { formatDollars } from "../domain/core/money";
 import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
-import { CONCEPTS } from "../domain/blueprint/concepts";
-import { STATUS_LABELS } from "./labels";
+import { MINIMUM_RESULTS_FOR_CLASS_NARRATION } from "../domain/competency/objectiveState";
+import { GAP_THRESHOLD_PERCENT, type TeachNextReading } from "../domain/competency/teachNext";
+import type { AttributedSubmission } from "../platform/classes/types";
+import { classSpineFrom, type ClassSpine } from "./classSpine";
+import { studentSpineFor } from "./studentSpine";
+import { COMPETENCY_STATE_HEADLINES } from "./labels";
 
 /**
  * The debrief. What to say to the room after they have all finished.
@@ -15,7 +19,13 @@ import { STATUS_LABELS } from "./labels";
  * read down it, and run twenty minutes of discussion from it without preparing anything.
  * Everything on it is drawn from this class — the two contrasting plans are two real
  * students, the prompts are earned by something the class actually disagreed about, and
- * the concepts flagged for review are the ones this class's evidence is short of.
+ * what it says to review is the same requirement reading the objective page prescribes from.
+ *
+ * That last point is the whole of §4 below. This page used to roll the evidence up to
+ * concept level and print "nothing here needs reteaching" for a class the objective page was
+ * prescribing a twelve-minute reteach for, because a failed required requirement disappears
+ * inside a concept that passed on the others. Both surfaces now read `classSpineFrom`, so
+ * disagreeing is no longer something they can do.
  *
  * It prints. A teacher standing at the front of a room is not holding a laptop.
  */
@@ -36,7 +46,7 @@ export function Debrief() {
     );
   }
 
-  const { analysis, record } = state;
+  const { analysis, record, assignments, submissions } = state;
   const total = analysis.rows.length;
 
   if (total === 0) {
@@ -44,15 +54,15 @@ export function Debrief() {
       <EducatorShell measure="read">
         <header className="page-header">
           <p className="eyebrow">{record.label} · Debrief</p>
-          <h1>There is nothing to debrief yet.</h1>
-          <p>No student in class {record.code} has turned work in. A debrief built on no evidence would be a worksheet, so there is not one.</p>
+          <h1>Nothing to debrief yet.</h1>
+          <p>No runs turned in yet. The debrief opens when work arrives.</p>
         </header>
         <Link className="button button--secondary" to={`/educator/class/${record.code}${keyQuery}`}>Back to the class</Link>
       </EducatorShell>
     );
   }
 
-  const needingReview = analysis.concepts.filter((concept) => concept.needsFollowUp.length > 0);
+  const spine = classSpineFrom({ record, assignments, submissions });
 
   return (
     <EducatorShell measure="read">
@@ -61,8 +71,7 @@ export function Debrief() {
           <p className="eyebrow">{record.label} · {BASKETBALL_SCENARIO.title}</p>
           <h1>Debrief</h1>
           <p className="lede">
-            {total} {total === 1 ? "student" : "students"} finished. Everything below comes from what they
-            submitted — nothing here is a sample or an average of other classes.
+            {total} {total === 1 ? "student" : "students"} finished. <DebriefLead spine={spine} />
           </p>
           <div className="debrief__actions no-print">
             <Link className="button button--secondary" to={`/educator/class/${record.code}${keyQuery}`}>Back to the class</Link>
@@ -72,8 +81,13 @@ export function Debrief() {
 
         <section className="debrief__section">
           <h2>1 · Open with the disagreement</h2>
-          {analysis.prompts.length === 0 ? (
-            <p>Not enough finished work yet to find a disagreement worth opening on.</p>
+          {!spine.narratable ? (
+            <p>
+              Under {MINIMUM_RESULTS_FOR_CLASS_NARRATION} results, this opens on the plans below rather than on
+              anything about the class.
+            </p>
+          ) : analysis.prompts.length === 0 ? (
+            <p>Nothing this class did splits it, so there is no disagreement to open on.</p>
           ) : (
             <ol className="debrief__prompts">
               {analysis.prompts.map((prompt) => (
@@ -90,13 +104,15 @@ export function Debrief() {
           <h2>2 · Put two real plans side by side</h2>
           {analysis.contrast ? (
             <div className="debrief__contrast">
-              {analysis.contrast.map((row) => <ContrastCard key={row.sessionId} row={row} />)}
+              {analysis.contrast.map((row) => (
+                <ContrastCard key={row.sessionId} row={row} submissions={submissions} />
+              ))}
             </div>
           ) : (
             <p>
               {total < 2
-                ? "Only one student has finished, so there is no second plan to set beside it yet."
-                : "Every finished plan made the same calls, so there is no contrast to draw. That is worth saying out loud — ask what would have made another plan the better one."}
+                ? "One student has finished, so there is no second plan to set beside it yet."
+                : "Every finished plan made the same calls. Ask what would have made another plan the better one."}
             </p>
           )}
         </section>
@@ -127,22 +143,7 @@ export function Debrief() {
 
         <section className="debrief__section">
           <h2>4 · What to review</h2>
-          {needingReview.length === 0 ? (
-            <p>Every concept is showing as demonstrated across this class. Nothing here needs reteaching.</p>
-          ) : (
-            <ul className="debrief__list">
-              {needingReview.map((concept) => {
-                const definition = CONCEPTS.find((item) => item.id === concept.conceptId);
-                return (
-                  <li key={concept.conceptId}>
-                    <b>{concept.code} · {concept.label}</b>
-                    <span> — {concept.needsFollowUp.length} of {total} still short ({seatList(concept.needsFollowUp)}).</span>
-                    {definition && <span> Reteach hook: <code>{definition.reteachId}</code>.</span>}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <WhatToReview spine={spine} classCode={record.code} keyQuery={keyQuery} />
         </section>
 
         <section className="debrief__section">
@@ -169,8 +170,83 @@ export function Debrief() {
   );
 }
 
-function ContrastCard({ row }: { row: StudentRow }) {
+/** The same figure the class page leads with, and never a share the denominator cannot carry. */
+function DebriefLead({ spine }: { spine: ClassSpine }) {
+  if (!spine.reading || spine.assessed === 0) {
+    return <>Nobody has a usable result yet{spine.awaitingReading > 0 ? `, because ${spine.awaitingReading} of the written explanations have not been read` : ""}.</>;
+  }
+  if (spine.reading.result.percentDemonstrated === null) {
+    return <>{spine.reading.result.demonstrated} of {spine.assessed} assessed showed the skill.</>;
+  }
+  return <>{spine.reading.result.percentDemonstrated}% of the {spine.assessed} assessed students demonstrated it.</>;
+}
+
+/**
+ * §18, said to a room instead of to a dashboard.
+ *
+ * Same module, same denominator, same requirement, same counts as the objective page and the
+ * class page. Where those two render the lesson in full, this renders the sentence a teacher
+ * says out loud and links to the rest.
+ */
+function WhatToReview({ spine, classCode, keyQuery }: { spine: ClassSpine; classCode: string; keyQuery: string }) {
+  const reading: TeachNextReading | null = spine.reading?.teachNext ?? null;
+  if (!reading || reading.state === "not-assessed") {
+    return (
+      <p>
+        Nobody has a usable result yet, so there is nothing to review from.
+        {spine.awaitingReading > 0 && ` ${spine.awaitingReading} written ${spine.awaitingReading === 1 ? "explanation is" : "explanations are"} still to read.`}
+      </p>
+    );
+  }
+  if (reading.state === "too-few-assessed") {
+    return (
+      <p>
+        {reading.assessed} {reading.assessed === 1 ? "student has" : "students have"} a usable result. Under
+        {" "}{MINIMUM_RESULTS_FOR_CLASS_NARRATION}, BOW does not name a lesson for the class.{" "}
+        <Link to={`/educator/class/${classCode}${keyQuery}`}>The counts are on the class page.</Link>
+      </p>
+    );
+  }
+  if (reading.state === "no-single-gap") {
+    return (
+      <p>
+        No single requirement reached {GAP_THRESHOLD_PERCENT}% of the {reading.assessed} assessed students. The class
+        is spread across small issues rather than one shared misunderstanding — review individual students.
+      </p>
+    );
+  }
+  const top = reading.top!;
+  return (
+    <>
+      <p>
+        <b>{top.struggled} of {reading.assessed}</b> assessed students did not show “{top.label.toLowerCase()}”.
+        {top.notObserved > 0 && ` A further ${top.notObserved} were never asked it.`}
+      </p>
+      {reading.reteach ? (
+        <>
+          <p><b>{reading.reteach.title}.</b> {reading.reteach.focus}</p>
+          <ol className="debrief__list">
+            {reading.reteach.moves.map((move) => <li key={move}>{move}</li>)}
+          </ol>
+          <p>About {reading.reteach.minutes} minutes.</p>
+        </>
+      ) : (
+        <p>
+          BOW names no misconception behind this one, so there is no reteach to hand you. What the work had to
+          show is: {top.observableRule.charAt(0).toLowerCase()}{top.observableRule.slice(1)}.
+        </p>
+      )}
+      <p className="no-print">
+        <Link to={`/educator/class/${classCode}${keyQuery}`}>The students who need it are on the class page.</Link>
+      </p>
+    </>
+  );
+}
+
+function ContrastCard({ row, submissions }: { row: StudentRow; submissions: readonly AttributedSubmission[] }) {
   const place = BASKETBALL_SCENARIO.setups.find((setup) => setup.id === row.setupId);
+  const submission = submissions.find((entry) => entry.sessionId === row.sessionId);
+  const spine = submission ? studentSpineFor(submission) : null;
   return (
     <article className="debrief__plan">
       <p className="eyebrow">Seat {row.seatCode}</p>
@@ -194,9 +270,13 @@ function ContrastCard({ row }: { row: StudentRow }) {
           {" Ends holding "}{formatDollars(row.resolution.endCash)}.
         </p>
       )}
-      <p className="debrief__status">
-        {row.result.concepts.map((concept) => `${concept.conceptId}: ${STATUS_LABELS[concept.status]}`).slice(0, 2).join(" · ")}
-      </p>
+      {/* The same reading as the class list and this student's own page. */}
+      {spine && (
+        <p className="debrief__status">
+          {COMPETENCY_STATE_HEADLINES[spine.lead]}
+          {spine.shortfalls[0] && ` · ${spine.shortfalls[0].label} ${spine.shortfalls[0].level === 0 ? "not shown" : "partly shown"}`}
+        </p>
+      )}
     </article>
   );
 }

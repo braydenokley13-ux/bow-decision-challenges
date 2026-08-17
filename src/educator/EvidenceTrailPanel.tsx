@@ -6,7 +6,7 @@ import { reteachFor } from "../domain/competency/reteach";
 import type { RubricLevel } from "../domain/competency/types";
 import type { SubmissionRecord, TeacherOverride } from "../platform/classes/types";
 import { competencyObservationsFor } from "./objectiveResults";
-import { LEVEL_LABELS, SUPPORT_LABELS, MOMENT_LABELS } from "./labels";
+import { LEVEL_DESCRIPTIONS, LEVEL_LABELS, SUPPORT_LABELS, MOMENT_LABELS } from "./labels";
 import type { OverrideRequest } from "./useClassEvidence";
 
 /**
@@ -28,6 +28,10 @@ const LEVELS: readonly (RubricLevel | null)[] = [5, 4, 3, 2, 0, null];
 
 function levelText(level: RubricLevel | null): string {
   return level === null ? LEVEL_LABELS.null : LEVEL_LABELS[level];
+}
+
+function levelDescription(level: RubricLevel | null): string {
+  return level === null ? LEVEL_DESCRIPTIONS.null : LEVEL_DESCRIPTIONS[level];
 }
 
 /** One requirement's standing judgement, what a teacher said about it, and the two together. */
@@ -107,34 +111,37 @@ function JudgementRow({ judgement, overrides, onOverride }: {
             >
               <fieldset>
                 <legend>What you read it as</legend>
-                {/* Named, not numbered. Six bare digits are not a rubric anybody listening
-                    to the page can fill in — the same reason the reasoning rubric names its
-                    own criteria beside every mark. */}
-                <div className="segmented segmented--wide">
+                {/* Named, described, and not numbered. Six one-word labels are BOW's own
+                    distinctions and nobody outside this codebase has agreed to them, so each
+                    one says what it means beside the control that records it. */}
+                <ul className="override-levels">
                   {LEVELS.map((option) => (
-                    <button
-                      type="button"
-                      key={String(option)}
-                      aria-pressed={level === option}
-                      onClick={() => setLevel(option)}
-                    >
-                      {levelText(option)}
-                    </button>
+                    <li key={String(option)}>
+                      <button
+                        type="button"
+                        aria-pressed={level === option}
+                        onClick={() => setLevel(option)}
+                      >
+                        {levelText(option)}
+                      </button>
+                      <span>{levelDescription(option)}</span>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </fieldset>
               <label>
                 Why — this is kept with the judgement
                 <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} maxLength={600} required />
               </label>
+              {/* Above the actions, because a rule explained under a disabled button is a
+                  rule a teacher meets after it has already refused them. */}
+              <p className="override-form__note" aria-live="polite">
+                {note.trim().length === 0 ? "A judgement with no reason is a number nobody can check later." : "BOW keeps both readings."}
+              </p>
               <div className="override-form__act">
                 <Button type="button" variant="quiet" onClick={() => { setOpen(false); setNote(""); }}>Cancel</Button>
                 <Button type="submit" aria-disabled={note.trim().length === 0}>Record it</Button>
               </div>
-              {/* Nothing is stored without a reason, and the form says so before it refuses. */}
-              <p className="override-form__note" aria-live="polite">
-                {note.trim().length === 0 ? "A judgement with no reason is a number nobody can check later." : "BOW keeps both readings."}
-              </p>
             </form>
           )}
           <span aria-live="polite" className="judgement__saved">{saved}</span>
@@ -253,27 +260,35 @@ export function StudentSummary({ submission }: { submission: SubmissionRecord })
         <p className="eyebrow">Where this student is</p>
         <h2>What to do next</h2>
       </div>
+      {/* Needs support leads and owns the width. Nine green ticks under "could do" used to
+          fill this tab while the one line that is the reason to open it sat in a column on
+          the right. */}
       <div className="student-summary">
-        <div>
-          <p className="field-label">Could do</p>
-          {strengths.length > 0 ? (
-            <ul className="student-summary__list" data-tone="good">
-              {strengths.map((judgement) => <li key={judgement.evidenceRequirementId}>{judgement.label}</li>)}
+        <div className="student-summary__needs">
+          <p className="field-label">Needs support</p>
+          {needs.length > 0 ? (
+            <ul className="student-summary__list" data-tone="gap">
+              {needs.map((judgement) => (
+                <li key={judgement.evidenceRequirementId}>
+                  {judgement.label}
+                  <span>{judgement.reason}</span>
+                </li>
+              ))}
             </ul>
-          ) : <p className="class-state">Nothing reached this bar on this attempt.</p>}
+          ) : <p className="class-state">Nothing on this attempt came out short.</p>}
           {supported.length > 0 && (
             <ul className="student-summary__list" data-tone="supported">
               {supported.map((judgement) => <li key={judgement.evidenceRequirementId}>{judgement.label} — after a hint</li>)}
             </ul>
           )}
         </div>
-        <div>
-          <p className="field-label">Needs support</p>
-          {needs.length > 0 ? (
-            <ul className="student-summary__list" data-tone="gap">
-              {needs.map((judgement) => <li key={judgement.evidenceRequirementId}>{judgement.label}</li>)}
+        <div className="student-summary__could">
+          <p className="field-label">Could do · {strengths.length}</p>
+          {strengths.length > 0 ? (
+            <ul className="student-summary__chips" data-tone="good">
+              {strengths.map((judgement) => <li key={judgement.evidenceRequirementId}>{judgement.label}</li>)}
             </ul>
-          ) : <p className="class-state">Nothing on this attempt came out short.</p>}
+          ) : <p className="class-state">Nothing reached this bar on this attempt.</p>}
         </div>
       </div>
       {next?.reteach && (

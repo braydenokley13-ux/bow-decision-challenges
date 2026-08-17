@@ -33,6 +33,20 @@ export const DEVELOPING_THRESHOLD_PERCENT = 50;
  */
 export const MINIMUM_ASSESSED_FOR_A_STATE = 5;
 
+/**
+ * Below this many usable results, no surface describes the class as a class.
+ *
+ * The same product decision as the line above, applied one level out: a share of the
+ * assessed students is refused below the minimum, and so is every sentence that speaks
+ * about the room rather than about the students in it — "the whole class chose…", a
+ * distribution, a lesson to teach next. Counts and individual work are still shown, because
+ * both are true at any denominator.
+ *
+ * It is written as one value rather than two so the two can never drift into a screen that
+ * refuses the number and keeps the sentence.
+ */
+export const MINIMUM_RESULTS_FOR_CLASS_NARRATION = MINIMUM_ASSESSED_FOR_A_STATE;
+
 /** Past this, a state is shown with its date and in muted styling rather than as current. */
 export const STALE_AFTER_DAYS = 90;
 

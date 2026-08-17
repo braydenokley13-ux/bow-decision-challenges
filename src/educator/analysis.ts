@@ -12,6 +12,7 @@ import type { ReasoningScores } from "../domain/blueprint/reasoning";
 import type { ConceptId } from "../domain/blueprint/types";
 import type { SubmissionRecord } from "../platform/classes/types";
 import { CHOICE_LABELS } from "../components/financial/choices";
+import { MINIMUM_RESULTS_FOR_CLASS_NARRATION } from "../domain/competency/objectiveState";
 
 /**
  * What a class actually did, derived from what its students actually submitted.
@@ -92,11 +93,17 @@ export interface ChoiceShare {
   seats: string[];
 }
 
+/**
+ * One decision, and who made each call.
+ *
+ * There is deliberately no authored line under a distribution any more. "The class split on
+ * the one decision that costs in both currencies" is the product admiring its own design,
+ * and it was printed above counts that already said it — including above a single
+ * submission, where it was also untrue.
+ */
 export interface ChoiceDistribution {
   id: string;
   question: string;
-  /** What makes this worth discussing, stated only when the class actually split. */
-  note: string;
   shares: ChoiceShare[];
 }
 
@@ -104,18 +111,7 @@ function share(rows: StudentRow[], id: string, label: string, matches: (row: Stu
   return { id, label, seats: rows.filter(matches).map((row) => row.seatCode) };
 }
 
-/**
- * A split is worth a discussion; a consensus is worth a different one. Both are stated,
- * because "everybody did the same thing" is itself a finding a teacher can use.
- */
-function splitNote(shares: ChoiceShare[], total: number, agreed: string, split: string): string {
-  const largest = Math.max(0, ...shares.map((item) => item.seats.length));
-  if (total === 0) return "No submissions yet.";
-  return largest === total ? agreed : split;
-}
-
 export function choiceDistributions(rows: StudentRow[]): ChoiceDistribution[] {
-  const total = rows.length;
   const housing = BASKETBALL_SCENARIO.setups.map((setup) =>
     share(rows, setup.id, setup.title, (row) => row.setupId === setup.id));
   const deposit = [
@@ -136,36 +132,11 @@ export function choiceDistributions(rows: StudentRow[]): ChoiceDistribution[] {
   ];
 
   return [
-    {
-      id: "housing",
-      question: "Where did they put Avery?",
-      note: splitNote(housing, total, "The whole class chose the same place, so the money-against-time trade never got argued.", "The class split on the one decision that costs in both currencies."),
-      shares: housing,
-    },
-    {
-      id: "showcase",
-      question: "Which income did they plan around?",
-      note: splitNote(showcase, total, "Nobody disagreed about the conditional money in the opening plan.", "Some students spent money that depended on a condition; some would not."),
-      shares: showcase,
-    },
-    {
-      id: "deposit",
-      question: "When did they commit to the course?",
-      note: splitNote(deposit, total, "The class agreed on when to commit.", "Committing early was cheaper and cost flexibility. The class did not agree on that trade."),
-      shares: deposit,
-    },
-    {
-      id: "clinics",
-      question: "Did they take the paid Saturdays?",
-      note: splitNote(clinics, total, "The class agreed about the clinics.", "Money against Avery's remaining time, and the class went both ways."),
-      shares: clinics,
-    },
-    {
-      id: "bonus",
-      question: "Did the final plan still count the attendance bonus?",
-      note: splitNote(bonus, total, "The class agreed about the risk that was still open.", "The class disagreed about whether to keep depending on money that might not arrive."),
-      shares: bonus,
-    },
+    { id: "housing", question: "Where did they put Avery?", shares: housing },
+    { id: "showcase", question: "Which income did they plan around?", shares: showcase },
+    { id: "deposit", question: "When did they commit to the course?", shares: deposit },
+    { id: "clinics", question: "Did they take the paid Saturdays?", shares: clinics },
+    { id: "bonus", question: "Did the final plan still count the attendance bonus?", shares: bonus },
   ];
 }
 
@@ -338,11 +309,13 @@ export function discussionPrompts(rows: StudentRow[]): DiscussionPrompt[] {
     });
   }
 
-  if (prompts.length === 0) {
+  // "You all played it the same way" is a claim about a class, and a claim about a class
+  // needs a class. From three runs it is a sentence about three children.
+  if (prompts.length === 0 && rows.length >= MINIMUM_RESULTS_FOR_CLASS_NARRATION) {
     prompts.push({
       id: "consensus",
       prompt: "You all played it the same way. What would have had to be different for another plan to be the better one?",
-      because: "This class made the same call on every major decision, which is itself worth asking about.",
+      because: `All ${rows.length} made the same call on every major decision.`,
     });
   }
   return prompts;

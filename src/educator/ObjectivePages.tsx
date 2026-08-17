@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Button } from "../components/primitives/Button";
+import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { EducatorShell } from "./EducatorShell";
 import { competencyById } from "../domain/competency/competencies";
 import type { CompetencyId } from "../domain/competency/types";
@@ -18,10 +17,7 @@ import {
   type StandardRef,
 } from "../domain/standards";
 import { MINIMUM_ASSESSED_FOR_A_STATE, type ObjectiveResult } from "../domain/competency/objectiveState";
-import { CLASS_API_BASE } from "../platform/evidence/transports";
-import { CLASS_ERROR_MESSAGES, isClassError, type Assignment, type ClassCreation } from "../platform/classes/types";
-import { PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
-import { rememberClass, rememberedClasses } from "./classMemory";
+import { rememberedClasses } from "./classMemory";
 import { useObjectiveEvidence } from "./useObjectiveEvidence";
 import type { ObjectiveClassResult } from "./objectiveResults";
 import { COMPETENCY_STATE_LABELS, OBJECTIVE_STATE_LABELS } from "./labels";
@@ -78,6 +74,7 @@ export function ObjectiveList() {
   const shown = standards.filter((standard) => matches(standard, query));
   const ready = shown.filter((standard) => isAssessable(refOf(standard)));
   const coming = shown.filter((standard) => !isAssessable(refOf(standard)));
+  const readyTotal = standards.filter((standard) => isAssessable(refOf(standard))).length;
 
   return (
     <EducatorShell>
@@ -85,32 +82,16 @@ export function ObjectiveList() {
         <p className="eyebrow">{labels?.frameworkShort} · {labels?.unitNoun}s</p>
         <h1>What do you want to assess?</h1>
         <p>
-          All {standards.length} of them. BOW can assess {ready.length} today — the rest are matched to a skill
-          and waiting for a challenge that can observe it.
+          BOW can assess {readyTotal} of the {standards.length} in this framework today. The rest are matched to a
+          skill and waiting for a challenge that can observe it.
         </p>
       </header>
 
-      <section className="dashboard-section">
-        <div className="class-form">
-          <label htmlFor="objective-search">Search {labels?.unitNounShort.toLowerCase()}s</label>
-          <input
-            id="objective-search"
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="budget, credit, insurance…"
-            aria-describedby="objective-search-count"
-          />
-          <p id="objective-search-count" className="class-state" aria-live="polite">
-            {shown.length} of {standards.length} shown · {ready.length} ready to assign
-          </p>
-        </div>
-      </section>
-
+      {/* What a teacher can actually do, first and in full. A search box over twenty-three
+          entries of which one is usable puts the product's coverage above the teacher's job. */}
       <section className="dashboard-section">
         <div className="section-head">
           <h2>Ready to assign</h2>
-          <p>{ready.length === 1 ? "One, today." : `${ready.length} today.`} Pick one to see what it measures and set it for a class.</p>
         </div>
         <div className="row-list">
           {ready.map((standard) => (
@@ -118,6 +99,7 @@ export function ObjectiveList() {
               <div>
                 <small>{standard.code} · {standard.topicName}</small>
                 <h3>{standard.shortLabel}</h3>
+                <small>{standard.text}</small>
               </div>
             </Link>
           ))}
@@ -128,14 +110,28 @@ export function ObjectiveList() {
       {/* The rest are mapped and waiting for a world. They are listed, because a teacher
           planning a year needs to know what is not here — quietly, because a list of what a
           product cannot do is not the first thing it should say about itself. */}
-      {coming.length > 0 && (
+      {(coming.length > 0 || query.trim().length > 0) && (
         <section className="dashboard-section">
           <div className="section-head">
             <h2>Mapped, not yet assessable</h2>
             <p>
-              BOW knows which skill sits behind {coming.length === 1 ? "this one" : "each of these"} and cannot
-              observe {coming.length === 1 ? "it" : "them"} yet. {coming.length === 1 ? "It reports" : "They report"} as coming,
-              never as nobody having demonstrated {coming.length === 1 ? "it" : "them"}.
+              BOW knows which skill sits behind each of these and cannot observe {coming.length === 1 ? "it" : "them"} yet.
+              {" "}{coming.length === 1 ? "It reports" : "They report"} as coming, never as nobody having
+              demonstrated {coming.length === 1 ? "it" : "them"}.
+            </p>
+          </div>
+          <div className="class-form">
+            <label htmlFor="objective-search">Search {labels?.unitNounShort.toLowerCase()}s</label>
+            <input
+              id="objective-search"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="budget, credit, insurance…"
+              aria-describedby="objective-search-count"
+            />
+            <p id="objective-search-count" className="class-state" aria-live="polite">
+              {shown.length} of {standards.length} shown · {ready.length} ready to assign
             </p>
           </div>
           <ul className="coming-list">
@@ -241,7 +237,12 @@ function ClassResult({ entry, onThisObjective }: { entry: ObjectiveClassResult; 
       )}
       {/* §18.1, in order: the number, then what the class could do, then the misconception,
           then the action, then the students. Never any of them without the ones above. */}
-      <TeachNext entry={entry} teacherKey={rememberedClasses().find((known) => known.code === entry.record.code)?.teacherKey ?? ""} />
+      <TeachNext
+        reading={entry.teachNext}
+        spotlight={entry.spotlight}
+        classCode={entry.record.code}
+        teacherKey={rememberedClasses().find((known) => known.code === entry.record.code)?.teacherKey ?? ""}
+      />
       <Link className="button button--quiet" to={`/educator/class/${entry.record.code}${keyQuery}`}>Open this class’s evidence</Link>
     </article>
   );
@@ -276,42 +277,60 @@ export function ObjectiveDetail() {
     .filter((competencyId) => !isCompetencyAvailable(competencyId))
     .flatMap((competencyId) => competencyById(competencyId) ?? []);
 
+  /**
+   * Twenty-two of the twenty-three are here, and there is nothing to report about any of
+   * them. They used to render the whole detail page — a coverage table, a results section
+   * and a line explaining that no class had been set an objective that cannot be set. This
+   * is what is actually true about them: what it is, its own framework's sentence, and the
+   * fact that BOW cannot assess it yet.
+   */
+  if (!assessable) {
+    return (
+      <EducatorShell>
+        <header className="page-header page-header--with-back">
+          <Link to="/educator/objectives">← All {labels?.unitNounShort.toLowerCase()}s</Link>
+          <p className="eyebrow">{labels?.frameworkShort} {standard.code} · {standard.topicName}</p>
+          <h1>{standard.shortLabel}</h1>
+          {/* The official sentence, verbatim. `nysedWording.test.ts` asserts it character by
+              character, and it is shown as a quotation because it is one. */}
+          <blockquote className="objective-wording">{standard.text}</blockquote>
+          <Attribution frameworkId={frameworkId} />
+        </header>
+        <section className="dashboard-section">
+          <div className="objective-coming">
+            {/* Authored prose, not a sentence concatenated around a statement that ends in
+                its own full stop — which is what produced "…for that situation. — and no
+                built world…" on every unavailable objective. */}
+            <p>BOW cannot assess this {labels?.unitNounShort.toLowerCase()} yet.</p>
+            {waiting.length > 0 && (
+              <>
+                <p>It rests on {waiting.length === 1 ? "this skill, and no world has been built that produces everything it asks for" : "these skills, and no world has been built that produces everything they ask for"}:</p>
+                <ul>{waiting.map((competency) => <li key={competency.id}>{competency.statement}</li>)}</ul>
+              </>
+            )}
+            <p className="objective-coming__exit">
+              <Link className="button button--secondary" to="/educator/objectives">See what BOW can assess</Link>
+            </p>
+          </div>
+        </section>
+      </EducatorShell>
+    );
+  }
+
   return (
     <EducatorShell>
       <header className="page-header page-header--with-back">
         <Link to="/educator/objectives">← All {labels?.unitNounShort.toLowerCase()}s</Link>
         <p className="eyebrow">{labels?.frameworkShort} {standard.code} · {standard.topicName}</p>
         <h1>{standard.shortLabel}</h1>
-        {/* The official sentence, verbatim. `nysedWording.test.ts` asserts it character by
-            character, and it is shown as a quotation because it is one. */}
         <blockquote className="objective-wording">{standard.text}</blockquote>
         <Attribution frameworkId={frameworkId} />
         {/* Wrapped rather than sitting directly under the header: `.page-header--with-back > a`
             paints its back-link in muted ink, and a primary button that inherited it failed
             contrast against its own dark fill. */}
-        {assessable
-          ? (
-            <p className="objective-actions">
-              <Link className="button button--primary" to={`/educator/assign?frameworkId=${frameworkId}&code=${standard.code}`}>Assign this</Link>
-            </p>
-          )
-          : (
-            <div className="objective-coming">
-              {/* Authored prose, not a sentence concatenated around a statement that ends in
-                  its own full stop — which is what produced "…for that situation. — and no
-                  built world…" on every unavailable objective. */}
-              <p>BOW cannot assess this {labels?.unitNounShort.toLowerCase()} yet.</p>
-              {waiting.length > 0 && (
-                <>
-                  <p>It rests on {waiting.length === 1 ? "this skill, and no world has been built that produces everything it asks for" : "these skills, and no world has been built that produces everything they ask for"}:</p>
-                  <ul>{waiting.map((competency) => <li key={competency.id}>{competency.statement}</li>)}</ul>
-                </>
-              )}
-              <p className="objective-coming__exit">
-                <Link className="button button--secondary" to="/educator/map">See what BOW can assess</Link>
-              </p>
-            </div>
-          )}
+        <p className="objective-actions">
+          <Link className="button button--primary" to={`/educator/classes?objective=${standard.code}`}>Assign this</Link>
+        </p>
       </header>
 
       <section className="dashboard-section">
@@ -365,168 +384,19 @@ export function ObjectiveDetail() {
 }
 
 // ---------------------------------------------------------------------------
-// /educator/assign — the whole flow, on one screen
+// /educator/assign — the route that used to be a second way to do this
 // ---------------------------------------------------------------------------
 
 /**
- * §17.2's four steps, with the two that have one answer collapsed to a line each.
+ * There is one path to assigning work, and it is the classes page.
  *
- * Arriving from an objective's page the objective is already chosen, there is one world so
- * there is nothing to pick, and what is left is *which class* and *go*. A screen that asked
- * a teacher to confirm a choice of one would be a screen that made the flow slower to look
- * more thorough.
+ * The assign flow was a screen that named an objective, offered a class, and — if there was
+ * no class — created one, which is what "Create a class" is. Two screens that both create a
+ * class and set it an objective are two places for that to go wrong and two places a teacher
+ * has to be told about. The objective travels in the URL; the classes page picks it up.
  */
 export function AssignFlow() {
   const [params] = useSearchParams();
-  const navigate = useNavigate();
-  const frameworkId = (params.get("frameworkId") ?? FRAMEWORK_ID) as FrameworkId;
-  const labels = labelsFor(frameworkId);
-  const assessable = useMemo(() => standardsIn(frameworkId).filter((standard) => isAssessable({ frameworkId, code: standard.code })), [frameworkId]);
-  const [code, setCode] = useState(params.get("code") ?? assessable[0]?.code ?? "");
-  const standard = standardByRef({ frameworkId, code });
-
-  const [known] = useState(() => rememberedClasses());
-  const [classCode, setClassCode] = useState(known[0]?.code ?? "");
-  const [newLabel, setNewLabel] = useState("");
-  const [working, setWorking] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
-  const [done, setDone] = useState<{ code: string; teacherKey: string; label: string } | null>(null);
-
-  const assign = async () => {
-    if (working || !standard) return;
-    setWorking(true);
-    setProblem(null);
-    try {
-      let target = known.find((entry) => entry.code === classCode) ?? null;
-      if (!target) {
-        const response = await fetch(`${CLASS_API_BASE}/classes`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ label: newLabel.trim() || "Untitled class", challengeId: PLAN_UNDER_PRESSURE.id }),
-        });
-        const body: unknown = await response.json();
-        if (!response.ok) {
-          setProblem(isClassError(body) ? CLASS_ERROR_MESSAGES[body.error] : CLASS_ERROR_MESSAGES.unavailable);
-          return;
-        }
-        const created = body as ClassCreation;
-        rememberClass(created);
-        target = { code: created.code, label: created.label, teacherKey: created.teacherKey, createdAt: created.createdAt };
-      }
-      const set = await fetch(`${CLASS_API_BASE}/classes/${target.code}/assignments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": target.teacherKey },
-        body: JSON.stringify({ objectiveRef: { frameworkId, code: standard.code } }),
-      });
-      if (!set.ok) {
-        const body: unknown = await set.json();
-        setProblem(isClassError(body) ? CLASS_ERROR_MESSAGES[body.error] : CLASS_ERROR_MESSAGES.unavailable);
-        return;
-      }
-      await set.json() as Assignment;
-      setDone({ code: target.code, teacherKey: target.teacherKey, label: target.label });
-    } catch {
-      setProblem(CLASS_ERROR_MESSAGES.unavailable);
-    } finally {
-      setWorking(false);
-    }
-  };
-
-  if (done && standard) {
-    return (
-      <EducatorShell>
-        <header className="page-header">
-          <p className="eyebrow">{labels?.frameworkShort} {standard.code} · {done.label}</p>
-          <h1>Assigned. Here is the code.</h1>
-        </header>
-        <section className="class-created">
-          <div className="class-created__code">
-            <p className="field-label">Class code</p>
-            <strong>{done.code}</strong>
-            <p>Read this out, or write it on the board. It is not case sensitive.</p>
-          </div>
-          <div className="class-created__body">
-            <h2>{standard.shortLabel}</h2>
-            <ol className="class-created__steps">
-              <li>Send students to <code>{window.location.origin}{PLAN_UNDER_PRESSURE.route}</code> with the code and a seat number each.</li>
-              <li>They play the challenge. Nothing on their screen mentions a standard.</li>
-              <li>Come back here to see what they demonstrated.</li>
-            </ol>
-            <div className="class-created__key">
-              <p className="field-label">Your private link</p>
-              <code>{window.location.origin}/educator/class/{done.code}?key={done.teacherKey}</code>
-              <p>Bookmark this. It is the only thing that opens this class’s evidence, and the class code alone will not.</p>
-            </div>
-            <Link className="button button--primary" to={`/educator/objectives/${frameworkId}/${standard.code}`}>
-              Back to {standard.code}
-            </Link>
-          </div>
-        </section>
-      </EducatorShell>
-    );
-  }
-
-  return (
-    <EducatorShell>
-      <header className="page-header">
-        <p className="eyebrow">Assign</p>
-        <h1>Two things, then a code.</h1>
-      </header>
-
-      <section className="dashboard-section">
-        <ol className="assign-steps">
-          <li>
-            <p className="field-caps">1 · {labels?.unitNounShort}</p>
-            {params.get("code") && standard ? (
-              <p className="assign-steps__settled">
-                <b>{standard.code} {standard.shortLabel}</b>
-                <Button variant="quiet" onClick={() => navigate("/educator/objectives")}>Change</Button>
-              </p>
-            ) : (
-              <div className="class-form">
-                <label htmlFor="assign-objective">{labels?.unitNounShort}</label>
-                <select id="assign-objective" value={code} onChange={(event) => setCode(event.target.value)}>
-                  {assessable.map((entry) => <option key={entry.code} value={entry.code}>{entry.code} · {entry.shortLabel}</option>)}
-                </select>
-              </div>
-            )}
-          </li>
-          <li>
-            <p className="field-caps">2 · Class</p>
-            <div className="class-form">
-              {known.length > 0 && (
-                <>
-                  <label htmlFor="assign-class">Which class</label>
-                  <select id="assign-class" value={classCode} onChange={(event) => setClassCode(event.target.value)}>
-                    {known.map((entry) => <option key={entry.code} value={entry.code}>{entry.label} · {entry.code}</option>)}
-                    <option value="">Create a new class</option>
-                  </select>
-                </>
-              )}
-              {(known.length === 0 || classCode === "") && (
-                <>
-                  <label htmlFor="assign-new-class">New class name</label>
-                  <input
-                    id="assign-new-class"
-                    value={newLabel}
-                    onChange={(event) => setNewLabel(event.target.value)}
-                    placeholder="Period 3 · Grade 7"
-                    maxLength={60}
-                  />
-                </>
-              )}
-            </div>
-          </li>
-        </ol>
-        <div className="stage-action">
-          <p id="assign-status" aria-live="polite">
-            {problem ?? `Students play ${PLAN_UNDER_PRESSURE.title} and need the code plus a seat number. No accounts, no names.`}
-          </p>
-          <Button aria-disabled={working || !standard} onClick={() => void assign()}>
-            {working ? "Assigning…" : "Assign and get the code"}
-          </Button>
-        </div>
-      </section>
-    </EducatorShell>
-  );
+  const code = params.get("code");
+  return <Navigate replace to={code ? `/educator/classes?objective=${code}` : "/educator/classes"} />;
 }

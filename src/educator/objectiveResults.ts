@@ -1,5 +1,11 @@
 import { observeCompetencies } from "../domain/competency/observe";
-import { objectiveResultFrom, studentOutcomeFor, type ObjectiveResult, type StudentObjectiveOutcome } from "../domain/competency/objectiveState";
+import {
+  objectiveResultFrom,
+  studentOutcomeFor,
+  type ObjectiveDemand,
+  type ObjectiveResult,
+  type StudentObjectiveOutcome,
+} from "../domain/competency/objectiveState";
 import { teachNextFrom, type TeachNextReading } from "../domain/competency/teachNext";
 import type { CompetencyId, CompetencyResult, CompetencyResultState, EvidenceRequirementObservation } from "../domain/competency/types";
 import { spotlightFor, type MisconceptionSpotlight, type SeatResults } from "./misconceptions";
@@ -110,9 +116,31 @@ export function objectiveResultForClass(input: {
     (entry) => entry.objectiveRef?.frameworkId === input.ref.frameworkId && entry.objectiveRef.code === input.ref.code,
   );
   if (!assignment) return null;
+  return classResultFor({
+    record: input.record,
+    assignment,
+    demand: demandFor(input.ref),
+    submissions: input.submissions,
+  });
+}
 
+/**
+ * The derivation itself, with the demand handed in rather than looked up.
+ *
+ * Two surfaces read this and they must never disagree: the objective page asks it what one
+ * class did against one objective, and the class page and the debrief ask it what that same
+ * class did against whatever it was set. Splitting the two would be splitting the product's
+ * account of the same evidence in half, which is the defect that let a debrief say nothing
+ * needed reteaching while the objective page prescribed a lesson for the same class.
+ */
+export function classResultFor(input: {
+  record: ClassRecord;
+  assignment: Assignment;
+  demand: ObjectiveDemand;
+  submissions: readonly AttributedSubmission[];
+}): ObjectiveClassResult {
+  const { assignment, demand } = input;
   const mine = input.submissions.filter((submission) => submission.assignmentId === assignment.id);
-  const demand = demandFor(input.ref);
   const outcomes: StudentObjectiveOutcome[] = [];
   const counts = new Map<CompetencyId, Record<CompetencyResultState, number>>();
   const perStudent: (readonly CompetencyResult[])[] = [];

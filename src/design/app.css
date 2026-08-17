@@ -219,49 +219,27 @@ p { color: var(--ink-2); }
 /* A page made of sentences owns its margins instead of stranding a column of nothing. */
 .educator-main[data-measure="read"] { --measure-page: var(--w-read); }
 
-/* The guide and the companion are full-bleed editorial layouts and predate the measure. */
+/* The companion is a full-bleed editorial layout and predates the measure. */
 .educator-main[data-measure="bleed"] { --measure-page: var(--w-dash); }
 .educator-main[data-measure="bleed"] > * { width: min(var(--w-dash), 100%); }
-.guide-hero { min-height: 590px; display: grid; grid-template-columns: 1.2fr 0.8fr; background: var(--surface); }
-.guide-hero > div { padding: clamp(40px, 7vw, 96px); }
-.guide-hero h1 { margin: 0 0 var(--s-5); font: 600 clamp(3.8rem, 8vw, 7.6rem)/0.88 var(--font-ui); letter-spacing: -0.07em; }
-.guide-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: var(--s-6) 0; }
-.guide-meta span { padding: var(--s-2) var(--s-3); background: var(--surface-sunken); border-radius: var(--r-pill); font: var(--t-micro); }
-.hero-actions { display: flex; gap: var(--s-3); }
-.guide-hero aside { display: flex; flex-direction: column; justify-content: end; padding: clamp(32px, 6vw, 72px); color: var(--ink-invert); background: var(--bow-brand-strong); }
-.guide-hero aside blockquote { margin: auto 0 var(--s-7); font: 500 clamp(2rem, 4vw, 4rem)/1.03 var(--font-ui); letter-spacing: -0.045em; }
-.guide-hero aside p { color: var(--border-default); }
-.guide-hero__mark { align-self: flex-end; color: var(--fin-conditional); font: var(--font-mono); }
-.guide-section, .alignment-block, .brief-answers { padding: clamp(48px, 7vw, 96px); }
-.brief-answers { background: var(--surface-sunken); border-bottom: 1px solid var(--border-default); }
+
+/* The guide is a quick start set to the ordinary page measure. The full-bleed editorial
+   hero, the 90 + 10 = 100 circles and the six-panel process line are gone: none of them told
+   a teacher anything a sentence does not. */
+.guide-actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin: var(--s-5) 0 0; }
+.brief-answers { padding: 0; }
 .brief-answers dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin: 0; padding: 1px; background: var(--border-default); }
 .brief-answers dl > div { display: grid; align-content: start; gap: var(--s-3); padding: var(--s-5); background: var(--surface); }
 .brief-answers dt { color: var(--ink-1); font: var(--t-title3); }
 .brief-answers dd { margin: 0; color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
 .brief-answers__links { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); margin-top: var(--s-5); }
 .brief-answers__links a { color: var(--ink-1); font: var(--t-ui); }
-.guide-section--dark { color: var(--ink-invert); background: var(--bow-brand-strong); }
-.guide-section--dark p { color: var(--border-default); }
-.prerequisite-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; padding: 1px; background: var(--bow-brand); list-style: none; }
-.prerequisite-list li { min-height: 150px; display: grid; grid-template-columns: auto 1fr; gap: var(--s-4); align-content: start; padding: var(--s-5); background: var(--bow-brand-strong); font: var(--t-body-lg); }
-.prerequisite-list span { color: var(--fin-conditional); font: var(--font-mono); }
-.companion-callout { margin-top: var(--s-6); }
-.companion-callout a { color: var(--ink-invert); }
-.process-line { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--border-ink); }
-.process-line > div { min-height: 190px; padding: var(--s-5); border-right: 1px solid var(--border-default); }
-.process-line span { font: var(--font-mono); }
-.process-line h3 { margin: var(--s-7) 0 var(--s-3); font: var(--t-title2); }
-.evidence-system { background: var(--surface-sunken); }
-.evidence-system .eyebrow { color: var(--ink-2); }
-.evidence-system__grid { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: var(--s-8); align-items: center; }
-.score-architecture { display: flex; align-items: center; gap: var(--s-4); }
-.score-architecture div { flex: 1; aspect-ratio: 1; display: grid; place-content: center; text-align: center; background: var(--surface); border: 1px solid var(--border-default); border-radius: 50%; }
-.score-architecture strong { font: var(--m-hero); }
-.score-architecture span { max-width: 90px; color: var(--ink-3); font: var(--t-micro); }
-.score-architecture i { font: normal var(--t-title1); }
-.evidence-system__grid ul { display: grid; gap: var(--s-3); padding: 0; list-style: none; }
-.evidence-system__grid li { padding-bottom: var(--s-3); border-bottom: 1px solid var(--border-default); }
-.alignment-block { background: var(--surface); }
+.prerequisite-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1px; margin: 0; padding: 1px; list-style: none; }
+.prerequisite-list li { display: grid; grid-template-columns: auto 1fr; gap: var(--s-4); align-content: start; padding: var(--s-5); background: var(--surface); box-shadow: 0 0 0 1px var(--border-subtle); font: var(--t-body); }
+.prerequisite-list span { color: var(--ink-3); font: var(--font-mono); }
+.companion-callout { margin-top: var(--s-5); }
+.companion-callout a { color: var(--ink-1); }
+.alignment-block { padding: 0; background: var(--surface); }
 .alignment-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--s-3); }
 .alignment-grid article { min-height: 250px; padding: var(--s-4); border: 1px solid var(--border-default); }
 .alignment-grid article > span { color: var(--fin-adjustable-ink); font: var(--t-micro); text-transform: uppercase; }
@@ -381,11 +359,14 @@ p { color: var(--ink-2); }
 .reteach-card { align-self: start; position: sticky; top: var(--s-6); padding: var(--s-6); color: var(--ink-invert); background: var(--bow-brand-strong); }
 .reteach-card p, .reteach-card li { color: var(--border-default); }
 .reteach-card h2 { margin: var(--s-7) 0 var(--s-4); font: var(--t-display2); letter-spacing: var(--display-tracking); }
-.student-evidence-header { display: grid; grid-template-columns: 1fr auto; gap: var(--s-7); align-items: end; padding: var(--s-7); background: var(--surface); border-bottom: 1px solid var(--border-default); }
-.student-evidence-header h1 { margin: var(--s-5) 0; font: 600 5rem/0.9 var(--font-ui); }
-.student-evidence-header > div:last-child { display: grid; grid-template-columns: auto auto; gap: var(--s-2) var(--s-6); align-items: baseline; }
-.student-evidence-header > div:last-child span { color: var(--ink-3); font: var(--t-micro); text-transform: uppercase; }
-.student-evidence-header > div:last-child strong { font: var(--m-md); }
+.student-evidence-header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 460px); gap: var(--s-7); align-items: start; padding: var(--s-7); background: var(--surface); border-bottom: 1px solid var(--border-default); }
+.student-evidence-header h1 { margin: var(--s-4) 0 var(--s-3); font: 600 clamp(2.6rem, 4.4vw, 4rem)/0.95 var(--font-ui); }
+
+/* The figures block on the fixture's student page. The real one carries the competency
+   reading here instead, which is a column of sentences rather than a pair of numbers. */
+.student-evidence-header > div:last-child:not(.student-lead) { display: grid; grid-template-columns: auto auto; gap: var(--s-2) var(--s-6); align-items: baseline; }
+.student-evidence-header > div:last-child:not(.student-lead) span { color: var(--ink-3); font: var(--t-micro); text-transform: uppercase; }
+.student-evidence-header > div:last-child:not(.student-lead) strong { font: var(--m-md); }
 .student-evidence-header .button { grid-column: 1 / -1; margin-top: var(--s-3); }
 .golden-case { margin: var(--s-7); padding: var(--s-6); color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); border-left: 4px solid var(--fin-adjustable); }
 .golden-case h2 { font: var(--t-title1); }
@@ -443,7 +424,7 @@ p { color: var(--ink-2); }
   .season-strip { gap: var(--s-3); }
   .setup-grid { gap: var(--s-3); }
   .alignment-grid, .brief-answers dl { grid-template-columns: repeat(2, 1fr); }
-  .process-line, .launch-guide ol { grid-template-columns: repeat(3, 1fr); }
+  .launch-guide ol { grid-template-columns: repeat(3, 1fr); }
   .concept-matrix tbody th { width: 220px; }
   .route-grid { grid-template-columns: repeat(2, 1fr); }
 }
@@ -459,7 +440,7 @@ p { color: var(--ink-2); }
 }
 
 @media (max-width: 760px) {
-  .guide-hero, .working-setup, .decision-row, .defense-layout, .gap-builder, .evidence-system__grid, .mini-unit-grid, .drill-grid, .student-evidence-header, .evidence-detail-grid, .reasoning-layout { grid-template-columns: 1fr; }
+  .working-setup, .decision-row, .defense-layout, .gap-builder, .mini-unit-grid, .drill-grid, .student-evidence-header, .evidence-detail-grid, .reasoning-layout { grid-template-columns: 1fr; }
   .opening { min-height: 0; }
   .season-log li { grid-template-columns: 1fr; gap: var(--s-2); }
   .plan-echo { grid-template-columns: 1fr; }
@@ -478,7 +459,7 @@ p { color: var(--ink-2); }
   .plan-commit, .stage-action { align-items: stretch; flex-direction: column; }
   .plan-commit__actions { flex-direction: column; }
   .calculation-help, .plan-help { flex-direction: column; }
-  .process-line, .launch-guide ol, .alignment-grid { grid-template-columns: 1fr; }
+  .launch-guide ol, .alignment-grid { grid-template-columns: 1fr; }
   .trajectory-panel { grid-template-columns: 1fr; margin: 0 var(--s-4); }
   .trajectory-strip { grid-template-columns: 1fr 1fr; }
   .route-grid { grid-template-columns: 1fr; }
@@ -490,10 +471,8 @@ p { color: var(--ink-2); }
   .educator-topbar { grid-template-columns: 1fr auto; padding: var(--s-3); }
   .educator-topbar nav { grid-column: 1 / -1; flex-wrap: wrap; justify-content: start; }
   .demo-pill { grid-column: 2; grid-row: 1; }
-  .guide-section, .alignment-block, .brief-answers, .page-header, .dashboard-section, .class-header, .reasoning-layout, .standards-list { padding: var(--s-5); }
+  .page-header, .dashboard-section, .class-header, .reasoning-layout, .standards-list { padding: var(--s-5); }
   .brief-answers dl { grid-template-columns: 1fr; }
-  .score-architecture { flex-direction: column; }
-  .score-architecture div { width: 180px; aspect-ratio: 1; }
   .standards-list article:last-child { grid-column: auto; }
 }
 
@@ -523,6 +502,21 @@ p { color: var(--ink-2); }
 .class-created__key .field-label { margin: 0; }
 .class-created__key p { margin: 0; max-width: 66ch; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
 .class-created .button { justify-self: start; }
+
+/* The code as the room reads it. On the empty class page and the just-created page this is
+   the whole job: thirty students copying five characters off a projector. */
+.class-created__code--projector strong { font: 700 clamp(3.6rem, 9vw, 6rem)/1 var(--font-display); }
+.join-address { margin: 0; }
+.join-address code { display: inline-block; padding: var(--s-2) var(--s-3); background: var(--surface-sunken); border-radius: var(--r-xs); font: var(--t-body); font-family: var(--font-mono); overflow-wrap: anywhere; }
+
+/* Setting an objective for a class that already exists. The old assign flow, where a
+   teacher already is. */
+.assign-list { display: grid; gap: 1px; margin: 0; padding: 0; list-style: none; background: var(--border-subtle); }
+.assign-list li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); padding: var(--s-4) var(--s-5); background: var(--surface); font: var(--t-ui); }
+.assign-list li > span:first-child { flex: 1; }
+.assign-list__done { color: var(--fin-balanced-ink); font: var(--t-sm); }
+.classes-forget { margin-top: var(--s-6); }
+
 
 @media (max-width: 860px) {
   .class-created { grid-template-columns: 1fr; }
@@ -595,6 +589,47 @@ p { color: var(--ink-2); }
 .student-tabs button:hover { color: var(--ink-1); }
 .student-tabs button[aria-selected="true"] { color: var(--ink-1); border-bottom-color: var(--bow-brand); }
 
+/* What the evidence shows, at the top of the page it is about. This replaced
+   STRUCTURED 90/90 · REASONING 10/10 · TOGETHER 100/100, which was the largest thing on a
+   page whose first content block said "Not demonstrated". */
+.student-lead { display: grid; align-content: start; gap: var(--s-3); min-width: min(360px, 100%); padding: var(--s-5); background: var(--surface-sunken); border-left: 4px solid var(--border-strong); }
+.student-lead[data-state="not-yet-demonstrated"] { border-left-color: var(--fin-over); }
+.student-lead[data-state="developing"] { border-left-color: var(--fin-conditional); }
+.student-lead[data-state="demonstrated"], .student-lead[data-state="demonstrated-with-support"] { border-left-color: var(--fin-balanced); }
+.student-lead .field-label { margin: 0; }
+.student-lead > strong { font: var(--t-title1); }
+.student-lead__skills, .student-lead__flags { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.student-lead__skills li { display: grid; gap: 2px; padding-top: var(--s-2); border-top: 1px solid var(--border-subtle); font: var(--t-sm); font-weight: 400; }
+.student-lead__skills b { font: var(--t-micro); text-transform: uppercase; letter-spacing: 0.06em; }
+.student-lead__flags li { padding-left: var(--s-4); border-left: 3px solid var(--fin-over); color: var(--ink-1); font: var(--t-ui); font-weight: 400; }
+.student-lead__absence { margin: 0; color: var(--ink-3); font: var(--t-micro); }
+
+/* The other model, once, at the bottom, saying what it counts. */
+.gradebook { margin: var(--s-7) 0 0; padding: var(--s-5); background: var(--surface); border-top: 1px solid var(--border-default); }
+.gradebook .field-label { margin: 0 0 var(--s-2); }
+.gradebook__figure { display: grid; gap: var(--s-2); max-width: var(--measure); margin: 0; }
+.gradebook__figure strong { font: var(--m-md); font-feature-settings: var(--num); }
+.gradebook__figure span { color: var(--ink-3); font: var(--t-sm); font-weight: 400; }
+.gradebook__working { margin-top: var(--s-4); }
+.gradebook__working summary { padding: var(--s-3) 0; color: var(--ink-2); cursor: pointer; font: var(--t-sm); }
+.gradebook__working[open] summary { margin-bottom: var(--s-3); }
+.gradebook__working .grade-ledger { margin-bottom: var(--s-5); }
+
+/* Reading and scoring every explanation in a class, in one place and in an order. */
+.reading-queue { display: grid; gap: var(--s-5); }
+.reading-queue__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-3) 0; border-bottom: 1px solid var(--border-default); }
+.reading-queue__bar p { margin: 0; color: var(--ink-2); font: var(--t-ui); font-feature-settings: var(--num); }
+.reading-queue h2 { margin: 0 0 var(--s-4); font: var(--t-title1); }
+.reading-queue h2:focus-visible { outline: 2px solid var(--focus-ring, var(--ink-1)); outline-offset: 4px; }
+
+/* Six BOW-internal levels, each saying what it means beside the control that records it. */
+.override-levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s-2); margin: var(--s-3) 0 0; padding: 0; list-style: none; }
+.override-levels li { display: grid; gap: 2px; }
+.override-levels button { min-height: var(--tap); padding: 0 var(--s-4); color: var(--ink-1); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); cursor: pointer; font: var(--t-ui); }
+.override-levels button[aria-pressed="true"] { color: var(--ink-invert); background: var(--ink-1); border-color: var(--ink-1); }
+.override-levels span { color: var(--ink-3); font: var(--t-micro); }
+
+
 .judgement-group + .judgement-group { margin-top: var(--s-6); }
 .judgement-group h3 { max-width: var(--measure); margin: 0 0 var(--s-4); font: var(--t-title2); }
 .judgement-list { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
@@ -651,7 +686,11 @@ p { color: var(--ink-2); }
 .trail__absent li { display: grid; gap: 2px; font: var(--t-sm); }
 .trail__absent p:last-child { margin: 0; color: var(--ink-2); font: var(--t-micro); }
 
-.student-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s-6); margin-bottom: var(--s-5); }
+.student-summary { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--s-6); margin-bottom: var(--s-5); }
+.student-summary__needs .student-summary__list li { display: grid; gap: 2px; }
+.student-summary__needs .student-summary__list span { color: var(--ink-3); font: var(--t-micro); font-weight: 400; }
+.student-summary__chips { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.student-summary__chips li { padding: var(--s-1) var(--s-3); color: var(--ink-2); background: var(--surface-sunken); border-radius: var(--r-pill); font: var(--t-micro); }
 .student-summary__list { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
 .student-summary__list li { padding-left: var(--s-5); position: relative; font: var(--t-ui); }
 .student-summary__list li::before { position: absolute; left: 0; font-weight: 700; }
@@ -680,7 +719,6 @@ p { color: var(--ink-2); }
 .choice-dist li b { font: var(--m-sm); font-feature-settings: var(--num); }
 .choice-dist li > span:first-of-type { font: var(--t-ui); font-weight: 400; }
 .choice-dist__seats { grid-column: 2; color: var(--ink-3); font: var(--t-micro); font-feature-settings: var(--num); }
-.choice-dist__note { margin: 0; padding-top: var(--s-3); border-top: 1px solid var(--border-subtle); color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
 
 .cut-list { display: grid; gap: var(--s-3); margin: 0 0 var(--s-5); padding: 0; list-style: none; }
 .cut-list li { display: grid; grid-template-columns: 3ch minmax(0, 1fr); gap: var(--s-1) var(--s-4); align-items: baseline; padding: var(--s-4) var(--s-5); background: var(--surface); border: 1px solid var(--border-subtle); border-left: 3px solid var(--fin-adjustable); }
@@ -713,7 +751,7 @@ p { color: var(--ink-2); }
 .debrief__prompts li { padding-left: var(--s-6); border-left: 3px solid var(--world-accent); }
 .debrief__ask { margin: 0; font: var(--t-title3); font-weight: 500; }
 .debrief__because { margin: var(--s-2) 0 0; color: var(--ink-3); font: var(--t-sm); font-weight: 400; }
-.debrief__list { display: grid; gap: var(--s-2); margin: var(--s-3) 0 0; padding-left: var(--s-6); }
+.debrief__list { display: grid; gap: var(--s-2); margin: var(--s-3) 0; padding-left: var(--s-6); }
 .debrief__list li { font: var(--t-body); }
 .debrief__contrast { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s-4); }
 .debrief__plan { padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--fin-reliable); }
@@ -796,6 +834,10 @@ p { color: var(--ink-2); }
 .map-tally div { display: grid; gap: var(--s-1); }
 .map-tally dt { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
 .map-tally dd { margin: 0; font: var(--m-md); font-feature-settings: var(--num); }
+.map-waiting { margin-top: var(--s-7); }
+.skill-chips { display: grid; gap: var(--s-2); margin: var(--s-4) 0; padding: 0; list-style: none; }
+.skill-chips li { display: grid; grid-template-columns: 5.5em minmax(0, 1fr); gap: var(--s-3); color: var(--ink-2); font: var(--t-micro); }
+.skill-chips code { color: var(--ink-3); font-family: var(--font-mono); }
 
 .map-controls { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: var(--s-5); padding: var(--s-5) var(--gutter); border-bottom: 1px solid var(--border-default); }
 .map-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-4); }
@@ -947,9 +989,10 @@ p { color: var(--ink-2); }
 
 /* What BOW cannot assess yet: listed, because a teacher planning a year needs it, and
    quiet, because absence had been given twenty-two full table rows on the first screen a
-   district ever saw. */
-.coming-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; background: var(--border-subtle); }
-.coming-list li { background: var(--surface); }
+   district ever saw. The hairline comes from the items rather than from a fill behind them,
+   so a row that does not divide evenly leaves nothing painted where an item is not. */
+.coming-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; }
+.coming-list li { background: var(--surface); box-shadow: 0 0 0 1px var(--border-subtle); }
 .coming-list a { display: block; padding: var(--s-4) var(--s-5); color: var(--ink-3); font: var(--t-ui); text-decoration: none; }
 .coming-list a:hover { color: var(--ink-1); background: var(--surface-raised); }
 .coming-list__code { display: inline-block; min-width: 3.2em; color: var(--ink-4); font: var(--m-xs); font-feature-settings: var(--num); }

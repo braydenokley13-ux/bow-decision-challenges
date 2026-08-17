@@ -199,16 +199,17 @@ for (const size of SIZES) {
 
     const evidence = `/educator/class/${created.code}?key=${created.teacherKey}`;
     for (const [name, path] of [
-      ["15b-class-setup", "/educator/classes/new"],
+      ["15b-class-setup", "/educator/classes"],
       ["15f-objectives", "/educator/objectives"],
       ["15g-objective-detail", "/educator/objectives/nysed-pf-2026/1.3"],
       ["15h-objective-coming", "/educator/objectives/nysed-pf-2026/4.2"],
-      ["15i-assign", "/educator/assign?frameworkId=nysed-pf-2026&code=1.3"],
+      ["15i-assign", "/educator/classes?objective=1.3"],
       ["15c-real-class", evidence],
       ["15d-real-student", `/educator/class/${created.code}/students/21?key=${created.teacherKey}`],
       ["15e-debrief", `/educator/class/${created.code}/debrief?key=${created.teacherKey}`],
+      ["15j-reading-queue", `/educator/class/${created.code}/reading?key=${created.teacherKey}`],
       ["16-educator-guide", "/educator/guide"],
-      ["17-demo-evidence", "/educator/demo"],
+      ["17-sample-class", "/educator/demo"],
       ["18-concept-drilldown", "/educator/demo/concepts/contingency"],
       ["19-seat-14", "/educator/demo/students/14"],
       ["20-reasoning", "/educator/demo/students/14/reasoning"],

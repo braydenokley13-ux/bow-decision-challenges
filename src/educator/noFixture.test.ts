@@ -25,11 +25,19 @@ const REAL_CLASS_MODULES = [
   "src/educator/useClassEvidence.ts",
   "src/educator/RealClassPages.tsx",
   "src/educator/Debrief.tsx",
+  // The one derivation the class page, the debrief and the objective page all read, and the
+  // per-student reading their rows lead with. A fixture reaching either would put invented
+  // states under a real teacher's class on three surfaces at once.
+  "src/educator/classSpine.ts",
+  "src/educator/studentSpine.ts",
+  // Where a person reads and scores every explanation in a class. A fixture here would put
+  // writing nobody wrote in front of a teacher marking it.
+  "src/educator/ReadingQueue.tsx",
   "src/educator/classMemory.ts",
   "src/educator/labels.ts",
-  // Where a real class is created, and now where its objective is picked. A demo objective
-  // list here would put a code on a whiteboard that no world can assess.
-  "src/educator/ClassSetup.tsx",
+  // Where a real class is created, set an objective, and listed. A demo objective list here
+  // would put a code on a whiteboard that no world can assess.
+  "src/educator/MyClasses.tsx",
   // The objective surfaces. Everything they render comes from the framework, the mappings
   // and classes this browser can actually open — a fixture reaching any of them would put
   // invented students under a real teacher's objective.
@@ -89,9 +97,9 @@ describe("a real class with no submissions reports nothing", () => {
   });
 
   it("reports every distribution as empty rather than as a shape", () => {
+    expect(empty.distributions.length).toBeGreaterThan(0);
     for (const distribution of empty.distributions) {
       for (const share of distribution.shares) expect(share.seats).toEqual([]);
-      expect(distribution.note).toBe("No submissions yet.");
     }
   });
 

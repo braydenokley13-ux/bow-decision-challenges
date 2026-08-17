@@ -59,10 +59,13 @@ describe("a class of three reads back as three different plans", () => {
     }
   });
 
-  it("finds the housing split and says it is one", () => {
+  it("finds the housing split and names the seats inside it", () => {
     const housing = analysis.distributions.find((item) => item.id === "housing")!;
-    expect(housing.shares.filter((share) => share.seats.length > 0)).toHaveLength(3);
-    expect(housing.note).toContain("split");
+    const used = housing.shares.filter((share) => share.seats.length > 0);
+    expect(used).toHaveLength(3);
+    // Counts and seats, and no authored sentence over the top of them.
+    expect(used.flatMap((share) => share.seats).sort()).toEqual(["12", "3", "9"]);
+    expect(Object.keys(housing)).toEqual(["id", "question", "shares"]);
   });
 
   it("contrasts two students who genuinely played it differently", () => {
@@ -96,21 +99,43 @@ describe("a class of three reads back as three different plans", () => {
 });
 
 describe("a class that all played it the same way says so", () => {
-  const analysis = analyseClass(["2", "5", "8"].map((seatCode) => buildSubmission({ ...CAUTIOUS, seatCode })));
+  const seats = ["2", "5", "8", "11", "14"];
+  const analysis = analyseClass(seats.map((seatCode) => buildSubmission({ ...CAUTIOUS, seatCode })));
 
   it("reports consensus rather than manufacturing a split", () => {
     const housing = analysis.distributions.find((item) => item.id === "housing")!;
-    expect(housing.shares.filter((share) => share.seats.length > 0)).toHaveLength(1);
-    expect(housing.note).toContain("whole class");
+    const used = housing.shares.filter((share) => share.seats.length > 0);
+    expect(used).toHaveLength(1);
+    expect(used[0]!.seats).toEqual(seats);
   });
 
   it("still offers one prompt, and it is about the consensus", () => {
     expect(analysis.prompts).toHaveLength(1);
     expect(analysis.prompts[0]!.id).toBe("consensus");
+    expect(analysis.prompts[0]!.because).toContain(`All ${seats.length}`);
   });
 
   it("draws no contrast between two identical plans", () => {
     expect(analysis.contrast).toBeNull();
+  });
+});
+
+describe("a class too small to be described as a class", () => {
+  /**
+   * The guard §15.3 and §18.4 both name, at the layer that produces the sentences. A
+   * consensus line from three runs is a claim about the twenty-five nobody assessed, and
+   * this is the state a teacher hits mid-lesson rather than an edge case.
+   */
+  it("offers no consensus prompt below the minimum denominator", () => {
+    const small = analyseClass(["2", "5", "8"].map((seatCode) => buildSubmission({ ...CAUTIOUS, seatCode })));
+    expect(small.rows).toHaveLength(3);
+    expect(small.prompts).toEqual([]);
+  });
+
+  it("still counts every seat, because a count is true at any denominator", () => {
+    const small = analyseClass(["2", "5", "8"].map((seatCode) => buildSubmission({ ...CAUTIOUS, seatCode })));
+    const housing = small.distributions.find((item) => item.id === "housing")!;
+    expect(housing.shares.flatMap((share) => share.seats)).toEqual(["2", "5", "8"]);
   });
 });
 

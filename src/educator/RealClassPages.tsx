@@ -11,9 +11,14 @@ import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { STRUCTURED_MICRO_SKILLS } from "../domain/blueprint/microSkills";
 import { CONCEPTS } from "../domain/blueprint/concepts";
-import { STATUS_LABELS, STATUS_ORDER, TRAJECTORY_LABELS } from "./labels";
+import { COMPETENCY_STATE_HEADLINES, COMPETENCY_STATE_LABELS, STATUS_LABELS, TRAJECTORY_LABELS } from "./labels";
 import { REASONING_MAXIMUM } from "../domain/evidence/grade";
 import { REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
+import { MINIMUM_ASSESSED_FOR_A_STATE, MINIMUM_RESULTS_FOR_CLASS_NARRATION } from "../domain/competency/objectiveState";
+import { PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
+import { classSpineFrom, type ClassSpine } from "./classSpine";
+import { studentSpineFor, type StudentSpine } from "./studentSpine";
+import { TeachNext } from "./TeachNext";
 
 /**
  * The educator's view of a real class.
@@ -24,11 +29,21 @@ import { REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../dom
  * thing the whole educator surface rests on: a teacher who cannot tell whether a
  * distribution is real cannot use any of it.
  *
- * It also leads with what the class did rather than with what they scored. The per-student
- * score is still available on their own page; it is not what a room of thirty is for.
+ * Two rules shape what leads. **One spine on screen:** every heading, every row and every
+ * count here is the competency reading — what the evidence requirements show. The points
+ * total still exists, is still computed the same way, and appears once per student at the
+ * bottom of their own page, labelled as the gradebook line it is. **Nothing about the class
+ * below the minimum denominator:** a handful of runs is evidence about those students and
+ * about nobody else, so under it this page shows counts and individual work and stops.
  */
 
-function ClassFrame({ state, children, title }: { state: ClassEvidenceState; title?: string; children: (analysis: ClassAnalysis, label: string) => React.ReactNode }) {
+type ReadyClass = Extract<ClassEvidenceState, { status: "ready" }>;
+
+function ClassFrame({ state, children, title }: {
+  state: ClassEvidenceState;
+  title?: string;
+  children: (ready: ReadyClass) => React.ReactNode;
+}) {
   if (state.status === "loading") {
     return <EducatorShell><p className="class-state" aria-live="polite">Opening the class…</p></EducatorShell>;
   }
@@ -40,50 +55,52 @@ function ClassFrame({ state, children, title }: { state: ClassEvidenceState; tit
           <h1>{title ?? "This class did not open."}</h1>
           <p>{state.message}</p>
         </header>
-        <Link className="button button--secondary" to="/educator/classes/new">Create a class</Link>
+        <Link className="button button--secondary" to="/educator/classes">My classes</Link>
       </EducatorShell>
     );
   }
-  return <EducatorShell>{children(state.analysis, state.record.label)}</EducatorShell>;
+  return <EducatorShell>{children(state)}</EducatorShell>;
 }
 
 /**
- * A class nobody has finished yet. Stated as the fact it is, with the one thing a teacher
- * in that position actually needs — the code to read out again.
+ * A class nobody has finished yet.
+ *
+ * In a classroom this screen has one job, and it is to put the code where thirty students
+ * can read it from their seats. So the code is the page, at the size a projector needs, with
+ * the address they type beside it.
  */
 function NothingYet({ code, label }: { code: string; label: string }) {
   return (
     <>
       <header className="class-header">
-        <div><p className="eyebrow">{label}</p><h1>Nothing turned in yet.</h1></div>
-        <div><span>Class {code}</span><span>0 submissions</span></div>
+        <div>
+          <p className="eyebrow">{label} · {BASKETBALL_SCENARIO.title}</p>
+          <h1>Nothing turned in yet.</h1>
+        </div>
+        <div><span>0 turned in</span></div>
       </header>
-      <section className="empty-state">
-        <p>
-          This class is open and no student has finished. Nothing on this page is a placeholder —
-          when students turn work in, their evidence appears here and every number below is
-          calculated from it.
-        </p>
-        <dl>
-          <div><dt>Class code</dt><dd>{code}</dd></div>
-          <div><dt>Challenge</dt><dd>{BASKETBALL_SCENARIO.title}</dd></div>
-        </dl>
-        <Button variant="secondary" onClick={() => window.location.reload()}>Check again</Button>
+      <section className="class-created">
+        <div className="class-created__code class-created__code--projector">
+          <p className="field-label">Class code</p>
+          <strong>{code}</strong>
+          <p>Not case sensitive.</p>
+        </div>
+        <div className="class-created__body">
+          <h2>Students go here</h2>
+          <p className="join-address"><code>{window.location.origin}{PLAN_UNDER_PRESSURE.route}</code></p>
+          <p>Each student types the code and picks a seat number. No accounts, no email addresses, no names.</p>
+          <Button variant="secondary" onClick={() => window.location.reload()}>Check again</Button>
+        </div>
       </section>
     </>
   );
 }
 
-function Distribution({ distribution, total }: { distribution: ChoiceDistribution; total: number }) {
-  const used = distribution.shares.filter((share) => share.seats.length > 0);
+/** One decision, and who made each call. Counts, and the seats behind every count. */
+function Distribution({ distribution }: { distribution: ChoiceDistribution }) {
   return (
     <article className="choice-dist">
       <h3>{distribution.question}</h3>
-      <div className="choice-dist__bar" aria-hidden="true">
-        {used.map((share) => (
-          <span key={share.id} data-option={share.id} style={{ width: `${(share.seats.length / total) * 100}%` }} />
-        ))}
-      </div>
       <ul>
         {distribution.shares.map((share) => (
           <li key={share.id} data-empty={share.seats.length === 0}>
@@ -95,8 +112,49 @@ function Distribution({ distribution, total }: { distribution: ChoiceDistributio
           </li>
         ))}
       </ul>
-      <p className="choice-dist__note">{distribution.note}</p>
     </article>
+  );
+}
+
+/**
+ * The class headline, and the rule that governs it.
+ *
+ * A share is only ever shown at a denominator that can carry one. Below it the same two
+ * numbers are still true and are printed as a count, which is what §15.3's first guard asks
+ * for and what stops "60%" being read as a fact about a room of twenty-eight.
+ */
+function ClassLead({ spine }: { spine: ClassSpine }) {
+  const reading = spine.reading;
+  if (!reading || spine.assessed === 0) {
+    return (
+      <>
+        <h1>Nobody is assessed yet.</h1>
+        <p>
+          {spine.awaitingReading > 0
+            ? `${spine.submitted} turned in. ${spine.awaitingReading} written ${spine.awaitingReading === 1 ? "explanation is" : "explanations are"} still to read, and a student whose writing nobody has read is not assessed.`
+            : `${spine.submitted} turned in, and none of it has produced a usable result yet.`}
+        </p>
+      </>
+    );
+  }
+  // The share is refused at a denominator that cannot carry one, and the same two numbers
+  // are printed as the count they are.
+  if (reading.result.percentDemonstrated === null) {
+    return (
+      <>
+        <h1>{reading.result.demonstrated} of {spine.assessed} assessed showed the skill.</h1>
+        <p>
+          {spine.submitted} turned in. Under {MINIMUM_ASSESSED_FOR_A_STATE} assessed students BOW shows the
+          count rather than a share, because a share of {spine.assessed} reads as a fact about the whole class.
+        </p>
+      </>
+    );
+  }
+  return (
+    <>
+      <h1>{reading.result.percentDemonstrated}% demonstrated.</h1>
+      <p>{reading.result.demonstrated} of {spine.assessed} assessed · {spine.submitted} turned in</p>
+    </>
   );
 }
 
@@ -105,114 +163,141 @@ export function RealClassOverview() {
   const [params] = useSearchParams();
   const { state } = useClassEvidence(code);
   const keyQuery = params.get("key") ? `?key=${params.get("key")}` : "";
+  const teacherKey = params.get("key") ?? "";
 
   return (
     <ClassFrame state={state}>
-      {(analysis, label) => {
-        if (analysis.rows.length === 0) return <NothingYet code={code ?? ""} label={label} />;
+      {(ready) => {
+        const { analysis, record, assignments, submissions } = ready;
+        if (analysis.rows.length === 0) return <NothingYet code={record.code} label={record.label} />;
+        const spine = classSpineFrom({ record, assignments, submissions });
         const total = analysis.rows.length;
+        const students = (
+          <section className="dashboard-section">
+            <div className="section-heading">
+              <p className="eyebrow">Open these</p>
+              <h2>Every student who turned in</h2>
+            </div>
+            <StudentRows rows={analysis.rows} submissions={submissions} code={record.code} keyQuery={keyQuery} />
+          </section>
+        );
+
         return (
           <>
             <header className="class-header">
-              <div><p className="eyebrow">{label} · {BASKETBALL_SCENARIO.title}</p><h1>What the class did</h1></div>
               <div>
-                <span>{total} {total === 1 ? "submission" : "submissions"}</span>
-                <span>{analysis.awaitingReview.length} awaiting your reading</span>
+                <p className="eyebrow">{record.label} · {BASKETBALL_SCENARIO.title}</p>
+                <ClassLead spine={spine} />
+              </div>
+              <div>
+                <span>{total} turned in</span>
+                {/* The largest single job this product creates, and it used to be a
+                    sentence. It is the way into the queue that does it. */}
+                {analysis.awaitingReview.length > 0
+                  ? <Link to={`/educator/class/${record.code}/reading${keyQuery}`}>{analysis.awaitingReview.length} awaiting your reading</Link>
+                  : <span>Every explanation read</span>}
               </div>
             </header>
 
-            <section className="dashboard-section">
-              <div className="section-heading">
-                <p className="eyebrow">The decisions</p>
-                <h2>Where they agreed, and where they did not</h2>
-              </div>
-              <div className="choice-grid">
-                {analysis.distributions.map((distribution) => (
-                  <Distribution key={distribution.id} distribution={distribution} total={total} />
-                ))}
-              </div>
-            </section>
+            {!spine.narratable && (
+              <p className="class-guard">
+                {total} turned in — individual work below. BOW does not describe a class from
+                fewer than {MINIMUM_RESULTS_FOR_CLASS_NARRATION} runs.
+              </p>
+            )}
 
-            <section className="dashboard-section">
-              <div className="section-heading">
-                <p className="eyebrow">After Week 5</p>
-                <h2>What they gave up first</h2>
-              </div>
-              {analysis.adaptation.cutFirst.length === 0 ? (
-                <p className="class-state">No student reduced any part of their plan after Week 5.</p>
-              ) : (
-                <ul className="cut-list">
-                  {analysis.adaptation.cutFirst.map((entry) => (
-                    <li key={entry.category}>
-                      <b>{entry.seats.length}</b>
-                      <span>cut <strong>{entry.label.toLowerCase()}</strong> first</span>
-                      <span className="choice-dist__seats">{seatList(entry.seats)}</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <dl className="adaptation-lines">
-                <div><dt>Backup money absorbed a loss</dt><dd>{analysis.adaptation.buffered.length} of {total}</dd></div>
-                <div><dt>Finished with something uncovered</dt><dd>{analysis.adaptation.leftUncovered.length} of {total}</dd></div>
-                <div><dt>Landed a plan they never changed</dt><dd>{analysis.adaptation.unchanged.length} of {total}</dd></div>
-              </dl>
-            </section>
+            {/* §18.1, at the top of the surface a teacher actually lands on. The objective
+                page renders the same reading from the same module; neither owns it. */}
+            {spine.reading && spine.narratable && (
+              <section className="dashboard-section">
+                <TeachNext
+                  reading={spine.reading.teachNext}
+                  spotlight={spine.reading.spotlight}
+                  classCode={record.code}
+                  teacherKey={teacherKey}
+                />
+              </section>
+            )}
 
-            <section className="dashboard-section">
-              <div className="section-heading">
-                <p className="eyebrow">Concepts</p>
-                <h2>What the evidence shows they can apply</h2>
-              </div>
-              <table className="concept-matrix">
-                <caption>Concept status across {total} submitted {total === 1 ? "attempt" : "attempts"}</caption>
-                <thead><tr><th scope="col">Concept</th><th scope="col">Status</th><th scope="col">Follow up with</th></tr></thead>
-                <tbody>
-                  {analysis.concepts.map((concept) => (
-                    <tr key={concept.conceptId} className={concept.conceptId === analysis.reviewFirst?.conceptId ? "is-emphasized" : ""}>
-                      <th scope="row"><span>{concept.code}</span>{concept.label}</th>
-                      <td>
-                        <div className="matrix-bar" aria-label={STATUS_ORDER.map((status) => `${concept.counts[status]} ${STATUS_LABELS[status]}`).join(", ")}>
-                          {STATUS_ORDER.map((status) => concept.counts[status] > 0 && (
-                            <span key={status} data-status={status} style={{ width: `${(concept.counts[status] / total) * 100}%` }} title={`${STATUS_LABELS[status]}: ${concept.counts[status]} of ${total}`} />
-                          ))}
-                        </div>
-                        <div className="matrix-counts">
-                          {STATUS_ORDER.filter((status) => concept.counts[status] > 0).map((status) => (
-                            <span key={status}><i data-status={status} />{concept.counts[status]} {STATUS_LABELS[status].toLowerCase()}</span>
-                          ))}
-                        </div>
-                      </td>
-                      <td>{concept.needsFollowUp.length > 0 ? seatList(concept.needsFollowUp) : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </section>
+            {!spine.narratable && students}
 
-            <section className="dashboard-section">
-              <div className="section-heading">
-                <p className="eyebrow">Open these</p>
-                <h2>Every student who turned in</h2>
-              </div>
-              <div className="row-list">
-                {analysis.rows.map((row) => (
-                  <Link key={row.sessionId} to={`/educator/class/${code}/students/${row.seatCode}${keyQuery}`}>
-                    <div>
-                      <small>Seat {row.seatCode} · {row.result.grade.finalPoints === null ? `${row.result.grade.structuredPoints}/${row.result.grade.structuredMaximum} structured` : `${row.result.grade.finalPoints}/100`}</small>
-                      <h3>{summarise(row)}</h3>
-                      <small>{row.reasoningPoints === null ? "Written explanation not read yet" : `Reasoning scored ${row.reasoningPoints}/${REASONING_MAXIMUM}`}</small>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
+            {spine.narratable && spine.reading && spine.reading.competencies.length > 0 && (
+              <section className="dashboard-section">
+                <div className="section-heading">
+                  <p className="eyebrow">What the evidence shows</p>
+                  <h2>Where the class is on each skill</h2>
+                </div>
+                <table className="micro-table">
+                  <caption>Counts across {spine.assessed} of {total} with a usable result</caption>
+                  <thead><tr><th scope="col">Skill</th><th scope="col">Where the class is</th></tr></thead>
+                  <tbody>
+                    {spine.reading.competencies.map((row) => (
+                      <tr key={row.competencyId}>
+                        <th scope="row">{competencyStatement(row.competencyId, submissions)}</th>
+                        <td>
+                          {Object.entries(row.counts)
+                            .filter(([, count]) => count > 0)
+                            .map(([entry, count]) => `${count} ${COMPETENCY_STATE_LABELS[entry as keyof typeof COMPETENCY_STATE_LABELS]}`)
+                            .join(" · ")}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </section>
+            )}
+
+            {/* Below the guard, nothing here describes the class. These two sections are
+                distributions, so they wait until there is a class to distribute. */}
+            {spine.narratable && (
+              <>
+                <section className="dashboard-section">
+                  <div className="section-heading">
+                    <p className="eyebrow">The decisions</p>
+                    <h2>What they decided</h2>
+                  </div>
+                  <div className="choice-grid">
+                    {analysis.distributions.map((distribution) => (
+                      <Distribution key={distribution.id} distribution={distribution} />
+                    ))}
+                  </div>
+                </section>
+
+                <section className="dashboard-section">
+                  <div className="section-heading">
+                    <p className="eyebrow">After Week 5</p>
+                    <h2>What they gave up first</h2>
+                  </div>
+                  {analysis.adaptation.cutFirst.length === 0 ? (
+                    <p className="class-state">No student reduced any part of their plan after Week 5.</p>
+                  ) : (
+                    <ul className="cut-list">
+                      {analysis.adaptation.cutFirst.map((entry) => (
+                        <li key={entry.category}>
+                          <b>{entry.seats.length}</b>
+                          <span>of {total} cut <strong>{entry.label.toLowerCase()}</strong> first</span>
+                          <span className="choice-dist__seats">{seatList(entry.seats)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <dl className="adaptation-lines">
+                    <div><dt>Backup money absorbed a loss</dt><dd>{analysis.adaptation.buffered.length} of {total}</dd></div>
+                    <div><dt>Finished with something uncovered</dt><dd>{analysis.adaptation.leftUncovered.length} of {total}</dd></div>
+                    <div><dt>Landed a plan they never changed</dt><dd>{analysis.adaptation.unchanged.length} of {total}</dd></div>
+                  </dl>
+                </section>
+              </>
+            )}
+
+            {spine.narratable && students}
 
             <section className="class-foot">
               <div>
                 <span>Next</span>
                 <strong>Run the debrief</strong>
-                <p>Two real plans, what changed after Week 5, and prompts drawn from this class.</p>
-                <Link className="button button--primary" to={`/educator/class/${code}/debrief${keyQuery}`}>Open the debrief</Link>
+                <p>Two real plans, what changed after Week 5, and what to review — from this class's evidence.</p>
+                <Link className="button button--primary" to={`/educator/class/${record.code}/debrief${keyQuery}`}>Open the debrief</Link>
               </div>
             </section>
           </>
@@ -222,16 +307,59 @@ export function RealClassOverview() {
   );
 }
 
-/** One line describing what this student actually did, never how well they did it. */
-function summarise(row: StudentRow): string {
-  const place = BASKETBALL_SCENARIO.setups.find((setup) => setup.id === row.setupId)?.title ?? "No place chosen";
-  const bits = [
-    place,
-    row.reservedSeat ? "reserved the seat" : "waited on the course",
-    row.tookClinics ? "took the clinics" : "kept the Saturdays",
-  ];
-  if (row.resolution) bits.push(row.resolution.attendanceHeld ? "made every session" : "lost the bonus");
-  return bits.join(" · ");
+/** The skill's own sentence, read from the first student who has a result for it. */
+function competencyStatement(competencyId: string, submissions: readonly AttributedSubmission[]): string {
+  for (const submission of submissions) {
+    const line = studentSpineFor(submission).competencies.find((entry) => entry.competencyId === competencyId);
+    if (line) return line.statement;
+  }
+  return competencyId;
+}
+
+/**
+ * The class list, led by what each student showed.
+ *
+ * Every row used to open with `100/100`, which is the number that is the same for almost
+ * everybody and says nothing about what to do next. It opens with the competency state and
+ * the requirement that fell short, which is the sentence a teacher acts on.
+ */
+function StudentRows({ rows, submissions, code, keyQuery }: {
+  rows: readonly StudentRow[];
+  submissions: readonly AttributedSubmission[];
+  code: string;
+  keyQuery: string;
+}) {
+  return (
+    <div className="row-list">
+      {rows.map((row) => {
+        const submission = submissions.find((entry) => entry.sessionId === row.sessionId);
+        const spine = submission ? studentSpineFor(submission) : null;
+        return (
+          <Link key={row.sessionId} to={`/educator/class/${code}/students/${row.seatCode}${keyQuery}`}>
+            <div>
+              <small>Seat {row.seatCode}</small>
+              <h3>{spine ? COMPETENCY_STATE_HEADLINES[spine.lead] : "No result"}</h3>
+              <small>{spine ? shortfallLine(spine, row) : "This attempt could not be read."}</small>
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The one requirement a teacher would open this student for, said in their own words. */
+function shortfallLine(spine: StudentSpine, row: StudentRow): string {
+  const [first, ...rest] = spine.shortfalls;
+  if (first) {
+    const verdict = first.level === 0 ? "not shown" : "partly shown";
+    return `${first.label} — ${verdict}${rest.length > 0 ? ` · ${rest.length} more` : ""}`;
+  }
+  if (row.reasoningPoints === null) return "Written explanation not read yet.";
+  if (spine.notObserved.length > 0) {
+    return `${spine.notObserved.length} requirement${spine.notObserved.length === 1 ? "" : "s"} never came up in this run.`;
+  }
+  return "Showed every required part.";
 }
 
 export function RealStudentEvidence() {
@@ -242,25 +370,21 @@ export function RealStudentEvidence() {
 
   return (
     <ClassFrame state={state} title="That student's work did not open.">
-      {(analysis) => {
-        const row = analysis.rows.find((item) => item.seatCode === seatCode);
+      {(ready) => {
+        const row = ready.analysis.rows.find((item) => item.seatCode === seatCode);
         if (!row) {
           return (
-            <>
-              <header className="page-header page-header--with-back">
-                <Link to={`/educator/class/${code}${keyQuery}`}>← Class evidence</Link>
-                <p className="eyebrow">Seat {seatCode}</p>
-                <h1>Nothing from this seat.</h1>
-                <p>No student has turned work in from seat {seatCode} in this class.</p>
-              </header>
-            </>
+            <header className="page-header page-header--with-back">
+              <Link to={`/educator/class/${code}${keyQuery}`}>← Class evidence</Link>
+              <p className="eyebrow">Seat {seatCode}</p>
+              <h1>Nothing from this seat.</h1>
+              <p>No student has turned work in from seat {seatCode} in this class.</p>
+            </header>
           );
         }
         // The raw submission, not the derived row: the trail is built from the student's own
         // events, and a summary of them cannot be audited against itself.
-        const submission = state.status === "ready"
-          ? state.submissions.find((entry) => entry.seatCode === seatCode && entry.sessionId === row.sessionId)
-          : undefined;
+        const submission = ready.submissions.find((entry) => entry.seatCode === seatCode && entry.sessionId === row.sessionId);
         return (
           <StudentPanel
             row={row}
@@ -286,6 +410,49 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
+/**
+ * What this attempt shows, at the top of the page it is about.
+ *
+ * The header used to print `STRUCTURED 90/90 · REASONING 10/10 · TOGETHER 100/100` two
+ * hundred pixels above a red *Not demonstrated*, and reconciled the two nowhere. The states
+ * are the assessment; the flags are the requirements behind them; the points are at the
+ * bottom of the page with a sentence saying what they count.
+ */
+function StudentLead({ spine, awaitingReading }: { spine: StudentSpine; awaitingReading: boolean }) {
+  return (
+    <div className="student-lead" data-state={spine.lead}>
+      <p className="field-label">What the evidence shows</p>
+      <strong>{COMPETENCY_STATE_HEADLINES[spine.lead]}</strong>
+      <ul className="student-lead__skills">
+        {spine.competencies.map((line) => (
+          <li key={line.competencyId}>
+            <span>{line.statement}</span>
+            <b>{COMPETENCY_STATE_LABELS[line.state]}</b>
+          </li>
+        ))}
+      </ul>
+      {spine.shortfalls.length > 0 && (
+        <ul className="student-lead__flags">
+          {spine.shortfalls.map((flag) => (
+            <li key={flag.evidenceRequirementId}>
+              {flag.label} — {flag.level === 0 ? "not shown" : "partly shown"}
+            </li>
+          ))}
+        </ul>
+      )}
+      {spine.lead === "incomplete" && awaitingReading && (
+        <p className="student-lead__absence">Their written explanation has not been read yet, so the evidence is not all in.</p>
+      )}
+      {spine.notObserved.length > 0 && (
+        <p className="student-lead__absence">
+          {spine.notObserved.length} required {spine.notObserved.length === 1 ? "requirement" : "requirements"} never came
+          up in this run. Absences, not zeros.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride }: {
   row: StudentRow;
   code: string;
@@ -305,13 +472,10 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride }: 
   // Every criterion has to have been answered before this is a reading rather than a blank.
   const complete = REASONING_CRITERIA.every((criterion) => scores[criterion.id] !== undefined);
   const grade = row.result.grade;
+  const spine = submission ? studentSpineFor(submission) : null;
 
   return (
     <>
-      {/* The headline used to be "Reasoning not read yet" — the largest thing on the page
-          was the absence of something, on the page a teacher opens to read one student.
-          The seat is who this is about; whether their writing has been read is a fact
-          about the page, and it sits with the numbers where the other facts are. */}
       <header className="student-evidence-header">
         <div>
           <Link to={`/educator/class/${code}${keyQuery}`}>← Class evidence</Link>
@@ -319,11 +483,9 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride }: 
           <h1>Seat {row.seatCode}</h1>
           <p>{summarise(row)}</p>
         </div>
-        <div>
-          <span>Structured</span><strong>{grade.structuredPoints}/{grade.structuredMaximum}</strong>
-          <span>Reasoning</span><strong>{row.reasoningPoints === null ? "Not read" : `${row.reasoningPoints}/${REASONING_MAXIMUM}`}</strong>
-          <span>Together</span><strong>{grade.finalPoints === null ? "—" : `${grade.finalPoints}/100`}</strong>
-        </div>
+        {spine
+          ? <StudentLead spine={spine} awaitingReading={row.reasoningPoints === null} />
+          : <p className="class-state">This attempt could not be opened in full.</p>}
       </header>
 
       {/* §19.1 says the chain is read in an order. The four tabs are that order cut into the
@@ -371,6 +533,9 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride }: 
             Nothing about this writing is machine-scored, and it is never sent to a model. You read it
             and you score it — which is what the student was told would happen.
           </p>
+          <p className="response-note">
+            <Link to={`/educator/class/${code}/reading${keyQuery}`}>Read the whole class in one queue →</Link>
+          </p>
         </div>
         <div className="rubric-panel">
           <p className="eyebrow">{REASONING_MAXIMUM}-point reasoning rubric</p>
@@ -409,28 +574,6 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride }: 
       </div>
 
       <div role="tabpanel" id="student-panel-plan" aria-labelledby="student-tab-plan" hidden={tab !== "plan"}>
-      <section className="dashboard-section">
-        <div className="section-heading">
-          <p className="eyebrow">Grade ledger</p>
-          <h2>Every point has a source</h2>
-        </div>
-        <table className="grade-ledger">
-          <thead><tr><th scope="col">What it shows</th><th scope="col">How it went</th><th scope="col">Points</th></tr></thead>
-          <tbody>
-            {row.result.concepts.map((result) => (
-              <tr key={result.conceptId}>
-                <th scope="row">{CONCEPTS.find((concept) => concept.id === result.conceptId)?.label ?? result.conceptId}</th>
-                <td>
-                  <span className="status-badge" data-status={result.status}>{STATUS_LABELS[result.status]}</span>
-                  <span className="grade-ledger__how">{TRAJECTORY_LABELS[result.trajectory]}</span>
-                </td>
-                <td className="money">{result.points === null ? "—" : `${result.points}/${result.maxPoints}`}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
       {row.resolution && (
         <section className="dashboard-section">
           <div className="section-heading">
@@ -466,20 +609,66 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride }: 
           </table>
         </section>
       )}
-
-      <section className="dashboard-section">
-        <div className="section-heading">
-          <p className="eyebrow">Micro-skill detail</p>
-          <h2>Where the structured points came from</h2>
-        </div>
-        {/* Eighteen rows reading 5/5 is a loop, not a table. What a teacher needs first is
-            the exceptions; the rest is one sentence, and the whole trail is still one
-            disclosure away because every point in this product has to be traceable. */}
-        <MicroSkillTrail observations={row.result.observations} />
-      </section>
       </div>
+
+      {/* The other model, once, at the bottom, saying what it is.
+          BOW computes a points total because a gradebook needs a number, and the way it is
+          computed has not changed. What changed is that it no longer sits at the top of the
+          page contradicting the states above: it is one line, it says what it counts, and
+          the working behind it is one disclosure away. */}
+      <Gradebook row={row} structured={grade.structuredPoints} structuredMaximum={grade.structuredMaximum} />
     </>
   );
+}
+
+function Gradebook({ row, structured, structuredMaximum }: { row: StudentRow; structured: number; structuredMaximum: number }) {
+  const final = row.result.grade.finalPoints;
+  return (
+    <section className="gradebook">
+      <p className="field-label">Gradebook line</p>
+      <p className="gradebook__figure">
+        <strong>{final === null ? `${structured} of ${structuredMaximum} structured` : `${final} of 100`}</strong>
+        <span>
+          {structured} structured points
+          {row.reasoningPoints === null
+            ? ", and no reasoning marks until you read the writing."
+            : ` plus ${row.reasoningPoints} reasoning points you recorded.`}
+          {" "}It counts marks. What the student can do is the states above.
+        </span>
+      </p>
+      <details className="gradebook__working">
+        <summary>Where the points came from</summary>
+        <table className="grade-ledger">
+          <thead><tr><th scope="col">What it shows</th><th scope="col">How it went</th><th scope="col">Points</th></tr></thead>
+          <tbody>
+            {row.result.concepts.map((result) => (
+              <tr key={result.conceptId}>
+                <th scope="row">{CONCEPTS.find((concept) => concept.id === result.conceptId)?.label ?? result.conceptId}</th>
+                <td>
+                  <span className="status-badge" data-status={result.status}>{STATUS_LABELS[result.status]}</span>
+                  <span className="grade-ledger__how">{TRAJECTORY_LABELS[result.trajectory]}</span>
+                </td>
+                <td className="money">{result.points === null ? "—" : `${result.points}/${result.maxPoints}`}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <MicroSkillTrail observations={row.result.observations} />
+      </details>
+    </section>
+  );
+}
+
+/** One line describing what this student actually did, never how well they did it. */
+function summarise(row: StudentRow): string {
+  const place = BASKETBALL_SCENARIO.setups.find((setup) => setup.id === row.setupId)?.title ?? "No place chosen";
+  const bits = [
+    place,
+    row.reservedSeat ? "reserved the seat" : "waited on the course",
+    row.tookClinics ? "took the clinics" : "kept the Saturdays",
+  ];
+  if (row.resolution) bits.push(row.resolution.attendanceHeld ? "made every session" : "lost the bonus");
+  return bits.join(" · ");
 }
 
 /**
@@ -511,13 +700,12 @@ function MicroSkillTrail({ observations }: { observations: StudentRow["result"][
     <>
       {exceptions.length === 0 ? (
         <p className="class-state">
-          All {observations.length} micro-skills came out full marks at the first real opportunity.
+          All {observations.length} micro-skills scored full marks. These are points, not the requirement states above.
         </p>
       ) : (
         <>
           <p className="class-state">
-            {exceptions.length} of {observations.length} came out below full marks. The rest were full at the first
-            real opportunity.
+            {exceptions.length} of {observations.length} scored below full marks.
           </p>
           {table(exceptions)}
         </>
@@ -529,3 +717,5 @@ function MicroSkillTrail({ observations }: { observations: StudentRow["result"][
     </>
   );
 }
+
+export type { ClassAnalysis };
