@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import { CLASS_ERROR_MESSAGES, isClassError, type Assignment, type AttributedSubmission, type ClassRecord } from "../platform/classes/types";
 import { reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
+import type { EvidenceRequirementId, RubricLevel } from "../domain/competency/types";
 import { analyseClass, type ClassAnalysis } from "./analysis";
 import { keyForClass, rememberClass } from "./classMemory";
 
@@ -17,6 +18,13 @@ import { keyForClass, rememberClass } from "./classMemory";
  * There is no fixture anywhere in this path and no default class. If the fetch fails, this
  * returns the failure.
  */
+/** What a teacher is saying instead, and why. The note is required by the service too. */
+export interface OverrideRequest {
+  evidenceRequirementId: EvidenceRequirementId;
+  level: RubricLevel | null;
+  note: string;
+}
+
 export type ClassEvidenceState =
   | { status: "loading" }
   | { status: "error"; message: string }
@@ -27,6 +35,7 @@ export function useClassEvidence(code: string | undefined): {
   teacherKey: string | null;
   reload: () => void;
   scoreReasoning: (seatCode: string, sessionId: string, scores: ReasoningScores | null) => Promise<boolean>;
+  recordOverride: (seatCode: string, sessionId: string, override: OverrideRequest) => Promise<boolean>;
 } {
   const [params] = useSearchParams();
   // The key comes from the link the educator was given, or from this browser if they have
@@ -97,5 +106,30 @@ export function useClassEvidence(code: string | undefined): {
     [code, teacherKey, reload],
   );
 
-  return { state: blocked ?? fetched, teacherKey, reload, scoreReasoning };
+  /**
+   * A teacher's own judgement, recorded beside BOW's rather than over it.
+   *
+   * It posts rather than patches because it appends: every override this attempt has ever
+   * carried stays on the record, which is what makes the disagreement readable later and
+   * what makes override rates worth measuring at all.
+   */
+  const recordOverride = useCallback(
+    async (seatCode: string, sessionId: string, override: OverrideRequest): Promise<boolean> => {
+      if (!code || !teacherKey) return false;
+      try {
+        const response = await fetch(`${CLASS_API_BASE}/classes/${code}/submissions/${seatCode}/overrides`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
+          body: JSON.stringify({ ...override, sessionId }),
+        });
+        if (response.ok) reload();
+        return response.ok;
+      } catch {
+        return false;
+      }
+    },
+    [code, teacherKey, reload],
+  );
+
+  return { state: blocked ?? fetched, teacherKey, reload, scoreReasoning, recordOverride };
 }

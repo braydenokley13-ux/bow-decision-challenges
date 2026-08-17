@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { EducatorShell } from "./EducatorShell";
-import { useClassEvidence, type ClassEvidenceState } from "./useClassEvidence";
+import { useClassEvidence, type ClassEvidenceState, type OverrideRequest } from "./useClassEvidence";
+import { EvidenceTrailPanel, StudentSummary } from "./EvidenceTrailPanel";
+import type { AttributedSubmission } from "../platform/classes/types";
 import { seatList, type ChoiceDistribution, type ClassAnalysis, type StudentRow } from "./analysis";
 import { formatDollars } from "../domain/core/money";
 import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
@@ -235,7 +237,7 @@ function summarise(row: StudentRow): string {
 export function RealStudentEvidence() {
   const { code, seatCode } = useParams();
   const [params] = useSearchParams();
-  const { state, scoreReasoning } = useClassEvidence(code);
+  const { state, scoreReasoning, recordOverride } = useClassEvidence(code);
   const keyQuery = params.get("key") ? `?key=${params.get("key")}` : "";
 
   return (
@@ -254,13 +256,47 @@ export function RealStudentEvidence() {
             </>
           );
         }
-        return <StudentPanel row={row} code={code ?? ""} keyQuery={keyQuery} onScore={scoreReasoning} />;
+        // The raw submission, not the derived row: the trail is built from the student's own
+        // events, and a summary of them cannot be audited against itself.
+        const submission = state.status === "ready"
+          ? state.submissions.find((entry) => entry.seatCode === seatCode && entry.sessionId === row.sessionId)
+          : undefined;
+        return (
+          <StudentPanel
+            row={row}
+            code={code ?? ""}
+            keyQuery={keyQuery}
+            onScore={scoreReasoning}
+            {...(submission ? { submission } : {})}
+            onOverride={(override) => recordOverride(row.seatCode, row.sessionId, override)}
+          />
+        );
       }}
     </ClassFrame>
   );
 }
 
-function StudentPanel({ row, code, keyQuery, onScore }: { row: StudentRow; code: string; keyQuery: string; onScore: (seat: string, session: string, scores: ReasoningScores | null) => Promise<boolean> }) {
+/** §19.1's chain, cut into the four things a teacher opens a student to do. */
+const TABS = [
+  { id: "trail", label: "Evidence trail" },
+  { id: "plan", label: "The plan" },
+  { id: "explanation", label: "The explanation" },
+  { id: "next", label: "What next" },
+] as const;
+
+type TabId = (typeof TABS)[number]["id"];
+
+function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride }: {
+  row: StudentRow;
+  code: string;
+  keyQuery: string;
+  onScore: (seat: string, session: string, scores: ReasoningScores | null) => Promise<boolean>;
+  submission?: AttributedSubmission;
+  onOverride: (override: OverrideRequest) => Promise<boolean>;
+}) {
+  // Opens on the trail, because the reason to open one student is to check a conclusion —
+  // and because §19.1 says the chain is read in order, not picked from.
+  const [tab, setTab] = useState<TabId>("trail");
   // Opens on whatever a person already recorded, so re-opening a scored student shows
   // their reading rather than a blank rubric that would overwrite it on the next save.
   const [scores, setScores] = useState<ReasoningScores>(() => row.reasoningCriteria ?? {});
@@ -290,9 +326,39 @@ function StudentPanel({ row, code, keyQuery, onScore }: { row: StudentRow; code:
         </div>
       </header>
 
-      {/* Reading the writing and scoring it is the reason a teacher opens one student, and
-          it used to sit fourteen hundred pixels below the fold under four tables of things
-          BOW had already worked out on its own. */}
+      {/* §19.1 says the chain is read in an order. The four tabs are that order cut into the
+          four things a teacher opens a student to do, and every one of them is one click from
+          every other — a teacher checking a conclusion should never have to scroll past the
+          rubric to reach the evidence, or the other way round. */}
+      <div className="student-tabs" role="tablist" aria-label="This student's work">
+        {TABS.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            role="tab"
+            id={`student-tab-${entry.id}`}
+            aria-selected={tab === entry.id}
+            aria-controls={`student-panel-${entry.id}`}
+            onClick={() => setTab(entry.id)}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </div>
+
+      <div role="tabpanel" id="student-panel-trail" aria-labelledby="student-tab-trail" hidden={tab !== "trail"}>
+        {submission
+          ? <EvidenceTrailPanel submission={submission} onOverride={onOverride} />
+          : <p className="class-state">This attempt could not be opened in full, so there is no trail to show.</p>}
+      </div>
+
+      <div role="tabpanel" id="student-panel-next" aria-labelledby="student-tab-next" hidden={tab !== "next"}>
+        {submission
+          ? <StudentSummary submission={submission} />
+          : <p className="class-state">This attempt could not be opened in full.</p>}
+      </div>
+
+      <div role="tabpanel" id="student-panel-explanation" aria-labelledby="student-tab-explanation" hidden={tab !== "explanation"}>
       <section className="reasoning-layout">
         <div className="student-response">
           <p className="eyebrow">What they wrote</p>
@@ -340,8 +406,9 @@ function StudentPanel({ row, code, keyQuery, onScore }: { row: StudentRow; code:
           </footer>
         </div>
       </section>
+      </div>
 
-
+      <div role="tabpanel" id="student-panel-plan" aria-labelledby="student-tab-plan" hidden={tab !== "plan"}>
       <section className="dashboard-section">
         <div className="section-heading">
           <p className="eyebrow">Grade ledger</p>
@@ -410,6 +477,7 @@ function StudentPanel({ row, code, keyQuery, onScore }: { row: StudentRow; code:
             disclosure away because every point in this product has to be traceable. */}
         <MicroSkillTrail observations={row.result.observations} />
       </section>
+      </div>
     </>
   );
 }

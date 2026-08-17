@@ -483,6 +483,10 @@ p { color: var(--ink-2); }
   .trajectory-strip { grid-template-columns: 1fr 1fr; }
   .route-grid { grid-template-columns: 1fr; }
   .concept-matrix { display: block; overflow-x: auto; }
+  .judgement { grid-template-columns: minmax(0, 1fr); }
+  .judgement__verdicts { justify-items: start; }
+  .judgement__machine, .judgement__override { justify-items: start; text-align: left; }
+  .trail > li { grid-template-columns: minmax(0, 1fr); }
   .educator-topbar { grid-template-columns: 1fr auto; padding: var(--s-3); }
   .educator-topbar nav { grid-column: 1 / -1; flex-wrap: wrap; justify-content: start; }
   .demo-pill { grid-column: 2; grid-row: 1; }
@@ -578,6 +582,83 @@ p { color: var(--ink-2); }
 .next-lesson__students small { color: var(--ink-3); font: var(--t-micro); }
 .next-lesson__working summary { padding: var(--s-3) 0; color: var(--ink-2); cursor: pointer; font: var(--t-sm); }
 .next-lesson__working[open] summary { margin-bottom: var(--s-3); }
+
+/* ---------------------------------------------------------------------------
+   §19 — one student, and the chain a teacher can follow.
+
+   Four tabs, because the chain has four things in it a teacher does; and one
+   row per judgement, because a conclusion whose evidence is a screen away is a
+   conclusion that gets taken on trust or not at all.
+   --------------------------------------------------------------------------- */
+.student-tabs { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: var(--s-6) 0 var(--s-5); border-bottom: 2px solid var(--border-default); }
+.student-tabs button { min-height: var(--tap); padding: 0 var(--s-5); color: var(--ink-2); background: transparent; border: 0; border-bottom: 3px solid transparent; margin-bottom: -2px; cursor: pointer; font: var(--t-ui); font-weight: 700; }
+.student-tabs button:hover { color: var(--ink-1); }
+.student-tabs button[aria-selected="true"] { color: var(--ink-1); border-bottom-color: var(--bow-brand); }
+
+.judgement-group + .judgement-group { margin-top: var(--s-6); }
+.judgement-group h3 { max-width: var(--measure); margin: 0 0 var(--s-4); font: var(--t-title2); }
+.judgement-list { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.judgement { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-3) var(--s-5); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-left: 4px solid var(--border-strong); }
+.judgement[data-level="5"], .judgement[data-level="4"] { border-left-color: var(--fin-balanced); }
+.judgement[data-level="3"], .judgement[data-level="2"] { border-left-color: var(--fin-conditional); }
+.judgement[data-level="0"] { border-left-color: var(--fin-over); }
+.judgement[data-level="none"] { border-left-style: dashed; }
+.judgement__say b { display: block; font: var(--t-title3); }
+.judgement__rule { display: block; margin-top: 2px; color: var(--ink-3); font: var(--t-micro); }
+.judgement__reason { margin: var(--s-3) 0 0; max-width: var(--measure); color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
+
+/* Whose doing the level is. "They needed a hint" and "they could not do it" are different
+   sentences and the rubric is the only thing that can tell them apart. */
+.judgement__cap { margin: var(--s-2) 0 0; padding: var(--s-2) var(--s-3); color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); font: var(--t-micro); }
+.judgement__verdicts { display: grid; gap: var(--s-2); align-content: start; justify-items: end; }
+.judgement__machine, .judgement__override { display: grid; gap: 2px; justify-items: end; margin: 0; text-align: right; }
+.judgement__machine span, .judgement__override span { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.judgement__machine strong { font: var(--m-xs); }
+.judgement__override strong { color: var(--bow-brand-strong); font: var(--m-xs); }
+.judgement__history { grid-column: 1 / -1; display: grid; gap: var(--s-2); margin: 0; padding: var(--s-3) var(--s-4); background: var(--surface-sunken); list-style: none; }
+.judgement__history li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: baseline; gap: var(--s-3); font: var(--t-sm); }
+.judgement__history q { color: var(--ink-2); }
+.judgement__history time { color: var(--ink-3); font: var(--t-micro); }
+.judgement__act { grid-column: 1 / -1; display: grid; gap: var(--s-2); }
+.judgement__saved { color: var(--fin-balanced-ink); font: var(--t-micro); }
+.override-form { display: grid; gap: var(--s-4); padding: var(--s-4); background: var(--surface-raised); border: 1px solid var(--border-ink); }
+.override-form fieldset { margin: 0; padding: 0; border: 0; }
+.segmented--wide { flex-wrap: wrap; }
+.segmented--wide button { flex: 1 1 auto; min-width: 9ch; padding: 0 var(--s-3); }
+.override-form legend { padding: 0 0 var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
+.override-form label { display: grid; gap: var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
+.override-form textarea { padding: var(--s-3); color: var(--ink-1); background: var(--surface); border: 1.5px solid var(--border-ink); font: var(--t-body); }
+.override-form__act { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--s-3); }
+.override-form__note { margin: 0; color: var(--ink-3); font: var(--t-micro); }
+
+/* The timeline. One row per moment in the log, and every judgement sits under the moment
+   that settled it — which is the whole of "a teacher can see what BOW saw". */
+.trail { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.trail > li { display: grid; grid-template-columns: minmax(180px, 220px) minmax(0, 1fr); gap: var(--s-4); padding: var(--s-4) 0; border-top: 1px solid var(--border-subtle); }
+.trail__when { display: grid; gap: 2px; align-content: start; }
+.trail__when b { font: var(--t-title3); }
+.trail__when span { color: var(--ink-2); font: var(--t-sm); }
+.trail__when code { color: var(--ink-3); font: var(--t-micro); font-family: var(--font-mono); }
+.trail__judgements { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.trail__judgements li { display: grid; gap: 2px; padding-left: var(--s-4); border-left: 3px solid var(--border-default); }
+.trail__judgements li[data-superseded="true"] { border-left-style: dotted; opacity: 0.75; }
+.trail__judgements b { font: var(--t-ui); }
+.trail__judgements span { color: var(--ink-2); font: var(--t-sm); }
+.trail__level { font-weight: 700; }
+.trail__judgements em { color: var(--ink-3); font: var(--t-micro); font-style: normal; }
+.trail__absent { margin-top: var(--s-5); padding: var(--s-4); background: var(--surface-sunken); border: 1px dashed var(--border-strong); }
+.trail__absent ul { display: grid; gap: var(--s-2); margin: 0 0 var(--s-3); padding: 0; list-style: none; }
+.trail__absent li { display: grid; gap: 2px; font: var(--t-sm); }
+.trail__absent p:last-child { margin: 0; color: var(--ink-2); font: var(--t-micro); }
+
+.student-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s-6); margin-bottom: var(--s-5); }
+.student-summary__list { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.student-summary__list li { padding-left: var(--s-5); position: relative; font: var(--t-ui); }
+.student-summary__list li::before { position: absolute; left: 0; font-weight: 700; }
+.student-summary__list[data-tone="good"] li::before { content: "\2713"; color: var(--fin-balanced-ink); }
+.student-summary__list[data-tone="supported"] li::before { content: "\2713"; color: var(--fin-conditional-ink); }
+.student-summary__list[data-tone="gap"] li::before { content: "\2717"; color: var(--fin-over-ink); }
+
 .class-state { margin: var(--s-6) 0; color: var(--ink-3); font: var(--t-body-lg); }
 
 .empty-state { display: grid; gap: var(--s-5); justify-items: start; max-width: 720px; padding: var(--s-7); background: var(--surface); border: 1px solid var(--border-default); border-left: 3px solid var(--fin-conditional); }

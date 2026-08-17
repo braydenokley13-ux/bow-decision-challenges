@@ -219,6 +219,15 @@ for (const size of SIZES) {
       await shoot(name);
     }
 
+    // One student, on the two tabs a teacher spends the time on: the trail they check a
+    // conclusion against, and what to do about it.
+    await page.goto(`/educator/class/${created.code}/students/21?key=${created.teacherKey}`);
+    await page.getByRole("button", { name: "I read this differently" }).first().click();
+    await shoot("15d2-student-override");
+    await page.getByRole("button", { name: "Cancel" }).first().click();
+    await page.getByRole("tab", { name: "What next" }).click();
+    await shoot("15d3-student-what-next");
+
     expect(problems, `${size.name}: ${problems.join("; ")}`).toEqual([]);
   });
 }

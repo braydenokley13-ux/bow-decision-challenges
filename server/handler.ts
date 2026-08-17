@@ -1,7 +1,9 @@
 import { allocateClassCode, generateTeacherKey, isWellFormedClassCode, isWellFormedSeatCode, normaliseClassCode, normaliseSeatCode } from "../src/platform/classes/codes";
 import { assignmentIdFor, assignmentsForClass, generateAssignmentId, readAssignmentRequest } from "../src/platform/classes/assignments";
-import { CLASS_RETENTION_DAYS, type Assignment, type AttributedSubmission, type ClassErrorCode, type EvidenceSubmission, type SubmissionRecord } from "../src/platform/classes/types";
+import { CLASS_RETENTION_DAYS, type Assignment, type AttributedSubmission, type ClassErrorCode, type EvidenceSubmission, type SubmissionRecord, type TeacherOverride } from "../src/platform/classes/types";
 import { EVIDENCE_EVENT_TYPES } from "../src/domain/evidence/types";
+import { evidenceRequirementById } from "../src/domain/competency/competencies";
+import type { EvidenceRequirementId, RubricLevel } from "../src/domain/competency/types";
 import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
 import { clampCriterion, REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../src/domain/blueprint/reasoning";
 import { challengeById, PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
@@ -16,6 +18,30 @@ import type { ClassStore, StoredClass } from "./store";
  * suite with a memory store — so what the browser tests exercise is the code that ships,
  * not a mock of it.
  */
+
+/** The five levels the shared rubric allows, and nothing else. There is no level 1. */
+const RUBRIC_LEVELS: readonly RubricLevel[] = [0, 2, 3, 4, 5];
+
+/** Longer than any note a person writes in the moment, short enough that nothing is a file. */
+const NOTE_LIMIT = 600;
+
+/**
+ * An override, or nothing.
+ *
+ * Every field is checked here rather than trusted, because this is the one route that lets a
+ * teacher's judgement into a student's permanent record: a requirement the model does not
+ * declare, a level the rubric does not have, or a blank note would each produce a row that
+ * cannot be read back or defended.
+ */
+function readOverride(body: { evidenceRequirementId?: unknown; level?: unknown; note?: unknown }, at: number): TeacherOverride | null {
+  const id = body.evidenceRequirementId;
+  if (typeof id !== "string" || !evidenceRequirementById(id as EvidenceRequirementId)) return null;
+  const level = body.level;
+  if (level !== null && !(typeof level === "number" && RUBRIC_LEVELS.includes(level as RubricLevel))) return null;
+  const note = typeof body.note === "string" ? body.note.trim() : "";
+  if (note.length === 0 || note.length > NOTE_LIMIT) return null;
+  return { evidenceRequirementId: id as EvidenceRequirementId, level: level as RubricLevel | null, note, at };
+}
 
 export interface ApiRequest {
   method: string;
@@ -304,6 +330,24 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       : others;
     await store.putClass({ ...record, taughtObjectives });
     return { status: 200, body: { taughtObjectives } };
+  }
+
+  // POST /classes/:code/submissions/:seat/overrides — a teacher disagrees, on the record.
+  if (request.method === "POST" && segments.length === 5 && segments[2] === "submissions" && segments[4] === "overrides") {
+    const body = (request.body ?? {}) as { sessionId?: unknown; evidenceRequirementId?: unknown; level?: unknown; note?: unknown };
+    const override = readOverride(body, now);
+    if (!override) return fail(400, "bad_request", "An override needs a real requirement, a level the rubric allows, and a note saying why.");
+    const seatCode = normaliseSeatCode(segments[3] ?? "");
+    const submissions = await store.listSubmissions(record.code);
+    const target = typeof body.sessionId === "string"
+      ? submissions.find((item) => item.seatCode === seatCode && item.sessionId === body.sessionId)
+      : submissions.filter((item) => item.seatCode === seatCode).at(-1);
+    if (!target) return fail(404, "class_not_found", "No submission from that seat.");
+    // Appended, never replaced. The machine judgement is in the log and stays there; a
+    // second thought writes a second row rather than editing the first.
+    const overrides = [...(target.overrides ?? []), override];
+    await store.putSubmission({ ...target, overrides });
+    return { status: 201, body: { seatCode, overrides } };
   }
 
   // PATCH /classes/:code/submissions/:seat — a person scores the written reasoning.

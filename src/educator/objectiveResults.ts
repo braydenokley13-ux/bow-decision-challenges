@@ -1,12 +1,12 @@
 import { observeCompetencies } from "../domain/competency/observe";
 import { objectiveResultFrom, studentOutcomeFor, type ObjectiveResult, type StudentObjectiveOutcome } from "../domain/competency/objectiveState";
 import { teachNextFrom, type TeachNextReading } from "../domain/competency/teachNext";
-import type { CompetencyId, CompetencyResult, CompetencyResultState } from "../domain/competency/types";
+import type { CompetencyId, CompetencyResult, CompetencyResultState, EvidenceRequirementObservation } from "../domain/competency/types";
 import { spotlightFor, type MisconceptionSpotlight, type SeatResults } from "./misconceptions";
 import { observeBasketballFromLog } from "../domain/scenario/worlds/basketball/observer";
 import { scoredExplanationsFrom } from "../domain/scenario/worlds/basketball/writtenDefense";
 import { demandFor, type StandardRef } from "../domain/standards";
-import type { Assignment, AttributedSubmission, ClassRecord } from "../platform/classes/types";
+import type { Assignment, AttributedSubmission, ClassRecord, SubmissionRecord } from "../platform/classes/types";
 
 /**
  * One class's evidence, against one objective a teacher assigned.
@@ -72,10 +72,13 @@ const EMPTY_COUNTS: Record<CompetencyResultState, number> = {
  * world contract's own observer lookup; until a second world exists, pretending to dispatch
  * would be a layer with one case in it.
  */
-export function competencyResultsFor(submission: AttributedSubmission): readonly CompetencyResult[] {
+export function competencyObservationsFor(submission: SubmissionRecord): readonly EvidenceRequirementObservation[] {
   const scored = scoredExplanationsFrom(submission.reasoningCriteria);
-  const observations = observeBasketballFromLog(submission.log, scored ? { scoredExplanations: scored } : {});
-  return observeCompetencies(observations, { submitted: true });
+  return observeBasketballFromLog(submission.log, scored ? { scoredExplanations: scored } : {});
+}
+
+export function competencyResultsFor(submission: AttributedSubmission): readonly CompetencyResult[] {
+  return observeCompetencies(competencyObservationsFor(submission), { submitted: true });
 }
 
 /**

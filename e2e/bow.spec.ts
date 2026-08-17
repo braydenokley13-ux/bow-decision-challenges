@@ -843,6 +843,20 @@ studentTest("an educator reads one student's evidence and scores their writing",
   // names the seat, and whether their writing has been read sits with the other figures.
   await expect(page.getByRole("heading", { name: "Seat 5", exact: true })).toBeVisible();
   await expect(page.locator(".student-evidence-header")).toContainText("Not read");
+
+  // §19.2. The page opens on the trail, because the reason to open one student is to check a
+  // conclusion — and every judgement on it points at a moment in this student's own log.
+  await expect(page.getByRole("tab", { name: "Evidence trail" })).toHaveAttribute("aria-selected", "true");
+  const judgements = page.locator(".judgement");
+  await expect(judgements.first()).toBeVisible();
+  const anchors = await page.locator(".trail__when code").allInnerTexts();
+  expect(anchors.length).toBeGreaterThan(0);
+  for (const anchor of anchors) expect(anchor).toMatch(/^event-\d+$/);
+  // Every judgement carries BOW's reading. None of them is a bare number.
+  await expect(judgements.first()).toContainText("BOW");
+  await noSeriousAxeViolations(page);
+
+  await page.getByRole("tab", { name: "The explanation" }).click();
   await expect(page.locator(".student-response blockquote")).toContainText("reserved the course seat");
 
   // A person scores it, and only then does a final grade exist. Each mark names its own
@@ -860,6 +874,57 @@ studentTest("an educator reads one student's evidence and scores their writing",
   // The together-figure only exists once a person has read the writing, and it sits
   // with the other two rather than replacing the student it is about.
   await expect(page.locator(".student-evidence-header")).toContainText("/100");
+  await noSeriousAxeViolations(page);
+});
+
+// ---------------------------------------------------------------------------
+// 24b. §19.4. A teacher disagreeing with one judgement, from the keyboard, with
+//      the machine's reading still on screen beside their own afterwards.
+// ---------------------------------------------------------------------------
+
+studentTest("a teacher records a different judgement and BOW keeps both", async ({ page, classCode }) => {
+  const key = createClassKeyFor(classCode);
+  const context: PlanContext = { setupId: "cousin-room" };
+  await gotoFreshChallenge(page);
+  await enterChallenge(page, { classCode, seatCode: "6" });
+  await completeSetupStage(page, 2);
+  await completeWorkingCalcs(page);
+  await savePlan(page, "working", context);
+  await playSeasonWeeks(page);
+  await passWeek5Calculation(page, String(week5TotalFor(context)));
+  await savePlan(page, "week5-first-response", context);
+  await decideOpportunity(page, { clinics: false, countBonus: false });
+  await savePlan(page, "final", { ...context, clinics: false, countCompletionFinal: false });
+  await readWeek8Resolution(page);
+  await submitDefense(page, "My plan holds because I never counted the bonus. I gave up rides to keep the course money where it was.");
+  await waitForDelivery(page);
+
+  await page.goto(`/educator/class/${classCode}/students/6?key=${key}`);
+  const row = page.locator(".judgement").first();
+  const machineBefore = await row.locator(".judgement__machine strong").innerText();
+
+  // Keyboard only, from the button that opens it to the button that records it.
+  await row.getByRole("button", { name: /I read this differently|Record a different judgement/ }).focus();
+  await page.keyboard.press("Enter");
+  await expect(row.locator(".override-form")).toBeVisible();
+  // Nothing is stored without a reason, and the form says so before it refuses.
+  await expect(row.getByRole("button", { name: "Record it" })).toHaveAttribute("aria-disabled", "true");
+  await row.getByRole("button", { name: "Partly" }).click();
+  await row.getByRole("textbox").fill("She talked me through it and had the figure before she touched the board.");
+  await expect(row.getByRole("button", { name: "Record it" })).not.toHaveAttribute("aria-disabled", "true");
+  await noSeriousAxeViolations(page);
+  await row.getByRole("button", { name: "Record it" }).click();
+
+  // Both readings, side by side, and the machine's is the one that did not move.
+  await expect(row.locator(".judgement__override strong")).toContainText("Partly");
+  await expect(row.locator(".judgement__machine strong")).toHaveText(machineBefore);
+  await expect(row.locator(".judgement__history q")).toContainText("before she touched the board");
+
+  // And it survives a reload, because it is on the record rather than in this tab.
+  await page.reload();
+  const reloaded = page.locator(".judgement").first();
+  await expect(reloaded.locator(".judgement__override strong")).toContainText("Partly");
+  await expect(reloaded.locator(".judgement__machine strong")).toHaveText(machineBefore);
   await noSeriousAxeViolations(page);
 });
 
@@ -1280,6 +1345,9 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   // the explanation requirement stand on a judgement somebody actually made.
   for (const seat of ["7", "8", "9"]) {
     await page.goto(`/educator/class/${code}/students/${seat}?key=${teacherKey}`);
+    // Reading the writing is one of the four things a teacher opens a student to do, and it
+    // is on its own tab — the page opens on the evidence trail.
+    await page.getByRole("tab", { name: "The explanation" }).click();
     // An unread paragraph is not a paragraph somebody scored zero. Until all four criteria
     // are answered the total refuses to be a number and the save refuses to run, so a stray
     // click cannot record a zero nobody meant.
