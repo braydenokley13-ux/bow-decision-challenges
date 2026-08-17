@@ -124,7 +124,7 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
           : "Avery missed a session, so the bonus never arrived. Your plan was already built without it."
         : held
           ? "Avery made every session. The money you planned around actually landed."
-          : `Avery missed a session, and the money your plan was counting on never came. ${clearing} more in Avery’s week — taken out of one of your other two amounts — would have kept it.`,
+          : `Avery missed a session, and the money your plan was counting on never came. ${clearing} more in Avery’s week — taken out of your other two amounts — would have kept it.`,
     },
     {
       id: "clinics",
@@ -143,7 +143,7 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
             ? "The clinics paid, and Avery still made every session."
             // The bonus was already gone at this housing and this spend, so the fee is
             // money the plan would not otherwise have had.
-            : "The clinics paid. Avery ran out of week with them or without them, so they cost nothing that was not already lost.",
+            : "The clinics paid, and they cost Avery nothing extra — the week was already too full either way.",
     },
     {
       id: "buying-time",
@@ -171,7 +171,7 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
       outcome: final.depositTaken ? "paid_off" : "no_effect",
       detail: final.depositTaken
         ? "The seat was held from Week 4, and it cost less than the late price."
-        : "Avery waited, kept the money reachable, and pays the full price.",
+        : "Avery kept the money where it could still move, and paid the full price when the course came round.",
     },
   ];
   return verdicts.sort((a, b) => VERDICT_WEIGHT[a.outcome] - VERDICT_WEIGHT[b.outcome]);

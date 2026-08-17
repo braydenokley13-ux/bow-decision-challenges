@@ -103,7 +103,7 @@ export function PlanBoard({
     const take = Math.min(value, residual);
     return take > 0
       ? {
-          label: `Take ${formatDollars(take)}`,
+          label: `Take ${formatDollars(take)} out`,
           spoken: `Take ${formatDollars(take)} out of ${CHOICE_LABELS[category]}`,
           onPress: () => onAmountChange(category, dollars(value - take)),
         }
@@ -210,7 +210,10 @@ export function PlanBoard({
           <section className="plan-step plan-step--closer" aria-labelledby="plan-step-rest">
             <header className="plan-step__head">
               {step(1) && <p className="stamp">{step(1)}</p>}
-              <h3 id="plan-step-rest">{steps.rest.name}</h3>
+              {/* Naming the amount is what tells this step apart from the one above it. Both
+                  offer the same three rows, and without the figure they read as the same
+                  control twice. */}
+              <h3 id="plan-step-rest">{closers.length > 0 ? `Where does the last ${formatDollars(balance)} go?` : steps.rest.name}</h3>
               <p className="plan-step__why">{closers.length > 0 ? steps.rest.ask : steps.rest.done}</p>
             </header>
             {closers.length > 0 && (

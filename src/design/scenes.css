@@ -75,7 +75,7 @@
 .opening__decisions li::before { content: "0" counter(decision); color: var(--bow-brand); font: var(--t-label); font-family: var(--font-mono); }
 .opening__decisions b { color: var(--ink-1); font: var(--t-title3); }
 .opening__decisions span { grid-column: 2; color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
-.opening__side { display: grid; gap: var(--s-3); align-content: space-between; padding: var(--s-5); }
+.opening__side { display: grid; gap: var(--s-3); align-content: start; align-self: start; padding: var(--s-5); }
 .opening__span { margin: 0; color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.12em; text-transform: uppercase; }
 .goal-strip { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--s-4); padding: var(--s-4) var(--s-5); background: var(--world-panel); border: 1px solid var(--world-panel-edge); border-left: 4px solid var(--world-flare); }
 .goal-strip strong { color: var(--world-flare); font: var(--m-lg); font-feature-settings: var(--num); }
@@ -194,7 +194,7 @@
 .ledger__spend { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); margin: 0; padding-top: var(--s-3); border-top: 1px solid var(--border-default); }
 .ledger__spend span { color: var(--ink-2); font: var(--t-ui); }
 .ledger__spend strong { color: var(--ink-1); font: var(--m-md); font-feature-settings: var(--num); }
-.ledger__warning { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2); margin: 0; padding: var(--s-3) var(--s-4); color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); border-left: 4px solid var(--fin-conditional-stripe); font: var(--t-ui); }
+.ledger__warning { margin: 0; padding: var(--s-3) var(--s-4); color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); border-left: 4px solid var(--fin-conditional-stripe); font: var(--t-ui); }
 .ledger__warning strong { font: var(--m-sm); font-feature-settings: var(--num); }
 
 /* What moved since the last save, named on the board that has to absorb it. */
@@ -223,7 +223,7 @@
    with three answers rather than tucked into a row as a shortcut. */
 .plan-step--closer { background: var(--surface-raised); border-top: 2px solid var(--fin-adjustable); }
 .closer-choice { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
-.closer-choice button { display: grid; align-content: space-between; gap: var(--s-4); min-height: 104px; padding: var(--s-4) var(--s-5); text-align: left; color: var(--ink-1); background: var(--surface); border: 1.5px solid var(--border-ink); border-left-width: 6px; cursor: pointer; transition: background var(--dur-micro) var(--ease-standard), color var(--dur-micro) var(--ease-standard); }
+.closer-choice button { display: grid; align-content: start; gap: var(--s-3); min-height: var(--tap); padding: var(--s-4) var(--s-5); text-align: left; color: var(--ink-1); background: var(--surface); border: 1.5px solid var(--border-ink); border-left-width: 6px; cursor: pointer; transition: background var(--dur-micro) var(--ease-standard), color var(--dur-micro) var(--ease-standard); }
 .closer-choice button[data-category="goal"] { border-left-color: var(--choice-1); }
 .closer-choice button[data-category="reserve"] { border-left-color: var(--choice-2); }
 .closer-choice button[data-category="flexibleCash"] { border-left-color: var(--choice-3); }
@@ -561,6 +561,7 @@
 .week-meter__track {
   position: relative;
   display: flex;
+  margin-bottom: 1.6em;
   height: 38px;
   background: var(--surface-inset);
   border: 1px solid var(--border-default);
@@ -570,24 +571,20 @@
 .week-meter__part[data-part="commute"] { background: var(--time-commute); }
 .week-meter__part[data-part="rehab"] { background: var(--time-rehab); }
 .week-meter__part[data-part="clinics"] { background: var(--time-clinics); }
-.week-meter__part i, .week-meter__bought i { font-style: normal; font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
+.week-meter__part i { font-style: normal; font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
 
-.week-meter__bought {
-  display: grid;
-  align-items: center;
-  padding-inline: 6px;
-  overflow: hidden;
-  background: var(--pat-ghost);
-  color: var(--ink-2);
-  border-left: 2px solid var(--time-bought);
-}
+.week-meter__paid { margin: -1em 0 0; }
+.week-meter__paid span { height: 18px; display: grid; align-items: center; padding-inline: 6px; overflow: hidden; background: var(--pat-ghost); border: 1px solid var(--border-default); border-top: 0; color: var(--ink-2); }
+.week-meter__paid i { font-style: normal; font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
 
 .week-meter__limit { position: absolute; inset-block: -6px; width: 0; border-left: 2px dashed var(--ink-1); }
 .week-meter__limit b {
   position: absolute;
-  top: -1.5em;
+  top: calc(100% + 4px);
   left: 0;
   transform: translateX(-50%);
+  padding: 0 4px;
+  background: var(--surface);
   white-space: nowrap;
   font-size: 0.72rem;
   font-weight: 700;

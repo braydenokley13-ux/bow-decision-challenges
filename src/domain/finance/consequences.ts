@@ -36,12 +36,16 @@ export function planConsequences(input: SnapshotInputs, n: ScenarioNumbers): Rec
   // once ticked: the backup version and the no-bonus check are priced without any
   // conditional money at all, so on those the reserve is covering nothing in particular.
   const conditional = conditionalIn(input, n);
+  // What the rides row holds beyond the last whole hour it managed to buy.
+  const idleTimeMoney = Math.max(0, input.amounts.flexibleCash - load.bought * n.load.blockBuybackCost);
   const uncovered = Math.max(0, conditional - input.amounts.reserve);
 
   return {
     goal: input.depositTaken
       ? `The seat is held. Nothing else is owed on the course.`
-      : courseShort > 0
+      : input.amounts.goal === 0
+        ? `Nothing put toward the ${formatDollars(coursePrice)} the course costs.`
+        : courseShort > 0
         ? `${formatDollars(courseShort)} short of the ${formatDollars(coursePrice)} the course costs.`
         : `Enough to pay the ${formatDollars(coursePrice)} the course costs.`,
     reserve: input.amounts.reserve === 0
@@ -53,6 +57,10 @@ export function planConsequences(input: SnapshotInputs, n: ScenarioNumbers): Rec
         : `${formatDollars(input.amounts.reserve)} put by for something going wrong.`,
     flexibleCash: load.bought === 0
       ? `Nothing paid for rides. Getting everywhere still takes Avery ${load.net} hours a week.`
-      : `Pays for rides. Avery gets ${load.bought} hour${load.bought === 1 ? "" : "s"} a week back, and still spends ${load.net}.`,
+      // Hours come in whole blocks, so money that does not reach the next one buys nothing.
+      // Saying so is the difference between a plan that balances and a plan that works.
+      : `Pays for rides. Avery gets ${load.bought} hour${load.bought === 1 ? "" : "s"} a week back, and still spends ${load.net}.${
+          idleTimeMoney > 0 ? ` The last ${formatDollars(idleTimeMoney)} is not enough for another hour.` : ""
+        }`,
   };
 }

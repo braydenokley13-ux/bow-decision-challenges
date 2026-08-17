@@ -36,6 +36,10 @@ export function MoneyLedger({ input, setupTitle, onLockedMoveAttempt }: {
   const available = availableFor(input, n);
   const locked = lockedFor(input, n);
   const conditional = conditionalIn(input, n);
+  // "Neither" was printed whether one bonus was being counted on or two. By Week 5 only one
+  // is left, and a sentence that says "neither" about a list of one is a sentence a student
+  // stops to re-read.
+  const countedBonuses = (input.includeCompletion ? 1 : 0) + (input.includeOutcome ? 1 : 0);
   const certain = Math.max(0, available - conditional);
   const toDecide = available - locked;
   const withoutBonus = certain - locked;
@@ -89,7 +93,7 @@ export function MoneyLedger({ input, setupTitle, onLockedMoveAttempt }: {
       </p>
       {conditional > 0 && (
         <p className="ledger__warning">
-          If neither bonus arrives, that drops to <strong className="money">{formatDollars(Math.max(0, withoutBonus))}</strong>.
+          If {countedBonuses > 1 ? "neither bonus" : "that bonus never"} arrives, this drops to <strong className="money">{formatDollars(Math.max(0, withoutBonus))}</strong>.
         </p>
       )}
       {spend > 0 && (

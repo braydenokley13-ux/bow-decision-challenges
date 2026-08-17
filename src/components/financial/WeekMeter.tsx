@@ -17,6 +17,12 @@ interface WeekMeterProps {
  * This is a readout, not a second ledger — the student never balances it. It exists so the
  * cost that is not money is visible while they are spending the money, and so the line the
  * attendance bonus depends on is a place on the screen rather than a sentence.
+ *
+ * The bar is the week Avery has to get through, and it does not change length. Money spent
+ * on rides is drawn as a slice taken *out* of it. It used to be appended to the end, which
+ * made the bar grow every time a student bought hours back — the caption said twelve of
+ * fourteen hours were covered while the picture showed the load getting bigger, and a
+ * reader who compared the two believed neither.
  */
 export function WeekMeter({ load, parts, atStake, rate }: WeekMeterProps) {
   const scale = Math.max(load.capacity, load.demand);
@@ -39,11 +45,6 @@ export function WeekMeter({ load, parts, atStake, rate }: WeekMeterProps) {
             <i>{part.label}</i>
           </span>
         ))}
-        {load.bought > 0 && (
-          <span className="week-meter__bought" style={{ width: width(load.bought) }}>
-            <i>Paid for rides</i>
-          </span>
-        )}
         {/* The line used to be a bare numeral over a dotted rule. A number with no noun is
             not a limit, it is a riddle — so it now says what it is a limit on. */}
         {load.atRisk && (
@@ -52,6 +53,15 @@ export function WeekMeter({ load, parts, atStake, rate }: WeekMeterProps) {
           </span>
         )}
       </div>
+
+      {/* Hours the plan has paid for, measured against the same bar rather than drawn on
+          top of it. As an overlay it covered the label of whatever it was cancelling; as
+          an appended segment it made the week get longer the more of it Avery bought back. */}
+      {load.bought > 0 && (
+        <p className="week-meter__paid" aria-hidden="true">
+          <span style={{ width: width(load.bought) }}><i>Paid for · {load.bought}h</i></span>
+        </p>
+      )}
 
       <p className="week-meter__state" aria-live="polite">
         {!load.atRisk

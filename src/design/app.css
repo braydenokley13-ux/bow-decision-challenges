@@ -11,7 +11,12 @@ p { color: var(--ink-2); }
 /* Squared, ruled, decisive. A pill-shaped button belongs to a different product. */
 .button { min-height: var(--tap); display: inline-flex; align-items: center; justify-content: center; gap: var(--s-3); padding: 0 var(--s-6); border: 1.5px solid var(--border-ink); border-radius: var(--r-sm); cursor: pointer; font: var(--t-ui); font-weight: 700; letter-spacing: 0.01em; text-decoration: none; transition: background var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard); }
 .button:hover { transform: translateY(-1px); }
+
+/* A primary action that is only waiting for an input keeps its outline. Flat grey on grey
+   reads as hardware that has stopped working, and a student decides the page is broken
+   before they decide it is their turn. */
 .button[aria-disabled="true"] { cursor: not-allowed; color: var(--ink-3); background: var(--surface-sunken); border-color: var(--border-default); transform: none; }
+.button--primary[aria-disabled="true"] { color: var(--bow-brand); background: transparent; border-color: var(--bow-brand); border-style: dashed; }
 .button--primary { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); }
 .button--primary:hover { background: var(--bow-brand-strong); border-color: var(--bow-brand-strong); }
 .button--secondary { color: var(--ink-1); background: var(--surface-raised); }
@@ -35,15 +40,15 @@ p { color: var(--ink-2); }
 
 /* The five chapters, each on its own air and under its own rule. A student who looks up
    from the numbers can tell which part of the story they are in without reading a word. */
-.challenge-shell[data-chapter="offer"] { --chapter-ground: var(--ground-plan); --chapter-accent: var(--ink-1); }
+.challenge-shell[data-chapter="offer"] { --chapter-ground: var(--ground-plan); --chapter-accent: var(--bow-brand); }
 .challenge-shell[data-chapter="plan"] { --chapter-ground: var(--ground-plan); --chapter-accent: var(--bow-brand); }
 .challenge-shell[data-chapter="season"] { --chapter-ground: var(--ground-season); --chapter-accent: var(--bow-brand); }
 .challenge-shell[data-chapter="pressure"] { --chapter-ground: var(--ground-pressure); --chapter-accent: var(--fin-over); }
-.challenge-shell[data-chapter="resolution"] { --chapter-ground: var(--ground-resolution); --chapter-accent: var(--ink-1); }
+.challenge-shell[data-chapter="resolution"] { --chapter-ground: var(--ground-resolution); --chapter-accent: var(--bow-brand-strong); }
 
 /* The chapter's colour is carried on the topbar's own border rather than a pseudo-element,
    so releasing `position` for a full-page screenshot cannot detach it from the bar. */
-.challenge-topbar { height: 72px; position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: 220px minmax(0, 1fr) auto; align-items: center; gap: var(--s-5); padding: 0 var(--gutter); background: var(--surface-raised); border-bottom: 3px solid var(--chapter-accent, var(--border-default)); box-shadow: var(--shadow-rail); transition: border-color var(--dur-stage) var(--ease-standard); }
+.challenge-topbar { height: 72px; position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-5); padding: 0 var(--gutter); background: var(--surface-raised); border-bottom: 3px solid var(--chapter-accent, var(--border-default)); box-shadow: var(--shadow-rail); transition: border-color var(--dur-stage) var(--ease-standard); }
 
 /* Season strip — eight weeks as a run of ticket stubs, one of which is live. */
 .season-strip { display: flex; align-items: center; gap: var(--s-4); min-width: 0; }
@@ -198,7 +203,7 @@ p { color: var(--ink-2); }
 
 /* Educator shell and guide */
 .educator-shell { min-height: 100vh; background: var(--canvas); }
-.educator-topbar { min-height: 72px; display: grid; grid-template-columns: 220px 1fr auto; align-items: center; gap: var(--s-5); padding: 0 var(--s-7); background: var(--surface); border-bottom: 1px solid var(--border-default); }
+.educator-topbar { min-height: 72px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--s-5); padding: 0 var(--s-7); background: var(--surface); border-bottom: 1px solid var(--border-default); }
 .educator-topbar nav { display: flex; justify-content: center; gap: var(--s-5); }
 .educator-topbar nav a { padding: var(--s-3) 0; color: var(--ink-3); font: var(--t-ui); text-decoration: none; }
 .educator-topbar nav a.active { color: var(--ink-1); border-bottom: 2px solid var(--ink-1); }
@@ -229,7 +234,7 @@ p { color: var(--ink-2); }
 .prerequisite-list span { color: var(--fin-conditional); font: var(--font-mono); }
 .companion-callout { margin-top: var(--s-6); }
 .companion-callout a { color: var(--ink-invert); }
-.process-line { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--border-ink); }
+.process-line { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--border-ink); }
 .process-line > div { min-height: 190px; padding: var(--s-5); border-right: 1px solid var(--border-default); }
 .process-line span { font: var(--font-mono); }
 .process-line h3 { margin: var(--s-7) 0 var(--s-3); font: var(--t-title2); }
@@ -416,7 +421,6 @@ p { color: var(--ink-2); }
 /* Chromebook compaction */
 
 @media (max-width: 1100px) {
-  .challenge-topbar { grid-template-columns: 170px minmax(0, 1fr) auto; }
   .season-strip { gap: var(--s-3); }
   .setup-grid { gap: var(--s-3); }
   .plan-board__body { grid-template-columns: 1fr; }
@@ -542,7 +546,8 @@ p { color: var(--ink-2); }
 .resolve-changes-table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border-default); }
 .resolve-changes-table th, .resolve-changes-table td { padding: var(--s-3) var(--s-5); text-align: right; border-bottom: 1px solid var(--border-subtle); }
 .resolve-changes-table thead th { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
-.resolve-changes-table th:first-child, .resolve-changes-table tbody th { text-align: left; font: var(--t-ui); }
+.resolve-changes-table th:first-child, .resolve-changes-table tbody th { text-align: left; }
+.resolve-changes-table tbody th { font: var(--t-ui); }
 .resolve-changes-table td { font: var(--m-xs); font-feature-settings: var(--num); }
 
 /* ---------------------------------------------------------------------------

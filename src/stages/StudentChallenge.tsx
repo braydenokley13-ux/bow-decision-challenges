@@ -746,7 +746,7 @@ function Week5EventStage() {
         <div className="gap-builder__intro">
           <p className="eyebrow">What this costs Avery</p>
           <h2>Work out what Week 5 just did to the plan.</h2>
-          <p>Some of these change the money in your plan and some do not. Tap the ones that do, then add them up.</p>
+          <p>Tap each card that hits the plan you built. Then add them up and type the total.</p>
         </div>
         <div className="gap-tiles">
           {changes.map((change) => {
@@ -763,7 +763,7 @@ function Week5EventStage() {
             );
           })}
           <p className="gap-tiles__running" aria-live="polite">
-            <span>Tapped so far</span><strong className="money">{formatDollars(selectedTotal)}</strong>
+            <span>The cards you tapped add up to</span><strong className="money">{formatDollars(selectedTotal)}</strong>
           </p>
         </div>
         <div className="gap-builder__sum">
@@ -791,7 +791,6 @@ function TriageStage() {
   const outcomeLabel = BASKETBALL_SCENARIO.incomeCopy.outcome.label;
   return (
     <StageShell stage="first-response" kicker="Week 5 · First response" title="Something has to give.">
-      <p className="stage-deck">No new money is coming. Everything below is money you already promised somewhere else.</p>
       <BoardForMode
         mode="week5-first-response"
         variant="triage"
@@ -981,7 +980,7 @@ function DefenseStage() {
               as a list of facts and a student can sit in front of the screen never
               discovering that the core control of the page is a control at all. */}
           <div className="interview__stats">
-            <p className="field-label">Tap 2 or 3 of your own numbers to use</p>
+            <p className="field-label">Tap 2 or 3 of your own numbers</p>
             {tiles.map((tile) => (
               <button key={tile.id} type="button" aria-pressed={selected.includes(tile.id)} onClick={() => toggle(tile.id)}>
                 <span className="interview__mark" aria-hidden="true" />
@@ -1004,8 +1003,8 @@ function DefenseStage() {
               had picked none. */}
           <footer>
             <p aria-live="polite">
-              {stillToPick > 0 ? `Tap ${stillToPick} number${stillToPick === 1 ? "" : "s"} on the left. ` : "Numbers ready. "}
-              {text.trim().length < 40 ? "Write at least one full sentence." : "Long enough to turn in."}
+              {stillToPick > 0 ? `Tap ${stillToPick} more number${stillToPick === 1 ? "" : "s"} on the left. ` : "Numbers ready. "}
+              {text.trim().length < 40 ? "Then write two to four sentences." : "Long enough to turn in."}
             </p>
             <Button aria-disabled={!canSubmit} onClick={() => canSubmit && dispatch({ type: "DEFENSE_SUBMITTED", tileIds: selected, text })}>Turn in my plan</Button>
           </footer>

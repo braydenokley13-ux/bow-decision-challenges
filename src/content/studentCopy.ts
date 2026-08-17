@@ -50,7 +50,7 @@ export const STUDENT_COPY = {
       committed: {
         name: "Money already spoken for",
         ask: "How much is gone before Avery chooses anything?",
-        why: "Rent and the weekly basics are already promised. Avery cannot move them.",
+        why: "You already worked out what the room costs. This is everything else Avery owes every week.",
       },
       decide: {
         name: "Decide what to protect",
@@ -60,7 +60,7 @@ export const STUDENT_COPY = {
       rest: {
         name: "Say where the rest goes",
         ask: "One of these takes what is left over. Which one?",
-        why: "Whichever you pick, that is the part of the plan the leftovers decided.",
+        why: "Whatever is left over goes to the one you pick.",
         done: "Nothing is left over. Every dollar already has a job.",
       },
       review: {

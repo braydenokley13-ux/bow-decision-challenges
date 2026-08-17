@@ -71,7 +71,7 @@ export function Week8Resolution() {
             <p className="eyebrow">Avery’s week, weeks {resolution.weeks[0]?.week}–{SCENARIO_NUMBERS.weeks}</p>
             <p className="resolve-weeks__load">
               <strong>{load.net} hours</strong>
-              <span>of getting places every week, and only {load.limit} spare to do it in</span>
+              <span>of getting places every week, and only {load.limit} spare to do it in.</span>
             </p>
           </div>
           <ol className="resolve-weeks__list">
