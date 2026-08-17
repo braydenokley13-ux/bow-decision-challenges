@@ -10,7 +10,7 @@ import { AssignFlow, ObjectiveDetail, ObjectiveList } from "./educator/Objective
 import { ObjectiveMap } from "./educator/ObjectiveMap";
 import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPages";
 import { Debrief } from "./educator/Debrief";
-import { durationLabel, PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
+import { PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
 
 function Home() {
   return (
@@ -24,7 +24,7 @@ function Home() {
         <div className="home__copy">
           <p className="eyebrow">Plan Under Pressure · Basketball</p>
           <h1>Eight weeks to the showcase.</h1>
-          <p className="home__deck">Avery Reyes just got the last roster spot with the Harbor City Flight. Some of the money is promised, some has to be earned, and the bills arrive either way. Avery plays. You handle the money.</p>
+          <p className="home__deck">Avery Reyes just got the last roster spot. Avery plays. You handle the money.</p>
           <div className="home__actions">
             <Link className="button button--primary" to={PLAN_UNDER_PRESSURE.route}>Start the challenge</Link>
           </div>
@@ -33,12 +33,6 @@ function Home() {
           <RosterCard note="Eight weeks. One shot at the sports-media course." />
         </aside>
       </section>
-      <footer className="home__foot">
-        <span>{PLAN_UNDER_PRESSURE.grades}</span>
-        <span>{durationLabel(PLAN_UNDER_PRESSURE)}</span>
-        <span>{PLAN_UNDER_PRESSURE.placement}</span>
-        <span>Adaptive budgeting under uncertainty</span>
-      </footer>
     </main>
   );
 }

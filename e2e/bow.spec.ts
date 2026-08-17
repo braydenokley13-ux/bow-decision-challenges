@@ -404,7 +404,7 @@ studentTest("the opening screens work with a keyboard only", async ({ page, clas
   const dealButton = page.getByRole("button", { name: "Find Avery a place" });
   await dealButton.focus();
   await dealButton.press("Enter");
-  await expect(page.getByRole("heading", { name: "Cheaper rent costs something else." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Which place costs the least?" })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------
@@ -672,7 +672,7 @@ studentTest("Weeks 1 to 4 and the deposit deadline are fully operable from the k
 
 test("a facilitator creates a class and gets a code plus a private link", async ({ page }) => {
   await page.goto("/educator/classes/new");
-  await page.getByLabel("Class name").fill("Period 3 · Grade 7");
+  await page.getByLabel("Name this class").fill("Period 3 · Grade 7");
   await page.getByRole("button", { name: "Create the class" }).click();
 
   const code = page.locator(".class-created__code strong");
@@ -837,7 +837,10 @@ studentTest("an educator reads one student's evidence and scores their writing",
   await waitForDelivery(page);
 
   await page.goto(`/educator/class/${classCode}/students/5?key=${key}`);
-  await expect(page.getByRole("heading", { name: "Reasoning not read yet" })).toBeVisible();
+  // The page is about a student, not about what has not happened to them yet: the headline
+  // names the seat, and whether their writing has been read sits with the other figures.
+  await expect(page.getByRole("heading", { name: "Seat 5", exact: true })).toBeVisible();
+  await expect(page.locator(".student-evidence-header")).toContainText("Not read");
   await expect(page.locator(".student-response blockquote")).toContainText("reserved the course seat");
 
   // A person scores it, and only then does a final grade exist. Each mark names its own
@@ -852,7 +855,9 @@ studentTest("an educator reads one student's evidence and scores their writing",
   await expect(page.getByText("Saved.")).toBeVisible();
 
   await page.reload();
-  await expect(page.locator(".student-evidence-header h1")).toContainText("/100");
+  // The together-figure only exists once a person has read the writing, and it sits
+  // with the other two rather than replacing the student it is about.
+  await expect(page.locator(".student-evidence-header")).toContainText("/100");
   await noSeriousAxeViolations(page);
 });
 
@@ -1094,7 +1099,7 @@ test("a teacher creates a class with an objective and a student joins with the c
   // whiteboard always has something behind it.
   const objective = page.getByLabel("Objective");
   await expect(objective).toHaveValue("1.3");
-  await page.getByLabel("Class name").fill("Assignment browser suite");
+  await page.getByLabel("Name this class").fill("Assignment browser suite");
   await page.getByRole("button", { name: "Create the class" }).click();
 
   const code = (await page.locator(".class-created__code strong").innerText()).trim();
@@ -1175,6 +1180,24 @@ test("a teacher searches for budget, finds 1.3, and reads its exact wording", as
   await noSeriousAxeViolations(page);
 });
 
+test("the objective screens name one set of skills and one grammatical sentence", async ({ page }) => {
+  // Three defects a cold read found, pinned. The coverage table said "full" on a page
+  // headed "BOW cannot assess this yet"; the class breakdown listed skills the objective
+  // does not rest on, so the page named two at the top and different ones underneath; and
+  // the coming page shipped "everything it ask for" above the fold.
+  await page.goto("/educator/objectives/nysed-pf-2026/4.2");
+  await expect(page.getByText("everything it asks for", { exact: false })).toBeVisible();
+  await expect(page.getByText(/it ask for/)).toHaveCount(0);
+  // Coverage and assessability are different claims and both are on screen.
+  const row = page.locator(".micro-table tbody tr").first();
+  await expect(row).toContainText("full");
+  await expect(row).toContainText("None yet");
+
+  await page.goto("/educator/objectives/nysed-pf-2026/1.3");
+  const skills = page.locator(".micro-table tbody th code");
+  await expect(skills).toHaveCount(2);
+});
+
 test("an objective with no world says so instead of reporting nothing as zero", async ({ page }) => {
   await page.goto("/educator/objectives/nysed-pf-2026/4.2");
   // Authored prose and a way out, rather than a sentence built around a statement that
@@ -1252,6 +1275,13 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   // the explanation requirement stand on a judgement somebody actually made.
   for (const seat of ["7", "8", "9"]) {
     await page.goto(`/educator/class/${code}/students/${seat}?key=${teacherKey}`);
+    // An unread paragraph is not a paragraph somebody scored zero. Until all four criteria
+    // are answered the total refuses to be a number and the save refuses to run, so a stray
+    // click cannot record a zero nobody meant.
+    if (seat === "7") {
+      await expect(page.locator(".rubric-panel footer strong")).toContainText("—/10");
+      await expect(page.getByRole("button", { name: "Save review" })).toHaveAttribute("aria-disabled", "true");
+    }
     for (const [label, mark] of [["Workability", 2], ["Protected priority", 2], ["Tradeoff / opportunity cost", 2], ["Numerical evidence", 4]] as const) {
       await page.getByRole("button", { name: `${label}: ${mark} of ${mark}` }).click();
     }

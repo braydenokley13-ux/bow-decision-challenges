@@ -168,29 +168,29 @@ export function Week8Resolution() {
         <section className="resolve-changes" aria-labelledby="changes-heading">
           <div className="section-heading">
             <p className="eyebrow">Before Week 5 · After Week 5</p>
-            <h2 id="changes-heading">How your plan moved.</h2>
+            <h2 id="changes-heading">What moved after Week 5.</h2>
           </div>
-          <table>
-            <caption className="visually-hidden">Your opening plan compared with the plan you landed</caption>
-            <thead>
-              <tr><th scope="col">Where the money went</th><th scope="col">Opening plan</th><th scope="col">Final plan</th><th scope="col">Change</th></tr>
-            </thead>
-            <tbody>
-              {CHOICE_ORDER.map((category) => {
-                const change = resolution.changes.find((item) => item.category === category)!;
-                return (
-                  <tr key={category}>
-                    <th scope="row">{CHOICE_LABELS[category]}</th>
-                    <td className="money">{formatDollars(change.before)}</td>
-                    <td className="money">{formatDollars(change.after)}</td>
-                    <td className="money" data-delta={change.delta === 0 ? "flat" : change.delta > 0 ? "up" : "down"}>
-                      {change.delta === 0 ? "—" : `${change.delta > 0 ? "+" : "−"}${formatDollars(Math.abs(change.delta))}`}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {/* This was a four-column table with green delta figures — an analytics widget at
+              the emotional end of a season. It is three sentences, and the lines that did
+              not move say so in a word instead of taking a row each. */}
+          <ul className="resolve-moves">
+            {CHOICE_ORDER.map((category) => {
+              const change = resolution.changes.find((item) => item.category === category)!;
+              return (
+                <li key={category} data-delta={change.delta === 0 ? "flat" : change.delta > 0 ? "up" : "down"}>
+                  <b>{CHOICE_LABELS[category]}</b>
+                  {change.delta === 0 ? (
+                    <span>stayed at <strong className="money">{formatDollars(change.after)}</strong></span>
+                  ) : (
+                    <span>
+                      went {change.delta > 0 ? "up" : "down"} to <strong className="money">{formatDollars(change.after)}</strong>
+                      {" "}from {formatDollars(change.before)}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
           {/* A plan can finish larger than it started, and a table that shows it growing
               without saying what paid for the growth reads as a mistake. */}
           <p className="resolve-changes__note">

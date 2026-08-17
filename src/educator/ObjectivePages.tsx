@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { Button } from "../components/primitives/Button";
 import { EducatorShell } from "./EducatorShell";
 import { competencyById } from "../domain/competency/competencies";
+import type { CompetencyId } from "../domain/competency/types";
 import {
   competenciesFor,
   FRAMEWORKS,
@@ -83,9 +84,8 @@ export function ObjectiveList() {
         <p className="eyebrow">{labels?.frameworkShort} · {labels?.unitNoun}s</p>
         <h1>What do you want to assess?</h1>
         <p>
-          Every {labels?.unitNounShort.toLowerCase()} in the framework is here. The ones BOW can assess today
-          have a world behind them that produces every piece of evidence the skill asks for; the rest are
-          mapped and waiting for one.
+          All {standards.length} of them. BOW can assess {ready.length} today — the rest are matched to a skill
+          and waiting for a challenge that can observe it.
         </p>
       </header>
 
@@ -109,7 +109,7 @@ export function ObjectiveList() {
       <section className="dashboard-section">
         <div className="section-head">
           <h2>Ready to assign</h2>
-          <p>A world exists for {ready.length === 1 ? "this one" : "these"} that produces every piece of evidence the skill asks for.</p>
+          <p>{ready.length === 1 ? "One, today." : `${ready.length} today.`} Pick one to see what it measures and set it for a class.</p>
         </div>
         <div className="row-list">
           {ready.map((standard) => (
@@ -132,8 +132,9 @@ export function ObjectiveList() {
           <div className="section-head">
             <h2>Mapped, not yet assessable</h2>
             <p>
-              BOW knows which skill sits behind {coming.length === 1 ? "this one" : "each of these"} and has no world for
-              {coming.length === 1 ? " it" : " them"} yet. Nothing here reports as 0% — it reports as coming.
+              BOW knows which skill sits behind {coming.length === 1 ? "this one" : "each of these"} and cannot
+              observe {coming.length === 1 ? "it" : "them"} yet. {coming.length === 1 ? "It reports" : "They report"} as coming,
+              never as nobody having demonstrated {coming.length === 1 ? "it" : "them"}.
             </p>
           </div>
           <ul className="coming-list">
@@ -147,7 +148,7 @@ export function ObjectiveList() {
           </ul>
         </section>
       )}
-      <Attribution frameworkId={FRAMEWORK_ID} />
+      <section className="dashboard-section"><Attribution frameworkId={FRAMEWORK_ID} /></section>
     </EducatorShell>
   );
 }
@@ -202,7 +203,7 @@ function ResultHeadline({ result, submitted, awaitingReading }: { result: Object
   );
 }
 
-function ClassResult({ entry }: { entry: ObjectiveClassResult }) {
+function ClassResult({ entry, onThisObjective }: { entry: ObjectiveClassResult; onThisObjective: readonly CompetencyId[] }) {
   const keyQuery = `?key=${rememberedClasses().find((known) => known.code === entry.record.code)?.teacherKey ?? ""}`;
   return (
     <article className="objective-class">
@@ -223,7 +224,7 @@ function ClassResult({ entry }: { entry: ObjectiveClassResult }) {
         <table className="micro-table">
           <thead><tr><th scope="col">Skill</th><th scope="col">Where the class is</th></tr></thead>
           <tbody>
-            {entry.competencies.map((row) => (
+            {entry.competencies.filter((row) => onThisObjective.includes(row.competencyId)).map((row) => (
               <tr key={row.competencyId}>
                 <th scope="row">{competencyById(row.competencyId)?.statement ?? row.competencyId}</th>
                 <td>
@@ -298,7 +299,7 @@ export function ObjectiveDetail() {
               <p>BOW cannot assess this {labels?.unitNounShort.toLowerCase()} yet.</p>
               {waiting.length > 0 && (
                 <>
-                  <p>It rests on {waiting.length === 1 ? "this skill" : "these skills"}, and no world has been built that produces everything {waiting.length === 1 ? "it" : "they"} ask for:</p>
+                  <p>It rests on {waiting.length === 1 ? "this skill, and no world has been built that produces everything it asks for" : "these skills, and no world has been built that produces everything they ask for"}:</p>
                   <ul>{waiting.map((competency) => <li key={competency.id}>{competency.statement}</li>)}</ul>
                 </>
               )}
@@ -315,12 +316,23 @@ export function ObjectiveDetail() {
           <h2>{covering.length} skill{covering.length === 1 ? "" : "s"} behind this {labels?.unitNounShort.toLowerCase()}</h2>
         </div>
         <table className="micro-table">
-          <thead><tr><th scope="col">Skill</th><th scope="col">Coverage</th><th scope="col">Why</th></tr></thead>
+          <thead>
+            <tr>
+              <th scope="col">Skill</th>
+              {/* Two different claims, and printing only the first is what made an
+                  unassessable objective show the word "full". A mapping says how much of
+                  this objective the skill covers; a world is what can actually observe it. */}
+              <th scope="col">Covers</th>
+              <th scope="col">World</th>
+              <th scope="col">Why</th>
+            </tr>
+          </thead>
           <tbody>
             {covering.map((entry) => (
               <tr key={entry.competency.id}>
                 <th scope="row"><code>{entry.competency.displayCode}</code> {entry.competency.statement}</th>
-                <td>{entry.coverage}</td>
+                <td><span className="coverage-chip" data-coverage={entry.coverage}>{entry.coverage}</span></td>
+                <td>{isCompetencyAvailable(entry.competency.id) ? "Built" : "None yet"}</td>
                 <td>{entry.rationale}</td>
               </tr>
             ))}
@@ -342,7 +354,7 @@ export function ObjectiveDetail() {
               : ""}
           </p>
         )}
-        {evidence.status === "ready" && evidence.results.map((entry) => <ClassResult key={entry.record.code} entry={entry} />)}
+        {evidence.status === "ready" && evidence.results.map((entry) => <ClassResult key={entry.record.code} entry={entry} onThisObjective={covering.map((row) => row.competency.id)} />)}
       </section>
     </EducatorShell>
   );

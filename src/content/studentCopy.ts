@@ -77,15 +77,10 @@ export const STUDENT_COPY = {
     },
     /**
      * The same number, said beside the controls rather than at the foot of the board. It
-     * is worded differently on purpose: two identical sentences on one screen read as one
-     * sentence that has been printed twice, and a student then wonders which is live.
+     * There is exactly one live number on a board. There used to be two, worded differently
+     * so they would not read as the same sentence twice — which they did anyway, and a cold
+     * reader counted three bands of alarm colour on the Week 5 screen saying one thing.
      */
-    running: {
-      balanced: "The plan balances.",
-      unassigned: "with no job yet.",
-      over: "over what Avery has.",
-      short: "still short.",
-    },
     ledger: {
       title: "Avery’s money",
       arrives: "Arrives no matter what",

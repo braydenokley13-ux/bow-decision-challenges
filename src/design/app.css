@@ -495,7 +495,9 @@ p { color: var(--ink-2); }
    Creating a class. The whole setup step: a name in, a code and a private link out.
    --------------------------------------------------------------------------- */
 
-.class-form { display: grid; gap: var(--s-3); max-width: 520px; }
+/* Left-aligned, not centred. This was the one centred block in the product, floating at
+   a different left edge from its own heading. */
+.class-form { display: grid; gap: var(--s-3); max-width: 520px; margin-inline: 0; }
 .class-form label { font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
 .class-form input { min-height: var(--tap); padding: 0 var(--s-4); font: var(--t-body-lg); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
 .class-form__status { margin: 0; color: var(--ink-3); font: var(--t-sm); font-weight: 400; }
@@ -640,7 +642,11 @@ p { color: var(--ink-2); }
 .objective-result[data-state="strong"] strong { color: var(--fin-balanced-ink); }
 .objective-result[data-state="needs-attention"] strong { color: var(--fin-over-ink); }
 .objective-actions { margin: 0; }
-.assign-steps { max-width: 640px; margin: 0; padding: 0; list-style: none; }
+
+/* The step rules used to stop at 640 while the commit bar under them ran the full
+   width, which put three unrelated right edges on one short page. */
+.assign-steps { margin: 0; padding: 0; list-style: none; }
+.assign-steps .class-form, .assign-steps .assign-steps__settled { max-width: 520px; }
 .assign-steps > li { padding: var(--s-5) 0; border-bottom: 1px solid var(--border-default); }
 .assign-steps__settled { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); margin: 0; font: var(--t-ui); }
 .class-form select { min-height: var(--tap); padding: 0 var(--s-4); font: var(--t-body-lg); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
@@ -672,7 +678,11 @@ p { color: var(--ink-2); }
 
 /* The mark. One ring, four fills, one dashed variant — geometry first. */
 .state-mark { width: 13px; height: 13px; flex: none; display: inline-block; border: 2px solid currentcolor; border-radius: 50%; background: transparent; }
-.state-mark[data-state="not-available"] { border-style: dashed; opacity: 0.65; }
+
+/* Not a ring at all. A dashed 13px circle read as a rendering artefact next to eight
+   real ones, and this is the one state that is not on the scale the others sit on — it is
+   a fact about BOW's coverage, not a position a class holds. */
+.state-mark[data-state="not-available"] { width: 11px; height: 0; border-width: 0 0 2px; border-radius: 0; opacity: 0.75; }
 .state-mark[data-state="taught-not-assessed"] { background: linear-gradient(currentcolor 0 0) 50% / 100% 3px no-repeat; }
 .state-mark[data-state="assigned"] { background: radial-gradient(circle, currentcolor 0 2.5px, transparent 2.5px); }
 .state-mark[data-state="partially-assessed"],
@@ -691,8 +701,11 @@ p { color: var(--ink-2); }
 .topic-band { padding: var(--s-6) 0; border-bottom: 1px solid var(--border-default); }
 .topic-band h2 { display: flex; align-items: baseline; gap: var(--s-4); margin: 0 0 var(--s-4); font: var(--t-title2); }
 .topic-band__number { min-width: 1.6em; padding-bottom: 2px; border-bottom: 3px solid var(--ink-1); font: var(--m-sm); font-feature-settings: var(--num); }
-.topic-band ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(238px, 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; background: var(--border-subtle); }
-.topic-band li { background: var(--surface); }
+
+/* The gap used to be a background showing through, which painted the unused cells at the
+   end of a short topic as solid blocks of nothing. */
+.topic-band ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(238px, 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; }
+.topic-band li { background: var(--surface); box-shadow: 0 0 0 1px var(--border-subtle); }
 .topic-band a { min-height: 92px; display: grid; grid-template-columns: auto 1fr; grid-template-areas: "code name" "state figure"; align-items: center; gap: var(--s-2) var(--s-4); padding: var(--s-4) var(--s-5); color: var(--ink-1); text-decoration: none; }
 .topic-band a:hover { background: var(--surface-raised); }
 .chip-code { grid-area: code; align-self: start; font: var(--m-sm); font-feature-settings: var(--num); }
@@ -808,3 +821,27 @@ p { color: var(--ink-2); }
 .coming-list a { display: block; padding: var(--s-4) var(--s-5); color: var(--ink-3); font: var(--t-ui); text-decoration: none; }
 .coming-list a:hover { color: var(--ink-1); background: var(--surface-raised); }
 .coming-list__code { display: inline-block; min-width: 3.2em; color: var(--ink-4); font: var(--m-xs); font-feature-settings: var(--num); }
+
+/* Where the money moved after Week 5. Sentences, because the season ending is not the
+   place for a four-column table with green deltas in it. */
+.resolve-moves { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.resolve-moves li { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-3); padding-bottom: var(--s-3); border-bottom: 1px solid var(--border-subtle); font: var(--t-body-lg); }
+.resolve-moves b { min-width: 12ch; }
+.resolve-moves span { color: var(--ink-2); }
+.resolve-moves strong { font: var(--m-sm); font-feature-settings: var(--num); }
+.resolve-moves li[data-delta="flat"] { color: var(--ink-3); }
+.resolve-moves li[data-delta="up"] strong { color: var(--fin-balanced-ink); }
+.resolve-moves li[data-delta="down"] strong { color: var(--fin-over-ink); }
+
+/* The full micro-skill trail, one disclosure away. Every structured point stays traceable;
+   eighteen rows of "5/5" is not what a teacher needs on the way in. */
+.micro-trail { margin-top: var(--gap-block); }
+.micro-trail summary { min-height: var(--tap); display: flex; align-items: center; color: var(--ink-2); font: var(--t-ui); cursor: pointer; }
+.micro-trail[open] summary { margin-bottom: var(--s-4); }
+.grade-ledger__how { display: block; margin-top: var(--s-2); color: var(--ink-3); font: var(--t-micro); }
+
+/* How much of an objective a skill covers, said as a value rather than as lowercase prose
+   in a table cell. It is the most load-bearing datum on the page. */
+.coverage-chip { display: inline-block; padding: 2px var(--s-3); border-radius: var(--r-pill); color: var(--ink-2); background: var(--surface-sunken); font: var(--t-micro); letter-spacing: 0.04em; text-transform: uppercase; }
+.coverage-chip[data-coverage="full"] { color: var(--fin-reliable-ink); background: var(--fin-reliable-soft); }
+

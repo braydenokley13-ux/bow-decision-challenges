@@ -256,12 +256,18 @@ function SetupStage() {
   };
 
   return (
-    <StageShell stage="setup-comparison" kicker="Where Avery stays" title="Cheaper rent costs something else.">
+    <StageShell
+      stage="setup-comparison"
+      kicker="Where Avery stays"
+      // One screen, two jobs, and they used to share a headline — so the page looked
+      // identical before and after the only thing that had happened on it.
+      title={ranked ? "Now pick where Avery lives." : "Which place costs the least?"}
+    >
       {!ranked ? (
         <>
           <p className="stage-deck">
-            Three places, three ways of paying. Put them in order from the cheapest to the most expensive
-            <strong> across all eight weeks</strong> — the weekly price is not the whole story.
+            Three places, three ways of paying. Put them in order, cheapest first —
+            <strong> over all eight weeks</strong>, not per week.
           </p>
           <ol className="rank-list">
             {order.map((id, index) => {
@@ -284,13 +290,13 @@ function SetupStage() {
           <div className="stage-action">
             {state.setupRanking && !state.setupRanking.correct
               ? <p aria-live="polite">Not yet. One of these costs less over eight weeks than its weekly price suggests.</p>
-              : <p>Order them cheapest first.</p>}
+              : <p>Cheapest over eight weeks goes first.</p>}
             <Button type="button" onClick={checkOrder}>Check the order</Button>
           </div>
         </>
       ) : (
         <div ref={revealRef}>
-          <p className="stage-deck">That is the order. Now pick where Avery lives, and work out what it costs.</p>
+          <p className="stage-deck">That is the order. Pick one, then add up what it costs Avery over the eight weeks.</p>
           <div className="setup-grid">
             {setups.map((setup, index) => (
               <article key={setup.id} className={`place-card ${state.setupId === setup.id ? "is-selected" : ""}`}>

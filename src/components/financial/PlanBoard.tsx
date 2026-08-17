@@ -13,7 +13,7 @@ import { MoneyLedger } from "./MoneyLedger";
 import { AllocationControl } from "./AllocationControl";
 import { WeekMeter } from "./WeekMeter";
 
-const { steps, balance: BALANCE_COPY, running: RUNNING_COPY } = STUDENT_COPY.plan;
+const { steps, balance: BALANCE_COPY } = STUDENT_COPY.plan;
 
 /**
  * The two moments that earn the whole board.
@@ -164,13 +164,11 @@ export function PlanBoard({
             <h3 id="plan-step-decide">{triage ? "Something has to come back out." : steps.decide.name}</h3>
             <p className="plan-step__why">{triage ? "Every amount below is money you already promised somewhere else. Take the shortfall out of whichever ones Avery can do without." : steps.decide.why}</p>
           </header>
-          {/* The number the rows are being driven to, beside the rows. The bar at the foot
-              of the board is the one that commits; on a long screen it is also the one that
-              has scrolled away by the time a student is pressing the keys. */}
-          <p className="plan-running" data-state={balance === 0 ? "balanced" : balance < 0 ? "over" : "unassigned"} aria-live="polite">
-            <strong className="money">{formatDollars(Math.abs(balance))}</strong>
-            <span>{balance === 0 ? RUNNING_COPY.balanced : balance < 0 ? (triage ? RUNNING_COPY.short : RUNNING_COPY.over) : RUNNING_COPY.unassigned}</span>
-          </p>
+          {/* There used to be a second copy of the live number here, worded differently from
+              the one in the commit bar so the two would not read as the same sentence twice.
+              They read as the same sentence twice anyway — one screen carried three bands of
+              alarm colour saying one thing. The commit bar is the one that stays with the
+              action and follows the student down the page, so it is the one that survived. */}
           <div className="choice-stack">
             {CHOICE_ORDER.map((category) => (
               <AllocationControl

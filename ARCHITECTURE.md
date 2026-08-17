@@ -131,10 +131,11 @@ and scores `null`.
 
 ### The teacher's loop
 
-Three screens, and they are the first thing in this product a teacher can use end to end:
+Four screens, and they are the first thing in this product a teacher can use end to end:
 
 | Route | What it answers |
 | --- | --- |
+| `/educator/map` | "Where do I stand across the whole requirement?" — all 23 in five topic bands, two views, and the choice remembered. |
 | `/educator/objectives` | "What can I assess?" — all 23, searchable, with the ones a built world can actually assess told apart from the ones that are only mapped. |
 | `/educator/objectives/:frameworkId/:code` | "What is this, and what did my class do?" — the framework's exact wording, its attribution, the skills behind it, and one result block per class that was set it. |
 | `/educator/assign` | "Give me a code." — §17.2's four steps with the two that have one answer collapsed to a line each. |
@@ -144,6 +145,27 @@ Three screens, and they are the first thing in this product a teacher can use en
 literal, so a New Jersey deployment reads New Jersey's nouns without a component changing.
 Students see none of it: nothing under `/educator` is on a student route, and no student
 screen mentions a standard.
+
+**The Objective Map's nine states** are §15.3's, and they live in `objectiveState.ts` beside
+the thresholds they read. The order they are decided in is the correctness: availability
+first, so an objective BOW cannot assess never reads as one a class did badly at; a bundled
+objective held at *partly assessed* until every part of its completion rule is in; the
+denominator guard before the thresholds. Four of the nine are not claims about students at
+all, and `isResultState` is what any surface asks before treating one as one.
+
+State is never carried by colour alone — every objective shows a mark whose geometry differs
+and its word beside it, so the table survives a greyscale printout and a colour vision
+difference identically. The table prints as a document: shell, filters and controls drop
+away and the framework's exact sentence stays in the row.
+
+*Taught* is a teacher's own record. It is stored on the class rather than in the browser that
+ticked it, it is true across several classes only when it is true of all of them, and it is
+never inferred from anything a student did — a lesson is not something BOW can see.
+
+Marking period and the district-required subset are driven by a `DistrictProfile`. None ships,
+so those two filters are tested and not rendered: a filter with nothing behind it is a dead
+end, and inventing a district's sequence would put an ordering in front of a teacher that
+nobody at their district agreed to.
 
 **What the results may say** is the same set of rules everywhere: never a percentage without
 its denominator, *not yet assessed* rather than 0% when nobody has submitted, the count and
@@ -169,6 +191,26 @@ browser remembers. That limit is stated on the screen rather than hidden.
 `analysis.ts` turns submitted evidence into what a class did. It is the **only** thing that
 feeds a real class view, and `noFixture.test.ts` enforces that structurally: the real-class
 modules cannot import a fixture, and every fixture page is mounted under `/educator/demo`.
+
+### The design system, and what it is enforced by
+
+Two grounds and three container weights do the separating. Hairline borders around every
+block gave a footnote the same frame as a result, so they are gone: `panel--raised` lifts off
+the ground, `panel--inset` sinks into it, and most things are separated by space alone.
+
+One measure per page — `evidence` for dense pages, `read` for pages made of sentences,
+`bleed` for the two editorial layouts composed for full width — set on the shell, so a page
+has one left edge including its footers. One vertical rhythm: `--gap-section`, `--gap-block`,
+`--gap-element`. Form controls are styled once, so a native chevron never sits beside a custom
+button, and the type scale carries a section step between the display line and body text —
+without it every page read as one giant headline dropping straight to 15px.
+
+**What keeps it honest is that the reviews are blind.** Screenshots go to reviewers who are
+told nothing about intent, and what they find is treated as findings rather than opinions.
+Three of the last round's were defects, not taste: a grammar error shipped above the fold on
+twenty-two objectives, a coverage table reading "full" on a page headed "BOW cannot assess
+this yet", and a rubric that defaulted to a saveable zero with no visible selection — one
+stray click from recording a zero nobody meant, in a gradebook. Each is pinned by a test now.
 
 ### `src/design/` — three layers, deliberately separate
 

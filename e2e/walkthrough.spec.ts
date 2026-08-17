@@ -116,7 +116,7 @@ for (const size of SIZES) {
 
     await page.getByRole("button", { name: "Explain my plan" }).click();
     await shoot("14-defense");
-    await submitDefense(page, "My plan still works because it balances after Week 5. I protected the course money and gave up the open Saturdays to take the clinics.");
+    await submitDefense(page, "My plan still balances after Week 5. I kept the full $1,200 for the course and gave up my Saturdays to coach the clinics, which brought in $500.");
     await shoot("15-submitted");
 
     // A second student, so the class views have a class in them.
@@ -133,7 +133,9 @@ for (const size of SIZES) {
       await decideOpportunity(page, { clinics: index === 0, countBonus: false });
       await savePlan(page, "final", { ...other, deposit: index === 1, clinics: index === 0, countCompletionFinal: false });
       await page.getByRole("button", { name: "Explain my plan" }).click();
-      await submitDefense(page, `Seat ${seat}: my plan still works because every dollar has a job after Week 5. I protected the course money and gave up part of the reserve.`);
+      await submitDefense(page, index === 0
+        ? "I kept the $1,200 for the course and took the $700 out of my backup money instead. It still balances, but I have nothing left if something else goes wrong."
+        : "I cut the course down to $500 so I could keep rides and rest. I would rather miss the course than miss practice and lose the $800 bonus.");
       await expect(page.getByRole("heading", { name: "Your plan is with your teacher." })).toBeVisible({ timeout: 15_000 });
     }
 

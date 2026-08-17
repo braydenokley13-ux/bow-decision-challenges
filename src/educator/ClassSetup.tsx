@@ -131,7 +131,7 @@ export function ClassSetup() {
         </section>
       ) : (
         <section className="class-form">
-          <label htmlFor="class-label">Class name</label>
+          <label htmlFor="class-label">Name this class</label>
           <input
             id="class-label"
             value={label}
@@ -169,19 +169,17 @@ export function ClassSetup() {
 
       {known.length > 0 && (
         <section className="dashboard-section">
-          <div className="section-heading">
-            <p className="eyebrow">On this computer</p>
+          <div className="section-head">
             <h2>Classes you have opened here</h2>
+            <p>Saved in this browser only. Opening a class from its private link on another computer adds it there too.</p>
           </div>
-          <div className="student-worklist">
+          <div className="row-list">
             {known.map((record) => (
               <Link key={record.code} to={evidencePath(record)}>
                 <div>
-                  <span>{record.code}</span>
+                  <small>{record.code} · created {new Date(record.createdAt).toLocaleDateString()}</small>
                   <h3>{record.label}</h3>
-                  <p>Created {new Date(record.createdAt).toLocaleDateString()}</p>
                 </div>
-                <span aria-hidden="true">→</span>
               </Link>
             ))}
           </div>
