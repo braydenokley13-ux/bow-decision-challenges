@@ -10,3 +10,6 @@ test-results
 dist-server
 .bow-classes
 /.scratch
+
+# Working screenshots. Curated receipts live in gauntlet/receipts/.
+gauntlet/screens/
