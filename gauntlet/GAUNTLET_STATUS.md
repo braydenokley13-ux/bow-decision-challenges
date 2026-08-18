@@ -72,21 +72,53 @@ underneath — one claim was half-refused, with the reason.
 - **J5** — a verdict no longer reads "No effect" above a line saying Avery paid more, and a test
   now fails any verdict that does.
 
+### Closed since, second batch
+
+- **The whole of the client-persistence workstream (D1–D14)**, including D26's stated largest
+  gap: a plan that balances exactly is now closed by naming the row that takes the rest, so the
+  one NYSED objective BOW claimed to assess can no longer silently fail to be assessed for a
+  student who did everything right. Also: nothing that reached the evidence log waits for a
+  debounce; one press writes one event; a second tab is told rather than allowed to overwrite;
+  and a student sitting down at somebody else's unfinished run gets their own.
+- **The educator surfaces.** The teacher's private note no longer reaches the projector. The
+  share-out offers both worlds in a mixed class, one card per submission, no removed seats. One
+  function now defines the class, the student and the attempt, and every count on the page is
+  derived from it. The export is roster-shaped: absentees are blank rows, removed seats are
+  gone, two attempts by one student are distinguishable.
+- **Feedback is a sequence.** A second note used to silently destroy the first — on the one
+  path this release exists to build. Notes accumulate, can be edited in place, can be taken
+  back, and the length limit refuses rather than truncating.
+- **The vendor review's code findings** — see §L. The disk is sealed, the retention promise is
+  executed, one child can be erased without destroying the class, and an unauthenticated caller
+  can no longer post a fabricated run into a teacher's evidence room.
+- **The class list has a screen**, which is how a teacher actually runs a rostered class. Every
+  route behind it had shipped and nothing could reach any of them.
+- **Every challenge screen fits a phone.** 266px of horizontal scroll at 360px, on all
+  nineteen. And a teacher who zooms can award full marks again.
+- **`sort-by-need-want-goal` is becoming assessable** — Basketball's dead Weeks 1–4 is now one
+  real decision, which takes the product from one assessable NYSED objective to two.
+
 ### In flight
 
-- The educator surfaces: the projected private note, the share-out's missing world, the three
-  disagreeing counts, the roster-shaped export.
-- Feedback as a sequence rather than a single record; the grade band; the seat-number
-  instructions; the worst string.
-- Client persistence, the write-up draft, the tab lock, and the er3 remainder blocker.
+Run the Pop-Up's four Saturdays and its ending verdicts, plus the market's own competing-claims
+beat so the two worlds stay equal · the prose cut, second pass · the accessibility findings ·
+one vocabulary in place of four · the eight golden end-to-end journeys · a teacher-experience
+critic, a student red team and a product-coherence critic, all running against the product now.
 
 ### Not yet started
 
-Decision density (the costed five-fix plan in `gauntlet/critiques/decision-density.md`) ·
-the terminology ladders · visual pass · accessibility fixes · Golden E2E journeys ·
-six-verdict judges.
+The six-verdict judges and the adversarial synthesis.
 
 ## Largest remaining gap
 
-**J1.** Both worlds are more reading than deciding, and both understate their own word counts
-in their own tests. Everything else on this page is a defect; this one is the product's shape.
+**J1, and it is now measured rather than asserted.** A word instrument built for this run renders
+every screen of the critical path through the real components with state folded through the real
+reducers, and counts the DOM. Basketball declared 1,180 words and reads **2,714** — 2.4× under.
+At the product's own assumed 150 wpm that is 18.1 minutes of reading against an 18.6-minute
+budget: reading alone eats 97% of the run, leaving about thirty seconds for ten decisions. At a
+realistic 120 wpm it is 22.6 minutes, four minutes past the whole budget before a number is
+typed. Run the Pop-Up fits, with six minutes to spare at the optimistic rate and two at the
+realistic one.
+
+Cuts are landing. The declared duration moves if they are not enough — that is the honest
+outcome, and it is preferable to a number that only survives because the gate assumes it.
