@@ -12,6 +12,7 @@ import { DEFAULT_WORLD_ID } from "../domain/scenario/registry";
 import { deliverWithRetry, type DeliveryState, type EvidenceTransport } from "../platform/evidence/transport";
 import { transportFromEnvironment } from "../platform/evidence/transports";
 import type { WorldOffer } from "../stages/worldOffer";
+import { useAttemptCheckpoint } from "../student/useAttemptCheckpoint";
 
 interface ChallengeContextValue {
   state: ChallengeState;
@@ -62,7 +63,18 @@ function restoredWorld(): WorldId {
   return loadAttemptFor(last) ? last : DEFAULT_WORLD_ID;
 }
 
-export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT }: PropsWithChildren<{ transport?: EvidenceTransport }>) {
+export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT, initial }: PropsWithChildren<{
+  transport?: EvidenceTransport;
+  /**
+   * An attempt this browser did not write.
+   *
+   * Cross-device resume, and the only way it can work: the reducer's initial state is chosen
+   * once, at mount, so a run recovered from the service has to be in hand before the provider
+   * exists rather than dispatched into it afterwards. `ResumeGate` in `App.tsx` is what fetches
+   * it. Absent on every other route, where the answer is whatever this machine remembers.
+   */
+  initial?: ChallengeState;
+}>) {
   // Basketball's attempt, by name. This provider holds Basketball's reducer, and with a second
   // world in the browser "whatever was open last" is no longer the same question as "what does
   // this reducer understand" — handing a food-truck attempt to this one would price another
@@ -70,7 +82,7 @@ export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT }: P
   const [state, rawDispatch] = useReducer(
     challengeReducer,
     undefined,
-    () => loadAttemptFor<ChallengeState>(DEFAULT_WORLD_ID) ?? createInitialState(Date.now()),
+    () => initial ?? loadAttemptFor<ChallengeState>(DEFAULT_WORLD_ID) ?? createInitialState(Date.now()),
   );
   const [activeWorldId, setActiveWorldId] = useState<WorldId>(restoredWorld);
   const [offer, setOffer] = useState<WorldOffer | null>(null);
@@ -89,6 +101,22 @@ export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT }: P
   // drag a student back into this world on the next reload while they were three screens into
   // the other one.
   useAttemptAutosave(state, activeWorldId === state.meta.worldId && !run.shadowed);
+
+  // And the same attempt to the class it belongs to, so a teacher walking the room can see who
+  // is mid-run and a student can finish on a different machine. Local storage answers neither
+  // of those questions, and both are things this product promises.
+  useAttemptCheckpoint(
+    state.meta.classCode
+      ? {
+        classCode: state.meta.classCode,
+        worldId: state.meta.worldId,
+        stage: state.stage,
+        payload: state,
+        ...(state.meta.assignmentId ? { assignmentId: state.meta.assignmentId } : {}),
+      }
+      : null,
+    activeWorldId === state.meta.worldId && !run.shadowed,
+  );
 
   const reset = useCallback(() => {
     // Every key the loader reads for this world, not the two somebody remembered: the

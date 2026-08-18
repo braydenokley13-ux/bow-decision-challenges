@@ -142,7 +142,11 @@ function ClassBlock({ entry }: { entry: StudentClass }) {
         <div className="student-card student-card--live">
           <h2>{world?.title ?? "Your run"}</h2>
           <p>You stopped at <strong>{stageLabel(entry.inProgress.worldId, entry.inProgress.stage)}</strong>.</p>
-          <Link className="button button--primary" to={PLAN_UNDER_PRESSURE.route}>Carry on</Link>
+          {/* The class code goes with them. It is what lets the run be fetched from the service
+              rather than from this machine's storage, which is the whole of "started it in class
+              on Tuesday, finished it at home on Thursday". Without it this button was a promise
+              to hand a student a blank board on any device but the one they began on. */}
+          <Link className="button button--primary" to={`${PLAN_UNDER_PRESSURE.route}?class=${entry.classCode}`}>Carry on</Link>
         </div>
       ) : entry.completed.length === 0 ? (
         <div className="student-card">
@@ -151,7 +155,7 @@ function ClassBlock({ entry }: { entry: StudentClass }) {
               ("Eight weeks to the showcase"), and printing it above a button that may open
               the night market is the same false promise the front door used to make. */}
           <p>You handle the money. {PLAN_UNDER_PRESSURE.duration.min}–{PLAN_UNDER_PRESSURE.duration.max} minutes.</p>
-          <Link className="button button--primary" to={PLAN_UNDER_PRESSURE.route}>Start</Link>
+          <Link className="button button--primary" to={`${PLAN_UNDER_PRESSURE.route}?class=${entry.classCode}`}>Start</Link>
         </div>
       ) : null}
 

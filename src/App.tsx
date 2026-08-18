@@ -1,5 +1,4 @@
 import { Link, Navigate, Route, Routes, useParams } from "react-router-dom";
-import { ChallengeProvider } from "./app/ChallengeContext";
 import { AppMark } from "./components/primitives/AppMark";
 import { StudentChallenge } from "./stages/StudentChallenge";
 import { EducatorGuide, TeachingCompanion } from "./educator/EducatorPages";
@@ -14,6 +13,7 @@ import { ShareOut } from "./educator/ShareOut";
 import { PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
 import { StudentJoin } from "./student/Join";
 import { StudentHome } from "./student/Home";
+import { ResumeGate } from "./student/ResumeGate";
 import { PLAYABLE_WORLDS } from "./domain/scenario/registry";
 import { DEMO_CLASS_CODE } from "./fixtures/demoClass";
 
@@ -81,7 +81,7 @@ export function App() {
           card. Nothing here asks for a name, an email address or a birthday. */}
       <Route path="/join" element={<StudentJoin />} />
       <Route path="/home" element={<StudentHome />} />
-      <Route path={PLAN_UNDER_PRESSURE.route} element={<ChallengeProvider><StudentChallenge /></ChallengeProvider>} />
+      <Route path={PLAN_UNDER_PRESSURE.route} element={<ResumeGate><StudentChallenge /></ResumeGate>} />
       {/* The route this shipped on. Class codes and bookmarks already point at it, so it
           redirects rather than 404s — and keeps redirecting after Challenge #2 lands. */}
       <Route path="/challenge" element={<Navigate to={PLAN_UNDER_PRESSURE.route} replace />} />
