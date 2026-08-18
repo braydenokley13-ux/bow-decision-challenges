@@ -1,37 +1,44 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppMark } from "../components/primitives/AppMark";
 import { Button } from "../components/primitives/Button";
 import { CODE_LENGTH, isWellFormedClassCode, normaliseClassCode } from "../platform/classes/codes";
-import { MAX_DISPLAY_NAME, type DeviceClass, type RosterChoice } from "../platform/identity/types";
+import { MAX_DISPLAY_NAME, type ClassDoor, type DeviceClass } from "../platform/identity/types";
+import { STUDENT_COPY } from "../content/studentCopy";
 import { claimSeat, readClassDoor, rememberStudent } from "./session";
 
 /**
- * Fifteen seconds, three actions, and the same three every time.
+ * Fifteen seconds, and the same fifteen every time.
  *
- * The code goes on the board, the cards go round the room, and a student types five
- * characters, taps their own name, and types four more. It is the same on the first day and
- * on the fortieth, on their own laptop and on whichever Chromebook they were handed — which
- * is the whole design goal, because the thing a twelve-year-old cannot do is remember a
- * different route than the one they did last time.
+ * The code goes on the board, the cards go round the room, and a student types five characters
+ * and then four more. It is the same on the first day and on the fortieth, on their own laptop
+ * and on whichever Chromebook they were handed — which is the whole design goal, because the
+ * thing a twelve-year-old cannot do is remember a different route than the one they did last
+ * time.
  *
- * Nothing here asks for a name, an email address, a birthday or a password. The names on the
- * second screen are ones a teacher typed about their own class; BOW does not know whether any
- * of them is real and has no way to find out.
+ * There used to be a grid of names in the middle, and taking it out made this both safer and
+ * shorter. Safer because the list came from an unauthenticated door: any five-character code —
+ * and a class code is written on a whiteboard, read aloud, photographed and typed into group
+ * chats — returned every child's name in the room. Shorter because a student had to tap their
+ * name *and* type their card code, and the card code identifies the seat on its own. One less
+ * step, one less thing published.
+ *
+ * Nothing here asks for a name, an email address, a birthday or a password. The name that comes
+ * back is one a teacher typed about their own class; BOW does not know whether it is real and
+ * has no way to find out.
  *
  * The device question is asked once, in one sentence, and defaults to **shared**. A cart
  * Chromebook is the normal case in the rooms this runs in, and a session measured in weeks on
  * one is how the next student ends up inside the last one's attempt.
  */
 
-type Step = "code" | "who" | "key";
+type Step = "code" | "card" | "name";
 
 export function StudentJoin() {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("code");
   const [classCode, setClassCode] = useState("");
-  const [door, setDoor] = useState<{ roster: RosterChoice[]; joinMode: "roster" | "open"; label: string } | null>(null);
-  const [seatCode, setSeatCode] = useState("");
+  const [door, setDoor] = useState<ClassDoor | null>(null);
   const [typedName, setTypedName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [device, setDevice] = useState<DeviceClass>("shared");
@@ -49,19 +56,20 @@ export function StudentJoin() {
       return;
     }
     setDoor(result.body);
-    setStep("who");
+    // A class with a list gets the card. A class without one gets the name box, and the card is
+    // one press away for the student who has been here before.
+    setStep(result.body.joinMode === "roster" ? "card" : "name");
   };
 
-  const finish = async (over: { seatCode?: string; displayName?: string }) => {
+  const finish = async (over: { joinCode?: string; displayName?: string }) => {
     if (busy) return;
     setBusy(true);
     setProblem(null);
     const result = await claimSeat({
       classCode: normaliseClassCode(classCode),
       device,
-      ...(over.seatCode !== undefined ? { seatCode: over.seatCode } : {}),
+      ...(over.joinCode ? { joinCode: over.joinCode } : {}),
       ...(over.displayName !== undefined ? { displayName: over.displayName } : {}),
-      ...(joinCode ? { joinCode } : {}),
     });
     setBusy(false);
     if (!result.ok) {
@@ -80,8 +88,7 @@ export function StudentJoin() {
       </header>
 
       {step === "code" && (
-        <section className="join-step">
-          <h1>What is your class code?</h1>
+        <Step key="code" heading="What is your class code?">
           <p>Your teacher has it on the board.</p>
           <label className="field" htmlFor="class-code">
             <span className="field-label">Class code</span>
@@ -97,42 +104,56 @@ export function StudentJoin() {
               onKeyDown={(event) => { if (event.key === "Enter") void findClass(); }}
             />
           </label>
+          {/* Said as a fact about the code rather than left for the student to discover by
+              pressing a button that does nothing. A disabled control with no reason attached is
+              a dead end to a twelve-year-old, and this screen is where they are least able to
+              guess what is wrong. */}
+          <p className="join-step__hint" aria-live="polite">
+            {classCode.length === 0
+              ? `${CODE_LENGTH} letters and numbers.`
+              : isWellFormedClassCode(classCode)
+                ? " "
+                : `That is ${classCode.length} — a class code is ${CODE_LENGTH}.`}
+          </p>
           <Button variant="primary" aria-disabled={!isWellFormedClassCode(classCode) || busy} onClick={() => void findClass()}>
             {busy ? "Looking…" : "Next"}
           </Button>
-          <p className="join-step__note">No name, no email, nothing about your real money.</p>
-        </section>
+          <p className="join-step__note">{STUDENT_COPY.join.noCode}</p>
+          <p className="join-step__note">BOW never asks for your email, your birthday, or anything about your real money.</p>
+        </Step>
       )}
 
-      {step === "who" && door?.joinMode === "roster" && (
-        <section className="join-step">
-          <h1>Which one is you?</h1>
-          <p>{door.label}</p>
-          <ul className="name-grid">
-            {door.roster.map((entry) => (
-              <li key={entry.seatCode}>
-                <button
-                  type="button"
-                  className="name-grid__pick"
-                  aria-pressed={seatCode === entry.seatCode}
-                  onClick={() => { setSeatCode(entry.seatCode); setStep("key"); }}
-                >
-                  {entry.displayName}
-                </button>
-              </li>
-            ))}
-          </ul>
-          {door.roster.length === 0 && <p>Your teacher has not added the class list yet. Ask them.</p>}
-          <Button variant="quiet" onClick={() => setStep("code")}>Different class</Button>
-        </section>
+      {step === "card" && (
+        <Step key="card" heading="Type the code on your card.">
+          <p>{door?.label}</p>
+          <label className="field" htmlFor="join-code">
+            <span className="field-label">Your code</span>
+            <input
+              id="join-code"
+              className="join-code-input"
+              value={joinCode}
+              maxLength={8}
+              autoCapitalize="characters"
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+              onKeyDown={(event) => { if (event.key === "Enter" && joinCode.length >= 4) void finish({ joinCode }); }}
+            />
+          </label>
+          <DeviceChoice device={device} onChange={setDevice} />
+          <Button variant="primary" aria-disabled={joinCode.length < 4 || busy} onClick={() => void finish({ joinCode })}>
+            {busy ? "Going in…" : "Go in"}
+          </Button>
+          <Button variant="quiet" onClick={() => { setStep("code"); setJoinCode(""); setProblem(null); }}>Different class</Button>
+          <p className="join-step__note">Lost your card? Ask your teacher — they can print you a new one.</p>
+        </Step>
       )}
 
-      {step === "who" && door?.joinMode === "open" && (
-        <section className="join-step">
-          <h1>What should your teacher see?</h1>
+      {step === "name" && (
+        <Step key="name" heading="What should your teacher see?">
           {/* Their teacher's list, in their teacher's words, is the better route — this is the
-              one for a teacher who had four minutes and no list. It still makes a real
-              account and a real session, so no work in this product is ever unattributed. */}
+              one for a teacher who had four minutes and no list. It still makes a real account
+              and a real session, so no work in this product is ever unattributed. */}
           <p>Your first name is enough.</p>
           <label className="field" htmlFor="display-name">
             <span className="field-label">Name</span>
@@ -148,38 +169,32 @@ export function StudentJoin() {
           <Button variant="primary" aria-disabled={typedName.trim().length === 0 || busy} onClick={() => void finish({ displayName: typedName.trim() })}>
             {busy ? "Going in…" : "Go in"}
           </Button>
-        </section>
-      )}
-
-      {step === "key" && (
-        <section className="join-step">
-          <h1>Type the code on your card.</h1>
-          <p>{door?.roster.find((entry) => entry.seatCode === seatCode)?.displayName}</p>
-          <label className="field" htmlFor="join-code">
-            <span className="field-label">Your code</span>
-            <input
-              id="join-code"
-              className="join-code-input"
-              value={joinCode}
-              maxLength={8}
-              autoCapitalize="characters"
-              autoComplete="off"
-              spellCheck={false}
-              onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
-              onKeyDown={(event) => { if (event.key === "Enter") void finish({ seatCode }); }}
-            />
-          </label>
-          <DeviceChoice device={device} onChange={setDevice} />
-          <Button variant="primary" aria-disabled={joinCode.length < 4 || busy} onClick={() => void finish({ seatCode })}>
-            {busy ? "Going in…" : "Go in"}
-          </Button>
-          <Button variant="quiet" onClick={() => setStep("who")}>Not me</Button>
-          <p className="join-step__note">Lost your card? Ask your teacher — they can print a new one.</p>
-        </section>
+          {/* Typing the name again would make a second student with the same name and none of
+              the first one's work. The code they were given the first time is the way back. */}
+          <Button variant="quiet" onClick={() => { setStep("card"); setProblem(null); }}>I have been here before</Button>
+        </Step>
       )}
 
       <p className="join-error" role="alert">{problem}</p>
     </main>
+  );
+}
+
+/**
+ * One step of the door, with the heading taking focus as it arrives.
+ *
+ * Without this, pressing Enter on the class code left focus on `<body>`: a keyboard user had to
+ * tab from the top of the document again at every step, and a screen-reader user was told
+ * nothing had happened at all.
+ */
+function Step({ heading, children }: { heading: string; children: React.ReactNode }) {
+  const title = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { title.current?.focus(); }, []);
+  return (
+    <section className="join-step">
+      <h1 tabIndex={-1} ref={title}>{heading}</h1>
+      {children}
+    </section>
   );
 }
 

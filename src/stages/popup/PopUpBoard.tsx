@@ -137,7 +137,10 @@ export function PopUpBoard({
                   type="button"
                   data-line={line}
                   data-warn={read?.warn === true}
-                  aria-label={`${POP_UP_SCENARIO.lines[line].label} takes ${formatDollars(give)}${read ? `. ${read.text}` : ""}`}
+                  // The words on the card, in the order they are printed, and then what
+                  // pressing it does. A name that reorders the visible words is a name a
+                  // voice-control user cannot reach the button with.
+                  aria-label={`${POP_UP_SCENARIO.lines[line].label} ${formatDollars(give)}${read ? ` ${read.text}` : ""} — takes what is left over`}
                   onClick={() => onAssignRemainder?.(line, dollars(give))}
                 >
                   <span aria-hidden="true">→</span>

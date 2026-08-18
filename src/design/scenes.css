@@ -82,16 +82,21 @@
 .goal-strip b { display: block; color: var(--world-hero-ink); font: var(--t-title3); }
 .goal-strip span { display: block; margin-top: var(--s-1); color: var(--world-hero-body); font: var(--t-micro); }
 
-/* The pass a student is handed at the door: cream card, torn edge, two codes. It is the
-   one place the ticket geometry is literal, because this genuinely is admission. */
+/* The pass a student is handed at the door: cream card, torn edge, and — since accounts —
+   their own name on it rather than two boxes to type into. It is the one place the ticket
+   geometry is literal, because this genuinely is admission. */
 .opening__job { position: relative; margin-top: var(--s-3); padding: var(--s-6); background: var(--surface-raised); border: 1px solid var(--border-ink); box-shadow: var(--shadow-card); }
 .opening__job .perf-rule { margin: var(--s-5) 0 var(--s-4); }
 .opening__job > .stamp { margin: 0 0 var(--s-4); }
-.opening__codes { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: var(--s-4); margin: 0 0 var(--s-5); }
-.opening__job label { display: grid; gap: var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
-.opening__job input { min-height: 52px; padding: 0 var(--s-4); color: var(--ink-1); background: var(--surface); border: 1.5px solid var(--border-ink); border-radius: var(--r-sm); font: var(--m-md); font-feature-settings: var(--num); letter-spacing: 0.14em; text-transform: uppercase; }
-.opening__job input:focus-visible { border-color: var(--bow-brand); }
 .opening__job .button { width: 100%; }
+.opening__job .button + .button { margin-top: var(--s-3); }
+.opening__whose { display: grid; gap: var(--s-1); margin: 0 0 var(--s-5); }
+.opening__whose .stamp { margin: 0; }
+.opening__whose strong { color: var(--ink-1); font: var(--t-title2); }
+.opening__class { color: var(--ink-3); font: var(--t-micro); }
+.opening--waiting { align-content: start; gap: var(--s-5); }
+.opening--waiting > .join-status { padding: 0 clamp(20px, 4vw, 56px); }
+.opening--waiting > .button { justify-self: start; margin-left: clamp(20px, 4vw, 56px); }
 .privacy-note { margin: var(--s-3) 0 0; color: var(--ink-3); font: var(--t-micro); }
 
 /* --- Scene 2: the deal ---------------------------------------------------- */

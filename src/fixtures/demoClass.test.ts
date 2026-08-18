@@ -1,86 +1,84 @@
 import { describe, expect, it } from "vitest";
-import { STRUCTURED_MICRO_SKILLS } from "../domain/blueprint/microSkills";
-import { aggregateConcepts, aggregateMicroSkills, classSummary, contingencyRoutes, DEMO_STUDENTS, reviewQueue, teachNext } from "./demoClass";
+import { analyseClass } from "../educator/analysis";
+import { worldOfSubmission } from "../educator/objectiveResults";
+import { isWellFormedClassCode } from "../platform/classes/codes";
+import { DEMO_CLASS_CODE, DEMO_CLASS_LABEL, demoClassBundle } from "./demoClass";
 
-describe("Basketball demo class", () => {
-  it("contains 28 hypothetical Basketball records", () => {
-    expect(DEMO_STUDENTS).toHaveLength(28);
-    expect(DEMO_STUDENTS.every((student) => student.worldId === "basketball")).toBe(true);
-    expect(new Set(DEMO_STUDENTS.map((student) => student.seatCode)).size).toBe(28);
+/**
+ * The sample class is real evidence now, not an authored shape, so what this file checks is
+ * different from what it used to check. It no longer pins a hand-typed status or a ledger
+ * total — there is nothing hand-typed left to pin. It checks that the bundle is what
+ * `useClassEvidence` needs to answer for a real class page: both worlds present, every
+ * submission attributed to the one assignment, a genuine mix of read and unread writing, and
+ * a class code that structurally cannot belong to a real class.
+ */
+describe("the sample class", () => {
+  it("cannot be addressed by a real class code", () => {
+    expect(isWellFormedClassCode(DEMO_CLASS_CODE)).toBe(false);
   });
 
-  // The educator dashboard is only defensible if a teacher can add the ledger up
-  // themselves and get the header total back. This is the invariant that guarantees it.
-  it("reconciles every student's ledger with their reported totals", () => {
-    for (const student of DEMO_STUDENTS) {
-      const essentials = student.concepts.filter((concept) => concept.conceptId !== "financial-defense");
-      const defense = student.concepts.find((concept) => concept.conceptId === "financial-defense")!;
-      expect(essentials.reduce((sum, concept) => sum + (concept.points ?? 0), 0)).toBe(student.structuredPoints);
-      expect(essentials.reduce((sum, concept) => sum + concept.maxPoints, 0)).toBe(90);
-      expect(defense.maxPoints).toBe(10);
-      expect(defense.points).toBe(student.reasoningPoints);
-      expect(student.finalPoints).toBe(student.reasoningPoints === null ? null : student.structuredPoints + student.reasoningPoints);
+  it("says what it is in the one field every real-class screen prints", () => {
+    expect(demoClassBundle().record.label.toLowerCase()).toContain("sample");
+  });
+
+  it("includes both worlds, on distinct seats", () => {
+    const { submissions } = demoClassBundle();
+    const worlds = new Set(submissions.map((submission) => worldOfSubmission(submission)));
+    expect(worlds).toEqual(new Set(["basketball", "food-truck"]));
+    expect(new Set(submissions.map((submission) => submission.seatCode)).size).toBe(submissions.length);
+    expect(submissions.length).toBeGreaterThanOrEqual(15);
+  });
+
+  it("attributes every submission to the class's own assignment", () => {
+    const { assignments, submissions } = demoClassBundle();
+    expect(assignments).toHaveLength(1);
+    for (const submission of submissions) {
+      expect(submission.classCode).toBe(DEMO_CLASS_CODE);
+      expect(submission.assignmentId).toBe(assignments[0]!.id);
     }
   });
 
-  it("keeps every student's headline, need, and timeline consistent with their own ledger", () => {
-    for (const student of DEMO_STUDENTS) {
-      const essentials = student.concepts.filter((concept) => concept.conceptId !== "financial-defense");
-      const allIndependent = essentials.every((concept) => concept.status === "demonstrated_independently");
-      if (student.seatCode !== "14") {
-        expect(student.primaryNeed === "No current essential gap").toBe(allIndependent && student.reasoningPoints !== null);
-      }
-      expect(student.timeline.length).toBeGreaterThanOrEqual(6);
-      expect(student.savedStates.length).toBeGreaterThanOrEqual(4);
-      expect(student.timeline.every((entry) => entry.body.length > 20)).toBe(true);
+  it("leaves some writing unread, so the reading queue has something to show", () => {
+    const { submissions } = demoClassBundle();
+    const pending = submissions.filter((submission) => submission.reasoningPoints === null);
+    const read = submissions.filter((submission) => submission.reasoningPoints !== null);
+    expect(pending.length).toBeGreaterThan(0);
+    expect(read.length).toBeGreaterThan(pending.length);
+    // Every reviewed submission carries the marks its total was computed from, not a bare
+    // number — the same requirement the real reading screen holds a teacher's own save to.
+    for (const submission of read) {
+      expect(submission.reasoningCriteria).toBeDefined();
+      expect(submission.reasoningPoints).toBeGreaterThanOrEqual(0);
+      expect(submission.reasoningPoints).toBeLessThanOrEqual(10);
     }
   });
 
-  it("derives concept and micro-skill rows that account for the whole class", () => {
-    for (const row of aggregateConcepts(DEMO_STUDENTS)) {
-      expect(Object.values(row.counts).reduce((sum, count) => sum + count, 0)).toBe(28);
-    }
-    for (const skill of STRUCTURED_MICRO_SKILLS) {
-      const row = aggregateMicroSkills(DEMO_STUDENTS, skill.conceptId).find((entry) => entry.id === skill.id)!;
-      expect(row.independent + row.support + row.partial).toBe(28);
-    }
+  it("is large enough for the real class page to describe it as a class", () => {
+    // `analyseClass` is the same function a real class's submissions go through — the
+    // bundle is only useful as a demo if what comes out the other side is the full,
+    // narratable class page rather than the below-minimum "individual work only" guard.
+    const analysis = analyseClass(demoClassBundle().submissions);
+    expect(analysis.rows.length).toBe(demoClassBundle().submissions.length);
+    expect(analysis.worlds.map((world) => world.worldId).sort()).toEqual(["basketball", "food-truck"]);
   });
 
-  it("derives contingency as the instructional priority", () => {
-    expect(teachNext(DEMO_STUDENTS)?.conceptId).toBe("contingency");
-    expect(teachNext(DEMO_STUDENTS)?.gap).toBe(9);
+  it("builds the same evidence every time it is asked", () => {
+    // Nothing about this bundle should depend on the clock or on randomness — a fixture that
+    // quietly changed shape between two reads would be its own kind of untrustworthy sample.
+    const first = demoClassBundle();
+    const second = demoClassBundle();
+    expect(second.submissions.map((submission) => submission.seatCode)).toEqual(first.submissions.map((submission) => submission.seatCode));
+    expect(second.submissions.map((submission) => submission.reasoningPoints)).toEqual(first.submissions.map((submission) => submission.reasoningPoints));
+    expect(second.record).toEqual(first.record);
   });
 
-  // The dashboard invites a teacher to move from a count to names, so the four
-  // routes have to be a partition — no student in two groups, none missing.
-  it("splits the class into four contingency routes that add up", () => {
-    const groups = contingencyRoutes(DEMO_STUDENTS);
-    expect(groups.reduce((sum, group) => sum + group.students.length, 0)).toBe(28);
-    expect(new Set(groups.flatMap((group) => group.students.map((student) => student.seatCode))).size).toBe(28);
-    const summary = classSummary(DEMO_STUDENTS);
-    expect(summary.independentFirst + summary.laterCorrected + summary.completedWithSupport + summary.persistentFallbackGap).toBe(28);
-    expect(summary.persistentFallbackGap).toBe(teachNext(DEMO_STUDENTS)?.gap);
-  });
-
-  it("opens the review queue on evidence rather than on grade order", () => {
-    const queue = reviewQueue(DEMO_STUDENTS);
-    expect(queue.length).toBeGreaterThanOrEqual(4);
-    expect(queue.some((student) => student.reasoningPoints === null)).toBe(true);
-    expect(queue.some((student) => student.seatCode === "14")).toBe(true);
-  });
-
-  it("reconciles Seat 14 exactly", () => {
-    const seat14 = DEMO_STUDENTS.find((student) => student.seatCode === "14");
-    expect(seat14?.concepts.map((concept) => concept.points)).toEqual([15, 9, 15, 17, 29, 9]);
-    expect(seat14?.structuredPoints).toBe(85);
-    expect(seat14?.reasoningPoints).toBe(9);
-    expect(seat14?.finalPoints).toBe(94);
-  });
-
-  it("leaves the four unreviewed records without a reasoning score or a final grade", () => {
-    const pending = DEMO_STUDENTS.filter((student) => student.reasoningPoints === null);
-    expect(pending.map((student) => student.seatCode)).toEqual(["18", "25", "26", "27"]);
-    expect(pending.every((student) => student.finalPoints === null)).toBe(true);
-    expect(classSummary(DEMO_STUDENTS)).toMatchObject({ total: 28, reviewed: 24, pending: 4, basketball: 28 });
+  it("does not carry the label the real product retired", () => {
+    // `finalPoints` and `structuredPoints` were the 100-point composite the real product no
+    // longer computes anywhere a teacher reads about a class; a sample still quoting them
+    // would be teaching a number the product cannot produce any more.
+    const serialised = JSON.stringify(demoClassBundle());
+    expect(serialised).not.toContain("finalPoints");
+    expect(serialised).not.toContain("structuredPoints");
+    expect(DEMO_CLASS_LABEL.toLowerCase()).toContain("sample");
   });
 });

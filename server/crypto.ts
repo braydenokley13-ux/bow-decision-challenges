@@ -157,3 +157,22 @@ export function cryptoRandom(): number {
 export function newRecoveryCode(): string {
   return randomBytes(15).toString("base64url").replace(/[-_]/g, "").slice(0, 20).toUpperCase();
 }
+
+/**
+ * A blind index for a card code, so finding the seat a card opens is one lookup rather than a
+ * scan.
+ *
+ * Resolving the seat from the card alone is what lets the class door stop publishing the class
+ * list — but the credential hash is scrypt at N=2^15, deliberately expensive, and trying it
+ * against every row is sixty of those per sign-in. A class of thirty arriving at once turns
+ * that into thousands of key derivations on one thread, and the last student in the room waits
+ * minutes. So the code also carries a keyed hash, computed once, that says *which row to check*.
+ *
+ * It is keyed with the store's session secret rather than being a plain digest, so a stolen
+ * database alone does not let somebody build a rainbow table over the five-character code
+ * space. It is not the credential check and never stands in for one: what it finds is still
+ * verified against the scrypt hash before anybody is let in.
+ */
+export function lookupIndex(secret: string, value: string): string {
+  return createHmac("sha256", secret).update(`card:${value.trim().toUpperCase()}`).digest("hex").slice(0, 32);
+}

@@ -4,17 +4,24 @@ import { cleanup, render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it } from "vitest";
 import { isAssessable, type FrameworkId } from "../domain/standards";
-import { EducatorGuide, StandardsView } from "./EducatorPages";
+import { EducatorGuide } from "./EducatorPages";
 
 /**
  * S1's regression guard: two live surfaces once disagreed about NYSED 1.2 — the guide
  * badged it "Primary" from a hard-coded table keyed by objective id, while
  * `/educator/objectives` correctly read `isAssessable` and reported it not yet assessable.
- * Both fixture surfaces now derive their badge from `isAssessable` at render time rather
- * than restating a strength by hand, so this test renders the real components — not a copy
- * of their logic — and cross-checks every badge against the one function the product is
- * allowed to base that claim on. A future edit that reintroduces a hard-coded strength, on
- * either surface, fails here rather than shipping.
+ * The guide derives its badge from `isAssessable` at render time rather than restating a
+ * strength by hand, so this test renders the real component — not a copy of its logic — and
+ * cross-checks every badge against the one function the product is allowed to base that
+ * claim on. A future edit that reintroduces a hard-coded strength here fails rather than
+ * ships.
+ *
+ * The second half of this guard used to be `StandardsView`, the demo's own standards page —
+ * a second fixture surface making the same claim, which is exactly how two surfaces get to
+ * disagree in the first place. The demo/real-class unification deleted it along with every
+ * other bespoke demo component; `/educator/demo` now redirects its old `/standards` route to
+ * `/educator/objectives`, the one real surface that speaks this claim, so there is no longer
+ * a second copy of it to drift from this one.
  */
 
 afterEach(cleanup);
@@ -44,28 +51,5 @@ describe("no fixture surface can state a coverage strength isAssessable does not
     // The specific regression: 1.2 has no full mapping to an available competency, so it
     // must never read as ready — this is the exact claim that shipped wrong.
     expect(badges.get("1.2")).toBe(false);
-  });
-
-  it("badges every objective on the demo standards view exactly as isAssessable says, never stronger", () => {
-    const { container } = render(<MemoryRouter><StandardsView /></MemoryRouter>);
-    const badges = assessabilityBadges(container);
-    expect(badges.size).toBe(GUIDE_OBJECTIVE_CODES.length);
-    for (const code of GUIDE_OBJECTIVE_CODES) {
-      expect(badges.get(code), `standards view's ${code} badge`).toBe(isAssessable({ frameworkId: FRAMEWORK_ID, code }));
-    }
-    expect(badges.get("1.2")).toBe(false);
-  });
-
-  it("never prints a per-skill coverage word the mapping table did not actually assert", () => {
-    // The demo's skill chips carry `data-coverage`; every one of them has to be a real
-    // `Coverage` value, because these used to be micro-skill labels with no coverage
-    // strength attached to them at all — a chip with no value here is exactly the silent
-    // downgrade of a real claim into an unlabelled one.
-    const { container } = render(<MemoryRouter><StandardsView /></MemoryRouter>);
-    const chips = [...container.querySelectorAll<HTMLElement>("[data-coverage]")];
-    expect(chips.length).toBeGreaterThan(0);
-    for (const chip of chips) {
-      expect(["full", "partial", "supporting"]).toContain(chip.getAttribute("data-coverage"));
-    }
   });
 });

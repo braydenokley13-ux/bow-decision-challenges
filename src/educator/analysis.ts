@@ -259,6 +259,164 @@ function popUpAdaptation(rows: StudentRow[]): WorldSection["adaptation"] {
   };
 }
 
+/**
+ * How one run ended, asked of the world the student actually played.
+ *
+ * There is one of these per world and they answer the same question — did the plan take the
+ * hit it had planned for, or did it finish short — because that is the question every
+ * educator surface wants to ask about a single student, and until this existed only
+ * Basketball could answer it. `resolution` is `resolveSeason` over Basketball's numbers, so
+ * it is `null` for every market run ever submitted; anything that branched on it was
+ * silently Basketball-only, and the share-out was, which is how a class that chose the
+ * market could not put a market plan in front of the room.
+ *
+ * A run that never reached its shock returns `null`. That is an absence rather than an
+ * outcome, and it is not something to offer a teacher as a thing to show.
+ */
+export interface RunOutcome {
+  kind: "absorbed" | "came-up-short";
+  /** What happened, in the world's own words, for a teacher to read. */
+  label: string;
+}
+
+export function runOutcome(row: StudentRow): RunOutcome | null {
+  if (row.worldId === "food-truck") {
+    const facts = derivePopUpFacts(row.log);
+    if (!facts.repair.saved) return null;
+    return facts.repair.residual === 0
+      ? { kind: "absorbed", label: "Their cushion covered the generator in full." }
+      : { kind: "came-up-short", label: "Covered what they could and finished the generator still short — worth asking what they would move first." };
+  }
+  if (!row.resolution) return null;
+  if (row.resolution.uncovered > 0) {
+    return { kind: "came-up-short", label: "Finished with something still uncovered — worth asking what they would move first." };
+  }
+  if (row.resolution.absorbed > 0) {
+    return { kind: "absorbed", label: "Their backup money absorbed the loss they had planned for." };
+  }
+  return null;
+}
+
+/**
+ * The class, defined once.
+ *
+ * Three surfaces on one screen used to count three different things and call all of them the
+ * class: the headline counted submission **records**, the live panel counted distinct
+ * **seats** without checking them against the roster, and the student list printed a row per
+ * record. A class whose teacher had removed one student and one of whose students had two
+ * attempts therefore reported *5 turned in* above *turned in 4 · not started 1* on a roll of
+ * four, and listed one child twice beside a seat that was no longer in the room.
+ *
+ * So there is one answer here to each of the three questions, and every count a teacher reads
+ * is taken from it rather than recomputed:
+ *
+ * **What the class is.** The seats on the roster the teacher has not removed. A class with no
+ * roster has never told BOW who is in it, so its class is the seats that have shown up in
+ * evidence — and the surfaces say so rather than pretending to know who is missing.
+ *
+ * **What a student is.** One seat. Two attempts from one seat are one student, and the
+ * attempt that stands for them anywhere a page shows one row per student is their **latest**.
+ *
+ * **What an attempt is.** One submitted run. They are all kept, in order, because the export
+ * has to be able to show both and say which is which — but they are never counted as people.
+ */
+export interface RosterSeat {
+  seatCode: string;
+  removedAt?: number | null;
+}
+
+export interface ClassSeat {
+  seatCode: string;
+  /** Every attempt this seat turned in, oldest first. Empty for a seat that has not. */
+  attempts: StudentRow[];
+  /** The attempt that stands for this student, or `null` when they have not turned in. */
+  latest: StudentRow | null;
+  state: "turned-in" | "still-working" | "not-started";
+}
+
+export interface ClassRoll {
+  /** Whether the teacher has told BOW who is in this class. Without it "not started" is unknowable. */
+  hasRoster: boolean;
+  /** Every seat in the class, in seat order. Removed seats are not in it. */
+  seats: ClassSeat[];
+  /** One row per student who turned in — their latest attempt. The class, for anything counted per student. */
+  rows: StudentRow[];
+  /** Every attempt from a seat still in the class, seat order then oldest first. */
+  attempts: StudentRow[];
+  /** Attempts from seats that are no longer in the class. Counted nowhere, shown nowhere. */
+  excluded: StudentRow[];
+  turnedIn: number;
+  stillWorking: number;
+  /** `null` where there is no roster, because a class that never said who is in it cannot say who is missing. */
+  notStarted: number | null;
+  /** Students whose writing nobody has read yet. Students, not records. */
+  awaitingReading: string[];
+}
+
+function bySeatCode(a: string, b: string): number {
+  const left = Number(a);
+  const right = Number(b);
+  return Number.isNaN(left) || Number.isNaN(right) ? a.localeCompare(b) : left - right;
+}
+
+/** Newest last, and a stable tie-break so two attempts saved in the same millisecond keep an order. */
+function byAttemptOrder(a: StudentRow, b: StudentRow): number {
+  return a.submittedAt - b.submittedAt || a.sessionId.localeCompare(b.sessionId);
+}
+
+/**
+ * The one attempt that stands for a seat, wherever a surface shows a student once.
+ *
+ * The rule is "their latest", and it is written here rather than at each call site because
+ * the class list, the student page and the roll all have to pick the same one — a list whose
+ * row described a different run from the page it opened is a teacher checking a conclusion
+ * against the wrong evidence.
+ */
+export function latestAttemptFor(rows: readonly StudentRow[], seatCode: string): StudentRow | null {
+  return rows.filter((row) => row.seatCode === seatCode).sort(byAttemptOrder).at(-1) ?? null;
+}
+
+export function classRoll(input: {
+  rows: readonly StudentRow[];
+  roster: readonly RosterSeat[];
+  progress?: readonly { seatCode: string }[];
+}): ClassRoll {
+  const live = input.roster.filter((seat) => !seat.removedAt).map((seat) => seat.seatCode);
+  const hasRoster = live.length > 0;
+  const working = new Set((input.progress ?? []).map((entry) => entry.seatCode));
+  // Without a roster the only students BOW knows about are the ones who have shown up. With
+  // one, the roster is the class and nothing else is — which is what keeps a removed seat out
+  // of every count on the page rather than out of some of them.
+  const seatCodes = hasRoster
+    ? [...live].sort(bySeatCode)
+    : [...new Set([...input.rows.map((row) => row.seatCode), ...working])].sort(bySeatCode);
+  const inClass = new Set(seatCodes);
+
+  const seats: ClassSeat[] = seatCodes.map((seatCode) => {
+    const attempts = input.rows.filter((row) => row.seatCode === seatCode).sort(byAttemptOrder);
+    const latest = latestAttemptFor(attempts, seatCode);
+    return {
+      seatCode,
+      attempts,
+      latest,
+      state: latest ? "turned-in" : working.has(seatCode) ? "still-working" : "not-started",
+    };
+  });
+
+  const rows = seats.flatMap((seat) => (seat.latest ? [seat.latest] : []));
+  return {
+    hasRoster,
+    seats,
+    rows,
+    attempts: seats.flatMap((seat) => seat.attempts),
+    excluded: input.rows.filter((row) => !inClass.has(row.seatCode)),
+    turnedIn: seats.filter((seat) => seat.state === "turned-in").length,
+    stillWorking: seats.filter((seat) => seat.state === "still-working").length,
+    notStarted: hasRoster ? seats.filter((seat) => seat.state === "not-started").length : null,
+    awaitingReading: rows.filter((row) => row.reasoningPoints === null).map((row) => row.seatCode),
+  };
+}
+
 export function worldSections(everyRow: StudentRow[]): WorldSection[] {
   return [...new Set(everyRow.map((row) => row.worldId))].map((worldId) => {
     const rows = everyRow.filter((row) => row.worldId === worldId);

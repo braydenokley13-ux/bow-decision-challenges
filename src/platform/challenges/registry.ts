@@ -57,7 +57,20 @@ export const PLAN_UNDER_PRESSURE: ChallengeDefinition = {
   title: "Plan Under Pressure",
   subtitle: "Eight weeks to the showcase.",
   pillar: "Financial Literacy",
-  grades: "Grades 6–8",
+  /**
+   * The band the content is actually written for, and the one every other surface names.
+   *
+   * It said "Grades 6–8" here — on the front door and at the head of the educator guide —
+   * while the objectives page, the framework footer and the whole competency spine said
+   * "Grades 5–8", because that is what the material is: the objectives this challenge reports
+   * against are NYSED's Grades 5–8 Personal Finance band, every competency in
+   * `src/domain/competency/competencies.ts` carries `gradeBand: "5-8"`, and the student copy is
+   * written to a Grade 5 reading floor. A teacher deciding whether this fits their Grade 5
+   * class was being told two different answers by the same product, and the one on the front
+   * door was the wrong one. `gradeBandAgreement.test.ts` fails if any user-visible grade band
+   * ever disagrees with another again.
+   */
+  grades: "Grades 5–8",
   conceptIds: ["income-reliability", "full-cost", "viable-budget", "contingency", "adaptation", "financial-defense"],
   duration: { min: 20, max: 25 },
   route: "/challenges/plan-under-pressure",

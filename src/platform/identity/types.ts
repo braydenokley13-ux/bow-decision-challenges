@@ -101,14 +101,31 @@ export interface RosterEntry {
   addedAt: number;
   claimedAt?: number;
   removedAt?: number;
+  /**
+   * Whether this row was written by the student rather than by their teacher.
+   *
+   * It is the difference between a class list and a class that has not got one. Join mode used
+   * to be derived from "does this class have any roster rows", which meant the first student to
+   * type their own name into an open class turned it into a roster class — and the second
+   * student arrived at a list of one name that was not theirs, with no way to add themselves
+   * and a card they had never been given.
+   */
+  selfNamed?: boolean;
 }
 
-/** A roster row as a student may see it before they have proved who they are: no ids, no codes. */
-export interface RosterChoice {
-  seatCode: string;
-  displayName: string;
-  /** Whether somebody is already signed in on this seat, so a student can tell theirs apart. */
-  claimed: boolean;
+/**
+ * What a student is told about the class before they have proved anything.
+ *
+ * Names are conspicuously not in it. The door used to answer any five-character code with the
+ * whole class list — and a class code is written on a whiteboard, read aloud, photographed and
+ * typed into group chats, so that published a roster of children's first names to anyone who
+ * had ever been in the room or seen a picture of it. There is no version of that a district
+ * vendor review should accept, and the product did not need it: a student types the code on
+ * their card, and BOW answers with the one name that code belongs to.
+ */
+export interface ClassDoor {
+  label: string;
+  joinMode: ClassJoinMode;
 }
 
 /** The card a teacher prints and hands out. The join code appears here and nowhere else, once. */
@@ -165,23 +182,62 @@ export interface ProgressRow {
 }
 
 /**
- * A teacher's response to one student's work.
+ * One note a teacher wrote about one attempt.
  *
- * Deliberately one short message per attempt rather than a thread. The loop this closes is
- * "the student finds out what their teacher thought"; a conversation is a different product,
- * and building it here would make BOW into a messaging system nobody asked for.
+ * **A note, not the note.** This was stored one record per `(classCode, seatCode, sessionId)`,
+ * so the second thing a teacher wrote about a piece of work destroyed the first: two writes,
+ * two `201`s, one file, and the student read only the later one. The earlier note was never
+ * seen by anybody and no longer existed anywhere. Both surfaces already implied otherwise —
+ * the composer labels the second write "Say something else" and the student's home renders
+ * feedback as a list — so the only thing that disagreed was the store.
+ *
+ * So an attempt carries a **sequence** of notes, each with its own `id` and its own `at`, and
+ * the student gets all of them. That is still not a thread: a student cannot write back, and
+ * there is nothing here for them to write into. It is the difference between a teacher being
+ * able to add "and check Week 5" the next morning and a teacher silently deleting what they
+ * said yesterday.
+ *
+ * `editedAt` and `deletedAt` are what "I mistyped" means. Editing rewrites a note in place —
+ * same id, same position in the sequence — because a typo fix must not arrive as a second
+ * message. Deleting sets `deletedAt` and the student stops seeing it, while the teacher keeps
+ * the row, the same way a removed roster entry keeps what that student did: a teacher who
+ * takes back the wrong sentence should be able to see what they took back.
  */
 export interface TeacherFeedback {
+  /**
+   * Unique per note. Absent on every record written before feedback was a sequence; those
+   * are read back with their old storage key as their id, so the one note a teacher wrote
+   * under the old model still exists, still reaches its student, and can still be edited.
+   */
+  id: string;
   classCode: string;
   seatCode: string;
   sessionId: string;
   body: string;
   at: number;
+  /** When this note was last rewritten by its author. Absent means it says what it first said. */
+  editedAt?: number;
+  /** When the teacher took it back. Hidden from the student from that moment; kept for the teacher. */
+  deletedAt?: number;
   /** Whether the teacher wants to talk to this student rather than only write to them. */
   flagged: boolean;
 }
 
-export const MAX_FEEDBACK_LENGTH = 400;
+/**
+ * How long one note may be, and why it is not 400.
+ *
+ * At 400 a teacher writing the paragraph this feature exists for stopped being able to type
+ * mid-sentence, and a longer note sent by API was cut to 400 mid-word and answered `201` — the
+ * teacher was told their note had been delivered and the student read three quarters of it.
+ * 1,200 is a long paragraph, comfortably past what anybody writes into a box beside a
+ * student's work, and still short enough that no note is a file. The server refuses what is
+ * over it rather than trimming it, because a truncated note is worse than a rejected one:
+ * a rejected note is still in the teacher's hands.
+ */
+export const MAX_FEEDBACK_LENGTH = 1200;
+
+/** Notes one attempt may carry. A ceiling, not a target — nothing legitimate comes near it. */
+export const MAX_FEEDBACK_NOTES = 20;
 
 /**
  * One piece of student work a teacher has chosen to put in front of the room.
@@ -212,6 +268,7 @@ export type IdentityErrorCode =
   | "no_session"
   | "seat_taken"
   | "seat_not_found"
+  | "seat_removed"
   | "roster_full"
   | "join_closed"
   | "too_many_attempts";
@@ -223,7 +280,13 @@ export const IDENTITY_ERROR_MESSAGES: Record<IdentityErrorCode, string> = {
   no_session: "You are signed out. Sign in again to carry on.",
   seat_taken: "Somebody is already signed in as that name. Ask your teacher.",
   seat_not_found: "That name is not on this class list. Check with your teacher.",
+  /* A real card for a seat their teacher took off the list. It is the one case where "that did
+     not match" would send a student off to check a code that is perfectly correct, so it says
+     what actually happened and who can undo it. */
+  seat_removed: "You are not on this class list any more. Ask your teacher.",
   roster_full: `A class holds up to ${MAX_ROSTER_SIZE} students.`,
   join_closed: "This class is not letting new students in. Ask your teacher.",
-  too_many_attempts: "Too many tries. Wait a minute and try again.",
+  /* Ten, because the window is ten. It used to say "wait a minute" while holding the door shut
+     for ten of them, which is how a room decides the product is broken. */
+  too_many_attempts: "Too many tries from this school's network. Wait ten minutes, or ask your teacher.",
 };

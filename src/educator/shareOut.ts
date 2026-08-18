@@ -2,7 +2,7 @@ import { isShortfall, levelFor } from "../domain/competency/teachNext";
 import { writtenAnswerFrom } from "../domain/evidence/writtenAnswer";
 import type { AttributedSubmission } from "../platform/classes/types";
 import type { ShareOutItem } from "../platform/identity/types";
-import { worldSections, type StudentRow, type WorldSection } from "./analysis";
+import { runOutcome, worldSections, type StudentRow, type WorldSection } from "./analysis";
 import { studentSpineFor } from "./studentSpine";
 
 /**
@@ -28,6 +28,21 @@ import { studentSpineFor } from "./studentSpine";
  * student in the room can read it off the board and half of them know whose it is. Projected
  * work is labelled `Plan A`, `Plan B` — stable within a selection, meaningless outside it —
  * unless a teacher deliberately turns names on.
+ *
+ * And two rules about the list itself, both of which it broke before they were written down:
+ *
+ * **One submission is one card.** A piece of work that qualified under two rules was offered
+ * twice, once as *"decided differently from the plan beside it"* and once as *"made the same
+ * call as the plan beside it"* — two opposite sentences under the same paragraph. A reason a
+ * teacher cannot trust is worse than no reason, so each submission carries the single
+ * strongest reason it earned and appears once.
+ *
+ * **A reason that only one world can earn is not a reason.** Every per-student reason here is
+ * asked of the world the student played (`runOutcome`), because the ones that read
+ * `resolution` directly were Basketball's — `resolveSeason` returns nothing for a market run
+ * — and a mixed class quietly offered four Basketball candidates while a finished market plan
+ * with a write-up on it was never offered at all. The gradebook was rewritten on exactly this
+ * principle; this is the same principle on the surface shipped beside it.
  */
 
 export interface ShareOutCandidate {
@@ -48,31 +63,48 @@ function quoteOf(submission: AttributedSubmission): string | null {
 }
 
 /**
- * What a teacher could show, and why each one would be worth showing.
+ * The order a reason wins in when one submission has earned several.
  *
  * Ordered by how much disagreement each one puts in the room, because the first thing a
- * discussion needs is something to disagree about. Everything here is derived from what
- * students decided and what they wrote — there is no ranking of children in it, and nothing
- * that would be a finding if a parent read it.
+ * discussion needs is something to disagree about — and it is also the tie-break, because a
+ * submission is offered once and has to be offered under its strongest reason.
+ */
+const KIND_ORDER: readonly ShareOutCandidate["kind"][] = [
+  "different-decisions", "same-call-different-reason", "absorbed-it", "came-up-short", "fixed-it-themselves", "misconception",
+];
+
+/**
+ * What a teacher could show, and why each one would be worth showing.
+ *
+ * Everything here is derived from what students decided and what they wrote — there is no
+ * ranking of children in it, and nothing that would be a finding if a parent read it. Each
+ * submission appears exactly once, under the strongest reason it earned; a piece of work that
+ * qualifies under three rules is one card, not three, and never two contradictory ones.
+ *
+ * The rows this is given are the class as the class page defines it — one attempt per student
+ * still in the room. Work from a seat the teacher has removed is not offered, because a
+ * teacher who takes a student off the roll has said something about who is in the room, and
+ * projecting their work is the loudest possible way of ignoring it.
  */
 export function shareOutCandidates(
   rows: readonly StudentRow[],
   submissions: readonly AttributedSubmission[],
 ): ShareOutCandidate[] {
   const byId = new Map(submissions.map((submission) => [submission.sessionId, submission]));
-  const candidates: ShareOutCandidate[] = [];
+  const best = new Map<string, ShareOutCandidate>();
   const add = (row: StudentRow, kind: ShareOutCandidate["kind"], reason: string) => {
     const submission = byId.get(row.sessionId);
     if (!submission) return;
-    if (candidates.some((entry) => entry.sessionId === row.sessionId && entry.kind === kind)) return;
-    candidates.push({ sessionId: row.sessionId, seatCode: row.seatCode, worldId: row.worldId, kind, reason, quote: quoteOf(submission) });
+    const standing = best.get(row.sessionId);
+    if (standing && KIND_ORDER.indexOf(standing.kind) <= KIND_ORDER.indexOf(kind)) return;
+    best.set(row.sessionId, { sessionId: row.sessionId, seatCode: row.seatCode, worldId: row.worldId, kind, reason, quote: quoteOf(submission) });
   };
 
   for (const world of worldSections([...rows])) {
     // Two students who decided differently. The single most reliable way to open a
     // conversation, and the one the class page already knows the answer to.
     if (world.contrast) {
-      for (const row of world.contrast) add(row, "different-decisions", `Decided differently from the plan beside it, in ${world.title}.`);
+      for (const row of world.contrast) add(row, "different-decisions", `Decided differently from another plan in this class, in ${world.title}.`);
     } else {
       addDivergent(world, add);
     }
@@ -80,7 +112,7 @@ export function shareOutCandidates(
     // The same call, explained two different ways. This is the pair that gets a room arguing
     // about reasons rather than about answers.
     for (const pair of sameCallDifferentReason(world, byId)) {
-      for (const row of pair) add(row, "same-call-different-reason", "Made the same call as the plan beside it, and gave a different reason for it.");
+      for (const row of pair) add(row, "same-call-different-reason", "Made the same call as another plan in this class, and gave a different reason for it.");
     }
 
     for (const row of world.rows) {
@@ -89,13 +121,11 @@ export function shareOutCandidates(
       const spine = studentSpineFor(submission);
 
       // A plan that took the hit it had planned for, and one that did not. Both are worth
-      // showing, and showing them together is the whole lesson.
-      if ((row.resolution?.absorbed ?? 0) > 0 && (row.resolution?.uncovered ?? 0) === 0) {
-        add(row, "absorbed-it", "Their backup money absorbed the loss they had planned for.");
-      }
-      if ((row.resolution?.uncovered ?? 0) > 0) {
-        add(row, "came-up-short", "Finished with something still uncovered — worth asking what they would move first.");
-      }
+      // showing, and showing them together is the whole lesson. Asked of the world the student
+      // played, so the market answers it too — reading `row.resolution` here is what made this
+      // whole section Basketball-only.
+      const outcome = runOutcome(row);
+      if (outcome) add(row, outcome.kind === "absorbed" ? "absorbed-it" : "came-up-short", outcome.label);
 
       // Level 4 on a requirement is BOW's word for "went wrong and the student put it right
       // before anything on screen helped them". A room almost never sees that, and it is the
@@ -112,10 +142,8 @@ export function shareOutCandidates(
     }
   }
 
-  const order: ShareOutCandidate["kind"][] = [
-    "different-decisions", "same-call-different-reason", "absorbed-it", "came-up-short", "fixed-it-themselves", "misconception",
-  ];
-  return candidates.sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind) || Number(a.seatCode) - Number(b.seatCode));
+  return [...best.values()].sort((a, b) =>
+    KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || Number(a.seatCode) - Number(b.seatCode));
 }
 
 /** Where no contrasting pair was computed, the two rows whose written answers differ most. */
@@ -161,14 +189,18 @@ function sameCallDifferentReason(
  * The label is positional and stable within one selection: reordering renames, which is
  * correct — the names exist so a room can say "the second one" without saying whose it is,
  * and they are not identities to be carried anywhere.
+ *
+ * There is no note on this type and that is the point. A slide is the projected frame, the
+ * teacher's note is theirs, and the way to keep a private thing off a wall is to not put it
+ * in the object the wall is rendered from. It used to be carried here and printed in the
+ * bottom-right corner at fourteen pixels, under a field labelled *for you, not the room*, on
+ * the only screen in this product that **is** the room.
  */
 export interface ShareOutSlide {
   sessionId: string;
   /** `Plan A` unless the teacher chose to show names. */
   title: string;
   quote: string | null;
-  /** The teacher's own note about why this one. Shown to them while presenting, never projected. */
-  note: string;
   /** What this student actually decided, in the world's own words. */
   summary: string;
 }
@@ -191,7 +223,6 @@ export function shareOutSlides(input: {
         sessionId: item.sessionId,
         title: input.named ? input.nameFor(item.seatCode) : `Plan ${ALPHABET[index] ?? index + 1}`,
         quote: quoteOf(submission),
-        note: item.note,
         summary: input.summaryFor(submission),
       }];
     });

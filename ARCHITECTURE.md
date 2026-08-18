@@ -209,8 +209,13 @@ browser remembers. That limit is stated on the screen rather than hidden.
 ### `src/educator/` — the educator surface
 
 `analysis.ts` turns submitted evidence into what a class did. It is the **only** thing that
-feeds a real class view, and `noFixture.test.ts` enforces that structurally: the real-class
-modules cannot import a fixture, and every fixture page is mounted under `/educator/demo`.
+feeds a real class view. `/educator/demo` renders those same real-class components — there is
+no separate fixture page any more — fed evidence `useClassEvidence` builds from
+`src/fixtures/demoClass.ts` instead of the service, and only for the one class code
+(`DEMO_CLASS_CODE`) that is structurally too short to ever be a real one.
+`noFixture.test.tsx` enforces that behaviourally: a well-formed class code always reaches the
+service and never the fixture, an empty real class renders as empty rather than as the
+sample, and the sample is labelled on every screen it appears on.
 
 ### The design system, and what it is enforced by
 

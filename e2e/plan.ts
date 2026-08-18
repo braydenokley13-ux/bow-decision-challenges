@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 import { SCENARIO_NUMBERS as N } from "../src/domain/scenario/numbers";
 import { formatDollars } from "../src/domain/core/money";
 import { BASKETBALL_SCENARIO } from "../src/domain/scenario/worlds/basketball";
-import type { SetupId } from "../src/domain/core/ids";
+import type { CategoryId, SetupId } from "../src/domain/core/ids";
 import type { PlanMode } from "../src/domain/finance/types";
 import { CHOICE_LABELS } from "../src/components/financial/choices";
 
@@ -100,9 +100,39 @@ export function splitFor(spendable: number, step: number, courseCap: number = N.
   return { goal, reserve, flexible: rest - reserve };
 }
 
+/**
+ * The card that sends what is left to one row, found by the row it feeds.
+ *
+ * Not by its wording: the wording carries the amount and, on the capped course row, what that
+ * row can hold — both of which move with the plan and neither of which a test should be
+ * restating.
+ */
+export function restCard(page: Page, category: CategoryId) {
+  return page.locator(`.closer-choice button[data-category="${category}"]`);
+}
+
+/**
+ * Closes the opening plan the way every student now closes it: name the row that takes what
+ * is left, then save.
+ *
+ * The naming used to be optional — the cards only appeared while money was unassigned — so a
+ * student who typed three figures that balanced exactly committed the board without ever being
+ * asked, and the one evidence requirement this challenge produces from a statement rather than
+ * from arithmetic was never observed for them at all. The cards are now the way the opening
+ * board closes, at any amount, so this helper presses both.
+ */
+export async function saveOpeningPlan(page: Page, into: CategoryId = "flexibleCash") {
+  await restCard(page, into).click();
+  await page.getByRole("button", { name: SAVE_LABEL.working }).click();
+}
+
 /** Fills the plan to zero and commits it, whatever this moment calls committing. */
 export async function savePlan(page: Page, mode: PlanMode, context: PlanContext) {
   await fillPlanToBalance(page, mode, context);
+  if (mode === "working") {
+    await saveOpeningPlan(page);
+    return;
+  }
   await page.getByRole("button", { name: SAVE_LABEL[mode] }).click();
 }
 
@@ -147,9 +177,7 @@ export async function closeOpeningByNamingTheRest(page: Page, context: PlanConte
     await setAmount(page, CHOICE_LABELS.goal, goal);
     await setAmount(page, CHOICE_LABELS.reserve, others - goal);
   }
-  const named = leftoversInto === "goal" ? CHOICE_LABELS.goal : CHOICE_LABELS.flexibleCash;
-  await page.getByRole("button", { name: `Put ${money(rest)} into ${named}` }).click();
-  await page.getByRole("button", { name: SAVE_LABEL.working }).click();
+  await saveOpeningPlan(page, leftoversInto);
 }
 
 /**

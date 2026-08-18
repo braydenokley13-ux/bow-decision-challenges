@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import { CLASS_ERROR_MESSAGES, isClassError, type Assignment, type AttributedSubmission, type ClassRecord } from "../platform/classes/types";
@@ -8,17 +8,24 @@ import { analyseClass, type ClassAnalysis } from "./analysis";
 import { keyForClass, rememberClass } from "./classMemory";
 import type { RosterRow } from "./names";
 import type { ProgressRow, TeacherFeedback } from "../platform/identity/types";
+import { DEMO_CLASS_CODE, demoClassBundle } from "../fixtures/demoClass";
 
 /**
- * A real class, loaded from the service.
+ * A real class, loaded from the service — with exactly one addressable exception.
  *
  * Four states, and they are genuinely four: still loading, could not be opened, opened but
  * nobody has finished yet, and opened with real work in it. The third is the one that
  * matters most — a class where nothing has been submitted has to look like a class where
  * nothing has been submitted, and never like a class with data in it.
  *
- * There is no fixture anywhere in this path and no default class. If the fetch fails, this
- * returns the failure.
+ * There is no fixture in the path a real class's code takes, and no default class — if the
+ * fetch fails, this returns the failure. The one string this hook answers without asking the
+ * service is `DEMO_CLASS_CODE`, and it can carry a fixture safely for a reason that is
+ * structural rather than promised: a class code the service allocates is always
+ * `CODE_LENGTH` characters from `CODE_ALPHABET` (`src/platform/classes/codes.ts`), and the
+ * marker is four. No real class's code can ever equal it, so branching on it here cannot
+ * misfire onto somebody's actual room — `noFixture.test.tsx` is what checks that this stays
+ * true rather than just being commented as true.
  */
 /** What a teacher is saying instead, and why. The note is required by the service too. */
 export interface OverrideRequest {
@@ -46,6 +53,31 @@ export type ClassEvidenceState =
       loadedAt: number;
     };
 
+/**
+ * The sample class, wrapped up the same way a fetch response is.
+ *
+ * Everything past `demoClassBundle()` is exactly what a real class's `submissions` goes
+ * through — `analyseClass` does not know these eighteen records were never posted to the
+ * service, because nothing about their shape says so. Roster, live progress and teacher
+ * feedback are empty rather than invented: nobody has named these seats, nobody is mid-run,
+ * and no teacher has written back yet, all of which are true statements about a class that
+ * has never actually been taught.
+ */
+function demoReady(): ClassEvidenceState {
+  const bundle = demoClassBundle();
+  return {
+    status: "ready",
+    record: bundle.record,
+    assignments: bundle.assignments,
+    submissions: bundle.submissions,
+    analysis: analyseClass(bundle.submissions),
+    roster: [],
+    progress: [],
+    feedback: [],
+    loadedAt: Date.now(),
+  };
+}
+
 export function useClassEvidence(code: string | undefined): {
   state: ClassEvidenceState;
   teacherKey: string | null;
@@ -54,6 +86,7 @@ export function useClassEvidence(code: string | undefined): {
   recordOverride: (seatCode: string, sessionId: string, override: OverrideRequest) => Promise<boolean>;
   sendFeedback: (seatCode: string, sessionId: string, body: string, flagged: boolean) => Promise<boolean>;
 } {
+  const isDemo = code === DEMO_CLASS_CODE;
   const [params] = useSearchParams();
   // The key comes from the link the educator was given, or from this browser if they have
   // opened the class here before. It is never derivable from the class code.
@@ -61,16 +94,28 @@ export function useClassEvidence(code: string | undefined): {
   const [fetched, setFetched] = useState<ClassEvidenceState>({ status: "loading" });
   const [nonce, setNonce] = useState(0);
 
+  // Built once per mount rather than on every render — it is a pure function of the fixture,
+  // not of anything this hook's caller can change, and re-running eighteen headless
+  // challenge runs on every keystroke in a reasoning rubric would be its own kind of bug.
+  const demo = useMemo(() => (isDemo ? demoReady() : null), [isDemo]);
+
   // A missing code or a missing key are facts about this render, not things to discover
-  // asynchronously — there is nothing to ask the service about.
-  const blocked: ClassEvidenceState | null = !code
-    ? { status: "error", message: CLASS_ERROR_MESSAGES.class_not_found }
-    : !teacherKey
-      ? { status: "error", message: CLASS_ERROR_MESSAGES.not_authorised }
-      : null;
+  // asynchronously — there is nothing to ask the service about. The demo never reaches this:
+  // it has no teacher key and needs none, because nothing about it is gated on one.
+  const blocked: ClassEvidenceState | null = isDemo
+    ? null
+    : !code
+      ? { status: "error", message: CLASS_ERROR_MESSAGES.class_not_found }
+      : !teacherKey
+        ? { status: "error", message: CLASS_ERROR_MESSAGES.not_authorised }
+        : null;
 
   useEffect(() => {
-    if (!code || !teacherKey) return;
+    // The one line that keeps the promise in the comment above true at runtime: this branch
+    // returns before the fetch is even constructed, so the demo's code and key are never
+    // formatted into a URL and `fetch` is never called with them. Nothing about a class
+    // opened this way touches the network, in either direction.
+    if (isDemo || !code || !teacherKey) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -109,7 +154,7 @@ export function useClassEvidence(code: string | undefined): {
       }
     })();
     return () => { cancelled = true; };
-  }, [code, teacherKey, nonce]);
+  }, [code, teacherKey, nonce, isDemo]);
 
   const reload = useCallback(() => setNonce((value) => value + 1), []);
 
@@ -190,5 +235,5 @@ export function useClassEvidence(code: string | undefined): {
     [code, teacherKey, reload],
   );
 
-  return { state: blocked ?? fetched, teacherKey, reload, scoreReasoning, recordOverride, sendFeedback };
+  return { state: demo ?? blocked ?? fetched, teacherKey, reload, scoreReasoning, recordOverride, sendFeedback };
 }

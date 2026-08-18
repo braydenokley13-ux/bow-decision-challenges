@@ -167,9 +167,14 @@ function depositVerdict(final: SnapshotInputs, n: ScenarioNumbers, pressure: Wee
     id: "course-deposit",
     label: "Not reserving the course seat early",
     taken: false,
-    outcome: !tested ? "no_effect" : held ? "paid_off" : "fell_short",
+    // Not "no effect". Not reserving always costs the premium — the sentence directly under
+    // this label says so, in dollars — and a verdict headed "No effect" over a line reading
+    // "Avery paid more" teaches a student that a cost they can read is not a cost. What is
+    // true when Week 5 never tested the plan is that the money bought room nobody needed:
+    // a decision that cost something and returned nothing.
+    outcome: !tested ? "cost_you" : held ? "paid_off" : "fell_short",
     detail: !tested
-      ? `${priced} Week 5 asked nothing of the money Avery kept reachable, so the room it bought was never used.`
+      ? `${priced} Week 5 then asked nothing of the money Avery kept reachable, so the room it bought was never needed.`
       : held
         ? `${priced} Week 5 asked for ${asked}, and it came out of the ${movable} Avery had kept reachable.`
         : `${priced} Week 5 asked for ${asked} and only ${movable} could move, so keeping it reachable was not enough on its own.`,

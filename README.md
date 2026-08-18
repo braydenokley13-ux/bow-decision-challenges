@@ -1,6 +1,6 @@
 # BOW Decision Challenges
 
-**Plan Under Pressure** — an applied financial-literacy challenge for Grades 6–8.
+**Plan Under Pressure** — an applied financial-literacy challenge for Grades 5–8.
 
 Students step into an eight-week basketball season as the person handling the money. They
 build a plan that works, play four weeks as it drains, commit to something before knowing
@@ -113,10 +113,17 @@ real contrasting plans, prompts earned by something this class disagreed about, 
 own words — which prints.
 
 Once a real class is open, **nothing falls back to demo data**. Missing evidence renders as
-missing. `src/educator/noFixture.test.ts` enforces that structurally and behaviourally.
+missing. `src/educator/noFixture.test.tsx` enforces that behaviourally: no well-formed class
+code can ever reach the fixture, only the four-character `DEMO_CLASS_CODE` can — and that
+marker cannot be a real class's code, because every code the service allocates is five
+characters (`src/platform/classes/codes.ts`).
 
-The fixture class still exists at `/educator/demo`, clearly labelled, so an educator can see
-the shape of the evidence before running one.
+The sample class still exists at `/educator/demo`, and it is the same real class page a real
+class opens — `RealClassOverview`, `RealStudentEvidence`, the reading queue, the debrief —
+fed real submitted evidence built the way the product's own tests build it
+(`src/fixtures/demoClass.ts`), clearly labelled on every screen it appears on, so an educator
+can see the shape of the evidence before running one without learning a workflow that does
+not exist.
 
 ## Main areas
 

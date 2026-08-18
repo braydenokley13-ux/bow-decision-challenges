@@ -4,7 +4,7 @@ import { memoryStore, type ClassStore } from "../../../server/store";
 import { PLAN_UNDER_PRESSURE } from "../challenges/registry";
 import type { ClassCreation } from "../classes/types";
 import type { EvidenceEvent } from "../../domain/evidence/types";
-import { SHARED_DEVICE_SESSION_HOURS, type JoinCard, type RosterChoice } from "./types";
+import { SHARED_DEVICE_SESSION_HOURS, type ClassDoor, type JoinCard } from "./types";
 
 /**
  * The account gauntlet, run against the handler that ships.
@@ -69,8 +69,12 @@ async function paste(store: ClassStore, code: string, token: string, names: stri
   return (result.body as { cards: JoinCard[] }).cards;
 }
 
-async function join(store: ClassStore, code: string, card: Pick<JoinCard, "seatCode" | "joinCode">, extra: Record<string, unknown> = {}, headers: Record<string, string | undefined> = {}, now = NOW) {
-  return api(store, now)("POST", `/classes/${code}/join`, { seatCode: card.seatCode, joinCode: card.joinCode, ...extra }, headers);
+/**
+ * A card, presented. The seat code is deliberately not sent: the card resolves the seat by
+ * itself, which is what lets the door keep the class list to itself.
+ */
+async function join(store: ClassStore, code: string, card: Pick<JoinCard, "joinCode">, extra: Record<string, unknown> = {}, headers: Record<string, string | undefined> = {}, now = NOW) {
+  return api(store, now)("POST", `/classes/${code}/join`, { joinCode: card.joinCode, ...extra }, headers);
 }
 
 function logFor(sessionId: string): EvidenceEvent[] {
@@ -158,20 +162,30 @@ describe("a class is a room somebody can be named in", () => {
     expect(more[0]?.seatCode, "a second paste continues the list rather than restarting it").toBe("4");
   });
 
-  it("shows a student the names and nothing else", async () => {
+  /**
+   * This test used to assert the opposite — that the door hands a student the class list — and
+   * it was wrong in a way no amount of careful implementation could fix. A class code is
+   * written on a whiteboard, read across a room, photographed and typed into group chats, and
+   * this endpoint takes no credential at all. Publishing every child's first name to everyone
+   * who has ever seen the board is not a thing to do carefully; it is a thing not to do.
+   */
+  it("tells a student which class it is and not who is in it", async () => {
     const store = memoryStore();
     const teacher = await signUp(store, "ms.chen@example.org");
     const created = await openClass(store, teacher.token);
-    await paste(store, created.code, teacher.token, ["Ana R."]);
+    await paste(store, created.code, teacher.token, ["Ana R.", "Devon P."]);
 
     const seen = await api(store)("GET", `/classes/${created.code}/roster`);
     expect(seen.status).toBe(200);
-    const roster = (seen.body as { roster: RosterChoice[] }).roster;
-    expect(roster).toEqual([{ seatCode: "1", displayName: "Ana R.", claimed: false }]);
-    // Nothing that could be used to sign in as somebody.
-    expect(JSON.stringify(seen.body)).not.toContain("joinCode");
-    expect(JSON.stringify(seen.body)).not.toContain("Hash");
-    expect(JSON.stringify(seen.body)).not.toContain("studentId");
+    expect(seen.body as ClassDoor).toEqual({ label: "Period 3", joinMode: "roster" });
+    const published = JSON.stringify(seen.body);
+    for (const secret of ["Ana", "Devon", "joinCode", "Hash", "studentId", "seatCode"]) {
+      expect(published, `the unauthenticated door published ${secret}`).not.toContain(secret);
+    }
+
+    // Their own teacher still sees the whole row, from the same URL, with a key.
+    const asTeacher = await api(store)("GET", `/classes/${created.code}/roster`, undefined, bearer(teacher.token));
+    expect((asTeacher.body as { roster: unknown[] }).roster).toHaveLength(2);
   });
 
   it("stores the label a teacher typed, and refuses to be a place for anything else", async () => {
@@ -192,7 +206,7 @@ describe("a student signs in, and stays the same person", () => {
     const created = await openClass(store, teacher.token);
     const [card] = await paste(store, created.code, teacher.token, ["Ana R."]);
 
-    const wrong = await join(store, created.code, { seatCode: card!.seatCode, joinCode: "AAAAA" });
+    const wrong = await join(store, created.code, { joinCode: "AAAAA" });
     expect(wrong.status).toBe(401);
 
     const right = await join(store, created.code, card!);
@@ -200,14 +214,26 @@ describe("a student signs in, and stays the same person", () => {
     expect((right.body as { displayName: string }).displayName).toBe("Ana R.");
   });
 
-  it("refuses a name that is not on the list", async () => {
+  it("refuses a card nobody in this class holds, and says nothing about who does", async () => {
     const store = memoryStore();
     const teacher = await signUp(store, "ms.chen@example.org");
     const created = await openClass(store, teacher.token);
     await paste(store, created.code, teacher.token, ["Ana R."]);
-    const nobody = await join(store, created.code, { seatCode: "9", joinCode: "AAAAA" });
-    expect(nobody.status).toBe(404);
-    expect((nobody.body as { error: string }).error).toBe("seat_not_found");
+    const nobody = await join(store, created.code, { joinCode: "AAAAA" });
+    expect(nobody.status).toBe(401);
+    expect((nobody.body as { error: string }).error).toBe("bad_credentials");
+    // A wrong card and a card belonging to a class that has no such seat are the same answer:
+    // an unauthenticated caller learns nothing about the shape of the room from either.
+    expect(JSON.stringify(nobody.body)).not.toContain("Ana");
+  });
+
+  it("refuses a roster class to somebody with no card at all", async () => {
+    const store = memoryStore();
+    const teacher = await signUp(store, "ms.chen@example.org");
+    const created = await openClass(store, teacher.token);
+    await paste(store, created.code, teacher.token, ["Ana R."]);
+    const noCard = await api(store)("POST", `/classes/${created.code}/join`, { displayName: "I am new here", device: "shared" });
+    expect(noCard.status).toBe(401);
   });
 
   it("gives the same account back on a second device, not a second student", async () => {
@@ -224,7 +250,74 @@ describe("a student signs in, and stays the same person", () => {
     expect((roster.body as { roster: unknown[] }).roster).toHaveLength(1);
   });
 
-  it("carries one identity into a second teacher's class", async () => {
+  /**
+   * **The one that was a student-data incident.**
+   *
+   * This test used to assert that a browser already holding a session carries that account
+   * into the next class it signs into — "one identity across classes". The mechanism behind it
+   * was `studentId ?? entry.studentId`: the ambient token first, the seat's own owner second.
+   * On a cart Chromebook that is not one student in two classes, it is two students in one
+   * account. The second child to sit down, tapping their own name and typing their own card,
+   * captured the first child's account and dragged it onto their own seat — so a twelve-year-old
+   * opening BOW at home on their own phone found a named classmate's plan and that classmate's
+   * private teacher feedback, and one account holding two seats could turn work in under the
+   * other child's name and be accepted.
+   *
+   * The behaviour this replaces it with is the opposite one, and it is the load-bearing
+   * invariant of the whole identity layer: **the card decides, and nothing else does.** What it
+   * costs is that a student in two BOW classes signs in twice rather than once. That is the
+   * right trade and it is not close.
+   */
+  it("never lets one browser's session decide whose seat this is", async () => {
+    const store = memoryStore();
+    const teacher = await signUp(store, "ms.chen@example.org");
+    const created = await openClass(store, teacher.token);
+    const [ana, devon] = await paste(store, created.code, teacher.token, ["Ana R.", "Devon P."]);
+
+    // Ana signs in on the cart Chromebook first.
+    const first = await join(store, created.code, ana!);
+    const anaToken = (first.body as { token: string }).token;
+    const anaId = (first.body as { studentId: string }).studentId;
+
+    // Devon picks up the same machine, which is still holding Ana's session, and presents his
+    // own card. He is Devon.
+    const second = await join(store, created.code, devon!, {}, bearer(anaToken));
+    const devonId = (second.body as { studentId: string }).studentId;
+    expect(devonId).not.toBe(anaId);
+
+    // And Ana is still Ana, on her own device, holding her own seat and nobody else's.
+    const anaHome = await api(store)("GET", "/me/classes", undefined, bearer(anaToken));
+    const anaClasses = (anaHome.body as { classes: { seatCode: string; displayName: string }[] }).classes;
+    expect(anaClasses).toHaveLength(1);
+    expect(anaClasses[0]?.displayName).toBe("Ana R.");
+    expect(anaClasses[0]?.seatCode).toBe(ana!.seatCode);
+
+    // One account per seat, both ways round.
+    const roster = await api(store)("GET", `/classes/${created.code}/roster`, undefined, bearer(teacher.token));
+    const rows = (roster.body as { roster: { seatCode: string; claimed: boolean }[] }).roster;
+    expect(rows.filter((row) => row.claimed)).toHaveLength(2);
+  });
+
+  it("will not let a captured session turn work in under another child's seat", async () => {
+    const store = memoryStore();
+    const teacher = await signUp(store, "ms.chen@example.org");
+    const created = await openClass(store, teacher.token);
+    const [ana, devon] = await paste(store, created.code, teacher.token, ["Ana R.", "Devon P."]);
+    const anaToken = (await join(store, created.code, ana!)).body as { token: string };
+    await join(store, created.code, devon!, {}, bearer(anaToken.token));
+
+    const posted = await api(store)("POST", `/classes/${created.code}/submissions`, {
+      classCode: created.code,
+      seatCode: devon!.seatCode,
+      sessionId: "ana-posting-as-devon",
+      challengeId: PLAN_UNDER_PRESSURE.id,
+      challengeVersion: PLAN_UNDER_PRESSURE.version,
+      log: logFor("ana-posting-as-devon"),
+    }, bearer(anaToken.token));
+    expect(posted.status).toBe(403);
+  });
+
+  it("keeps a student in two classes signed in separately, each by their own card", async () => {
     const store = memoryStore();
     const chen = await signUp(store, "ms.chen@example.org");
     const ito = await signUp(store, "mr.ito@example.org");
@@ -234,15 +327,14 @@ describe("a student signs in, and stays the same person", () => {
     const [inCivics] = await paste(store, civics.code, ito.token, ["Ana Ruiz"]);
 
     const first = await join(store, maths.code, inMaths!);
-    const token = (first.body as { token: string; studentId: string }).token;
-    const second = await join(store, civics.code, inCivics!, {}, bearer(token));
-    expect((second.body as { studentId: string }).studentId).toBe((first.body as { studentId: string }).studentId);
-
-    const home = await api(store)("GET", "/me/classes", undefined, bearer(token));
-    const classes = (home.body as { classes: { classCode: string; displayName: string }[] }).classes;
-    expect(classes.map((entry) => entry.classCode).sort()).toEqual([civics.code, maths.code].sort());
-    // Each teacher's own label for the same person, held on their own class.
-    expect(classes.map((entry) => entry.displayName).sort()).toEqual(["Ana R.", "Ana Ruiz"]);
+    const second = await join(store, civics.code, inCivics!, {}, bearer((first.body as { token: string }).token));
+    // Two rooms, two cards, two sign-ins. Each one opens its own class and only its own.
+    for (const [result, code, label] of [[first, maths.code, "Ana R."], [second, civics.code, "Ana Ruiz"]] as const) {
+      const home = await api(store)("GET", "/me/classes", undefined, bearer((result.body as { token: string }).token));
+      const classes = (home.body as { classes: { classCode: string; displayName: string }[] }).classes;
+      expect(classes.map((entry) => entry.classCode)).toEqual([code]);
+      expect(classes[0]?.displayName).toBe(label);
+    }
   });
 
   it("expires a shared-device session in hours and an own-device session in weeks", async () => {
@@ -257,6 +349,83 @@ describe("a student signs in, and stays the same person", () => {
 
     expect((await api(store, later)("GET", "/me/classes", undefined, bearer(shared.token))).status).toBe(401);
     expect((await api(store, later)("GET", "/me/classes", undefined, bearer(own.token))).status).toBe(200);
+  });
+});
+
+describe("a class with no list still lets a room in", () => {
+  it("stays open after the first student names themselves", async () => {
+    const store = memoryStore();
+    const teacher = await signUp(store, "ms.chen@example.org");
+    const created = await openClass(store, teacher.token);
+
+    const first = await api(store)("POST", `/classes/${created.code}/join`, { displayName: "Ana", device: "shared" });
+    expect(first.status).toBe(201);
+
+    // The door has to still say "open". Deriving join mode from "are there any roster rows"
+    // meant the first student to type their own name turned the class into a roster class, and
+    // the second student arrived at a list of one name that was not theirs, with no way to add
+    // themselves and a card nobody had ever given them.
+    const door = await api(store)("GET", `/classes/${created.code}/roster`);
+    expect((door.body as ClassDoor).joinMode).toBe("open");
+
+    const second = await api(store)("POST", `/classes/${created.code}/join`, { displayName: "Devon", device: "shared" });
+    expect(second.status).toBe(201);
+    expect((second.body as { studentId: string }).studentId).not.toBe((first.body as { studentId: string }).studentId);
+    expect((second.body as { seatCode: string }).seatCode).not.toBe((first.body as { seatCode: string }).seatCode);
+  });
+
+  it("lets a student who has been here before come back with the code they were given", async () => {
+    const store = memoryStore();
+    const teacher = await signUp(store, "ms.chen@example.org");
+    const created = await openClass(store, teacher.token);
+    const first = await api(store)("POST", `/classes/${created.code}/join`, { displayName: "Ana", device: "shared" });
+    const { joinCode, studentId } = first.body as { joinCode: string; studentId: string };
+
+    // Typing the name again would make a second Ana with none of the first Ana's work.
+    const back = await join(store, created.code, { joinCode });
+    expect(back.status).toBe(200);
+    expect((back.body as { studentId: string }).studentId).toBe(studentId);
+  });
+
+  it("closes the door for good the moment a teacher pastes a list", async () => {
+    const store = memoryStore();
+    const teacher = await signUp(store, "ms.chen@example.org");
+    const created = await openClass(store, teacher.token);
+    const [card] = await paste(store, created.code, teacher.token, ["Ana R."]);
+    expect(((await api(store)("GET", `/classes/${created.code}/roster`)).body as ClassDoor).joinMode).toBe("roster");
+
+    // Including after every name is taken off it again — otherwise the student their teacher
+    // just removed walks back in under a name they choose themselves.
+    await api(store)("DELETE", `/classes/${created.code}/roster/${card!.seatCode}`, undefined, bearer(teacher.token));
+    expect(((await api(store)("GET", `/classes/${created.code}/roster`)).body as ClassDoor).joinMode).toBe("roster");
+    const walkIn = await api(store)("POST", `/classes/${created.code}/join`, { displayName: "Ana R.", device: "shared" });
+    expect(walkIn.status).toBe(401);
+  });
+
+  // Slow on purpose: every sign-in here is a real scrypt verify at the parameters that ship, so
+  // this is also the only place the cost of a class arriving at once is measured rather than
+  // assumed. It was minutes before the card carried a lookup index.
+  it("does not spend a room's brute-force budget on the room signing in", { timeout: 120_000 }, async () => {
+    const store = memoryStore();
+    const teacher = await signUp(store, "ms.chen@example.org");
+    const created = await openClass(store, teacher.token);
+    const names = Array.from({ length: 30 }, (_, seat) => `Student ${seat + 1}`);
+    const cards = await paste(store, created.code, teacher.token, names);
+
+    // A whole class arrives on one school connection, several of them twice because they were
+    // handed a different Chromebook after break. Under a limiter that charged successes, this
+    // is where the lesson stopped.
+    for (const card of cards) expect((await join(store, created.code, card)).status).toBe(200);
+    for (const card of cards.slice(0, 20)) expect((await join(store, created.code, card)).status).toBe(200);
+
+    // And the thing the window is actually for is still bounded.
+    let refusedAt = 0;
+    for (let attempt = 1; attempt <= 130 && refusedAt === 0; attempt += 1) {
+      const guess = await join(store, created.code, { joinCode: `Z${String(attempt).padStart(4, "0")}` });
+      if (guess.status === 429) refusedAt = attempt;
+    }
+    expect(refusedAt).toBeGreaterThan(0);
+    expect(refusedAt).toBeLessThanOrEqual(121);
   });
 });
 
@@ -313,7 +482,12 @@ describe("the teacher is the recovery mechanism, and the off switch", () => {
 
     const home = await api(store)("GET", "/me/classes", undefined, bearer(student.token));
     expect((home.body as { classes: unknown[] }).classes, "the class stops being theirs").toHaveLength(0);
-    expect((await join(store, created.code, card!)).status, "and the card stops opening it").toBe(404);
+    // Their own card, for a seat that is no longer on the list. A removed student is a person
+    // who needs to know to go and talk to their teacher, not one who should be re-typing a code
+    // that was right the first time.
+    const refused = await join(store, created.code, card!);
+    expect(refused.status, "and the card stops opening it").toBe(403);
+    expect((refused.body as { error: string }).error).toBe("seat_removed");
   });
 });
 

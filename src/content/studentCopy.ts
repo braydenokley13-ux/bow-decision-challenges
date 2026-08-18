@@ -23,11 +23,19 @@ export const STUDENT_COPY = {
   join: {
     /* Shown where the class may offer a choice, in place of one world's story. It says what
        is about to happen and nothing about which world, because the student has not picked
-       one yet and a promise made here would be a promise to half of them. */
+       one yet and a promise made here would be a promise to half of them.
+
+       The lede used to open "Type the code your teacher put up" — which was true when this
+       screen was also the sign-in and became false the day it stopped being one. A student
+       reaching it has already signed in at /join, and being told to do the thing they just
+       did is the product not knowing where they are. */
     chooseKicker: "Before you start",
     chooseHeadline: "Two ways in. You pick one.",
-    chooseLede: "Type the code your teacher put up. Then you choose which one you want to run, and the money is yours to handle either way.",
-    privacy: "No name, no email, nothing about your real money. Your seat code is how your work gets back to your teacher.",
+    chooseLede: "Next you choose which one you want to run. The money is yours to handle either way, and either one answers the same question about you.",
+    /* What BOW itself stores, stated precisely, on a screen that is now showing the student a
+       name. The name is one their teacher typed about their own class; the account behind it
+       holds no personal information at all, and that distinction is the honest sentence. */
+    privacy: "The only name here is the one your teacher wrote on their class list. BOW never asks for your email, your birthday, or anything about your real money.",
     /* A student who arrived without a code used to meet a form they could not fill in and no
        way forward. One line, stated as a fact rather than an apology. */
     noCode: "No code? Your teacher gives it out at the start of the lesson.",
@@ -36,16 +44,27 @@ export const STUDENT_COPY = {
   /**
    * The world choice (§13.3).
    *
-   * The heading is in the student's voice and the context line is deliberately phrased as
-   * what the teacher wants to see rather than as what is being measured — it is the closest
-   * the student flow comes to naming the thing at all. The cards carry a title, a hook, the
-   * role and how long it takes, in a stable order, and nothing else: no difficulty label, no
-   * stars, no badge saying one of them is recommended. A student picking the story they like
-   * must not be picking the story BOW likes.
+   * The heading is in the student's voice, and the line under it says what is true of both
+   * cards and nothing else. It used to say *"Your teacher wants to see that you can build a
+   * budget that works"*, printed directly above a card offering Run the Pop-Up — which is not
+   * a budget, it is stock and spoilage priced in trays against a crowd, so half the room was
+   * told the wrong thing about the story they were one press from choosing. It also spoke for
+   * an adult BOW cannot speak for: a class can be created with no objective on it at all, and
+   * the product has no way to know what any teacher wants.
+   *
+   * What replaced it names the two things both worlds actually do — the money is the
+   * student's to move, and the moves are theirs to explain — and stops there. It does not
+   * describe a good answer. The whole reason there are two worlds is that a student who has
+   * worked out the shape of the answer is no longer making the decision, and a line at the
+   * door handing that shape over would give away more than either story ever could.
+   *
+   * The cards carry a title, a hook, the role and how long it takes, in a stable order, and
+   * nothing else: no difficulty label, no stars, no badge saying one of them is recommended. A
+   * student picking the story they like must not be picking the story BOW likes.
    */
   choose: {
     title: "Pick a world. Make it count.",
-    deck: "Your teacher wants to see that you can build a budget that works. Choose the challenge you want to try.",
+    deck: "In both, the money is yours to move and your choices are yours to explain. Pick the one you want to run.",
     role: "You are",
     length: "How long",
     minutes: "minutes",

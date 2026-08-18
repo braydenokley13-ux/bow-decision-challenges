@@ -6,7 +6,7 @@ import type { ChallengeAction } from "../domain/machine/actions";
 import type { WorldId } from "../domain/core/ids";
 import { clearAttemptFor, clearEveryAttempt, lastWorldPlayed, loadAttemptFor } from "../domain/io/persistence";
 import { useAttemptAutosave, useRunLock, useSingleFireDispatch } from "./attemptStore";
-import { PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
+import { forgetStudent } from "../platform/identity/token";
 import { Button } from "../components/primitives/Button";
 import { DEFAULT_WORLD_ID } from "../domain/scenario/registry";
 import { deliverWithRetry, type DeliveryState, type EvidenceTransport } from "../platform/evidence/transport";
@@ -97,15 +97,23 @@ export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT }: P
     // half-written defence from the abandoned run is the abandoned run.
     clearAttemptFor(activeWorldId);
     run.release();
-    window.location.assign("/");
+    // Back to the student's own screen rather than the front door. They are signed in, the
+    // work they just turned in is on it, and the front door's first question — do you have a
+    // class code — is one they answered twenty-five minutes ago.
+    window.location.assign("/home");
   }, [activeWorldId, run]);
 
   const handOver = useCallback(() => {
     clearEveryAttempt();
     run.release();
-    // Straight back to the join form rather than to the front door: the next person is here
-    // to do the work, and the one screen they need is the one asking for their seat.
-    window.location.assign(PLAN_UNDER_PRESSURE.route);
+    // The session goes with the attempt. Clearing one and keeping the other is the shared-cart
+    // failure with an extra step: the next student would sit down to a cleared board that was
+    // still signed in as the last one, and every decision they made would be filed under a
+    // name that is not theirs.
+    forgetStudent();
+    // Straight to the sign-in rather than the front door: the next person is here to do the
+    // work, and the one screen they need is the one that asks who they are.
+    window.location.assign("/join");
   }, [run]);
 
   const enterWorld = useCallback((worldId: WorldId) => setActiveWorldId(worldId), []);

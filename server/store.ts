@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { CLASS_RETENTION_DAYS, type Assignment, type ClassRecord, type SubmissionRecord } from "../src/platform/classes/types";
 import type {
   AttemptCheckpoint,
+  ClassJoinMode,
   RosterEntry,
   ShareOutSelection,
   StudentAccount,
@@ -32,6 +33,18 @@ export interface StoredClass extends ClassRecord {
    * key for, never inferred — a key in a browser is not proof of which account is holding it.
    */
   teacherId?: string;
+  /**
+   * How this class lets students in, decided when it is created and again the first time a
+   * teacher pastes a class list.
+   *
+   * It is stored rather than derived because the derivation was wrong in both directions: from
+   * "any roster rows at all", removing the last student flipped a named class back to
+   * type-your-own-name and let the person just removed walk back in; from "any live rows", the
+   * first student to name themselves in an open class turned it into a roster class holding one
+   * name that was not theirs. Absent on classes created before this existed, which fall back to
+   * reading the roster's own shape.
+   */
+  joinMode?: ClassJoinMode;
 }
 
 /** A teacher account with the two secrets that are never returned to anybody. */
@@ -44,6 +57,16 @@ export interface StoredTeacher extends TeacherAccount {
 /** A roster row with the join code stored as a hash, exactly like a password. */
 export interface StoredRosterEntry extends RosterEntry {
   joinCodeHash: string;
+  /**
+   * A keyed hash of the same code, used to find this row and never to admit anybody.
+   *
+   * The join resolves a seat from the card alone, which is what lets the class door stop
+   * publishing the class list — but `joinCodeHash` is scrypt at N=2^15 and trying it against
+   * every row would be up to sixty key derivations per sign-in, on one thread, with a whole
+   * class arriving at once. This narrows that to one row; the scrypt check still decides.
+   * Absent on rows written before it existed, which fall back to the scan.
+   */
+  joinCodeIndex?: string;
 }
 
 /** Which class a student holds a seat in. The index behind a student's own home screen. */
@@ -122,7 +145,9 @@ export interface ClassStore {
   /** Idempotent on (classCode, seatCode). An attempt has one live position, not a history. */
   putCheckpoint(record: AttemptCheckpoint): Promise<void>;
 
+  /** Every note this class holds, oldest first, each carrying an id even if it was stored without one. */
   listFeedback(code: string): Promise<TeacherFeedback[]>;
+  /** Idempotent on the note's own id: writing a note again edits it, and never lands on another one. */
   putFeedback(record: TeacherFeedback): Promise<void>;
 
   getShareOut(code: string): Promise<ShareOutSelection | null>;
@@ -135,7 +160,35 @@ export function emailKey(email: string): string {
 }
 
 const checkpointKey = (record: Pick<AttemptCheckpoint, "seatCode">) => record.seatCode;
-const feedbackKey = (record: Pick<TeacherFeedback, "seatCode" | "sessionId">) => `${record.seatCode}:${record.sessionId}`;
+
+/**
+ * Where one note is filed: its own id, and nothing composed out of what it is about.
+ *
+ * This used to be `${seatCode}:${sessionId}` — one slot per attempt — and that single line is
+ * the whole of the defect it caused. A teacher wrote a note, wrote a second note about the
+ * same piece of work the next morning, was answered `201` twice, and the store held one
+ * record containing only the second. The first was never read by the student it was written
+ * to and no longer existed anywhere.
+ */
+const feedbackKey = (record: Pick<TeacherFeedback, "id">) => record.id;
+
+/**
+ * A note as it comes back off a store written before feedback was a sequence.
+ *
+ * Records from the old model have no `id`, and they are read back carrying the old storage
+ * key as one — which is exactly where they already live, in every driver. So a note written
+ * last term is still delivered, still editable in place, and writing it back lands on the
+ * same file or field rather than forking into a duplicate. There is no migration step to run
+ * and nothing to lose if one never runs.
+ */
+function withFeedbackId(record: TeacherFeedback): TeacherFeedback {
+  return record.id ? record : { ...record, id: `${record.seatCode}:${record.sessionId}` };
+}
+
+/** Oldest first. A note that says "and check Week 5" is unreadable above the one it follows. */
+function byWhenWritten(a: TeacherFeedback, b: TeacherFeedback): number {
+  return a.at - b.at;
+}
 
 function submissionKey(record: Pick<SubmissionRecord, "seatCode" | "sessionId">): string {
   return `${record.seatCode}:${record.sessionId}`;
@@ -235,7 +288,7 @@ export function memoryStore(): ClassStore {
     putRosterEntry: (record) => { bucket(rosters, record.classCode).set(record.seatCode, record); return Promise.resolve(); },
     listCheckpoints: (code) => Promise.resolve([...bucket(checkpoints, code).values()].sort(bySeat)),
     putCheckpoint: (record) => { bucket(checkpoints, record.classCode).set(checkpointKey(record), record); return Promise.resolve(); },
-    listFeedback: (code) => Promise.resolve([...bucket(feedback, code).values()]),
+    listFeedback: (code) => Promise.resolve([...bucket(feedback, code).values()].map(withFeedbackId).sort(byWhenWritten)),
     putFeedback: (record) => { bucket(feedback, record.classCode).set(feedbackKey(record), record); return Promise.resolve(); },
     getShareOut: (code) => Promise.resolve(shareOuts.get(code) ?? null),
     putShareOut: (record) => { shareOuts.set(record.classCode, record); return Promise.resolve(); },
@@ -363,7 +416,7 @@ export function fileStore(root: string): ClassStore {
     listCheckpoints: async (code) => (await readFolder<AttemptCheckpoint>(code, "checkpoints")).sort(bySeat),
     putCheckpoint: (record) =>
       writeAtomic(join(root, record.classCode, "checkpoints", `${checkpointKey(record)}.json`), record),
-    listFeedback: (code) => readFolder<TeacherFeedback>(code, "feedback"),
+    listFeedback: async (code) => (await readFolder<TeacherFeedback>(code, "feedback")).map(withFeedbackId).sort(byWhenWritten),
     putFeedback: (record) => writeAtomic(join(root, record.classCode, "feedback", `${feedbackKey(record)}.json`), record),
     getShareOut: (code) => readJson<ShareOutSelection>(join(root, code, "shareout.json")),
     putShareOut: (record) => writeAtomic(join(root, record.classCode, "shareout.json"), record),
@@ -491,7 +544,7 @@ export function redisRestStore(url: string, token: string): ClassStore {
       await command("HSET", `checkpoints:${record.classCode}`, checkpointKey(record), JSON.stringify(record));
       await keepWithClass(`checkpoints:${record.classCode}`);
     },
-    listFeedback: (code) => readHash<TeacherFeedback>(`feedback:${code}`),
+    listFeedback: async (code) => (await readHash<TeacherFeedback>(`feedback:${code}`)).map(withFeedbackId).sort(byWhenWritten),
     putFeedback: async (record) => {
       await command("HSET", `feedback:${record.classCode}`, feedbackKey(record), JSON.stringify(record));
       await keepWithClass(`feedback:${record.classCode}`);

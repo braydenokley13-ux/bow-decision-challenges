@@ -282,8 +282,29 @@ describe("the season says which risk paid off and which one cost", () => {
       const untested = deposit({}, pressure(0, 3100));
       expect(covered.outcome).toBe("paid_off");
       expect(notEnough.outcome).toBe("fell_short");
-      expect(untested.outcome).toBe("no_effect");
+      // This used to expect "no effect", and the screen printed that heading directly above a
+      // sentence saying Avery had paid the full price rather than the deposit. Waiting is never
+      // free: the season that never tests the plan is the one where the extra bought room
+      // nobody needed, which is a cost with nothing back — not an absence of one.
+      expect(untested.outcome).toBe("cost_you");
       expect(new Set([covered.outcome, notEnough.outcome, untested.outcome]).size).toBe(3);
+    });
+
+    /**
+     * The invariant behind the fix above, applied to every verdict this world can produce.
+     *
+     * A student reads the heading before the sentence. A heading that contradicts the money in
+     * its own detail line teaches the wrong thing more effectively than no heading at all.
+     */
+    it("never heads a verdict 'no effect' over a detail that names money changing hands", () => {
+      for (const depositTaken of [false, true]) {
+        for (const week5 of [pressure(0, 3100), pressure(500, 1900), pressure(1200, 400), pressure(500, 1900, true)]) {
+          const read = deposit({ depositTaken }, week5);
+          if (read.outcome !== "no_effect") continue;
+          expect(read.detail, `${String(depositTaken)} / ${week5.shortfall} of ${week5.movable}`)
+            .not.toMatch(/paid .*more|cost .*less|instead of/);
+        }
+      }
     });
 
     it("names the price difference on every season, whichever way the call went", () => {

@@ -5,6 +5,7 @@ import { EducatorShell } from "./EducatorShell";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import type { ShareOutItem, ShareOutSelection } from "../platform/identity/types";
 import { useClassEvidence } from "./useClassEvidence";
+import { classRoll } from "./analysis";
 import { seatLabel, seatNames } from "./names";
 import { shareOutCandidates, shareOutSlides, type ShareOutCandidate, type ShareOutSlide } from "./shareOut";
 import type { AttributedSubmission } from "../platform/classes/types";
@@ -20,8 +21,15 @@ import { worldOfSubmission } from "./objectiveResults";
  *
  * The teacher is shown candidates *with BOW's reason for offering each one*, chooses at most
  * five, writes their own note about why, and puts them in an order. Then there is a present
- * mode: one item at a time, big enough to read from the back, driven by arrow keys, with the
- * teacher's own note visible to them and to nobody else.
+ * mode: one item at a time, sized for a room rather than for a laptop, driven by arrow keys.
+ *
+ * **Present mode is the projector, so nothing private is in it.** There is no second screen
+ * here: what this renders is what thirty students are looking at. The teacher's note — the
+ * field labelled *for you, not the room* — stays on the planning page they typed it on and is
+ * not part of the slide at all; `ShareOutSlide` does not carry it, so no future edit to this
+ * component can put it back on a wall by accident. It starts empty rather than pre-filled
+ * with BOW's own sentence, because a field that says it holds the teacher's reason has to
+ * hold the teacher's reason.
  *
  * Anonymity is the default and it is real anonymity. A seat number is the class's own
  * identifier for a person — every student in the room can read it off the board and half of
@@ -91,9 +99,14 @@ export function ShareOut() {
   const { analysis, submissions, record, roster } = state;
   const names = seatNames(roster);
   const nameFor = (seatCode: string) => seatLabel(seatCode, names);
-  const items = selection?.items ?? [];
+  // The same class the class page counts: seats the teacher has not removed, one attempt
+  // each. A share-out that offered a seat the roll no longer has would be putting a student
+  // the teacher took out of the room onto the wall of it.
+  const roll = classRoll({ rows: analysis.rows, roster });
+  const inClass = new Set(roll.rows.map((row) => row.sessionId));
   const named = selection?.named ?? false;
-  const candidates = shareOutCandidates(analysis.rows, submissions);
+  const items = (selection?.items ?? []).filter((item) => inClass.has(item.sessionId));
+  const candidates = shareOutCandidates(roll.rows, submissions);
   const slides = shareOutSlides({ items, submissions, named, nameFor, summaryFor: summaryOf });
 
   if (presenting && slides.length > 0) {
@@ -106,7 +119,10 @@ export function ShareOut() {
       ? items.filter((item) => item.sessionId !== candidate.sessionId).map((item, index) => ({ ...item, order: index }))
       : items.length >= MAX_ITEMS
         ? items
-        : [...items, { sessionId: candidate.sessionId, seatCode: candidate.seatCode, note: candidate.reason, order: items.length }];
+        // Empty, not pre-filled. BOW's reason for offering this one is already on the card
+        // beside it; copying it into a field labelled as the teacher's own would make the
+        // machine's sentence read as theirs.
+        : [...items, { sessionId: candidate.sessionId, seatCode: candidate.seatCode, note: "", order: items.length }];
     void save(next, named);
   };
 
@@ -133,7 +149,7 @@ export function ShareOut() {
         </p>
       </header>
 
-      {analysis.rows.length === 0 ? (
+      {roll.rows.length === 0 ? (
         <p className="class-state">Nothing has been turned in yet, so there is nothing to show.</p>
       ) : (
         <>
@@ -155,6 +171,7 @@ export function ShareOut() {
                         <input
                           value={item.note}
                           maxLength={200}
+                          placeholder="Your own reason. Stays on this page."
                           onChange={(event) => {
                             const note = event.target.value;
                             void save(items.map((entry) => entry.sessionId === item.sessionId ? { ...entry, note } : entry), named);
@@ -232,12 +249,31 @@ function summaryOf(submission: AttributedSubmission): string {
 }
 
 /**
+ * Type for a room, not for a laptop.
+ *
+ * The rest of this product is read at arm's length; this screen is read from the back row of
+ * a classroom over a projector, which is a different problem and needs different numbers. On
+ * a 1920 × 1080 projector the frame used to carry a 12px counter and 14–15px controls beside
+ * a 38px quote — three sizes on one wall, two of which nobody past the second row can read.
+ *
+ * They are set here, on the frame, rather than in the shared stylesheet, because they are
+ * properties of this one surface's viewing distance and of nothing else in the product.
+ */
+const ROOM = {
+  counter: { fontSize: "1.5rem" },
+  control: { fontSize: "1.5rem" },
+  summary: { fontSize: "1.75rem" },
+} as const;
+
+/**
  * The projector.
  *
  * One item at a time, at a size that reads from the back of a room, driven by the arrow keys
- * so a teacher standing at the front is not hunting for a control. The teacher's own note is
- * on screen in small type at the bottom — it is theirs, it is why they picked this one, and
- * it never becomes part of what the room is looking at.
+ * so a teacher standing at the front is not hunting for a control.
+ *
+ * What is **not** here is the teacher's note. This component renders what the room sees, the
+ * note is the teacher's own, and there is no second screen to put it on — so it is not on the
+ * slide, not in `ShareOutSlide`, and not reachable from here at all.
  */
 function Present({ slides, onClose }: { slides: readonly ShareOutSlide[]; onClose: () => void }) {
   const [at, setAt] = useState(0);
@@ -256,22 +292,21 @@ function Present({ slides, onClose }: { slides: readonly ShareOutSlide[]; onClos
   return (
     <main className="present" aria-live="polite">
       <header className="present__bar">
-        <span>{at + 1} of {slides.length}</span>
-        <Button variant="quiet" onClick={onClose}>Done</Button>
+        <span style={ROOM.counter}>{at + 1} of {slides.length}</span>
+        <Button variant="quiet" style={ROOM.control} onClick={onClose}>Done</Button>
       </header>
       <section className="present__slide">
         <p className="present__title">{slide.title}</p>
         {slide.quote
           ? <blockquote className="present__quote">{slide.quote}</blockquote>
           : <p className="present__quote present__quote--none">This student did not write an explanation.</p>}
-        <p className="present__summary">{slide.summary}</p>
+        <p className="present__summary" style={ROOM.summary}>{slide.summary}</p>
       </section>
       <footer className="present__foot">
         <div className="present__moves">
-          <Button variant="secondary" aria-disabled={at === 0} onClick={() => setAt(Math.max(0, at - 1))}>← Back</Button>
-          <Button variant="primary" aria-disabled={at === slides.length - 1} onClick={() => setAt(Math.min(slides.length - 1, at + 1))}>Next →</Button>
+          <Button variant="secondary" style={ROOM.control} aria-disabled={at === 0} onClick={() => setAt(Math.max(0, at - 1))}>← Back</Button>
+          <Button variant="primary" style={ROOM.control} aria-disabled={at === slides.length - 1} onClick={() => setAt(Math.min(slides.length - 1, at + 1))}>Next →</Button>
         </div>
-        <p className="present__note">{slide.note}</p>
       </footer>
     </main>
   );

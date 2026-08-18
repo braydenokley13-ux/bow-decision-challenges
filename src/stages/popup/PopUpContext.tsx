@@ -1,8 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, type Dispatch, type PropsWithChildren } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type Dispatch, type PropsWithChildren } from "react";
 import { clearAttemptFor, clearEveryAttempt, loadAttemptFor } from "../../domain/io/persistence";
 import { useAttemptAutosave, useSingleFireDispatch } from "../../app/attemptStore";
-import { PLAN_UNDER_PRESSURE } from "../../platform/challenges/registry";
 import { createPopUpState, popUpReducer, type PopUpAction, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
 import { deliverWithRetry, type DeliveryState, type EvidenceTransport } from "../../platform/evidence/transport";
 
@@ -84,8 +83,14 @@ export function PopUpProvider({ children, seed, transport }: PropsWithChildren<{
   // pieces of work, and giving them one id would make the class service's record ambiguous
   // about which one a submission came from.
   const started = state.meta.sessionId !== "";
+  // The ref, not the flag, is what stops this happening twice. React runs an effect twice on
+  // mount in development, and both runs read the same `started` from the same render — so the
+  // market opened with two SESSION_STARTED events in its log and a session id that did not
+  // match the one on the first of them.
+  const starting = useRef(false);
   useEffect(() => {
-    if (started) return;
+    if (started || starting.current) return;
+    starting.current = true;
     dispatch({
       type: "SESSION_STARTED",
       sessionId: crypto.randomUUID(),
@@ -124,7 +129,9 @@ export function PopUpProvider({ children, seed, transport }: PropsWithChildren<{
 
   const handOver = useCallback(() => {
     clearEveryAttempt();
-    window.location.assign(PLAN_UNDER_PRESSURE.route);
+    // Same door as the other world's, for the same reason: the next person at this machine
+    // has to be able to say who they are before anything else happens.
+    window.location.assign("/");
   }, []);
 
   const value = useMemo(

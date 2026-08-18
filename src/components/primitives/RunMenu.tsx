@@ -38,9 +38,11 @@ export function RunMenu({ classCode, seatCode, submitted, onLeave }: RunMenuProp
   const named = classCode !== "" && seatCode !== "";
   return (
     <details className="run-menu" onToggle={() => setConfirming(false)}>
-      {/* The seat is the summary rather than a word like "menu", because the first job of
-          this control is to tell a student whose work is on the screen in front of them. */}
-      <summary aria-label={named ? `This run: class ${classCode}, seat ${seatCode}` : "This run has no seat yet"}>
+      {/* The seat is the summary rather than a word like "menu", because the first job of this
+          control is to tell a student whose work is on the screen in front of them. The spoken
+          name contains the visible one word for word, so a student driving this by voice can
+          ask for what they can see. */}
+      <summary aria-label={named ? `This run: ${classCode} · seat ${seatCode}` : "This run has no seat yet"}>
         {named ? `${classCode} · seat ${seatCode}` : "No seat yet"}
       </summary>
       <div>

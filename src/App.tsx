@@ -1,8 +1,8 @@
-import { Link, Navigate, Route, Routes } from "react-router-dom";
+import { Link, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { ChallengeProvider } from "./app/ChallengeContext";
 import { AppMark } from "./components/primitives/AppMark";
 import { StudentChallenge } from "./stages/StudentChallenge";
-import { ClassOverview, ConceptDrilldown, EducatorGuide, ReasoningReview, StandardsView, StudentEvidence, TeachingCompanion } from "./educator/EducatorPages";
+import { EducatorGuide, TeachingCompanion } from "./educator/EducatorPages";
 import { MyClasses } from "./educator/MyClasses";
 import { AssignFlow, ObjectiveDetail, ObjectiveList } from "./educator/ObjectivePages";
 import { ObjectiveMap } from "./educator/ObjectiveMap";
@@ -14,6 +14,13 @@ import { PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
 import { StudentJoin } from "./student/Join";
 import { StudentHome } from "./student/Home";
 import { PLAYABLE_WORLDS } from "./domain/scenario/registry";
+import { DEMO_CLASS_CODE } from "./fixtures/demoClass";
+
+/** A seat-scoped demo route redirected to its real-class equivalent, param and all. */
+function DemoStudentRedirect() {
+  const { seatCode } = useParams();
+  return <Navigate to={`/educator/class/${DEMO_CLASS_CODE}/students/${seatCode}`} replace />;
+}
 
 /**
  * The front door, and the one screen that has to be true of the whole product.
@@ -99,17 +106,27 @@ export function App() {
       <Route path="/educator/class/:code/debrief" element={<Debrief />} />
       {/* Select, sequence, project. Nothing is shown to a room unless a teacher chose it. */}
       <Route path="/educator/class/:code/share-out" element={<ShareOut />} />
-      {/* The fixture class, behind a route that says so. It exists to show an educator the
-          shape of the evidence before they run one, and it can never be reached from a
-          real class's URL. */}
-      <Route path="/educator/demo" element={<ClassOverview />} />
-      <Route path="/educator/demo/concepts/:conceptId" element={<ConceptDrilldown />} />
-      <Route path="/educator/demo/students/:seatCode" element={<StudentEvidence />} />
-      <Route path="/educator/demo/students/:seatCode/reasoning" element={<ReasoningReview />} />
-      <Route path="/educator/demo/standards" element={<StandardsView />} />
-      {/* The routes the demo shipped on. */}
+      {/* The sample class. `DEMO_CLASS_CODE` cannot be a real class's code — real codes are
+          five characters from `CODE_ALPHABET`, this one is four — so this is the exact same
+          `RealClassOverview` a real class opens, fed evidence `useClassEvidence` builds from
+          `src/fixtures/demoClass.ts` instead of the service. There is no separate demo
+          component any more: a teacher who learns this screen has learned the one a real
+          class actually shows them. */}
+      <Route path="/educator/demo" element={<Navigate to={`/educator/class/${DEMO_CLASS_CODE}`} replace />} />
+      {/* Four routes the old bespoke demo shipped on, none of which has a real-class
+          equivalent at that exact address — a real class has no per-concept drilldown, no
+          sub-route for scoring reasoning, and no standards page scoped to one class. Rather
+          than 404 a bookmark or a link in a PD deck, each redirects to the real surface that
+          actually answers the question it was asking. */}
+      <Route path="/educator/demo/concepts/:conceptId" element={<Navigate to={`/educator/class/${DEMO_CLASS_CODE}`} replace />} />
+      <Route path="/educator/demo/students/:seatCode" element={<DemoStudentRedirect />} />
+      {/* Reasoning is a tab on the student page now, not a page of its own, so this lands on
+          the same seat the old reasoning screen was scoped to. */}
+      <Route path="/educator/demo/students/:seatCode/reasoning" element={<DemoStudentRedirect />} />
+      <Route path="/educator/demo/standards" element={<Navigate to="/educator/objectives" replace />} />
+      {/* The routes the demo shipped on before that. */}
       <Route path="/educator/class" element={<Navigate to="/educator/demo" replace />} />
-      <Route path="/educator/class/standards" element={<Navigate to="/educator/demo/standards" replace />} />
+      <Route path="/educator/class/standards" element={<Navigate to="/educator/objectives" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

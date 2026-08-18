@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
-import { createClass, createClassKeyFor, gotoFreshChallenge, noHorizontalOverflow, noSeriousAxeViolations } from "./flow";
+import { createClass, createClassKeyFor, gotoFreshChallenge, noHorizontalOverflow, noSeriousAxeViolations, seatOnRoster, signIn } from "./flow";
 import { PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 import { POP_UP_NUMBERS as N } from "../src/domain/scenario/worlds/food-truck/numbers";
 import { cashToPlan, orderCost, owedUpFront, swapBill } from "../src/domain/scenario/worlds/food-truck/economy";
@@ -43,9 +43,19 @@ async function classWithOneWorld(request: APIRequestContext, worldId: string): P
   return created.code;
 }
 
+/**
+ * In through the door a student actually uses: their teacher's class code, their own name off
+ * the roster, the code on their card — and then the run.
+ *
+ * It used to be two boxes on the challenge screen itself. That door is gone, and it is worth
+ * saying why the change reaches this file: a rostered class refuses work from somebody who has
+ * not signed in, so a suite that took the old shortcut would have been proving the market runs
+ * for a student the service would then have turned away at submission.
+ */
 async function join(page: Page, classCode: string, seatCode: string) {
-  await page.getByLabel("Class code").fill(classCode);
-  await page.getByLabel("Seat", { exact: true }).fill(seatCode);
+  const card = await seatOnRoster(page, classCode, seatCode);
+  await signIn(page, { ...card, classCode });
+  await page.getByRole("link", { name: /^(Start|Carry on)$/ }).click();
   await page.getByRole("button", { name: /Start the eight weeks|Go in/ }).click();
 }
 
@@ -80,9 +90,18 @@ async function buildOpeningPlan(page: Page, plan: { stock: number; cushion: numb
 
   await setLine(page, POP_UP_SCENARIO.lines.stock.label, plan.stock);
   await setLine(page, POP_UP_SCENARIO.lines.cushion.label, plan.cushion);
-  const rest = cashToPlan(N, SPOT.id) - plan.stock - plan.cushion;
-  await page.getByRole("button", { name: `${POP_UP_SCENARIO.lines.cut.label} takes $${rest.toLocaleString("en-US")}` }).click();
+  await restLine(page, "cut").click();
   await page.getByRole("button", { name: COPY.plan.commit }).click();
+}
+
+/**
+ * The card that sends what is left to one line, found by the line it feeds.
+ *
+ * Its wording carries the amount and, since the shortcut started saying what it would leave
+ * the truck cooking with, a tray count as well — neither of which a test should be restating.
+ */
+function restLine(page: Page, line: "stock" | "cushion" | "cut") {
+  return page.locator(`.popup-closer__choice button[data-line="${line}"]`);
 }
 
 async function orderTrays(page: Page, trays: number) {
@@ -125,14 +144,44 @@ test.describe("Run the Pop-Up", () => {
 
     // 5 — the opening board. It refuses a plan that does not add up, and says so.
     await expect(page.getByRole("heading", { name: COPY.plan.title })).toBeVisible();
+
+    // Before a dollar is placed, every card says what the truck would be left cooking with if
+    // that line took the lot. Sending it all to a line that is not stock is a legal plan that
+    // opens four Saturdays with an empty window, and the card says so before it is pressed
+    // rather than four Saturdays later.
+    await expect(restLine(page, "cut")).toHaveAccessibleName(new RegExp(`0 ${COPY.plan.lineNotes.stock}`));
+    await expect(restLine(page, "cut")).toHaveAttribute("data-warn", "true");
+    await expect(restLine(page, "stock")).toHaveAttribute("data-warn", "false");
+
     await setLine(page, POP_UP_SCENARIO.lines.stock.label, 600);
     await page.getByRole("button", { name: COPY.plan.check }).click();
     await expect(page.getByRole("heading", { name: COPY.plan.title })).toBeVisible();
     await expect(page.locator(".popup-commit")).toContainText(COPY.plan.unassigned);
 
+    // The refusal is said out loud, not left to a figure that has not moved. A student who
+    // presses the only button on the screen and is answered by nothing has no way to tell
+    // whether the application is broken or they are.
+    await expect(page.getByRole("alert")).toContainText(COPY.plan.unassigned);
+
+    // Two more refused saves open the way out of a board a student cannot balance: the
+    // step-by-step help, and one split that adds up. This world had the affordance built and
+    // never wired, so ten failed attempts produced neither — in the world whose first screen
+    // is a division problem. The waits are deliberate: a second identical press inside a
+    // double-click is one press, which is how the evidence log stays a record of decisions.
+    for (let refused = 0; refused < 2; refused += 1) {
+      await page.waitForTimeout(450);
+      await page.getByRole("button", { name: COPY.plan.check }).click();
+    }
+    await expect(page.getByRole("button", { name: COPY.plan.help.open })).toBeVisible();
+    await expect(page.getByRole("button", { name: COPY.plan.help.supply })).toBeVisible();
+
     await setLine(page, POP_UP_SCENARIO.lines.cushion.label, 400);
     const rest = cashToPlan(N, SPOT.id) - 1000;
-    await page.getByRole("button", { name: `${POP_UP_SCENARIO.lines.cut.label} takes $${rest.toLocaleString("en-US")}` }).click();
+    // With six hundred already on the stock line the same card is no longer a warning, and it
+    // says that too: ten trays, and the amount it would take.
+    await expect(restLine(page, "cut")).toHaveAccessibleName(new RegExp(`\\$${rest.toLocaleString("en-US")} 10 ${COPY.plan.lineNotes.stock}`));
+    await expect(restLine(page, "cut")).toHaveAttribute("data-warn", "false");
+    await restLine(page, "cut").click();
     await expect(page.locator(".popup-commit")).toContainText(COPY.plan.balanced);
     await page.getByRole("button", { name: COPY.plan.commit }).click();
 
@@ -182,7 +231,16 @@ test.describe("Run the Pop-Up", () => {
     await expect(page.locator(".writeup__ask")).toContainText(POP_UP_SCENARIO.writeUp.note);
     await page.locator(".writeup__tiles button").nth(0).click();
     await page.locator(".writeup__tiles button").nth(1).click();
-    await page.getByLabel(COPY.writeUp.field).fill("I kept the cushion at four hundred because the generator is rented and rented things break. That is where the swap money came from.");
+    const answer = "I kept the cushion at four hundred because the generator is rented and rented things break. That is where the swap money came from.";
+    await page.getByLabel(COPY.writeUp.field).fill(answer);
+
+    // The answer a person reads and marks is the last thing in the run and it used to be the
+    // only thing never written down until the submit button: a reload here threw away the
+    // whole paragraph and every number picked, and left a submit button that could not be
+    // pressed. It is a draft now, and drafts survive the page going away.
+    await page.reload();
+    await expect(page.getByLabel(COPY.writeUp.field)).toHaveValue(answer);
+    await expect(page.locator('.writeup__tiles button[aria-pressed="true"]')).toHaveCount(2);
     await page.getByRole("button", { name: COPY.writeUp.submit }).click();
 
     await expect(page.getByRole("heading", { name: COPY.submitted.sent })).toBeVisible({ timeout: 15_000 });
@@ -242,11 +300,13 @@ test.describe("Run the Pop-Up", () => {
   test("the choice screen and the opening board work with a keyboard only", async ({ page, request }) => {
     const classCode = await classWithChoice(request);
     await gotoFreshChallenge(page);
-    const codeField = page.getByLabel("Class code");
-    await codeField.focus();
-    await codeField.fill(classCode);
-    await page.keyboard.press("Tab");
-    await page.keyboard.type("6");
+    // The sign-in has its own keyboard-only test next door, so this one starts where the
+    // question this world adds begins: the choice, and the board behind it.
+    const card = await seatOnRoster(page, classCode, "6");
+    await signIn(page, { ...card, classCode });
+    const start = page.getByRole("link", { name: /^(Start|Carry on)$/ });
+    await start.focus();
+    await page.keyboard.press("Enter");
     const enter = page.getByRole("button", { name: /Start the eight weeks|Go in/ });
     await enter.focus();
     await enter.press("Enter");
@@ -328,11 +388,13 @@ test.describe("Run the Pop-Up", () => {
       await page.setViewportSize(viewport);
       await gotoFreshChallenge(page);
 
-      // The join card leads at narrow widths: the one thing a student has to do is on screen.
-      await expect(page.getByRole("button", { name: /Start the eight weeks|Go in/ })).toBeInViewport();
+      // The way in leads at narrow widths: the one thing a student has to do is on screen.
+      await expect(page.getByRole("link", { name: /class code/i }).first()).toBeInViewport();
       await noHorizontalOverflow(page);
 
-      await join(page, classCode, viewport.width === 640 ? "8" : "9");
+      // Seats in ascending order: the roster hands them out in order, so asking for a lower
+      // number after a higher one asks for a seat that is already there.
+      await join(page, classCode, viewport.width === 640 ? "9" : "8");
       await expect(page.locator(".worldcard")).toHaveCount(2);
       // Both cards fit a Chromebook. On a phone they stack, so the first card's action is on
       // screen and the second card's title is under it — a list, not a hidden option.
@@ -365,6 +427,9 @@ test.describe("the route the pop-up lives on", () => {
     // No new route ships with the second world: the shell picks the world, so a class code
     // and a bookmark keep working exactly as they did.
     await page.goto(PLAN_UNDER_PRESSURE.route);
+    // With no session it hands the student to the one door there is, which is the same
+    // behaviour for both worlds — the route itself never names one.
     await expect(page.getByLabel("Class code")).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe("/join");
   });
 });

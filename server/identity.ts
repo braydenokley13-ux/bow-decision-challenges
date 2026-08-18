@@ -3,20 +3,21 @@ import {
   IDENTITY_ERROR_MESSAGES,
   MAX_DISPLAY_NAME,
   MAX_FEEDBACK_LENGTH,
+  MAX_FEEDBACK_NOTES,
   MAX_ROSTER_SIZE,
   OWN_DEVICE_SESSION_DAYS,
   SHARED_DEVICE_SESSION_HOURS,
   TEACHER_SESSION_DAYS,
   type AttemptCheckpoint,
+  type ClassDoor,
   type ClassJoinMode,
   type DeviceClass,
   type IdentityErrorCode,
   type JoinCard,
-  type RosterChoice,
   type ShareOutItem,
   type ShareOutSelection,
 } from "../src/platform/identity/types";
-import { hashSecret, newId, newRecoveryCode, readToken, signToken, verifySecret } from "./crypto";
+import { hashSecret, lookupIndex, newId, newRecoveryCode, readToken, signToken, verifySecret } from "./crypto";
 import type { ClassStore, StoredClass, StoredRosterEntry, StoredTeacher } from "./store";
 
 /**
@@ -67,17 +68,40 @@ export function identityFail(status: number, error: IdentityErrorCode): ApiRespo
 const WINDOWS = new Map<string, { count: number; resetAt: number }>();
 
 export function withinRate(key: string, limit: number, windowMs: number, now: number): boolean {
+  spendRate(key, windowMs, now);
+  return (WINDOWS.get(key)?.count ?? 1) <= limit;
+}
+
+/**
+ * Whether this caller is still under the ceiling, **without** spending anything.
+ *
+ * The pair of this and `spendRate` exists because charging every attempt is wrong wherever
+ * the legitimate traffic and the attack look the same at the door but not at the answer. A
+ * class signing in is thirty correct cards; an attack is a thousand wrong ones. Counting only
+ * the wrong ones is what lets the ceiling be low enough to matter and high enough to survive
+ * a room.
+ */
+export function underRate(key: string, limit: number, windowMs: number, now: number): boolean {
+  const found = WINDOWS.get(key);
+  if (!found || found.resetAt <= now) return true;
+  return found.count < limit;
+}
+
+/** Charges one attempt against a window, opening it if this is the first. */
+export function spendRate(key: string, windowMs: number, now: number): void {
   const found = WINDOWS.get(key);
   if (!found || found.resetAt <= now) {
     WINDOWS.set(key, { count: 1, resetAt: now + windowMs });
     // The map is bounded by sweeping expired windows whenever it grows past a class-sized
     // number of callers; nothing here should hold memory for a lesson that ended.
     if (WINDOWS.size > 5000) for (const [entry, value] of WINDOWS) if (value.resetAt <= now) WINDOWS.delete(entry);
-    return true;
+    return;
   }
   found.count += 1;
-  return found.count <= limit;
 }
+
+/** Ten minutes, named because the message a locked-out student reads has to say the same thing. */
+export const JOIN_WINDOW_MS = 10 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Sessions
@@ -173,11 +197,30 @@ export function cleanDisplayName(raw: unknown): string | null {
   return cleaned.length > 0 ? cleaned : null;
 }
 
-/** Roster rows a student may see: labels and whether the seat is taken. No ids, no codes. */
-export function rosterChoices(entries: readonly StoredRosterEntry[]): RosterChoice[] {
-  return entries
-    .filter((entry) => !entry.removedAt)
-    .map((entry) => ({ seatCode: entry.seatCode, displayName: entry.displayName, claimed: entry.studentId !== null }));
+/**
+ * A note's words, or the answer to send back instead of storing them.
+ *
+ * Over-long input is **refused**, never trimmed. A 16,200-character note used to be cut to 400
+ * characters mid-word and answered `201`: the teacher was told their note had been delivered,
+ * the student read a fragment that stopped mid-sentence, and nothing on either screen said
+ * anything had happened. A rejected note is still in the teacher's hands. A truncated one is
+ * gone, and neither person knows it.
+ */
+function readFeedbackBody(raw: unknown): string | ApiResponse {
+  const body = typeof raw === "string" ? raw.trim() : "";
+  if (body.length === 0) {
+    return { status: 400, body: { error: "bad_request", message: "Write something for them to read." } };
+  }
+  if (body.length > MAX_FEEDBACK_LENGTH) {
+    return {
+      status: 400,
+      body: {
+        error: "bad_request",
+        message: `That note is ${body.length} characters. The limit is ${MAX_FEEDBACK_LENGTH} — shorten it and send it again.`,
+      },
+    };
+  }
+  return body;
 }
 
 /** The lowest seat number nobody on this roster holds. Seats are read down a list, so they stay dense. */
@@ -349,9 +392,14 @@ export async function handleIdentityRequest(
       const checkpoints = await store.listCheckpoints(seat.classCode);
       const submissions = await store.listSubmissions(seat.classCode);
       const mySubmissions = submissions.filter((entry) => entry.seatCode === seat.seatCode);
+      // Every note this seat's work has drawn, oldest first, minus the ones the teacher took
+      // back. Oldest first because notes about one attempt are written as a sequence — "and
+      // check Week 5" is unreadable printed above the note it was written after — and because
+      // a student who has already read the first two should find the new one where new things
+      // go. It used to be one note: the newest, because the store only ever kept one.
       const feedback = (await store.listFeedback(seat.classCode))
-        .filter((entry) => entry.seatCode === seat.seatCode)
-        .sort((a, b) => b.at - a.at);
+        .filter((entry) => entry.seatCode === seat.seatCode && !entry.deletedAt)
+        .sort((a, b) => a.at - b.at);
       const checkpoint = checkpoints.find((entry) => entry.seatCode === seat.seatCode);
       return {
         classCode: record.code,
@@ -369,7 +417,13 @@ export async function handleIdentityRequest(
           submittedAt: entry.submittedAt,
           worldId: entry.log[0]?.worldId ?? null,
         })),
-        feedback: feedback.map((entry) => ({ body: entry.body, at: entry.at, sessionId: entry.sessionId })),
+        feedback: feedback.map((entry) => ({
+          id: entry.id,
+          body: entry.body,
+          at: entry.at,
+          sessionId: entry.sessionId,
+          ...(entry.editedAt ? { editedAt: entry.editedAt } : {}),
+        })),
       };
     }));
     return { status: 200, body: { classes: rows.filter((row) => row !== null) } };
@@ -439,7 +493,14 @@ export async function handleIdentityRequest(
         },
       };
     }
-    return { status: 200, body: { roster: rosterChoices(roster), joinMode: joinModeOf(record, roster), label: record.label } };
+    // Everybody else gets the two facts a student needs to get in, and no names.
+    //
+    // This used to answer any five-character code with the whole class list. A class code is
+    // written on a whiteboard, read aloud across a room, photographed and typed into group
+    // chats — so that published a roster of children's first names, and the class label, to
+    // anyone who had ever been in the room or seen a picture of one. The product did not need
+    // it: a card is the proof of who somebody is, and one card resolves to exactly one name.
+    return { status: 200, body: { label: record.label, joinMode: joinModeOf(record, roster) } satisfies ClassDoor };
   }
 
   // -- POST /classes/:code/roster — a teacher pastes their class list and gets cards back. --
@@ -457,6 +518,10 @@ export async function handleIdentityRequest(
     if (existing.filter((entry) => !entry.removedAt).length + cleaned.length > MAX_ROSTER_SIZE) {
       return identityFail(400, "roster_full");
     }
+    // Pasting a class list is what makes this a roster class, and it is recorded on the class
+    // rather than inferred from the rows — so removing every name later does not reopen the
+    // door to whoever was just taken off the list.
+    if (record.joinMode !== "roster") await store.putClass({ ...record, joinMode: "roster" });
     const cards: JoinCard[] = [];
     let roster = existing;
     for (const displayName of cleaned) {
@@ -471,6 +536,7 @@ export async function handleIdentityRequest(
         studentId: null,
         addedAt: now,
         joinCodeHash: await hashSecret(joinCode),
+        joinCodeIndex: lookupIndex(await store.sessionSecret(), joinCode),
       };
       await store.putRosterEntry(entry);
       roster = [...roster, entry];
@@ -498,7 +564,12 @@ export async function handleIdentityRequest(
     // seat, and a claimedAt from the student who lost it would read as this one signing in.
     const rest = { ...entry };
     delete rest.claimedAt;
-    await store.putRosterEntry({ ...rest, studentId: null, joinCodeHash: await hashSecret(joinCode) });
+    await store.putRosterEntry({
+      ...rest,
+      studentId: null,
+      joinCodeHash: await hashSecret(joinCode),
+      joinCodeIndex: lookupIndex(await store.sessionSecret(), joinCode),
+    });
     return { status: 200, body: { card: { seatCode, displayName: entry.displayName, joinCode } satisfies JoinCard } };
   }
 
@@ -520,30 +591,41 @@ export async function handleIdentityRequest(
 
   // -- POST /classes/:code/join — the fifteen seconds a student spends getting in. --
   if (request.method === "POST" && third === "join") {
-    if (!withinRate(`join:${clientId}:${code}`, 40, 10 * 60 * 1000, now)) return identityFail(429, "too_many_attempts");
+    // Only wrong answers are counted.
+    //
+    // This window exists for one thing: a script grinding through five-character card codes.
+    // It used to charge every attempt, including the successful ones, at forty per ten minutes
+    // per class — and a class is a room that arrives at once, so thirty students signing in
+    // plus ten typos locked the rest of the room out of the lesson. A correct card is not
+    // evidence of an attack and no longer spends anything; a hundred and twenty wrong ones in
+    // ten minutes against one class is still nowhere near the code space.
+    const attempts = `join:${clientId}:${code}`;
+    if (!underRate(attempts, 120, JOIN_WINDOW_MS, now)) return identityFail(429, "too_many_attempts");
     const record = await store.getClass(code);
     if (!record || record.expiresAt <= now) return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
     const roster = await store.listRoster(code);
     const live = roster.filter((entry) => !entry.removedAt);
-    // A student who is already signed in and joining a second class keeps the same account.
-    // That is the whole of "one identity across classes" — there is nothing else to it.
-    const caller = await callerOf(request.headers, context);
-    const studentId = caller?.kind === "student" && (await store.getStudent(caller.id)) ? caller.id : null;
     // Asked once, in one plain question, and answered "shared" when nobody says otherwise.
     // A cart Chromebook is the normal case in the rooms this runs in, and a session measured
     // in weeks on one is how the next student ends up inside the last one's attempt.
     const device: DeviceClass = request.body.device === "own" ? "own" : "shared";
+    const joinCode = typeof request.body.joinCode === "string" ? request.body.joinCode.trim().toUpperCase() : "";
+    const openClass = joinModeOf(record, roster) === "open";
 
-    if (joinModeOf(record, roster) === "roster") {
-      const seatCode = normaliseSeatCode(typeof request.body.seatCode === "string" ? request.body.seatCode : "");
-      const joinCode = typeof request.body.joinCode === "string" ? request.body.joinCode.trim().toUpperCase() : "";
-      const entry = live.find((row) => row.seatCode === seatCode);
-      if (!entry) return identityFail(404, "seat_not_found");
-      // The card is the proof of who this is, so a seat somebody already holds is opened by
-      // the same card rather than refused — a student on a second device is the common case,
-      // and a student whose card was taken is a conversation with their teacher, not a lockout.
-      if (!(await verifySecret(joinCode, entry.joinCodeHash))) return identityFail(401, "bad_credentials");
-      const claimed = await claim(store, entry, studentId, now);
+    // A card, presented. This is the only way into a roster class, and it is also how a student
+    // in an open class comes back after signing out — so it is tried first either way.
+    if (joinCode) {
+      const entry = await seatForCard(store, live, joinCode);
+      if (!entry) {
+        // A card that is genuinely theirs, for a seat their teacher took off the list. Telling
+        // them "that did not match" sends a child off to re-check a code that is perfectly
+        // correct; it is also no disclosure, because anyone reading it has already presented a
+        // valid card and a removed seat cannot be signed into. Everything else is one answer.
+        const removed = await seatForCard(store, roster.filter((row) => row.removedAt), joinCode);
+        spendRate(attempts, JOIN_WINDOW_MS, now);
+        return removed ? identityFail(403, "seat_removed") : identityFail(401, "bad_credentials");
+      }
+      const claimed = await claim(store, entry, now);
       return {
         status: 200,
         body: {
@@ -555,13 +637,20 @@ export async function handleIdentityRequest(
       };
     }
 
+    // No card. A roster class has nothing else to offer: every seat in it belongs to a name
+    // the teacher wrote, and a student without their card needs their teacher, not a form.
+    if (!openClass) {
+      spendRate(attempts, JOIN_WINDOW_MS, now);
+      return identityFail(401, "bad_credentials");
+    }
+
     // Open join: no list, so the student writes the label themselves and is given a seat.
     const displayName = cleanDisplayName(request.body.displayName);
     if (!displayName) return { status: 400, body: { error: "bad_request", message: "Type what your teacher should see." } };
     if (live.length >= MAX_ROSTER_SIZE) return identityFail(400, "roster_full");
     const seatCode = nextSeat(roster);
     if (!seatCode) return identityFail(400, "roster_full");
-    const joinCode = generateJoinCode(random);
+    const issued = generateJoinCode(random);
     const entry: StoredRosterEntry = {
       id: newId("r"),
       classCode: code,
@@ -569,10 +658,15 @@ export async function handleIdentityRequest(
       displayName,
       studentId: null,
       addedAt: now,
-      joinCodeHash: await hashSecret(joinCode),
+      joinCodeHash: await hashSecret(issued),
+      joinCodeIndex: lookupIndex(await store.sessionSecret(), issued),
+      // Written by the student, not by their teacher. It is what keeps this class open for the
+      // next student to type their own name into, rather than turning it into a roster class
+      // holding one name that is not theirs.
+      selfNamed: true,
     };
     await store.putRosterEntry(entry);
-    const claimed = await claim(store, entry, studentId, now);
+    const claimed = await claim(store, entry, now);
     return {
       status: 201,
       body: {
@@ -582,7 +676,7 @@ export async function handleIdentityRequest(
         label: record.label,
         // Handed back once so a student who loses their session can get in again without
         // finding their teacher. It is the same code a roster class prints on a card.
-        joinCode,
+        joinCode: issued,
       },
     };
   }
@@ -610,7 +704,12 @@ export async function handleIdentityRequest(
   }
 
   // -- POST /classes/:code/feedback — the half of the loop that was missing. --
-  if (request.method === "POST" && third === "feedback") {
+  //
+  // It **appends**. It used to write one record per (class, seat, attempt), so the second note
+  // a teacher wrote about a piece of work silently destroyed the first: two `201`s, one stored
+  // record, and a student who read only the later one. What the teacher said first was never
+  // read by anybody and did not exist anywhere afterwards.
+  if (request.method === "POST" && third === "feedback" && !fourth) {
     const record = await store.getClass(code);
     if (!record || record.expiresAt <= now) return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
     const caller = await callerOf(request.headers, context);
@@ -619,17 +718,63 @@ export async function handleIdentityRequest(
     }
     const seatCode = normaliseSeatCode(typeof request.body.seatCode === "string" ? request.body.seatCode : "");
     const sessionId = typeof request.body.sessionId === "string" ? request.body.sessionId.slice(0, 64) : "";
-    const body = typeof request.body.body === "string" ? request.body.body.trim().slice(0, MAX_FEEDBACK_LENGTH) : "";
     if (!isWellFormedSeatCode(seatCode) || !sessionId) return { status: 400, body: { error: "bad_request", message: "Feedback needs a seat and an attempt." } };
+    const body = readFeedbackBody(request.body.body);
+    if (typeof body !== "string") return body;
     // Feedback has to be attached to work that exists. A note on an attempt nobody made is a
     // message, and this is not a messaging system.
     const submissions = await store.listSubmissions(code);
     if (!submissions.some((entry) => entry.seatCode === seatCode && entry.sessionId === sessionId)) {
       return { status: 404, body: { error: "class_not_found", message: "No attempt from that seat." } };
     }
-    if (body.length === 0) return { status: 400, body: { error: "bad_request", message: "Write something for them to read." } };
-    await store.putFeedback({ classCode: code, seatCode, sessionId, body, at: now, flagged: request.body.flagged === true });
-    return { status: 201, body: { seatCode, sessionId, at: now } };
+    const already = (await store.listFeedback(code))
+      .filter((entry) => entry.seatCode === seatCode && entry.sessionId === sessionId && !entry.deletedAt);
+    if (already.length >= MAX_FEEDBACK_NOTES) {
+      return {
+        status: 409,
+        body: {
+          error: "bad_request",
+          message: `There are already ${MAX_FEEDBACK_NOTES} notes on this attempt. Edit one instead of adding another.`,
+        },
+      };
+    }
+    const note = { id: newId("f"), classCode: code, seatCode, sessionId, body, at: now, flagged: request.body.flagged === true };
+    await store.putFeedback(note);
+    return { status: 201, body: { id: note.id, seatCode, sessionId, at: now } };
+  }
+
+  // -- PATCH/DELETE /classes/:code/feedback/:id — the teacher who mistyped. --
+  //
+  // Editing rewrites a note where it stands: same id, same place in the sequence, `editedAt`
+  // set. A student who is told "I meant Week 5, not Week 4" by a second note that arrives on
+  // its own has been told the teacher wrote twice; a correction is not a second thing said.
+  //
+  // Deleting is a tombstone, not an erasure. The student stops seeing the note from that
+  // moment — which is the whole point of being able to take one back — and the teacher keeps
+  // the row, exactly as removing a student from a roster keeps what that student did. A
+  // teacher who takes back the wrong sentence has to be able to see what they took back.
+  if ((request.method === "PATCH" || request.method === "DELETE") && third === "feedback" && fourth) {
+    const record = await store.getClass(code);
+    if (!record || record.expiresAt <= now) return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
+    const caller = await callerOf(request.headers, context);
+    if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
+      return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
+    }
+    const existing = (await store.listFeedback(code)).find((entry) => entry.id === fourth);
+    if (!existing) return { status: 404, body: { error: "class_not_found", message: "No note with that id." } };
+    if (request.method === "DELETE") {
+      if (existing.deletedAt) return { status: 200, body: { id: existing.id, deletedAt: existing.deletedAt } };
+      await store.putFeedback({ ...existing, deletedAt: now });
+      return { status: 200, body: { id: existing.id, deletedAt: now } };
+    }
+    if (existing.deletedAt) {
+      return { status: 409, body: { error: "bad_request", message: "That note was taken back. Write a new one." } };
+    }
+    const body = readFeedbackBody(request.body.body);
+    if (typeof body !== "string") return body;
+    const flagged = typeof request.body.flagged === "boolean" ? request.body.flagged : existing.flagged;
+    await store.putFeedback({ ...existing, body, flagged, editedAt: now });
+    return { status: 200, body: { id: existing.id, at: existing.at, editedAt: now } };
   }
 
   // -- GET/PUT /classes/:code/shareout — what a teacher chose to put in front of the room. --
@@ -667,40 +812,70 @@ async function seatOf(store: ClassStore, studentId: string, classCode: string): 
   return { seatCode: seat.seatCode };
 }
 
-/** Binds a seat to an account, creating the account when there is not one yet. */
+/**
+ * Binds a seat to an account, creating the account when the seat has not got one.
+ *
+ * **The seat decides, and nothing else does.** This function used to read
+ * `studentId ?? entry.studentId` — the session the browser happened to be holding first, the
+ * seat's own owner second — and that one line was a student-data incident. Two children
+ * signing in one after the other on a cart Chromebook, each tapping their own name and typing
+ * their own card, became one account: the second capture the first's id and dragged it onto
+ * their own seat. Both children then *were* that account. A twelve-year-old opening BOW at
+ * home on their own phone, which nobody else had touched, found a named classmate's plan and
+ * that classmate's private teacher feedback on their screen; and because one account then held
+ * two seats, work could be turned in under the other child's name and was accepted.
+ *
+ * Nothing about the request except the card is evidence of who is presenting it. A card
+ * belongs to one seat, a seat belongs to one account, and that is the whole rule. Presenting
+ * the same card again — on a second device, after a session expired, on the shared machine
+ * they moved to — returns the same account, because the seat still remembers it.
+ *
+ * What this deliberately costs: a student in two BOW classes has two sign-ins rather than one
+ * account holding both. That is a mild inconvenience for a rare case. The alternative was
+ * adopting whatever session was lying around in the browser, which is the incident above, and
+ * there is no version of that trade a school should be asked to take.
+ */
 async function claim(
   store: ClassStore,
   entry: StoredRosterEntry,
-  studentId: string | null,
   now: number,
 ): Promise<{ studentId: string; seatCode: string; displayName: string; generation: number }> {
-  // The card is the proof of who this is, so presenting it again is the same person — on a
-  // second device, after a session expired, or on the shared Chromebook they moved to. This
-  // used to mint a fresh account whenever the request carried no session, which made one
-  // student two students the first time they sat somewhere else.
-  let id = studentId ?? entry.studentId;
+  let id = entry.studentId;
   let generation = 0;
-  if (!id) {
+  const account = id ? await store.getStudent(id) : null;
+  // A seat pointing at an account that no longer exists is a seat with nobody in it.
+  if (!id || !account) {
     id = newId("s");
     await store.putStudent({ id, createdAt: now });
   } else {
-    const account = await store.getStudent(id);
-    // A seat pointing at an account that no longer exists is a seat with nobody in it.
-    if (!account) {
-      id = newId("s");
-      await store.putStudent({ id, createdAt: now });
-    } else {
-      generation = account.sessionGeneration ?? 0;
-    }
-  }
-  // Whoever held this seat before does not hold it now. Two accounts pointing at one seat is
-  // the corruption that makes every count an educator reads wrong.
-  if (entry.studentId && entry.studentId !== id) {
-    await store.unlinkSeatFromStudent(entry.studentId, { classCode: entry.classCode, seatCode: entry.seatCode });
+    generation = account.sessionGeneration ?? 0;
   }
   await store.putRosterEntry({ ...entry, studentId: id, claimedAt: entry.claimedAt ?? now });
   await store.linkSeatToStudent(id, { classCode: entry.classCode, seatCode: entry.seatCode });
   return { studentId: id, seatCode: entry.seatCode, displayName: entry.displayName, generation };
+}
+
+/**
+ * The seat a card opens, found by trying it against every live card in the class.
+ *
+ * Linear over a roster that is capped at sixty, and each comparison is a scrypt verify, which
+ * is what makes the join rate limit load-bearing rather than decorative. It resolves the seat
+ * from the card alone so the door never has to publish who is in the class.
+ */
+async function seatForCard(store: ClassStore, rows: readonly StoredRosterEntry[], joinCode: string): Promise<StoredRosterEntry | null> {
+  const index = lookupIndex(await store.sessionSecret(), joinCode);
+  // Rows written since the index existed are found by it; the scrypt check below still decides.
+  const narrowed = rows.filter((entry) => entry.joinCodeIndex === index);
+  for (const entry of narrowed) {
+    if (await verifySecret(joinCode, entry.joinCodeHash)) return entry;
+  }
+  // Rows written before it. A class from last term does not stop working because the lookup got
+  // cheaper, and once every row carries an index this loop has nothing to iterate over.
+  for (const entry of rows) {
+    if (entry.joinCodeIndex) continue;
+    if (await verifySecret(joinCode, entry.joinCodeHash)) return entry;
+  }
+  return null;
 }
 
 /**
@@ -711,9 +886,15 @@ async function claim(
  * — is the failure that would make a teacher stop using this in the first lesson.
  */
 export function joinModeOf(record: StoredClass, roster: readonly StoredRosterEntry[]): ClassJoinMode {
-  void record;
-  // Any row at all, including removed ones. Deriving this from live rows meant that removing
-  // the last student flipped a named class back to "type your own name", so the person who
-  // had just been taken off the list could walk back in under a name they chose themselves.
-  return roster.length > 0 ? "roster" : "open";
+  // What the class was set to, when it was set to anything. A class becomes a roster class the
+  // moment its teacher pastes a list, and stays one — including after the last name is removed,
+  // because otherwise the student who had just been taken off the list could walk back in under
+  // a name they chose themselves.
+  if (record.joinMode) return record.joinMode;
+  // Classes created before join mode was stored. A row the student wrote about themselves is
+  // not a class list: deriving this from "are there any rows at all" meant the first student to
+  // type their own name into an open class turned it into a roster class, and the second
+  // student arrived at a list of one name that was not theirs, with no way to add themselves
+  // and a card nobody had ever given them.
+  return roster.some((entry) => !entry.selfNamed) ? "roster" : "open";
 }

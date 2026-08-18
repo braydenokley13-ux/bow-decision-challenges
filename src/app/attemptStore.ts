@@ -53,6 +53,8 @@ export function useAttemptAutosave(state: PersistedAttempt, active = true): void
   const timer = useRef<number | null>(null);
   const pending = useRef<PersistedAttempt | null>(null);
   const written = useRef<string | null>(null);
+  const seen = useRef<PersistedAttempt | null>(null);
+  const first = useRef(true);
 
   const flush = useCallback(() => {
     if (timer.current !== null) {
@@ -67,7 +69,21 @@ export function useAttemptAutosave(state: PersistedAttempt, active = true): void
 
   useEffect(() => {
     if (!active) return;
+    // The same attempt arriving again is not a change. The reducer returns a new object for
+    // every real change, so object identity is the honest test — and React runs an effect
+    // twice on mount in development, which without this scheduled a write of the attempt as
+    // it stood at mount and let it land on top of newer work a moment later.
+    if (seen.current === state) return;
+    seen.current = state;
     const stamp = stampOf(state);
+    // The state a provider opens with came out of storage or has nothing in it yet, so the
+    // first render owes storage nothing. Writing here would put an empty attempt in every
+    // browser that so much as loaded the page.
+    if (first.current) {
+      first.current = false;
+      written.current = stamp;
+      return;
+    }
     if (written.current !== stamp) {
       written.current = stamp;
       pending.current = null;

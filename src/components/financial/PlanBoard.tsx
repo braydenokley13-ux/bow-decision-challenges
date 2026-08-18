@@ -250,21 +250,27 @@ export function PlanBoard({
         <section ref={closerRef} className="closer" aria-labelledby="plan-rest">
           <h3 id="plan-rest">{balance > 0 ? `Send the last ${formatDollars(balance)} to one row` : steps.rest.ask}</h3>
           <div className="closer-choice">
-            {closers.map(({ category, offer }) => (
-              <button
-                key={category}
-                type="button"
-                data-category={category}
-                aria-label={offer!.amount > 0
-                  ? `Put ${formatDollars(offer!.amount)} into ${CHOICE_LABELS[category]}`
-                  : `${CHOICE_LABELS[category]} takes what is left over`}
-                onClick={offer!.onPress}
-              >
-                {CHOICE_LABELS[category]}
-                {offer!.capped && <small>{formatDollars(offer!.amount)} — all it can hold</small>}
-                {offer!.amount === 0 && <small>{steps.rest.done}</small>}
-              </button>
-            ))}
+            {closers.map(({ category, offer }) => {
+              // Whatever the card says under its own name, said once and used twice: on the
+              // card and inside the spoken name. A button whose accessible name does not
+              // contain the words printed on it is a button a student using voice control can
+              // see and cannot ask for.
+              const note = offer!.capped
+                ? `${formatDollars(offer!.amount)} — all it can hold`
+                : offer!.amount === 0 ? steps.rest.done : "";
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  data-category={category}
+                  aria-label={`${CHOICE_LABELS[category]} ${note ? `${note} ` : ""}— ${offer!.amount > 0 ? `put ${formatDollars(offer!.amount)} in` : "takes what is left over"}`}
+                  onClick={offer!.onPress}
+                >
+                  {CHOICE_LABELS[category]}
+                  {note && <small>{note}</small>}
+                </button>
+              );
+            })}
           </div>
           <p>{balance > 0 ? steps.rest.shortcut : steps.rest.why}</p>
         </section>
@@ -314,7 +320,11 @@ export function PlanBoard({
               the control does nothing and reads as a step they have missed. */}
           {restored && <Button variant="quiet" type="button" onClick={() => onApplyReference?.()}>Put my saved numbers back</Button>}
           {residual > 0 && attempts > 0 && <Button type="button" variant="quiet" onClick={() => commit(dollars(residual))}>Save it, {formatDollars(residual)} still missing</Button>}
-          <Button type="button" aria-disabled={balance === 0 && unnamed} onClick={() => commit()}>
+          {/* Not `aria-disabled`, deliberately. A student who presses this while no row has
+              been named has done something reasonable, and the answer to it is a sentence
+              saying what is missing and the cards brought into view — not a control that
+              refuses to respond, which is the failure this whole bar was reported for. */}
+          <Button type="button" onClick={() => commit()}>
             {balance !== 0 ? "Check this plan" : unnamed ? "Name the row that takes the rest" : commitLabel}
           </Button>
         </div>

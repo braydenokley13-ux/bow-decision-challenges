@@ -85,12 +85,17 @@ export async function seedRuns(
   seats: readonly { seat: string; savingsAsLeftovers?: boolean }[],
 ): Promise<void> {
   for (const entry of seats) {
+    // Seated and signed in, exactly as a student is. Since a rostered class refuses work that
+    // cannot say who sent it, a seeded run that skipped this would be testing the educator
+    // surface against evidence the service would have rejected from a real room.
+    const token = await seatAndSignIn(request, classCode, entry.seat);
     const built = buildSubmission({
       seatCode: entry.seat,
       closeOpeningInto: entry.savingsAsLeftovers === false ? "flexibleCash" : "goal",
       defenseText: `Seat ${entry.seat}: I kept the course money where it was and gave up part of the reserve after Week 5.`,
     });
-    const response = await request.post(`http://127.0.0.1:4180/api/classes/${classCode}/submissions`, {
+    const response = await request.post(`${API}/classes/${classCode}/submissions`, {
+      headers: { Authorization: `Bearer ${token}` },
       data: {
         classCode,
         seatCode: built.seatCode,
@@ -102,6 +107,37 @@ export async function seedRuns(
     });
     expect(response.status(), await response.text()).toBe(202);
   }
+}
+
+/**
+ * A seat on the roster and a session holding it, without a browser.
+ *
+ * The same two calls the join screen makes, in the same order, with the same bodies — so a
+ * seeded student is indistinguishable from a real one to everything downstream. Seats are
+ * handed out in order, so this asks for as many rows as it takes to reach the one it wants.
+ */
+async function seatAndSignIn(request: APIRequestContext, classCode: string, seatCode: string): Promise<string> {
+  const key = createClassKeyFor(classCode);
+  const wanted = Number(seatCode);
+  if (!Number.isInteger(wanted) || wanted < 1) throw new Error(`Seat ${seatCode} is not a seat number.`);
+  const listed = await request.get(`${API}/classes/${classCode}/roster`, { headers: { "X-BOW-Teacher-Key": key } });
+  const already = ((await listed.json()) as { roster?: readonly { seatCode: string }[] }).roster ?? [];
+  let card = already.find((row) => row.seatCode === String(wanted)) as JoinCard | undefined;
+  if (!card) {
+    const names = Array.from({ length: wanted - already.length }, (_, index) => `Seeded Student ${already.length + index + 1}`);
+    const created = await request.post(`${API}/classes/${classCode}/roster`, {
+      headers: { "X-BOW-Teacher-Key": key },
+      data: { names },
+    });
+    expect(created.status(), await created.text()).toBe(201);
+    card = ((await created.json()) as { cards: JoinCard[] }).cards.at(-1);
+  }
+  if (!card?.joinCode) throw new Error(`Seat ${seatCode} in ${classCode} was already claimed; seed it before anyone signs in.`);
+  const joined = await request.post(`${API}/classes/${classCode}/join`, {
+    data: { classCode, seatCode: card.seatCode, joinCode: card.joinCode, device: "shared" },
+  });
+  expect(joined.status(), await joined.text()).toBe(200);
+  return ((await joined.json()) as { token: string }).token;
 }
 
 /** A person's marks on one seat's writing, through the endpoint the reading queue uses. */
@@ -119,23 +155,89 @@ export async function scoreWriting(
   expect(response.status(), await response.text()).toBe(200);
 }
 
+/**
+ * A browser with nothing in it, parked somewhere that will not bounce.
+ *
+ * It used to land on the challenge route and reload, which worked while that route *was*
+ * the sign-in. It is not one any more: arriving there without a session sends the student to
+ * `/join`, so clearing storage there and reloading is a race between the wipe and the
+ * redirect. The front door has no session of its own to lose.
+ */
 export async function gotoFreshChallenge(page: Page) {
-  await page.goto(PLAN_UNDER_PRESSURE.route);
+  await page.goto("/");
   await page.evaluate(() => localStorage.clear());
-  await page.reload();
+}
+
+/** Where the API lives for a test that is talking to it directly rather than through a page. */
+const API = "http://127.0.0.1:4180/api";
+
+/**
+ * Puts a named seat on a class's roster and hands back the card a student would be given.
+ *
+ * Seats are handed out in order by the service, which is the right behaviour for a teacher
+ * pasting a class list and the wrong shape for a test that wants seat 7 in particular — so
+ * this asks for as many rows as it takes to reach the seat it wants and returns the last.
+ *
+ * Seating the roster is not test scaffolding around the product: a class with a roster is the
+ * configuration the product is *for*, and it is the one where a submission has to arrive from
+ * somebody who is actually in the room. A suite that only ever ran open-join classes would
+ * have covered the path a pilot does not use.
+ */
+export async function seatOnRoster(page: Page, classCode: string, seatCode: string): Promise<JoinCard> {
+  const wanted = Number(seatCode);
+  if (!Number.isInteger(wanted) || wanted < 1) throw new Error(`Seat ${seatCode} is not a seat number.`);
+  const existing = await page.request.get(`${API}/classes/${classCode}/roster`, {
+    headers: { "X-BOW-Teacher-Key": createClassKeyFor(classCode) },
+  });
+  const already = ((await existing.json()) as { roster?: readonly { seatCode: string }[] }).roster ?? [];
+  const seated = already.find((entry) => entry.seatCode === String(wanted));
+  if (seated) throw new Error(`Seat ${seatCode} in ${classCode} is already on the roster.`);
+  const names = Array.from({ length: wanted - already.length }, (_, index) => `Test Student ${already.length + index + 1}`);
+  const response = await page.request.post(`${API}/classes/${classCode}/roster`, {
+    headers: { "X-BOW-Teacher-Key": createClassKeyFor(classCode) },
+    data: { names },
+  });
+  expect(response.status(), await response.text()).toBe(201);
+  const cards = ((await response.json()) as { cards: JoinCard[] }).cards;
+  const card = cards.at(-1);
+  if (!card || card.seatCode !== String(wanted)) throw new Error(`Asked for seat ${seatCode}, got ${card?.seatCode}.`);
+  return card;
+}
+
+/** What a student is handed on a card, and the three things they type or tap to get in. */
+export interface JoinCard { seatCode: string; displayName: string; joinCode: string }
+
+/**
+ * Signs a student in through the door a student actually uses: class code, their own name off
+ * their teacher's list, the code on their card.
+ *
+ * This is the whole of identity in this product now. There is no second route, and there is
+ * deliberately no test-only one — a suite that reached the run by setting a token would not be
+ * covering the screen every student in the pilot meets first.
+ */
+export async function signIn(page: Page, card: JoinCard & { classCode: string }) {
+  await page.goto("/join");
+  await page.getByLabel("Class code").fill(card.classCode);
+  await page.getByRole("button", { name: "Next" }).click();
+  // Two typed codes and no list of names in between: the card resolves the seat by itself, so
+  // the door never has to publish who is in the class.
+  await page.getByLabel("Your code").fill(card.joinCode);
+  await page.getByRole("button", { name: "Go in" }).click();
+  await expect(page.getByRole("link", { name: /^(Start|Carry on)$/ })).toBeVisible();
 }
 
 /**
- * Joins the class, picks the season where the class offers a choice, and steps past the
- * contract. Seats differ so runs never collide.
+ * Signs in, opens the run, picks the season where the class offers a choice, and steps past
+ * the contract. Seats differ so runs never collide.
  *
  * A class set to let students choose opens on the picker, which is the product working: this
  * helper drives the Basketball path, so it answers that question rather than assuming the
  * screen is not there.
  */
 export async function enterChallenge(page: Page, options: { classCode: string; seatCode?: string }) {
-  await page.getByLabel("Class code").fill(options.classCode);
-  await page.getByLabel("Seat", { exact: true }).fill(options.seatCode ?? "7");
+  const card = await seatOnRoster(page, options.classCode, options.seatCode ?? "7");
+  await signIn(page, { ...card, classCode: options.classCode });
+  await page.getByRole("link", { name: /^(Start|Carry on)$/ }).click();
   await page.getByRole("button", { name: /Start the eight weeks|Go in/ }).click();
   await chooseSeasonIfOffered(page);
   await page.getByRole("button", { name: "Find Avery a place" }).click();

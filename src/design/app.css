@@ -181,6 +181,12 @@ p { color: var(--ink-2); }
 .plan-commit--unassigned { color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); }
 .plan-commit__read { margin: 0; color: inherit; font: var(--t-title2); }
 .plan-commit__figure { font-feature-settings: var(--num); }
+
+/* The answer to a press that did not save anything. It takes the whole width of the bar
+   because it is a reply to the student rather than a caption on the figure. */
+.plan-commit__refusal { flex-basis: 100%; order: -1; margin: 0; color: inherit; font: var(--t-ui); }
+.plan-commit__refusal b { font-weight: 700; }
+.plan-commit__refusal .money { font-feature-settings: var(--num); }
 .plan-commit__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
 
 /* Plan checks and Week 5 */

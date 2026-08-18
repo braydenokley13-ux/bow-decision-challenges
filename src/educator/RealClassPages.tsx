@@ -5,9 +5,9 @@ import { EducatorShell } from "./EducatorShell";
 import { useClassEvidence, type ClassEvidenceState, type OverrideRequest } from "./useClassEvidence";
 import { EvidenceTrailPanel, StudentSummary } from "./EvidenceTrailPanel";
 import type { AttributedSubmission } from "../platform/classes/types";
-import { type ChoiceDistribution, type ClassAnalysis, type StudentRow } from "./analysis";
+import { classRoll, latestAttemptFor, worldSections, type ChoiceDistribution, type ClassAnalysis, type ClassRoll, type StudentRow } from "./analysis";
 import { SeatNamesContext, seatLabels, seatNames, useSeatLabel, useSeatNames, type RosterRow } from "./names";
-import { gradebookLineFor, gradebookTsv } from "./gradebook";
+import { gradebookLineFor, gradebookRows, gradebookTsv } from "./gradebook";
 import { MAX_FEEDBACK_LENGTH, type TeacherFeedback } from "../platform/identity/types";
 import type { ProgressRow } from "../platform/identity/types";
 import { stageLabel } from "../domain/scenario/registry";
@@ -198,22 +198,25 @@ function ClassLead({ spine }: { spine: ClassSpine }) {
  * last-touched time are what a teacher can act on; anything finer would be surveillance
  * bought with nothing.
  */
-function LiveState({ roster, progress, turnedIn, code, keyQuery, loadedAt }: {
+function LiveState({ roll, roster, progress, code, keyQuery, loadedAt }: {
+  /** The class, counted once, by the same function every other number on this page reads. */
+  roll: ClassRoll;
   roster: readonly RosterRow[];
   progress: readonly ProgressRow[];
-  turnedIn: readonly string[];
   code: string;
   keyQuery: string;
   /** When this page was fetched. Elapsed time is measured from it so the render is a function of its input. */
   loadedAt: number;
 }) {
   const label = useSeatLabel();
-  const live = roster.filter((row) => !row.removedAt);
-  if (live.length === 0 && progress.length === 0) return null;
-  const done = new Set(turnedIn);
-  const working = progress.filter((row) => !done.has(row.seatCode));
-  const workingSeats = new Set(working.map((row) => row.seatCode));
-  const notStarted = live.filter((row) => !done.has(row.seatCode) && !workingSeats.has(row.seatCode));
+  if (roll.seats.length === 0) return null;
+  // The three tiles are three states of the same list of seats, so they add up to the class
+  // by construction. They used to be computed from three different lists — a set of seats
+  // that had submitted, unfiltered by the roster, against a roster that was filtered — and a
+  // teacher who removed one student got a panel reporting a class larger than the class.
+  const notStarted = roll.seats.filter((seat) => seat.state === "not-started");
+  const working = roll.seats.filter((seat) => seat.state === "still-working");
+  const workingRows = working.flatMap((seat) => progress.filter((row) => row.seatCode === seat.seatCode).slice(0, 1));
 
   return (
     <section className="dashboard-section live-state">
@@ -222,13 +225,13 @@ function LiveState({ roster, progress, turnedIn, code, keyQuery, loadedAt }: {
         <h2>Where the room is</h2>
       </div>
       <dl className="live-state__counts">
-        <div><dt>Turned in</dt><dd>{done.size}</dd></div>
-        <div><dt>Still working</dt><dd>{working.length}</dd></div>
-        <div><dt>Not started</dt><dd>{live.length > 0 ? notStarted.length : "—"}</dd></div>
+        <div><dt>Turned in</dt><dd>{roll.turnedIn}</dd></div>
+        <div><dt>Still working</dt><dd>{roll.stillWorking}</dd></div>
+        <div><dt>Not started</dt><dd>{roll.notStarted ?? "—"}</dd></div>
       </dl>
-      {working.length > 0 && (
+      {workingRows.length > 0 && (
         <ul className="live-state__list">
-          {working
+          {workingRows
             .slice()
             .sort((a, b) => a.updatedAt - b.updatedAt)
             .map((row) => {
@@ -245,10 +248,10 @@ function LiveState({ roster, progress, turnedIn, code, keyQuery, loadedAt }: {
             })}
         </ul>
       )}
-      {live.length > 0 && notStarted.length > 0 && (
-        <p className="live-state__waiting">Not started: {seatLabels(notStarted.map((row) => row.seatCode), seatNames(roster))}.</p>
+      {notStarted.length > 0 && (
+        <p className="live-state__waiting">Not started: {seatLabels(notStarted.map((seat) => seat.seatCode), seatNames(roster))}.</p>
       )}
-      {live.length === 0 && (
+      {!roll.hasRoster && (
         <p className="class-state">
           This class has no student list, so BOW cannot say who has not started — only who has.
           Add one from the class setup and every seat gets a name.
@@ -268,20 +271,33 @@ function LiveState({ roster, progress, turnedIn, code, keyQuery, loadedAt }: {
  * already have open — a file to find in a Downloads folder is a step further from that, not
  * closer.
  */
-function ExportClass({ submissions, roster, label }: {
+function ExportClass({ roll, submissions, roster, label }: {
+  roll: ClassRoll;
   submissions: readonly AttributedSubmission[];
   roster: readonly RosterRow[];
   label: string;
 }) {
   const [said, setSaid] = useState<string | null>(null);
   const names = seatNames(roster);
-  if (submissions.length === 0) return null;
+  if (roll.seats.length === 0) return null;
   const copy = () => {
-    const lines = submissions.map((submission) =>
-      gradebookLineFor(submission, names.get(submission.seatCode) ?? null));
+    // Built from the roll, so what leaves is the shape of the teacher's own list: a row per
+    // seat in the class whether or not they turned anything in, a row per extra attempt, and
+    // nothing at all from a seat that is no longer on it.
+    const rows = gradebookRows(roll.seats.map((seat) => ({
+      seatCode: seat.seatCode,
+      displayName: names.get(seat.seatCode) ?? null,
+      attempts: seat.attempts.flatMap((row) => {
+        const submission = submissions.find((entry) => entry.sessionId === row.sessionId);
+        return submission ? [submission] : [];
+      }),
+    })));
+    const absent = rows.filter((row) => row.line === null).length;
     void navigator.clipboard
-      .writeText(gradebookTsv(lines))
-      .then(() => setSaid(`${lines.length} rows copied. Paste into a spreadsheet.`))
+      .writeText(gradebookTsv(rows))
+      .then(() => setSaid(
+        `${rows.length} rows copied — every seat in the class${absent > 0 ? `, including ${absent} who turned nothing in` : ""}. Paste into a spreadsheet.`,
+      ))
       .catch(() => setSaid("Could not reach the clipboard. Select the table and copy it instead."));
   };
   return (
@@ -376,16 +392,24 @@ export function RealClassOverview() {
       {(ready) => {
         const { analysis, record, assignments, submissions } = ready;
         const names = seatNames(ready.roster);
-        if (analysis.rows.length === 0) return <NothingYet code={record.code} label={record.label} />;
-        const spine = classSpineFrom({ record, assignments, submissions });
-        const total = analysis.rows.length;
+        // One reading of who is in this class and what each of them turned in. Every count
+        // below is taken from it — the headline, the live tiles, the table's denominator, the
+        // student list and the export — so two of them cannot disagree about the same room.
+        // They used to be computed five ways and three of them were on screen at once.
+        const roll = classRoll({ rows: analysis.rows, roster: ready.roster, progress: ready.progress });
+        if (roll.rows.length === 0) return <NothingYet code={record.code} label={record.label} />;
+        // The spine is read against the same class: one attempt per student still in the
+        // room, so "turned in" in the headline is the same number as "turned in" in the tile.
+        const counted = roll.rows.flatMap((row) => submissions.filter((entry) => entry.sessionId === row.sessionId));
+        const spine = classSpineFrom({ record, assignments, submissions: counted });
+        const total = roll.turnedIn;
         const students = (
           <section className="dashboard-section">
             <div className="section-heading">
               <p className="eyebrow">Open these</p>
               <h2>Every student who turned in</h2>
             </div>
-            <StudentRows rows={analysis.rows} submissions={submissions} code={record.code} keyQuery={keyQuery} />
+            <StudentRows rows={roll.rows} submissions={submissions} code={record.code} keyQuery={keyQuery} />
           </section>
         );
 
@@ -393,23 +417,23 @@ export function RealClassOverview() {
           <>
             <header className="class-header">
               <div>
-                <p className="eyebrow">{[record.label, worldsPlayed(analysis.rows)].filter(Boolean).join(" · ")}</p>
+                <p className="eyebrow">{[record.label, worldsPlayed(roll.rows)].filter(Boolean).join(" · ")}</p>
                 <ClassLead spine={spine} />
               </div>
               <div>
                 <span>{total} turned in</span>
                 {/* The largest single job this product creates, and it used to be a
                     sentence. It is the way into the queue that does it. */}
-                {analysis.awaitingReview.length > 0
-                  ? <Link to={`/educator/class/${record.code}/reading${keyQuery}`}>{analysis.awaitingReview.length} awaiting your reading</Link>
+                {roll.awaitingReading.length > 0
+                  ? <Link to={`/educator/class/${record.code}/reading${keyQuery}`}>{roll.awaitingReading.length} awaiting your reading</Link>
                   : <span>Every explanation read</span>}
               </div>
             </header>
 
             <LiveState
+              roll={roll}
               roster={ready.roster}
               progress={ready.progress}
-              turnedIn={analysis.rows.map((row) => row.seatCode)}
               code={record.code}
               keyQuery={keyQuery}
               loadedAt={ready.loadedAt}
@@ -472,7 +496,7 @@ export function RealClassOverview() {
                     questions, and each set has its own denominator. */}
                 {/* One block per world, each with its own denominator. Nothing on this page
                     divides one world's question by the whole class any more. */}
-                {analysis.worlds.map((world) => (
+                {worldSections(roll.rows).map((world) => (
                   <section className="dashboard-section" key={world.worldId}>
                     <div className="section-heading">
                       <p className="eyebrow">
@@ -517,7 +541,7 @@ export function RealClassOverview() {
             {spine.narratable && students}
 
             <section className="dashboard-section">
-              <ExportClass submissions={submissions} roster={ready.roster} label={record.label} />
+              <ExportClass roll={roll} submissions={submissions} roster={ready.roster} label={record.label} />
             </section>
 
             <section className="class-foot">
@@ -601,7 +625,11 @@ export function RealStudentEvidence() {
   return (
     <ClassFrame state={state} title="That student's work did not open.">
       {(ready) => {
-        const row = ready.analysis.rows.find((item) => item.seatCode === seatCode);
+        // The same attempt the class list opened: a seat's **latest**, so the page a teacher
+        // lands on from a row is the run that row was describing. Read from every row this
+        // class holds rather than from the roll, so a seat taken off the roster is still
+        // reachable from a link somebody already has — it is simply not listed anywhere.
+        const row = latestAttemptFor(ready.analysis.rows, seatCode ?? "");
         if (!row) {
           return (
             <header className="page-header page-header--with-back">

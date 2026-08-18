@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useChallenge } from "../app/ChallengeContext";
 import { useDraft } from "../app/attemptStore";
 import { StageShell } from "../app/StageShell";
@@ -26,7 +27,8 @@ import { bonusWeeks, clinicWeeks } from "../domain/scenario/season";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { amountsFor, meaningfulAttempts, snapshotForMode } from "../domain/machine/selectors";
 import { STUDENT_COPY } from "../content/studentCopy";
-import { CODE_LENGTH, isWellFormedClassCode, isWellFormedSeatCode, normaliseSeatCode } from "../platform/classes/codes";
+import type { Assignment } from "../platform/classes/types";
+import { forgetStudent, readMyClasses, studentToken } from "../student/session";
 import { planPosition, railStop, seedVisited, type PlanPosition } from "./planNavigation";
 import { DepositDeadline, SeasonWeeks } from "./SeasonWeeks";
 import { Week8Resolution } from "./Week8Resolution";
@@ -64,46 +66,100 @@ function useRevealOnce<T extends HTMLElement = HTMLDivElement>(active: boolean) 
 }
 
 /**
- * Beat 1. The story and the check-in are the same screen: a student reads what happened
- * to Avery while entering the two codes, so nothing stands between the URL and the story.
+ * The seat a build with no class service plays from. No service means no session and no
+ * roster to be on — nothing to resolve, and nothing this student could type that would make
+ * it truer, which is why the old screen's two required boxes were unfillable here.
+ */
+const OFFLINE_SEAT: StartingSeat = { classCode: "", seatCode: "", label: "", displayName: null, assignment: null };
+
+/** Who is about to play, as the session answered it. Every field comes from the service. */
+interface StartingSeat {
+  classCode: string;
+  seatCode: string;
+  label: string;
+  displayName: string | null;
+  assignment: Assignment | null;
+}
+
+/**
+ * Beat 1. Arrival — and the only door.
+ *
+ * This screen used to *be* the sign-in: two boxes, a class code and a seat number, typed by
+ * hand. That was the whole identity system, and it produced work signed by whatever number a
+ * student typed. It cannot survive accounts, and not for tidiness — a class with a roster now
+ * refuses work that cannot say who sent it, so the old door led a student through twenty-five
+ * minutes of real decisions to a submission the service was right to reject. Two doors, one
+ * of which throws the lesson away.
+ *
+ * So there is one door, and it is not this screen. A student signs in at `/join` — class code,
+ * their own name off their teacher's list, the code on their card — and arrives here already
+ * known. What is left here is the job the codes were standing in front of: who this run
+ * belongs to, whose story it is, and one press to start it.
+ *
+ * A build with no class service behind it (design work, a room that lost its network) has no
+ * session to read and never had a real class code either. It starts straight away rather than
+ * demanding a code that resolves against nothing.
  */
 function OpeningStage() {
   const { state, dispatch, transport, setOffer } = useChallenge();
   const { offer, invitation, numbers } = BASKETBALL_SCENARIO;
-  const [classCode, setClassCode] = useState("");
-  const [seatCode, setSeatCode] = useState("");
-  const [joining, setJoining] = useState(false);
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  // A build with no class service resolves to a seat during render rather than in an effect:
+  // there is nothing to ask and nobody to ask, so it is a fact about the build, not a load.
+  const [seat, setSeat] = useState<StartingSeat | null>(() => (transport.requiresClass ? null : OFFLINE_SEAT));
   const [problem, setProblem] = useState<string | null>(null);
-  const [joinedLabel, setJoinedLabel] = useState<string | null>(null);
-  // The codes are checked for shape here and for existence by the transport. Neither is
-  // prefilled: a default class code that happened to resolve would start a room of
-  // students in somebody else's class.
-  const valid = isWellFormedClassCode(classCode) && isWellFormedSeatCode(seatCode);
   // Whether a picker exists at all. The class decides whether it is offered, and that is not
-  // known until the code is checked — but a build with one world can never show one, and a
-  // build with two should not promise either before the student has chosen.
+  // known until the session has answered — but a build with one world can never show one, and
+  // a build with two should not promise either before the student has chosen.
   const choosing = WORLD_CHOICE_UI_READY && PLAYABLE_WORLDS.length > 1;
 
-  const start = async () => {
-    if (!valid || joining) return;
-    setJoining(true);
-    setProblem(null);
-    const result = await transport.join(classCode);
-    setJoining(false);
-    if (!result.ok) {
-      setProblem(result.message);
+  useEffect(() => {
+    if (!transport.requiresClass) return;
+    if (!studentToken()) {
+      navigate("/join", { replace: true });
       return;
     }
-    setJoinedLabel(result.joined.record?.label ?? null);
-    // The oldest assignment the class holds, which is the same one the service attributes a
-    // submission to when a client names none. It used to be whichever assignment mentioned
-    // Basketball — a rule that quietly answered the world question before the student had
-    // been asked it.
-    const assignment = result.joined.assignments[0];
+    let cancelled = false;
+    void (async () => {
+      const result = await readMyClasses();
+      if (cancelled) return;
+      if (!result.ok) {
+        // A dead session is not an error to explain to a twelve-year-old, it is a sign-in to
+        // do again. A service that is merely unreachable says so and keeps them here.
+        if (result.message.startsWith("No connection")) { setProblem(result.message); return; }
+        forgetStudent();
+        navigate("/join", { replace: true });
+        return;
+      }
+      const wanted = (params.get("class") ?? "").toUpperCase();
+      const classes = result.body.classes;
+      const picked = wanted
+        ? classes.find((entry) => entry.classCode === wanted)
+        : classes.length === 1 ? classes[0] : undefined;
+      // Nought classes, or several and no answer about which: both are questions the student's
+      // own screen already asks better than this one can.
+      if (!picked) {
+        navigate("/home", { replace: true });
+        return;
+      }
+      setSeat({
+        classCode: picked.classCode,
+        seatCode: picked.seatCode,
+        label: picked.label,
+        displayName: picked.displayName,
+        assignment: picked.assignments[0] ?? null,
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [navigate, params, transport.requiresClass]);
+
+  const start = () => {
+    if (!seat) return;
     // What this class was set, carried to the picker so it does not have to ask again.
     setOffer(worldOffer({
-      allowedWorldIds: assignment?.allowedWorldIds ?? [],
-      assignmentAllowsChoice: assignment?.studentChoosesWorld ?? true,
+      allowedWorldIds: seat.assignment?.allowedWorldIds ?? [],
+      assignmentAllowsChoice: seat.assignment?.studentChoosesWorld ?? true,
       playableWorldIds: PLAYABLE_WORLDS.map((world) => world.id),
       pickerReady: WORLD_CHOICE_UI_READY,
       defaultWorldId: DEFAULT_WORLD_ID,
@@ -111,11 +167,21 @@ function OpeningStage() {
     dispatch({
       type: "SESSION_STARTED",
       sessionId: crypto.randomUUID(),
-      classCode: result.joined.classCode,
-      seatCode: normaliseSeatCode(seatCode),
-      ...(assignment ? { assignmentId: assignment.id } : {}),
+      classCode: seat.classCode,
+      seatCode: seat.seatCode,
+      ...(seat.assignment ? { assignmentId: seat.assignment.id } : {}),
     });
   };
+
+  if (!seat) {
+    return (
+      <div className="opening opening--waiting" data-world={state.meta.worldId}>
+        <div className="opening__bar"><AppMark /><span>Plan Under Pressure</span></div>
+        <p className="join-status" aria-live="polite">{problem ?? "Getting your class…"}</p>
+        {problem && <Button type="button" variant="secondary" onClick={() => window.location.reload()}>Try again</Button>}
+      </div>
+    );
+  }
 
   return (
     <div className="opening" data-world={state.meta.worldId}>
@@ -123,15 +189,12 @@ function OpeningStage() {
         <AppMark />
         <span>Plan Under Pressure</span>
       </div>
-      {/* The join card comes first in the source and stays on the right at laptop widths.
-          Below 760px the columns stack in source order, which is the fix for the one screen
-          where the thing a student has to do was entirely below the fold. */}
       <div className="opening__grid">
         {/* Avery, and the one thing Avery is playing for — but only where Avery is what the
             student is about to play. With a picker one screen away, this panel sold one of
             the two worlds before the student had been offered either, and a student who
             went on to choose the market had pressed a button promising eight weeks of
-            basketball. Where there is a choice to make, the code is the story. */}
+            basketball. Where there is a choice to make, the choice is the story. */}
         <aside className="opening__side scene">
           {choosing ? (
             <p className="opening__span">{PLAYABLE_WORLDS.map((world) => world.title).join(" · ")}</p>
@@ -147,55 +210,36 @@ function OpeningStage() {
             </>
           )}
           <div className="opening__job">
-            <p className="stamp">Your class code gets you in</p>
-            <div className="opening__codes">
-              <label>
-                Class code
-                <input
-                  value={classCode}
-                  onChange={(event) => { setClassCode(event.target.value.toUpperCase()); setProblem(null); }}
-                  onKeyDown={(event) => { if (event.key === "Enter") void start(); }}
-                  maxLength={CODE_LENGTH}
-                  autoComplete="off"
-                  autoCapitalize="characters"
-                  spellCheck={false}
-                  aria-describedby="join-status"
-                />
-              </label>
-              <label>
-                Seat
-                <input
-                  value={seatCode}
-                  onChange={(event) => { setSeatCode(normaliseSeatCode(event.target.value)); setProblem(null); }}
-                  onKeyDown={(event) => { if (event.key === "Enter") void start(); }}
-                  inputMode="numeric"
-                  maxLength={2}
-                  autoComplete="off"
-                  aria-describedby="join-status"
-                />
-              </label>
-            </div>
-            <Button type="button" aria-disabled={!valid || joining} onClick={() => void start()}>
-              {joining ? "Checking the code…" : choosing ? "Go in" : "Start the eight weeks"}
+            {/* Whose run this is, before it starts. On a cart Chromebook the previous
+                student's session was indistinguishable from your own, and the answer to that
+                is not a warning — it is saying whose it is, on the screen where starting is
+                still free. */}
+            {seat.displayName && (
+              <p className="opening__whose">
+                <span className="stamp">You are signed in as</span>
+                <strong>{seat.displayName}</strong>
+                {seat.label && <span className="opening__class">{seat.label}</span>}
+              </p>
+            )}
+            <Button type="button" onClick={start}>
+              {choosing ? "Go in" : "Start the eight weeks"}
             </Button>
-            <hr className="perf-rule" />
-            {/* One live region for every outcome, so a screen reader hears the result of
-                joining rather than only sighted students seeing it. */}
-            <p id="join-status" className={`join-status${problem ? " join-status--problem" : ""}`} aria-live="polite">
-              {problem ?? joinedLabel ?? (transport.requiresClass
-                ? "Your teacher gives you the class code and your seat number."
-                : transport.promise)}
-            </p>
-            {/* A student who found BOW without a code used to meet a form they could not
-                fill in and nothing else. One line, and it says where the code comes from. */}
-            <p className="no-code">{STUDENT_COPY.join.noCode}</p>
+            <p id="join-status" className="join-status" aria-live="polite">{transport.promise}</p>
+            {seat.displayName && (
+              <Button
+                type="button"
+                variant="quiet"
+                onClick={() => { forgetStudent(); navigate("/join", { replace: true }); }}
+              >
+                Not you?
+              </Button>
+            )}
             <p className="privacy-note">{STUDENT_COPY.join.privacy}</p>
           </div>
         </aside>
         {/* The story. It used to open with an 01/02/03 list of the decisions ahead — a
-            syllabus handed over before any of it meant anything, and the thing that pushed
-            the join card off a 640px screen. The card above says what the student is being
-            asked to do; this says who they are doing it for. */}
+            syllabus handed over before any of it meant anything. The card above says who is
+            about to do this; this says who they are doing it for. */}
         <section className="opening__story">
           {choosing ? (
             <>

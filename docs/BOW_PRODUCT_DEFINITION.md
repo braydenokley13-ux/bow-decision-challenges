@@ -2237,7 +2237,7 @@ intact:
 | Scoring never takes a `worldId` | ESLint boundary + signature test | This is precisely what makes worlds interchangeable. Strengthen it. |
 | The class service and its three stores | `server/handler.ts`, `server/store.ts` | Framework-free, fails closed on a non-durable host, tested against the shipping handler. Extend, do not replace. |
 | Class code vs teacher key | `src/platform/classes/codes.ts` | Students cannot read each other's work. Keep exactly. |
-| The no-fixture invariant | `src/educator/noFixture.test.ts` | A real class never falls back to demo data. Extend to every new surface. |
+| The no-fixture invariant | `src/educator/noFixture.test.tsx` | A real class never falls back to demo data — enforced behaviourally: no well-formed class code reaches the fixture, only the too-short `DEMO_CLASS_CODE` marker can. Extend to every new surface. |
 | The balance harness pattern | `src/domain/scenario/balance.ts` | Every new world needs its own. Generalise the pattern, not the numbers. |
 | Per-challenge attempt keys | `attemptKeyFor()` in the registry | Already prevents world #2 from destroying world #1's saved attempt. |
 | The three-layer CSS split | `src/design/` | Each new world gets a block in `worlds.css` and touches nothing else. |
@@ -2537,7 +2537,7 @@ and its axe-scanned routes, `EducatorShell`'s nav pattern.
 **Tests required.**
 - e2e: teacher assigns 1.3 → three students join on separate browser contexts → all submit →
   teacher sees "3 of 3 assessed" and a per-competency breakdown.
-- `noFixture.test.ts` extended to the new routes.
+- `noFixture.test.tsx` extended to the new routes.
 - Axe scan on all three new routes.
 - A copy test: no teacher-facing string hardcodes a framework name outside
   `FrameworkLabels`.

@@ -95,13 +95,21 @@ function ClassBlock({ entry }: { entry: StudentClass }) {
     <section className="student-class">
       <p className="eyebrow">{entry.label}</p>
 
+      {/* Every note, in the order they were written. The list has always been a list here;
+          what changed is that the service now has more than one note to put in it. Keyed by
+          the note's own id rather than by its timestamp, because two notes written inside the
+          same millisecond are one React key, and an edited note keeps the timestamp it was
+          first sent at — which is the point of the edit. */}
       {entry.feedback.length > 0 && (
         <div className="student-feedback">
           <p className="field-label">From your teacher</p>
           {entry.feedback.map((note) => (
-            <blockquote key={note.at}>
+            <blockquote key={note.id}>
               {note.body}
-              <cite>{new Date(note.at).toLocaleDateString()}</cite>
+              <cite>
+                {new Date(note.at).toLocaleDateString()}
+                {note.editedAt ? " · your teacher changed this" : ""}
+              </cite>
             </blockquote>
           ))}
         </div>

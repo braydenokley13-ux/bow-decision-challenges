@@ -1,6 +1,7 @@
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import type { Assignment } from "../platform/classes/types";
-import type { DeviceClass, RosterChoice } from "../platform/identity/types";
+import type { ClassDoor, DeviceClass } from "../platform/identity/types";
+import { forgetStudent, rememberStudent, studentAuthHeaders, studentToken } from "../platform/identity/token";
 import type { WorldId } from "../domain/core/ids";
 
 /**
@@ -11,36 +12,20 @@ import type { WorldId } from "../domain/core/ids";
  * teacher who corrects a spelling on Monday does not leave a stale name on a Chromebook for
  * the rest of the term.
  *
- * The token is held in `localStorage` rather than a cookie because this product is a static
- * bundle talking to an API that may not be on the same registrable domain, and a cookie that
- * a district's browser policy drops silently is a sign-in that fails for reasons nobody can
- * see. What makes that safe enough is the other end: the token carries a session generation,
- * so a teacher can end every session in their class in one action, and a shared-device
- * session is measured in hours rather than weeks.
+ * The token itself lives one layer down, in `platform/identity/token`, because the evidence
+ * transport needs to send it too — a rostered class refuses work that cannot say who it is
+ * from. These re-exports are the student screens' own way in.
  */
 
-const TOKEN_KEY = "bow.student.v1.token";
-
-export function studentToken(storage: Pick<Storage, "getItem"> = window.localStorage): string | null {
-  return storage.getItem(TOKEN_KEY);
-}
-
-export function rememberStudent(token: string, storage: Pick<Storage, "setItem"> = window.localStorage): void {
-  storage.setItem(TOKEN_KEY, token);
-}
-
-export function forgetStudent(storage: Pick<Storage, "removeItem"> = window.localStorage): void {
-  storage.removeItem(TOKEN_KEY);
-}
+export { forgetStudent, rememberStudent, studentToken };
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<{ ok: true; body: T } | { ok: false; message: string }> {
-  const token = studentToken();
   try {
     const response = await fetch(`${CLASS_API_BASE}${path}`, {
       ...init,
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...studentAuthHeaders(),
         ...(init.headers ?? {}),
       },
     });
@@ -56,16 +41,15 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<{ ok: true
   }
 }
 
-/** What a student sees before they have proved anything: the names, and nothing else. */
-export interface ClassDoor {
-  roster: RosterChoice[];
-  joinMode: "roster" | "open";
-  label: string;
-}
-
+/**
+ * What a student is told before they have proved anything: the class's own label, and how it
+ * lets people in. Deliberately not the class list — see `ClassDoor` for why.
+ */
 export function readClassDoor(classCode: string) {
   return call<ClassDoor>(`/classes/${classCode.toUpperCase()}/roster`);
 }
+
+export type { ClassDoor };
 
 export interface JoinedStudent {
   studentId: string;
@@ -80,8 +64,9 @@ export interface JoinedStudent {
 
 export function claimSeat(input: {
   classCode: string;
-  seatCode?: string;
+  /** The code on the card. It resolves the seat by itself; there is nothing else to send. */
   joinCode?: string;
+  /** Only for an open class, and only for somebody who has never been in it before. */
   displayName?: string;
   device: DeviceClass;
 }) {
@@ -99,8 +84,15 @@ export interface StudentClass {
   assignments: Assignment[];
   inProgress: { worldId: WorldId; stage: string; updatedAt: number } | null;
   completed: { sessionId: string; submittedAt: number; worldId: WorldId | null }[];
-  /** What a teacher wrote back. The half of the loop that did not exist. */
-  feedback: { body: string; at: number; sessionId: string }[];
+  /**
+   * What a teacher wrote back — every note, oldest first, not just the last one.
+   *
+   * It was one note per attempt for as long as the store held one, which meant a teacher who
+   * added a second thought overwrote the first and the student never saw it. `editedAt` is
+   * set when the teacher rewrote a note they had already sent; notes they took back are not
+   * in this list at all.
+   */
+  feedback: { id: string; body: string; at: number; sessionId: string; editedAt?: number }[];
 }
 
 export function readMyClasses() {

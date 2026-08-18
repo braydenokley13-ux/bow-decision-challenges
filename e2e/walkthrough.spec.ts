@@ -1,7 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import { CHOICE_LABELS } from "../src/components/financial/choices";
 import { expect, test } from "@playwright/test";
-import { NUMBERS, SAVE_LABEL, closeOpeningByNamingTheRest, fillPlanToBalance, savePlan, week5TotalFor, type PlanContext } from "./plan";
+import { NUMBERS, SAVE_LABEL, closeOpeningByNamingTheRest, fillPlanToBalance, savePlan, saveOpeningPlan, week5TotalFor, type PlanContext } from "./plan";
 import {
   completeSetupStage,
   createClass,
@@ -104,8 +104,7 @@ for (const size of SIZES) {
     await fillPlanToBalance(page, "working", context);
     await shoot("06-working-plan");
     await setAmount(page, CHOICE_LABELS.flexibleCash, "0");
-    await page.getByRole("button", { name: new RegExp(`^Put \\$.* into ${CHOICE_LABELS.flexibleCash}$`) }).click();
-    await page.getByRole("button", { name: SAVE_LABEL.working }).click();
+    await saveOpeningPlan(page);
 
     await shoot("07a-bonus-pulled");
     await fillPlanToBalance(page, "fallback", context);

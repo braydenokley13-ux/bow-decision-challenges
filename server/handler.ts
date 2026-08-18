@@ -219,7 +219,24 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
 
   // POST /classes — an educator creates a class and receives the key that reads it.
   if (request.method === "POST" && segments.length === 1 && segments[0] === "classes") {
-    if (!withinRate(`create:${clientId}`, 30, 60 * 60 * 1000, now)) {
+    // Who is being counted matters more than the number.
+    //
+    // This used to be thirty an hour per client id, and a client id is an egress address. A
+    // school district is one egress address: forty teachers in a September PD session, each
+    // making the four classes they teach, is a hundred and sixty legitimate creations from
+    // one address in twenty minutes, and this refused a hundred and thirty of them. The
+    // teacher whose class would not create has no way to know it was their neighbour's fault
+    // and no way to wait it out inside the session they are sitting in.
+    //
+    // So a signed-in teacher is counted as themselves, generously — nobody teaches thirty
+    // classes an hour, and if they did it would still be their own quota to spend. The
+    // address-wide window stays for callers who have not signed in, where it is the only
+    // thing standing between an unauthenticated endpoint and a script, and it is set where a
+    // whole staffroom fits under it rather than where one enthusiastic teacher does not.
+    const creator = await callerOf(request.headers, { store, now });
+    const bucket = creator?.kind === "teacher" ? `create:teacher:${creator.id}` : `create:${clientId}`;
+    const ceiling = creator?.kind === "teacher" ? 60 : 400;
+    if (!withinRate(bucket, ceiling, 60 * 60 * 1000, now)) {
       return fail(429, "unavailable", "Too many classes from here just now. Wait a minute.");
     }
     const challengeId = typeof body.challengeId === "string" ? body.challengeId : "";
@@ -257,6 +274,9 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       createdAt: now,
       expiresAt: now + CLASS_RETENTION_DAYS * 24 * 60 * 60 * 1000,
       teacherKey: generateTeacherKey(random),
+      // Open until a class list is pasted. A teacher who has four minutes and no list still
+      // gets a working lesson, and pasting the list later closes the door behind it.
+      joinMode: "open",
       ...(teacherId ? { teacherId } : {}),
     };
     await store.putClass(record);

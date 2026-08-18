@@ -1,4 +1,5 @@
 import { isWellFormedClassCode, normaliseClassCode } from "../classes/codes";
+import { studentAuthHeaders } from "../identity/token";
 import { CLASS_ERROR_MESSAGES, isClassError, type Assignment, type ClassErrorCode, type ClassRecord, type EvidenceSubmission } from "../classes/types";
 import type { EvidenceTransport, JoinResult, DeliveryResult } from "./transport";
 
@@ -23,7 +24,11 @@ async function call(path: string, init: RequestInit = {}): Promise<{ status: num
   try {
     const response = await fetch(`${CLASS_API_BASE}${path}`, {
       ...init,
-      headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
+      // Signed in as themselves, on every call. A class with a roster refuses work that
+      // cannot say who sent it, and the request carrying twenty-five minutes of a student's
+      // run is the last place to discover that. Absent on a class with no roster and on a
+      // build with no service, where it is simply not sent.
+      headers: { "Content-Type": "application/json", ...studentAuthHeaders(), ...(init.headers ?? {}) },
     });
     const text = await response.text();
     return { status: response.status, body: text ? JSON.parse(text) : null };

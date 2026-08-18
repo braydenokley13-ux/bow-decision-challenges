@@ -1,6 +1,7 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { CHOICE_LABELS } from "../src/components/financial/choices";
-import { NUMBERS as N, BACKUP_HEADING, NO_BONUS_HEADING, TRIAGE_HEADING, fillPlanToBalance, fillPlanLeavingShortfall, money, savePlan, spendableFor, week5TotalFor, type PlanContext } from "./plan";
+import { PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
+import { NUMBERS as N, BACKUP_HEADING, NO_BONUS_HEADING, TRIAGE_HEADING, fillPlanToBalance, fillPlanLeavingShortfall, money, restCard, savePlan, saveOpeningPlan, spendableFor, week5TotalFor, type PlanContext } from "./plan";
 import {
   createClass,
   createClassKeyFor,
@@ -10,6 +11,8 @@ import {
   SETUP_ORDER,
   SETUP_TITLES,
   rankPlacesCorrectly,
+  seatOnRoster,
+  chooseSeasonIfOffered,
   completeSetupStage,
   completeWorkingCalcs,
   decideOpportunity,
@@ -86,7 +89,7 @@ studentTest("full conditional path completes through fallback, Week 5, remaining
   const context: PlanContext = { setupId: "cousin-room", countCompletion: true, countOutcome: true };
   await fillPlanToBalance(page, "working", context);
   await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await saveOpeningPlan(page);
 
   await expect(page.getByRole("heading", { name: BACKUP_HEADING })).toBeVisible();
   await fillPlanLeavingShortfall(page, "fallback", context, 900);
@@ -402,16 +405,30 @@ studentTest("clicking Check on an empty box does not burn the student's attempts
 // ---------------------------------------------------------------------------
 
 studentTest("the opening screens work with a keyboard only", async ({ page, classCode }) => {
+  // Every step of the real door, driven the way a student with no mouse drives it: the class
+  // code, their own name off the teacher's list, the code on their card, and then the run.
+  // There is no second way in, so a step that could not be reached from a keyboard here would
+  // be a student who cannot start at all.
   await gotoFreshChallenge(page);
+  const card = await seatOnRoster(page, classCode, "9");
+  await page.goto("/join");
   const codeField = page.getByLabel("Class code");
   await codeField.focus();
   await codeField.fill(classCode);
-  const seatField = page.getByLabel("Seat", { exact: true });
-  await seatField.focus();
-  await seatField.fill("9");
-  const enterButton = page.getByRole("button", { name: /Start the eight weeks|Go in/ });
-  await enterButton.focus();
-  await enterButton.press("Enter");
+  await page.getByRole("button", { name: "Next" }).focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: card.displayName, exact: true }).focus();
+  await page.keyboard.press("Enter");
+  const keyField = page.getByLabel("Your code");
+  await keyField.focus();
+  await keyField.fill(card.joinCode);
+  await page.getByRole("button", { name: "Go in" }).focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("link", { name: /^(Start|Carry on)$/ }).focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("button", { name: /Start the eight weeks|Go in/ }).focus();
+  await page.keyboard.press("Enter");
+  await chooseSeasonIfOffered(page);
   const dealButton = page.getByRole("button", { name: "Find Avery a place" });
   await dealButton.focus();
   await dealButton.press("Enter");
@@ -510,9 +527,11 @@ studentTest("key screens have no serious or critical accessibility violations", 
 // ---------------------------------------------------------------------------
 
 studentTest("the weeks Avery plays are narrated differently for each housing choice", async ({ page, classCode }) => {
-  for (const [index, line] of [[0, /first one in the building/i], [2, /5:40/]] as const) {
+  // Two runs, two seats. A seat is a person on a roster now, so the same class cannot be
+  // entered twice as the same student — which is the product being right, not the test.
+  for (const [index, line, seat] of [[0, /first one in the building/i, "3"], [2, /5:40/, "4"]] as const) {
     await gotoFreshChallenge(page);
-    await enterChallenge(page, { classCode });
+    await enterChallenge(page, { classCode, seatCode: seat });
     await completeSetupStage(page, index);
     await completeWorkingCalcs(page);
     await savePlan(page, "working", { setupId: SETUP_ORDER[index] });
@@ -598,17 +617,17 @@ studentTest("Weeks 1 to 4 resolve on one screen and move the account at the rate
 });
 
 studentTest("a costlier place leaves Avery visibly poorer by Week 4 than a cheaper one", async ({ page, classCode }) => {
-  const inHandAtWeek4 = async (index: 0 | 2, setupId: "gym-sublet" | "cousin-room") => {
+  const inHandAtWeek4 = async (index: 0 | 2, setupId: "gym-sublet" | "cousin-room", seat: string) => {
     await gotoFreshChallenge(page);
-    await enterChallenge(page, { classCode });
+    await enterChallenge(page, { classCode, seatCode: seat });
     await completeSetupStage(page, index);
     await completeWorkingCalcs(page);
     await savePlan(page, "working", { setupId });
     const text = await page.locator(".season-ledger__row[data-tone='money'] strong").innerText();
     return Number(text.replace(/[^0-9]/g, ""));
   };
-  const dear = await inHandAtWeek4(0, "gym-sublet");
-  const cheap = await inHandAtWeek4(2, "cousin-room");
+  const dear = await inHandAtWeek4(0, "gym-sublet", "3");
+  const cheap = await inHandAtWeek4(2, "cousin-room", "4");
   expect(cheap).toBeGreaterThan(dear);
 });
 
@@ -627,7 +646,7 @@ studentTest("the course deposit deadline says what reserving would do before the
   const spendable = spendableFor("working", { setupId: "cousin-room" });
   await setAmount(page, "Backup money", String(spendable));
   await setAmount(page, CHOICE_LABELS.flexibleCash, "0");
-  await page.getByRole("button", { name: "Save this version" }).click();
+  await saveOpeningPlan(page, "reserve");
   await page.getByRole("button", { name: TO_DEPOSIT }).click();
 
   // Its own screen now, not a panel under four weeks of feed.
@@ -745,11 +764,11 @@ studentTest("a student's finished work reaches the class it joined", async ({ pa
 
 test("a class code that does not exist is refused before the challenge starts", async ({ page }) => {
   await gotoFreshChallenge(page);
+  await page.goto("/join");
   await page.getByLabel("Class code").fill("QQQQQ");
-  await page.getByLabel("Seat", { exact: true }).fill("4");
-  await page.getByRole("button", { name: /Start the eight weeks|Go in/ }).click();
+  await page.getByRole("button", { name: "Next" }).click();
 
-  await expect(page.locator("#join-status")).toContainText("No class with that code");
+  await expect(page.getByRole("alert")).toContainText("No class with that code");
   await expect(page.getByRole("heading", { name: "What the eight weeks pay." })).not.toBeVisible();
 });
 
@@ -1293,18 +1312,19 @@ studentTest("the opening plan can be closed by naming the row that takes the res
   await setAmount(page, "Sports-media course", String(N.course.fullPrice));
   await setAmount(page, "Backup money", "300");
 
-  // The button names the amount and the row, because three buttons reading "Put the rest
-  // here" are not a choice anybody listening to the page can make.
+  // The card names the row and the amount, because three buttons reading "Put the rest here"
+  // are not a choice anybody listening to the page can make.
   const rest = spendable - N.course.fullPrice - 300;
-  const intoWeek = page.getByRole("button", { name: `Put ${money(rest)} into ${CHOICE_LABELS.flexibleCash}` });
-  await expect(intoWeek).toBeVisible();
+  const intoWeek = restCard(page, "flexibleCash");
+  await expect(intoWeek).toHaveAccessibleName(new RegExp(`${CHOICE_LABELS.flexibleCash}.*${money(rest).replace("$", "\\$")}`));
   await noSeriousAxeViolations(page);
   await intoWeek.click();
 
   await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
   await expect(page.getByRole("spinbutton", { name: CHOICE_LABELS.flexibleCash })).toHaveValue(String(rest));
-  // Nothing left to place, so the offer withdraws rather than sitting there doing nothing.
-  await expect(page.getByRole("button", { name: /^Put \$/ })).toHaveCount(0);
+  // The cards stay: on the opening board they are how the plan is closed, not a shortcut that
+  // withdraws once the arithmetic is done. What changes is that they now move nothing.
+  await expect(restCard(page, "goal")).toBeVisible();
   await page.getByRole("button", { name: "Save this version" }).click();
   await expect(page.getByRole("heading", { name: "The season starts." })).toBeVisible();
 });
@@ -1315,17 +1335,92 @@ studentTest("naming the row is operable from the keyboard and never overfills th
 
   // The course row is capped at what the course costs, so the offer on that row is only
   // ever the headroom — it can never propose paying $3,000 for a $1,200 course.
-  const courseOffer = page.getByRole("button", { name: `Put ${money(N.course.fullPrice)} into Sports-media course` });
-  await expect(courseOffer).toBeVisible();
+  const courseOffer = restCard(page, "goal");
+  await expect(courseOffer).toHaveAccessibleName(new RegExp(money(N.course.fullPrice).replace("$", "\\$")));
   await courseOffer.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("spinbutton", { name: "Sports-media course" })).toHaveValue(String(N.course.fullPrice));
 
   // And what is left is still looking for a job, on the two rows that have no cap.
   const remaining = spendable - N.course.fullPrice;
-  await page.getByRole("button", { name: `Put ${money(remaining)} into Backup money` }).click();
+  await expect(restCard(page, "reserve")).toHaveAccessibleName(new RegExp(money(remaining).replace("$", "\\$")));
+  await restCard(page, "reserve").click();
   await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
   await noSeriousAxeViolations(page);
+});
+
+// ---------------------------------------------------------------------------
+// 27b. Work that has been done stays done: through a reload a moment later,
+//      through a second tab, and through the board that has to be closed out
+//      loud before it will commit.
+// ---------------------------------------------------------------------------
+
+/** The attempt as this browser has it stored, which is what a reload restores from. */
+async function storedAttempt(page: Page) {
+  const raw = await page.evaluate(() => localStorage.getItem("bow.attempt.v2.plan-under-pressure.basketball"));
+  return raw === null ? null : (JSON.parse(raw) as { log: { type: string }[]; setupRanking: { correct: boolean } | null });
+}
+
+studentTest("a decision survives a reload a moment later, and is never recorded twice", async ({ page, classCode }) => {
+  await gotoFreshChallenge(page);
+  await enterChallenge(page, { classCode });
+
+  // Checking the ranking changes the state without changing the screen, which is exactly the
+  // case the old autosave debounced — so a reload inside 250ms threw the work away, and the
+  // student's second, identical attempt at it was recorded as a second attempt.
+  await rankPlacesCorrectly(page);
+  await expect(page.getByRole("heading", { name: "Now pick where Avery lives." })).toBeVisible();
+  // And the heading takes focus, because the screen has become a different question.
+  await expect(page.locator(".stage-heading")).toBeFocused();
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Now pick where Avery lives." })).toBeVisible();
+  const restored = await storedAttempt(page);
+  expect(restored?.setupRanking?.correct).toBe(true);
+  expect(restored?.log.filter((event) => event.type === "SETUP_RANKED")).toHaveLength(1);
+
+  // A second tab on the same attempt used to restore it, sit there, and replace the whole log
+  // with its own stale copy on the first click. It is told instead, and it writes nothing.
+  const second = await page.context().newPage();
+  await second.goto(PLAN_UNDER_PRESSURE.route);
+  await expect(second.getByRole("heading", { name: "Your challenge is open in another tab." })).toBeVisible();
+  await expect(second.locator(".rank-list")).toHaveCount(0);
+  await second.close();
+
+  // The work is where the student left it.
+  await page.bringToFront();
+  const after = await storedAttempt(page);
+  expect(after?.log.filter((event) => event.type === "SETUP_RANKED")).toHaveLength(1);
+  expect(after?.setupRanking?.correct).toBe(true);
+});
+
+studentTest("an opening plan that balances exactly is still closed by naming a row", async ({ page, classCode }) => {
+  // The blocker this test exists for: the cards only appeared while money was unassigned, so a
+  // student who typed three deliberate figures that balanced exactly closed the board without
+  // ever being asked which row took the rest — and the one objective this challenge is
+  // assigned against came back "not assessed" for a run that did everything right.
+  await reachWorkingBoard(page, classCode);
+  const spendable = spendableFor("working", { setupId: "cousin-room" });
+  await setAmount(page, CHOICE_LABELS.goal, String(N.course.fullPrice));
+  await setAmount(page, CHOICE_LABELS.reserve, "1000");
+  await setAmount(page, CHOICE_LABELS.flexibleCash, String(spendable - N.course.fullPrice - 1000));
+  await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
+
+  // Pressing the primary button says what is missing rather than doing nothing at all.
+  await page.getByRole("button", { name: "Name the row that takes the rest" }).click();
+  await expect(page.getByRole("alert")).toContainText("Not saved yet");
+  await expect(page.getByRole("heading", { name: "What does Avery do with the rest?" })).toBeVisible();
+
+  await restCard(page, "reserve").click();
+  await page.getByRole("button", { name: "Save this version" }).click();
+  await expect(page.getByRole("heading", { name: "The season starts." })).toBeVisible();
+
+  // The statement is in the log, and it moved no money: the plan saved is the plan typed.
+  const stored = await storedAttempt(page);
+  const closing = stored?.log.find((event) => event.type === "PLAN_REMAINDER_ASSIGNED") as
+    | { payload: { mode: string; category: string; amount: number; remaining: number } }
+    | undefined;
+  expect(closing?.payload).toMatchObject({ mode: "working", category: "reserve", amount: 0, remaining: 0 });
 });
 
 // ---------------------------------------------------------------------------
@@ -1519,8 +1614,7 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
       // Closed by naming the row that takes the rest, which is what makes the savings figure
       // evidence rather than arithmetic.
       await setAmount(student, "Sports-media course", String(N.course.fullPrice));
-      await student.getByRole("button", { name: new RegExp(`Put \\$.* into ${CHOICE_LABELS.flexibleCash}`) }).click();
-      await student.getByRole("button", { name: "Save this version" }).click();
+      await saveOpeningPlan(student);
       await playSeasonWeeks(student);
       await passWeek5Calculation(student, String(week5TotalFor(plan)));
       await savePlan(student, "week5-first-response", plan);

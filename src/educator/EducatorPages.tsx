@@ -1,11 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { Button } from "../components/primitives/Button";
-import { CONCEPTS } from "../domain/blueprint/concepts";
-import { STRUCTURED_MICRO_SKILLS } from "../domain/blueprint/microSkills";
-import type { MasteryStatus, Trajectory } from "../domain/evidence/types";
+import { Link } from "react-router-dom";
 import {
-  competenciesFor,
   FRAMEWORKS,
   gradeBandLabel,
   isAssessable,
@@ -14,85 +8,35 @@ import {
   type FrameworkId,
   type StandardRef,
 } from "../domain/standards";
-import { aggregateConcepts, aggregateMicroSkills, classSummary, contingencyRoutes, DEMO_LABEL, DEMO_STUDENTS, reviewQueue, teachNext, type DemoStudent } from "../fixtures/demoClass";
 import { EducatorShell } from "./EducatorShell";
 import { durationLabel, PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
-import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
-import { RETEACH_TOPICS } from "../domain/competency/reteach";
 
 /**
- * The framework this fixture surface names, and the objectives Plan Under Pressure's
- * competencies actually reach.
+ * The framework this guide names, and the objectives Plan Under Pressure's competencies
+ * actually reach.
  *
- * `AlignmentBlock` and `StandardsView` used to read `src/domain/blueprint/standards.ts`, a
- * pre-framework model that hard-coded a strength ("Primary", "Partial") by objective id
- * rather than deriving it from what BOW can actually assess. That let the guide badge 1.2
- * "Primary" the same week `/educator/objectives` correctly reported 1.2 as not yet
- * assessable — two live surfaces, one account of coverage each, disagreeing about the same
- * objective. Reading `src/domain/standards/` here instead means there is exactly one
- * account in the product: whatever `isAssessable` and the mapping table actually say.
+ * `AlignmentBlock` used to read `src/domain/blueprint/standards.ts`, a pre-framework model
+ * that hard-coded a strength ("Primary", "Partial") by objective id rather than deriving it
+ * from what BOW can actually assess. That let the guide badge 1.2 "Primary" the same week
+ * `/educator/objectives` correctly reported 1.2 as not yet assessable — two live surfaces,
+ * one account of coverage each, disagreeing about the same objective. Reading
+ * `src/domain/standards/` here instead means there is exactly one account in the product:
+ * whatever `isAssessable` and the mapping table actually say.
  */
 const GUIDE_FRAMEWORK_ID: FrameworkId = "nysed-pf-2026";
 const GUIDE_OBJECTIVE_CODES = ["1.1", "1.2", "1.3", "4.1", "5.1"] as const;
 
-const STATUS_LABELS: Record<MasteryStatus, string> = {
-  demonstrated_independently: "Independent",
-  demonstrated_with_support: "With support",
-  developing: "Developing",
-  not_demonstrated: "Not demonstrated",
-  not_observed: "Not observed",
-};
-
-const TRAJECTORY_LABELS: Record<Trajectory, string> = {
-  independent_first_opportunity: "Independent first opportunity",
-  corrected_after_consequence: "Corrected after consequence",
-  corrected_after_scaffold: "Corrected after scaffold",
-  new_difficulty_during_adaptation: "New difficulty during adaptation",
-  persistent_gap: "Persistent gap",
-  insufficient_evidence: "Insufficient evidence",
-};
-
 function objectivePath(ref: StandardRef): string {
   return `/educator/objectives/${ref.frameworkId}/${ref.code}`;
 }
-
-/** Copy-to-clipboard that confirms it worked, and says so when the browser blocks it. */
-function CopyButton({ text, label = "Copy the reteach" }: { text: string; label?: string }) {
-  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
-  return (
-    <Button
-      variant="secondary"
-      onClick={() => {
-        navigator.clipboard?.writeText(text)
-          .then(() => setState("copied"))
-          .catch(() => setState("failed"));
-        window.setTimeout(() => setState("idle"), 2400);
-      }}
-    >
-      <span aria-live="polite">{state === "copied" ? "Copied" : state === "failed" ? "Copy blocked — select it manually" : label}</span>
-    </Button>
-  );
-}
-
-/**
- * The reteach this sample points at, read from the table every real class reads.
- *
- * The demo used to carry its own three-step script and call it a "4-minute reteach" while
- * the real objective page called the same lesson twelve minutes. A duration written twice is
- * a duration that disagrees with itself, so there is one of each here: one title, one focus,
- * one set of moves, one number of minutes.
- */
-const DEMO_RETEACH = RETEACH_TOPICS.find((topic) => topic.id === "certain-and-conditional")!;
-const RETEACH_SCRIPT = `${DEMO_RETEACH.title}. ${DEMO_RETEACH.moves.join(" ")}`;
 
 /**
  * Standards alignment, read live from the audited layer rather than restated by hand.
  *
  * Every badge here is `isAssessable` and nothing else — the same function
  * `/educator/objectives` calls to decide "Ready to assign" from "Mapped, not yet
- * assessable." Neither this page nor `StandardsView` below carries its own opinion about
- * how strong an objective's coverage is, because the day it did was the day the two
- * surfaces could disagree again.
+ * assessable." This page carries no opinion of its own about how strong an objective's
+ * coverage is, because the day it did was the day the two surfaces could disagree again.
  */
 function AlignmentBlock() {
   const labels = labelsFor(GUIDE_FRAMEWORK_ID);
@@ -172,8 +116,9 @@ export function EducatorGuide() {
         <p className="guide-actions">
           <Link className="button button--primary" to="/educator/classes">Create a class</Link>
           <Link className="button button--secondary" to={PLAN_UNDER_PRESSURE.route}>Try it as a student</Link>
-          {/* The one way in to the fixture, framed as what it is. It used to be a nav item
-              beside a teacher's real classes. */}
+          {/* The one way in to the sample class, framed as what it is: real submissions
+              built the same way any real class's are, so this button leads to the same
+              screens and the same vocabulary a real class uses. */}
           <Link className="button button--secondary" to="/educator/demo">See a sample class</Link>
         </p>
       </header>
@@ -225,196 +170,6 @@ export function TeachingCompanion() {
         <article><header><span>Day 02</span><h2>Revise when conditions change</h2><p>Example context: Sam is preparing for a school music showcase with a short paid equipment-helper role.</p></header><ol><li><b>Committed vs adjustable money</b><p>Mark the registration and transit already committed; keep future savings adjustable.</p></li><li><b>Contingency thinking</b><p>Construct a lower-income version without telling students which priority to reduce.</p></li><li><b>Unexpected change</b><p>Add a required repair cost, revise the plan, and explain one tradeoff with two numbers.</p></li></ol><aside>Debrief prompt: “How can two different revised plans both be financially coherent?”</aside></article>
       </div>
       <section className="teaching-boundary"><h2>Keep the assessment clean</h2><p>Teach the concepts with different names, amounts, and situations. During the BOW challenge, allow calculators and access tools, but do not tell students which financial strategy to choose.</p><Link className="button button--primary" to="/educator/guide">Return to challenge brief</Link></section>
-    </EducatorShell>
-  );
-}
-
-function StatusKey() {
-  return (
-    <ul className="status-key">
-      {statusOrder.map((status) => <li key={status}><i data-status={status} />{STATUS_LABELS[status]}</li>)}
-    </ul>
-  );
-}
-
-function Matrix({ records }: { records: DemoStudent[] }) {
-  const rows = aggregateConcepts(records);
-  return (
-    <table className="concept-matrix">
-      <caption>Concept status across 28 hypothetical student records</caption>
-      <thead><tr><th scope="col">Concept</th><th scope="col">Status distribution</th><th scope="col">Follow-up</th></tr></thead>
-      <tbody>{rows.map((row) => {
-        const concept = CONCEPTS.find((item) => item.id === row.conceptId)!;
-        const followUp = row.counts.developing + row.counts.not_demonstrated;
-        return <tr key={row.conceptId} className={row.conceptId === "contingency" ? "is-emphasized" : ""}><th scope="row"><Link to={`/educator/demo/concepts/${row.conceptId}`}><span>{concept.code}</span>{concept.label}</Link></th><td><div className="matrix-bar" aria-label={`${row.counts.demonstrated_independently} independent, ${row.counts.demonstrated_with_support} with support, ${row.counts.developing} developing, ${row.counts.not_demonstrated} not demonstrated, ${row.counts.not_observed} not observed`}>{statusOrder.map((status) => row.counts[status] > 0 && <span key={status} data-status={status} style={{ width: `${(row.counts[status] / records.length) * 100}%` }} title={`${STATUS_LABELS[status]}: ${row.counts[status]} of ${records.length}`} />)}</div><div className="matrix-counts">{statusOrder.map((status) => <span key={status}><i data-status={status} />{row.counts[status]}</span>)}</div></td><td><b>{followUp}</b> of {records.length}</td></tr>;
-      })}</tbody>
-    </table>
-  );
-}
-
-const statusOrder: readonly MasteryStatus[] = ["demonstrated_independently", "demonstrated_with_support", "developing", "not_demonstrated", "not_observed"];
-
-export function ClassOverview() {
-  const insight = teachNext(DEMO_STUDENTS);
-  const summary = classSummary(DEMO_STUDENTS);
-  const routes = contingencyRoutes(DEMO_STUDENTS);
-  const reviewStudents = reviewQueue(DEMO_STUDENTS);
-  const labels = labelsFor(GUIDE_FRAMEWORK_ID);
-  return (
-    <EducatorShell demo>
-      <header className="class-header"><div><p className="eyebrow">{DEMO_LABEL} · {BASKETBALL_SCENARIO.title}</p><h1>Sample class</h1><p>{summary.total} hypothetical records, so you can read the shape of the evidence before you run it with anybody.</p></div><div><span>{summary.total} turned in</span><span>{summary.reviewed} read</span><span>{summary.pending} awaiting reading</span></div></header>
-      {/* Partial evidence toward both, stated as such: `adapt-a-plan` and
-          `plan-for-the-unexpected` are `partial` on 1.2 and 4.1 alike, and neither number
-          gets the unqualified badge — a bare "NYSED 1.2" beside "4.1 partial" read as a
-          stronger claim for 1.2 than the mapping table makes for either. */}
-      <section className="teach-next"><p className="eyebrow">Teach next · C4</p><h2>Build a complete fallback.</h2><p><b>{summary.persistentFallbackGap} of {summary.total}</b> students finished with a backup plan that does not cover the risk. Another <b>{summary.laterCorrected}</b> left the opening fallback short and closed it themselves during Week 5, and <b>{summary.completedWithSupport}</b> got there after using a scaffold.</p><div><Link className="button button--primary" to={`/educator/demo/concepts/${insight?.conceptId}`}>Open C4 evidence</Link><CopyButton text={RETEACH_SCRIPT} /></div><span className="standard-chip">Partial evidence toward {labels?.frameworkShort} 1.2 · 4.1</span></section>
-      <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Concept matrix</p><h2>Current evidence by financial concept</h2></div><StatusKey /><Matrix records={DEMO_STUDENTS} /></section>
-      <section className="trajectory-panel"><div><p className="eyebrow">How they got there · C4</p><h2>Every student is in exactly one of these four.</h2><p>Same 28 records as the matrix, grouped by the route they took to a backup plan.</p></div><div className="route-grid">{routes.map((group) => (
-        <article key={group.route} data-route={group.route}>
-          <b>{group.students.length}</b>
-          <h3>{group.label}</h3>
-          <p>{group.meaning}</p>
-          <div className="seat-chips">{group.students.map((student) => <Link key={student.seatCode} to={`/educator/demo/students/${student.seatCode}`}>{student.seatCode}</Link>)}</div>
-        </article>
-      ))}</div></section>
-      <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Open these first</p><h2>Ordered by evidence, not by grade</h2></div><div className="student-worklist">{reviewStudents.map((student) => <Link key={student.seatCode} to={`/educator/demo/students/${student.seatCode}`}><div><span>Seat {student.seatCode} · {student.finalPoints === null ? `${student.structuredPoints}/90 structured` : `${student.finalPoints}/100`}</span><h3>{student.evidenceLine}</h3><p>{student.primaryNeed}</p></div><span aria-hidden="true">→</span></Link>)}</div></section>
-      <section className="class-foot"><div><span>Grade status</span><strong>{summary.reviewed} of {summary.total} reviewed</strong><p>Median {summary.median} · Range {summary.range[0]}–{summary.range[1]}</p></div><div><span>Challenge</span><strong>{PLAN_UNDER_PRESSURE.title}</strong><p>{BASKETBALL_SCENARIO.title}</p></div><div><span>Data status</span><strong>{DEMO_LABEL}</strong><p>All totals derive from individual records. <Link to="/educator/demo/standards">How this maps to objectives</Link></p></div></section>
-    </EducatorShell>
-  );
-}
-
-export function ConceptDrilldown() {
-  const { conceptId = "contingency" } = useParams();
-  const concept = CONCEPTS.find((item) => item.id === conceptId) ?? CONCEPTS[3]!;
-  const affected = DEMO_STUDENTS.filter((student) => ["developing", "not_demonstrated"].includes(student.concepts.find((result) => result.conceptId === concept.id)?.status ?? ""));
-  const labels = labelsFor(GUIDE_FRAMEWORK_ID);
-  return (
-    <EducatorShell demo>
-      {/* The tag used to print "NYSED 1.2" on every concept's page, C1 through C6 — a
-          leftover from when this only ever rendered C4. Only C4 (contingency) is actually
-          partial evidence toward 1.2 and 4.1; every other concept correctly shows nothing. */}
-      <header className="page-header page-header--with-back"><Link to="/educator/demo">← Sample class</Link><p className="eyebrow">{concept.code} · Concept drill-down</p><h1>{concept.label}</h1><p>{concept.description}</p>{concept.id === "contingency" && <div className="tag-row"><span>Partial evidence toward {labels?.frameworkShort} 1.2</span><span>4.1 partial</span></div>}</header>
-      <section className="drill-grid">
-        <div className="drill-main"><div className="section-heading"><p className="eyebrow">Micro-skill distribution</p><h2>Where the evidence separates</h2></div><table className="micro-table"><caption>Counts across {DEMO_STUDENTS.length} hypothetical records</caption><thead><tr><th scope="col">Micro-skill</th><th scope="col">Independent</th><th scope="col">Support</th><th scope="col">Partial / not</th></tr></thead><tbody>{aggregateMicroSkills(DEMO_STUDENTS, concept.id).map(({ id, label, independent, support, partial }) => <tr key={id}><th scope="row"><code>{id}</code>{label}</th><td>{independent}</td><td>{support}</td><td>{partial}</td></tr>)}</tbody></table>{concept.id === "contingency" && <p className="context-note">C4 observation context is shown for every student: <b>Opening income fallback</b> or <b>Week 5 cost response</b>.</p>}
-          <div className="misconception-list"><h2>How each pattern is identified</h2><p className="misconception-list__note">These are fixed rules applied to the financial states a student saved. The same evidence always produces the same flag — nothing here is inferred or AI-generated.</p>{[
-            ["Partial fallback", "A lower-resource plan was saved, but money was still exposed when it was saved.", "The student changed the plan and left part of the risk uncovered."],
-            ["Reached for committed money", "The student tried to move a cost that was already locked.", "Committed money is being treated as if it were still available."],
-            ["Backup still depends on a bonus", "The backup plan's costs and choices exceed the money that does not depend on a condition.", "The lower-income version still relies on money that may not arrive."],
-          ].map(([label, rule, wording]) => <article key={label}><div><b>{label}</b><span>{rule}</span></div><p>{wording}</p></article>)}</div>
-        </div>
-        <aside className="reteach-card"><p className="eyebrow">Teach next</p><h2>{DEMO_RETEACH.title}</h2><p>{DEMO_RETEACH.focus}</p><ol>{DEMO_RETEACH.moves.map((move) => <li key={move}>{move}</li>)}</ol><p className="next-lesson__minutes">About {DEMO_RETEACH.minutes} minutes.</p><CopyButton text={RETEACH_SCRIPT} /></aside>
-      </section>
-      <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Affected students</p><h2>{affected.length} students need follow-up on {concept.code}</h2><p>Each row lists the micro-skills still open for that student, so a small group can be pulled for the piece they are actually missing.</p></div><div className="student-worklist">{affected.map((student) => {
-        const open = STRUCTURED_MICRO_SKILLS.filter((skill) => skill.conceptId === concept.id && student.microStatuses[skill.id] !== "independent");
-        return (
-          <Link key={student.seatCode} to={`/educator/demo/students/${student.seatCode}`}>
-            <div>
-              <span>Seat {student.seatCode} · {STATUS_LABELS[student.concepts.find((result) => result.conceptId === concept.id)!.status]}</span>
-              <h3>{open.map((skill) => skill.label).join(" · ") || "Concept-level gap with no single micro-skill isolated"}</h3>
-              <p>{open.map((skill) => skill.id).join(", ")}</p>
-            </div>
-            <span aria-hidden="true">→</span>
-          </Link>
-        );
-      })}</div></section>
-    </EducatorShell>
-  );
-}
-
-function readReview(seatCode: string): number | null {
-  try {
-    const raw = window.localStorage.getItem("bow.educator.v1.review");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Record<string, { total: number }>;
-    return parsed[seatCode]?.total ?? null;
-  } catch { return null; }
-}
-
-function StudentLedger({ student }: { student: DemoStudent }) {
-  return <table className="grade-ledger"><thead><tr><th>Concept</th><th>Status</th><th>Trajectory</th><th>Points</th></tr></thead><tbody>{student.concepts.map((result) => { const concept = CONCEPTS.find((item) => item.id === result.conceptId)!; return <tr key={result.conceptId}><th><span>{concept.code}</span>{concept.label}</th><td><span className="status-badge" data-status={result.status}>{STATUS_LABELS[result.status]}</span></td><td>{TRAJECTORY_LABELS[result.trajectory]}</td><td>{result.points === null ? "—" : `${result.points}/${result.maxPoints}`}</td></tr>; })}</tbody></table>;
-}
-
-export function StudentEvidence() {
-  const { seatCode = "14" } = useParams();
-  const student = DEMO_STUDENTS.find((item) => item.seatCode === seatCode) ?? DEMO_STUDENTS[13]!;
-  const reviewed = readReview(student.seatCode);
-  const reasoning = reviewed ?? student.reasoningPoints;
-  const final = reasoning === null ? null : student.structuredPoints + reasoning;
-  return (
-    <EducatorShell demo>
-      <header className="student-evidence-header"><div><Link to="/educator/demo">← Sample class</Link><p className="eyebrow">Seat {student.seatCode} · Basketball</p><h1>{final === null ? "Final grade pending" : `${final}/100`}</h1><p>{student.evidenceLine}</p></div><div><span>Structured</span><strong>{student.structuredPoints}/90</strong><span>Reasoning</span><strong>{reasoning === null ? "Pending" : `${reasoning}/10`}</strong><Link className="button button--secondary" to={`/educator/demo/students/${student.seatCode}/reasoning`}>Review reasoning</Link></div></header>
-      {student.seatCode === "14" && <section className="golden-case"><p className="eyebrow">Golden evidence case</p><h2>C4: 17/20 · Demonstrated independently</h2><p>Trajectory: <b>Corrected after consequence.</b> The incomplete opening fallback stays in the ledger; the later balanced no-$800 preview updates current status without rewriting earlier points.</p></section>}
-      <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Grade ledger</p><h2>Every point has a source</h2></div><StudentLedger student={student} /></section>
-      <section className="evidence-detail-grid">
-        <div><div className="section-heading"><p className="eyebrow">Student evidence timeline</p><h2>First attempt through final state</h2></div><ol className="evidence-timeline">{student.timeline.map((entry) => <li key={entry.stage}><span /><div><b>{entry.stage}</b><p>{entry.body}</p><small>{entry.result}</small></div></li>)}</ol></div>
-        <aside className="snapshot-stack"><p className="eyebrow">Saved financial states</p>{student.savedStates.map((saved) => <article key={saved.label}><span>{saved.label}</span><strong>{saved.headline}</strong><p>{saved.detail}</p></article>)}</aside>
-      </section>
-    </EducatorShell>
-  );
-}
-
-export function ReasoningReview() {
-  const { seatCode = "14" } = useParams();
-  const navigate = useNavigate();
-  const student = DEMO_STUDENTS.find((item) => item.seatCode === seatCode) ?? DEMO_STUDENTS[13]!;
-  const [scores, setScores] = useState({ workability: 2, priority: 2, tradeoff: student.seatCode === "14" ? 1 : 0, numbers: student.seatCode === "14" ? 4 : 0 });
-  const total = Object.values(scores).reduce((sum, value) => sum + value, 0);
-  const save = () => {
-    const reviews: Record<string, { total: number; scores: typeof scores }> = {};
-    try {
-      const parsed: unknown = JSON.parse(window.localStorage.getItem("bow.educator.v1.review") ?? "{}");
-      if (parsed && typeof parsed === "object") Object.assign(reviews, parsed);
-    } catch { /* A malformed local demo review is safely replaced. */ }
-    reviews[student.seatCode] = { total, scores };
-    window.localStorage.setItem("bow.educator.v1.review", JSON.stringify(reviews));
-    navigate(`/educator/demo/students/${student.seatCode}`);
-  };
-  return (
-    <EducatorShell demo>
-      <header className="page-header page-header--with-back"><Link to={`/educator/demo/students/${student.seatCode}`}>← Seat {student.seatCode} evidence</Link><p className="eyebrow">Human review · C6</p><h1>Score the financial defense.</h1><p>Reasoning changes only C6 and the final grade. Structured evidence remains untouched.</p></header>
-      <div className="reasoning-layout"><section className="student-response"><p className="eyebrow">Student response</p><blockquote>{student.seatCode === "14" ? "I kept $800 for the sports-media course after the update. The clinic added $500, but I gave up Avery's only rest block and reduced the reserve to $400. The revised plan balances at $6,300, and if the $800 completion payment does not arrive, my preview still balances." : "My plan works because I changed future money after the new cost. I used the numbers in my final plan to make sure it balanced."}</blockquote><div className="selected-evidence">{(student.seatCode === "14"
-        ? [["Final funds", "$6,300"], ["Course goal", "$800"], ["Reserve", "$400"]]
-        : [["Structured evidence", `${student.structuredPoints}/90`], ["Current need", student.primaryNeed]]
-      ).map(([label, value]) => <span key={label}>{label} <b>{value}</b></span>)}</div><p className="response-note">Numbers shown are the ones this student selected from their own saved plan. Scoring the writing does not change any of them.</p></section><section className="rubric-panel"><p className="eyebrow">10-point reasoning rubric</p>{([
-        ["workability", "Workability", 2, "Explains why the final plan actually holds"], ["priority", "Protected priority", 2, "Names what they chose to keep, and why"], ["tradeoff", "Tradeoff / opportunity cost", 2, "Names what that choice cost them"], ["numbers", "Numerical evidence", 4, "Two accurate, relevant numbers from their own plan"],
-      ] as const).map(([key, label, max, hint]) => <div className="rubric-row" key={key}><div><b>{label}</b><span>{hint}</span></div><div>{Array.from({ length: max + 1 }, (_, value) => <button type="button" key={value} aria-pressed={scores[key] === value} onClick={() => setScores((current) => ({ ...current, [key]: value }))}>{value}</button>)}</div></div>)}<footer><span>Reasoning total</span><strong>{total}/10</strong><Button onClick={save}>Save review</Button></footer></section></div>
-    </EducatorShell>
-  );
-}
-
-/**
- * The demo's own standards page — nine micro-skills used to hang off 1.2 here on the
- * strength of the legacy blueprint layer, while `/educator/objectives` correctly reported
- * 1.2 as not yet assessable. Reading the audited layer means this page and that one now
- * agree about 1.2 because they read the same mapping table, not because anybody kept two
- * copies in sync by hand.
- */
-export function StandardsView() {
-  const labels = labelsFor(GUIDE_FRAMEWORK_ID);
-  const framework = FRAMEWORKS[GUIDE_FRAMEWORK_ID];
-  return (
-    <EducatorShell demo>
-      <header className="page-header page-header--with-back"><Link to="/educator/demo">← Sample class</Link><p className="eyebrow">Standards evidence view · {DEMO_LABEL}</p><h1>Evidence connected to {labels?.frameworkShort} objectives.</h1><p>The same evidence is regrouped here. There is no separate standards score and no {labels?.frameworkShort} mastery claim. Each chip below is one BOW skill: how much of the objective it covers, then what it observes.</p></header>
-      <div className="standards-list">{GUIDE_OBJECTIVE_CODES.map((code) => {
-        const ref: StandardRef = { frameworkId: GUIDE_FRAMEWORK_ID, code };
-        const standard = standardByRef(ref);
-        if (!standard) return null;
-        const assessable = isAssessable(ref);
-        const covering = competenciesFor(GUIDE_FRAMEWORK_ID, code);
-        return (
-          <article key={code} data-code={code}>
-            <header><span data-assessable={assessable}>{assessable ? "Ready to assign" : "Mapped, not yet assessable"}</span><b>{code}</b></header>
-            <h2>{standard.shortLabel}</h2>
-            <blockquote>{standard.text}</blockquote>
-            <ul className="skill-chips">{covering.map((entry) => (
-              <li key={entry.competency.id}><code data-coverage={entry.coverage}>{entry.coverage}</code>{entry.competency.statement}</li>
-            ))}</ul>
-            {code === "4.1" && <p>Advance planning for unexpected events only. Insurance is not taught or assessed by Basketball.</p>}
-            <a href={framework?.sourceUrl} target="_blank" rel="noreferrer">Open official {labels?.frameworkShort} source ↗</a>
-          </article>
-        );
-      })}</div>
-      <p className="disclaimer">{framework?.labels.attribution} {gradeBandLabel(GUIDE_FRAMEWORK_ID)}.</p>
     </EducatorShell>
   );
 }

@@ -24,9 +24,11 @@ import { forgetClass, rememberClass, rememberedClasses } from "./classMemory";
  * objective it is for, and an existing class is set one from the same screen. The separate
  * assign flow was a third of this page on its own page, and it could create classes too.
  *
- * The setup step is deliberately the whole setup step: no accounts, no roster, no student
- * names, no email addresses. A teacher names the class, gets a code to read out and a
- * private link to keep, and that is the pilot. The private link matters more than it looks:
+ * The setup step is deliberately the whole setup step: no accounts to make for anybody, no
+ * email addresses, no passwords. A teacher names the class, gets a code to read out and a
+ * private link to keep, and that is the pilot. A student types the code at /join and the name
+ * their teacher will see their work under; nothing on the student's side is an account BOW
+ * asks a child to create. The private link matters more than it looks:
  * the class code goes on a whiteboard, so every student in the room has it — which means it
  * cannot be what opens the evidence. The key in this link is, and it is stored in this
  * browser and shown once.
@@ -198,7 +200,7 @@ export function MyClasses() {
         {working ? "Creating…" : "Create the class"}
       </Button>
       <p id="class-form-status" className={`class-form__status${problem ? " class-form__status--problem" : ""}`} aria-live="polite">
-        {problem ?? `Students need the code and a seat number. Classes and their evidence are kept for ${CLASS_RETENTION_DAYS} days, then deleted.`}
+        {problem ?? `Students need the code and nothing else. Classes and their evidence are kept for ${CLASS_RETENTION_DAYS} days, then deleted.`}
       </p>
     </section>
   );
@@ -219,9 +221,13 @@ export function MyClasses() {
           <div className="class-created__body">
             <h2>{created.label}</h2>
             <ol className="class-created__steps">
+              {/* What a student actually does, in the order they do it. This used to read
+                  "give them the code above plus a seat number each" — and there is no seat
+                  number anywhere in the student flow to give. A teacher who read that out
+                  handed thirty students a number to type into a box that does not exist. */}
               <li>
-                Send students to <code>{window.location.origin}{PLAN_UNDER_PRESSURE.route}</code> and give them
-                the code above plus a seat number each.
+                Send students to <code>{window.location.origin}/join</code> and read out the code above.
+                They type the code, then the name you will see their work under.
               </li>
               <li>Allow about {durationLabel(PLAN_UNDER_PRESSURE)}. Do not coach a financial strategy.</li>
               <li>Open the evidence with your private link when they are finished.</li>
@@ -251,8 +257,9 @@ export function MyClasses() {
           <p className="eyebrow">My classes</p>
           <h1>Create your first class.</h1>
           <p>
-            You get a code to read out and a private link that opens the evidence. Students need no account,
-            no email address and no name — a seat number is how their work finds its way back to you.
+            You get a code to read out and a private link that opens the evidence. Students make no account
+            and give no email address — they type the code at <code>/join</code> and the name their work
+            comes back under.
           </p>
         </header>
         {createBlock}

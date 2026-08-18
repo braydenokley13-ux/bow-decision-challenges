@@ -294,6 +294,13 @@
 .popup-closer__choice span.money { grid-column: 2; color: var(--ink-2); font: var(--t-sm); font-feature-settings: var(--num); }
 .popup-closer__choice button:hover span.money { color: inherit; }
 .popup-closer__choice button > span[aria-hidden="true"] { grid-row: 1 / span 2; align-self: center; color: var(--world-accent); font: var(--m-md); }
+
+/* What that card would leave the truck cooking with, said on the card. The one that would
+   leave it cooking nothing is marked, because a plan with an empty stock line opens four
+   Saturdays with an empty window and every figure after it reads zero. */
+.popup-closer__choice button small { grid-column: 2; color: var(--ink-3); font: var(--t-micro); }
+.popup-closer__choice button[data-warn="true"] { border-left-color: var(--fin-over); }
+.popup-closer__choice button[data-warn="true"] small { color: var(--fin-over-ink); font-weight: 600; }
 .popup-closer__choice button:hover > span[aria-hidden="true"] { color: inherit; }
 .popup-help { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); padding: var(--s-4); background: var(--world-accent-soft); border-left: 4px solid var(--world-accent); }
 .popup-help p { margin: 0; font: var(--t-ui); }
@@ -305,6 +312,8 @@
 .popup-commit--spare { color: var(--fin-over-ink); background: var(--fin-over-soft); border-color: var(--fin-over); }
 .popup-commit__read { margin: 0; color: inherit; font: var(--t-title2); }
 .popup-commit__read .money { font-feature-settings: var(--num); }
+.popup-commit__refusal { flex-basis: 100%; order: -1; margin: 0; color: inherit; font: var(--t-ui); }
+.popup-commit__refusal .money { font-feature-settings: var(--num); }
 .popup-commit__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
 
 /* ---------------------------------------------------------------------------
