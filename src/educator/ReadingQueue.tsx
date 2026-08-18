@@ -6,7 +6,7 @@ import { SeatNamesContext, seatNames, useSeatLabel } from "./names";
 import { REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 import { REASONING_MAXIMUM } from "../domain/evidence/grade";
 import { useClassEvidence } from "./useClassEvidence";
-import type { StudentRow } from "./analysis";
+import { classRoll, type StudentRow } from "./analysis";
 
 /**
  * Every written explanation in one class, in one place, in an order.
@@ -57,7 +57,12 @@ export function ReadingQueue() {
     );
   }
 
-  const rows = state.analysis.rows;
+  // The class, counted by the one function every other surface counts it with. This read
+  // `analysis.rows` — every submission record — so a seat with two attempts was two students
+  // and a student the teacher had removed was still one, and the queue told a teacher a
+  // different number from the page they had arrived from.
+  const roll = classRoll({ rows: state.analysis.rows, roster: state.roster, progress: state.progress });
+  const rows = roll.rows;
   const unread = rows.filter((entry) => entry.reasoningPoints === null).length;
 
   return (

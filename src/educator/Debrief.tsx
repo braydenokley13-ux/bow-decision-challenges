@@ -1,7 +1,7 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { EducatorShell, StateKey } from "./EducatorShell";
 import { useClassEvidence } from "./useClassEvidence";
-import { seatList, type StudentRow } from "./analysis";
+import { classRoll, seatList, type StudentRow } from "./analysis";
 import { seatLabel, seatNames } from "./names";
 import { formatDollars } from "../domain/core/money";
 import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
@@ -50,7 +50,11 @@ export function Debrief() {
   const { analysis, record, assignments, submissions, roster } = state;
   const names = seatNames(roster);
   const nameFor = (seatCode: string) => seatLabel(seatCode, names);
-  const total = analysis.rows.length;
+  // The class, counted the way every other surface counts it. This was `analysis.rows.length`
+  // — one per submission record — so the page a teacher prints and reads aloud told a room of
+  // twenty-two that twenty-three of them had finished.
+  const roll = classRoll({ rows: analysis.rows, roster: state.roster, progress: state.progress });
+  const total = roll.rows.length;
 
   if (total === 0) {
     return (
