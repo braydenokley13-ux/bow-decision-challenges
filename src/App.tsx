@@ -9,6 +9,7 @@ import { ObjectiveMap } from "./educator/ObjectiveMap";
 import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPages";
 import { ReadingQueue } from "./educator/ReadingQueue";
 import { Debrief } from "./educator/Debrief";
+import { ShareOut } from "./educator/ShareOut";
 import { PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
 import { StudentJoin } from "./student/Join";
 import { StudentHome } from "./student/Home";
@@ -96,6 +97,8 @@ export function App() {
       <Route path="/educator/class/:code/students/:seatCode" element={<RealStudentEvidence />} />
       <Route path="/educator/class/:code/reading" element={<ReadingQueue />} />
       <Route path="/educator/class/:code/debrief" element={<Debrief />} />
+      {/* Select, sequence, project. Nothing is shown to a room unless a teacher chose it. */}
+      <Route path="/educator/class/:code/share-out" element={<ShareOut />} />
       {/* The fixture class, behind a route that says so. It exists to show an educator the
           shape of the evidence before they run one, and it can never be reached from a
           real class's URL. */}

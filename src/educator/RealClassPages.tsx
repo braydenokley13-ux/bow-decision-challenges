@@ -526,6 +526,7 @@ export function RealClassOverview() {
                 <strong>Run the debrief</strong>
                 <p>Two real plans, what changed after Week 5, and what to review — from this class's evidence.</p>
                 <Link className="button button--primary" to={`/educator/class/${record.code}/debrief${keyQuery}`}>Open the debrief</Link>
+                <Link className="button button--secondary" to={`/educator/class/${record.code}/share-out${keyQuery}`}>Pick what the room sees</Link>
               </div>
             </section>
           </>

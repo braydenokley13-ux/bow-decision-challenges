@@ -1170,3 +1170,33 @@ p { color: var(--ink-2); }
 .home__worlds strong { font: var(--t-title2); }
 .home__worlds span { color: var(--ink-2); font: var(--t-sm); }
 .home__worlds-length { font-feature-settings: var(--num); }
+
+/* ── Share-out ────────────────────────────────────────────────────────────────────────────
+   Select and sequence, then project. Nothing reaches a room that a teacher did not choose. */
+.shareout-chosen { display: grid; gap: var(--s-3); margin: 0 0 var(--s-4); padding: 0; list-style: none; counter-reset: shareout; }
+.shareout-chosen li { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--s-4); padding: var(--s-4); background: var(--surface); border-radius: var(--r-sm); }
+.shareout-chosen li > div:first-child { flex: 1 1 20rem; display: grid; gap: var(--s-2); }
+.shareout-chosen strong { font: var(--t-title2); }
+.shareout-chosen input { width: 100%; padding: var(--s-2) var(--s-3); }
+.shareout-chosen__moves { display: flex; gap: var(--s-2); }
+
+.shareout-candidates { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.shareout-candidates li { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--s-4); padding: var(--s-4); background: var(--surface); border-radius: var(--r-sm); }
+.shareout-candidates li[data-chosen="true"] { box-shadow: inset 4px 0 0 var(--bow-brand); }
+.shareout-candidates li > div { flex: 1 1 24rem; display: grid; gap: var(--s-2); }
+.shareout-candidates__who { margin: 0; font: var(--t-ui); font-weight: 600; }
+.shareout-candidates__why { margin: 0; color: var(--ink-2); font: var(--t-sm); }
+.shareout-candidates blockquote { max-width: var(--measure); margin: 0; padding-left: var(--s-4); border-left: 3px solid var(--border-default); font-style: italic; }
+
+/* Read from the back of a room, driven by the arrow keys, with the teacher's own reason
+   on screen for them and for nobody else. */
+.present { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; gap: var(--s-5); padding: var(--s-5); background: var(--canvas); }
+.present__bar { display: flex; align-items: center; justify-content: space-between; color: var(--ink-2); font: var(--t-label); letter-spacing: var(--track-label); text-transform: uppercase; }
+.present__slide { display: grid; align-content: center; justify-items: start; gap: var(--s-5); width: 100%; max-width: 60rem; margin: 0 auto; }
+.present__title { margin: 0; color: var(--bow-brand); font: var(--t-display2); }
+.present__quote { margin: 0; font: 500 clamp(1.5rem, 3.2vw, 2.4rem)/1.35 var(--font-ui); }
+.present__quote--none { color: var(--ink-3); font-style: italic; }
+.present__summary { margin: 0; color: var(--ink-2); font: var(--t-ui); }
+.present__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); padding-top: var(--s-4); border-top: 1px solid var(--border-default); }
+.present__moves { display: flex; gap: var(--s-3); }
+.present__note { margin: 0; max-width: 34rem; color: var(--ink-3); font: var(--t-sm); text-align: right; }
