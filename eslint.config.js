@@ -6,7 +6,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   // `scripts` holds standalone dev tooling that runs outside the app tsconfig.
-  { ignores: ["dist", "dist-server", ".bow-classes", "coverage", "playwright-report", "test-results", "screens", "scripts", "eslint.config.js", "stylelint.config.js"] },
+  { ignores: ["dist", "dist-server", ".bow-classes", "coverage", "playwright-report", "test-results", "screens", "scripts", ".scratch", "gauntlet", "eslint.config.js", "stylelint.config.js"] },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {

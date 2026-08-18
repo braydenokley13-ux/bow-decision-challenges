@@ -1,6 +1,15 @@
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { CLASS_RETENTION_DAYS, type Assignment, type ClassRecord, type SubmissionRecord } from "../src/platform/classes/types";
+import type {
+  AttemptCheckpoint,
+  RosterEntry,
+  ShareOutSelection,
+  StudentAccount,
+  TeacherAccount,
+  TeacherFeedback,
+} from "../src/platform/identity/types";
 
 /**
  * Where a class and its evidence actually live.
@@ -15,6 +24,32 @@ import { CLASS_RETENTION_DAYS, type Assignment, type ClassRecord, type Submissio
  */
 export interface StoredClass extends ClassRecord {
   teacherKey: string;
+  /**
+   * The account that owns this class, once one does.
+   *
+   * Absent on every class created before accounts existed, and those classes still open with
+   * their key alone. Ownership is added by a teacher claiming a class they already hold the
+   * key for, never inferred — a key in a browser is not proof of which account is holding it.
+   */
+  teacherId?: string;
+}
+
+/** A teacher account with the two secrets that are never returned to anybody. */
+export interface StoredTeacher extends TeacherAccount {
+  passwordHash: string;
+  /** Set at signup, shown once, and the only way back in without email. */
+  recoveryHash: string;
+}
+
+/** A roster row with the join code stored as a hash, exactly like a password. */
+export interface StoredRosterEntry extends RosterEntry {
+  joinCodeHash: string;
+}
+
+/** Which class a student holds a seat in. The index behind a student's own home screen. */
+export interface StudentSeat {
+  classCode: string;
+  seatCode: string;
 }
 
 export type StoreId = "memory" | "file" | "redis" | "unconfigured";
@@ -41,7 +76,66 @@ export interface ClassStore {
   listSubmissions(code: string): Promise<SubmissionRecord[]>;
   /** Idempotent on (classCode, seatCode, sessionId): a retried delivery replaces, never duplicates. */
   putSubmission(record: SubmissionRecord): Promise<void>;
+
+  /**
+   * Everything this class holds, gone.
+   *
+   * The one operation a district asks for that this service could not previously perform.
+   * A class that has expired is not the same as a class that has been deleted, and a
+   * retention promise nothing can execute is a sentence in a document rather than a
+   * property of the system.
+   */
+  deleteClass(code: string): Promise<void>;
+
+  // -- Identity. See src/platform/identity/types.ts for what is deliberately not stored. --
+
+  /**
+   * The key every session token is signed with.
+   *
+   * Read from the environment where one is set, and otherwise minted once and kept here, so
+   * a self-hosted pilot works with no configuration and a restart does not sign every
+   * student out. A store that keeps nothing mints a new one per process, which is the
+   * correct behaviour for a test.
+   */
+  sessionSecret(): Promise<string>;
+
+  getTeacher(id: string): Promise<StoredTeacher | null>;
+  /** Lower-cased at the boundary. Two accounts on one address is the bug this prevents. */
+  getTeacherByEmail(email: string): Promise<StoredTeacher | null>;
+  putTeacher(record: StoredTeacher): Promise<void>;
+  /** The classes an account owns, so a teacher's list survives losing a browser. */
+  listClassesForTeacher(teacherId: string): Promise<string[]>;
+  linkClassToTeacher(teacherId: string, code: string): Promise<void>;
+
+  getStudent(id: string): Promise<StudentAccount | null>;
+  putStudent(record: StudentAccount): Promise<void>;
+  /** Every seat this account holds, across every class. The student's own home screen. */
+  listSeatsForStudent(studentId: string): Promise<StudentSeat[]>;
+  linkSeatToStudent(studentId: string, seat: StudentSeat): Promise<void>;
+  unlinkSeatFromStudent(studentId: string, seat: StudentSeat): Promise<void>;
+
+  listRoster(code: string): Promise<StoredRosterEntry[]>;
+  /** Idempotent on the seat: a class holds one row per seat, however many times it is written. */
+  putRosterEntry(record: StoredRosterEntry): Promise<void>;
+
+  listCheckpoints(code: string): Promise<AttemptCheckpoint[]>;
+  /** Idempotent on (classCode, seatCode). An attempt has one live position, not a history. */
+  putCheckpoint(record: AttemptCheckpoint): Promise<void>;
+
+  listFeedback(code: string): Promise<TeacherFeedback[]>;
+  putFeedback(record: TeacherFeedback): Promise<void>;
+
+  getShareOut(code: string): Promise<ShareOutSelection | null>;
+  putShareOut(record: ShareOutSelection): Promise<void>;
 }
+
+/** A stable, non-reversing key for an email address, so no address is a filename or a redis key. */
+export function emailKey(email: string): string {
+  return createHash("sha256").update(email.trim().toLowerCase(), "utf8").digest("hex").slice(0, 32);
+}
+
+const checkpointKey = (record: Pick<AttemptCheckpoint, "seatCode">) => record.seatCode;
+const feedbackKey = (record: Pick<TeacherFeedback, "seatCode" | "sessionId">) => `${record.seatCode}:${record.sessionId}`;
 
 function submissionKey(record: Pick<SubmissionRecord, "seatCode" | "sessionId">): string {
   return `${record.seatCode}:${record.sessionId}`;
@@ -62,6 +156,26 @@ export function memoryStore(): ClassStore {
   const classes = new Map<string, StoredClass>();
   const assignments = new Map<string, Assignment[]>();
   const submissions = new Map<string, SubmissionRecord[]>();
+  const teachers = new Map<string, StoredTeacher>();
+  const teacherClasses = new Map<string, Set<string>>();
+  const students = new Map<string, StudentAccount>();
+  const studentSeats = new Map<string, StudentSeat[]>();
+  const rosters = new Map<string, Map<string, StoredRosterEntry>>();
+  const checkpoints = new Map<string, Map<string, AttemptCheckpoint>>();
+  const feedback = new Map<string, Map<string, TeacherFeedback>>();
+  const shareOuts = new Map<string, ShareOutSelection>();
+  // A process-lifetime secret. Correct for a store that keeps nothing: a test that restarted
+  // and kept signing tokens with the same key would be testing something no deployment does.
+  const secret = createHash("sha256").update(`memory-${Math.random()}-${Date.now()}`).digest("base64url");
+
+  const bucket = <T>(map: Map<string, Map<string, T>>, code: string) => {
+    const existing = map.get(code);
+    if (existing) return existing;
+    const created = new Map<string, T>();
+    map.set(code, created);
+    return created;
+  };
+
   return {
     id: "memory",
     durable: false,
@@ -77,7 +191,60 @@ export function memoryStore(): ClassStore {
       submissions.set(record.classCode, merge(submissions.get(record.classCode) ?? [], record));
       return Promise.resolve();
     },
+    deleteClass: (code) => {
+      classes.delete(code);
+      assignments.delete(code);
+      submissions.delete(code);
+      rosters.delete(code);
+      checkpoints.delete(code);
+      feedback.delete(code);
+      shareOuts.delete(code);
+      for (const set of teacherClasses.values()) set.delete(code);
+      for (const [id, seats] of studentSeats) studentSeats.set(id, seats.filter((seat) => seat.classCode !== code));
+      return Promise.resolve();
+    },
+
+    sessionSecret: () => Promise.resolve(secret),
+    getTeacher: (id) => Promise.resolve(teachers.get(id) ?? null),
+    getTeacherByEmail: (email) =>
+      Promise.resolve([...teachers.values()].find((record) => record.email === email.trim().toLowerCase()) ?? null),
+    putTeacher: (record) => { teachers.set(record.id, record); return Promise.resolve(); },
+    listClassesForTeacher: (teacherId) => Promise.resolve([...(teacherClasses.get(teacherId) ?? [])]),
+    linkClassToTeacher: (teacherId, code) => {
+      teacherClasses.set(teacherId, (teacherClasses.get(teacherId) ?? new Set()).add(code));
+      return Promise.resolve();
+    },
+
+    getStudent: (id) => Promise.resolve(students.get(id) ?? null),
+    putStudent: (record) => { students.set(record.id, record); return Promise.resolve(); },
+    listSeatsForStudent: (studentId) => Promise.resolve(studentSeats.get(studentId) ?? []),
+    linkSeatToStudent: (studentId, seat) => {
+      const kept = (studentSeats.get(studentId) ?? []).filter((entry) => entry.classCode !== seat.classCode);
+      studentSeats.set(studentId, [...kept, seat]);
+      return Promise.resolve();
+    },
+    unlinkSeatFromStudent: (studentId, seat) => {
+      studentSeats.set(
+        studentId,
+        (studentSeats.get(studentId) ?? []).filter((entry) => entry.classCode !== seat.classCode || entry.seatCode !== seat.seatCode),
+      );
+      return Promise.resolve();
+    },
+
+    listRoster: (code) => Promise.resolve([...bucket(rosters, code).values()].sort(bySeat)),
+    putRosterEntry: (record) => { bucket(rosters, record.classCode).set(record.seatCode, record); return Promise.resolve(); },
+    listCheckpoints: (code) => Promise.resolve([...bucket(checkpoints, code).values()].sort(bySeat)),
+    putCheckpoint: (record) => { bucket(checkpoints, record.classCode).set(checkpointKey(record), record); return Promise.resolve(); },
+    listFeedback: (code) => Promise.resolve([...bucket(feedback, code).values()]),
+    putFeedback: (record) => { bucket(feedback, record.classCode).set(feedbackKey(record), record); return Promise.resolve(); },
+    getShareOut: (code) => Promise.resolve(shareOuts.get(code) ?? null),
+    putShareOut: (record) => { shareOuts.set(record.classCode, record); return Promise.resolve(); },
   };
+}
+
+/** Seats are numbers a teacher reads down a list, so they sort as numbers. */
+function bySeat(a: { seatCode: string }, b: { seatCode: string }): number {
+  return Number(a.seatCode) - Number(b.seatCode);
 }
 
 /**
@@ -122,6 +289,23 @@ export function fileStore(root: string): ClassStore {
     return records.filter((record): record is T => record !== null);
   }
 
+  /** Everything outside a class's own directory: accounts, and the indexes into classes. */
+  const accountPath = (kind: string, id: string) => join(root, "_accounts", kind, `${id}.json`);
+  const indexPath = (kind: string, owner: string, name: string) => join(root, "_index", kind, owner, `${name}.json`);
+
+  async function readIndex<T>(kind: string, owner: string): Promise<T[]> {
+    let names: string[];
+    try {
+      names = await readdir(join(root, "_index", kind, owner));
+    } catch {
+      return [];
+    }
+    const records: (T | null)[] = await Promise.all(
+      names.filter((name) => name.endsWith(".json")).map((name) => readJson<T>(join(root, "_index", kind, owner, name))),
+    );
+    return records.filter((record): record is T => record !== null);
+  }
+
   return {
     id: "file",
     durable: true,
@@ -134,6 +318,55 @@ export function fileStore(root: string): ClassStore {
       (await readFolder<SubmissionRecord>(code, "submissions"))
         .sort((a, b) => Number(a.seatCode) - Number(b.seatCode) || a.submittedAt - b.submittedAt),
     putSubmission: (record) => writeAtomic(submissionPath(record.classCode, record), record),
+    deleteClass: async (code) => {
+      // The seat index lives outside the class directory, so it has to be unpicked before the
+      // directory goes — otherwise a deleted class survives as a row on somebody's home screen.
+      for (const entry of await readFolder<StoredRosterEntry>(code, "roster")) {
+        if (entry.studentId) await rm(indexPath("student", entry.studentId, code), { force: true });
+      }
+      const record = await readJson<StoredClass>(classPath(code));
+      if (record?.teacherId) await rm(indexPath("teacher", record.teacherId, code), { force: true });
+      await rm(join(root, code), { recursive: true, force: true });
+    },
+
+    sessionSecret: async () => {
+      const path = join(root, "_accounts", "session-secret.json");
+      const existing = await readJson<{ secret: string }>(path);
+      if (existing?.secret) return existing.secret;
+      const secret = createHash("sha512").update(`${Math.random()}${Date.now()}${process.pid}`).digest("base64url");
+      await writeAtomic(path, { secret });
+      return secret;
+    },
+    getTeacher: (id) => readJson<StoredTeacher>(accountPath("teachers", id)),
+    getTeacherByEmail: async (email) => {
+      const pointer = await readJson<{ id: string }>(accountPath("teachers-by-email", emailKey(email)));
+      return pointer ? readJson<StoredTeacher>(accountPath("teachers", pointer.id)) : null;
+    },
+    putTeacher: async (record) => {
+      await writeAtomic(accountPath("teachers", record.id), record);
+      await writeAtomic(accountPath("teachers-by-email", emailKey(record.email)), { id: record.id });
+    },
+    listClassesForTeacher: async (teacherId) =>
+      (await readIndex<{ code: string }>("teacher", teacherId)).map((entry) => entry.code),
+    linkClassToTeacher: (teacherId, code) => writeAtomic(indexPath("teacher", teacherId, code), { code }),
+
+    getStudent: (id) => readJson<StudentAccount>(accountPath("students", id)),
+    putStudent: (record) => writeAtomic(accountPath("students", record.id), record),
+    listSeatsForStudent: (studentId) => readIndex<StudentSeat>("student", studentId),
+    linkSeatToStudent: (studentId, seat) => writeAtomic(indexPath("student", studentId, seat.classCode), seat),
+    unlinkSeatFromStudent: async (studentId, seat) => {
+      await rm(indexPath("student", studentId, seat.classCode), { force: true });
+    },
+
+    listRoster: async (code) => (await readFolder<StoredRosterEntry>(code, "roster")).sort(bySeat),
+    putRosterEntry: (record) => writeAtomic(join(root, record.classCode, "roster", `${record.seatCode}.json`), record),
+    listCheckpoints: async (code) => (await readFolder<AttemptCheckpoint>(code, "checkpoints")).sort(bySeat),
+    putCheckpoint: (record) =>
+      writeAtomic(join(root, record.classCode, "checkpoints", `${checkpointKey(record)}.json`), record),
+    listFeedback: (code) => readFolder<TeacherFeedback>(code, "feedback"),
+    putFeedback: (record) => writeAtomic(join(root, record.classCode, "feedback", `${feedbackKey(record)}.json`), record),
+    getShareOut: (code) => readJson<ShareOutSelection>(join(root, code, "shareout.json")),
+    putShareOut: (record) => writeAtomic(join(root, record.classCode, "shareout.json"), record),
   };
 }
 
@@ -193,6 +426,83 @@ export function redisRestStore(url: string, token: string): ClassStore {
       await command("HSET", `submissions:${record.classCode}`, submissionKey(record), JSON.stringify(record));
       await keepWithClass(`submissions:${record.classCode}`);
     },
+    deleteClass: async (code) => {
+      for (const entry of await readHash<StoredRosterEntry>(`roster:${code}`)) {
+        if (entry.studentId) await command("HDEL", `student-seats:${entry.studentId}`, code);
+      }
+      const raw = await command<string>("GET", `class:${code}`);
+      const record = raw ? (JSON.parse(raw) as StoredClass) : null;
+      if (record?.teacherId) await command("HDEL", `teacher-classes:${record.teacherId}`, code);
+      await command(
+        "DEL",
+        `class:${code}`, `assignments:${code}`, `submissions:${code}`,
+        `roster:${code}`, `checkpoints:${code}`, `feedback:${code}`, `shareout:${code}`,
+      );
+    },
+
+    sessionSecret: async () => {
+      const existing = await command<string>("GET", "bow:session-secret");
+      if (existing) return existing;
+      const secret = createHash("sha512").update(`${Math.random()}${Date.now()}`).digest("base64url");
+      // NX so two functions cold-starting in the same second cannot sign with different keys.
+      await command("SET", "bow:session-secret", secret, "NX");
+      return (await command<string>("GET", "bow:session-secret")) ?? secret;
+    },
+    getTeacher: async (id) => {
+      const raw = await command<string>("GET", `teacher:${id}`);
+      return raw ? (JSON.parse(raw) as StoredTeacher) : null;
+    },
+    getTeacherByEmail: async (email) => {
+      const id = await command<string>("GET", `teacher-email:${emailKey(email)}`);
+      if (!id) return null;
+      const raw = await command<string>("GET", `teacher:${id}`);
+      return raw ? (JSON.parse(raw) as StoredTeacher) : null;
+    },
+    putTeacher: async (record) => {
+      await command("SET", `teacher:${record.id}`, JSON.stringify(record));
+      await command("SET", `teacher-email:${emailKey(record.email)}`, record.id);
+    },
+    listClassesForTeacher: async (teacherId) =>
+      (await readHash<{ code: string }>(`teacher-classes:${teacherId}`)).map((entry) => entry.code),
+    linkClassToTeacher: async (teacherId, code) => {
+      await command("HSET", `teacher-classes:${teacherId}`, code, JSON.stringify({ code }));
+    },
+
+    getStudent: async (id) => {
+      const raw = await command<string>("GET", `student:${id}`);
+      return raw ? (JSON.parse(raw) as StudentAccount) : null;
+    },
+    putStudent: async (record) => { await command("SET", `student:${record.id}`, JSON.stringify(record)); },
+    listSeatsForStudent: (studentId) => readHash<StudentSeat>(`student-seats:${studentId}`),
+    linkSeatToStudent: async (studentId, seat) => {
+      await command("HSET", `student-seats:${studentId}`, seat.classCode, JSON.stringify(seat));
+    },
+    unlinkSeatFromStudent: async (studentId, seat) => {
+      await command("HDEL", `student-seats:${studentId}`, seat.classCode);
+    },
+
+    listRoster: async (code) => (await readHash<StoredRosterEntry>(`roster:${code}`)).sort(bySeat),
+    putRosterEntry: async (record) => {
+      await command("HSET", `roster:${record.classCode}`, record.seatCode, JSON.stringify(record));
+      await keepWithClass(`roster:${record.classCode}`);
+    },
+    listCheckpoints: async (code) => (await readHash<AttemptCheckpoint>(`checkpoints:${code}`)).sort(bySeat),
+    putCheckpoint: async (record) => {
+      await command("HSET", `checkpoints:${record.classCode}`, checkpointKey(record), JSON.stringify(record));
+      await keepWithClass(`checkpoints:${record.classCode}`);
+    },
+    listFeedback: (code) => readHash<TeacherFeedback>(`feedback:${code}`),
+    putFeedback: async (record) => {
+      await command("HSET", `feedback:${record.classCode}`, feedbackKey(record), JSON.stringify(record));
+      await keepWithClass(`feedback:${record.classCode}`);
+    },
+    getShareOut: async (code) => {
+      const raw = await command<string>("GET", `shareout:${code}`);
+      return raw ? (JSON.parse(raw) as ShareOutSelection) : null;
+    },
+    putShareOut: async (record) => {
+      await command("SET", `shareout:${record.classCode}`, JSON.stringify(record), "EX", ttl({ expiresAt: Date.now() + 1000 * 60 * 60 * 24 * CLASS_RETENTION_DAYS }));
+    },
   };
 }
 
@@ -226,6 +536,26 @@ export function unconfiguredStore(reason: string): ClassStore {
     putAssignment: refuse,
     listSubmissions: refuse,
     putSubmission: refuse,
+    deleteClass: refuse,
+    sessionSecret: refuse,
+    getTeacher: refuse,
+    getTeacherByEmail: refuse,
+    putTeacher: refuse,
+    listClassesForTeacher: refuse,
+    linkClassToTeacher: refuse,
+    getStudent: refuse,
+    putStudent: refuse,
+    listSeatsForStudent: refuse,
+    linkSeatToStudent: refuse,
+    unlinkSeatFromStudent: refuse,
+    listRoster: refuse,
+    putRosterEntry: refuse,
+    listCheckpoints: refuse,
+    putCheckpoint: refuse,
+    listFeedback: refuse,
+    putFeedback: refuse,
+    getShareOut: refuse,
+    putShareOut: refuse,
   };
 }
 

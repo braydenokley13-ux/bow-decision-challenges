@@ -1,4 +1,5 @@
 import { handleApiRequest } from "../server/handler";
+import { allowedOrigin } from "../server/index";
 import { storeFromEnvironment } from "../server/store";
 
 /**
@@ -19,9 +20,10 @@ const store = storeFromEnvironment();
 export default async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const cors: Record<string, string> = {
-    "Access-Control-Allow-Origin": request.headers.get("origin") ?? "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-BOW-Teacher-Key",
+    "Access-Control-Allow-Origin": allowedOrigin(request.headers.get("origin") ?? undefined),
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-BOW-Teacher-Key",
+    "Vary": "Origin",
   };
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
 
@@ -40,7 +42,12 @@ export default async function handler(request: Request): Promise<Response> {
       {
         method: request.method,
         path: url.pathname.replace(/^\/api/, ""),
-        headers: { "x-bow-teacher-key": request.headers.get("x-bow-teacher-key") ?? undefined },
+        query: url.search.replace(/^\?/, ""),
+        headers: {
+          "x-bow-teacher-key": request.headers.get("x-bow-teacher-key") ?? undefined,
+          authorization: request.headers.get("authorization") ?? undefined,
+        },
+        clientId: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "anonymous",
         ...(body !== undefined ? { body } : {}),
       },
       { store },

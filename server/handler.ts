@@ -1,5 +1,5 @@
 import { allocateClassCode, generateTeacherKey, isWellFormedClassCode, isWellFormedSeatCode, normaliseClassCode, normaliseSeatCode } from "../src/platform/classes/codes";
-import { assignmentIdFor, assignmentsForClass, generateAssignmentId, readAssignmentRequest } from "../src/platform/classes/assignments";
+import { assignmentBelongsToClass, assignmentIdFor, assignmentsForClass, generateAssignmentId, readAssignmentRequest } from "../src/platform/classes/assignments";
 import { CLASS_RETENTION_DAYS, type Assignment, type AttributedSubmission, type ClassErrorCode, type EvidenceSubmission, type SubmissionRecord, type TeacherOverride } from "../src/platform/classes/types";
 import { EVIDENCE_EVENT_TYPES } from "../src/domain/evidence/types";
 import { evidenceRequirementById } from "../src/domain/competency/competencies";
@@ -11,6 +11,8 @@ import { contractFor } from "../src/domain/scenario/contracts";
 import { DEFAULT_WORLD_ID } from "../src/domain/scenario/registry";
 import { standardByRef, type FrameworkId } from "../src/domain/standards";
 import type { ClassStore, StoredClass } from "./store";
+import { cryptoRandom } from "./crypto";
+import { callerOf, handleIdentityRequest, opensClass, withinRate } from "./identity";
 
 /**
  * The class service, as one function of (method, path, body) → (status, body).
@@ -51,6 +53,14 @@ export interface ApiRequest {
   path: string;
   headers: Record<string, string | undefined>;
   body?: unknown;
+  /** The raw query string, without the leading "?". Read by the routes that take one. */
+  query?: string;
+  /**
+   * Whatever the transport knows about who is calling — a remote address, a forwarded-for
+   * header, or nothing. Used for rate limiting and for nothing else: it is never stored,
+   * never logged and never attached to a student.
+   */
+  clientId?: string;
 }
 
 export interface ApiResponse {
@@ -161,8 +171,14 @@ function attributed(submissions: readonly SubmissionRecord[], assignments: reado
 export async function handleApiRequest(request: ApiRequest, options: HandlerOptions): Promise<ApiResponse> {
   const { store } = options;
   const now = options.now?.() ?? Date.now();
-  const random = options.random ?? Math.random;
+  // A CSPRNG by default. The class code and the teacher key are the two things standing
+  // between a stranger and a class of children's work, and `Math.random` is a sequence an
+  // attacker who can create classes can observe and then replay.
+  const random = options.random ?? cryptoRandom;
   const segments = request.path.split("/").filter(Boolean);
+  const clientId = request.clientId ?? "anonymous";
+  const body = (request.body ?? {}) as Record<string, unknown>;
+  const identityContext = { store, now, random, clientId };
 
   /**
    * GET /health — what a deploy smoke test and a load balancer both ask for, and the one
@@ -191,9 +207,20 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
   // so once, in words, rather than failing later as an unexplained 503.
   if (store.blockedReason) return fail(503, "unavailable", store.blockedReason);
 
+  // Accounts, rosters, sessions, checkpoints, feedback and share-outs. It answers first and
+  // returns `null` for a path it does not own, so there is one router and no path that both
+  // modules can claim.
+  const identity = await handleIdentityRequest(
+    { method: request.method, segments, headers: request.headers, body, query: new URLSearchParams(request.query ?? "") },
+    identityContext,
+  );
+  if (identity) return identity;
+
   // POST /classes — an educator creates a class and receives the key that reads it.
   if (request.method === "POST" && segments.length === 1 && segments[0] === "classes") {
-    const body = (request.body ?? {}) as { label?: unknown; challengeId?: unknown; code?: unknown };
+    if (!withinRate(`create:${clientId}`, 30, 60 * 60 * 1000, now)) {
+      return fail(429, "unavailable", "Too many classes from here just now. Wait a minute.");
+    }
     const challengeId = typeof body.challengeId === "string" ? body.challengeId : "";
     if (!challengeById(challengeId)) return fail(400, "bad_request", "That challenge does not exist.");
     const label = typeof body.label === "string" && body.label.trim() ? body.label.trim().slice(0, 60) : "Untitled class";
@@ -217,6 +244,11 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       }
     }
 
+    // A signed-in teacher owns the classes they create, so their list survives the browser
+    // that made them. A class created without an account still works exactly as it did —
+    // requiring one here would have shut the door on every teacher mid-term.
+    const owner = await callerOf(request.headers, { store, now });
+    const teacherId = owner?.kind === "teacher" ? owner.id : undefined;
     const record: StoredClass = {
       code,
       label,
@@ -224,8 +256,10 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       createdAt: now,
       expiresAt: now + CLASS_RETENTION_DAYS * 24 * 60 * 60 * 1000,
       teacherKey: generateTeacherKey(random),
+      ...(teacherId ? { teacherId } : {}),
     };
     await store.putClass(record);
+    if (teacherId) await store.linkClassToTeacher(teacherId, code);
     return { status: 201, body: record };
   }
 
@@ -261,16 +295,45 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
 
   // POST /classes/:code/submissions — a student turns their evidence in.
   if (request.method === "POST" && segments.length === 3 && segments[2] === "submissions") {
+    // A class code goes on a whiteboard, so it is a public write token unless something else
+    // is asked for. Two hundred forged submissions were accepted in eight and a half seconds
+    // before this existed; the ceiling is a room of thirty turning in inside one lesson, with
+    // retries, and nothing legitimate comes near it.
+    if (!withinRate(`submit:${clientId}:${record.code}`, 120, 10 * 60 * 1000, now)) {
+      return fail(429, "unavailable", "Too many submissions from here just now. Wait a minute and try again.");
+    }
     const submission = readSubmission(request.body);
     if (!submission) return fail(400, "bad_request", "That submission could not be read.");
+
+    // A class with a roster knows who is in it, so work has to arrive from one of them. A
+    // class with no roster is a class created before accounts existed, or one whose teacher
+    // has not built one, and it keeps the behaviour it has always had — because refusing
+    // those would be refusing work students have already done.
+    const roster = await store.listRoster(record.code);
+    if (roster.length > 0) {
+      const student = await callerOf(request.headers, { store, now });
+      const seat = roster.find((entry) => entry.seatCode === submission.seatCode && !entry.removedAt);
+      if (!student || student.kind !== "student" || !seat || seat.studentId !== student.id) {
+        return fail(403, "not_authorised", "Sign in as yourself before turning this in.");
+      }
+    }
     if (submission.challengeId !== record.challengeId) {
       return fail(409, "challenge_mismatch", "That class is running a different challenge.");
     }
-    // A named assignment has to be one this class actually holds. A submission naming
-    // nothing is accepted and attributed on read — that is every submission stored before
-    // this checkpoint, and refusing them would delete a class's history to add a field.
-    const assignments = await assignmentsOn(store, record);
-    if (submission.assignmentId !== undefined && !assignments.some((assignment) => assignment.id === submission.assignmentId)) {
+    // A named assignment must belong to **this class**, and that is the whole of the check.
+    //
+    // It used to be checked against the assignments the class currently holds, and answered
+    // 404 — which the client treats as non-retryable. So a student who joined before their
+    // teacher set the class an objective in another tab was holding the synthesised
+    // assignment id, which stops being offered the moment a real one is stored; they reached
+    // the end of twenty-five minutes and were told "That class was not set that work." Their
+    // work was gone, the code they were told to go and check was fine, and nothing about the
+    // failure was theirs.
+    //
+    // Belonging to this class is what the check was actually for — it stops work being filed
+    // under another room's assignment — and it is true of every id this class has ever
+    // handed out, including the one it has stopped handing out.
+    if (submission.assignmentId !== undefined && !assignmentBelongsToClass(submission.assignmentId, record.code)) {
       return fail(404, "assignment_not_found", "That class was not set that work.");
     }
     const stored: SubmissionRecord = {
@@ -283,12 +346,42 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
     const existing = (await store.listSubmissions(record.code))
       .find((item) => item.seatCode === stored.seatCode && item.sessionId === stored.sessionId);
     await store.putSubmission(existing ? { ...stored, reasoningPoints: existing.reasoningPoints } : stored);
+    // The seat is no longer in progress. Leaving the checkpoint live would put a student on
+    // the teacher's "still working" list after they had turned in, which is exactly the kind
+    // of wrong that makes a live view worse than no live view.
+    const checkpoint = (await store.listCheckpoints(record.code)).find((entry) => entry.seatCode === stored.seatCode);
+    if (checkpoint && !checkpoint.submittedAt) await store.putCheckpoint({ ...checkpoint, submittedAt: now });
     return { status: 202, body: { seatCode: stored.seatCode, submittedAt: stored.submittedAt } };
   }
 
-  // Everything past here reads or writes other people's work, so it takes the key.
-  const key = request.headers["x-bow-teacher-key"];
-  if (!key || key !== record.teacherKey) return fail(403, "not_authorised", "This link does not open that class.");
+  // Everything past here reads or writes other people's work, so it takes proof: the class's
+  // own key, or a session belonging to the account that owns it.
+  const caller = await callerOf(request.headers, { store, now });
+  if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
+    return fail(403, "not_authorised", "This link does not open that class.");
+  }
+
+  // DELETE /classes/:code — the class and everything in it, gone.
+  //
+  // The operation a district asks for and this service could not perform. A retention
+  // promise nothing can execute is a sentence in a document rather than a property of the
+  // system, and the FTC's guidance makes a school's ability to have data deleted a condition
+  // of the consent a school gives on a parent's behalf.
+  if (request.method === "DELETE" && segments.length === 2) {
+    await store.deleteClass(record.code);
+    return { status: 200, body: { code: record.code, deleted: true } };
+  }
+
+  // POST /classes/:code/claim — a teacher who holds the key binds the class to their account.
+  if (request.method === "POST" && segments.length === 3 && segments[2] === "claim") {
+    if (caller?.kind !== "teacher") return fail(403, "not_authorised", "Sign in first.");
+    if (record.teacherId && record.teacherId !== caller.id) {
+      return fail(403, "not_authorised", "Another account already holds this class.");
+    }
+    await store.putClass({ ...record, teacherId: caller.id });
+    await store.linkClassToTeacher(caller.id, record.code);
+    return { status: 200, body: { code: record.code, teacherId: caller.id } };
+  }
 
   // POST /classes/:code/assignments — the educator sets this class something.
   if (request.method === "POST" && segments.length === 3 && segments[2] === "assignments") {
@@ -308,9 +401,34 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
   // GET /classes/:code/submissions — the educator's evidence room.
   if (request.method === "GET" && segments.length === 3 && segments[2] === "submissions") {
     const assignments = await assignmentsOn(store, record);
+    // The key is not echoed back. It is the credential this request was authorised with, and
+    // a response body is the easiest place for a credential to end up somewhere it should not
+    // be — a screenshot, a copied JSON blob, a browser cache.
+    const classForRead: Omit<StoredClass, "teacherKey"> & { teacherKey?: string } = { ...record };
+    delete classForRead.teacherKey;
     return {
       status: 200,
-      body: { class: record, assignments, submissions: attributed(await store.listSubmissions(record.code), assignments) },
+      body: {
+        class: classForRead,
+        assignments,
+        submissions: attributed(await store.listSubmissions(record.code), assignments),
+        roster: (await store.listRoster(record.code)).map((entry) => ({
+          seatCode: entry.seatCode,
+          displayName: entry.displayName,
+          claimed: entry.studentId !== null,
+          removedAt: entry.removedAt ?? null,
+        })),
+        progress: (await store.listCheckpoints(record.code))
+          .filter((entry) => !entry.submittedAt)
+          .map((entry) => ({
+            seatCode: entry.seatCode,
+            worldId: entry.worldId,
+            stage: entry.stage,
+            startedAt: entry.startedAt,
+            updatedAt: entry.updatedAt,
+          })),
+        feedback: await store.listFeedback(record.code),
+      },
     };
   }
 

@@ -11,6 +11,24 @@ import { storeFromEnvironment, type ClassStore } from "./store";
  * same function the Vercel handler calls.
  */
 
+/**
+ * Which origins may talk to this service.
+ *
+ * It used to reflect whatever origin asked, which made every state-changing route reachable
+ * from any page on the internet — and because the handler parses a body regardless of its
+ * content type, a `text/plain` POST skips the preflight that would otherwise have stopped it.
+ * Set `BOW_ALLOWED_ORIGIN` (comma-separated) in a deployment; local development answers the
+ * two ports this repository runs on and nothing else.
+ */
+const DEFAULT_ORIGINS = ["http://127.0.0.1:4173", "http://localhost:4173", "http://127.0.0.1:4180", "http://localhost:4180"];
+
+export function allowedOrigin(origin: string | undefined): string {
+  const configured = (process.env.BOW_ALLOWED_ORIGIN ?? "").split(",").map((entry) => entry.trim()).filter(Boolean);
+  const allowed = configured.length > 0 ? configured : DEFAULT_ORIGINS;
+  if (allowed.includes("*")) return "*";
+  return origin && allowed.includes(origin) ? origin : (allowed[0] ?? "null");
+}
+
 /** Bodies are one evidence log. Anything larger than this is not a student. */
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
 
@@ -40,9 +58,10 @@ export function createApiServer(store: ClassStore = storeFromEnvironment()) {
       // dev server proxies. CORS stays permissive for methods and headers this API
       // actually uses and nothing else.
       const cors = {
-        "Access-Control-Allow-Origin": request.headers.origin ?? "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, X-BOW-Teacher-Key",
+        "Access-Control-Allow-Origin": allowedOrigin(request.headers.origin),
+        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-BOW-Teacher-Key",
+        "Vary": "Origin",
       };
       if (request.method === "OPTIONS") {
         response.writeHead(204, cors);
@@ -62,9 +81,15 @@ export function createApiServer(store: ClassStore = storeFromEnvironment()) {
       const apiRequest: ApiRequest = {
         method: request.method ?? "GET",
         path: url.pathname.slice("/api".length),
+        query: url.search.replace(/^\?/, ""),
         headers: Object.fromEntries(
           Object.entries(request.headers).map(([name, value]) => [name.toLowerCase(), Array.isArray(value) ? value[0] : value]),
         ),
+        // Only the rate limiter reads this, and it is never stored or logged. A proxy header
+        // is trusted only when one is configured, because a client can set it themselves.
+        clientId: (process.env.BOW_TRUST_PROXY === "1" ? String(request.headers["x-forwarded-for"] ?? "").split(",")[0]?.trim() : "")
+          || request.socket.remoteAddress
+          || "anonymous",
         ...(body !== undefined ? { body } : {}),
       };
 
