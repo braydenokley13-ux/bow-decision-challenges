@@ -191,3 +191,37 @@ clickstream. The supply chain is four runtime dependencies with no analytics, no
 font and no tracker, and no student writing is sent to any model: zero outbound calls except
 this deployment's own API, enumerated. And the product does not claim FERPA, COPPA or §2-d
 compliance anywhere, which is the rule it set itself.
+
+
+## M · The teacher's product, played for five periods
+
+A fresh-context critic set up a class of 28 from nothing, ran a 42-minute lesson, marked the
+writing, ran a share-out, exported a gradebook and overruled BOW — and returned **REJECT**.
+Full report and screenshots: `gauntlet/critiques/teacher-experience.md`, `gauntlet/receipts/teacher/`.
+
+| # | Sev | Defect | State |
+| --- | --- | --- | --- |
+| M1 | BLOCKER | **A teacher has no account.** A census of all four educator routes found zero password fields, zero email fields and zero sign-in controls — while `POST /auth/teacher`, `POST /auth/teacher/session`, `GET /me/teaching` and `POST /classes/:code/claim` had all been answering correctly for hours with nothing calling any of them. Classes lived in one browser's storage plus a link the product says is shown once, so a reimaged laptop permanently destroyed twenty-eight children's assessed work. | **Closed** — `/educator/sign-in`. Verified in two isolated browser contexts: a class made without an account, by a teacher who then signs up, is on the classes page of a browser that has never seen it. Signing in also claims what the browser already holds. |
+| M2 | MAJOR | **The empty class shows nothing about the room**, and that is the first ten minutes of every lesson: "Nothing turned in yet · 0 turned in" to a teacher standing in a room of twenty-eight working students. | **Closed** — the live panel renders whenever anybody is working, names who is mid-run and on which screen, and names who has not started. |
+| M3 | MAJOR | **The headline is a fact about one child, set larger than everything else.** Mid-lesson: *"0 of 1 assessed showed the skill"* in the page's largest type, over a class of twenty-eight, with "22 awaiting your reading" in small grey text at the right edge. Finished and read: *"92% demonstrated"* — a percentage of twelve children in a class of thirty. This is the 10-second test, and it fails. | Open, in flight. |
+| M4 | MAJOR | **The same class reports different numbers on three teacher screens** — and the one saying twenty-three is the debrief, the page a teacher prints and reads aloud to a room of twenty-two. | **Closed** — the debrief and the reading queue now count the class with the same function the class page uses. |
+| M5 | MAJOR | **Reopening the same browser tells a student their run is "open in another tab"**, which is false — the tab is gone. | Open, in flight. |
+| M6 | MAJOR | A student who turned in twice is **shown four different ways on four surfaces**. | Open, in flight. |
+| M7 | MAJOR | The share-out offers **seven candidates with a reason that is true of every student in the class**. A reason a teacher cannot trust is worse than no reason. | Open, in flight. |
+| M8–M12 | MINOR | "STILL WORKING" never ages out under a heading reading "RIGHT NOW"; "Teacher readings" counts overrules rather than readings; double-pasting a class list silently doubles the roster; no total, with the denominator a mark needs varying per student; numbers without denominators throughout. | Open, in flight. |
+
+### What the critic said held up, in its own words
+
+The reading queue, the export, the overrule flow, the live room panel and the debrief are *"at
+or above the bar of tools I already use"* — and the export is *"the only one I've used that
+distinguishes an absentee from a zero"*. Its answer to "would a teacher use this a second
+time" was **yes**; to a third time, *"not on a class whose marks I have to defend"* — which
+was the account blocker, and is now closed.
+
+### The measurement worth keeping
+
+Class created in 4.8s. Twenty-eight names pasted to printable cards in 3.3s at the API. A
+careful human read plus four rubric judgements is **45–75 seconds per student**, so marking a
+class of twenty-eight is **21–35 minutes**. With the run itself at 22–28 minutes, this is a
+two-lesson resource. It is not a defect that it is; it is a defect if the product implies it
+is not.
