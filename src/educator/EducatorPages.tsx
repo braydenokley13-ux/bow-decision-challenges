@@ -9,6 +9,7 @@ import {
   type StandardRef,
 } from "../domain/standards";
 import { EducatorShell } from "./EducatorShell";
+import { TERMS } from "./labels";
 import { durationLabel, PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
 
 /**
@@ -43,7 +44,7 @@ function AlignmentBlock() {
   const framework = FRAMEWORKS[GUIDE_FRAMEWORK_ID];
   return (
     <section className="alignment-block">
-      <div className="section-heading"><p className="eyebrow">Standards alignment</p><h2>Mapped to {labels?.frameworkShort} objectives, not scored against them.</h2></div>
+      <div className="section-heading"><p className="eyebrow">Standards alignment</p><h2>Matched to {labels?.frameworkShort} objectives, not scored against them.</h2></div>
       <div className="alignment-grid">
         {GUIDE_OBJECTIVE_CODES.map((code) => {
           const ref: StandardRef = { frameworkId: GUIDE_FRAMEWORK_ID, code };
@@ -52,7 +53,7 @@ function AlignmentBlock() {
           const assessable = isAssessable(ref);
           return (
             <article key={code} data-code={code}>
-              <span data-assessable={assessable}>{assessable ? "Ready to assign" : "Mapped, not yet assessable"}</span>
+              <span data-assessable={assessable}>{assessable ? "Ready to assign" : "BOW cannot see this one yet"}</span>
               <h3>{code} · {standard.shortLabel}</h3>
               <p>{standard.text}</p>
               <Link to={objectivePath(ref)}>What BOW measures for this ↗</Link>
@@ -80,11 +81,11 @@ function BriefAnswers() {
       <div className="section-heading"><p className="eyebrow">Read this first</p><h2>The whole resource in one minute.</h2></div>
       <dl>
         <div><dt>What does it assess?</dt><dd>Whether students can <b>apply</b> budgeting under uncertainty — build a workable eight-week plan, keep it working when income and costs change, and justify it.</dd></div>
-        <div><dt>When do I use it?</dt><dd><b>After</b> you have taught the concepts. It is an application task, not a lesson.</dd></div>
+        <div><dt>When do I use it?</dt><dd><b>After</b> you have taught the {TERMS.skills}. It is an application task, not a lesson.</dd></div>
         <div><dt>How long?</dt><dd><b>{durationLabel(PLAN_UNDER_PRESSURE)}</b> for most students. One sitting, one device, no sound.</dd></div>
-        <div><dt>What do students do?</dt><dd>They handle the money in one of two situations, and they pick which. <b>Eight Weeks to the Showcase</b>: a player’s season, where they choose housing, build a plan, absorb a Week 5 loss and a new required cost, and repair it. <b>Run the Pop-Up</b>: four Saturdays at a night market, where they take a booth, decide how much food to cook against the crowd it draws, and cover a generator that dies with the biggest night still ahead. Both ask for a plan that fits the money, both break it, and both end with the student explaining in writing what they did.</dd></div>
-        <div><dt>Do the two give me the same thing back?</dt><dd>Yes, and that is the point of having two. They collect evidence against the same named requirements and are judged on the same rubric, so a class where students chose differently still produces one answer about the class. What differs is the story, the decisions and the numbers — never what is being looked for.</dd></div>
-        <div><dt>What do I get back?</dt><dd>For each student, what the evidence shows against each skill — requirement by requirement, every judgement traceable to the moment in their own run. Plus what the class decided, and one written explanation you read and score yourself. A points total for your gradebook comes with it.</dd></div>
+        <div><dt>What do students do?</dt><dd>They handle the money in one of two {TERMS.stories}, and they pick which. <b>Eight Weeks to the Showcase</b>: a player’s season, where they choose housing, build a plan, absorb a Week 5 loss and a new required cost, and repair it. <b>Run the Pop-Up</b>: four Saturdays at a night market, where they take a booth, decide how much food to cook against the crowd it draws, and cover a generator that dies with the biggest night still ahead. Both ask for a plan that fits the money, both break it, and both end with the student explaining in writing what they did.</dd></div>
+        <div><dt>Do the two give me the same thing back?</dt><dd>Yes, and that is the point of having two. Both {TERMS.stories} collect evidence against the same named parts of the work and are judged on the same rubric, so a class where students chose differently still produces one answer about the class. What differs is the {TERMS.story}, the decisions and the numbers — never what is being looked for.</dd></div>
+        <div><dt>What do I get back?</dt><dd>For each student, what the evidence shows against each {TERMS.skill} — one line for each thing the work had to show, every judgement traceable to the moment in their own run. Plus what the class decided, and one written explanation you read and score yourself. Counts for your gradebook come with it.</dd></div>
         {/* Every clause after the first used to be false: there are accounts now, teachers do
             give an email address, the roster is where the names live, and there is no seat
             number to give out — a student signs in with a class code and the code on a card.
@@ -138,7 +139,7 @@ export function EducatorGuide() {
           <li><span>03</span>Build a budget that does not exceed available money.</li>
           <li><span>04</span>Separate committed money from money that can change.</li>
           <li><span>05</span>Revise after income or expenses change.</li>
-          <li><span>06</span>Explain a tradeoff with relevant numbers.</li>
+          <li><span>06</span>Explain a trade-off with relevant numbers.</li>
         </ol>
         <p className="companion-callout">
           Schools may use their own instruction. <Link to="/educator/teaching-companion">A two-day sample mini-unit →</Link>
@@ -156,7 +157,7 @@ export function EducatorGuide() {
           <li>Run the debrief with the room.</li>
         </ol>
         <p>
-          A high grade reflects demonstrated financial skills — not a preference for saving more, spending less,
+          A high grade reflects the financial skills a student actually showed — not a preference for saving more, spending less,
           taking a job, or choosing the cheapest option.
         </p>
       </section>
@@ -168,12 +169,12 @@ export function EducatorGuide() {
 export function TeachingCompanion() {
   return (
     <EducatorShell measure="bleed">
-      <header className="page-header"><p className="eyebrow">Optional educator resource</p><h1>Two-Day Mini-Unit: Budgeting Under Uncertainty</h1><p>Schools may use their own instruction. This sample sequence shows the prerequisite skills students should learn before Plan Under Pressure. It does not pre-teach Avery's answers.</p></header>
+      <header className="page-header"><p className="eyebrow">Optional educator resource</p><h1>A two-day mini-unit: budgeting under uncertainty</h1><p>Schools may use their own instruction. This sample sequence shows the prerequisite skills students should learn before Plan Under Pressure. It does not pre-teach Avery's answers.</p></header>
       <div className="mini-unit-grid">
-        <article><header><span>Day 01</span><h2>Build a plan from dependable money</h2><p>Example context: Jordan is saving for a robotics camp while earning money from neighborhood jobs.</p></header><ol><li><b>Dependable vs conditional income</b><p>Sort a guaranteed allowance from snow-shoveling money that depends on weather.</p></li><li><b>Recurring + one-time full cost</b><p>Calculate six weeks of bus fare plus a one-time registration fee.</p></li><li><b>Basic viable budget</b><p>Give every dollar one job across required costs, a goal, a reserve, and flexible cash.</p></li></ol><aside>Exit prompt: “Which dollars can Jordan count on before the weather is known?”</aside></article>
-        <article><header><span>Day 02</span><h2>Revise when conditions change</h2><p>Example context: Sam is preparing for a school music showcase with a short paid equipment-helper role.</p></header><ol><li><b>Committed vs adjustable money</b><p>Mark the registration and transit already committed; keep future savings adjustable.</p></li><li><b>Contingency thinking</b><p>Construct a lower-income version without telling students which priority to reduce.</p></li><li><b>Unexpected change</b><p>Add a required repair cost, revise the plan, and explain one tradeoff with two numbers.</p></li></ol><aside>Debrief prompt: “How can two different revised plans both be financially coherent?”</aside></article>
+        <article><header><span>Day 01</span><h2>Build a plan from dependable money</h2><p>Example context: Jordan is saving for a robotics camp while earning money from neighborhood jobs.</p></header><ol><li><b>Dependable vs conditional income</b><p>Sort a guaranteed allowance from snow-shoveling money that depends on weather.</p></li><li><b>Recurring + one-time full cost</b><p>Calculate six weeks of bus fare plus a one-time registration fee.</p></li><li><b>A budget that works</b><p>Give every dollar one job across required costs, a goal, a reserve, and flexible cash.</p></li></ol><aside>Exit prompt: “Which dollars can Jordan count on before the weather is known?”</aside></article>
+        <article><header><span>Day 02</span><h2>Revise when conditions change</h2><p>Example context: Sam is preparing for a school music showcase with a short paid equipment-helper role.</p></header><ol><li><b>Committed vs adjustable money</b><p>Mark the registration and transit already committed; keep future savings adjustable.</p></li><li><b>Contingency thinking</b><p>Construct a lower-income version without telling students which priority to reduce.</p></li><li><b>Unexpected change</b><p>Add a required repair cost, revise the plan, and explain one trade-off with two numbers.</p></li></ol><aside>Debrief prompt: “How can two different revised plans both be financially coherent?”</aside></article>
       </div>
-      <section className="teaching-boundary"><h2>Keep the assessment clean</h2><p>Teach the concepts with different names, amounts, and situations. During the BOW challenge, allow calculators and access tools, but do not tell students which financial strategy to choose.</p><Link className="button button--primary" to="/educator/guide">Return to challenge brief</Link></section>
+      <section className="teaching-boundary"><h2>Keep the assessment clean</h2><p>Teach the {TERMS.skills} with different names, amounts, and situations. During the BOW challenge, allow calculators and access tools, but do not tell students which financial strategy to choose.</p><Link className="button button--primary" to="/educator/guide">Return to challenge brief</Link></section>
     </EducatorShell>
   );
 }

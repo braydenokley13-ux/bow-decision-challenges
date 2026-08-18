@@ -80,19 +80,19 @@ const BANNED = [
 const BANNED_TONE = ["let's", "lets go", "great job", "well done", "nice work", "it's time to", "now that you've", "get ready to"];
 
 /**
- * Two sentences that keep a banned word and earn it, each written down with its reason.
+ * The one sentence that keeps a banned word and earns it, written down with its reason.
  *
- * Both are in Basketball, both are nouns from the sport rather than words about measurement,
- * and neither tells a student anything about how their work is read. The list is exact strings
- * rather than patterns, so a new sentence carrying one of these words fails the scan and has to
- * be argued for here — which is the point of an exception list existing at all.
+ * It is in Basketball, it is a noun from the sport rather than a word about measurement, and
+ * it tells a student nothing about how their work is read. The list is exact strings rather
+ * than patterns, so a sentence that is edited stops being exempt and has to be argued for
+ * again — which is the point of an exception list existing at all.
+ *
+ * It was two. The other was *"Sixteen points against Rivertown"*, a scoreboard line in Week 2
+ * of the four-card season feed, and it went when the feed did: Weeks 1–4 are now one decision
+ * and a drain, and there is nowhere left for a week's flavour note to be read. An exception
+ * that outlives the sentence it protects is a hole in the ban, so it went with it.
  */
 const ALLOWED: readonly { path: string; text: string; because: string }[] = [
-  {
-    path: "src/domain/scenario/worlds/basketball/scenario.ts",
-    text: "Sixteen points against Rivertown. Avery starts the next game and keeps the spot.",
-    because: "Points on a scoreboard in a basketball story. §13.1 bans the vocabulary of measuring a student, and this is the vocabulary of the sport the world is about.",
-  },
   {
     path: "src/domain/scenario/worlds/basketball/scenario.ts",
     text: "The team runs skills clinics for younger players and is short a coach. ${CLINIC_SATURDAYS} Saturdays, the last ${CLINIC_SATURDAYS} of the season, and the money lands before the ${SCENARIO_NUMBERS.weeks} weeks end.",

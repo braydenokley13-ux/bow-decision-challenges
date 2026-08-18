@@ -123,18 +123,17 @@ describe("what BOW may claim about an objective", () => {
 
   describe("assessability requires a built world, not a mapping", () => {
     it("counts exactly what a built world can produce every requirement of", () => {
-      // Two worlds now produce all five of `adapt-a-plan` and all five of
-      // `plan-within-income`, and that is the point of §9.1 — a student who picks the night
-      // market instead of the season is measured on the same named things. Basketball adds
-      // a third that the night market does not have a beat for yet, which is a real
-      // asymmetry and is written down as one rather than smoothed over.
+      // Two worlds produce all five of `adapt-a-plan`, all five of `plan-within-income` and
+      // all four of `sort-by-need-want-goal`, and that is the point of §9.1 — a student who
+      // picks the night market instead of the season is measured on the same named things.
       expect(availableCompetencyIds()).toEqual(new Set(["sort-by-need-want-goal", "adapt-a-plan", "plan-within-income"]));
       expect(worldsAssessing("adapt-a-plan")).toEqual(["basketball", "food-truck"]);
       expect(worldsAssessing("plan-within-income")).toEqual(["basketball", "food-truck"]);
-      // One world, until the market has a week where several claims want the same money.
-      // The event that records it is named for the situation rather than for the season, so
-      // the second world produces the same evidence without a change to the spine.
-      expect(worldsAssessing("sort-by-need-want-goal")).toEqual(["basketball"]);
+      // Both worlds, from one shared event with two worlds' fiction over it: Avery's Week 3
+      // cash and Mo's tips jar after the first Saturday. `COMPETING_CLAIMS_SETTLED` and the
+      // four reason ids are named for the situation rather than for either story, which is
+      // what let the second world produce the same evidence without a change to the spine.
+      expect(worldsAssessing("sort-by-need-want-goal")).toEqual(["basketball", "food-truck"]);
       // Neither world produces this one, and both say why in their own route tables. A gap in
       // both is honest; closing it in one would mean the choice of story changed what was
       // measured.

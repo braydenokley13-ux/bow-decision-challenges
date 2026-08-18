@@ -230,14 +230,20 @@ function unpaidClaimVerdicts(outcome: CompetingClaimsOutcome): RiskVerdict[] {
   const wentOn = outcome.paidFor.length > 0
     ? `${formatDollars(outcome.spent)} went on ${listOf(outcome.paidFor)} instead.`
     : `None of the ${formatDollars(outcome.cash)} was spent on any of them.`;
-  return outcome.unpaid.map((claim) => ({
+  // Where the money went, and what the student said, are facts about the week rather than
+  // about a claim — so they are said on the first of these verdicts and not again on the
+  // second. They used to be appended to every one, which put the same two sentences twice
+  // under one heading, twelve words apart, at the end of the run. The verdicts keep their
+  // order through the sort below: both are `cost_you`, so they carry the same weight and stay
+  // adjacent, which is what lets the second one lean on the first.
+  return outcome.unpaid.map((claim, index) => ({
     id: `unpaid-claim:${claim.id}` as const,
     label: claim.label,
     taken: false,
     outcome: "cost_you" as const,
     // The last clause only appears where it is true, and where it is true it is the whole
     // finding: money was left in a week it could not be saved in, beside a claim it covered.
-    detail: `${claim.wentUnpaid} ${wentOn} ${outcome.reasonToldBack}${
+    detail: `${claim.wentUnpaid}${index === 0 ? ` ${wentOn} ${outcome.reasonToldBack}` : ""}${
       claim.cost <= outcome.leftOver ? ` The ${formatDollars(outcome.leftOver)} left over would have covered it.` : ""
     }`,
   }));

@@ -12,6 +12,11 @@ import { studentSpineFor } from "./studentSpine";
  * 100/100` two hundred pixels above a red *Savings is a planned amount — Not demonstrated*,
  * with nothing on the page reconciling them. The states are the assessment. The points are a
  * gradebook line at the bottom, and they are still computed exactly as they were.
+ *
+ * The words in that sentence are historical now — `STRUCTURED` was retired with the points
+ * model, and *Not demonstrated* is Ladder 2's `Did not do it`. The defect is kept in its own
+ * vocabulary here because a comment describing what was on a screen in 2026 should say what
+ * was on that screen.
  */
 
 const READ_AND_STRONG: ReasoningScores = Object.fromEntries(REASONING_CRITERIA.map((criterion) => [criterion.id, criterion.max]));
@@ -62,8 +67,16 @@ describe("the points model stays out of the lead", () => {
     const header = source.slice(source.indexOf("<header className=\"student-evidence-header\">"), source.indexOf("student-tabs"));
     expect(header).toContain("StudentLead");
     expect(header).not.toMatch(/structuredPoints|finalPoints|REASONING_MAXIMUM/);
+    // `COMPETENCY_STATE_HEADLINES` used to be the constant named here. It was one of two
+    // tables holding the same six states — a Title Case copy for headings and a lowercase
+    // copy for the tail of a sentence — and the two had already drifted: *not observed*
+    // against *Not observed in this run*, *still incomplete* against *Not assessed yet*. The
+    // need was casing, so casing is what solves it now (`skillStateInSentence`), and there is
+    // one table. The claim this test makes is unchanged: **a class row leads with what the
+    // student showed, not with a number**, and it names the surviving table so a row that
+    // went back to spelling a state fails here.
     const rows = source.slice(source.indexOf("function StudentRows"), source.indexOf("function shortfallLine"));
-    expect(rows).toContain("COMPETENCY_STATE_HEADLINES");
+    expect(rows).toContain("SKILL_STATE_LABELS");
     expect(rows).not.toMatch(/structuredPoints|finalPoints|\/100/);
   });
 
@@ -83,10 +96,19 @@ describe("the points model stays out of the lead", () => {
   });
 
   it("counts what was never asked separately from what fell short", () => {
+    // The two words moved. "Never asked" and "Fell short" were two of the eleven level
+    // phrasings improvised in JSX, and this block was the only place either appeared; they
+    // are now `LEVEL_BUCKET_LABELS.neverAsked` and `.short`, which the exported gradebook
+    // column reads from the same table so the screen and the spreadsheet cannot disagree.
+    //
+    // What is being pinned is not the words. It is that **the two counts never merge**: a
+    // question nobody asked is not a question failed, and this is the one artefact of the
+    // product that gets copied somewhere nothing can explain it.
     const gradebook = source.slice(source.indexOf("function Gradebook"), source.indexOf("function summarise"));
-    expect(gradebook).toContain("Never asked");
-    expect(gradebook).toContain("Fell short");
+    expect(gradebook).toContain("LEVEL_BUCKET_LABELS.neverAsked");
+    expect(gradebook).toContain("LEVEL_BUCKET_LABELS.short");
     expect(gradebook).toContain("line.requirements.neverAsked");
+    expect(gradebook).toContain("line.requirements.short");
   });
 
   it("says the same thing in both worlds", () => {

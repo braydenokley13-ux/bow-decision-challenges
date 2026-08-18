@@ -1,10 +1,12 @@
 import { dollars, type Dollars } from "../../../core/money";
-import type { EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../../../evidence/types";
+import type { ClaimReasonId } from "../../../core/ids";
+import type { CompetingClaimsSettlement, EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../../../evidence/types";
+import { costOfTipClaims, TIP_CLAIM_IDS } from "./claims";
 import { PLAN_UNDER_PRESSURE } from "../../../../platform/challenges/registry";
 import { orderCost, playSaturday, rebateEarned } from "./economy";
 import { EMPTY_PLAN, planSum, popUpLedger, type LedgerInput, type PopUpLedger } from "./ledger";
 import { POP_UP_NUMBERS } from "./numbers";
-import type { PopUpBoardId, PopUpLineId, PopUpNumbers, PopUpPlan, PopUpSourceId, PopUpSumId, SaturdayNumber, SpotId } from "./types";
+import type { PopUpBoardId, PopUpLineId, PopUpNumbers, PopUpPlan, PopUpSourceId, PopUpSumId, SaturdayNumber, SpotId, TipClaimId } from "./types";
 import { popUpEvidenceRequirementsForEvent, popUpCompetenciesForEvent } from "./eventEvidence";
 
 /**
@@ -67,6 +69,8 @@ export interface PopUpState {
   /** Trays ordered for the first Saturday, for each of the middle two, and for the last. */
   trays: { first: number | null; middle: number | null; last: number | null };
   helper: boolean | null;
+  /** The tips jar, once the student has said what it pays for and what it does not. */
+  tipClaims: { fundedIds: readonly TipClaimId[]; reason: ClaimReasonId } | null;
   log: EvidenceEvent[];
   support: Partial<Record<string, SupportLevel>>;
   writeUp: { tileIds: string[]; text: string };
@@ -87,6 +91,8 @@ export type PopUpAction =
   | { type: "POPUP_LOCKED_MOVE_ATTEMPTED"; board: PopUpBoardId; lockedId: string }
   | { type: "POPUP_STOCK_ORDERED"; saturday: SaturdayNumber; trays: number }
   | { type: "POPUP_HELPER_DECIDED"; booked: boolean }
+  /** The tips jar settled: what it paid for, and what made the rest matter less. */
+  | { type: "POPUP_CLAIMS_SETTLED"; fundedIds: readonly TipClaimId[]; reason: ClaimReasonId }
   | { type: "SCAFFOLD_OPENED"; interactionId: string }
   | { type: "SHOW_AND_CONTINUE_USED"; interactionId: string }
   | { type: "POPUP_WRITEUP_SUBMITTED"; tileIds: string[]; text: string };
@@ -118,6 +124,7 @@ export function createPopUpState(now = 1): PopUpState {
     snapshots: [],
     trays: { first: null, middle: null, last: null },
     helper: null,
+    tipClaims: null,
     log: [],
     support: {},
     writeUp: { tileIds: [], text: "" },
@@ -369,6 +376,28 @@ export function popUpReducer(state: PopUpState, action: TimestampedPopUpAction, 
 
     case "POPUP_HELPER_DECIDED":
       return append({ ...state, helper: action.booked }, action.type, decisionPayload(action), "standard_access", undefined, at);
+
+    case "POPUP_CLAIMS_SETTLED": {
+      // The one event this world writes that another world also writes. The payload is the
+      // shared shape, so the evidence a market student produces about which claim mattered
+      // pools with the evidence a season student produces about the same question — which is
+      // §9.1's whole claim, and the reason none of these fields is named for a food truck.
+      const fundedIds = TIP_CLAIM_IDS.filter((id) => action.fundedIds.includes(id));
+      const unfundedIds = TIP_CLAIM_IDS.filter((id) => !fundedIds.includes(id));
+      const spent = dollars(costOfTipClaims(fundedIds, n));
+      const settlement: CompetingClaimsSettlement = {
+        cash: n.tips.cash,
+        fundedIds,
+        unfundedIds,
+        spent,
+        leftOver: dollars(Math.max(0, n.tips.cash - spent)),
+        reason: action.reason,
+      };
+      return append(
+        { ...state, tipClaims: { fundedIds, reason: action.reason } },
+        "COMPETING_CLAIMS_SETTLED", settlement, "standard_access", undefined, at,
+      );
+    }
 
     case "POPUP_STOCK_ORDERED": {
       if (!state.spotId) return state;

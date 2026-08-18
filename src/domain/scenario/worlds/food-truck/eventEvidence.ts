@@ -55,7 +55,18 @@ const LOCKED_MOVE_REQUIREMENTS: Partial<Record<PopUpBoardId, readonly EvidenceRe
 const STATIC_REQUIREMENTS: Partial<Record<EvidenceEventType, readonly EvidenceRequirementId[]>> = {
   POPUP_CONDITIONAL_MONEY_DECIDED: ["plan-within-income.er1"],
   POPUP_COVER_LINE_NAMED: ["plan-within-income.er1"],
-  POPUP_WRITEUP_SUBMITTED: ["plan-within-income.er5", "adapt-a-plan.er5"],
+  // The whole of the tips settlement, in one event: how far the jar was made to reach, what
+  // kind of reason was given for the rest, and whether that reason is true of what actually
+  // went unpaid. Three requirements from one moment because the moment carries three
+  // separable facts, and the observer reads each of them from a different field of the same
+  // payload. This is the one event this world shares with the other one, so the tags are the
+  // same tags — a market student and a season student answer the same question here.
+  COMPETING_CLAIMS_SETTLED: [
+    "sort-by-need-want-goal.er1",
+    "sort-by-need-want-goal.er2",
+    "sort-by-need-want-goal.er3",
+  ],
+  POPUP_WRITEUP_SUBMITTED: ["plan-within-income.er5", "adapt-a-plan.er5", "sort-by-need-want-goal.er4"],
 };
 
 export function popUpEvidenceRequirementsForEvent(type: EvidenceEventType, payload: unknown): readonly EvidenceRequirementId[] {

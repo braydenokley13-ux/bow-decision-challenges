@@ -2,6 +2,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type Dispatch, type PropsWithChildren } from "react";
 import { clearAttemptFor, clearEveryAttempt, loadAttemptFor } from "../../domain/io/persistence";
 import { useAttemptAutosave, useSingleFireDispatch } from "../../app/attemptStore";
+import { useAttemptCheckpoint } from "../../student/useAttemptCheckpoint";
+import { readMyAttempt, studentToken } from "../../student/session";
 import { createPopUpState, popUpReducer, type PopUpAction, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
 import { deliverWithRetry, type DeliveryState, type EvidenceTransport } from "../../platform/evidence/transport";
 
@@ -58,11 +60,63 @@ function belongsToSeat(state: PopUpState, seed: PopUpSeed): boolean {
   return state.meta.seatCode === seed.seatCode && state.meta.classCode === seed.classCode;
 }
 
+/**
+ * Tuesday's market, opened on Thursday, on a different Chromebook.
+ *
+ * The other world solves this with `student/ResumeGate.tsx`, which fetches before its provider
+ * mounts and builds the provider around the answer. It has to be a gate rather than a hook
+ * inside the provider for a reason that is true here too: a reducer's initial state is chosen
+ * once, at mount, and an attempt fetched afterwards could only be dispatched *into* a run that
+ * had already started — a reducer adopting a state it did not produce is worse than a page
+ * load.
+ *
+ * That gate is Basketball-shaped, and deliberately: it holds a `ChallengeState` and hands it to
+ * `ChallengeProvider`. Rather than teach it a second world's payload and a second provider —
+ * which would put both worlds' interiors in one platform file, the thing §7.1 exists to
+ * prevent — the market gates itself, in its own provider, with its own shape. One extra
+ * request on the market path, and no world knows anything about the other.
+ *
+ * The local copy wins a tie and wins outright when it is newer, for the same reason it does in
+ * the other world: a student who carried on offline on this machine has work here the service
+ * has never seen, and pulling an older server copy over it would be sync losing the thing sync
+ * is for.
+ */
 export function PopUpProvider({ children, seed, transport }: PropsWithChildren<{ seed: PopUpSeed; transport: EvidenceTransport }>) {
+  const here = loadAttemptFor<PopUpState>("food-truck");
+  const nothingToAsk = !seed.classCode || !studentToken();
+  const [resolved, setResolved] = useState<{ state?: PopUpState } | null>(() => (nothingToAsk ? {} : null));
+
+  useEffect(() => {
+    if (nothingToAsk) return;
+    let cancelled = false;
+    void (async () => {
+      const result = await readMyAttempt(seed.classCode);
+      if (cancelled) return;
+      const attempt = result.ok ? result.body.attempt : null;
+      const there = attempt?.worldId === "food-truck" ? (attempt.payload as PopUpState | null) : null;
+      const usable = there?.meta?.sessionId && there.stage !== "popup-submitted" && there.log.length > 0
+        && belongsToSeat(there, seed);
+      const mineIsNewer = here && there && here.meta.sessionId === there.meta.sessionId && here.log.length >= there.log.length;
+      setResolved(usable && !mineIsNewer && there ? { state: there } : {});
+    })();
+    return () => { cancelled = true; };
+    // `here` is read once at mount on purpose: it is the comparison this fetch is against, and
+    // re-running the fetch every time the local attempt changes would be a request per keypress.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed, nothingToAsk]);
+
+  if (!resolved) return <div className="popup-shell" data-world="food-truck" />;
+  return <PopUpRun seed={seed} transport={transport} {...(resolved.state ? { initial: resolved.state } : {})}>{children}</PopUpRun>;
+}
+
+function PopUpRun({ children, seed, transport, initial }: PropsWithChildren<{ seed: PopUpSeed; transport: EvidenceTransport; initial?: PopUpState }>) {
   const [state, rawDispatch] = useReducer(
     popUpReducer,
     undefined,
     () => {
+      // A run recovered from the service outranks this machine's copy: the gate above only
+      // hands one over when it is this seat's and further along than what is here.
+      if (initial) return initial;
       const restored = loadAttemptFor<PopUpState>("food-truck");
       if (restored && belongsToSeat(restored, seed)) return restored;
       // The seat that has just joined outranks a run left behind by the seat before it. The
@@ -103,6 +157,23 @@ export function PopUpProvider({ children, seed, transport }: PropsWithChildren<{
   // The same rule Basketball's provider keeps, from the same module: anything that reached
   // the log is written at once, a draft waits a moment, and the page going away ends the wait.
   useAttemptAutosave(state);
+
+  // …and the half of "where is this student up to" that lives on the server. Local storage
+  // keeps the work safe on the machine it was made on; it cannot tell a teacher walking the
+  // room who has started, and it cannot hand Tuesday's market to Thursday's Chromebook. The
+  // hook debounces itself — on a change of stage, otherwise at most every fifteen seconds,
+  // and once when the page goes away — so there is no second debounce around it.
+  useAttemptCheckpoint(
+    state.meta.classCode
+      ? {
+          classCode: state.meta.classCode,
+          worldId: "food-truck" as const,
+          stage: state.stage,
+          payload: state,
+          ...(state.meta.assignmentId ? { assignmentId: state.meta.assignmentId } : {}),
+        }
+      : null,
+  );
 
   const deliver = useCallback(async () => {
     await deliverWithRetry(

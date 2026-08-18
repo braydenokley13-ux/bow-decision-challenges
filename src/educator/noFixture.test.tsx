@@ -129,7 +129,6 @@ describe("a real class with no submissions reports nothing", () => {
   it("has no students, no counts and no contrast", () => {
     expect(empty.rows).toEqual([]);
     expect(empty.contrast).toBeNull();
-    expect(empty.reviewFirst).toBeNull();
     expect(empty.awaitingReview).toEqual([]);
     expect(empty.totalMoneyCommittedToCourse).toBe(0);
   });
@@ -141,11 +140,20 @@ describe("a real class with no submissions reports nothing", () => {
     }
   });
 
-  it("counts every concept as zero across every status", () => {
-    for (const concept of empty.concepts) {
-      expect(Object.values(concept.counts).reduce((sum, value) => sum + value, 0)).toBe(0);
-      expect(concept.needsFollowUp).toEqual([]);
-    }
+  /**
+   * This used to count every *concept* as zero across every *status* — the `C1`–`C6`
+   * taxonomy and the `demonstrated_independently`/`not_observed` status words, neither of
+   * which any screen has rendered since the bespoke demo was deleted, and both of which are
+   * now gone from `ClassAnalysis` rather than sitting in it waiting for a fifth vocabulary to
+   * be wired back onto a teacher's page.
+   *
+   * The claim underneath is the one that matters and it survives verbatim: an empty class
+   * reports an empty shape, never a shape with zeros standing in for children.
+   */
+  it("reports an empty class as empty rather than as a room of zeros", () => {
+    expect(empty.worlds.every((world) => world.seats === 0)).toBe(true);
+    expect(empty.adaptation.cutFirst).toEqual([]);
+    expect(empty.prompts).toEqual([]);
   });
 
   it("offers no discussion prompts it has not earned", () => {
@@ -206,10 +214,6 @@ describe("a real class reports exactly what it was given", () => {
       for (const share of distribution.shares) {
         for (const seat of share.seats) expect(seats).toContain(seat);
       }
-    }
-    for (const concept of analysis.concepts) {
-      const counted = Object.values(concept.counts).reduce((sum, value) => sum + value, 0);
-      expect(counted).toBe(3);
     }
   });
 

@@ -109,12 +109,13 @@ describe("Run the Pop-Up's coverage claim is backed by its observer", () => {
     }
   });
 
-  it("rolls a complete run up to both competencies", () => {
+  it("rolls a complete run up to all three competencies", () => {
     const results = observeCompetencies(
       observePopUpFromLog(runPopUp().log, { scoredExplanations: popUpScoredExplanationsFrom(READ_AND_STRONG)! }),
       { submitted: true },
     );
-    expect(results.map((result) => result.competencyId).sort()).toEqual(["adapt-a-plan", "plan-within-income"]);
+    expect(results.map((result) => result.competencyId).sort())
+      .toEqual(["adapt-a-plan", "plan-within-income", "sort-by-need-want-goal"]);
     expect(results.find((result) => result.competencyId === "plan-within-income")?.state).toBe("demonstrated");
   });
 
@@ -198,8 +199,17 @@ describe("the competencies Run the Pop-Up does not produce", () => {
   });
 
   it("leaves the same gap Basketball leaves, which is what keeps the two comparable", () => {
-    // If one world produced a competency the other could not, a student who picked the other
-    // story would be measured on less — and §9.1 is the claim that they are not.
+    // §9.1 is the claim that the story a student picks does not change what is measured, and
+    // it holds across the whole table again.
+    //
+    // It briefly did not. Basketball's Week 3 gave `sort-by-need-want-goal` its first beat —
+    // three claims on one week's cash, the student saying which ones get it and what made them
+    // leave the rest out — and for the length of one branch a choose-your-world class assessed
+    // that competency for half the room. The market's answer is the tips jar after the first
+    // Saturday: the same `COMPETING_CLAIMS_SETTLED` event, the same four reason ids from
+    // `core/ids.ts`, the same three reads, three claims of its own and not one line of shared
+    // implementation. Which is exactly what those ids were named for the situation rather than
+    // for a season to allow.
     const forWorld = (worldId: string) =>
       BUILT_WORLD_COVERAGE.filter((claim) => claim.worldId === worldId)
         .map((claim) => `${claim.competencyId}:${[...claim.producedEvidenceRequirementIds].sort().join(",")}`)

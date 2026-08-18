@@ -8,7 +8,8 @@ import {
 } from "../domain/scenario/worlds/food-truck/economy";
 import { ledgerOf, popUpReducer, createPopUpState, type PopUpState, type TimestampedPopUpAction } from "../domain/scenario/worlds/food-truck/machine";
 import { POP_UP_NUMBERS as N } from "../domain/scenario/worlds/food-truck/numbers";
-import { POP_UP_LINES, type PopUpLineId, type PopUpPlan, type PopUpSumId, type SpotId } from "../domain/scenario/worlds/food-truck/types";
+import { POP_UP_LINES, type PopUpLineId, type PopUpPlan, type PopUpSumId, type SpotId, type TipClaimId } from "../domain/scenario/worlds/food-truck/types";
+import type { ClaimReasonId } from "../domain/core/ids";
 import { PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
 import type { SubmissionRecord } from "../platform/classes/types";
 
@@ -34,6 +35,11 @@ export interface PopUpRunOptions {
   /** Trays cooked on the first Saturday, on each of the middle two, and on the last. */
   trays?: { first?: number; middle?: number; last?: number };
   bookHelper?: boolean;
+  /** What the tips jar pays for after the first Saturday, and what made the rest matter less. */
+  tipClaims?: readonly TipClaimId[];
+  tipReason?: ClaimReasonId;
+  /** Walk past the tips jar without settling it, so an unanswered beat can be exercised. */
+  skipTipClaims?: boolean;
   /** Share of the money left after stock that goes into the cushion rather than the cut. */
   cushionShare?: number;
   /** The line the student sends the last of the money to when closing the opening plan. */
@@ -66,6 +72,9 @@ const DEFAULTS = {
   coverLine: "cushion" as PopUpLineId | null,
   trays: { first: 3, middle: 4, last: 4 },
   bookHelper: false,
+  tipClaims: ["cool-box"] as readonly TipClaimId[],
+  tipReason: "only-wanted" as ClaimReasonId,
+  skipTipClaims: false,
   cushionShare: 0.55,
   closeOpeningInto: "stock" as PopUpLineId,
   closeByHand: false,
@@ -148,6 +157,9 @@ export function runPopUp(options: PopUpRunOptions = {}): PopUpState {
   // Beat 3 — the Saturdays.
   sum("first-order", orderCost(N, opts.trays.first));
   send({ type: "POPUP_STOCK_ORDERED", saturday: 1, trays: opts.trays.first });
+  if (!opts.skipTipClaims) {
+    send({ type: "POPUP_CLAIMS_SETTLED", fundedIds: opts.tipClaims, reason: opts.tipReason });
+  }
   send({ type: "POPUP_HELPER_DECIDED", booked: opts.bookHelper });
   send({ type: "POPUP_STOCK_ORDERED", saturday: 2, trays: opts.trays.middle });
   if (opts.stopAfterSaturdayThree) return state;

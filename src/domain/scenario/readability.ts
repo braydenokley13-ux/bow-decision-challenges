@@ -134,6 +134,23 @@ export interface ScreenText {
    * critical-path total for that reason, rather than dropped.
    */
   scaffoldChunks: readonly string[];
+  /**
+   * The student's own sentences, quoted back to them — anything under `data-own-words`.
+   *
+   * This is the one real limit of counting words off a DOM, and it is worth stating rather
+   * than leaving for somebody to rediscover by deleting a receipt. A word count cannot tell
+   * comprehension from recognition. Ninety seconds after a student typed a paragraph, the
+   * confirmation screen shows it back to them; they are checking that what they wrote is what
+   * was sent, which is a glance, not a read. Charging it at 150 words a minute made the
+   * receipt look like the most expensive screen in the run and would have argued for deleting
+   * the only place a student can confirm their own work went.
+   *
+   * The exemption is narrow on purpose: it applies to text the student themselves produced in
+   * this run, never to anything the product wrote. A screen that wrapped BOW's own prose in
+   * `data-own-words` would be cheating this ruler, which is why the attribute goes on the
+   * element holding `state.defense.text` and nowhere else.
+   */
+  ownWordsChunks: readonly string[];
   /** Tokens rejected for containing no letter or digit, so the exclusion can be checked. */
   symbolTokens: number;
 }
@@ -150,8 +167,9 @@ export interface ScreenText {
 export function screenTextOf(root: Node | null): ScreenText {
   const chunks: string[] = [];
   const scaffoldChunks: string[] = [];
+  const ownWordsChunks: string[] = [];
   let symbolTokens = 0;
-  if (!root) return { chunks, scaffoldChunks, symbolTokens };
+  if (!root) return { chunks, scaffoldChunks, ownWordsChunks, symbolTokens };
 
   const walk = (node: Node) => {
     if (node.nodeType === 3 /* text */) {
@@ -165,6 +183,11 @@ export function screenTextOf(root: Node | null): ScreenText {
     if (node.nodeType !== 1 /* element */) return;
     const element = node as Element;
     if (element.getAttribute("aria-hidden") === "true") return;
+    if (element.hasAttribute("data-own-words")) {
+      // Children, not the element itself, or the marker would send this straight back here.
+      for (const child of Array.from(element.childNodes)) ownWordsChunks.push(...screenTextOf(child).chunks);
+      return;
+    }
     if (element.tagName === "DETAILS" && !element.hasAttribute("open")) {
       // Collected rather than skipped, so "the student can open this if stuck" is a
       // number in the report and not a hole in the count. The `<summary>` is the part a
@@ -178,7 +201,7 @@ export function screenTextOf(root: Node | null): ScreenText {
     for (const child of Array.from(element.childNodes)) walk(child);
   };
   walk(root);
-  return { chunks, scaffoldChunks, symbolTokens };
+  return { chunks, scaffoldChunks, ownWordsChunks, symbolTokens };
 }
 
 /**

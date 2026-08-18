@@ -11,9 +11,11 @@ import {
   type SaturdayOutcome,
 } from "../../domain/scenario/worlds/food-truck/economy";
 import { ledgerInputFor, ledgerOf, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
+import { costOfTipClaims, TIP_CLAIM_REASONS, tipClaims, type TipClaim } from "../../domain/scenario/worlds/food-truck/claims";
 import { resolveMarket, type MarketVerdict } from "../../domain/scenario/worlds/food-truck/resolution";
 import { POP_UP_NUMBERS as N } from "../../domain/scenario/worlds/food-truck/numbers";
-import { POP_UP_LINES, type PopUpLineId, type PopUpSourceId, type PopUpSumId, type SaturdayNumber, type SpotId } from "../../domain/scenario/worlds/food-truck/types";
+import { POP_UP_LINES, type PopUpLineId, type PopUpSourceId, type PopUpSumId, type SaturdayNumber, type SpotId, type TipClaimId } from "../../domain/scenario/worlds/food-truck/types";
+import type { ClaimReasonId } from "../../domain/core/ids";
 import type { PopUpSumCopy } from "../../domain/scenario/worlds/food-truck/scenario";
 import { usePopUp } from "./PopUpContext";
 import { PopUpBoard, type LockedLine } from "./PopUpBoard";
@@ -503,6 +505,111 @@ export function FirstSaturdayStage() {
   );
 }
 
+/**
+ * The tips jar, and three things that want it.
+ *
+ * The one beat in this world where money will not stretch to everything that has a claim on
+ * it, and the one place it grades something other than arithmetic: the student says what the
+ * jar pays for, and then says what made the thing they left out matter less. The four answers
+ * are the shared ones — the same event and the same four ids the other world writes — so a
+ * class where half the room ran the market and half ran the season measures both halves on
+ * the same question.
+ *
+ * Everything about the money is said before a tap: how much is in the jar, what each claim
+ * costs, and that a dollar left in it is a dollar spent on nothing, because it never reaches
+ * the three lines and cannot be banked.
+ */
+function TipsJar() {
+  const { state, dispatch } = usePopUp();
+  const [funded, setFunded] = useDraft<TipClaimId[]>("food-truck", "tip-claims", []);
+  const [reason, setReason] = useDraft<ClaimReasonId | null>("food-truck", "tip-reason", null);
+  const settled = state.tipClaims !== null;
+  const claims = tipClaims(N);
+  const spent = costOfTipClaims(funded, N);
+  const left = Math.max(0, N.tips.cash - spent);
+  const chosen: readonly TipClaimId[] = settled ? state.tipClaims!.fundedIds : funded;
+  const said: ClaimReasonId | null = settled ? state.tipClaims!.reason : reason;
+  const affordable = (claim: TipClaim) => chosen.includes(claim.id) || claim.cost <= left;
+  const toggle = (id: TipClaimId, cost: number) => setFunded((current) =>
+    current.includes(id) ? current.filter((entry) => entry !== id) : cost <= left ? [...current, id] : current);
+  const ready = chosen.length > 0 && said !== null;
+
+  return (
+    /* Built out of the pieces this world already has — the conditional-money cards, the
+       three-figure readout, the two-button choice — rather than a new set of its own. A beat
+       that looks like nothing else on the run reads as a different product. */
+    <section className="standing-next" aria-labelledby="tips-heading">
+      <p className="eyebrow">{COPY.tips.kicker}</p>
+      <h2 id="tips-heading">{COPY.tips.title}</h2>
+      <p>{COPY.tips.deck}</p>
+      <p className="popup-verdict" data-tone="plain">{COPY.tips.outsideRule}</p>
+      <div className="popup-read">
+        <div><span>{COPY.tips.jarLabel}</span><strong className="money">{formatDollars(N.tips.cash)}</strong></div>
+        <div><span>{COPY.tips.spentLabel}</span><strong className="money">{formatDollars(costOfTipClaims(chosen, N))}</strong></div>
+        <div data-alert={N.tips.cash - costOfTipClaims(chosen, N) > 0}>
+          <span>{COPY.tips.leftLabel}</span>
+          <strong className="money">{formatDollars(N.tips.cash - costOfTipClaims(chosen, N))}</strong>
+        </div>
+      </div>
+      <ul className="maybe-grid">
+        {claims.map((claim) => (
+          <li key={claim.id}>
+            <article className="maybe-card" data-counted={chosen.includes(claim.id)}>
+              <div className="maybe-card__head">
+                <b>{claim.title}</b>
+                <MoneyAmount value={claim.cost} />
+              </div>
+              <p>{claim.detail}</p>
+              <div className="maybe-card__ask">
+                <Button
+                  type="button"
+                  variant={chosen.includes(claim.id) ? "primary" : "secondary"}
+                  aria-pressed={chosen.includes(claim.id)}
+                  aria-disabled={settled || !affordable(claim)}
+                  aria-label={`${chosen.includes(claim.id) ? COPY.tips.paying : COPY.tips.pay}: ${claim.title}`}
+                  onClick={() => !settled && affordable(claim) && toggle(claim.id, claim.cost)}
+                >
+                  {chosen.includes(claim.id) ? COPY.tips.paying : COPY.tips.pay}
+                </Button>
+              </div>
+            </article>
+          </li>
+        ))}
+      </ul>
+      <div className="helper-card__ask">
+        <p className="field-label" id="tips-why">{COPY.tips.ask}</p>
+        <div className="binary-choice" role="group" aria-labelledby="tips-why">
+          {TIP_CLAIM_REASONS.map((entry) => (
+            <button
+              key={entry.id}
+              type="button"
+              aria-pressed={said === entry.id}
+              aria-disabled={settled}
+              onClick={() => !settled && setReason(entry.id)}
+            >
+              {entry.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {settled
+        ? <p className="popup-verdict" data-tone="good" aria-live="polite">{COPY.tips.settled}</p>
+        : (
+          <div className="popup-action">
+            <p>{chosen.length === 0 ? COPY.tips.gateClaims : said === null ? COPY.tips.gateReason : COPY.tips.settled}</p>
+            <Button
+              type="button"
+              aria-disabled={!ready}
+              onClick={() => ready && said !== null && dispatch({ type: "POPUP_CLAIMS_SETTLED", fundedIds: chosen, reason: said })}
+            >
+              {COPY.tips.title}
+            </Button>
+          </div>
+        )}
+    </section>
+  );
+}
+
 export function StandingOrderStage() {
   const { state, dispatch } = usePopUp();
   const ledger = ledgerOf(state);
@@ -518,6 +625,7 @@ export function StandingOrderStage() {
   const [wanted, setWanted] = useDraft("food-truck", "trays-saturday-2", 3);
   const trays = Math.min(wanted, max);
   const decided = state.helper !== null;
+  const ready = decided && state.tipClaims !== null;
   if (!spot || !first) return null;
   const earned = first.soldOut && first.cooked >= N.rebate.minimumPlates;
   const rebate = earned
@@ -532,6 +640,8 @@ export function StandingOrderStage() {
       banner={<NightResult outcome={first} saturday={1} spot={spot} helper={state.helper === true} />}
     >
       <p className="popup-verdict" data-tone={earned ? "good" : "plain"}>{rebate}</p>
+
+      <TipsJar />
 
       <section className="helper-card">
         <div>
@@ -567,11 +677,11 @@ export function StandingOrderStage() {
       </section>
 
       <div className="popup-action">
-        {/* The two nights' own notes are on the order above, where the decision is. Repeating
-            one of them here was the screen saying the same thing twice. */}
-        <p>{COPY.saturday.trayHint}</p>
-        <Button type="button" aria-disabled={!decided} onClick={() => decided && dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 2, trays })}>
-          {decided ? COPY.standing.action : COPY.standing.gate}
+        {/* The two nights' own notes are on the order above, where the decision is, and what a
+            tray costs is on the control itself. Anything printed here was the screen saying
+            something it had already said. */}
+        <Button type="button" aria-disabled={!ready} onClick={() => ready && dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 2, trays })}>
+          {ready ? COPY.standing.action : state.tipClaims === null ? COPY.tips.gateClaims : COPY.standing.gate}
         </Button>
       </div>
     </PopUpShell>

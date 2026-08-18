@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { MINIMUM_ASSESSED_FOR_A_STATE } from "../domain/competency/objectiveState";
 import { GAP_THRESHOLD_PERCENT, type RequirementGap, type TeachNextReading } from "../domain/competency/teachNext";
 import type { MisconceptionSpotlight } from "./misconceptions";
+import { levelLabel, LEVEL_BUCKET_LABELS, TERMS } from "./labels";
 
 /**
  * "What should I teach next?" — §18, rendered in the order §18.1 fixes and in no other.
@@ -24,15 +25,26 @@ import type { MisconceptionSpotlight } from "./misconceptions";
  * should I teach next?" for the same class.
  */
 
-/** The counts behind every required requirement. The audit trail for the card above it. */
+/**
+ * The counts behind everything the work had to show. The audit trail for the card above it.
+ *
+ * The first column's header is Ladder 1's noun for the unit, and it is the phrase the rest
+ * of the product was renamed onto: this table already used it when five other surfaces were
+ * calling the same object a requirement, a criterion, a required part, an evidence
+ * requirement or a micro-skill.
+ *
+ * The third column used to read "Never asked", one of eleven phrasings of a level improvised
+ * in JSX. It is Ladder 2's `null`, read from the table, and it stays in its own column: an
+ * opportunity the run never presented can never be read as a student who got it wrong.
+ */
 function GapTable({ gaps, assessed }: { gaps: readonly RequirementGap[]; assessed: number }) {
   return (
     <table className="micro-table next-lesson__gaps">
       <thead>
         <tr>
-          <th scope="col">What the work had to show</th>
-          <th scope="col">Did not show it</th>
-          <th scope="col">Never asked</th>
+          <th scope="col">{TERMS.Requirement}</th>
+          <th scope="col">{LEVEL_BUCKET_LABELS.short}</th>
+          <th scope="col">{levelLabel(null)}</th>
         </tr>
       </thead>
       <tbody>
@@ -84,7 +96,7 @@ function Spotlight({ spotlight, classCode, teacherKey }: { spotlight: Misconcept
               <li key={example.seatCode}>
                 <blockquote>{example.writing}</blockquote>
                 <cite>
-                  Seat {example.seatCode} · {example.level === 0 ? "not demonstrated" : "partly there"}
+                  Seat {example.seatCode} · {levelLabel(example.level).toLowerCase()}
                   {teacherKey && <> · <Link to={`/educator/class/${classCode}/students/${example.seatCode}?key=${teacherKey}`}>open the evidence</Link></>}
                 </cite>
               </li>
@@ -99,12 +111,15 @@ function Spotlight({ spotlight, classCode, teacherKey }: { spotlight: Misconcept
         </p>
       )}
 
+      {/* The product's epistemology, said in a sentence rather than as a two-word fragment in
+          front of it. "Not evidence either way." was correct and important and nobody who had
+          not already agreed with it could parse it; the sentence underneath was always doing
+          the work. */}
       {(unread.length > 0 || unasked.length > 0) && (
         <p className="spotlight__absence">
-          <strong>Not evidence either way.</strong>{" "}
           {unread.length > 0 && `${unread.length} student${unread.length === 1 ? "" : "s"} wrote an explanation nobody has read yet. `}
           {unasked.length > 0 && `${unasked.length} student${unasked.length === 1 ? "" : "s"} were never asked this in their run. `}
-          Neither is a student who got it wrong.
+          <strong>Neither is a student who got it wrong, and neither counts either way.</strong>
         </p>
       )}
     </section>
@@ -141,7 +156,7 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
             <h4>{top.label}</h4>
             <p className="next-lesson__focus">
               BOW has no reteach topic for this one, because the model names no misconception behind it.
-              What the work has to show is: {top.observableRule.charAt(0).toLowerCase()}{top.observableRule.slice(1)}.
+              {TERMS.Requirement} is: {top.observableRule.charAt(0).toLowerCase()}{top.observableRule.slice(1)}.
             </p>
           </>
         )}
@@ -162,7 +177,7 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
                 {teacherKey
                   ? <Link to={`/educator/class/${classCode}/students/${example.seatCode}?key=${teacherKey}`}>Seat {example.seatCode}</Link>
                   : <span>Seat {example.seatCode}</span>}
-                <small>{example.level === 0 ? "did not show it" : "partly showed it"}</small>
+                <small>{levelLabel(example.level)}</small>
               </li>
             ))}
           </ul>
@@ -216,7 +231,10 @@ export function TeachNext({ reading, spotlight, classCode, teacherKey }: {
       {spotlight && <Spotlight spotlight={spotlight} classCode={classCode} teacherKey={teacherKey} />}
       <Action reading={reading} spotlight={spotlight} classCode={classCode} teacherKey={teacherKey} />
       <details className="next-lesson__working">
-        <summary>Every requirement behind this {reading.assessed}-student result</summary>
+        {/* Named in plain English rather than in the vocabulary the table below exists to
+            explain. A teacher clicking into an audit trail should not have to already know
+            what BOW calls the rows in it. */}
+        <summary>Show the counts behind this</summary>
         <GapTable gaps={reading.gaps} assessed={reading.assessed} />
       </details>
     </section>

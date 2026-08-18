@@ -132,9 +132,14 @@ function countsOnScreen(container: HTMLElement) {
     turnedIn: Number(tiles[0]),
     stillWorking: Number(tiles[1]),
     notStarted: Number(tiles[2]),
-    /** "Counts across 5 of 6 with a usable result". */
+    /**
+     * "Counts across the 5 of 6 with a usable result — one whose written explanation
+     * somebody has read." The trailing clause is new: "usable result" was precise,
+     * load-bearing and defined two sections further up the page, which is the wrong place
+     * for the definition of the denominator every number under it is divided by.
+     */
     captionOf: Number(/of (\d+) with a usable result/.exec(caption)?.[1]),
-    captionAssessed: Number(/across (\d+) of/.exec(caption)?.[1]),
+    captionAssessed: Number(/across the (\d+) of/.exec(caption)?.[1]),
     students: container.querySelectorAll(".row-list > a").length,
   };
 }

@@ -255,9 +255,12 @@ export function PlanBoard({
               // card and inside the spoken name. A button whose accessible name does not
               // contain the words printed on it is a button a student using voice control can
               // see and cannot ask for.
-              const note = offer!.capped
-                ? `${formatDollars(offer!.amount)} — all it can hold`
-                : offer!.amount === 0 ? steps.rest.done : "";
+              // The capped card explains itself, because only that one card is not taking the
+              // whole leftover. "Nothing is left over. Every dollar already has a job." used to
+              // be printed underneath all three of them — the same ten words, three times, an
+              // inch apart, on the busiest screen in the run. It is one fact about the plan
+              // rather than a fact about a row, so it is said once, in the line under the cards.
+              const note = offer!.capped ? `${formatDollars(offer!.amount)} — all it can hold` : "";
               return (
                 <button
                   key={category}
@@ -272,7 +275,7 @@ export function PlanBoard({
               );
             })}
           </div>
-          <p>{balance > 0 ? steps.rest.shortcut : steps.rest.why}</p>
+          <p>{balance > 0 ? steps.rest.shortcut : residual === 0 ? steps.rest.done : steps.rest.why}</p>
         </section>
       )}
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { EducatorShell } from "./EducatorShell";
+import { EducatorShell, StateKey } from "./EducatorShell";
 import {
   districtProfile,
   FRAMEWORKS,
@@ -10,10 +10,10 @@ import {
   type FrameworkId,
   type Standard,
 } from "../domain/standards";
-import { MINIMUM_ASSESSED_FOR_A_STATE, isResultState, type ObjectiveMapState } from "../domain/competency/objectiveState";
+import { MINIMUM_ASSESSED_FOR_A_STATE, isResultState, type ObjectiveMapState, type ObjectiveResultState } from "../domain/competency/objectiveState";
 import { applyMapFilters, displayNameFor, NO_FILTERS, objectiveMapRows, type MapFilters, type ObjectiveMapRow } from "./objectiveMap";
 import { useTeacherClasses } from "./useTeacherClasses";
-import { MAP_STATE_LABELS, MAP_STATE_ORDER } from "./labels";
+import { classStateKey, storyCoverageLabel, MAP_STATE_LABELS, MAP_STATE_ORDER, TERMS } from "./labels";
 
 /**
  * The Objective Map — where a teacher stands against the whole requirement.
@@ -53,6 +53,16 @@ function StateMark({ state }: { state: ObjectiveMapState }) {
   return <span className="state-mark" data-state={state} aria-hidden="true" />;
 }
 
+/**
+ * The four map states that are Ladder 4, narrowed to it. The other five are not claims about
+ * students and have no Ladder-4 sentence to give — `isResultState` is not a type guard, so
+ * this is where the narrowing is written down rather than asserted at the call site.
+ */
+function classStateOf(state: ObjectiveMapState): ObjectiveResultState[] {
+  if (state === "strong" || state === "developing" || state === "needs-attention" || state === "too-few-assessed") return [state];
+  return [];
+}
+
 function lastAssessedLabel(row: ObjectiveMapRow): string {
   if (row.lastAssessedAt === null) return "—";
   const when = new Date(row.lastAssessedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -60,7 +70,7 @@ function lastAssessedLabel(row: ObjectiveMapRow): string {
 }
 
 /** The count, or the share, or a dash — and never a share the denominator cannot carry. */
-function demonstratedLabel(row: ObjectiveMapRow): string {
+function showedItLabel(row: ObjectiveMapRow): string {
   if (!row.available) return "—";
   if (row.result.assessed === 0) return "—";
   if (row.result.percentDemonstrated === null) return `${row.result.demonstrated} of ${row.result.assessed}`;
@@ -228,11 +238,11 @@ export function ObjectiveMap() {
           {waiting.length > 0 && (
             <section className="dashboard-section map-waiting">
               <div className="section-head">
-                <h2>Not yet assessable</h2>
+                <h2>BOW cannot see {waiting.length === 1 ? "this one" : "these"} yet</h2>
                 <p>
-                  {waiting.length} {waiting.length === 1 ? `${unit} is` : `${unit}s are`} matched to a skill BOW cannot
-                  observe yet. {waiting.length === 1 ? "It reports" : "They report"} as coming, never as nobody having
-                  demonstrated {waiting.length === 1 ? "it" : "them"}.
+                  {waiting.length} {waiting.length === 1 ? `${unit} is` : `${unit}s are`} matched to a {TERMS.skill} BOW
+                  cannot observe yet. {waiting.length === 1 ? "It reports" : "They report"} as coming, never as nobody
+                  having shown {waiting.length === 1 ? "it" : "them"}.
                 </p>
               </div>
               <ul className="coming-list">
@@ -260,8 +270,18 @@ export function ObjectiveMap() {
                 <th scope="col">{labels?.unitNounShort}</th>
                 <th scope="col">Status</th>
                 <th scope="col">Assessed</th>
-                <th scope="col">Demonstrated</th>
-                <th scope="col">Worlds</th>
+                <th scope="col">Showed it</th>
+                {/* This column used to read "Worlds" over a bare 1 or 2, on the one page the
+                    product tells a teacher to print and hand to somebody. Its value is *how
+                    many of the two stories can ask a student for what this objective rests
+                    on* — a fact no department head could guess from an integer.
+
+                    "Where it comes up" rather than the longer "Where students meet it":
+                    `.map-table thead th` is `white-space: nowrap`, and this table's first
+                    column is the objective's own wording, which every character here takes
+                    from. It also lands on Ladder 2's `Never came up` — a story either asks a
+                    student for this or it never does, which is the same fact one grain down. */}
+                <th scope="col">Where it comes up</th>
                 <th scope="col">Last assessed</th>
                 <th scope="col">Next</th>
                 <th scope="col">Taught</th>
@@ -281,6 +301,14 @@ export function ObjectiveMap() {
           {shown.length === 0 && <p className="class-state">No {unit} matches those filters.</p>}
         </section>
       )}
+
+      {/* Ladder 4, once, for the words this page actually put on screen. Five of the nine
+          map states are facts about coverage or a teacher's own record rather than claims
+          about students, and they are worded so they cannot be read as scores; the four that
+          are claims are the ones that need the sentence. */}
+      <div className="map-note">
+        <StateKey title="What these words mean" entries={classStateKey(shown.flatMap((row) => classStateOf(row.state)))} />
+      </div>
 
       <p className="framework-attribution map-note">
         {framework?.labels.attribution}{" "}
@@ -318,8 +346,8 @@ function TableRow({ row, classCode, onTaught }: {
       </th>
       <td><span className="map-table__status"><StateMark state={row.state} />{MAP_STATE_LABELS[row.state]}</span></td>
       <td className="money">{assessedLabel(row)}</td>
-      <td className="money">{demonstratedLabel(row)}</td>
-      <td className="money">{row.worlds}</td>
+      <td className="money">{showedItLabel(row)}</td>
+      <td>{storyCoverageLabel(row.worlds)}</td>
       <td>{lastAssessedLabel(row)}</td>
       {/* The map says where the class stands; the objective says what to do about it. A row
           that has a result carries the way through, so "needs attention" is a link to a

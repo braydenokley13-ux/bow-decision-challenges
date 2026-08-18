@@ -73,7 +73,7 @@ export function Week8Resolution() {
       cash: SCENARIO_NUMBERS.week3.cash,
       spent: dollars(spent),
       leftOver: dollars(SCENARIO_NUMBERS.week3.cash - spent),
-      paidFor: week3Claims().filter((claim) => funded.includes(claim.id)).map((claim) => claim.title),
+      paidFor: week3Claims().filter((claim) => funded.includes(claim.id)).map((claim) => claim.inSentence),
       unpaid: week3Claims()
         .filter((claim) => !funded.includes(claim.id))
         .map((claim) => ({ id: claim.id, label: claim.verdictLabel, cost: claim.cost, wentUnpaid: claim.wentUnpaid })),

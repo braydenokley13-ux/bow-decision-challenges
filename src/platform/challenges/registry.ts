@@ -72,7 +72,13 @@ export const PLAN_UNDER_PRESSURE: ChallengeDefinition = {
    */
   grades: "Grades 5–8",
   conceptIds: ["income-reliability", "full-cost", "viable-budget", "contingency", "adaptation", "financial-defense"],
-  duration: { min: 20, max: 25 },
+  // Was 20–25, and it survived only because nothing measured the words on the screens. Both
+  // worlds are now counted where a student meets them (`stages/readingLoad.test.tsx`): the
+  // longest basketball route budgets 23m20s at the 150 wpm its own pacing table assumes, and
+  // the same screens take four minutes longer at the 120 wpm that is realistic for the Grades
+  // 5–8 band this ships against. This is what a teacher should allow for the challenge itself,
+  // and it does not include getting a class of twenty-eight through the join screen.
+  duration: { min: 20, max: 28 },
   route: "/challenges/plan-under-pressure",
   placement: "Use after instruction",
   skillId: "adaptive-budgeting-under-uncertainty",

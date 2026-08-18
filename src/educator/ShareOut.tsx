@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { EducatorShell } from "./EducatorShell";
@@ -39,6 +39,9 @@ import { worldOfSubmission } from "./objectiveResults";
 
 const MAX_ITEMS = 5;
 
+/** The control Present mode was opened from, and the one focus is handed back to on the way out. */
+const PRESENT_BUTTON_ID = "share-out-present";
+
 export function ShareOut() {
   const { code } = useParams();
   const [params] = useSearchParams();
@@ -47,6 +50,17 @@ export function ShareOut() {
   const [selection, setSelection] = useState<ShareOutSelection | null>(null);
   const [presenting, setPresenting] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  /* Leaving Present mode used to drop focus on `<body>`, which puts a keyboard teacher at the
+     top of a long page with no memory of where they were. The control that opened the
+     projector is the place to come back to. `Button` is a plain function component and does
+     not forward a ref, so the button is found by id rather than held in one — the alternative
+     was changing a shared primitive this surface does not own. */
+  const wasPresenting = useRef(false);
+  useEffect(() => {
+    if (wasPresenting.current && !presenting) document.getElementById(PRESENT_BUTTON_ID)?.focus();
+    wasPresenting.current = presenting;
+  }, [presenting]);
 
   const load = useCallback(async () => {
     if (!code || !teacherKey) return;
@@ -196,7 +210,7 @@ export function ShareOut() {
               <span>Show names on the screen. Off means the room sees Plan A and Plan B.</span>
             </label>
             {items.length > 0 && (
-              <Button variant="primary" onClick={() => setPresenting(true)}>Show it</Button>
+              <Button id={PRESENT_BUTTON_ID} variant="primary" onClick={() => setPresenting(true)}>Show it</Button>
             )}
           </section>
 
@@ -249,23 +263,6 @@ function summaryOf(submission: AttributedSubmission): string {
 }
 
 /**
- * Type for a room, not for a laptop.
- *
- * The rest of this product is read at arm's length; this screen is read from the back row of
- * a classroom over a projector, which is a different problem and needs different numbers. On
- * a 1920 × 1080 projector the frame used to carry a 12px counter and 14–15px controls beside
- * a 38px quote — three sizes on one wall, two of which nobody past the second row can read.
- *
- * They are set here, on the frame, rather than in the shared stylesheet, because they are
- * properties of this one surface's viewing distance and of nothing else in the product.
- */
-const ROOM = {
-  counter: { fontSize: "1.5rem" },
-  control: { fontSize: "1.5rem" },
-  summary: { fontSize: "1.75rem" },
-} as const;
-
-/**
  * The projector.
  *
  * One item at a time, at a size that reads from the back of a room, driven by the arrow keys
@@ -278,34 +275,52 @@ const ROOM = {
 function Present({ slides, onClose }: { slides: readonly ShareOutSlide[]; onClose: () => void }) {
   const [at, setAt] = useState(0);
   const slide = slides[Math.min(at, slides.length - 1)]!;
+  const heading = useRef<HTMLHeadingElement>(null);
+
+  /* The projector had no heading and never took focus — entering it left `document.activeElement`
+     on `<body>` and the view contained zero headings. The slide title is the heading of what is
+     on the wall, so it is the `<h1>`, and it takes focus on arrival and on every slide. */
+  useEffect(() => { heading.current?.focus(); }, [at]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "ArrowRight" || event.key === " ") setAt((value) => Math.min(slides.length - 1, value + 1));
+      if (event.key === "Escape") { onClose(); return; }
+      /* Space is for a teacher standing at the front with nothing focused. When focus is on a
+         control, the control's own activation is the press — handling it here as well made one
+         press of Space on **Next →** move the counter from "1 of 5" to "3 of 5". */
+      const onControl = event.target instanceof Element && event.target.closest("button, a, input, select, textarea") !== null;
+      if (event.key === " " && onControl) return;
+      if (event.key === "ArrowRight" || event.key === " ") {
+        event.preventDefault();
+        setAt((value) => Math.min(slides.length - 1, value + 1));
+      }
       if (event.key === "ArrowLeft") setAt((value) => Math.max(0, value - 1));
-      if (event.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [slides.length, onClose]);
 
   return (
-    <main className="present" aria-live="polite">
+    <main className="present">
       <header className="present__bar">
-        <span style={ROOM.counter}>{at + 1} of {slides.length}</span>
-        <Button variant="quiet" style={ROOM.control} onClick={onClose}>Done</Button>
+        <span>{at + 1} of {slides.length}</span>
+        <Button variant="quiet" onClick={onClose}>Done</Button>
       </header>
-      <section className="present__slide">
-        <p className="present__title">{slide.title}</p>
+      {/* The live region is the slide and only the slide.
+          It used to be the whole of `<main>` — 315 characters and three controls — so every
+          arrow key re-read the counter and both button labels along with the work. What
+          changes when a teacher presses an arrow is the slide, so that is what is announced. */}
+      <section className="present__slide" aria-live="polite" aria-atomic="true">
+        <h1 className="present__title" ref={heading} tabIndex={-1}>{slide.title}</h1>
         {slide.quote
           ? <blockquote className="present__quote">{slide.quote}</blockquote>
           : <p className="present__quote present__quote--none">This student did not write an explanation.</p>}
-        <p className="present__summary" style={ROOM.summary}>{slide.summary}</p>
+        <p className="present__summary">{slide.summary}</p>
       </section>
       <footer className="present__foot">
         <div className="present__moves">
-          <Button variant="secondary" style={ROOM.control} aria-disabled={at === 0} onClick={() => setAt(Math.max(0, at - 1))}>← Back</Button>
-          <Button variant="primary" style={ROOM.control} aria-disabled={at === slides.length - 1} onClick={() => setAt(Math.min(slides.length - 1, at + 1))}>Next →</Button>
+          <Button variant="secondary" aria-disabled={at === 0} onClick={() => setAt(Math.max(0, at - 1))}>← Back</Button>
+          <Button variant="primary" aria-disabled={at === slides.length - 1} onClick={() => setAt(Math.min(slides.length - 1, at + 1))}>Next →</Button>
         </div>
       </footer>
     </main>

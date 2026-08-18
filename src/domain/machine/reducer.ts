@@ -104,15 +104,22 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
     case "SESSION_STARTED": {
       // With one finished world there is no choice to present, so the session opens
       // straight into it. Restoring the picker means routing to "choose-world" here.
-      // The opening screen already told the story, so checking in lands on the deal
-      // rather than on a second orientation screen.
+      //
+      // Both routes now land on the setup comparison rather than on "role-contract". That
+      // screen was 165 rendered words restating four payments the header disclosure carries
+      // on every screen of the run, and it took no input at all — the second of three
+      // no-input screens a density critic found in a run already over its reading budget.
+      // The half of it the disclosure could not carry, what a conditional payment costs when
+      // its rule is not met, moved onto the bonus cards in `WorkingStage`, which is where the
+      // student is asked to take a position on exactly that. The stage id stays in `StageId`
+      // and in `STAGE_ORDER` because stored evidence logs and saved attempts still name it.
       const next = { ...state, meta: { ...state.meta, sessionId: action.sessionId, classCode: action.classCode, seatCode: action.seatCode, assignmentId: action.assignmentId ?? "", worldId: DEFAULT_WORLD_ID } };
       const started = append(next, action.type, action, "standard_access", undefined, at);
-      return goTo(PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? started : append(started, "WORLD_CONFIRMED", { worldId: DEFAULT_WORLD_ID }, "standard_access", undefined, at), PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? "choose-world" : "role-contract", at);
+      return goTo(PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? started : append(started, "WORLD_CONFIRMED", { worldId: DEFAULT_WORLD_ID }, "standard_access", undefined, at), PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? "choose-world" : "setup-comparison", at);
     }
     case "WORLD_CONFIRMED": {
       const next = { ...state, meta: { ...state.meta, worldId: action.worldId } };
-      return goTo(append(next, action.type, action, "standard_access", undefined, at), "role-contract", at);
+      return goTo(append(next, action.type, action, "standard_access", undefined, at), "setup-comparison", at);
     }
     case "CALCULATION_SUBMITTED": {
       const previous = state.calculations[action.calcId];

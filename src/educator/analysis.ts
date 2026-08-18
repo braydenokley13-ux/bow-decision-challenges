@@ -3,7 +3,7 @@ import { dollars, type Dollars } from "../domain/core/money";
 import { deriveFacts } from "../domain/evidence/facts";
 import { writtenAnswerFrom } from "../domain/evidence/writtenAnswer";
 import { deriveResult } from "../domain/evidence/result";
-import type { AssessmentFacts, AssessmentResult, EvidenceEvent, MasteryStatus } from "../domain/evidence/types";
+import type { AssessmentFacts, AssessmentResult, EvidenceEvent } from "../domain/evidence/types";
 import { resolveSeason, type SeasonResolution } from "../domain/finance/resolution";
 import type { PlanAmounts } from "../domain/finance/types";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
@@ -11,9 +11,7 @@ import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { POP_UP_SCENARIO } from "../domain/scenario/worlds/food-truck";
 import { WORLD_REGISTRY } from "../domain/scenario/registry";
 import { derivePopUpFacts } from "../domain/scenario/worlds/food-truck/facts";
-import { CONCEPTS } from "../domain/blueprint/concepts";
 import type { ReasoningScores } from "../domain/blueprint/reasoning";
-import type { ConceptId } from "../domain/blueprint/types";
 import { worldOfSubmission } from "./objectiveResults";
 import type { SubmissionRecord } from "../platform/classes/types";
 import { CHOICE_LABELS } from "../components/financial/choices";
@@ -544,32 +542,6 @@ export function adaptationSummary(rows: StudentRow[]): AdaptationSummary {
   };
 }
 
-export interface ConceptSummary {
-  conceptId: ConceptId;
-  code: string;
-  label: string;
-  reteachId: string;
-  counts: Record<MasteryStatus, number>;
-  /** Students not yet showing the concept, so a small group can be pulled for it. */
-  needsFollowUp: string[];
-}
-
-export function conceptSummaries(rows: StudentRow[]): ConceptSummary[] {
-  return CONCEPTS.filter((concept) => concept.id !== "financial-defense").map((concept) => {
-    const counts: Record<MasteryStatus, number> = {
-      demonstrated_independently: 0, demonstrated_with_support: 0, developing: 0, not_demonstrated: 0, not_observed: 0,
-    };
-    const needsFollowUp: string[] = [];
-    for (const row of rows) {
-      const result = row.result.concepts.find((item) => item.conceptId === concept.id);
-      if (!result) continue;
-      counts[result.status] += 1;
-      if (result.status === "developing" || result.status === "not_demonstrated") needsFollowUp.push(row.seatCode);
-    }
-    return { conceptId: concept.id, code: concept.code, label: concept.label, reteachId: concept.reteachId, counts, needsFollowUp };
-  });
-}
-
 /**
  * Two real plans that went differently, for the board.
  *
@@ -692,30 +664,35 @@ export interface ClassAnalysis {
   worlds: WorldSection[];
   distributions: ChoiceDistribution[];
   adaptation: AdaptationSummary;
-  concepts: ConceptSummary[];
   contrast: [StudentRow, StudentRow] | null;
   prompts: DiscussionPrompt[];
   /** Reasoning still waiting for a person. */
   awaitingReview: string[];
-  /** The concept the most students are still short of, or null when nothing stands out. */
-  reviewFirst: ConceptSummary | null;
   totalMoneyCommittedToCourse: Dollars;
 }
 
+/**
+ * `concepts` and `reviewFirst` used to be two more fields here, and they are gone.
+ *
+ * They carried the *concept* taxonomy — `C1`–`C6`, and teacher-register labels like "Build an
+ * executable contingency" — computed for every class and rendered on no screen since the
+ * bespoke demo pages were deleted. `classSpine.test.ts` already asserted that neither the
+ * class page nor the debrief may read them, which is the whole argument: a derivation nothing
+ * renders, whose labels are in a vocabulary the product retired, is not dead weight so much as
+ * a loaded gun. The next person adding a section reads `ClassAnalysis`, finds a ready-made
+ * per-concept summary with labels on it, and a fifth vocabulary is back on a teacher's screen.
+ * Deleted rather than fenced, for the same reason `STATUS_LABELS` was.
+ */
 export function analyseClass(records: SubmissionRecord[]): ClassAnalysis {
   const rows = records.map(readSubmission);
-  const concepts = conceptSummaries(rows);
-  const ranked = [...concepts].sort((a, b) => b.needsFollowUp.length - a.needsFollowUp.length);
   return {
     rows,
     distributions: choiceDistributions(rows),
     worlds: worldSections(rows),
     adaptation: adaptationSummary(rows),
-    concepts,
     contrast: contrastingPair(rows),
     prompts: discussionPrompts(rows),
     awaitingReview: rows.filter((row) => row.reasoningPoints === null).map((row) => row.seatCode),
-    reviewFirst: ranked[0] && ranked[0].needsFollowUp.length > 0 ? ranked[0] : null,
     totalMoneyCommittedToCourse: dollars(rows.reduce((sum, row) => sum + (row.resolution?.courseSaved ?? 0), 0)),
   };
 }

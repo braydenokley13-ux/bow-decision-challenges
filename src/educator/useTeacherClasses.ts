@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import type { Assignment, AttributedSubmission, ClassRecord } from "../platform/classes/types";
 import type { StandardRef } from "../domain/standards";
-import { rememberedClasses } from "./classMemory";
+import { rememberClass, rememberedClasses } from "./classMemory";
+import { claimRememberedClasses, myTeaching, teacherToken } from "./teacherSession";
 
 /**
  * Every class this browser can open, opened once.
@@ -44,6 +45,25 @@ export function useTeacherClasses(): {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
+      // The account first, where there is one. This used to be "whatever this browser
+      // remembers", which is a laptop away from a term of assessed work — a teacher-experience
+      // critic put it plainly: a reimaged machine permanently destroyed twenty-eight children's
+      // work, and the endpoint that would have prevented it had been answering correctly for
+      // hours with nothing calling it.
+      //
+      // Signing in also claims what this browser holds, so a teacher who signs in on the laptop
+      // they already work on keeps everything rather than starting a second collection. A class
+      // somebody else owns is refused and left alone; two teachers on one staffroom machine is
+      // the normal case, not an error.
+      if (teacherToken()) {
+        const owned = await myTeaching();
+        if (owned.ok) {
+          for (const entry of owned.body.classes) {
+            rememberClass({ code: entry.code, label: entry.label, teacherKey: entry.teacherKey, createdAt: entry.createdAt });
+          }
+          await claimRememberedClasses(owned.body.classes.map((entry) => entry.code));
+        }
+      }
       const known = rememberedClasses();
       const opened = await Promise.all(known.map(async (remembered): Promise<OpenedClass | null> => {
         try {

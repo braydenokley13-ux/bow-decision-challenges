@@ -89,10 +89,28 @@ describe("a class of three reads back as three different plans", () => {
     }
   });
 
-  it("names the seats behind every follow-up rather than only a count", () => {
-    for (const concept of analysis.concepts) {
-      for (const seat of concept.needsFollowUp) {
-        expect(analysis.rows.map((row) => row.seatCode)).toContain(seat);
+  /**
+   * This used to walk `analysis.concepts[].needsFollowUp`. That field is deleted, along with
+   * the concept taxonomy it belonged to: `C1`–`C6` and labels like "Build an executable
+   * contingency" were a fourth vocabulary for the thing the rest of the product now calls a
+   * skill, they reached no screen, and a summary sitting in `ClassAnalysis` waiting to be
+   * rendered is how a retired vocabulary comes back.
+   *
+   * The invariant it was checking is not about concepts and is worth keeping, so it is kept
+   * against the distributions, which are what the class page actually renders: **every seat a
+   * count names is a seat that turned work in.** A number a teacher cannot open is a number
+   * they have to take on faith.
+   */
+  it("names only seats that actually submitted behind every count", () => {
+    const seats = new Set(analysis.rows.map((row) => row.seatCode));
+    for (const distribution of analysis.distributions) {
+      for (const share of distribution.shares) {
+        for (const seat of share.seats) expect(seats).toContain(seat);
+      }
+    }
+    for (const world of analysis.worlds) {
+      for (const entry of world.adaptation?.cuts ?? []) {
+        for (const seat of entry.seats) expect(seats).toContain(seat);
       }
     }
   });

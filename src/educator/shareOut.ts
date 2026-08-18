@@ -127,11 +127,13 @@ export function shareOutCandidates(
       const outcome = runOutcome(row);
       if (outcome) add(row, outcome.kind === "absorbed" ? "absorbed-it" : "came-up-short", outcome.label);
 
-      // Level 4 on a requirement is BOW's word for "went wrong and the student put it right
-      // before anything on screen helped them". A room almost never sees that, and it is the
-      // most useful thing in a class's evidence.
+      // Level 4 is Ladder 2's `Fixed it themselves`: went wrong, saw what that cost, and put
+      // it right with no hint. A room almost never sees that, and it is the most useful thing
+      // in a class's evidence. The sentence says the same thing the level word says, in the
+      // same verb, because this one is a *reason to show the work* rather than a label — the
+      // two must agree, and this is the only place in this file where a level is in view.
       const fixed = spine.results.flatMap((result) => result.levels).find((level) => level.level === 4);
-      if (fixed) add(row, "fixed-it-themselves", "Went wrong here and corrected it themselves, with nothing on screen helping.");
+      if (fixed) add(row, "fixed-it-themselves", "Went wrong here and fixed it themselves, with nothing on screen helping.");
 
       // A shortfall in the student's own words, which is what turns a gap into a discussion
       // rather than a mark.

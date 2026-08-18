@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
-import { EducatorShell } from "./EducatorShell";
+import { EducatorShell, StateKey } from "./EducatorShell";
 import { competencyById } from "../domain/competency/competencies";
-import type { CompetencyId } from "../domain/competency/types";
+import type { CompetencyId, CompetencyResultState } from "../domain/competency/types";
 import {
   competenciesFor,
   FRAMEWORKS,
@@ -21,7 +21,7 @@ import { MINIMUM_ASSESSED_FOR_A_STATE, type ObjectiveResult } from "../domain/co
 import { rememberedClasses } from "./classMemory";
 import { useObjectiveEvidence } from "./useObjectiveEvidence";
 import type { ObjectiveClassResult } from "./objectiveResults";
-import { COMPETENCY_STATE_LABELS, OBJECTIVE_STATE_LABELS } from "./labels";
+import { classStateKey, skillStateKey, skillStateInSentence, CLASS_STATE_LABELS, COVERAGE_LABELS, TERMS } from "./labels";
 import { TeachNext } from "./TeachNext";
 
 /**
@@ -91,7 +91,7 @@ export function ObjectiveList() {
         <h1>What do you want to assess?</h1>
         <p>
           BOW can assess {readyTotal} of the {standards.length} {gradeBandLabel(FRAMEWORK_ID)} {labels?.unitNounShort.toLowerCase()}s in
-          this framework today. The rest are matched to a skill and waiting for a challenge that can observe it.
+          this framework today. The rest are matched to a {TERMS.skill} and waiting for a {TERMS.story} that can show it.
         </p>
       </header>
 
@@ -115,17 +115,22 @@ export function ObjectiveList() {
         {ready.length === 0 && <p className="class-state">Nothing you can assign matches “{query}”.</p>}
       </section>
 
-      {/* The rest are mapped and waiting for a world. They are listed, because a teacher
-          planning a year needs to know what is not here — quietly, because a list of what a
-          product cannot do is not the first thing it should say about itself. */}
+      {/* The rest are matched to a skill and waiting for a story that can produce it. They
+          are listed, because a teacher planning a year needs to know what is not here —
+          quietly, because a list of what a product cannot do is not the first thing it should
+          say about itself.
+
+          The heading used to read "Mapped, not yet assessable", which assumes a teacher knows
+          BOW has a mapping layer between its skills and a state's objectives. A teacher who
+          cannot parse it reads it as a criticism of their class. */}
       {(coming.length > 0 || query.trim().length > 0) && (
         <section className="dashboard-section">
           <div className="section-head">
-            <h2>Mapped, not yet assessable</h2>
+            <h2>BOW cannot see {coming.length === 1 ? "this one" : "these"} yet</h2>
             <p>
               BOW knows which skill sits behind each of these and cannot observe {coming.length === 1 ? "it" : "them"} yet.
               {" "}{coming.length === 1 ? "It reports" : "They report"} as coming, never as nobody having
-              demonstrated {coming.length === 1 ? "it" : "them"}.
+              shown {coming.length === 1 ? "it" : "them"}.
             </p>
           </div>
           <div className="class-form">
@@ -178,7 +183,7 @@ function ResultHeadline({ result, submitted, awaitingReading }: { result: Object
     // a count of three submissions.
     return (
       <div className="objective-result">
-        <strong>Not yet assessed</strong>
+        <strong>{CLASS_STATE_LABELS["not-assessed"]}</strong>
         <span>
           {submitted === 0
             ? "Nobody has turned work in for this yet."
@@ -202,14 +207,20 @@ function ResultHeadline({ result, submitted, awaitingReading }: { result: Object
   }
   return (
     <div className="objective-result" data-state={result.state}>
-      <strong>{result.percentDemonstrated}% demonstrated</strong>
-      <span>{result.demonstrated} of {result.assessed} assessed · {OBJECTIVE_STATE_LABELS[result.state]}</span>
+      {/* The share and Ladder 4's sentence for it, in the same block. "83% demonstrated" was
+          the last place on this page where the roll-up register survived — a Ladder-3 word
+          sitting where the claim is about a room. */}
+      <strong>{result.percentDemonstrated}% showed it</strong>
+      <span>{result.demonstrated} of {result.assessed} assessed · {CLASS_STATE_LABELS[result.state]}</span>
     </div>
   );
 }
 
 function ClassResult({ entry, onThisObjective }: { entry: ObjectiveClassResult; onThisObjective: readonly CompetencyId[] }) {
   const keyQuery = `?key=${rememberedClasses().find((known) => known.code === entry.record.code)?.teacherKey ?? ""}`;
+  const shownSkills = entry.competencies.filter((row) => onThisObjective.includes(row.competencyId));
+  const statesShown = shownSkills.flatMap((row) =>
+    (Object.entries(row.counts) as [CompetencyResultState, number][]).filter(([, count]) => count > 0).map(([state]) => state));
   return (
     <article className="objective-class">
       <header>
@@ -225,23 +236,33 @@ function ClassResult({ entry, onThisObjective }: { entry: ObjectiveClassResult; 
           ? ` · ${entry.awaitingReading} written explanation${entry.awaitingReading === 1 ? "" : "s"} still to read. A student whose writing nobody has read yet is not counted as assessed.`
           : " · every written explanation read."}
       </p>
-      {entry.competencies.length > 0 && (
-        <table className="micro-table">
-          <thead><tr><th scope="col">Skill</th><th scope="col">Where the class is</th></tr></thead>
-          <tbody>
-            {entry.competencies.filter((row) => onThisObjective.includes(row.competencyId)).map((row) => (
-              <tr key={row.competencyId}>
-                <th scope="row">{competencyById(row.competencyId)?.statement ?? row.competencyId}</th>
-                <td>
-                  {Object.entries(row.counts)
-                    .filter(([, count]) => count > 0)
-                    .map(([state, count]) => `${count} ${COMPETENCY_STATE_LABELS[state as keyof typeof COMPETENCY_STATE_LABELS]}`)
-                    .join(" · ")}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      {shownSkills.length > 0 && (
+        <>
+          <table className="micro-table">
+            <thead><tr><th scope="col">Skill</th><th scope="col">Where the class is</th></tr></thead>
+            <tbody>
+              {shownSkills.map((row) => (
+                <tr key={row.competencyId}>
+                  <th scope="row">{competencyById(row.competencyId)?.statement ?? row.competencyId}</th>
+                  {/* Counts of students, so the state words are Ladder 3 — each one is a
+                      claim about one child, added up. The lowercase form is the same table
+                      read for the tail of a sentence, not a second table. */}
+                  <td>
+                    {Object.entries(row.counts)
+                      .filter(([, count]) => count > 0)
+                      .map(([state, count]) => `${count} ${skillStateInSentence(state as CompetencyResultState)}`)
+                      .join(" · ")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {/* Once for this class block, for the words in the table above and the one in the
+              headline — a Ladder-3 word about a child and a Ladder-4 word about the room sit
+              within one scroll here, which is exactly where "Developing" used to mean both. */}
+          <StateKey title="What these words mean, student by student" entries={skillStateKey(statesShown)} />
+          <StateKey title="And the one about the whole class" entries={classStateKey([entry.result.state])} />
+        </>
       )}
       {/* §18.1, in order: the number, then what the class could do, then the misconception,
           then the action, then the students. Never any of them without the ones above. */}
@@ -294,7 +315,7 @@ export function ObjectiveDetail() {
   }
 
   const covering = competenciesFor(frameworkId, standard.code);
-  // Which skills this objective rests on that no built world can produce yet. Named, because
+  // Which skills this objective rests on that neither story can produce yet. Named, because
   // "coming" without a reason is a promise and this is a fact.
   const demand = demandFor(ref);
   const waiting = [...demand.allOf, ...demand.anyOf]
@@ -328,7 +349,7 @@ export function ObjectiveDetail() {
             <p>BOW cannot assess this {labels?.unitNounShort.toLowerCase()} yet.</p>
             {waiting.length > 0 && (
               <>
-                <p>It rests on {waiting.length === 1 ? "this skill, and no world has been built that produces everything it asks for" : "these skills, and no world has been built that produces everything they ask for"}:</p>
+                <p>It rests on {waiting.length === 1 ? `this ${TERMS.skill}, and neither ${TERMS.story} asks a student for everything it needs` : `these ${TERMS.skills}, and neither ${TERMS.story} asks a student for everything they need`}:</p>
                 <ul>{waiting.map((competency) => <li key={competency.id}>{competency.statement}</li>)}</ul>
               </>
             )}
@@ -367,10 +388,16 @@ export function ObjectiveDetail() {
             <tr>
               <th scope="col">Skill</th>
               {/* Two different claims, and printing only the first is what made an
-                  unassessable objective show the word "full". A mapping says how much of
-                  this objective the skill covers; a world is what can actually observe it. */}
-              <th scope="col">Covers</th>
-              <th scope="col">World</th>
+                  unassessable objective show the word "full". A mapping says how much of this
+                  objective the skill covers; a story is what can actually show it.
+
+                  Both columns used to print a raw enum under a one-word header — `full` /
+                  `partial` / `supporting` under "Covers", and `Built` / `None yet` under
+                  "World". The distinction is load-bearing: it is the difference between "a
+                  student who shows this has met the standard" and "they have met some of
+                  it", and nothing on the page said so. */}
+              <th scope="col">How much of this {labels?.unitNounShort.toLowerCase()} it covers</th>
+              <th scope="col">Can BOW see it yet?</th>
               <th scope="col">Why</th>
             </tr>
           </thead>
@@ -378,8 +405,8 @@ export function ObjectiveDetail() {
             {covering.map((entry) => (
               <tr key={entry.competency.id}>
                 <th scope="row"><code>{entry.competency.displayCode}</code> {entry.competency.statement}</th>
-                <td><span className="coverage-chip" data-coverage={entry.coverage}>{entry.coverage}</span></td>
-                <td>{isCompetencyAvailable(entry.competency.id) ? "Built" : "None yet"}</td>
+                <td><span className="coverage-chip" data-coverage={entry.coverage}>{COVERAGE_LABELS[entry.coverage]}</span></td>
+                <td>{isCompetencyAvailable(entry.competency.id) ? "Yes" : "Not yet"}</td>
                 <td>{entry.rationale}</td>
               </tr>
             ))}
@@ -387,14 +414,14 @@ export function ObjectiveDetail() {
         </table>
         {/* Said once, here, where a teacher reading a negative result for 1.3 would land to
             find out why. BOW's bar for 1.3 is higher than NYSED's own — "not yet
-            demonstrated" is a fact about BOW's stricter bar, not about NYSED's objective,
+            shown it" is a fact about BOW's stricter bar, not about NYSED's objective,
             and nothing else on this page or the results below it makes that distinction. */}
         {standard.code === "1.3" && (
           <p className="objective-bar-note">
-            BOW's bar here is higher than {labels?.frameworkShort}'s own. {labels?.frameworkShort} 1.3 asks only for a budget
+            BOW’s bar here is higher than {labels?.frameworkShort}'s own. {labels?.frameworkShort} 1.3 asks only for a budget
             that fits a hypothetical income and includes planned expenses and savings; the skill above additionally
-            requires conditional money handled correctly, savings set before discretionary spending, and a tradeoff
-            explained with one of the student's own numbers. A class that has not yet demonstrated this has not
+            requires conditional money handled correctly, savings set before discretionary spending, and a trade-off
+            explained with one of the student's own numbers. A class that has not yet shown this has not
             failed {labels?.frameworkShort}'s 1.3 — they have not yet cleared BOW's stricter bar for it.
           </p>
         )}

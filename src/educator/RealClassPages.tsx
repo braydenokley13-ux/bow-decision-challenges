@@ -18,7 +18,7 @@ import { WORLD_REGISTRY } from "../domain/scenario/registry";
 import { POP_UP_SCENARIO } from "../domain/scenario/worlds/food-truck";
 import { derivePopUpFacts } from "../domain/scenario/worlds/food-truck/facts";
 import type { CompetencyResultState } from "../domain/competency/types";
-import { levelLabel, skillStateKey, skillStateInSentence, LEVEL_BUCKET_DESCRIPTIONS, LEVEL_BUCKET_LABELS, SKILL_STATE_LABELS, TERMS } from "./labels";
+import { levelBucketKey, levelLabel, skillStateKey, skillStateInSentence, LEVEL_BUCKET_LABELS, SKILL_STATE_LABELS, TERMS } from "./labels";
 import { REASONING_MAXIMUM } from "../domain/evidence/grade";
 import { REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 import { MINIMUM_ASSESSED_FOR_A_STATE, MINIMUM_RESULTS_FOR_CLASS_NARRATION } from "../domain/competency/objectiveState";
@@ -197,7 +197,7 @@ function ClassLead({ spine }: { spine: ClassSpine }) {
   if (reading.result.percentDemonstrated === null) {
     return (
       <>
-        <h1>{reading.result.demonstrated} of {spine.assessed} assessed showed the skill.</h1>
+        <h1>{reading.result.demonstrated} of {spine.assessed} assessed showed it.</h1>
         <p>
           {spine.submitted} turned in. Under {MINIMUM_ASSESSED_FOR_A_STATE} assessed students BOW shows the
           count rather than a share, because a share of {spine.assessed} reads as a fact about the whole class.
@@ -207,7 +207,7 @@ function ClassLead({ spine }: { spine: ClassSpine }) {
   }
   return (
     <>
-      <h1>{reading.result.percentDemonstrated}% demonstrated.</h1>
+      <h1>{reading.result.percentDemonstrated}% showed it.</h1>
       <p>{reading.result.demonstrated} of {spine.assessed} assessed · {spine.submitted} turned in</p>
     </>
   );
@@ -1061,7 +1061,11 @@ function Gradebook({ submission, displayName }: { submission: AttributedSubmissi
             explain it — which is why the export names these three the same way. */}
         <div><dt>{LEVEL_BUCKET_LABELS.neverAsked}</dt><dd>{line.requirements.neverAsked}</dd></div>
       </dl>
-      <p className="gradebook__note">{LEVEL_BUCKET_DESCRIPTIONS.met} {LEVEL_BUCKET_DESCRIPTIONS.neverAsked}</p>
+      {/* The same glossary rule as every other surface, applied to the one artefact that
+          leaves the product. The three sentences are attached to their own labels rather than
+          run together into a paragraph — a teacher copying three numbers into a district
+          gradebook needs to know exactly which number is which. */}
+      <StateKey title="What these three count" entries={levelBucketKey()} />
       <p className="gradebook__figure">
         <strong>
           {line.reasoning.total === null

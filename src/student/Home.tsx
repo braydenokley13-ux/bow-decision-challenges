@@ -168,6 +168,11 @@ function ClassBlock({ entry }: { entry: StudentClass }) {
               ? " Your teacher has written back."
               : " Your teacher has it."}
           </p>
+          {/* The one door to the recap, and it says what is behind it rather than "details".
+              A student who turned in yesterday came back to a card that could only tell them
+              their work had arrived somewhere — true, and not worth opening the page for.
+              The link is deliberately not the word "results": nothing behind it is a mark. */}
+          <Link to={`/run/${entry.classCode}/${done.sessionId}`}>See what your run shows</Link>
         </div>
       ))}
     </section>

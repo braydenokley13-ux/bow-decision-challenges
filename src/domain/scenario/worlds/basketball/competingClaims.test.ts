@@ -207,7 +207,7 @@ describe("Week 8 says what happened to what went unpaid", () => {
       cash: CASH,
       spent: dollars(spent),
       leftOver: dollars(CASH - spent),
-      paidFor: week3Claims().filter((claim) => funded.includes(claim.id)).map((claim) => claim.title),
+      paidFor: week3Claims().filter((claim) => funded.includes(claim.id)).map((claim) => claim.inSentence),
       unpaid: week3Claims()
         .filter((claim) => !funded.includes(claim.id))
         .map((claim) => ({ id: claim.id, label: claim.verdictLabel, cost: claim.cost, wentUnpaid: claim.wentUnpaid })),
@@ -237,7 +237,7 @@ describe("Week 8 says what happened to what went unpaid", () => {
     const travel = byId.get("unpaid-claim:away-travel")!;
     expect(travel.label).toBe(week3Claim("away-travel").verdictLabel);
     expect(travel.detail).toContain("told the coach");
-    expect(travel.detail).toContain("Team shoes");
+    expect(travel.detail).toContain("the team shoes");
     expect(travel.detail).toContain("You said nobody was counting on it.");
     // $30 of the $150 is left, and the away share cost more than that — so the ending does
     // not claim the leftover would have covered it, because it would not have.
@@ -245,6 +245,22 @@ describe("Week 8 says what happened to what went unpaid", () => {
 
     const present = byId.get("unpaid-claim:sister-present")!;
     expect(present.detail).toContain("turned eleven");
+  });
+
+  it("says where the money went and what the student said once, not once per claim", () => {
+    // Both are facts about the week rather than about a claim. Two unpaid claims used to
+    // carry the same two sentences twelve words apart under one heading, at the end of the
+    // run. The verdicts are both `cost_you` and the sort is stable, so they stay adjacent
+    // and the second can lean on the first.
+    const outcome = outcomeFor(["away-travel"], "cheapest");
+    const risks = resolveSeason(finalOf({}), N, undefined, "attendance bonus", undefined, outcome).risks
+      .filter((risk) => risk.id.startsWith("unpaid-claim:"));
+    expect(risks).toHaveLength(2);
+    const saidIt = risks.filter((risk) => risk.detail.includes("went on the away-game travel share instead"));
+    expect(saidIt).toHaveLength(1);
+    expect(risks.filter((risk) => risk.detail.includes("You said it was the cheapest to drop."))).toHaveLength(1);
+    // And every one of them still names what actually happened to its own claim.
+    for (const risk of risks) expect(risk.detail.length, risk.id).toBeGreaterThan(40);
   });
 
   it("says so when the money left over would have covered what went unpaid", () => {

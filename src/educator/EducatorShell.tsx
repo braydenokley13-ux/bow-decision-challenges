@@ -1,8 +1,9 @@
 import type { PropsWithChildren } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { AppMark } from "../components/primitives/AppMark";
+import { forgetTeacher, teacherToken } from "./teacherSession";
 import { DEMO_CLASS_CODE } from "../fixtures/demoClass";
-import { NAV_LABELS } from "./labels";
+import { NAV_LABELS, type KeyEntry } from "./labels";
 
 /**
  * The measure a page is set to.
@@ -44,9 +45,49 @@ export function EducatorShell({ children, measure = "evidence" }: PropsWithChild
           <NavLink to="/educator/map">Map</NavLink>
           <NavLink to="/educator/guide">Guide</NavLink>
         </nav>
+        {/* Whether this browser is anything more than a browser. Without an account a class
+            lives here and nowhere else, and a wiped laptop takes a term of assessed work with
+            it — so the offer to fix that belongs on every screen, not on one a teacher has to
+            already know about. */}
+        {teacherToken()
+          ? (
+            <button
+              type="button"
+              className="educator-topbar__session"
+              onClick={() => { forgetTeacher(); window.location.assign("/educator/classes"); }}
+            >
+              Sign out
+            </button>
+          )
+          : <NavLink className="educator-topbar__session" to="/educator/sign-in">Sign in</NavLink>}
         {isSampleClassRoute(pathname) && <span className="demo-pill">Sample class — not a real class</span>}
       </header>
       <main className="educator-main" data-measure={measure}>{children}</main>
+    </div>
+  );
+}
+
+/**
+ * The key: the words on this page, each with its sentence, once.
+ *
+ * BOW's four ladders are BOW's own distinctions. "Part way", "Did it after a hint" and
+ * "Fewer than half showed it" are not vocabulary a teacher has agreed to, and the product
+ * has never had a glossary anywhere. So the rule this component exists to keep is: **the
+ * first time a word from Ladder 2, 3 or 4 appears on a page, its sentence appears with it —
+ * once per page, not once per row.**
+ *
+ * It renders nothing when there is nothing on the page to explain, which is what makes it
+ * safe to drop into a section that sometimes has no results in it. The entries come from
+ * `labels.ts`, never from the caller, so a page cannot explain a word it made up.
+ */
+export function StateKey({ title, entries }: { title: string; entries: readonly KeyEntry[] }) {
+  if (entries.length === 0) return null;
+  return (
+    <div className="objective-bar-note">
+      <p className="field-label">{title}</p>
+      {entries.map((entry) => (
+        <p key={entry.label}><b>{entry.label}</b> — {entry.description}</p>
+      ))}
     </div>
   );
 }

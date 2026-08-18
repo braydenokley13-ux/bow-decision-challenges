@@ -203,7 +203,11 @@
 .ledger__lines li[data-known="false"] .ledger__label { color: var(--ink-3); }
 
 /* A promised cost answers when a student presses it rather than sitting there inert. */
-.ledger__label--locked { padding: 0; text-align: left; background: none; border: 0; color: inherit; font: inherit; cursor: help; text-decoration: underline dotted var(--border-strong); text-underline-offset: 3px; }
+
+/* A button 19px tall. 2.5.8 asks for 24 in both directions, and this one is the control that
+   explains why a locked row cannot move — the row a student presses when they are stuck.
+   `inline-flex` rather than a padding block, so the two-line variant keeps its own height. */
+.ledger__label--locked { min-height: 24px; display: inline-flex; align-items: center; padding: 0; text-align: left; background: none; border: 0; color: inherit; font: inherit; cursor: help; text-decoration: underline dotted var(--border-strong); text-underline-offset: 3px; }
 .ledger__lines li[data-tone="conditional"] .ledger__label--locked { padding-left: var(--s-3); }
 
 /* The one figure on the rail set large: what the whole plan is built against. */
@@ -557,7 +561,20 @@
      `--rail-height` is the strip's own height, set by the component that draws it, and
      `--rail-idle` stays as what to reserve before the first measurement lands. */
   .plan-scene__work { grid-column: 1; grid-row: 1; padding-bottom: calc(var(--rail-height, var(--rail-idle)) + var(--s-6)); }
-  .plan-rail { grid-column: 1; grid-row: 2; position: sticky; bottom: 0; z-index: 15; }
+
+  /* `top: auto` is the whole of the rail's reflow bug, and it is a one-word omission.
+     The two-column rule above sets `top: calc(72px + var(--s-5))` so the rail can ride the
+     sticky top bar on a laptop. Down here the rail is a bottom bar — but `top` was never
+     released, so the box carried both offsets, and CSS resolves a sticky box that cannot
+     satisfy both by honouring `top`. Whenever the rail grew taller than the window minus
+     88px — which is every time a student opens "See where the money goes" at 200 % zoom, and
+     every time on a phone — the bottom bar silently became a panel anchored 88px below the
+     top of the window. Measured at 640 x 512 with the ledger open: the rail sat at y=186.8
+     and ran to the bottom of the screen, 325px of it, 63.5 % of the viewport, covering the
+     question, the money field and both steppers at every scroll position between 15 % and
+     50 % of the page. The reserve on `.plan-scene__work` could not help, because the reserve
+     is at the end of the column and the rail was over the middle of it. */
+  .plan-rail { grid-column: 1; grid-row: 2; position: sticky; top: auto; bottom: 0; z-index: 15; }
   .plan-progress { font-size: 0.95em; }
 
   /* Stacked, the receipt would sit two thousand pixels under the question it belongs to.
@@ -577,7 +594,18 @@
   .ledger[data-state="over"] .ledger__glance strong { color: var(--fin-over-ink); }
   .ledger__toggle { display: inline-flex; align-items: center; flex: none; margin-left: auto; min-height: var(--tap); padding: 0 var(--s-3); color: var(--ink-1); background: var(--surface-raised); border: 1.5px solid var(--border-ink); border-radius: var(--r-sm); cursor: pointer; font: var(--t-sm); font-weight: 700; }
   .ledger__body { display: none; }
-  .ledger[data-open="true"] .ledger__body { display: grid; max-height: 52vh; overflow-y: auto; }
+
+  /* The cap belongs to the whole rail, not to the list inside it.
+     `max-height: 52vh` bounded the body and left the head unbounded, so the opened rail was
+     52vh *plus* whatever the head needed: measured 63.5 % of a 640 x 512 window and 90.4 % of
+     a 320 x 256 one (400 % zoom), which is a money summary that has eaten the decision it
+     belongs to. Bounding the rail and letting the body take what is left keeps the same
+     scrollable list and gives the question back the rest of the screen. Nothing is hidden —
+     the body still scrolls to all of itself. 56vh is chosen so that no viewport loses room it
+     had before: the old effective heights were 456.6px at 360 x 780, 325.2px at 640 x 512 and
+     231.3px at 320 x 256, and 56vh is 436.8, 286.7 and 143.4. */
+  .ledger[data-open="true"] { max-height: 56vh; grid-template-rows: auto minmax(0, 1fr); }
+  .ledger[data-open="true"] .ledger__body { display: grid; align-content: start; min-height: 0; max-height: none; overflow-y: auto; }
 }
 
 /* ---------------------------------------------------------------------------
@@ -677,7 +705,15 @@
 .week-meter__part { display: grid; align-items: center; overflow: hidden; min-width: 0; padding-inline: 6px; color: var(--ink-invert); }
 .week-meter__part[data-part="commute"] { background: var(--time-commute); }
 .week-meter__part[data-part="rehab"] { background: var(--time-rehab); }
-.week-meter__part[data-part="clinics"] { background: var(--time-clinics); }
+
+/* The amber band takes dark ink, and it is the only one of the three that does.
+   White on `--time-clinics` (#b8801b) measures 3.42:1 at 11.5px/600 — below the 4.5:1 that
+   1.4.3 asks of body text, and the two bands beside it pass comfortably (commute 5.87:1,
+   rehab 6.69:1) because they are dark grounds. Amber is a light ground, so it reads with
+   light-ground ink: `--ink-1` on the same amber measures 5.35:1. The alternative was to
+   darken the token, which lives in `tokens.css` and is used elsewhere; this changes only the
+   band that fails. */
+.week-meter__part[data-part="clinics"] { color: var(--ink-1); background: var(--time-clinics); }
 .week-meter__part i { font-style: normal; font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
 
 .week-meter__paid { margin: -1em 0 0; }
@@ -898,25 +934,55 @@
 .claims__list > li { display: grid; }
 .claims__list button {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: baseline;
   gap: var(--s-1) var(--s-3);
   width: 100%;
   padding: var(--s-3) var(--s-4);
   text-align: left;
   background: var(--surface-raised);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
+
+  /* The same 4px edge every pressable card in this product carries. Without it the three
+     claims sit on the page as information and the reason pills below are the only things
+     that read as controls. */
+  border-left: 4px solid var(--border-strong);
   border-radius: var(--r-md);
   cursor: pointer;
+  transition: border-color var(--dur-micro) var(--ease-standard), background var(--dur-micro) var(--ease-standard);
 }
 .claims__list button b { font: var(--t-ui); }
 .claims__list button strong { justify-self: end; font: var(--m-sm); font-feature-settings: var(--num); }
-.claims__list button span,
-.claims__list button em { grid-column: 1 / -1; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+
+/* Named rather than matched as "the spans in here": the mark is a span too, and the rule
+   below was placing it in the second column and stretching it across the price, which put
+   the affordance in the middle of the card instead of in front of the title. */
+.claims__detail,
+.claims__list button em { grid-column: 2 / -1; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
 .claims__list button em { color: var(--ink-3); font-style: normal; }
 .claims__list button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); border-color: var(--ink-1); }
-.claims__list button[aria-pressed="true"] span { color: var(--surface-sunken); }
+.claims__list button[aria-pressed="true"] .claims__detail { color: var(--surface-sunken); }
 .claims__list button[aria-disabled="true"] { cursor: default; opacity: 0.55; }
+
+/* Deliberately the same square as `.gap-tiles__mark` and `.interview__mark`, which is the
+   mark this product already uses to say "you can press this". It is restated rather than
+   added to that rule because `app.css` belongs to another change in flight; the two should
+   be merged into one selector list the moment it is free. */
+.claims__mark {
+  align-self: center;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--r-xs);
+}
+.claims__list button[aria-pressed="true"] .claims__mark { background: var(--fin-adjustable); border-color: var(--fin-adjustable); }
+.claims__list button[aria-pressed="true"] .claims__mark::after { content: "✓"; color: var(--ink-invert); font: 700 0.85rem/1 var(--font-ui); }
+
+.claims__refusal { margin: 0 0 var(--s-3); color: inherit; font: var(--t-ui); }
+.claims__refusal b { font-weight: 700; }
 
 .claims__left {
   display: flex;
@@ -947,7 +1013,9 @@
 }
 .claims__why button[aria-pressed="true"] { color: var(--ink-invert); background: var(--ink-1); border-color: var(--ink-1); }
 
-.season-run { display: grid; gap: var(--s-2); }
+/* Its own band, not a fourth row of the decision above it: the reason buttons end the
+   choice, and the four weeks are context standing apart from it. */
+.season-run { display: grid; gap: var(--s-2); margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); }
 .season-run > .field-label { margin: 0; }
 .season-run ol { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
 .season-run li {

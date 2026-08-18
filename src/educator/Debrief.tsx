@@ -1,5 +1,5 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { EducatorShell } from "./EducatorShell";
+import { EducatorShell, StateKey } from "./EducatorShell";
 import { useClassEvidence } from "./useClassEvidence";
 import { seatList, type StudentRow } from "./analysis";
 import { seatLabel, seatNames } from "./names";
@@ -11,7 +11,7 @@ import { GAP_THRESHOLD_PERCENT, type TeachNextReading } from "../domain/competen
 import type { AttributedSubmission } from "../platform/classes/types";
 import { classSpineFrom, type ClassSpine } from "./classSpine";
 import { studentSpineFor } from "./studentSpine";
-import { COMPETENCY_STATE_HEADLINES } from "./labels";
+import { levelLabel, skillStateKey, SKILL_STATE_LABELS, TERMS } from "./labels";
 
 /**
  * The debrief. What to say to the room after they have all finished.
@@ -66,6 +66,14 @@ export function Debrief() {
   }
 
   const spine = classSpineFrom({ record, assignments, submissions });
+  // The Ladder-3 words this debrief actually prints, for the key at the foot of §2. A
+  // printed page is the one surface a teacher cannot click for a definition.
+  const contrastStates = analysis.worlds
+    .flatMap((world) => world.contrast ?? [])
+    .flatMap((row) => {
+      const submission = submissions.find((entry) => entry.sessionId === row.sessionId);
+      return submission ? [studentSpineFor(submission).lead] : [];
+    });
 
   return (
     <EducatorShell measure="read">
@@ -132,12 +140,13 @@ export function Debrief() {
                   {world.seats < 2
                     ? `One student ran ${world.title}, so there is no second plan to set beside it yet.`
                     : world.worldId === "food-truck"
-                      ? "Two market plans side by side is not built yet. Their decisions are on the class page, and their own words are below."
+                      ? "Take two market plans off the class page and read them side by side — the decisions are there and their own words are below."
                       : "Every finished plan made the same calls. Ask what would have made another plan the better one."}
                 </p>
               )}
             </div>
           ))}
+          <StateKey title="What these words mean" entries={skillStateKey(contrastStates)} />
         </section>
 
         <section className="debrief__section">
@@ -145,7 +154,7 @@ export function Debrief() {
           {analysis.worlds.map((world) => (
             <div key={world.worldId}>
               {analysis.worlds.length > 1 && <p className="eyebrow">{world.title} · {world.seats} {world.seats === 1 ? "student" : "students"}</p>}
-              {!world.adaptation ? <p>Nothing to report for this world yet.</p> : (
+              {!world.adaptation ? <p>Nothing to report for {world.title} yet.</p> : (
                 <>
                   <p className="debrief__because">{world.adaptation.heading}</p>
                   {world.adaptation.cuts.length > 0 && (
@@ -186,7 +195,7 @@ export function Debrief() {
             analysis.worlds.map((world) => (
               <div key={world.worldId}>
                 {analysis.worlds.length > 1 && <p className="eyebrow">{world.title}</p>}
-                {world.quotes.length === 0 ? <p>Nobody in this world has written yet.</p> : (
+                {world.quotes.length === 0 ? <p>Nobody who ran {world.title} has written yet.</p> : (
                   <ul className="debrief__quotes">
                     {world.quotes.slice(0, 4).map((quote) => (
                       <li key={quote.seatCode}>
@@ -267,8 +276,8 @@ function WhatToReview({ spine, classCode, keyQuery }: { spine: ClassSpine; class
         </>
       ) : (
         <p>
-          BOW names no misconception behind this one, so there is no reteach to hand you. What the work had to
-          show is: {top.observableRule.charAt(0).toLowerCase()}{top.observableRule.slice(1)}.
+          BOW names no misconception behind this one, so there is no reteach to hand you.
+          {" "}{TERMS.Requirement} is: {top.observableRule.charAt(0).toLowerCase()}{top.observableRule.slice(1)}.
         </p>
       )}
       <p className="no-print">
@@ -308,8 +317,8 @@ function ContrastCard({ row, submissions }: { row: StudentRow; submissions: read
       {/* The same reading as the class list and this student's own page. */}
       {spine && (
         <p className="debrief__status">
-          {COMPETENCY_STATE_HEADLINES[spine.lead]}
-          {spine.shortfalls[0] && ` · ${spine.shortfalls[0].label} ${spine.shortfalls[0].level === 0 ? "not shown" : "partly shown"}`}
+          {SKILL_STATE_LABELS[spine.lead]}
+          {spine.shortfalls[0] && ` · ${spine.shortfalls[0].label} — ${levelLabel(spine.shortfalls[0].level)}`}
         </p>
       )}
     </article>

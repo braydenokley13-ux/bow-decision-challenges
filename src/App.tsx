@@ -3,6 +3,7 @@ import { AppMark } from "./components/primitives/AppMark";
 import { StudentChallenge } from "./stages/StudentChallenge";
 import { EducatorGuide, TeachingCompanion } from "./educator/EducatorPages";
 import { MyClasses } from "./educator/MyClasses";
+import { TeacherSignIn } from "./educator/SignIn";
 import { AssignFlow, ObjectiveDetail, ObjectiveList } from "./educator/ObjectivePages";
 import { ObjectiveMap } from "./educator/ObjectiveMap";
 import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPages";
@@ -13,6 +14,7 @@ import { ShareOut } from "./educator/ShareOut";
 import { PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
 import { StudentJoin } from "./student/Join";
 import { StudentHome } from "./student/Home";
+import { RunReport } from "./student/RunReport";
 import { ResumeGate } from "./student/ResumeGate";
 import { PLAYABLE_WORLDS } from "./domain/scenario/registry";
 import { DEMO_CLASS_CODE } from "./fixtures/demoClass";
@@ -81,6 +83,9 @@ export function App() {
           card. Nothing here asks for a name, an email address or a birthday. */}
       <Route path="/join" element={<StudentJoin />} />
       <Route path="/home" element={<StudentHome />} />
+      {/* What a student gets back: their own run, read out of their own log, in their own
+          world's words. Reached from the finished card on /home and from nowhere else. */}
+      <Route path="/run/:classCode/:sessionId" element={<RunReport />} />
       <Route path={PLAN_UNDER_PRESSURE.route} element={<ResumeGate><StudentChallenge /></ResumeGate>} />
       {/* The route this shipped on. Class codes and bookmarks already point at it, so it
           redirects rather than 404s — and keeps redirecting after Challenge #2 lands. */}
@@ -89,6 +94,10 @@ export function App() {
           a year-planning surface, not the thing a teacher opens mid-week. */}
       <Route path="/educator" element={<Navigate to="/educator/classes" replace />} />
       <Route path="/educator/classes" element={<MyClasses />} />
+      {/* The door a teacher did not have. A class used to be a code and a key in one browser,
+          so a reimaged laptop destroyed a term of assessed work — and every endpoint behind
+          this screen had been answering correctly for hours with nothing calling them. */}
+      <Route path="/educator/sign-in" element={<TeacherSignIn />} />
       <Route path="/educator/classes/new" element={<MyClasses />} />
       <Route path="/educator/guide" element={<EducatorGuide />} />
       {/* The objective a teacher assigns and the list they find it in. Real classes only;

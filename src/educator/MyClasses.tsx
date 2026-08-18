@@ -8,7 +8,10 @@ import { durationLabel, PLAN_UNDER_PRESSURE } from "../platform/challenges/regis
 import { DEFAULT_WORLD_ID, PLAYABLE_WORLDS, WORLD_REGISTRY } from "../domain/scenario/registry";
 import { assessableStandards, FRAMEWORKS, labelsFor, standardByRef } from "../domain/standards";
 import type { FrameworkId } from "../domain/standards";
-import { forgetClass, rememberClass, rememberedClasses } from "./classMemory";
+import { forgetClass, rememberClass } from "./classMemory";
+import { useRememberedClasses } from "./useRememberedClasses";
+import { teacherToken } from "./teacherSession";
+import { TERMS } from "./labels";
 
 /**
  * My classes — the first thing an educator sees, and the only place work is set.
@@ -44,9 +47,11 @@ export function MyClasses() {
   const [created, setCreated] = useState<ClassCreation | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
-  const [known, setKnown] = useState(() => rememberedClasses());
-  // Only objectives a built world can actually assess. An objective BOW has a mapping for
-  // and no world would produce a class code, thirty submissions and no result — which is
+  // The account first where there is one, this browser otherwise. A list that was only ever
+  // this browser's is a wiped laptop away from a term of assessed work.
+  const { classes: known, syncing, reload: reloadKnown } = useRememberedClasses();
+  // Only objectives a story can actually produce evidence for. An objective BOW has a
+  // mapping for and no story would produce a class code, thirty submissions and no result — which is
   // the one thing §5.6 says the product may never let a teacher believe.
   const [objectives] = useState(() => assessableStandards(FRAMEWORK_ID));
   // Arriving from an objective carries the objective. That is the whole of the old assign
@@ -55,7 +60,7 @@ export function MyClasses() {
   const [objectiveCode, setObjectiveCode] = useState(
     () => (requested && objectives.some((entry) => entry.code === requested) ? requested : objectives[0]?.code ?? NO_OBJECTIVE),
   );
-  // §17.2 step 2: student choice, every built world selected. A teacher who wants one world
+  // §17.2 step 2: student choice, every playable story selected. A teacher who wants one story
   // for everyone says so; a teacher who does nothing gets the promise the product makes to
   // students on the front of the box.
   const [studentPicks, setStudentPicks] = useState(true);
@@ -98,7 +103,7 @@ export function MyClasses() {
         });
       }
       rememberClass(record);
-      setKnown(rememberedClasses());
+      reloadKnown();
       setCreated(record);
     } catch {
       setProblem(CLASS_ERROR_MESSAGES.unavailable);
@@ -172,8 +177,12 @@ export function MyClasses() {
           ? "Students still play the challenge and you still see everything they did. Nothing is reported against a state objective."
           : framework?.labels.attribution}
       </p>
+      {/* "Which challenge" named the two stories with the word the product uses for the
+          thing they are both inside — Plan Under Pressure is the challenge, and these are the
+          two situations in it. A teacher who set "which challenge" and then read "the
+          challenge" on the guide had two meanings for one word, one screen apart. */}
       <fieldset className="class-form__worlds">
-        <legend>Which challenge</legend>
+        <legend>Which {TERMS.story}</legend>
         <label>
           <input
             type="radio"
@@ -183,8 +192,8 @@ export function MyClasses() {
           />
           <span>
             <b>Students pick</b>
-            {PLAYABLE_WORLDS.map((world) => world.title).join(" or ")}. Both collect the same evidence,
-            so the results pool either way.
+            {PLAYABLE_WORLDS.map((world) => world.title).join(" or ")}. Both {TERMS.stories} collect the
+            same evidence, so the results pool either way.
           </span>
         </label>
         <label>
@@ -267,6 +276,13 @@ export function MyClasses() {
     );
   }
 
+  // "Create your first class" to a teacher whose classes are still arriving from their account
+  // is the product telling them their work is gone. It is the same sentence and it is false for
+  // the two seconds it takes to ask.
+  if (known.length === 0 && syncing) {
+    return <EducatorShell><p className="class-state" aria-live="polite">Getting your classes…</p></EducatorShell>;
+  }
+
   if (known.length === 0) {
     return (
       <EducatorShell>
@@ -294,7 +310,15 @@ export function MyClasses() {
       <header className="page-header">
         <p className="eyebrow">My classes</p>
         <h1>{known.length === 1 ? "Your class." : `Your ${known.length} classes.`}</h1>
-        <p>Saved in this browser. Opening a class from its private link on another computer adds it there too.</p>
+        {/* What is actually true of where these live, which changed the day accounts arrived and
+            is the difference between losing a term of work to a wiped laptop and not. */}
+        <p>
+          {teacherToken()
+            ? "On your account, so they are here on any computer you sign in on."
+            : "Saved in this browser only. "}
+          {!teacherToken() && <Link to="/educator/sign-in">Make an account</Link>}
+          {!teacherToken() && " and they follow you to any computer — a wiped laptop takes them otherwise."}
+        </p>
       </header>
 
       <section className="dashboard-section">
@@ -345,7 +369,7 @@ export function MyClasses() {
         <p className="classes-forget">
           <Button
             variant="quiet"
-            onClick={() => { known.forEach((record) => forgetClass(record.code)); setKnown([]); }}
+            onClick={() => { known.forEach((record) => forgetClass(record.code)); reloadKnown(); }}
           >
             Forget these classes on this computer
           </Button>

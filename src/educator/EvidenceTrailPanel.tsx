@@ -59,11 +59,15 @@ function JudgementRow({ judgement, overrides, onOverride }: {
             doing, because a capped level *is* the cap: `levelUnderRubric` is `min(claimed,
             cap)`, so whenever `cappedBySupport` is true the held level and the cap are the
             same value. Four level words in eighteen, two of them the same word twice. Said
-            once, it is two clauses: what BOW read, and what holds it there. */}
+            once, it is two clauses: what BOW read, and what holds it there.
+
+            No emphasis on the two level words, deliberately: `.judgement__say b` is a display
+            block one level up, so a `<b>` here breaks the sentence into four lines with the
+            comma and the full stop orphaned on their own. */}
         {judgement.cappedBySupport && (
           <p className="judgement__cap">
-            BOW read this as <b>{levelLabel(judgement.claimed)}</b>, and {SUPPORT_LABELS[judgement.supportLevel]} holds
-            it at <b>{levelLabel(judgement.level)}</b>.
+            BOW read this as {levelLabel(judgement.claimed)}, and {SUPPORT_LABELS[judgement.supportLevel]} holds
+            it at {levelLabel(judgement.level)}.
           </p>
         )}
       </div>

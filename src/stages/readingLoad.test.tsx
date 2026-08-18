@@ -14,6 +14,9 @@ import { createInitialState, type ChallengeState } from "../domain/machine/state
 import type { ChallengeAction } from "../domain/machine/actions";
 import { createPopUpState, popUpReducer, type PopUpAction, type PopUpState } from "../domain/scenario/worlds/food-truck/machine";
 import { POP_UP_PATH, POP_UP_STAGE_BUDGET, type PopUpStageId } from "../domain/scenario/worlds/food-truck/stages";
+import { WORLD_REGISTRY } from "../domain/scenario/registry";
+import { PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
+import type { WorldId } from "../domain/core/ids";
 import { BASKETBALL_DEMAND } from "../domain/scenario/worlds/basketball/demand";
 import { POP_UP_DEMAND } from "../domain/scenario/worlds/food-truck/demand";
 import type { StageId } from "../domain/evidence/types";
@@ -44,14 +47,23 @@ import type { EvidenceTransport } from "../platform/evidence/transport";
  * rank and the pick on `setup-comparison`, the two halves of `popup-repair`. It stops at the
  * two screens before a world starts: `/join` and the student's own home page are the
  * platform's front door, shared by both worlds, outside either world's pacing table, and 125
- * words between them. `choose-world` is inside the count and has no budget row at all; that
- * is a declaration gap rather than an exclusion, and it is carried openly in the debt
- * register below.
+ * words between them. The picker is inside the count and now has a budget row of its own: it
+ * had none when this file was written, so every word on a screen both worlds route through was
+ * a word no budget had paid for.
  *
  * **What is not counted, and why.**
  * - *Collapsed disclosures* — Basketball's "The four payments" drawer. A student following the
  *   screen never opens it; a student who has lost the thread does. Counted separately and
  *   reported below as scaffold, not dropped.
+ * - *The student's own sentences, quoted back* — anything under `data-own-words`, which today
+ *   is one element: the confirmation screen's blockquote of the paragraph the student wrote
+ *   ninety seconds earlier. A DOM word count cannot tell comprehension from recognition, and
+ *   this is where the difference bites: re-reading your own sentence to check it was sent is a
+ *   glance. Charged at 150 wpm it made the receipt the most expensive screen per second in the
+ *   run and argued for deleting the only place a student can confirm their work went. Counted,
+ *   reported on its own line, and kept out of the total. It covers text the student produced,
+ *   never a word the product wrote — see `readability.ts` for why the attribute has exactly
+ *   one legitimate home.
  * - *`aria-hidden` subtrees* — the product's own declaration that a thing is decoration.
  * - *Tokens with no letter or digit* — `·`, `▾`, the `−` and `+` on a stepper, a lone spaced
  *   em dash. They run at about 3% of everything on screen, the test measures them on every
@@ -65,19 +77,27 @@ import type { EvidenceTransport } from "../platform/evidence/transport";
  *
  * **Why jsdom is allowed to stand for a browser here.** It is the real component tree with
  * state from the real reducers, so the DOM is the DOM the browser builds. It was checked
- * against the running app twice — a Playwright census driven through `/join`, a real class and
- * the real class service, walking the same optimal route a screen at a time and reading the
- * words off the DOM. Before the density pass it read Basketball at 2,845 against this file's
- * 2,870 and the pop-up at 1,968 against 1,990; after it, Basketball at 2,655 against 2,688.
- * Between 0.9% and 1.2% apart every time, always in the direction of this file counting
- * slightly more, which is the safe direction for a budget check.
+ * against the running app four times — a Playwright census driven through `/join`, a real class
+ * and the real class service, walking the same route a screen at a time and reading the words
+ * off the DOM. Before the density pass it read Basketball at 2,845 against this file's 2,870
+ * and the pop-up at 1,968 against 1,990; after the first pass, 2,655 against 2,688; after the
+ * second, once the browser census was taught the same two exclusions, **2,362 against 2,367**.
+ * Between 0.2% and 1.2% apart every time.
  *
- * **The budget.** Each stage's own `seconds`, converted at the rate its own basis line is
- * written in — 150 words a minute, `READING_RATE_WPM` — so the two cannot drift apart. That is
- * a generous conversion on purpose: it hands the whole of a stage's budget to reading, when the
- * same basis line also promises "a beat to consider each decision, and about four seconds per
- * deliberate input". A world that fails it has no seconds left for the decisions it exists to
- * ask.
+ * **The budget, and the hole in it.** Each stage's own `seconds`, converted at the rate its own
+ * basis line is written in — 150 words a minute, `READING_RATE_WPM` — so the two cannot drift
+ * apart. That conversion is generous: it hands the whole of a stage's budget to reading, when
+ * the same basis line also promises "a beat to consider each decision, and about four seconds
+ * per deliberate input". A world that fails it has no seconds left for the decisions it exists
+ * to ask.
+ *
+ * Generous in that direction has an obvious exploit, and it is worth naming because the fix for
+ * it is the last test in this file. A world over its reading budget could declare that its
+ * screens need longer to think about, and every check priced at 150 wpm would relax. It cannot,
+ * because the advertised duration is held to `slowestMinutes` — the same screens at 120 wpm
+ * *plus* whatever interaction time the budget claims — so a second spent buying headroom here
+ * is a second added to what a teacher is told to allow. Reading and thinking are both in the
+ * number the lesson is planned around. The only way to shorten the run is to shorten the run.
  */
 
 /** The two contexts the screens read, swapped for a state this file builds and controls. */
@@ -151,15 +171,19 @@ interface ScreenMeasure {
   /** Every word on the screen, whether or not the last one carried it too. */
   raw: number;
   scaffold: number;
+  /** The student's own writing, shown back to them. Reported, never charged. */
+  own: number;
   symbols: number;
 }
 
 interface WorldMeasure {
   world: string;
+  id: WorldId;
   screens: readonly ScreenMeasure[];
   words: number;
   raw: number;
   scaffold: number;
+  own: number;
   symbols: number;
   budgetSeconds: number;
   budgetWords: number;
@@ -175,6 +199,7 @@ interface WorldMeasure {
  */
 async function measureWorld<S, A>(input: {
   world: string;
+  id: WorldId;
   screens: readonly Screen<A>[];
   reduce: (actions: readonly A[]) => S;
   draw: (state: S) => React.ReactElement;
@@ -184,6 +209,7 @@ async function measureWorld<S, A>(input: {
   const screens: ScreenMeasure[] = [];
   let previous: readonly string[] = [];
   let scaffold = 0;
+  let own = 0;
   let symbols = 0;
   let raw = 0;
   for (const screen of input.screens) {
@@ -194,18 +220,21 @@ async function measureWorld<S, A>(input: {
     // screen's text run by run with its word count, which is how a cut gets made against the
     // rendered screen rather than against a guess about it.
     if (process.env.DUMP_SCREEN && screen.label.includes(process.env.DUMP_SCREEN)) {
-      console.log(`\n--- ${screen.label} ---\n` + text.chunks.map((chunk) => `${String(countRenderedWords(chunk)).padStart(3)}  ${chunk}`).join("\n"));
+      process.stdout.write(`\n--- ${screen.label} ---\n` + text.chunks.map((chunk) => `${String(countRenderedWords(chunk)).padStart(3)}  ${chunk}`).join("\n") + "\n");
     }
     const rawWords = countRenderedWords(text.chunks.join(" "));
+    const ownWords = countRenderedWords(text.ownWordsChunks.join(" "));
     screens.push({
       label: screen.label,
       stage: screen.stage,
       fresh: freshWords(text.chunks, previous),
       raw: rawWords,
       scaffold: countRenderedWords(text.scaffoldChunks.join(" ")),
+      own: ownWords,
       symbols: text.symbolTokens,
     });
     scaffold = Math.max(scaffold, countRenderedWords(text.scaffoldChunks.join(" ")));
+    own += ownWords;
     symbols += text.symbolTokens;
     raw += rawWords;
     previous = text.chunks;
@@ -213,10 +242,12 @@ async function measureWorld<S, A>(input: {
   }
   return {
     world: input.world,
+    id: input.id,
     screens,
     words: screens.reduce((total, screen) => total + screen.fresh, 0),
     raw,
     scaffold,
+    own,
     symbols,
     budgetSeconds: input.budgetSeconds,
     budgetWords: wordsAffordableIn(input.budgetSeconds),
@@ -247,11 +278,37 @@ function report(measure: WorldMeasure): string {
     `measured    ${measure.words} words`
       + `  ->  ${(secondsToRead(measure.words) / 60).toFixed(1)} min at ${READING_RATE_WPM} wpm`
       + `, ${(secondsToRead(measure.words, READING_RATE_REALISTIC_WPM) / 60).toFixed(1)} min at ${READING_RATE_REALISTIC_WPM} wpm`,
+    `fastest     ${fastestMinutes(measure).toFixed(1)} min — this world's own budget, whose reading is priced at ${READING_RATE_WPM} wpm`,
+    `slowest     ${slowestMinutes(measure).toFixed(1)} min — the same screens at ${READING_RATE_REALISTIC_WPM} wpm, plus the interaction time the budget declares`,
     `scaffold    ${measure.scaffold} words behind collapsed disclosures, read only if the student opens them`,
+    `own words   ${measure.own} words of the student's own writing quoted back to them, reported and not charged`,
     `symbols     ${measure.symbols} tokens excluded for carrying no letter or digit`,
     "",
   ];
   return lines.join("\n");
+}
+
+/**
+ * The two ends of an honest duration, and why they are these two.
+ *
+ * `fastest` is the world's own pacing budget: reading at the 150 wpm that budget is written in,
+ * plus the deciding and typing its basis lines describe. `slowest` is the same run for a reader
+ * at 120 wpm — the realistic end of the Grade 5–8 band — with the interaction time left exactly
+ * where the budget put it, because reading slowly does not make anybody type faster.
+ *
+ * The pair exists to close the hole a critic could otherwise drive a bus through. Every check
+ * above prices reading at 150 wpm, so declaring more thinking time makes them easier to pass —
+ * a world could buy its way out of a density problem by claiming its screens need longer to
+ * think about. It cannot: thinking time lands in `slowest` too, which is what the advertised
+ * duration has to cover. The only way to shorten the run is to shorten the run.
+ */
+function fastestMinutes(measure: WorldMeasure): number {
+  return measure.budgetSeconds / 60;
+}
+
+function slowestMinutes(measure: WorldMeasure): number {
+  const interaction = measure.budgetSeconds - secondsToRead(measure.words);
+  return (secondsToRead(measure.words, READING_RATE_REALISTIC_WPM) + Math.max(0, interaction)) / 60;
 }
 
 function stageSeconds(stage: StageId): number {
@@ -275,8 +332,9 @@ const amount = (mode: "working" | "week5-first-response" | "final", category: "g
   ({ type: "PLAN_AMOUNT_CHANGED", mode, category, amount: dollars(value) });
 
 const CHOOSE: ChallengeAction[] = [SESSION];
-const CONTRACT: ChallengeAction[] = [...CHOOSE, { type: "WORLD_CONFIRMED", worldId: "basketball" }];
-const RANK: ChallengeAction[] = [...CONTRACT, goTo("setup-comparison")];
+// Confirming the world opens the setup comparison directly. It used to open "role-contract",
+// a 165-word screen with no input on it, which this instrument is why anybody noticed.
+const RANK: ChallengeAction[] = [...CHOOSE, { type: "WORLD_CONFIRMED", worldId: "basketball" }];
 const PICK: ChallengeAction[] = [...RANK, { type: "SETUP_RANKED", order: ["cousin-room", "teammate-share", "gym-sublet"], correct: true }];
 const PLAN_Q1: ChallengeAction[] = [
   ...PICK,
@@ -303,8 +361,30 @@ const SEASON: ChallengeAction[] = [
 ];
 const DEPOSIT: ChallengeAction[] = [
   ...SEASON,
-  // Week 3: the cash is spent on the shoes, and the student says why the rest went unpaid.
-  { type: "COMPETING_CLAIMS_SETTLED", fundedIds: ["team-shoes"], reason: "only-wanted" },
+  /*
+   * Week 3, settled by paying for the present alone — a deliberate choice of branch, not an
+   * accident, because it is the most expensive ending a student can actually reach.
+   *
+   * The ending names what happened to every claim the student left unpaid, so the length of
+   * Week 8 depends on which ones and how many. Measured on this instrument: two claims funded
+   * gives one verdict and a 294-word ending; the shoes alone gives two and 309; the travel
+   * share alone 315; the present alone 318. Funding nothing would give three verdicts and 354,
+   * and it is not on this list because `SeasonWeeks` refuses to settle an empty allocation —
+   * measuring it would have budgeted for a screen no student can open. A single declared number
+   * for `week8-resolution` has to cover the worst of the reachable branches, so that is the one
+   * measured. The run this file walks is otherwise the *shortest*
+   * complete route, and the two rules do not collide: a longer stage route is declared
+   * separately and budgeted separately (`LONGEST_PATH` against `SHORTEST_PATH`, held apart by
+   * `pacing.test.ts`), whereas a branch inside one stage has only that stage's single number
+   * behind it.
+   *
+   * This chain had no settle at all until the Week 3 beat shipped, which meant `state.week3`
+   * was null and the ending it measured carried no claim verdicts — 45 words of the most
+   * consequential branch of the ending, invisible. Found by the agent who built the beat. It is
+   * the same class of defect as the declared 1,180 this file exists to have caught, and worth
+   * saying out loud: an instrument that skips a branch flatters exactly the screens that grew.
+   */
+  { type: "COMPETING_CLAIMS_SETTLED", fundedIds: ["sister-present"], reason: "can-wait" },
   goTo("week5-transition"),
 ];
 const WEEK5: ChallengeAction[] = [
@@ -344,7 +424,6 @@ const SUBMITTED: ChallengeAction[] = [
 const BASKETBALL_SCREENS: readonly Screen<ChallengeAction>[] = [
   { label: "entry", stage: "entry", actions: [] },
   { label: "choose-world (the picker)", stage: "choose-world", actions: CHOOSE },
-  { label: "role-contract", stage: "role-contract", actions: CONTRACT },
   { label: "setup-comparison (rank)", stage: "setup-comparison", actions: RANK },
   { label: "setup-comparison (pick)", stage: "setup-comparison", actions: PICK },
   { label: "working-plan Q1 (income)", stage: "working-plan", actions: PLAN_Q1 },
@@ -442,6 +521,7 @@ const P_STANDING: PopUpAction[] = [
 ];
 const P_GENERATOR: PopUpAction[] = [
   ...P_STANDING,
+  { type: "POPUP_CLAIMS_SETTLED", fundedIds: ["cool-box"], reason: "only-wanted" },
   { type: "POPUP_HELPER_DECIDED", booked: true },
   { type: "POPUP_STOCK_ORDERED", saturday: 2, trays: 4 },
   pGo("popup-generator"),
@@ -521,6 +601,7 @@ describe("the words a student reads, measured off the rendered screen", () => {
   it("measures both worlds through one instrument", async () => {
     basketball = await measureWorld({
       world: "Eight Weeks to the Showcase",
+      id: "basketball",
       screens: BASKETBALL_SCREENS,
       reduce: basketballState,
       draw: drawBasketball,
@@ -530,12 +611,16 @@ describe("the words a student reads, measured off the rendered screen", () => {
     });
     popUp = await measureWorld({
       world: "Run the Pop-Up",
+      id: "food-truck",
       screens: POP_UP_SCREENS,
       reduce: popUpState,
       draw: drawPopUp,
       budgetSeconds: POP_UP_BUDGET_SECONDS,
     });
-    console.log(report(basketball) + report(popUp));
+    // Written to stdout rather than through `console`, which the runner keeps to itself on a
+    // passing test. The point of this file is the table, not the green tick: whoever has to
+    // make the next cut needs to see where the words are without having to make it fail first.
+    process.stdout.write(report(basketball) + report(popUp));
     // A run that drew nothing would pass every check below, so this is what stops it.
     expect(basketball.words).toBeGreaterThan(900);
     expect(popUp.words).toBeGreaterThan(900);
@@ -577,32 +662,13 @@ describe("the words a student reads, measured off the rendered screen", () => {
     // carries and who has to pay it off. It is not an exemption: nothing is excluded from the
     // measurement, the numbers may only go down, and a screen that is not on the list may not
     // go over at all. Adding a row is a deliberate act with a name on it.
-    const debt: Record<string, number> = {
-      // Unbudgeted, not overlong: `choose-world` is a real screen on the critical path with no
-      // row in `STAGE_BUDGET` at all, so every word it renders is over. The fix is a budget
-      // line (~45 s) and adding it to LONGEST_PATH — `pacing.ts` and `pacing.test.ts`, which
-      // requires the two to move together.
-      "choose-world": 104,
-      // The screen the density critic asked to be deleted outright: four payments already
-      // available from the header disclosure on every screen of the run. `DealStage` and the
-      // reducer's route out of `SESSION_STARTED` are the lead's.
-      "role-contract": 65,
-      // Four questions under one stage id. The copy in `studentCopy.ts` has been through a
-      // pass; what is left is the board's own labels and `WorkingStage`'s JSX.
-      "working-plan": 108,
-      // Two prices for one seat, stated twice each — once in the trade list and once on the
-      // buttons under it. `DepositDeadline`, the lead's.
-      "week5-transition": 43,
-      // The ending, and the one screen here whose length is defended rather than excused. Six
-      // verdicts with counterfactuals is what the beat is for, and it is the best thing in the
-      // product. 85 s was never enough for it: the honest fix is to declare ~125 s and take the
-      // difference out of a screen that is narrating rather than deciding.
-      "week8-resolution": 108,
-      // The confirmation screen. `SubmittedStage`, the lead's.
-      submitted: 101,
-      // Run the Pop-Up carries no debt: it retired `popup-pitch`, moved the seconds that came
-      // with it, and every screen it still draws is inside the budget that screen declares.
-    };
+    // Empty, and it has been empty since the density pass closed the last of it: `role-contract`
+    // deleted outright, `week5-transition` saying the trade once instead of three times, the
+    // picker given the budget it never had, and `working-plan`, `week8-resolution` and
+    // `submitted` re-declared at the seconds their screens actually cost. A screen may not go
+    // over its own budget without an entry here, and an entry is a debt with a name on it —
+    // the number may only go down, and adding one is a deliberate act.
+    const debt: Record<string, number> = {};
     const broken: string[] = [];
     for (const measure of [basketball, popUp]) {
       const perStage = new Map<StageId, number>();
@@ -617,6 +683,33 @@ describe("the words a student reads, measured off the rendered screen", () => {
       }
     }
     expect(broken, broken.join("\n") + report(basketball) + report(popUp)).toEqual([]);
+  });
+
+  it("advertises a duration both ends of which are true of the screens", () => {
+    // The number a teacher plans a lesson around. It read 20–25 minutes for as long as nothing
+    // counted the words on a screen, and it survived a run whose prose alone was 21 minutes at
+    // the rate the number itself assumed. Both ends are now held to the measurement: the low
+    // end may not claim a run faster than the quicker world's own budget, and the high end must
+    // cover the slower world's reading at a realistic rate plus the interaction that world
+    // declares. Neither end can be met by re-declaring seconds, because the seconds are in both.
+    const fastest = Math.min(...[basketball, popUp].map(fastestMinutes));
+    const slowest = Math.max(...[basketball, popUp].map(slowestMinutes));
+    expect(
+      PLAN_UNDER_PRESSURE.duration.min,
+      `the challenge advertises a floor of ${PLAN_UNDER_PRESSURE.duration.min} min; the quicker world budgets ${fastest.toFixed(1)}`,
+    ).toBeLessThanOrEqual(Math.ceil(fastest));
+    expect(
+      PLAN_UNDER_PRESSURE.duration.max,
+      `the challenge advertises a ceiling of ${PLAN_UNDER_PRESSURE.duration.max} min; the slower world takes ${slowest.toFixed(1)} at ${READING_RATE_REALISTIC_WPM} wpm`,
+    ).toBeGreaterThanOrEqual(Math.ceil(slowest));
+
+    // And the same two ends per world, because the picker prints them side by side and a
+    // student choosing between two stories is being told how long each one takes.
+    for (const measure of [basketball, popUp]) {
+      const card = WORLD_REGISTRY[measure.id]!.durationMinutes;
+      expect(card.min, `${measure.world} card floor`).toBeLessThanOrEqual(Math.ceil(fastestMinutes(measure)));
+      expect(card.max, `${measure.world} card ceiling`).toBeGreaterThanOrEqual(Math.ceil(slowestMinutes(measure)));
+    }
   });
 
   it("holds each world's declared word count to what the screens actually render", () => {

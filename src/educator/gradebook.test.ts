@@ -106,7 +106,19 @@ describe("every row is the same width as the header", () => {
     }
   });
 
-  it("puts each competency's answer under that competency's own heading", () => {
+  /**
+   * The skill columns are headed `Skill: <the skill's own sentence>` rather than by the
+   * sentence alone.
+   *
+   * A tab-separated file is the one artefact of this product that leaves it, and it is read
+   * months later by somebody who has never seen a BOW screen. Everywhere else the rule is
+   * that the first time a BOW word appears on a page its sentence appears with it; a TSV has
+   * no page to put that on — a legend row above the data shifts every column, and a legend
+   * block below it lands on whichever students a teacher pastes underneath. So the header row
+   * *is* the glossary, and the prefix is what makes a cell reading "Not yet" legible under a
+   * twenty-word sentence.
+   */
+  it("puts each skill's answer under that skill's own heading, named as a skill", () => {
     const seats: GradebookSeat[] = [
       { seatCode: "1", displayName: "Short", attempts: [attributed(buildPopUpSubmission({ seatCode: "1", stopAfterSaturdayThree: true }))] },
       { seatCode: "2", displayName: "Full", attempts: [attributed(buildPopUpSubmission({ seatCode: "2" }))] },
@@ -115,8 +127,8 @@ describe("every row is the same width as the header", () => {
     const [header, ...body] = cellsOf(gradebookTsv(rows));
     for (const [index, row] of rows.entries()) {
       for (const competency of row.line?.competencies ?? []) {
-        const column = header!.indexOf(competency.statement);
-        expect(column).toBeGreaterThan(-1);
+        const column = header!.indexOf(`Skill: ${competency.statement}`);
+        expect(column, `no column headed “Skill: ${competency.statement}”`).toBeGreaterThan(-1);
         expect(body[index]![column]).not.toBe("");
       }
     }

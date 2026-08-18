@@ -65,44 +65,6 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
       { title: "Decide whether to count on the bonuses", detail: "Two payments might arrive. Neither one is promised." },
     ],
   },
-  season: [
-    {
-      week: "Week 1",
-      note: "First practice Monday. Avery comes off the bench in the opener and does not turn the ball over once.",
-      voice: {
-        "gym-sublet": "Five minutes door to gym. I’m the first one in the building every morning.",
-        "teammate-share": "Bus gets me there twenty minutes early. My roommate slept through it twice already.",
-        "cousin-room": "Alarm at 5:40. Seventy minutes across the city before anyone else is awake.",
-      },
-    },
-    {
-      week: "Week 2",
-      note: "Sixteen points against Rivertown. Avery starts the next game and keeps the spot.",
-      voice: {
-        "gym-sublet": "Stayed late shooting because I can just walk home after.",
-        "teammate-share": "We ride in together now. Cheaper and I actually talk to someone before 9am.",
-        "cousin-room": "Did my homework on the train. It’s the only quiet hour I get.",
-      },
-    },
-    {
-      week: "Week 3",
-      note: "The Flight win two of three. Rent, food, and phone come out of the account right on schedule.",
-      voice: {
-        "gym-sublet": "Rent is the biggest thing I pay and I feel it every week.",
-        "teammate-share": "Splitting the room is the only reason this works.",
-        "cousin-room": "My cousin won’t take more money. I buy the groceries instead.",
-      },
-    },
-    {
-      week: "Week 4",
-      note: "Most minutes on the roster. Two weeks of practice left before the showcase bracket is set.",
-      voice: {
-        "gym-sublet": "Legs feel good. I’m not spending them getting here.",
-        "teammate-share": "Long days, but I’m sleeping fine.",
-        "cousin-room": "Two and a half hours a day on buses is starting to show up in my legs.",
-      },
-    },
-  ],
   setups: [
     {
       id: "gym-sublet",

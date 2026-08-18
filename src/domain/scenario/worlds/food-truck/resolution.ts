@@ -162,7 +162,17 @@ function stockVerdict(
     gap: formatDollars(dollars(Math.round(best.value - mine))),
   };
   if (best.value <= mine) {
-    return { id: "stock", label: copy.stock.label, taken: true, outcome: "paid_off", detail: fill(copy.stock.paidOff, values) };
+    // An order can be the best of the three and still have thrown food away — the extra tray
+    // that fills the busy night bins its other half on the thin one, and on this world's
+    // numbers the two can come out level. Saying "paid off" over a run that binned ninety
+    // dollars without naming the ninety dollars is the heading contradicting the page.
+    return {
+      id: "stock",
+      label: copy.stock.label,
+      taken: true,
+      outcome: "paid_off",
+      detail: fill(ledger.binned > 0 ? copy.stock.paidOffSpoiled : copy.stock.paidOff, values),
+    };
   }
   return {
     id: "stock",

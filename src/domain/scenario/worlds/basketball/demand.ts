@@ -27,22 +27,28 @@ export const BASKETBALL_DEMAND: DemandProfile = {
   // through — when the second world shipped its own. The original 5.4 came from an
   // instrument this repository does not contain, and a declared fact §9.2 calls checkable
   // has to come from the ruler that checks it.
-  // Re-measured after the density pass. It had already drifted to 3.71 against a declared
-  // 4.2 before a word of this pass was cut — 0.49 of the 0.5 tolerance, spent — and shortening
-  // two contract lines took it to 3.65. Lower is easier, which is the direction this world
-  // wants to move in, and the number is now what the ruler says rather than what it said.
-  readingGradeLevel: 3.65,
+  // Re-measured twice during the density pass. It had already drifted to 3.71 against a
+  // declared 4.2 before a word of this pass was cut — 0.49 of the 0.5 tolerance, spent. It is
+  // 3.87 now, and the move is mostly the retirement of `scenario.season`: 227 words of week
+  // notes and Avery's per-housing voice lines that the rebuilt Week 3 stopped rendering and
+  // that this grade was still being computed from. What is left is prose a student actually
+  // meets, which is the only kind a declared reading grade can honestly be about.
+  readingGradeLevel: 3.87,
   // Was 1180, asserted on nothing. It counted the world's story — the strings in
   // `scenario.ts` — and not the run: a critic who played the whole thing and counted what was
   // on the glass measured 3,167, and the only test looking at this field was the pop-up's,
   // which filtered through `isProse` and so could not see a button, a table header or a money
   // figure. This number is now the one `stages/readingLoad.test.tsx` renders and counts,
   // screen by screen along the shortest complete path, and that test fails if the two drift.
-  totalWordsStudentReads: 2688,
+  totalWordsStudentReads: 2367,
   arithmeticOperations: 4,
   arithmeticComplexity: "multiply",
   decisionsRequired: 8,
   simultaneousConstraints: 2,
   adaptationEvents: 1,
-  designMinutes: 23,
+  // Was 23 against a pacing table that budgeted 19m45s. The table now budgets 23m20s honestly
+  // — the biggest correction being `working-plan`, which renders 491 words against a declared
+  // 165 seconds — and this carries the same margin over it that Run the Pop-Up carries over
+  // its own, which is what §9.2's margin check is for.
+  designMinutes: 27,
 };

@@ -86,16 +86,31 @@ describe("the whole framework, every time", () => {
     expect(all.map((row) => row.standard.sortIndex)).toEqual([...all.map((row) => row.standard.sortIndex)].sort((a, b) => a - b));
   });
 
-  it("says coming for the twenty-two BOW has no world for, and never a result", () => {
+  it("says coming for the twenty-one BOW has no world for, and never a result", () => {
+    // Twenty-two until Basketball's Week 3 gave `sort-by-need-want-goal` something to
+    // observe, and twenty-one now, because 1.1 crossed over. The number is not a target and
+    // it is not adjustable: it falls out of `isCompetencyAvailable`, which counts an
+    // objective assessable only where some world produces **every required** evidence
+    // requirement of every competency behind it. Both sides of that are checked elsewhere —
+    // `coverage.test.ts` beside the observer fails if the coverage table claims a route the
+    // observer does not have, and `evidenceEnvelope.test.ts` fails if an event is tagged
+    // with a requirement nothing can observe. So the honest way to move this number is to
+    // build a world, and lowering it here to make a build pass would be the exact thing
+    // this file exists to stop.
     const all = rows([]);
     const coming = all.filter((row) => !row.available);
-    expect(coming).toHaveLength(22);
+    expect(coming).toHaveLength(21);
     for (const row of coming) {
       expect(row.state, row.standard.code).toBe("not-available");
       expect(row.result.percentDemonstrated).toBeNull();
       expect(row.result.assessed).toBe(0);
     }
-    expect(rowFor(all, "1.3")?.available).toBe(true);
+    // The two that are not "coming", and what each one rests on. 1.3 is `full`-mapped to
+    // `plan-within-income` and both worlds produce all five of it. 1.1 is `full`-mapped to
+    // `sort-by-need-want-goal` and one world produces all four — three decisions off the
+    // Week 3 settlement and one written explanation. Naming them here rather than only
+    // counting them means the next person to see this number change can check the claim.
+    expect(all.filter((row) => row.available).map((row) => row.standard.code)).toEqual(["1.1", "1.3"]);
   });
 
   it("counts the worlds behind an objective rather than claiming one", () => {
@@ -116,10 +131,15 @@ describe("what a teacher has covered", () => {
   it("moves to taught only when a person marked it, never from a submission", () => {
     const marked = openedClass({ assignments: [], taught: [{ frameworkId: "nysed-pf-2026", standardCode: "1.3", markedAt: NOW }] });
     expect(rowFor(rows([marked]), "1.3")?.state).toBe("taught-not-assessed");
-    // Work turned in on 1.3 does not tick 1.1, however much of it there is.
+    // Work turned in on 1.3 does not tick 1.1, however much of it there is. 1.1 is now
+    // assessable in its own right, so this is no longer a statement about an objective
+    // nothing can reach — it reads `not-taught`, which is the sharper version of the same
+    // claim: a teacher marks an objective taught, and a pile of submissions never does it
+    // for them.
     const busy = openedClass({ seats: ["1", "2", "3", "4", "5", "6"], scored: true });
+    expect(rowFor(rows([busy]), "1.1")?.available).toBe(true);
     expect(rowFor(rows([busy]), "1.1")?.markedTaught).toBe(false);
-    expect(rowFor(rows([busy]), "1.1")?.state).toBe("not-available");
+    expect(rowFor(rows([busy]), "1.1")?.state).toBe("not-taught");
   });
 
   it("calls an objective taught across several classes only when it is true of all of them", () => {
@@ -196,7 +216,9 @@ describe("the filters", () => {
   it("narrows to one topic and to one status", () => {
     expect(applyMapFilters(all, { ...NO_FILTERS, topicCode: "2" })).toHaveLength(4);
     expect(applyMapFilters(all, { ...NO_FILTERS, state: "strong" }).map((row) => row.standard.code)).toEqual(["1.3"]);
-    expect(applyMapFilters(all, { ...NO_FILTERS, state: "not-available" })).toHaveLength(22);
+    // Twenty-one, for the reason written out above: NYSED 1.1 stopped being one of them
+    // when Basketball's Week 3 gave the competency behind it something to observe.
+    expect(applyMapFilters(all, { ...NO_FILTERS, state: "not-available" })).toHaveLength(21);
   });
 
   it("respects a district's required subset, its terms and its own names", () => {

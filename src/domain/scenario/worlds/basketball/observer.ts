@@ -445,8 +445,13 @@ function claimsObservation(
   }
   const { settlement, evidenceRef, supportLevel } = settled;
   const claims = week3Claims();
-  const named = (ids: readonly string[]) =>
-    claims.filter((claim) => ids.includes(claim.id)).map((claim) => claim.title).join(" and ");
+  // The mid-sentence form, not the card heading. "$105 went on A present for Avery's sister"
+  // reads as a typo, and every sentence below puts a claim inside one.
+  const named = (ids: readonly string[]) => {
+    const titles = claims.filter((claim) => ids.includes(claim.id)).map((claim) => claim.inSentence);
+    if (titles.length <= 1) return titles[0] ?? "";
+    return `${titles.slice(0, -1).join(", ")} and ${titles.at(-1)}`;
+  };
   const built = read(route.reads, settlement, claims, named);
   return {
     evidenceRequirementId: route.evidenceRequirementId,
@@ -501,9 +506,9 @@ function reachRead(settlement: CompetingClaimsSettlement, named: (ids: readonly 
     return { level: 0, detail: `Nothing on the list was paid for, so the whole ${cash} sat in a week where it could not be saved and could not be spent on anything else.` };
   }
   if (reachesAsFarAsItGoes(settlement.fundedIds)) {
-    return { level: 5, detail: `${named(settlement.fundedIds)} took ${spent} of the ${cash}, and the ${left} left over could not have covered ${named(settlement.unfundedIds)}.` };
+    return { level: 5, detail: `${spent} of the ${cash} went on ${named(settlement.fundedIds)}, and the ${left} left over could not have covered ${named(settlement.unfundedIds)}.` };
   }
-  return { level: 2, detail: `${named(settlement.fundedIds)} took ${spent} of the ${cash}, and the ${left} still in hand could have covered something on the unpaid list as well.` };
+  return { level: 2, detail: `${spent} of the ${cash} went on ${named(settlement.fundedIds)}, and the ${left} still in hand could have covered something on the unpaid list as well.` };
 }
 
 /**
@@ -548,21 +553,22 @@ function holdsRead(
   const holds = (ids: readonly string[]) => claims.filter((claim) => ids.includes(claim.id) && holdsOf(claim));
   const unpaidThatFit = holds(settlement.unfundedIds);
   const paidThatFit = holds(settlement.fundedIds);
+  const ids = (list: readonly CompetingClaim[]) => named(list.map((claim) => claim.id));
   if (unpaidThatFit.length === 0) {
-    return { level: 0, detail: `They left ${named(settlement.unfundedIds)} unpaid and ${said}, and that is not what this world says ${settlement.unfundedIds.length > 1 ? "either of them was" : "it was"}.` };
+    return { level: 0, detail: `They left ${named(settlement.unfundedIds)} unpaid and said ${said}, and that is not what this world says ${settlement.unfundedIds.length > 1 ? "either of them was" : "it was"}.` };
   }
   if (settlement.fundedIds.length === 0) {
-    return { level: 2, detail: `${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} — but nothing was paid for, so the reason has nothing to explain the choosing of.` };
+    return { level: 2, detail: `They said ${said}, which is true of ${ids(unpaidThatFit)} — but nothing at all was paid for, so the reason has no choice to account for.` };
   }
   if (paidThatFit.length > 0) {
     return {
       level: 2,
-      detail: `${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} — and just as true of ${named(paidThatFit.map((claim) => claim.id))}, which they did pay for, so it does not account for this choice.`,
+      detail: `They said ${said}, which is true of ${ids(unpaidThatFit)} — and just as true of ${ids(paidThatFit)}, which they did pay for, so it does not account for this choice.`,
     };
   }
   return {
     level: 5,
-    detail: `${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} and of nothing they paid for.`,
+    detail: `They said ${said}, which is true of ${ids(unpaidThatFit)} and of nothing they paid for.`,
   };
 }
 
@@ -639,7 +645,13 @@ export function observeBasketballFromLog(
   const defenseEvents = log.filter((event) => event.type === "DEFENSE_SUBMITTED");
   // The last settlement stands, for the same reason the last remainder declaration does:
   // a student who revisited a judgement is judged on where they ended, not where they began.
-  const settled = log.filter((event) => event.type === "COMPETING_CLAIMS_SETTLED").at(-1);
+  // …and only this world's. `COMPETING_CLAIMS_SETTLED` is deliberately shared with the
+  // market, which is what lets the two worlds' evidence about the same competency pool — and
+  // it means an unguarded filter here would read a market student's tips jar and name it with
+  // Avery's shoes. The envelope already records which world wrote each event.
+  const settled = log
+    .filter((event) => event.type === "COMPETING_CLAIMS_SETTLED" && event.worldId === "basketball")
+    .at(-1);
   return observeBasketballEvidence({
     observations: observeStructured(facts, numbers),
     defense: { submitted: defenseEvents.length > 0, evidenceRefs: defenseEvents.map((event) => event.id) },

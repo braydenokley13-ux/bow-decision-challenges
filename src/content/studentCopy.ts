@@ -98,7 +98,6 @@ export const STUDENT_COPY = {
            two-line question in caps stops being a voice and becomes a wall. */
         title: "What can Avery count on?",
         ask: "How much money will Avery definitely have?",
-        why: "This money arrives whatever happens on the court.",
         settled: "You worked this out.",
         next: "Next — the two bonuses",
       },
@@ -117,9 +116,6 @@ export const STUDENT_COPY = {
         name: "Money already spoken for",
         title: "What does Avery already owe?",
         ask: "How much is gone before Avery chooses anything?",
-        /* The room is on screen, priced, in the locked row directly above this line. Naming
-           it again was the copy explaining a thing the screen was already showing. */
-        why: "Everything else Avery owes every week, on top of the room.",
         settled: "You worked this out.",
         next: "Now decide what Avery protects",
       },

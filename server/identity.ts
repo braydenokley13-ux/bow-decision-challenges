@@ -18,7 +18,7 @@ import {
   type ShareOutSelection,
 } from "../src/platform/identity/types";
 import { hashSecret, lookupIndex, newId, newRecoveryCode, readToken, signToken, verifySecret } from "./crypto";
-import type { ClassStore, StoredClass, StoredRosterEntry, StoredTeacher } from "./store";
+import { emailKey, type ClassStore, type StoredClass, type StoredRosterEntry, type StoredTeacher } from "./store";
 
 /**
  * Accounts, rosters, sessions, checkpoints, feedback and share-outs.
@@ -258,7 +258,12 @@ export async function handleIdentityRequest(
 
   // -- POST /auth/teacher — a teacher makes an account. --
   if (request.method === "POST" && head === "auth" && second === "teacher" && !third) {
-    if (!withinRate(`signup:${clientId}`, 10, 60 * 60 * 1000, now)) return identityFail(429, "too_many_attempts");
+    // Ten an hour per address was the same mistake as the class-creation cap, one route along:
+    // a school district is one egress address, and fifteen teachers making accounts in a
+    // September PD session is the normal case rather than the attack. What this window is for
+    // is a script farming accounts, and sixty an hour still bounds that while leaving a whole
+    // staffroom room to sign up in one sitting.
+    if (!withinRate(`signup:${clientId}`, 60, 60 * 60 * 1000, now)) return identityFail(429, "too_many_attempts");
     const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
     const password = typeof request.body.password === "string" ? request.body.password : "";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 160) return identityFail(400, "bad_credentials");
@@ -290,13 +295,31 @@ export async function handleIdentityRequest(
 
   // -- POST /auth/teacher/session — signing in. --
   if (request.method === "POST" && head === "auth" && second === "teacher" && third === "session") {
-    if (!withinRate(`login:${clientId}`, 20, 15 * 60 * 1000, now)) return identityFail(429, "too_many_attempts");
+    // Two windows, because a password is guessed one account at a time and a staffroom arrives
+    // all at once. The tight one is per account: ten wrong tries in fifteen minutes is far
+    // below anything worth attacking and far above anybody's own typing. The loose one is the
+    // address, and it is deliberately generous — thirty teachers signing in at half past eight,
+    // several of them twice, used to exhaust a twenty-per-address window between them and lock
+    // the rest of the school out of their own classes.
+    //
+    // Only failures are charged, for the same reason the student join is: a correct password is
+    // not evidence of an attack, and charging it made a room's own sign-in the thing that
+    // stopped the room signing in.
+    const emailWindow = `login:email:${emailKey(typeof request.body.email === "string" ? request.body.email : "")}`;
+    const addressWindow = `login:${clientId}`;
+    if (!underRate(emailWindow, 10, 15 * 60 * 1000, now) || !underRate(addressWindow, 300, 15 * 60 * 1000, now)) {
+      return identityFail(429, "too_many_attempts");
+    }
     const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
     const password = typeof request.body.password === "string" ? request.body.password : "";
     const teacher = await store.getTeacherByEmail(email);
     // One message and one shape for "no such account" and "wrong password", so this endpoint
     // cannot be used to find out which teachers exist.
-    if (!teacher || !(await verifySecret(password, teacher.passwordHash))) return identityFail(401, "bad_credentials");
+    if (!teacher || !(await verifySecret(password, teacher.passwordHash))) {
+      spendRate(emailWindow, 15 * 60 * 1000, now);
+      spendRate(addressWindow, 15 * 60 * 1000, now);
+      return identityFail(401, "bad_credentials");
+    }
     return {
       status: 200,
       body: {
@@ -308,13 +331,22 @@ export async function handleIdentityRequest(
 
   // -- POST /auth/teacher/recovery — the code from sign-up, exchanged for a new password. --
   if (request.method === "POST" && head === "auth" && second === "teacher" && third === "recovery") {
-    if (!withinRate(`recover:${clientId}`, 10, 60 * 60 * 1000, now)) return identityFail(429, "too_many_attempts");
+    // Same shape as signing in: the recovery code is the thing worth guessing, so the tight
+    // window is per account and the address only stops a flood.
+    const recoverEmail = `recover:email:${emailKey(typeof request.body.email === "string" ? request.body.email : "")}`;
+    if (!underRate(recoverEmail, 10, 60 * 60 * 1000, now) || !underRate(`recover:${clientId}`, 200, 60 * 60 * 1000, now)) {
+      return identityFail(429, "too_many_attempts");
+    }
     const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
     const code = typeof request.body.recoveryCode === "string" ? request.body.recoveryCode.trim().toUpperCase() : "";
     const password = typeof request.body.password === "string" ? request.body.password : "";
     if (password.length < 10 || password.length > 200) return identityFail(400, "bad_credentials");
     const teacher = await store.getTeacherByEmail(email);
-    if (!teacher || !(await verifySecret(code, teacher.recoveryHash))) return identityFail(401, "bad_credentials");
+    if (!teacher || !(await verifySecret(code, teacher.recoveryHash))) {
+      spendRate(recoverEmail, 60 * 60 * 1000, now);
+      spendRate(`recover:${clientId}`, 60 * 60 * 1000, now);
+      return identityFail(401, "bad_credentials");
+    }
     // A used recovery code is spent. Reissuing here rather than leaving the old one live is
     // what stops a code read off a screenshot from being a permanent second key.
     const recoveryCode = newRecoveryCode();

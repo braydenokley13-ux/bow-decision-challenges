@@ -45,6 +45,14 @@ export const POP_UP_NUMBERS: PopUpNumbers = {
   catering: { amount: dollars(260) },
   rebate: { amount: dollars(150), minimumPlates: 20 },
   generator: { replacement: dollars(420), deposit: dollars(150) },
+  // The jar, and three claims on it that together want $155. Two ways of spending it reach
+  // as far as it goes and no further — the seal on its own, or the cleaner's share and the
+  // sign together — and they express opposite priorities. Anything else leaves a dollar in a
+  // jar that can do nothing else with it.
+  tips: {
+    cash: dollars(100),
+    claimCosts: { "cool-box": dollars(75), "cleaner-share": dollars(45), "truck-sign": dollars(35) },
+  },
   planIncrement: 50,
   repairIncrement: 10,
 };

@@ -5,7 +5,7 @@ import { REASONING_MAXIMUM } from "../domain/evidence/grade";
 import { REASONING_CRITERIA } from "../domain/blueprint/reasoning";
 import { WORLD_REGISTRY } from "../domain/scenario/registry";
 import type { AttributedSubmission } from "../platform/classes/types";
-import { COMPETENCY_STATE_LABELS } from "./labels";
+import { LEVEL_BUCKET_LABELS, SKILL_STATE_LABELS, TERMS } from "./labels";
 import { studentSpineFor } from "./studentSpine";
 import { worldOfSubmission } from "./objectiveResults";
 
@@ -45,6 +45,7 @@ export interface GradebookLine {
   seatCode: string;
   /** The teacher's own label for this seat, where their class has a roster. */
   displayName: string | null;
+  /** The story this attempt ran, by its own title. */
   worldTitle: string;
   sessionId: string;
   submittedAt: number;
@@ -184,13 +185,31 @@ export function gradebookTsv(rows: readonly GradebookRow[]): string {
     }
   }
 
+  /**
+   * The header row is the glossary.
+   *
+   * Everywhere else in the product the rule is that the first time a BOW word appears on a
+   * page, its sentence appears with it. A tab-separated file has no page to put a sentence
+   * on: a legend row above the data would shift every column, and a legend block below it
+   * lands on top of whichever students a teacher pastes underneath. So the sentence goes
+   * into the header itself, and the headers are written long enough that a cell under them
+   * needs no key at all — `Did it` over a count, `Skill:` over a state, and the two absences
+   * named as absences rather than as low scores.
+   *
+   * This is the one artefact of the whole product that leaves it. Whatever a teacher pastes
+   * into a district gradebook is read months later by somebody who never saw a BOW screen.
+   */
   const header = [
-    "Seat", "Student", "Attempt", "World", "Turned in",
-    "Requirements met", "Requirements short", "Never asked",
+    "Seat", "Student", "Attempt", TERMS.Story, "Turned in",
+    // The unit first, so the three read as one group in a column header row a person scans
+    // sideways, and each says enough on its own that the cell under it needs no key.
+    `${TERMS.Requirement} — ${LEVEL_BUCKET_LABELS.met.toLowerCase()}`,
+    `${TERMS.Requirement} — ${LEVEL_BUCKET_LABELS.short.toLowerCase()}`,
+    `${TERMS.Requirement} — ${LEVEL_BUCKET_LABELS.neverAsked.toLowerCase()} (this run never asked)`,
     ...criteria.map((criterion) => `${criterion.label} (/${criterion.max})`),
-    `Reasoning (/${REASONING_MAXIMUM})`,
-    "Teacher readings",
-    ...competencies.map((entry) => entry.statement),
+    `Reasoning (/${REASONING_MAXIMUM}) — your own marks`,
+    "Your readings recorded",
+    ...competencies.map((entry) => `Skill: ${entry.statement}`),
     "Session",
   ];
 
@@ -218,7 +237,7 @@ export function gradebookTsv(rows: readonly GradebookRow[]): string {
       String(line.teacherReadings),
       ...competencies.map((column) => {
         const entry = line.competencies.find((item) => item.competencyId === column.competencyId);
-        return entry ? COMPETENCY_STATE_LABELS[entry.state] : "";
+        return entry ? SKILL_STATE_LABELS[entry.state] : "";
       }),
       line.sessionId,
     ];

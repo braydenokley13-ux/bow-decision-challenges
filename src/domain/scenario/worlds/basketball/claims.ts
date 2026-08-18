@@ -41,6 +41,15 @@ export interface CompetingClaim {
   id: Week3ClaimId;
   /** What the card is headed. */
   title: string;
+  /**
+   * The same claim, as it reads inside a sentence.
+   *
+   * The card heading and the middle of a sentence want different words: "A present for
+   * Avery's sister" is a heading and reads as a mistake in "$105 went on A present for
+   * Avery's sister". Two fields rather than a capitalisation rule, because the difference
+   * is an article and a lower-case letter and no rule gets both right.
+   */
+  inSentence: string;
   cost: Dollars;
   /** What the claim is, in Avery's week. */
   detail: string;
@@ -64,6 +73,7 @@ export function week3Claims(n: ScenarioNumbers = SCENARIO_NUMBERS): readonly Com
   return [
     {
       id: "team-shoes",
+      inSentence: "the team shoes",
       title: "Team shoes",
       cost: costOf("team-shoes", n),
       detail: "The pair Avery plays in are splitting along the side. Avery can keep playing in them. It hurts.",
@@ -75,6 +85,7 @@ export function week3Claims(n: ScenarioNumbers = SCENARIO_NUMBERS): readonly Com
     },
     {
       id: "away-travel",
+      inSentence: "the away-game travel share",
       title: "Away-game travel share",
       cost: costOf("away-travel", n),
       detail: "Everyone on the bus pays their share. Avery already told the coach they were in.",
@@ -86,6 +97,7 @@ export function week3Claims(n: ScenarioNumbers = SCENARIO_NUMBERS): readonly Com
     },
     {
       id: "sister-present",
+      inSentence: "the present for Avery’s sister",
       title: "A present for Avery's sister",
       cost: costOf("sister-present", n),
       detail: "She turns eleven on Saturday.",
@@ -122,7 +134,10 @@ export interface ClaimReason {
   id: ClaimReasonId;
   /** What the student taps, in their own register. */
   label: string;
-  /** The claim it makes, restated in the third person for the evidence trail. */
+  /**
+   * The claim it makes, as a clause the evidence trail can put after "They said" — third
+   * person, because the trail is a sentence a teacher reads about a student.
+   */
   said: string;
   /** The same claim, said back to the student at Week 8. Short: the ending has a budget. */
   toldBack: string;
@@ -140,28 +155,28 @@ export const CLAIM_REASONS: readonly ClaimReason[] = [
     id: "only-wanted",
     toldBack: "You said you only wanted it.",
     label: "It was the one I only wanted.",
-    said: "you said it was the one you only wanted",
+    said: "that it was the one they only wanted",
     holdsOf: (claim) => claim.onlyWanted,
   },
   {
     id: "no-one-counting",
     toldBack: "You said nobody was counting on it.",
     label: "Nobody else was counting on it.",
-    said: "you said nobody else was counting on it",
+    said: "that nobody else was counting on it",
     holdsOf: (claim) => !claim.countedOnBySomeone,
   },
   {
     id: "can-wait",
     toldBack: "You said it could wait.",
     label: "It can wait, even if it costs more.",
-    said: "you said it could wait, even at a price",
+    said: "that it could wait, even at a price",
     holdsOf: (claim) => claim.waitsAtAPrice,
   },
   {
     id: "cheapest",
     toldBack: "You said it was the cheapest to drop.",
     label: "It was the cheapest one to drop.",
-    said: "you said it was the cheapest one to drop",
+    said: "that it was the cheapest one to drop",
     holdsOf: null,
   },
 ] as const;

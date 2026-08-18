@@ -133,7 +133,12 @@
    --------------------------------------------------------------------------- */
 .worldpick { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; background: var(--canvas); }
 .worldpick--waiting { place-items: center; padding: var(--s-8); color: var(--ink-3); }
-.worldpick__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-5); padding: var(--s-4) clamp(20px, 4vw, 56px); background: var(--surface-raised); border-bottom: 3px solid var(--bow-brand); }
+
+/* `flex-wrap` and a floor, for the same reason the two top bars needed them: the seat line
+   beside the mark is `nowrap`, and at 320 CSS px (400 % zoom of 1280) the pair has nowhere to
+   go. The audit measured 14px of residual overflow here. */
+.worldpick__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3) var(--s-5); min-width: 0; padding: var(--s-4) clamp(20px, 4vw, 56px); background: var(--surface-raised); border-bottom: 3px solid var(--bow-brand); }
+.worldpick__bar > * { min-width: 0; }
 .worldpick__bar > span { color: var(--ink-3); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; font-feature-settings: var(--num); }
 .worldpick__main { width: min(1100px, 100% - 2 * var(--gutter)); margin: 0 auto; padding: clamp(28px, 5vw, 64px) 0 var(--s-9); }
 .worldpick__say { max-width: 46ch; margin-bottom: var(--s-7); }
@@ -497,9 +502,20 @@
 }
 
 @media (max-width: 760px) {
-  .popup-topbar { grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-3); }
-  .market-strip { flex-wrap: wrap; }
-  .market-strip ol { flex-basis: 100%; }
+  /* The same two-column crush the challenge shell had, in the market's bar.
+     `minmax(0, 1fr) auto` gave the mark a track that can go to zero and the four-Saturday
+     strip a track that takes whatever it asks for — and the strip asks for a lot. Measured at
+     320, 360 and 390 the computed tracks were `0px 280px`, `0px 304px`, `0px 334px`: the BOW
+     mark was drawn at zero width on every phone in this world. The strip goes to its own row,
+     as it does in the other world, and the mark and the run menu share row one. */
+
+  /* And the gutter comes down with it, as it does on the challenge shell. With the full
+     gutter the mark's track was 103px against a 129px wordmark at 320 — the letters were
+     drawn and then cut. */
+  .popup-topbar { grid-template-columns: minmax(0, 1fr) minmax(0, auto); gap: var(--s-2) var(--s-3); padding: var(--s-3); }
+  .popup-topbar > .run-menu { grid-column: 2; grid-row: 1; justify-self: end; }
+  .market-strip { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; min-width: 0; }
+  .market-strip ol { min-width: 0; flex-basis: 100%; }
   .popup-main { width: calc(100% - 24px); }
   .popup-heading h1 { font-size: 2rem; }
   .popup-action, .popup-commit { flex-direction: column; align-items: stretch; }

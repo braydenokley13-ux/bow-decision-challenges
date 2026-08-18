@@ -33,6 +33,15 @@ p { color: var(--ink-2); }
 .app-mark { display: inline-flex; align-items: center; gap: var(--s-3); color: inherit; text-decoration: none; }
 .app-mark__monogram { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: var(--r-xs); color: var(--mark-plate-ink, var(--bow-brand-ink)); font: 800 1.05rem/1 var(--font-ui); letter-spacing: -0.02em; }
 .app-mark b, .app-mark small { display: block; }
+
+/* Re-asserted at two classes, because two bar rules below win against one.
+   `.join-shell__bar span` and `.student-home__bar span` are class-plus-element (0,1,1) and
+   the monogram is a `<span>` inside those bars, so they were painting the letter in body ink
+   on the navy plate: measured 1.04:1 on /join (`#383e47` on `#123a8f`) and 1.76:1 on /home.
+   1.4.3 exempts a logotype, so neither is scored as a failure — but the letter could not be
+   seen, and a fix that only patched the two bars would break again on the third. White on the
+   plate measures 10.36:1. */
+.app-mark .app-mark__monogram { color: var(--mark-plate-ink, var(--bow-brand-ink)); }
 .app-mark > span { min-width: 0; }
 .app-mark b { font: 800 1rem/1 var(--font-ui); letter-spacing: 0.1em; white-space: nowrap; }
 .app-mark small { margin-top: 4px; font: var(--t-micro); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; }
@@ -466,6 +475,17 @@ p { color: var(--ink-2); }
 /* Chromebook compaction */
 
 @media (max-width: 1100px) {
+  /* The plan echo stacks here rather than at 760.
+     Its desktop shape is `auto 1fr auto` with the note in the third column at `max-width:
+     30ch`. Measured, the note reaches that 30ch (229px) only at 1200 and above; at 1024 it is
+     127px, at 900 it is 77px, and at 768 — iPad portrait, named hardware — it is **43.4px
+     wide and 285px tall**, a column of one or two words per line under the Week 5 headline.
+     760 was the wrong breakpoint for this block; the width where three columns stop fitting
+     is where it belongs, and 1100 is the compaction breakpoint this sheet already keeps. */
+  .plan-echo { grid-template-columns: 1fr; }
+  .plan-echo dl { grid-auto-flow: row; grid-auto-columns: auto; gap: var(--s-3); }
+  .plan-echo .plan-echo__note { max-width: none; text-align: left; }
+
   .season-strip { gap: var(--s-3); }
   .setup-grid { gap: var(--s-3); }
   .alignment-grid, .brief-answers dl { grid-template-columns: repeat(2, 1fr); }
@@ -488,9 +508,6 @@ p { color: var(--ink-2); }
   .working-setup, .decision-row, .defense-layout, .gap-builder, .mini-unit-grid, .drill-grid, .student-evidence-header, .evidence-detail-grid, .reasoning-layout { grid-template-columns: 1fr; }
   .opening { min-height: 0; }
   .season-log li { grid-template-columns: 1fr; gap: var(--s-2); }
-  .plan-echo { grid-template-columns: 1fr; }
-  .plan-echo dl { grid-auto-flow: row; grid-auto-columns: auto; gap: var(--s-3); }
-  .plan-echo .plan-echo__note { max-width: none; text-align: left; }
   .gap-tiles button { grid-template-columns: 1fr auto; }
   .gap-tiles__kind { grid-column: 1 / -1; }
   .tradeoff-pair > div { grid-template-columns: 1fr; gap: var(--s-1); }
@@ -563,7 +580,14 @@ p { color: var(--ink-2); }
 
 /* The code as the room reads it. On the empty class page and the just-created page this is
    the whole job: thirty students copying five characters off a projector. */
-.class-created__code--projector strong { font: 700 clamp(3.6rem, 9vw, 6rem)/1 var(--font-display); }
+
+/* The floor of the clamp was doing no work on a phone and all the damage.
+   `clamp(3.6rem, 9vw, 6rem)` never reaches its 9vw term below 640px, so a 360px window drew
+   the code at 57.6px with 0.12em tracking: min-content 296.4px, plus the block's 48px of
+   padding, is 344.4px inside a 312px column — 8.4px of document overflow at 360 and 24.4px at
+   320. Lowering only the floor leaves the projector case untouched (at 1024, 9vw is 92px and
+   the 6rem ceiling is what applies) and lets the phone case actually clamp. */
+.class-created__code--projector strong { font: 700 clamp(2.5rem, 9vw, 6rem)/1 var(--font-display); }
 .join-address { margin: 0; }
 .join-address code { display: inline-block; padding: var(--s-2) var(--s-3); background: var(--surface-sunken); border-radius: var(--r-xs); font: var(--t-body); font-family: var(--font-mono); overflow-wrap: anywhere; }
 
@@ -577,7 +601,9 @@ p { color: var(--ink-2); }
 
 
 @media (max-width: 860px) {
-  .class-created { grid-template-columns: 1fr; }
+  /* `minmax(0, 1fr)` rather than `1fr`: a bare `1fr` track keeps its content's min-content as
+     its floor, which is how a single-column grid ended up wider than the page it is in. */
+  .class-created { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ---------------------------------------------------------------------------
@@ -732,8 +758,17 @@ p { color: var(--ink-2); }
 .trail__when b { font: var(--t-title3); }
 .trail__when span { color: var(--ink-2); font: var(--t-sm); }
 .trail__when code { color: var(--ink-3); font: var(--t-micro); font-family: var(--font-mono); }
+
+/* The floor the inner grid never had. `.trail > li` collapses to one column below 760, but a
+   grid item's automatic minimum is its min-content, so the judgement list kept the width of
+   its longest unbroken phrase and pushed the page sideways: measured at 360, the document was
+   12px wider than the window and `.trail` reported clientWidth 312 against scrollWidth 348.
+   The reasons are sentences with long words in them ("Independently", "The saved plan spends
+   no more than Avery has"), so they get a break of last resort as well. */
+.trail__judgements, .trail__judgements > li { min-width: 0; }
 .trail__judgements { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
 .trail__judgements li { display: grid; gap: 2px; padding-left: var(--s-4); border-left: 3px solid var(--border-default); }
+.trail__judgements b, .trail__judgements span, .trail__judgements em { overflow-wrap: anywhere; }
 .trail__judgements li[data-superseded="true"] { border-left-style: dotted; opacity: 0.75; }
 .trail__judgements b { font: var(--t-ui); }
 .trail__judgements span { color: var(--ink-2); font: var(--t-sm); }
@@ -1133,8 +1168,16 @@ p { color: var(--ink-2); }
 .feedback__sent cite { display: block; margin-top: var(--s-2); color: var(--ink-3); font: var(--t-sm); font-style: normal; }
 .feedback__actions { display: flex; align-items: center; gap: var(--s-4); }
 .feedback__actions span { color: var(--ink-3); font: var(--t-sm); font-feature-settings: var(--num); }
-.checkline { display: flex; align-items: flex-start; gap: var(--s-3); color: var(--ink-2); font: var(--t-sm); }
-.checkline input { margin-top: 2px; }
+
+/* 2.5.8 Target Size (Minimum), and the one axe reproduced twice.
+   The box was the browser default — 13 x 13 — inside a 1180 x 20 label, and axe measured the
+   safe clickable space at 23.6px against the 24 the criterion asks for: it failed on size and
+   missed the spacing exception by four tenths of a pixel. A 24px box passes on size outright
+   and needs no exception. The label stays top-aligned, because these labels run to two lines
+   and a centred box beside a paragraph points at nothing. The same rule serves the student
+   drilldown's feedback checkbox and, below, the join screen's device radios. */
+.checkline { display: flex; align-items: flex-start; gap: var(--s-3); min-height: 24px; padding-block: var(--s-2); color: var(--ink-2); font: var(--t-sm); }
+.checkline input { flex: none; width: 24px; height: 24px; margin: 0; accent-color: var(--bow-brand); }
 
 /* One block per world on the printed debrief, so neither world's students are unmentioned. */
 .debrief__world { margin-bottom: var(--s-5); }
@@ -1166,15 +1209,27 @@ p { color: var(--ink-2); }
 
 .device-choice { display: grid; gap: var(--s-2); width: 100%; margin: 0; padding: var(--s-3) 0 0; border: 0; }
 .device-choice legend { padding: 0 0 var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: var(--track-label); text-transform: uppercase; }
-.device-choice label { display: flex; align-items: flex-start; gap: var(--s-3); color: var(--ink-2); font: var(--t-sm); }
+.device-choice label { display: flex; align-items: flex-start; gap: var(--s-3); min-height: 24px; padding-block: var(--s-2); color: var(--ink-2); font: var(--t-sm); }
+.device-choice input { flex: none; width: 24px; height: 24px; margin: 0; accent-color: var(--bow-brand); }
 .join-error { min-height: 1.5rem; margin: 0; color: var(--fin-over); font: var(--t-sm); text-align: center; }
 
 .student-home { min-height: 100dvh; display: grid; align-content: start; gap: var(--s-6); width: 100%; max-width: 52rem; margin: 0 auto; padding: var(--s-5); background: var(--canvas); }
-.student-home__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); padding-bottom: var(--s-4); border-bottom: 1px solid var(--border-default); }
+
+/* `flex-wrap` is what the phone case needed and the 400 % case still needs. B1's shared
+   `.app-mark b, .app-mark small { white-space: normal }` took the 61px off 360 and 31px off
+   390; at a 320 x 256 window — 400 % zoom of 1280 x 1024, where the media query does not
+   apply — the bar was still `nowrap` and the document ran 15px wide, with `main.student-home`
+   reporting clientWidth 320 against scrollWidth 335. */
+.student-home__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); padding-bottom: var(--s-4); border-bottom: 1px solid var(--border-default); }
 .student-home__bar div { display: flex; align-items: center; gap: var(--s-3); }
 .student-home__bar span { color: var(--ink-1); font: var(--t-ui); font-weight: 600; }
 .student-home__empty { display: grid; justify-items: start; gap: var(--s-4); }
 .student-home__foot { padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); }
+
+/* Standalone links, sized as the targets they are. None of these sits inside a sentence, so
+   2.5.8's inline exception does not obviously cover them, and they measured 19–21.8px tall.
+   4px of padding on each side clears 24 without moving anything else on the line. */
+.home__bar a, .student-home__foot a, .page-header--with-back > a, .response-note a { display: inline-block; padding-block: 4px; }
 .student-class { display: grid; gap: var(--s-4); }
 .student-card { display: grid; justify-items: start; gap: var(--s-2); padding: var(--s-5); background: var(--surface); border-radius: var(--r-sm); }
 .student-card h2 { margin: 0; font: var(--t-title1); }
@@ -1214,12 +1269,20 @@ p { color: var(--ink-2); }
 /* Read from the back of a room, driven by the arrow keys, with the teacher's own reason
    on screen for them and for nobody else. */
 .present { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; gap: var(--s-5); padding: var(--s-5); background: var(--canvas); }
-.present__bar { display: flex; align-items: center; justify-content: space-between; color: var(--ink-2); font: var(--t-label); letter-spacing: var(--track-label); text-transform: uppercase; }
+/* Type for a room, not for a laptop.
+   The rest of this product is read at arm's length; this screen is read from the back row of a
+   classroom over a projector, which is a different problem and needs different numbers. On a
+   1920 x 1080 projector the frame carried a 12px counter and 14–15px controls beside a 38px
+   quote — three sizes on one wall, two of which nobody past the second row can read. These
+   were inline styles on the component until `app.css` became the right place for them. */
+.present__bar { display: flex; align-items: center; justify-content: space-between; color: var(--ink-2); font: var(--t-label); font-size: 1.5rem; letter-spacing: var(--track-label); text-transform: uppercase; }
+.present .button { font-size: 1.5rem; }
 .present__slide { display: grid; align-content: center; justify-items: start; gap: var(--s-5); width: 100%; max-width: 60rem; margin: 0 auto; }
-.present__title { margin: 0; color: var(--bow-brand); font: var(--t-display2); }
+.present__title { max-width: none; margin: 0; color: var(--bow-brand); font: var(--t-display2); }
+.present__title:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 6px; }
 .present__quote { margin: 0; font: 500 clamp(1.5rem, 3.2vw, 2.4rem)/1.35 var(--font-ui); }
 .present__quote--none { color: var(--ink-3); font-style: italic; }
-.present__summary { margin: 0; color: var(--ink-2); font: var(--t-ui); }
+.present__summary { margin: 0; color: var(--ink-2); font: var(--t-ui); font-size: 1.75rem; }
 .present__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); padding-top: var(--s-4); border-top: 1px solid var(--border-default); }
 .present__moves { display: flex; gap: var(--s-3); }
 .present__note { margin: 0; max-width: 34rem; color: var(--ink-3); font: var(--t-sm); text-align: right; }
@@ -1272,3 +1335,20 @@ p { color: var(--ink-2); }
 
 .student-home__title { margin: 0 0 var(--s-4); color: var(--ink-1); font: var(--t-scene); letter-spacing: var(--display-tracking-tight); text-transform: uppercase; }
 .student-home__title:focus-visible, .join-step h1:focus-visible { outline: 2px solid var(--bow-brand); outline-offset: 4px; }
+
+
+/* ---------------------------------------------------------------------------
+   A teacher's own account.
+
+   Written here rather than in a component because the sign-in is three fields and a paragraph,
+   and the paragraph is the part that matters: it is the one place a teacher decides whether to
+   give this product an email address, so it sits at the reading measure and not in a footnote.
+   --------------------------------------------------------------------------- */
+.educator-topbar__session { padding: var(--s-2) var(--s-3); color: var(--ink-2); background: none; border: 1.5px solid var(--border-default); border-radius: var(--r-sm); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; text-decoration: none; }
+.educator-topbar__session:hover { color: var(--ink-1); border-color: var(--border-ink); }
+.sign-in { max-width: 46ch; }
+.sign-in .field { margin-bottom: var(--s-4); }
+.sign-in input { padding: var(--s-3); color: var(--ink-1); background: var(--surface); border: 1.5px solid var(--border-ink); border-radius: var(--r-sm); font: var(--t-body); }
+.sign-in__note { max-width: 46ch; margin: var(--s-4) 0 0; color: var(--ink-3); font: var(--t-micro); }
+.sign-in__switch { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); }
+.recovery-code { margin: var(--s-2) 0; color: var(--ink-1); font: var(--m-lg); font-feature-settings: var(--num); letter-spacing: 0.18em; }

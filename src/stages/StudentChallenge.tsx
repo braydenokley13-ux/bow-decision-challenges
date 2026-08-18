@@ -261,81 +261,22 @@ function OpeningStage() {
   );
 }
 
-/**
- * Beat 2. The contract, and the two payments that come with a rule attached.
+/*
+ * Beat 2 used to be here: "The terms", four payments in two columns, a Continue button and no
+ * input of any kind. It was 165 rendered words against a 40-second budget, and every payment on
+ * it is permanently available from "The four payments" in the top bar — the definition of a
+ * corridor, and one of three no-input screens in a run whose reading already outran the period
+ * it is sold for.
  *
- * This screen used to be a slide: four payments in two columns, every one of them already
- * available from "The four payments" in the top bar at any moment of the run, plus a legend
- * explaining a texture the eye could barely see. There was nothing on it a student could not
- * read somewhere else, which is the definition of a corridor.
+ * What the top bar could not carry is the half of a conditional payment that matters: what
+ * happens to the season when the rule is not met. Deleting the screen without that would have
+ * thrown away the only place the product states it, so the two `ifNot` sentences moved onto the
+ * bonus cards in `WorkingStage` — beside the rule, on the screen that asks the student to take a
+ * position on it, where they cost twenty words instead of a hundred and sixty-five.
  *
- * What the top bar cannot carry is the half of a conditional payment that matters: what has
- * to happen, and what it means for the season if it does not. So that is what this screen is
- * now — the certain money in one line, and the two conditions with their consequences stated,
- * which is the thing Question 2 will ask the student to take a position on.
+ * The stage id survives in `StageId` and `STAGE_ORDER`: stored evidence logs name it, and a
+ * saved attempt sitting on it lands on the setup comparison rather than on nothing.
  */
-function DealStage() {
-  const { dispatch } = useChallenge();
-  const { offer, incomeCopy, numbers } = BASKETBALL_SCENARIO;
-  const weekly = Math.round(numbers.basePay / numbers.weeks / 10) * 10;
-  const certain = [
-    { key: "savings" as const, when: "In the account", detail: "Avery has it now." },
-    { key: "base" as const, when: `Across the ${numbers.weeks} weeks`, detail: `About ${formatDollars(weekly)} a week, win or lose.` },
-  ].map((line) => ({ ...line, label: incomeCopy[line.key].label, amount: formatDollars(incomeAmount(numbers, line.key)) }));
-  const conditional = (["completion", "outcome"] as const).map((key) => ({
-    key,
-    label: incomeCopy[key].label,
-    amount: formatDollars(incomeAmount(numbers, key)),
-    rule: incomeCopy[key].rule ?? "",
-    ifNot: incomeCopy[key].ifNot ?? "",
-  }));
-  return (
-    <StageShell stage="role-contract" kicker="The terms" title="Two of these payments have a rule.">
-      <p className="stage-deck">
-        Four payments in the contract. Two arrive whatever happens on the court. Two only arrive
-        if something else does.
-      </p>
-      <div className="contract">
-        <div className="contract__head">
-          <b>{offer.team} · {numbers.weeks}-week terms</b>
-          <span>Avery Reyes #{offer.jersey} · {offer.position}</span>
-        </div>
-        <div className="contract__columns">
-          {/* The certain money, stated once and briefly. It is the base the whole plan is
-              built on and the student works out its total two screens from here, so the
-              screen names the two payments and never adds them up. */}
-          <section className="contract__column" data-tone="safe">
-            <p className="contract__tag">Avery will have this</p>
-            {certain.map((line) => (
-              <div key={line.key} className="contract__line">
-                <b>{line.label}</b>
-                <strong className="money">{line.amount}</strong>
-                <span className="contract__rule"><em>{line.when}</em>{line.detail}</span>
-              </div>
-            ))}
-          </section>
-          {/* The conditions, and what each one costs the season when it is not met. This is
-              the only place either sentence appears. */}
-          <section className="contract__column" data-tone="maybe">
-            <p className="contract__tag">Depends on something happening</p>
-            {conditional.map((line) => (
-              <div key={line.key} className="contract__line">
-                <b>{line.label}</b>
-                <strong className="money">{line.amount}</strong>
-                <span className="contract__rule"><em>Only if</em>{line.rule}</span>
-                <span className="contract__ifnot"><em>If it does not</em>{line.ifNot}</span>
-              </div>
-            ))}
-          </section>
-        </div>
-      </div>
-      <div className="stage-action">
-        <p>Nothing is spent yet. The first bill is the biggest one: eight weeks of somewhere to live.</p>
-        <Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "setup-comparison" })}>Find Avery a place</Button>
-      </div>
-    </StageShell>
-  );
-}
 
 /**
  * Beat 3. Three places, priced in two currencies.
@@ -779,6 +720,10 @@ function WorkingStage() {
     <section ref={pullRef} className="bets" data-settled={backup} aria-label={backup ? "Neither bonus arrived" : PLAN_COPY.steps.bonuses.name}>
       {BETS.map(([sourceId, key]) => {
         const included = key === "completion" ? state.income.includeCompletion : state.income.includeOutcome;
+        // What it costs the season when the rule is not met. This is the sentence the deleted
+        // contract screen existed for, and it reads as a consequence on its own — the line
+        // above it has just said what the rule is, so this one does not need to name it again.
+        const ifNot = BASKETBALL_SCENARIO.incomeCopy[key].ifNot ?? "";
         return (
           <article key={sourceId} className="bet" data-counted={included} data-struck={backup && included}>
             <div className="bet__head">
@@ -786,6 +731,7 @@ function WorkingStage() {
               <strong className="money">{formatDollars(incomeAmount(SCENARIO_NUMBERS, key))}</strong>
             </div>
             <p className="bet__rule">Avery only gets this if {BASKETBALL_SCENARIO.incomeCopy[key].rule}</p>
+            {!backup && ifNot && <p className="bet__rule" data-tone="ifnot">{ifNot}</p>}
             {backup ? (
               <p className="bet__verdict">{included ? "You counted on it. Take it back out of the plan." : "You left it out, so nothing here changes."}</p>
             ) : (
@@ -857,7 +803,12 @@ function WorkingStage() {
 
         {at === 0 && (
           <div className="question">
-            <p className="question__why">{question.countOn.why}</p>
+            {/* No `why` line on the two calculation questions. Each of them already carried
+                four framings of one sum — the rail's step name, the heading, this line, and
+                the prompt that names which payments to add — and this was the one that only
+                said "definitely" a second time. The prompt asks the question and the terms
+                line guards it; a fifth sentence is the screen explaining what it is already
+                showing. */}
             {floorReady ? (
               <p className="question__settled">
                 {question.countOn.settled} Avery can count on <b className="money">{formatDollars(reliableFloorExpectation(SCENARIO_NUMBERS))}</b> whatever
@@ -897,7 +848,7 @@ function WorkingStage() {
 
         {at === 2 && (
           <div className="question">
-            <p className="question__why">{question.committed.why}</p>
+
             {essentialsReady ? (
               <p className="question__settled">
                 {question.committed.settled} <b className="money">{formatDollars(essentialsExpectation(SCENARIO_NUMBERS))}</b> of Avery’s
@@ -1392,9 +1343,11 @@ function SubmittedStage() {
         <div className="handed-in__grid">
           <RosterCard {...(setup ? { note: `Eight weeks at the ${setup.title}` } : {})} />
           <div className="handed-in__body">
+            {/* The class, and not the seat. A seat is an internal allocation: since the door
+                moved to /join a student never sees one, never types one and has never been told
+                what one is, so the row was a word of vocabulary the run does not use. */}
             <dl className="handed-in__where">
               <div><dt>Class</dt><dd>{state.meta.classCode || "—"}</dd></div>
-              <div><dt>Seat</dt><dd>{state.meta.seatCode || "—"}</dd></div>
             </dl>
             {/* A delivery that did not happen is never drawn as one. Everything an educator
                 sees downstream treats a submission as a fact about a student. */}
@@ -1425,18 +1378,27 @@ function SubmittedStage() {
           ))}
         </ul>
         <p className="handed-in__said">Your {state.defense.tileIds.length} numbers, and what you said about them:</p>
-        <blockquote>{state.defense.text}</blockquote>
-        <p className="handed-in__reader">
-          A person reads the writing. Software can check whether the money works; it should not
-          decide whether your thinking makes sense. Nothing here has been read yet.
-        </p>
+        {/* `data-own-words` marks this as the student's own writing for the reading-load ruler
+            in `stages/readingLoad.test.tsx`, which reports it and does not charge it. A word
+            count cannot tell comprehension from recognition, and re-reading your own paragraph
+            ninety seconds after typing it to check it was sent is a glance rather than a read.
+            Charged at 150 words a minute it made this the most expensive screen per second in
+            the run and argued for deleting the receipt. The attribute belongs on this element
+            and on nothing the product wrote. */}
+        <blockquote data-own-words>{state.defense.text}</blockquote>
+        {/* Was three sentences. The middle one — software can check the money but should not
+            judge your thinking — is BOW's design philosophy addressed to a twelve-year-old who
+            did not ask for it. What is left is the promise and the honest limit on it, which is
+            the only claim on this screen a student could otherwise get wrong. */}
+        <p className="handed-in__reader">A person reads the writing, not software. Nothing here has been read yet.</p>
       </section>
 
+      {/* The paragraph that used to sit here said a different plan would have produced a
+          different season — which is what the whole of Week 8 has just shown them, verdict by
+          verdict — and then reassured them that starting again does not take this one back,
+          which is what the button below it is for. Twenty-seven words, both of them already
+          answered on screen. */}
       <div className="stage-action">
-        <p>
-          Avery’s eight weeks would have gone differently on a different plan. Starting again does not
-          take this one back — what you turned in stays with your teacher.
-        </p>
         <div className="stage-action__pair">
           <Button variant="quiet" aria-disabled={delivery.status !== "delivered"} onClick={() => delivery.status === "delivered" && reset()}>
             Try a different plan
@@ -1461,10 +1423,10 @@ function BasketballStages({ stage }: { stage: StageId }) {
     switch (stage) {
       case "entry": case "join": return <OpeningStage />;
       case "choose-world": return <WorldChoice />;
-      // Retired as its own screen — resumed sessions saved on it land on the deal.
-      case "the-offer": return <DealStage />;
-      case "role-contract": return <DealStage />;
-      case "setup-comparison": return <SetupStage />;
+      // Both retired as screens. An attempt saved on either — a browser closed mid-run before
+      // the contract screen was deleted, a log replayed out of the class service — opens on the
+      // first screen that still exists rather than on a blank switch arm.
+      case "the-offer": case "role-contract": case "setup-comparison": return <SetupStage />;
       // The backup version is the working plan with its bonus money taken out, so it is the
       // same screen reacting rather than a second board.
       case "working-plan": case "fallback-version": return <WorkingStage />;

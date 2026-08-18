@@ -55,7 +55,8 @@ describe("the world contract", () => {
   it("gives the second world a contract of its own", () => {
     const contract = contractFor("food-truck");
     expect(contract).toBeDefined();
-    expect(contract?.coverage.map((claim) => claim.competencyId).sort()).toEqual(["adapt-a-plan", "plan-within-income"]);
+    expect(contract?.coverage.map((claim) => claim.competencyId).sort())
+      .toEqual(["adapt-a-plan", "plan-within-income", "sort-by-need-want-goal"]);
   });
 
   it("produces every requirement of every competency it claims", () => {

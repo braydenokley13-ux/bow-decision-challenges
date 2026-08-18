@@ -101,6 +101,26 @@ export const BUILT_WORLD_COVERAGE: readonly WorldEvidenceCoverage[] = [
       "sort-by-need-want-goal.er4",
     ],
   },
+  /**
+   * The same competency, produced by the market, from the same event.
+   *
+   * §9.1 is the claim that which story a student picks does not change what is measured. It
+   * held only while both worlds covered the same list, and it stopped holding the moment
+   * Basketball gained a week where three claims want one pot. The market's answer is the
+   * tips jar after the first Saturday: same `COMPETING_CLAIMS_SETTLED` event, same four
+   * reason ids, same three reads, its own three claims and its own words. A class that lets
+   * students choose now measures both halves of the room on this.
+   */
+  {
+    worldId: "food-truck",
+    competencyId: "sort-by-need-want-goal",
+    producedEvidenceRequirementIds: [
+      "sort-by-need-want-goal.er1",
+      "sort-by-need-want-goal.er2",
+      "sort-by-need-want-goal.er3",
+      "sort-by-need-want-goal.er4",
+    ],
+  },
   {
     worldId: "basketball",
     competencyId: "plan-within-income",

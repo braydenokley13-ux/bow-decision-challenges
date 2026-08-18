@@ -1,5 +1,5 @@
 import { dollars, type Dollars } from "../../../core/money";
-import type { EvidenceEvent, SupportLevel } from "../../../evidence/types";
+import type { CompetingClaimsSettlement, EvidenceEvent, SupportLevel } from "../../../evidence/types";
 import type { PopUpBoardId, PopUpLineId, PopUpSourceId, PopUpSumId, SpotId } from "./types";
 
 /**
@@ -66,6 +66,8 @@ export interface PopUpFacts {
   repair: PopUpBoardEvidence;
   /** Every "put the rest here" on the opening board, in the order they were made. */
   openingRemainder: PopUpRemainderChoice[];
+  /** The tips jar, settled: what it paid for and what the student said about the rest. */
+  tipClaims: { settlement: CompetingClaimsSettlement; supportLevel: SupportLevel; evidenceRef: string } | null;
   writeUp: { submitted: boolean; evidenceRefs: string[] };
 }
 
@@ -106,6 +108,7 @@ export function derivePopUpFacts(log: readonly EvidenceEvent[]): PopUpFacts {
     opening: emptyBoard(),
     repair: emptyBoard(),
     openingRemainder: [],
+    tipClaims: null,
     writeUp: { submitted: false, evidenceRefs: [] },
   };
   const boards: Record<PopUpBoardId, PopUpBoardEvidence> = { opening: facts.opening, repair: facts.repair };
@@ -199,6 +202,17 @@ export function derivePopUpFacts(log: readonly EvidenceEvent[]): PopUpFacts {
         board.evidenceRefs.push(event.id);
         break;
       }
+      case "COMPETING_CLAIMS_SETTLED":
+        // The one event this world shares with the other, so it is the one that has to be
+        // gated on who wrote it. Reading a season student's Week 3 here would name Avery's
+        // shoes with a cool box's fiction, and the envelope already says which world it is.
+        if (event.worldId !== "food-truck") break;
+        facts.tipClaims = {
+          settlement: payload as unknown as CompetingClaimsSettlement,
+          supportLevel: event.supportLevel,
+          evidenceRef: event.id,
+        };
+        break;
       case "POPUP_WRITEUP_SUBMITTED":
         facts.writeUp = { submitted: true, evidenceRefs: [...facts.writeUp.evidenceRefs, event.id] };
         break;

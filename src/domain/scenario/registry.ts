@@ -74,7 +74,10 @@ export const WORLD_REGISTRY: Partial<Record<WorldId, WorldRegistryEntry>> = {
     title: BASKETBALL_SCENARIO.title,
     subtitle: "Step into Avery's eight-week run.",
     role: BASKETBALL_SCENARIO.invitation.role,
-    durationMinutes: { min: 20, max: 25 },
+    // From the pacing table and the rendered-word census in `stages/readingLoad.test.tsx`,
+    // not from a guess: the longest route budgets 23m20s, and that budget reads at 150 words
+    // a minute. A Grade 5–8 reader at 120 does the same 2,386 words in four minutes more.
+    durationMinutes: { min: 22, max: 28 },
     availability: "available",
     stages: STAGE_ORDER,
     scenario: BASKETBALL_SCENARIO,
@@ -84,7 +87,10 @@ export const WORLD_REGISTRY: Partial<Record<WorldId, WorldRegistryEntry>> = {
     title: POP_UP_SCENARIO.title,
     subtitle: POP_UP_SCENARIO.subtitle,
     role: POP_UP_SCENARIO.pitch.role,
-    durationMinutes: { min: 18, max: 24 },
+    // Same instrument, same arithmetic, applied to this world's 2,145 words and its own
+    // stage budget. 18–24 was below this world's reading time alone at a realistic rate, so
+    // it could not have been true; the owner of this world should confirm the top of the band.
+    durationMinutes: { min: 20, max: 23 },
     availability: "available",
     // Plus the two screens that belong to the platform rather than to either world: an
     // attempt saved on the join screen is a real attempt and has to restore.

@@ -35,6 +35,15 @@ export const POP_UP_SUM_IDS: readonly PopUpSumId[] = ["owed-up-front", "cash-to-
 /** Which board the student is on. The opening plan, then the one repair. */
 export type PopUpBoardId = "opening" | "repair";
 
+/**
+ * The three things that want the tips jar after the first Saturday.
+ *
+ * A world's own ids, as §7.1 asks. What crosses into the shared layer is the *event* they are
+ * settled with and the four reasons a student may give, because those are what let a market
+ * student's answer and a season student's answer be about the same thing.
+ */
+export type TipClaimId = "cool-box" | "cleaner-share" | "truck-sign";
+
 /** The four Saturdays, numbered the way the market numbers them. */
 export type SaturdayNumber = 1 | 2 | 3 | 4;
 
@@ -112,6 +121,15 @@ export interface PopUpNumbers {
   rebate: { amount: Dollars; minimumPlates: number };
   /** The rented generator, and what the shop holds against it. */
   generator: { replacement: Dollars; deposit: Dollars };
+  /**
+   * Mo's tips from the first Saturday, and the three things that want them.
+   *
+   * Outside the plan on purpose: it never reaches stock, the cushion or the cut, it cannot
+   * be banked, and no function in `ledger.ts` or `economy.ts` reads it. That keeps the beat
+   * out of the strategy space `balance.ts` sweeps, which is what lets a world that refuses
+   * to grade a preference grade this one thing.
+   */
+  tips: { cash: Dollars; claimCosts: Record<TipClaimId, Dollars> };
   /** The step the opening board moves money in. */
   planIncrement: 50;
   /** The step the repair board moves money in. */

@@ -170,7 +170,17 @@ export interface WorldScenario {
    * `voice` is Avery's own line for that week, and it differs by where the student put
    * Avery — the housing choice is felt every week, not only when it bills.
    */
-  season: readonly { week: string; note: string; voice: Record<SetupId, string> }[];
+  /*
+   * `season` used to live here: four weeks of match reports and, per week, one line of Avery's
+   * own voice for each housing choice — the one place in Weeks 1–4 where the room a student
+   * picked in minute four came back and said something. The rebuilt Week 3 has no screen for
+   * any of it, so from the day that shipped it was two hundred and twenty-seven words rendered
+   * nowhere and still being measured for a declared reading grade. A grade computed partly
+   * from text no student sees is a number about nothing, so the field is gone and the grade is
+   * re-declared from what is left. The voice lines were the best thing about that beat; if the
+   * housing choice is to bite during the weeks again it has to come back as a line something
+   * renders, not as an array nobody reads.
+   */
   /** Week 5 arrives as two separate pieces of news, so the turn lands as two hits. */
   disruption: {
     source: string;

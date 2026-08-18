@@ -37,14 +37,23 @@ describe("the challenge is designed to fit the lesson it claims to fit", () => {
   });
 
   /**
-   * The band is 20–25 minutes and the budget aims below the middle of it, because a real
-   * student is slower than a budget: they hesitate, re-read, change their mind and talk to
-   * the person next to them. A budget that landed at 25 would put the real run past it.
+   * The budget aims below the middle of the advertised band, because a real student is slower
+   * than a budget: they hesitate, re-read, change their mind and talk to the person next to
+   * them.
+   *
+   * The band was 20–25 and this ceiling was 21 minutes, and both numbers were wrong in the
+   * same direction for the same reason: nothing in the repository counted the words on a
+   * screen, so a stage could declare 165 seconds while rendering 491 words and no test could
+   * tell. `stages/readingLoad.test.tsx` counts them now, `working-plan`, `week8-resolution`
+   * and `submitted` have been re-declared against what they actually render, and the picker —
+   * a screen every student passes through — has a budget for the first time. The longest route
+   * costs 23m20s, the advertised band moved to 22–30 to match, and this ceiling is the middle
+   * of that band rather than a number the table used to fit under.
    */
   it("lands the longest route inside the band with room for a real student to hesitate", () => {
     const longest = budgetFor(LONGEST_PATH);
     expect(longest).toBeGreaterThanOrEqual(15 * MINUTE);
-    expect(longest).toBeLessThanOrEqual(21 * MINUTE);
+    expect(longest).toBeLessThanOrEqual(26 * MINUTE);
   });
 
   it("keeps the shortest route meaningfully shorter, without making it a different lesson", () => {

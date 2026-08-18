@@ -1,4 +1,5 @@
 import { formatDollars } from "../../../core/money";
+import { TIP_CLAIM_REASONS, tipClaims } from "./claims";
 import { POP_UP_NUMBERS as N } from "./numbers";
 import type { PopUpLineId, PopUpNumbers, PopUpSourceId, SpotId } from "./types";
 
@@ -189,6 +190,28 @@ export interface PopUpScreenCopy {
     turnedAway: string;
   };
   first: { kicker: string; title: string; deck: string };
+  /**
+   * The tips jar, and the three things that want it.
+   *
+   * Its own block rather than words inside `standing`, because it is its own decision: the
+   * money is outside the plan, the question is which claim matters, and the four answers are
+   * the same four the other world offers under the same ids.
+   */
+  tips: {
+    kicker: string;
+    title: string;
+    deck: string;
+    outsideRule: string;
+    jarLabel: string;
+    spentLabel: string;
+    leftLabel: string;
+    pay: string;
+    paying: string;
+    ask: string;
+    gateClaims: string;
+    gateReason: string;
+    settled: string;
+  };
   standing: {
     kicker: string;
     title: string;
@@ -310,7 +333,7 @@ export interface PopUpVerdictCopy {
   title: string;
   outcomes: { paidOff: string; costYou: string; fellShort: string; noEffect: string };
   booth: { label: string; paidOff: string; costYou: string; fellShort: string };
-  stock: { label: string; paidOff: string; costYou: string; fellShort: string; nothing: string };
+  stock: { label: string; paidOff: string; paidOffSpoiled: string; costYou: string; fellShort: string; nothing: string };
   helper: {
     labelBooked: string;
     labelAlone: string;
@@ -539,6 +562,21 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       title: "How much do you cook?",
       deck: "Order the food before the doors open. Whatever the crowd does not buy is money in the bin.",
     },
+    tips: {
+      kicker: "The tips jar",
+      title: "Three things want the tips.",
+      deck: `You emptied the jar on the way home from the first Saturday: ${formatDollars(N.tips.cash)}, and it is yours. Three things want it and it does not stretch to all three.`,
+      outsideRule: "This money is not the truck's. It cannot go on the three lines and it cannot be banked, so a dollar you do not spend here is a dollar spent on nothing.",
+      jarLabel: "In the jar",
+      spentLabel: "Spent",
+      leftLabel: "Left over",
+      pay: "Pay for this",
+      paying: "Paying for it",
+      ask: "What made the one you left out matter less?",
+      gateClaims: "Say what the jar pays for",
+      gateReason: "Say what made the rest matter less",
+      settled: "That is the jar spent, and you said why.",
+    },
     standing: {
       kicker: "Saturday 1 is done",
       title: "The first night is in.",
@@ -607,7 +645,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       startedWith: "The account started at",
       missedLast: "The truck sat dark on the biggest night of the run.",
       neverCooked: "You never cooked a plate all run, so the truck had nothing to sell. The money stayed on the lines you put it on.",
-      handOff: "Nadia Okafor ran the market. She has one question for every stall that took a booth.",
+      handOff: "Nadia Okafor ran the market. One question, for every stall that took a booth.",
       action: "Answer the organiser",
       verdicts: {
         title: "What each call actually did.",
@@ -620,7 +658,8 @@ export const POP_UP_SCENARIO: PopUpScenario = {
         },
         stock: {
           label: "What you cooked",
-          paidOff: "{cooked} plates cooked, {sold} sold, {takings}. No other standing order beats it on these four crowds.",
+          paidOff: "{cooked} plates cooked, {sold} sold, {takings}. Nothing was thrown away and no standing order does better on these four crowds.",
+          paidOffSpoiled: "{cooked} plates cooked, {sold} sold, {takings}. {binned} went in the bin on the thin night, and cooking less takes less.",
           costYou: "{binned} went in the bin. {alt} trays a night on Saturdays 2 and 3, not {actual}, leaves you {gap} better off.",
           fellShort: "{unfed} people wanted a plate you did not have. {alt} trays a night on Saturdays 2 and 3, not {actual}, takes {gap} more.",
           nothing: "You never cooked a plate, so the truck opened four times with nothing on it and took {zero}.",
@@ -711,6 +750,9 @@ function screenCopy(s: PopUpScreenCopy): readonly string[] {
     s.night.cooked, s.night.sold, s.night.binned, s.night.takings, s.night.soldOut,
     s.night.someLeft, s.night.nothingCooked, s.night.nothingBinned, s.night.binnedTrays, s.night.turnedAway,
     s.first.kicker, s.first.title, s.first.deck,
+    s.tips.kicker, s.tips.title, s.tips.deck, s.tips.outsideRule, s.tips.jarLabel,
+    s.tips.spentLabel, s.tips.leftLabel, s.tips.pay, s.tips.paying, s.tips.ask,
+    s.tips.gateClaims, s.tips.gateReason, s.tips.settled,
     s.standing.kicker, s.standing.title, s.standing.rebateEarnedPlanned, s.standing.rebateEarnedWindfall,
     s.standing.rebateMissedPlanned, s.standing.rebateMissedFree, s.standing.next, s.standing.nextNote,
     s.standing.helperAsk, s.standing.helperBooked, s.standing.helperAlone, s.standing.book,
@@ -753,6 +795,8 @@ export function popUpStudentCopy(scenario: PopUpScenario = POP_UP_SCENARIO): rea
     scenario.supplier.label, scenario.supplier.note,
     scenario.helper.label, scenario.helper.note, scenario.helper.rule,
     ...scenario.saturdays.flatMap((saturday) => [saturday.title, saturday.note]),
+    ...tipClaims(scenario.numbers).flatMap((claim) => [claim.title, claim.detail, claim.wentUnpaid]),
+    ...TIP_CLAIM_REASONS.map((reason) => reason.label),
     breakdown.source, breakdown.title,
     ...breakdown.beats.flatMap((beat) => [beat.marker, beat.tag, beat.text]),
     breakdown.movable, breakdown.locked,

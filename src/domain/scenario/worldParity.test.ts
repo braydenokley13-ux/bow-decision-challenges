@@ -32,7 +32,6 @@ function basketballCopy(): string[] {
     s.offer.headline, s.offer.body, s.offer.wantDetail,
     s.invitation.headline, s.invitation.role,
     ...s.invitation.decisions.flatMap((decision) => [decision.title, decision.detail]),
-    ...s.season.flatMap((week) => [week.note, ...Object.values(week.voice)]),
     ...s.setups.flatMap((setup) => [setup.terms, setup.tradeoff, setup.commute]),
     ...Object.values(s.incomeCopy).flatMap((line) => [line.note, line.rule ?? ""]),
     s.disruption.title,

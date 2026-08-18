@@ -148,6 +148,42 @@ describe("a teacher's account outlives their browser", () => {
   });
 });
 
+describe("a staffroom is not an attacker", () => {
+  it("lets a school's worth of teachers make accounts and sign in from one address", { timeout: 120_000 }, async () => {
+    const store = memoryStore();
+    // Fifteen teachers in a September PD session, on one school connection. Ten an hour per
+    // address — the cap this used to carry, and the same mistake the class-creation cap
+    // carried one route along — refused a third of them, and none of the three had any way to
+    // know it was their neighbour's fault.
+    const made = [];
+    for (let index = 0; index < 15; index += 1) {
+      const created = await api(store)("POST", "/auth/teacher", { email: `teacher${index}@school.example`, password: "a long enough passphrase" });
+      expect(created.status, `teacher ${index} could not make an account`).toBe(201);
+      made.push(`teacher${index}@school.example`);
+    }
+    // And all of them again the next morning, several of them twice, from the same address.
+    for (const email of [...made, ...made.slice(0, 8)]) {
+      const back = await api(store)("POST", "/auth/teacher/session", { email, password: "a long enough passphrase" });
+      expect(back.status, `${email} could not sign in`).toBe(200);
+    }
+  });
+
+  it("still stops somebody guessing one teacher's password", { timeout: 120_000 }, async () => {
+    const store = memoryStore();
+    await signUp(store, "ms.chen@example.org");
+    let refusedAt = 0;
+    for (let attempt = 1; attempt <= 20 && refusedAt === 0; attempt += 1) {
+      const guess = await api(store)("POST", "/auth/teacher/session", { email: "ms.chen@example.org", password: `guess-number-${attempt}` });
+      if (guess.status === 429) refusedAt = attempt;
+    }
+    expect(refusedAt, "a password could be guessed without limit").toBeGreaterThan(0);
+    expect(refusedAt).toBeLessThanOrEqual(11);
+    // And the account's own owner is locked out with them, which is the cost of the control
+    // being per account — but every other teacher in the building is not.
+    expect((await api(store)("POST", "/auth/teacher/session", { email: "mr.ito@example.org", password: "x" })).status).not.toBe(429);
+  });
+});
+
 describe("a class is a room somebody can be named in", () => {
   it("hands back one card per name and never the same seat twice", async () => {
     const store = memoryStore();

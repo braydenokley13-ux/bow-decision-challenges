@@ -22,12 +22,13 @@ import type { PopUpScoredExplanations } from "./observer";
  * | --- | --- | --- |
  * | `plan-within-income.er5` | Names something given up, says what it was given up for, refers to one of their own numbers | tradeoff + priority + numbers |
  * | `adapt-a-plan.er5` | Names what they refused to cut and why | priority |
+ * | `sort-by-need-want-goal.er4` | Names what made one claim matter more than another, rather than what it cost | priority |
  */
 
 /** The parts of `plan-within-income.er5`, and the mark that answers each. */
 const TRADE_OFF_PARTS = ["C6.3", "C6.2", "C6.4"] as const;
 
-/** The single part of `adapt-a-plan.er5`. */
+/** The single part of `adapt-a-plan.er5`, and of `sort-by-need-want-goal.er4`. */
 const PROTECTED_PART = "C6.2" as const;
 
 /**
@@ -65,5 +66,9 @@ export function popUpScoredExplanationsFrom(scores: ReasoningScores | undefined)
   return {
     "plan-within-income.er5": levelFrom(partsOf(scores, TRADE_OFF_PARTS)),
     "adapt-a-plan.er5": levelFrom(partsOf(scores, [PROTECTED_PART])),
+    // The same criterion the other world reads for the same requirement. Two worlds marking
+    // one requirement off two different criteria would be two rubrics wearing one name, and
+    // pooling their results is exactly what this beat exists to make possible.
+    "sort-by-need-want-goal.er4": levelFrom(partsOf(scores, [PROTECTED_PART])),
   };
 }

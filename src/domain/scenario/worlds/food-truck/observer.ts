@@ -7,6 +7,9 @@ import type {
 } from "../../../competency/types";
 import { evidenceRequirementById } from "../../../competency/competencies";
 import type { EvidenceEvent } from "../../../evidence/types";
+import { formatDollars } from "../../../core/money";
+import type { CompetingClaimsSettlement } from "../../../evidence/types";
+import { isTipClaimReasonId, tipClaimReason, tipClaims, tipsReachAsFarAsTheyGo, type TipClaim } from "./claims";
 import { cashToPlan, owedUpFront, swapBill } from "./economy";
 import { derivePopUpFacts, type PopUpBoardEvidence, type PopUpFacts, type PopUpRemainderChoice, type PopUpSumEvidence } from "./facts";
 import { POP_UP_NUMBERS } from "./numbers";
@@ -62,6 +65,18 @@ export type PopUpRouteVia =
   | {
       /** The repair board: whether it ended settled, or the shortfall was named out loud. */
       via: "repair-ending";
+    }
+  | {
+      /**
+       * The tips jar, settled. One event, three separable facts, one read each.
+       *
+       * The same three the other world reads from the same event, deliberately: `reach` is
+       * arithmetic over the allocation, `kind-of-reason` is whether the basis given was about
+       * the claim or about its price, and `reason-holds` is whether that basis is actually
+       * true of what went unpaid and not equally true of what was funded.
+       */
+      via: "competing-claims";
+      reads: "reach" | "kind-of-reason" | "reason-holds";
     }
   | {
       /** The student writes it; a person scores it. BOW never grades student writing. */
@@ -144,6 +159,38 @@ export const POP_UP_EVIDENCE_ROUTES: readonly PopUpEvidenceRoute[] = [
     evidenceRequirementId: "adapt-a-plan.er5",
     via: "written-answer",
     note: "The organiser's question is where the student names what they refused to cut and why.",
+  },
+
+  // ── sort-by-need-want-goal — all four, from the tips jar and the write-up ─────────
+  // The market could not produce any of these until it had a moment where more than one
+  // person wanted the same money at once. Every board before the tips jar divides money the
+  // student controls into lines the plan names; nothing on any of them is a claim somebody
+  // else is making. The four below read one settlement and one paragraph, and none of them
+  // reads how much any claim cost — which is what keeps the two allocations that spend the
+  // jar as far as it goes worth the same, and stops this competency quietly deciding that a
+  // cool box matters more than a promise or the other way round.
+  {
+    evidenceRequirementId: "sort-by-need-want-goal.er1",
+    via: "competing-claims",
+    reads: "reach",
+    note: "Making the first Saturday's tips reach as far as they can across three claims that together cost more than the jar — committing no more than there is, and leaving nothing behind that one of the unpaid claims could still have taken.",
+  },
+  {
+    evidenceRequirementId: "sort-by-need-want-goal.er2",
+    via: "competing-claims",
+    reads: "kind-of-reason",
+    note: "Saying what the unpaid claim was to Mo rather than what it cost. Price is a fact about a claim and it is not a judgement about whether the claim matters, and this row is where the difference between the two shows.",
+  },
+  {
+    evidenceRequirementId: "sort-by-need-want-goal.er3",
+    via: "competing-claims",
+    reads: "reason-holds",
+    note: "Whether the reason the student gave is actually true of what they left unpaid, and not equally true of what they paid for. A basis that fits both halves of a choice explains neither of them.",
+  },
+  {
+    evidenceRequirementId: "sort-by-need-want-goal.er4",
+    via: "written-answer",
+    note: "The organiser's question is where the student says what made one claim matter more than another — something the truck needed, a promise to somebody on the row, or something they simply wanted.",
   },
 
   // ── save-toward-a-goal — examined, and declined for the same reasons as Basketball ──
@@ -462,6 +509,129 @@ function expectedFor(sumId: PopUpSumId, facts: PopUpFacts, n: PopUpNumbers): num
   return null;
 }
 
+/**
+ * The tips jar, read three ways.
+ *
+ * Nothing here reads *which* claims survived, and that is the whole discipline of the beat.
+ * Two ways of spending the jar reach as far as the money goes: the seal on its own, or the
+ * cleaner's share and the sign together. One protects the food, the other keeps a promise
+ * and puts the truck's name on the truck, and this file has no opinion about which is
+ * better. An observer that scored which claims survived would be scoring a set of values,
+ * and `balance.ts` exists to keep this world from doing that anywhere.
+ */
+function claimsPart(reads: "reach" | "kind-of-reason" | "reason-holds", facts: PopUpFacts, n: PopUpNumbers): Part {
+  const settled = facts.tipClaims;
+  if (!settled) {
+    return NOT_REACHED("The run never reached the night the tips jar is emptied, so this world saw no answer either way.", "tip-claims");
+  }
+  const claims = tipClaims(n);
+  const named = (ids: readonly string[]) =>
+    claims.filter((claim) => ids.includes(claim.id)).map((claim) => claim.title).join(" and ");
+  const built = reads === "reach"
+    ? tipsReachRead(settled.settlement, named, n)
+    : reasonRead(reads, settled.settlement, claims, named);
+  return {
+    level: built.level,
+    supportLevel: settled.supportLevel,
+    evidenceRefs: [settled.evidenceRef],
+    detail: built.detail,
+  };
+}
+
+interface ClaimsRead {
+  level: RubricLevel;
+  detail: string;
+}
+
+/**
+ * `er1` — how far the jar was made to reach.
+ *
+ * Arithmetic, and neutral by construction: more than one allocation satisfies it and it is
+ * indifferent between them. The tips never enter the plan and cannot be banked — the screen
+ * says so before the student decides — so a dollar not spent on one of these three is a
+ * dollar spent on nothing, which is why leaving a claim affordable and unpaid is a real gap
+ * rather than a preference.
+ */
+function tipsReachRead(
+  settlement: CompetingClaimsSettlement,
+  named: (ids: readonly string[]) => string,
+  n: PopUpNumbers,
+): ClaimsRead {
+  const cash = formatDollars(settlement.cash);
+  const spent = formatDollars(settlement.spent);
+  const left = formatDollars(settlement.leftOver);
+  if (settlement.spent > settlement.cash) {
+    return { level: 0, detail: `The claims taken on came to ${spent} against ${cash} in the jar, which is more money than was in it.` };
+  }
+  if (settlement.fundedIds.length === 0) {
+    return { level: 0, detail: `Nothing on the list was paid for, so the whole ${cash} sat in a jar that could not be banked and could not be spent on anything else.` };
+  }
+  if (tipsReachAsFarAsTheyGo(settlement.fundedIds, n)) {
+    return { level: 5, detail: `${named(settlement.fundedIds)} took ${spent} of the ${cash}, and the ${left} left over could not have covered ${named(settlement.unfundedIds)}.` };
+  }
+  return { level: 2, detail: `${named(settlement.fundedIds)} took ${spent} of the ${cash}, and the ${left} still in the jar could have covered something on the unpaid list as well.` };
+}
+
+function reasonRead(
+  reads: "kind-of-reason" | "reason-holds",
+  settlement: CompetingClaimsSettlement,
+  claims: readonly TipClaim[],
+  named: (ids: readonly string[]) => string,
+): ClaimsRead {
+  if (!isTipClaimReasonId(settlement.reason)) {
+    return { level: 0, detail: "The settlement carries a reason this world does not offer, so nothing about it can be read either way." };
+  }
+  const reason = tipClaimReason(settlement.reason);
+  if (reads === "kind-of-reason") {
+    // No middle level, because the tap has no middle. Whether the basis given was the right
+    // *kind* is a yes or a no; whether it was *true* is the next row down, and that one does
+    // have a middle.
+    return reason.holdsOf
+      ? { level: 5, detail: `They gave a reason about what the claim was — “${reason.label}” — rather than about its price.` }
+      : { level: 0, detail: `They gave the price as the reason — “${reason.label}” — which says which claim was smallest and nothing about which one mattered.` };
+  }
+  return tipsHoldRead(settlement, claims, reason.holdsOf, reason.said, named);
+}
+
+/**
+ * `er3` — whether the reason they gave is true of what they actually left unpaid.
+ *
+ * Two ways to miss it, and they are different mistakes. A reason true of nothing they left
+ * unpaid contradicts what they did: calling the perishing cool box seal the one they only
+ * wanted is a claim about the world the world does not support. A reason true of something
+ * they left unpaid *and* of something they paid for did not do the separating: "nobody else
+ * was counting on it" is true of the seal and of the sign alike, so a student who funds one
+ * of them and drops the other has named a fact rather than a reason. Both read as a real
+ * gap; only the first is a contradiction.
+ */
+function tipsHoldRead(
+  settlement: CompetingClaimsSettlement,
+  claims: readonly TipClaim[],
+  holdsOf: ((claim: TipClaim) => boolean) | null,
+  said: string,
+  named: (ids: readonly string[]) => string,
+): ClaimsRead {
+  if (!holdsOf) {
+    return { level: 0, detail: `The reason given was the price, so nothing was claimed about ${named(settlement.unfundedIds)} that could be true or false of it.` };
+  }
+  const holds = (ids: readonly string[]) => claims.filter((claim) => ids.includes(claim.id) && holdsOf(claim));
+  const unpaidThatFit = holds(settlement.unfundedIds);
+  const paidThatFit = holds(settlement.fundedIds);
+  if (unpaidThatFit.length === 0) {
+    return { level: 0, detail: `They left ${named(settlement.unfundedIds)} unpaid and ${said}, and that is not what this world says ${settlement.unfundedIds.length > 1 ? "either of them was" : "it was"}.` };
+  }
+  if (settlement.fundedIds.length === 0) {
+    return { level: 2, detail: `${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} — but nothing was paid for, so the reason has nothing to explain the choosing of.` };
+  }
+  if (paidThatFit.length > 0) {
+    return {
+      level: 2,
+      detail: `${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} — and just as true of ${named(paidThatFit.map((claim) => claim.id))}, which they did pay for, so it does not account for this choice.`,
+    };
+  }
+  return { level: 5, detail: `${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} and of nothing they paid for.` };
+}
+
 function partFor(route: PopUpEvidenceRoute, input: PopUpObserverInput): Part {
   const { facts, numbers } = input;
   switch (route.via) {
@@ -488,6 +658,8 @@ function partFor(route: PopUpEvidenceRoute, input: PopUpObserverInput): Part {
       return repairFreedPart(facts.repair);
     case "repair-ending":
       return repairEndingPart(facts.repair);
+    case "competing-claims":
+      return claimsPart(route.reads, facts, numbers);
     case "written-answer":
       return explanationPart(facts, input.scoredExplanations?.[route.evidenceRequirementId]);
     case "not-produced":

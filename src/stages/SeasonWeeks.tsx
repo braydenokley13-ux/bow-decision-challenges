@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useChallenge } from "../app/ChallengeContext";
 import { useDraft } from "../app/attemptStore";
 import { StageShell } from "../app/StageShell";
@@ -69,6 +69,9 @@ export function SeasonWeeks() {
   // the deposit screen remembers: a page refresh may not quietly reverse a decision.
   const [funded, setFunded] = useDraft<string[]>(state.meta.worldId, "week3-claims", state.week3?.fundedIds ? [...state.week3.fundedIds] : []);
   const [reason, setReason] = useDraft<ClaimReasonId | null>(state.meta.worldId, "week3-reason", state.week3?.reason ?? null);
+  // What the last press refused for, or null. Not a draft: it belongs to a press, and a
+  // student who reloads has not just pressed anything.
+  const [refusal, setRefusal] = useState<"nothing-paid" | "no-reason" | null>(null);
   if (!setupId) return null;
 
   const closing = ledger.at(-1)!;
@@ -76,11 +79,24 @@ export function SeasonWeeks() {
   const spent = costOfClaims(funded);
   const left = CASH - spent;
 
-  const toggle = (id: string) =>
+  const toggle = (id: string) => {
+    setRefusal(null);
     setFunded(funded.includes(id) ? funded.filter((entry) => entry !== id) : [...funded, id]);
+  };
 
+  /**
+   * The press always answers.
+   *
+   * The plan board next door was reported for exactly the opposite: a primary button that
+   * refused silently, leaving a student unable to tell whether the application was broken or
+   * they were. It was fixed with a real control and an alert saying what is missing, and a
+   * greyed rectangle wearing an instruction as its label is the same defect wearing a
+   * different hat — worse here, because the instruction is the only thing on screen telling
+   * a twelve-year-old what to do and it is written on the one control they cannot use.
+   */
   const settle = () => {
-    if (reason === null) return;
+    if (funded.length === 0) return setRefusal("nothing-paid");
+    if (reason === null) return setRefusal("no-reason");
     dispatch({ type: "COMPETING_CLAIMS_SETTLED", fundedIds: funded, reason });
   };
 
@@ -97,8 +113,10 @@ export function SeasonWeeks() {
         things want it before Sunday.
       </p>
 
-      <section className="claims" aria-labelledby="claims-heading">
-        <h2 className="visually-hidden" id="claims-heading">Week {CASH_WEEK}</h2>
+      {/* Named rather than headed: the screen's own title already says which week this is,
+          and a hidden heading repeating it is two more words in a beat that is being kept
+          short on purpose. */}
+      <section className="claims" aria-label={`The three claims on Week ${CASH_WEEK}’s cash`}>
         <ul className="claims__list">
           {CLAIMS.map((claim) => {
             const chosen = funded.includes(claim.id);
@@ -111,9 +129,16 @@ export function SeasonWeeks() {
                   aria-disabled={overBudget}
                   onClick={() => !overBudget && toggle(claim.id)}
                 >
+                  {/* A card with no mark on it is a card nobody knows they can press — the
+                      sentence this product already wrote once, about the Week 5 cards, and
+                      the same square is drawn here for the same reason. Without it the three
+                      claims read as facts and the four reason pills below them are the only
+                      things on screen that look like controls, which invites a student to
+                      answer the question before making the decision. */}
+                  <span className="claims__mark" aria-hidden="true" />
                   <b>{claim.title}</b>
                   <strong className="money">{formatDollars(claim.cost)}</strong>
-                  <span>{claim.detail}</span>
+                  <span className="claims__detail">{claim.detail}</span>
                   {/* Only where it is true, and where it is true it is the whole reason the
                       card cannot be taken. A disabled control with no stated cause is a bug
                       as far as the person pressing it is concerned. */}
@@ -127,29 +152,41 @@ export function SeasonWeeks() {
             behind a real cost rather than a saving. This cash never reaches the plan. */}
         <p className="claims__left" aria-live="polite">
           <strong className="money">{formatDollars(left)}</strong>
-          <span>left of {formatDollars(CASH)}. What Avery does not spend this week goes nowhere.</span>
+          {/* "What Avery does not spend" read as though it could mean the plan. It is the
+              cash and only the cash, and the sentence has to survive being read once. */}
+          <span>left of {formatDollars(CASH)}. Cash Avery does not spend this week goes nowhere.</span>
         </p>
 
-        <div className="claims__why">
-          <p className="field-label" id="why-heading">What made you leave the rest out?</p>
-          <ul aria-labelledby="why-heading">
-            {CLAIM_REASONS.map((entry) => (
-              <li key={entry.id}>
-                <button type="button" aria-pressed={reason === entry.id} onClick={() => setReason(entry.id)}>
-                  {entry.label}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
+        {/* Not asked until something has actually been left out. Asked at the top of the
+            screen it is a question about nothing — all three claims are still in — and it is
+            answerable, which lets a student tap a reason first and then allocate to fit it.
+            That turns a judgement about what matters into a justification exercise, and it is
+            the one thing this beat exists to avoid. */}
+        {funded.length > 0 && (
+          <div className="claims__why">
+            <p className="field-label" id="why-heading">What made you leave the rest out?</p>
+            <ul aria-labelledby="why-heading">
+              {CLAIM_REASONS.map((entry) => (
+                <li key={entry.id}>
+                  <button type="button" aria-pressed={reason === entry.id} onClick={() => { setRefusal(null); setReason(entry.id); }}>
+                    {entry.label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
       {/* The drain, and nothing around it. Two students who chose differently read visibly
           different seasons off the same four bars, and neither is being punished — both are
           seeing the bill for a decision they already made. */}
       <aside className="season-run" aria-label={`Weeks 1 to ${PLAYED_WEEKS.length}`}>
+        {/* "Left in hand" over a bar that climbs every week fought itself: the money is not
+            draining, it is pay arriving faster than rent and the basics leave. The label says
+            what the figure is and lets the direction be what it is. */}
         <p className="field-label">
-          Left in hand · {hours(closing.hoursToDate)} on the road
+          In hand at the end of each week · {hours(closing.hoursToDate)} on the road
         </p>
         <ol>
           {ledger.map((week) => (
@@ -163,9 +200,16 @@ export function SeasonWeeks() {
       </aside>
 
       <div className="stage-action">
-        <Button aria-disabled={reason === null} onClick={settle}>
-          {reason === null ? "Say why to carry on" : `Week ${DEADLINE} · the course office is calling`}
-        </Button>
+        {/* An answer to something the student just did, so it is an alert. Both branches name
+            what is missing rather than repeating the instruction that is already on screen. */}
+        {refusal !== null && (
+          <p className="claims__refusal" role="alert">
+            {refusal === "nothing-paid"
+              ? <><b>Nothing paid for yet.</b> The {formatDollars(CASH)} cannot be saved and cannot go into the plan, so leaving it is not one of the choices. Pay for at least one of the three.</>
+              : <><b>One thing left.</b> Say what made you leave {formatDollars(CASH - spent)} worth of it out.</>}
+          </p>
+        )}
+        <Button onClick={settle}>Week {DEADLINE} · the course office is calling</Button>
       </div>
     </StageShell>
   );
@@ -215,20 +259,15 @@ export function DepositDeadline() {
       </p>
 
       <section className="deposit-call deposit-call--deadline" aria-labelledby="deposit-heading">
+        {/* The list that used to sit here named both options, both prices and both
+            consequences — fifty-four words — directly above two buttons that name the same two
+            options, the same two prices and the same two consequences, and directly above a
+            live line that prices whichever one is selected against this student's own plan.
+            Three statements of one trade on one screen. The buttons are the decision, so the
+            buttons keep it; what the list alone carried, how much stays movable either way, is
+            what the live line below says once a side is picked. */}
         <div className="deposit-call__intro">
-          <h2 id="deposit-heading">Two prices, and what each one does to the plan.</h2>
-          {/* Both sides in the same shape and the same number of words. The screen states the
-              trade; it does not lean on it. */}
-          <ul className="deposit-call__trade">
-            <li>
-              <b>Reserve it now</b>
-              <span>{formatDollars(preview.price)} today. That money is committed, and the plan meets the rest of the season on the {formatDollars(preview.movableAfter)} left in your other two lines.</span>
-            </li>
-            <li>
-              <b>Wait and decide later</b>
-              <span>{formatDollars(preview.laterPrice)} at the end of the season — {formatDollars(preview.saving)} more. Every one of the {formatDollars(preview.movableNow)} in your plan stays where you can move it.</span>
-            </li>
-          </ul>
+          <h2 id="deposit-heading">Two prices for the same seat.</h2>
         </div>
         <div className="deposit-call__options">
           <button type="button" aria-pressed={reserving === true} onClick={() => setReserving(true)}>
@@ -256,8 +295,10 @@ export function DepositDeadline() {
                   ? `The seat is yours and the course is paid. ${formatDollars(preview.freed)} of course money comes back needing a new job.`
                   : "The seat is yours and the course is paid in full. Your course money covered it exactly."}
         </p>
+        {/* "Whatever the last weeks bring, it lands on the plan you already built" used to sit
+            here. The deck at the top of this screen already says there are weeks still to play,
+            and the button says the call is being locked in. */}
         <div className="stage-action">
-          <p>Whatever the last {REMAINING_WEEKS} weeks bring, it lands on the plan you already built.</p>
           <Button aria-disabled={reserving === null} onClick={commit}>
             {reserving === null ? "Make the call to continue" : "Lock it in and play Week 5"}
           </Button>
