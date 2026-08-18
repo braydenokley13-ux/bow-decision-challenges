@@ -6,6 +6,7 @@ test-results
 .DS_Store
 *.log
 *.tsbuildinfo
-screens
+/screens
 dist-server
 .bow-classes
+/.scratch
