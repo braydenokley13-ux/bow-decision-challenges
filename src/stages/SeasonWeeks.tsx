@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useChallenge } from "../app/ChallengeContext";
+import { useDraft } from "../app/attemptStore";
 import { StageShell } from "../app/StageShell";
 import { Button } from "../components/primitives/Button";
 import { formatDollars } from "../domain/core/money";
@@ -163,7 +164,11 @@ export function SeasonWeeks() {
 export function DepositDeadline() {
   const { state, dispatch } = useChallenge();
   const { setupId, amounts } = useSeason();
-  const [reserving, setReserving] = useState<boolean | null>(state.depositTaken);
+  // Selecting a price is not yet deciding it — nothing is recorded until "lock it in" — but a
+  // student who has chosen and then reloads should not find the screen has forgotten. It came
+  // back saying "wait and decide later" to students who had selected the deposit, which is the
+  // pivot decision of the whole design being quietly reversed by a page refresh.
+  const [reserving, setReserving] = useDraft<boolean | null>(state.meta.worldId, "deposit-choice", state.depositTaken);
   if (!setupId) return null;
 
   const preview = depositPreview(amounts, SCENARIO_NUMBERS);

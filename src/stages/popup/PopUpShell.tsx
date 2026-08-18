@@ -1,6 +1,8 @@
 import { useEffect, useRef, type PropsWithChildren, type ReactNode } from "react";
 import { useStageArrival } from "../../app/useStageArrival";
 import { AppMark } from "../../components/primitives/AppMark";
+import { RunMenu } from "../../components/primitives/RunMenu";
+import { usePopUp } from "./PopUpContext";
 import { MarketBackdrop } from "../../components/story/MarketBackdrop";
 import { formatDollars } from "../../domain/core/money";
 import type { StageId } from "../../domain/evidence/types";
@@ -44,6 +46,7 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
   /** When this changes the heading takes focus, so a keyboard user is moved to the new question. */
   focusKey?: string | number;
 }>) {
+  const { state, handOver } = usePopUp();
   const position = marketPositionFor(stage);
   const strip = marketStrip(ledger, position.current, N.saturdays);
   const heading = useRef<HTMLElement>(null);
@@ -72,6 +75,10 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
             ))}
           </ol>
         </div>
+        {/* The same control the other world carries, for the same reason: a market restored on
+            a shared laptop has to be able to say whose it is, and a student who meant to play
+            the other one needs a door that is not "finish this first". */}
+        <RunMenu classCode={state.meta.classCode} seatCode={state.meta.seatCode} submitted={state.stage === "popup-submitted"} onLeave={handOver} />
       </header>
       <main className="popup-main" data-tone={tone}>
         <header ref={heading} className={`popup-heading${tone === "dark" ? " popup-heading--dark scene" : ""}`} tabIndex={-1}>

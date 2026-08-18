@@ -156,6 +156,8 @@ export interface PopUpScreenCopy {
     takings: string;
     soldOut: string;
     someLeft: string;
+    /** A night the truck opened with nothing to sell. It is not a night that sold out. */
+    nothingCooked: string;
     nothingBinned: string;
     binnedTrays: string;
     turnedAway: string;
@@ -224,6 +226,11 @@ export interface PopUpScreenCopy {
     ranOut: string;
     spoilage: string;
     noSpoilage: string;
+    /**
+     * A whole run with nothing cooked. Said plainly, because "every plate you cooked went over
+     * the counter" is true of a truck that cooked none and reads as a clean night.
+     */
+    neverCooked: string;
     capped: string;
     handOff: string;
     action: string;
@@ -454,6 +461,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       takings: "Takings",
       soldOut: "You sold every plate you cooked.",
       someLeft: "You cooked more than the crowd bought.",
+      nothingCooked: "You did not cook anything, so there was nothing to sell.",
       nothingBinned: "Nothing went in the bin.",
       binnedTrays: "of food went in the bin.",
       turnedAway: "More people wanted a plate than two hands could hand over.",
@@ -533,6 +541,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       ranOut: "You ran out of food on a night that still had people queuing.",
       spoilage: "of the food you bought was never sold.",
       noSpoilage: "Every plate you cooked went over the counter.",
+      neverCooked: "You never cooked a plate all run, so the truck had nothing to sell. The money stayed on the lines you put it on.",
       capped: "The crowd was bigger than the window could serve.",
       handOff: "Nadia Okafor ran the market. She has one question for every stall that took a booth.",
       action: "Answer the organiser",

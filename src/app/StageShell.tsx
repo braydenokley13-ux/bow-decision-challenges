@@ -7,6 +7,7 @@ import { formatDollars } from "../domain/core/money";
 import { chapterFor, PROGRESS_STEPS, progressIndexFor, seasonPositionFor, type SeasonPosition } from "../domain/machine/stages";
 import type { StageId } from "../domain/evidence/types";
 import { AppMark } from "../components/primitives/AppMark";
+import { RunMenu } from "../components/primitives/RunMenu";
 import { useChallenge } from "./ChallengeContext";
 import { SeasonStrip } from "../components/story/SeasonStrip";
 
@@ -59,7 +60,7 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
   const announcement = `${position.caption}. Part ${chapter + 1} of ${PROGRESS_STEPS.length}: ${PROGRESS_STEPS[chapter]?.label}.`;
   // The art direction comes from the world the attempt says it is in, so a second world
   // themes the same components by adding a block to `worlds.css` and nothing else.
-  const { state } = useChallenge();
+  const { state, handOver } = useChallenge();
   const world = state.meta.worldId;
   const heading = useRef<HTMLElement>(null);
   const first = useRef(true);
@@ -78,6 +79,7 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
       <header className="challenge-topbar">
         <AppMark />
         <SeasonStrip position={position} announcement={announcement} />
+        <div className="challenge-topbar__end">
         <details className="contract-drawer">
           <summary>The four payments<span aria-hidden="true">▾</span></summary>
           <div>
@@ -94,6 +96,11 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
             <p className="contract-drawer__goal">{goalLabel} · up to {formatDollars(numbers.goalCap)}</p>
           </div>
         </details>
+        {/* Whose run this is, on every screen, with the way out of it. A restored attempt that
+            cannot say who it belongs to is how the second student of the day ends up filing
+            their work under the first student's seat. */}
+        <RunMenu classCode={state.meta.classCode} seatCode={state.meta.seatCode} submitted={state.stage === "submitted"} onLeave={handOver} />
+        </div>
       </header>
       <main className="stage-main" data-tone={tone}>
         <header ref={heading} className={`stage-heading${tone === "dark" ? " stage-heading--dark scene" : ""}`} tabIndex={-1}>

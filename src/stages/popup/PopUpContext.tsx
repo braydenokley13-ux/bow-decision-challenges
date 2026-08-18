@@ -1,6 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type Dispatch, type PropsWithChildren } from "react";
-import { attemptKeyForWorld, loadAttemptFor, saveAttempt } from "../../domain/io/persistence";
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState, type Dispatch, type PropsWithChildren } from "react";
+import { clearAttemptFor, clearEveryAttempt, loadAttemptFor } from "../../domain/io/persistence";
+import { useAttemptAutosave, useSingleFireDispatch } from "../../app/attemptStore";
+import { PLAN_UNDER_PRESSURE } from "../../platform/challenges/registry";
 import { createPopUpState, popUpReducer, type PopUpAction, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
 import { deliverWithRetry, type DeliveryState, type EvidenceTransport } from "../../platform/evidence/transport";
 
@@ -23,6 +25,8 @@ interface PopUpContextValue {
   delivery: DeliveryState;
   deliver: () => Promise<void>;
   reset: () => void;
+  /** Somebody else is sitting here: every world's attempt cleared, back to the join form. */
+  handOver: () => void;
 }
 
 const PopUpContext = createContext<PopUpContextValue | null>(null);
@@ -34,17 +38,46 @@ export interface PopUpSeed {
   assignmentId: string;
 }
 
+/**
+ * Whether a stored run is this student's to carry on with.
+ *
+ * A run nobody has claimed a seat against belongs to whoever is here — that is the ordinary
+ * case of a student reloading, and the seat on the attempt is the one they typed. The case
+ * this exists for is the other one: a student who has just joined with their *own* seat, on a
+ * device where the last student left an unfinished market behind. The provider used to skip
+ * starting a session whenever the restored attempt already had one, so the new student's seat
+ * was dropped on the floor and everything they then did was filed under the seat of whoever
+ * had the machine before them — a submission attributed to a child who did not make it.
+ *
+ * An empty seed is not a mismatch. It means nobody has joined in this browser since the page
+ * loaded, so there is no competing claim, and the run on screen says whose it is and offers
+ * the way out.
+ */
+function belongsToSeat(state: PopUpState, seed: PopUpSeed): boolean {
+  if (state.meta.sessionId === "") return true;
+  if (!seed.seatCode || !seed.classCode) return true;
+  return state.meta.seatCode === seed.seatCode && state.meta.classCode === seed.classCode;
+}
+
 export function PopUpProvider({ children, seed, transport }: PropsWithChildren<{ seed: PopUpSeed; transport: EvidenceTransport }>) {
   const [state, rawDispatch] = useReducer(
     popUpReducer,
     undefined,
-    () => loadAttemptFor<PopUpState>("food-truck") ?? createPopUpState(Date.now()),
+    () => {
+      const restored = loadAttemptFor<PopUpState>("food-truck");
+      if (restored && belongsToSeat(restored, seed)) return restored;
+      // The seat that has just joined outranks a run left behind by the seat before it. The
+      // stale keys and drafts go with it, so the new student's write-up box does not open
+      // holding somebody else's sentences.
+      if (restored) clearAttemptFor("food-truck");
+      return createPopUpState(Date.now());
+    },
   );
   const [delivery, setDelivery] = useState<DeliveryState>({ status: "idle" });
-  const timer = useRef<number | null>(null);
-  const savedStage = useRef<string | null>(null);
 
-  const dispatch = useCallback<Dispatch<PopUpAction>>((action) => rawDispatch({ ...action, at: Date.now() }), []);
+  // The reducer stays pure, so the clock is read here and travelled with the action, and a
+  // button pressed twice inside a double-click is recorded once.
+  const dispatch = useSingleFireDispatch<PopUpAction>(rawDispatch);
 
   // A run that has not been started yet starts here, with the class and seat the student
   // already typed. The session id is this world's own: two attempts in one browser are two
@@ -62,21 +95,9 @@ export function PopUpProvider({ children, seed, transport }: PropsWithChildren<{
     });
   }, [started, seed, dispatch]);
 
-  useEffect(() => {
-    // Arriving somewhere is written down at once; adjusting a board is debounced. The same
-    // rule Basketball's provider keeps, and for the same reason: a reload a moment after a
-    // screen change must not cost the student the screen.
-    if (savedStage.current !== state.stage) {
-      savedStage.current = state.stage;
-      saveAttempt(state);
-      return;
-    }
-    if (timer.current !== null) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => saveAttempt(state), 250);
-    return () => {
-      if (timer.current !== null) window.clearTimeout(timer.current);
-    };
-  }, [state]);
+  // The same rule Basketball's provider keeps, from the same module: anything that reached
+  // the log is written at once, a draft waits a moment, and the page going away ends the wait.
+  useAttemptAutosave(state);
 
   const deliver = useCallback(async () => {
     await deliverWithRetry(
@@ -95,13 +116,20 @@ export function PopUpProvider({ children, seed, transport }: PropsWithChildren<{
   }, [transport, state.meta, state.log]);
 
   const reset = useCallback(() => {
-    window.localStorage.removeItem(attemptKeyForWorld("food-truck"));
+    // Every key this world's attempt can be restored from, plus the drafts its screens were
+    // holding. A student who asks to run the market again must not be handed the last one.
+    clearAttemptFor("food-truck");
     window.location.assign("/");
   }, []);
 
+  const handOver = useCallback(() => {
+    clearEveryAttempt();
+    window.location.assign(PLAN_UNDER_PRESSURE.route);
+  }, []);
+
   const value = useMemo(
-    () => ({ state, dispatch, transport, delivery, deliver, reset }),
-    [state, dispatch, transport, delivery, deliver, reset],
+    () => ({ state, dispatch, transport, delivery, deliver, reset, handOver }),
+    [state, dispatch, transport, delivery, deliver, reset, handOver],
   );
   return <PopUpContext.Provider value={value}>{children}</PopUpContext.Provider>;
 }

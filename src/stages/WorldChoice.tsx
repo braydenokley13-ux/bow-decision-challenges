@@ -26,6 +26,7 @@ const PLAYABLE = PLAYABLE_WORLDS.map((world) => world.id);
  */
 export function WorldChoice() {
   const { state, dispatch, transport, offer, setOffer, enterWorld } = useChallenge();
+  const heading = useRef<HTMLHeadingElement>(null);
   // A ref, not state: asking the class what it was set is a one-off errand, and a second
   // render is not what should record that the errand is under way.
   const asking = useRef(false);
@@ -80,6 +81,15 @@ export function WorldChoice() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offer]);
 
+  // The picker is not on screen when this component mounts: it waits on an answer from the
+  // class, and then the whole screen — heading and all — appears where a line of status text
+  // used to be. Nothing moved focus when that happened, so a screen-reader user was left on
+  // the body of a page that had become a question, with the two cards they were meant to
+  // choose between announced by nothing at all.
+  useEffect(() => {
+    if (offer?.studentChooses) heading.current?.focus();
+  }, [offer]);
+
   // Nothing to choose between, so nothing is drawn. The world is already opening.
   if (!offer || !offer.studentChooses) {
     return (
@@ -97,7 +107,7 @@ export function WorldChoice() {
       </div>
       <main className="worldpick__main">
         <header className="worldpick__say">
-          <h1>{COPY.title}</h1>
+          <h1 ref={heading} tabIndex={-1}>{COPY.title}</h1>
           <p>{COPY.deck}</p>
         </header>
         <ul className="worldpick__cards">

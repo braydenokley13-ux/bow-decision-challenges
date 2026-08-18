@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { CategoryId } from "../../domain/core/ids";
 import { dollars, formatDollars } from "../../domain/core/money";
 import { SCENARIO_NUMBERS } from "../../domain/scenario/numbers";
@@ -45,6 +45,18 @@ interface PlanBoardProps {
    */
   onAssignRemainder: (category: CategoryId, amount: ReturnType<typeof dollars>) => void;
   onCommit: (acknowledgedResidual?: ReturnType<typeof dollars>) => void;
+  /**
+   * Whether this board is the one that has to carry the closing statement, and whether the
+   * student has made it yet.
+   *
+   * Only the opening plan asks. It is the one moment in the run where the student is dividing
+   * money nobody has claimed yet, so it is the only one where "which row takes what is left
+   * over" is a question about their priorities rather than about a bill — and the answer is
+   * the sole evidence this world produces for the objective that says savings is a figure a
+   * student set rather than what the arithmetic came to.
+   */
+  requireRemainder?: boolean;
+  remainderDeclared?: boolean;
   onApplyReference?: ((category?: CategoryId) => void) | undefined;
   onScaffold?: () => void;
   onShowAndContinue?: () => void;
@@ -55,9 +67,14 @@ interface PlanBoardProps {
 
 export function PlanBoard({
   input, variant, baseline, reference, attempts, notes, lead,
-  onAmountChange, onAssignRemainder, onCommit, onApplyReference, onScaffold, onShowAndContinue, change, commitLabel,
+  onAmountChange, onAssignRemainder, onCommit, requireRemainder = false, remainderDeclared = false,
+  onApplyReference, onScaffold, onShowAndContinue, change, commitLabel,
 }: PlanBoardProps) {
   const [showHelp, setShowHelp] = useState(false);
+  // What the last press of the commit button did, when what it did was nothing. Pressing a
+  // primary button and getting no response at all is the thing this is here to stop.
+  const [refusal, setRefusal] = useState<"unbalanced" | "unnamed" | null>(null);
+  const closerRef = useRef<HTMLElement>(null);
   const balance = balanceOf(input, SCENARIO_NUMBERS);
   const residual = Math.max(0, -Number(balance));
   const freed = baseline ? amountFreed(baseline, input.amounts) : undefined;
@@ -128,19 +145,48 @@ export function PlanBoard({
   const putRestInto = (category: CategoryId) => {
     const value = input.amounts[category];
     const headroom = category === "goal" ? Math.max(0, courseCap - value) : balance;
-    const give = Math.min(balance, headroom);
+    const give = Math.max(0, Math.min(balance, headroom));
     // A row that cannot hold the whole remainder says so. Three cards, two offering the
     // whole leftover and one offering the course's own price, read as one of them being
     // wrong until the capped one explains itself.
-    return give > 0
-      ? { amount: give, capped: give < balance, onPress: () => onAssignRemainder(category, dollars(give)) }
+    //
+    // A row with nothing to take is still offered on the opening board, and $0 is not a
+    // degenerate case there: the question is which row *would* take what the other two left,
+    // and a student whose three figures happened to land on zero has as much of an answer to
+    // it as one who left $400 over. Refusing to ask them was how a student could do
+    // everything right and produce a run in which the one objective this challenge claims to
+    // assess was never assessed at all.
+    return give > 0 || (requireRemainder && balance === 0)
+      ? { amount: give, capped: give > 0 && give < balance, onPress: () => onAssignRemainder(category, dollars(give)) }
       : undefined;
   };
 
-  const closers = triage || balance <= 0
+  // Never while the plan is over: there is nothing left over to name, and the only honest
+  // next move is taking money back out of a row.
+  const closers = triage || balance < 0 || (balance === 0 && !requireRemainder)
     ? []
     : CHOICE_ORDER.map((category) => ({ category, offer: putRestInto(category) })).filter((entry) => entry.offer);
+  // The opening plan is not committed until the student has said which row takes the rest.
+  const unnamed = requireRemainder && !remainderDeclared;
   const restored = reference && onApplyReference && CHOICE_ORDER.some((category) => reference[category] !== input.amounts[category]);
+
+  /**
+   * Committing, and saying so when it does not happen.
+   *
+   * Both refusals below are the board's, not the reducer's: an unbalanced plan is recorded as
+   * a save the student asked for and did not get, and an opening plan with no row named is not
+   * sent at all, because the statement is part of closing this board rather than a thing to
+   * chase afterwards. Either way the student is told which of the two it was.
+   */
+  const commit = (acknowledgedResidual?: ReturnType<typeof dollars>) => {
+    if (acknowledgedResidual === undefined && balance === 0 && unnamed) {
+      setRefusal("unnamed");
+      closerRef.current?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+      return;
+    }
+    setRefusal(acknowledgedResidual === undefined && balance !== 0 ? "unbalanced" : null);
+    onCommit(acknowledgedResidual);
+  };
 
   return (
     <section className="plan-board" data-variant={variant} aria-label="Avery’s plan">
@@ -193,24 +239,34 @@ export function PlanBoard({
           title type made this read as a second, competing way to do the same job. The rows
           above are the way a plan gets built; this is one press that closes it, and the press
           it records is the only statement this world makes about savings. */}
+      {/* The question every opening plan closes on, and the one this world reads its savings
+          evidence off. It used to appear only while money was still unassigned, which meant a
+          student whose three figures happened to add up exactly was never asked it — they
+          committed a deliberate plan and produced a run where the requirement came back "never
+          came up", with the objective unassessed and nothing on screen that could have told
+          them so. The cards are the same cards; what changed is that they are always the way
+          the opening plan is closed, and at $0 they move nothing. */}
       {closers.length > 0 && (
-        <section className="closer" aria-labelledby="plan-rest">
-          <h3 id="plan-rest">{`Or send the last ${formatDollars(balance)} to one row`}</h3>
+        <section ref={closerRef} className="closer" aria-labelledby="plan-rest">
+          <h3 id="plan-rest">{balance > 0 ? `Send the last ${formatDollars(balance)} to one row` : steps.rest.ask}</h3>
           <div className="closer-choice">
             {closers.map(({ category, offer }) => (
               <button
                 key={category}
                 type="button"
                 data-category={category}
-                aria-label={`Put ${formatDollars(offer!.amount)} into ${CHOICE_LABELS[category]}`}
+                aria-label={offer!.amount > 0
+                  ? `Put ${formatDollars(offer!.amount)} into ${CHOICE_LABELS[category]}`
+                  : `${CHOICE_LABELS[category]} takes what is left over`}
                 onClick={offer!.onPress}
               >
                 {CHOICE_LABELS[category]}
                 {offer!.capped && <small>{formatDollars(offer!.amount)} — all it can hold</small>}
+                {offer!.amount === 0 && <small>{steps.rest.done}</small>}
               </button>
             ))}
           </div>
-          <p>{steps.rest.shortcut}</p>
+          <p>{balance > 0 ? steps.rest.shortcut : steps.rest.why}</p>
         </section>
       )}
 
@@ -239,12 +295,28 @@ export function PlanBoard({
             : <><span className="plan-commit__figure money">{formatDollars(Math.abs(balance))}</span>{" "}
               {balance < 0 ? (triage ? BALANCE_COPY.short : BALANCE_COPY.over) : BALANCE_COPY.unassigned}</>}
         </p>
+        {/* A press that did nothing used to say nothing: the board re-rendered identically,
+            the live region held the same words it already held, and a student who had just
+            pressed the only primary button on the screen had no way to tell whether the
+            application was broken or they were. Every refusal answers now, and it answers in
+            an alert, because it is a response to something the student just did. */}
+        {refusal !== null && (
+          <p className="plan-commit__refusal" role="alert">
+            {refusal === "unnamed"
+              ? <><b>Not saved yet.</b> {steps.rest.ask}</>
+              : balance > 0
+                ? <><b>Not saved yet.</b> <span className="money">{formatDollars(balance)}</span> {BALANCE_COPY.unassigned} Put it on one of the three rows, or send it to one of them below.</>
+                : <><b>Not saved yet.</b> The plan holds <span className="money">{formatDollars(Math.abs(balance))}</span> {BALANCE_COPY.over} Take some back off a row.</>}
+          </p>
+        )}
         <div className="plan-commit__actions">
           {/* Only offered once the board differs from what the student saved; otherwise
               the control does nothing and reads as a step they have missed. */}
           {restored && <Button variant="quiet" type="button" onClick={() => onApplyReference?.()}>Put my saved numbers back</Button>}
-          {residual > 0 && attempts > 0 && <Button type="button" variant="quiet" onClick={() => onCommit(dollars(residual))}>Save it, {formatDollars(residual)} still missing</Button>}
-          <Button type="button" onClick={() => onCommit()}>{balance === 0 ? commitLabel : "Check this plan"}</Button>
+          {residual > 0 && attempts > 0 && <Button type="button" variant="quiet" onClick={() => commit(dollars(residual))}>Save it, {formatDollars(residual)} still missing</Button>}
+          <Button type="button" aria-disabled={balance === 0 && unnamed} onClick={() => commit()}>
+            {balance !== 0 ? "Check this plan" : unnamed ? "Name the row that takes the rest" : commitLabel}
+          </Button>
         </div>
       </footer>
     </section>

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { useDraft } from "../../app/attemptStore";
 import { Button } from "../../components/primitives/Button";
 import { CalculationInput } from "../../components/primitives/CalculationInput";
 import { MoneyAmount } from "../../components/primitives/MoneyAmount";
@@ -11,7 +12,7 @@ import {
 } from "../../domain/scenario/worlds/food-truck/economy";
 import { ledgerOf, previewSaturday, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
 import { POP_UP_NUMBERS as N } from "../../domain/scenario/worlds/food-truck/numbers";
-import type { PopUpLineId, PopUpSourceId, PopUpSumId, SaturdayNumber, SpotId } from "../../domain/scenario/worlds/food-truck/types";
+import { POP_UP_LINES, type PopUpLineId, type PopUpSourceId, type PopUpSumId, type SaturdayNumber, type SpotId } from "../../domain/scenario/worlds/food-truck/types";
 import type { PopUpSumCopy } from "../../domain/scenario/worlds/food-truck/scenario";
 import { usePopUp } from "./PopUpContext";
 import { PopUpBoard, type LockedLine } from "./PopUpBoard";
@@ -155,12 +156,21 @@ function NightResult({ outcome, saturday, spot, helper, compact = false }: {
         <div data-alert={outcome.spoiled > 0}><dt>{COPY.night.binned}</dt><dd>{outcome.spoiled}</dd></div>
         <div><dt>{COPY.night.takings}</dt><dd className="money">{formatDollars(outcome.takings)}</dd></div>
       </dl>
+      {/* A night that cooked nothing used to read "you cooked more than the crowd bought.
+          Nothing went in the bin." — two sentences that are both false about an empty truck and
+          together sound like a clean night. */}
       <p className="night__say">
-        {read.soldOut ? COPY.night.soldOut : COPY.night.someLeft}{" "}
-        {outcome.spoiled > 0
-          ? <><strong className="money">{formatDollars(outcome.binned)}</strong> {COPY.night.binnedTrays}</>
-          : COPY.night.nothingBinned}
-        {read.turnedAway ? ` ${COPY.night.turnedAway}` : ""}
+        {outcome.cooked === 0
+          ? COPY.night.nothingCooked
+          : (
+            <>
+              {read.soldOut ? COPY.night.soldOut : COPY.night.someLeft}{" "}
+              {outcome.spoiled > 0
+                ? <><strong className="money">{formatDollars(outcome.binned)}</strong> {COPY.night.binnedTrays}</>
+                : COPY.night.nothingBinned}
+              {read.turnedAway ? ` ${COPY.night.turnedAway}` : ""}
+            </>
+          )}
       </p>
     </section>
   );
@@ -327,12 +337,47 @@ export function MoneyStage() {
   );
 }
 
+/**
+ * One split of the money that adds up, dealt out without a preference between the three lines.
+ *
+ * The money goes a step at a time to whichever line is currently holding the least, so no line
+ * is favoured by the order of a loop, and the odd amount the step size cannot divide lands on
+ * the cushion because that is the line that means "not spent yet" rather than a decision. The
+ * student gets no credit for this plan — every event it writes carries `answer_supplied`, which
+ * scores nothing — so it must not model a right answer, only a plan that balances.
+ */
+function evenSplit(available: number, step: number): Record<PopUpLineId, number> {
+  const amounts: Record<PopUpLineId, number> = { stock: 0, cushion: 0, cut: 0 };
+  let left = available;
+  while (left >= step) {
+    const target = [...POP_UP_LINES].sort((a, b) => amounts[a] - amounts[b])[0]!;
+    amounts[target] += step;
+    left -= step;
+  }
+  amounts.cushion += left;
+  return amounts;
+}
+
 export function PlanStage() {
   const { state, dispatch } = usePopUp();
   const ledger = ledgerOf(state);
   const plan = state.drafts.opening ?? { stock: dollars(0), cushion: dollars(0), cut: dollars(0) };
   const conditional = state.counted.catering || state.counted.rebate;
   const trays = Math.floor(plan.stock / N.trayCost);
+
+  /**
+   * The same way out Basketball offers on its own board, which this world had never been
+   * wired to: after two refused saves the step-by-step help opens, and after a third the board
+   * can fill in one split that adds up. It was reachable in the component and nothing passed
+   * it in, so ten failed attempts at the arithmetic produced no offer of help at all — in the
+   * world whose whole first screen is a division problem.
+   */
+  const supplyOneSplit = () => {
+    const amounts = evenSplit(ledger.available, N.planIncrement);
+    dispatch({ type: "SHOW_AND_CONTINUE_USED", interactionId: "opening" });
+    for (const line of POP_UP_LINES) dispatch({ type: "POPUP_LINE_CHANGED", board: "opening", line, amount: dollars(amounts[line]) });
+    dispatch({ type: "POPUP_PLAN_SAVE_REQUESTED", board: "opening" });
+  };
   const notes: Record<PopUpLineId, string> = {
     stock: trayNote(trays),
     cushion: COPY.plan.lineNotes.cushion,
@@ -380,6 +425,15 @@ export function PlanStage() {
         onAssignRemainder={(line, amount) => dispatch({ type: "POPUP_REMAINDER_ASSIGNED", board: "opening", line, amount: dollars(amount) })}
         onCommit={() => dispatch({ type: "POPUP_PLAN_SAVE_REQUESTED", board: "opening" })}
         onScaffold={() => dispatch({ type: "SCAFFOLD_OPENED", interactionId: "opening" })}
+        onShowAndContinue={supplyOneSplit}
+        // What each card would leave the truck with, in trays, before it is pressed. The one
+        // that sends the last of the money to a line that is not stock is the one that ends a
+        // run with four empty Saturdays, and it used to say nothing at all.
+        closerRead={(line, give) => {
+          const stock = plan.stock + (line === "stock" ? give : 0);
+          const bought = Math.floor(stock / N.trayCost);
+          return { text: trayNote(bought), warn: bought === 0 };
+        }}
       />
     </PopUpShell>
   );
@@ -394,26 +448,25 @@ export function FirstSaturdayStage() {
   const ledger = ledgerOf(state);
   const plan = ledger.held;
   const max = affordableTrays(plan.stock, N);
-  const [wanted, setWanted] = useState(3);
+  const [wanted, setWanted] = useDraft("food-truck", "trays-saturday-1", 3);
   const trays = Math.min(wanted, max);
-  const [priced, setPriced] = useState<number | null>(null);
-  const ready = priced === trays;
+  // Whether this order has been priced, read off the sum the student actually did rather than
+  // off a counter in this component. It used to be component state, so a reload put a student
+  // who had already worked the order out back in front of the same box — and their second,
+  // identical answer was recorded as a second attempt at it. What a teacher was told about
+  // that student depended on whether their laptop had gone to sleep.
+  const sum = state.sums["first-order"];
+  const ready = sum?.correct === true && sum.value === orderCost(N, trays);
   return (
     <PopUpShell stage="popup-first-saturday" kicker={COPY.first.kicker} title={COPY.first.title} ledger={ledger}>
       <p className="stage-deck">{COPY.first.deck}</p>
       <LinesHeld plan={plan} label={COPY.plan.placedLabel} />
-      <TrayOrder saturday={1} nights={1} max={max} trays={trays} onTrays={(next) => { setWanted(next); setPriced(null); }} />
+      <TrayOrder saturday={1} nights={1} max={max} trays={trays} onTrays={setWanted} />
       <div className="popup-sum">
         {ready
           ? <Settled label={COPY.saturday.order.label} amount={orderCost(N, trays)} />
           : (
-            <PopUpSum
-              key={trays}
-              sumId="first-order"
-              copy={COPY.saturday.order}
-              expected={orderCost(N, trays)}
-              onCorrect={() => setPriced(trays)}
-            />
+            <PopUpSum key={trays} sumId="first-order" copy={COPY.saturday.order} expected={orderCost(N, trays)} />
           )}
       </div>
       <div className="popup-action">
@@ -435,7 +488,10 @@ export function StandingOrderStage() {
   // trays have already been paid for out of the stock line.
   const held = ledger.held;
   const max = affordableTrays(held.stock, N, 2);
-  const [wanted, setWanted] = useState(3);
+  // The order for the two middle Saturdays, kept as it is dialled. It used to sit in component
+  // state, so a reload put it back to three and the run cooked three — a number the student
+  // had already changed, chosen by nobody.
+  const [wanted, setWanted] = useDraft("food-truck", "trays-saturday-2", 3);
   const trays = Math.min(wanted, max);
   const decided = state.helper !== null;
   if (!spot || !first) return null;
@@ -565,7 +621,7 @@ export function RepairStage() {
   const settled = saved && ledger.residual === 0;
   const afterRepair = ledger.afterRepair;
   const max = affordableTrays(afterRepair.stock, N);
-  const [wanted, setWanted] = useState(4);
+  const [wanted, setWanted] = useDraft("food-truck", "trays-saturday-4", 4);
   const trays = Math.min(wanted, max);
   if (!spot) return null;
 
@@ -580,6 +636,34 @@ export function RepairStage() {
     stock: trayNote(affordableTrays(draft.stock, N)),
     cushion: COPY.plan.lineNotes.cushion,
     cut: COPY.plan.lineNotes.cut,
+  };
+
+  /**
+   * The way out of the repair board, which this world had never been wired to either.
+   *
+   * It takes the bill off the lines a step at a time, always off whichever line is holding the
+   * most, so the money comes out of the fullest line rather than out of one this screen prefers.
+   * Where the movable lines cannot cover the whole bill it saves what they can and says what is
+   * missing, because that is the only honest ending available to that plan and a student who
+   * cannot find the money must not be left with a board that will not close.
+   */
+  const supplyOneRepair = () => {
+    const amounts: Record<PopUpLineId, number> = { stock: held.stock, cushion: held.cushion, cut: held.cut };
+    let toFind: number = ledger.bill;
+    while (toFind > 0) {
+      const line = POP_UP_LINES.filter((entry) => amounts[entry] > 0).sort((a, b) => amounts[b] - amounts[a])[0];
+      if (!line) break;
+      const take = Math.min(N.repairIncrement, toFind, amounts[line]);
+      amounts[line] -= take;
+      toFind -= take;
+    }
+    dispatch({ type: "SHOW_AND_CONTINUE_USED", interactionId: "repair" });
+    for (const line of POP_UP_LINES) dispatch({ type: "POPUP_LINE_CHANGED", board: "repair", line, amount: dollars(amounts[line]) });
+    dispatch({
+      type: "POPUP_PLAN_SAVE_REQUESTED",
+      board: "repair",
+      ...(toFind > 0 ? { acknowledgedResidual: dollars(toFind) } : {}),
+    });
   };
 
   return (
@@ -612,6 +696,7 @@ export function RepairStage() {
           })}
           onLockedMoveAttempt={(lockedId) => dispatch({ type: "POPUP_LOCKED_MOVE_ATTEMPTED", board: "repair", lockedId })}
           onScaffold={() => dispatch({ type: "SCAFFOLD_OPENED", interactionId: "repair" })}
+          onShowAndContinue={supplyOneRepair}
         />
       ) : settled ? (
         <>
@@ -659,6 +744,11 @@ export function SettleStage() {
     day.cooked > 0 && day.spoiled === 0
     && day.sold < serveCap(N, day.saturday, state.helper === true)
     && crowdOn(N, spot, day.saturday) > day.sold);
+  // A run that never cooked a plate. It is reachable in one tap — send the last of the money
+  // to a line that is not stock — and it used to come out the other end wearing the good news:
+  // nothing in the bin, a green verdict, and the ordinary reflection screen after it, as if a
+  // truck that never opened its window had simply run a tidy market.
+  const neverCooked = ledger.saturdays.length > 0 && ledger.saturdays.every((day) => day.cooked === 0);
   return (
     <PopUpShell
       stage="popup-settle"
@@ -706,12 +796,18 @@ export function SettleStage() {
       {/* Green only where the food actually worked out. A run that sold every plate and still
           turned people away is not a clean night, and colouring it like one would be the
           screen congratulating a student on a decision that cost them. */}
-      <p className="popup-verdict" data-tone={ledger.binned > 0 ? "hard" : ranOut ? "plain" : "good"}>
-        {ledger.binned > 0
-          ? <><strong className="money">{formatDollars(ledger.binned)}</strong> {COPY.settle.spoilage}</>
-          : COPY.settle.noSpoilage}
-        {capped ? ` ${COPY.settle.capped}` : ""}
-        {ranOut ? ` ${COPY.settle.ranOut}` : ""}
+      <p className="popup-verdict" data-tone={neverCooked || ledger.binned > 0 ? "hard" : ranOut ? "plain" : "good"}>
+        {neverCooked
+          ? COPY.settle.neverCooked
+          : (
+            <>
+              {ledger.binned > 0
+                ? <><strong className="money">{formatDollars(ledger.binned)}</strong> {COPY.settle.spoilage}</>
+                : COPY.settle.noSpoilage}
+              {capped ? ` ${COPY.settle.capped}` : ""}
+              {ranOut ? ` ${COPY.settle.ranOut}` : ""}
+            </>
+          )}
       </p>
       <div className="popup-action">
         {/* Not the question itself. It is asked on the next screen, and asking it twice would
@@ -726,8 +822,11 @@ export function SettleStage() {
 export function WriteUpStage() {
   const { state, dispatch } = usePopUp();
   const ledger = ledgerOf(state);
-  const [selected, setSelected] = useState<string[]>(state.writeUp.tileIds);
-  const [text, setText] = useState(state.writeUp.text);
+  // The answer a person reads and marks. It was held in component state until the submit
+  // button, so a reload on this screen threw away the whole paragraph and every number the
+  // student had picked, and left them looking at a submit button they could no longer press.
+  const [selected, setSelected] = useDraft<string[]>("food-truck", "writeup-tiles", state.writeUp.tileIds);
+  const [text, setText] = useDraft("food-truck", "writeup-text", state.writeUp.text);
   const tiles = [
     { id: "takings", label: COPY.writeUp.tileLabels.takings, value: ledger.takings, money: true },
     { id: "binned", label: COPY.writeUp.tileLabels.binned, value: ledger.binned, money: true },

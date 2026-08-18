@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useChallenge } from "../app/ChallengeContext";
+import { useDraft } from "../app/attemptStore";
 import { StageShell } from "../app/StageShell";
 import { AppMark } from "../components/primitives/AppMark";
 import { Button } from "../components/primitives/Button";
@@ -334,6 +335,11 @@ function SetupStage() {
       // One screen, two jobs, and they used to share a headline — so the page looked
       // identical before and after the only thing that had happened on it.
       title={ranked ? "Now pick where Avery lives." : "Which place costs the least?"}
+      // And when the headline changed, the heading took focus with it. Without this the
+      // ranking was accepted, the whole screen became a different question, and a keyboard or
+      // screen-reader user was left standing on a button that no longer existed, with nothing
+      // announcing that the screen had moved on.
+      focusKey={ranked ? "choose" : "rank"}
     >
       {!ranked ? (
         <>
@@ -503,6 +509,12 @@ function usePlanWiring(mode: PlanMode) {
 
     dispatch({ type: "SHOW_AND_CONTINUE_USED", interactionId: mode });
     for (const category of CHOICE_KEYS) setAmount(category, dollars(amounts[category]));
+    // The supplied plan closes the same way a hand-built one does, or it would be a way of
+    // committing the opening board that skips the one statement the board exists to collect.
+    // The row named here cannot flatter anybody: every event from this press carries
+    // `answer_supplied`, which scores nothing, so what it records is "this plan was closed,
+    // and BOW closed it" rather than a priority the student expressed.
+    if (mode === "working") dispatch({ type: "PLAN_REMAINDER_ASSIGNED", mode, category: "flexibleCash", amount: dollars(0) });
     dispatch({ type: "PLAN_SAVE_REQUESTED", mode });
   };
 
@@ -547,6 +559,22 @@ function PlanLedgerFor({ mode, known, placing }: { mode: PlanMode; known?: Ledge
   );
 }
 
+/**
+ * Whether this student has closed the opening plan by naming a row, in the sense the
+ * requirement is written in: a row that took *the last* of the money.
+ *
+ * A press that filled a capped row on the way past is a figure being placed, not a plan being
+ * closed, and reading it as one would let a run finish with the statement unmade while the
+ * board believed it had been made.
+ */
+function openingRemainderDeclared(state: ReturnType<typeof useChallenge>["state"]): boolean {
+  return state.log.some((event) => {
+    if (event.type !== "PLAN_REMAINDER_ASSIGNED") return false;
+    const payload = event.payload as { mode?: PlanMode; remaining?: number };
+    return payload.mode === "working" && payload.remaining === 0;
+  });
+}
+
 /** The full board. Only the first plan and the Week 5 triage get one. */
 function BoardForMode({ mode, variant, commitLabel, lead, change }: {
   mode: PlanMode;
@@ -558,6 +586,10 @@ function BoardForMode({ mode, variant, commitLabel, lead, change }: {
   const wiring = usePlanWiring(mode);
   const { input, notes, state } = wiring;
   if (!input || !notes || !state.setupId) return null;
+  // The opening plan carries the closing statement and no other board does. Week 5 is money
+  // being taken away rather than money looking for a job, and the three adjustments after it
+  // start from a plan that has already been closed once.
+  const opening = mode === "working";
   return (
     <PlanBoard
       input={input}
@@ -571,6 +603,8 @@ function BoardForMode({ mode, variant, commitLabel, lead, change }: {
       onAmountChange={wiring.setAmount}
       onAssignRemainder={wiring.assignRemainder}
       onCommit={wiring.commit}
+      requireRemainder={opening}
+      remainderDeclared={openingRemainderDeclared(state)}
       onScaffold={wiring.scaffold}
       onShowAndContinue={wiring.supplyOneBalancedPlan}
       {...(change ? { change } : {})}
@@ -1199,8 +1233,12 @@ function FinalRepairStage() {
 /** Beat 11. The season review: Avery's numbers, put to work as the student's argument. */
 function DefenseStage() {
   const { state, dispatch } = useChallenge();
-  const [selected, setSelected] = useState<string[]>(state.defense.tileIds);
-  const [text, setText] = useState(state.defense.text);
+  // The two pieces of this screen a reload used to destroy: the numbers tapped and the
+  // paragraph a person is going to read and mark. Neither is an event — a half-written
+  // sentence is not a claim about a student — so both are kept as drafts, written as they are
+  // typed, and the screen comes back with the student's own words in it.
+  const [selected, setSelected] = useDraft<string[]>(state.meta.worldId, "defense-tiles", state.defense.tileIds);
+  const [text, setText] = useDraft(state.meta.worldId, "defense-text", state.defense.text);
   const final = amountsFor(state, "final");
   const finalInput = snapshotForMode(state, "final");
   // Every chip is derived from the student's own saved plan, and any chip worth $0

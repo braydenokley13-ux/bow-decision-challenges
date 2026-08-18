@@ -157,7 +157,7 @@
    The market shell: a topbar with the four Saturdays in it, and one column.
    --------------------------------------------------------------------------- */
 .popup-shell { min-height: 100vh; background: var(--chapter-ground, var(--canvas)); transition: background var(--dur-stage) var(--ease-standard); }
-.popup-topbar { min-height: 68px; position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--s-5); padding: var(--s-3) var(--gutter); background: var(--surface-raised); border-bottom: 3px solid var(--chapter-accent, var(--world-accent)); box-shadow: var(--shadow-rail); }
+.popup-topbar { min-height: 68px; position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-5); padding: var(--s-3) var(--gutter); background: var(--surface-raised); border-bottom: 3px solid var(--chapter-accent, var(--world-accent)); box-shadow: var(--shadow-rail); }
 .market-strip { display: flex; align-items: center; gap: var(--s-4); min-width: 0; }
 .market-strip__caption { flex: none; margin: 0; color: var(--ink-1); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
 .market-strip ol { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); flex: 1; min-width: 0; margin: 0; padding: 0; list-style: none; }
@@ -469,7 +469,7 @@
 }
 
 @media (max-width: 760px) {
-  .popup-topbar { grid-template-columns: minmax(0, 1fr); gap: var(--s-3); }
+  .popup-topbar { grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-3); }
   .market-strip { flex-wrap: wrap; }
   .market-strip ol { flex-basis: 100%; }
   .popup-main { width: calc(100% - 24px); }

@@ -42,6 +42,16 @@ interface PopUpBoardProps {
   onLockedMoveAttempt?: ((lockedId: string) => void) | undefined;
   onScaffold: () => void;
   onShowAndContinue?: (() => void) | undefined;
+  /**
+   * What one of the "send the rest to this line" cards would do to the run, said before it is
+   * pressed rather than discovered four Saturdays later.
+   *
+   * The card that sends every dollar to the line the student keeps for themselves is a legal
+   * plan and stays a legal plan — but it leaves nothing to buy food with, so the market opens
+   * four times with an empty truck and every Saturday reports nothing cooked and nothing sold.
+   * Nothing on the screen said so at the moment of the tap.
+   */
+  closerRead?: ((line: PopUpLineId, give: number) => { text: string; warn: boolean }) | undefined;
 }
 
 /**
@@ -61,10 +71,14 @@ interface PopUpBoardProps {
  */
 export function PopUpBoard({
   variant, plan, ceiling, notes, target, outstanding, spare, baseline, locked, attempts,
-  commitLabel, onLineChange, onAssignRemainder, onCommit, onLockedMoveAttempt, onScaffold, onShowAndContinue,
+  commitLabel, onLineChange, onAssignRemainder, onCommit, onLockedMoveAttempt, onScaffold, onShowAndContinue, closerRead,
 }: PopUpBoardProps) {
   const [showHelp, setShowHelp] = useState(false);
   const [reasonShown, setReasonShown] = useState<string | null>(null);
+  // Whether the last press of the commit button did nothing. A board that refuses a plan and
+  // says nothing leaves a student pressing the only button on the screen and guessing whether
+  // the application is broken.
+  const [refused, setRefused] = useState(false);
   const step = variant === "opening" ? N.planIncrement : N.repairIncrement;
   const opening = variant === "opening";
   const settled = outstanding === 0 && spare === 0;
@@ -115,19 +129,24 @@ export function PopUpBoard({
           <h3 id="popup-rest">{COPY.plan.closer.title}</h3>
           <p>{COPY.plan.closer.note}</p>
           <div className="popup-closer__choice">
-            {closers.map(({ line, give }) => (
-              <button
-                key={line}
-                type="button"
-                data-line={line}
-                aria-label={`${POP_UP_SCENARIO.lines[line].label} takes ${formatDollars(give)}`}
-                onClick={() => onAssignRemainder?.(line, dollars(give))}
-              >
-                <span aria-hidden="true">→</span>
-                <strong>{POP_UP_SCENARIO.lines[line].label}</strong>
-                <span className="money">{formatDollars(give)}</span>
-              </button>
-            ))}
+            {closers.map(({ line, give }) => {
+              const read = closerRead?.(line, give);
+              return (
+                <button
+                  key={line}
+                  type="button"
+                  data-line={line}
+                  data-warn={read?.warn === true}
+                  aria-label={`${POP_UP_SCENARIO.lines[line].label} takes ${formatDollars(give)}${read ? `. ${read.text}` : ""}`}
+                  onClick={() => onAssignRemainder?.(line, dollars(give))}
+                >
+                  <span aria-hidden="true">→</span>
+                  <strong>{POP_UP_SCENARIO.lines[line].label}</strong>
+                  <span className="money">{formatDollars(give)}</span>
+                  {read && <small>{read.text}</small>}
+                </button>
+              );
+            })}
           </div>
         </section>
       )}
@@ -156,12 +175,25 @@ export function PopUpBoard({
                 ? (outstanding > 0 ? COPY.plan.unassigned : COPY.plan.over)
                 : COPY.repair.stillLabel.toLowerCase()}</>}
         </p>
+        {/* A refused save used to change nothing on the screen: the same figure in the same
+            words, and a live region whose text had not moved, so a screen reader announced
+            nothing at all. This is the answer to the press, and it is an alert because that is
+            what it is. */}
+        {refused && !settled && (
+          <p className="popup-commit__refusal" role="alert">
+            {spare > 0
+              ? <><span className="money">{formatDollars(spare)}</span> {COPY.repair.spare}</>
+              : <><span className="money">{formatDollars(Math.abs(outstanding))}</span> {opening
+                ? (outstanding > 0 ? COPY.plan.unassigned : COPY.plan.over)
+                : COPY.repair.stillLabel.toLowerCase()}</>}
+          </p>
+        )}
         <div className="popup-commit__actions">
           {/* The one place a shortfall may be committed, and only out loud. */}
           {!opening && outstanding > 0 && spare === 0 && attempts > 0 && (
-            <Button type="button" variant="quiet" onClick={() => onCommit(outstanding)}>{COPY.repair.acknowledge}</Button>
+            <Button type="button" variant="quiet" onClick={() => { setRefused(false); onCommit(outstanding); }}>{COPY.repair.acknowledge}</Button>
           )}
-          <Button type="button" onClick={() => onCommit()}>{settled ? commitLabel : COPY.plan.check}</Button>
+          <Button type="button" onClick={() => { setRefused(!settled); onCommit(); }}>{settled ? commitLabel : COPY.plan.check}</Button>
         </div>
       </footer>
     </section>

@@ -1,6 +1,6 @@
 import { isKnownWorld, type WorldId } from "../core/ids";
 import type { StageId } from "../evidence/types";
-import { DEFAULT_WORLD_ID, isPlayableWorld, stagesFor } from "../scenario/registry";
+import { DEFAULT_WORLD_ID, isPlayableWorld, stagesFor, WORLD_REGISTRY } from "../scenario/registry";
 import { attemptKeyFor, PLAN_UNDER_PRESSURE } from "../../platform/challenges/registry";
 
 /**
@@ -54,6 +54,128 @@ const LEGACY_ATTEMPT_KEY = "bow.student.v1.attempt";
 /** Which world the student was last in. A single id; never state, never work. */
 const LAST_WORLD_KEY = `${attemptKeyFor(PLAN_UNDER_PRESSURE)}.world`;
 
+/**
+ * Where a screen parks the part of a decision that is not a decision yet.
+ *
+ * A tray order the student has dialled up but not placed, the seat they have selected at the
+ * course deadline but not committed to, the paragraph they are half-way through typing: none
+ * of it is an event and none of it belongs in the log, because the log is what a teacher is
+ * shown and a half-typed sentence is not a claim about a student. It is still work, and a
+ * student who reloads and finds their paragraph gone has lost work whatever the log says.
+ *
+ * So it lives beside the attempt rather than inside it, under a key that names the world.
+ * Clearing an attempt clears these with it — a second student must never be handed the first
+ * student's half-written defence, which is the same rule the attempt itself keeps.
+ */
+const DRAFT_PREFIX = "bow.draft.";
+
+/** Storage this module reads and writes. Everything past the first two is best-effort. */
+type AttemptStorage = Pick<Storage, "getItem" | "setItem"> & Partial<Storage>;
+
+function draftKey(worldId: WorldId, id: string): string {
+  return `${DRAFT_PREFIX}${worldId}.${id}`;
+}
+
+/**
+ * What a screen last had in its hands, or null when it has never said.
+ *
+ * Anything unreadable answers null rather than throwing. A draft is a convenience the screen
+ * can do without; a crash on the way into a screen is not.
+ */
+export function readDraft<T>(worldId: WorldId, id: string, storage: AttemptStorage = window.localStorage): T | null {
+  const raw = storage.getItem(draftKey(worldId, id));
+  if (raw === null) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+export function writeDraft(worldId: WorldId, id: string, value: unknown, storage: AttemptStorage = window.localStorage): void {
+  storage.setItem(draftKey(worldId, id), JSON.stringify(value));
+}
+
+/** Every key this browser holds, where the storage will say. A Map-backed fake will not. */
+function keysOf(storage: AttemptStorage): string[] {
+  const count = storage.length;
+  if (typeof count !== "number" || typeof storage.key !== "function") return [];
+  const keys: string[] = [];
+  for (let index = 0; index < count; index += 1) {
+    const key = storage.key(index);
+    if (key !== null) keys.push(key);
+  }
+  return keys;
+}
+
+function drop(storage: AttemptStorage, key: string): void {
+  storage.removeItem?.(key);
+}
+
+/**
+ * Every key the loader would read for this world, so clearing one clears all of them.
+ *
+ * "Try a different plan" used to remove the per-world key and the pre-world key and leave the
+ * unversioned one the loader still reads directly underneath — so a student who asked to start
+ * again was handed back the very plan they had asked to abandon. A list the loader and the
+ * clearer both read is the only version of this that cannot drift apart again.
+ */
+export function attemptKeysFor(worldId: WorldId): readonly string[] {
+  return worldId === DEFAULT_WORLD_ID
+    ? [attemptKeyForWorld(worldId), ATTEMPT_KEY, LEGACY_ATTEMPT_KEY]
+    : [attemptKeyForWorld(worldId)];
+}
+
+/**
+ * One world's attempt, gone: the keys it could be restored from, and the drafts its screens
+ * were holding. The pointer moves off this world too, so the next cold load does not open a
+ * world whose attempt has just been thrown away and land the student on a fresh machine
+ * pretending to be a resumed one.
+ */
+export function clearAttemptFor(worldId: WorldId, storage: AttemptStorage = window.localStorage): void {
+  for (const key of attemptKeysFor(worldId)) drop(storage, key);
+  for (const key of keysOf(storage)) {
+    if (key.startsWith(`${DRAFT_PREFIX}${worldId}.`)) drop(storage, key);
+  }
+  if (storage.getItem(LAST_WORLD_KEY) === worldId) drop(storage, LAST_WORLD_KEY);
+}
+
+/**
+ * Every world's attempt, gone.
+ *
+ * This is the one a student presses when the person in the seat is somebody else. Clearing
+ * only the world on screen would leave the other world's attempt behind for the loader to
+ * find on the next cold load, and the new student would land inside the last student's run
+ * again — by a different door.
+ */
+export function clearEveryAttempt(storage: AttemptStorage = window.localStorage): void {
+  for (const worldId of Object.keys(WORLD_REGISTRY) as WorldId[]) clearAttemptFor(worldId, storage);
+  for (const key of keysOf(storage)) {
+    if (key.startsWith(DRAFT_PREFIX)) drop(storage, key);
+  }
+  drop(storage, LAST_WORLD_KEY);
+}
+
+/** How many quarantined attempts are kept. Enough to recover work; not enough to fill a disk. */
+const BACKUPS_KEPT = 3;
+
+const BACKUP_PREFIX = "bow.backup.";
+
+/**
+ * Work this build could not read, put somewhere a person could still get it back from.
+ *
+ * Every one of these used to be kept for ever under a key stamped with the millisecond it was
+ * written, on a device a school hands to a different student every period — a store that only
+ * ever grows, on the one browser API with a hard quota, until the day a write throws and the
+ * student who is actually sitting there loses their attempt to somebody else's rubbish. The
+ * newest few are what anybody would ever ask for.
+ */
+function backUp(storage: AttemptStorage, raw: string): void {
+  storage.setItem(`${BACKUP_PREFIX}${Date.now()}`, raw);
+  const backups = keysOf(storage).filter((key) => key.startsWith(BACKUP_PREFIX)).sort();
+  for (const key of backups.slice(0, Math.max(0, backups.length - BACKUPS_KEPT))) drop(storage, key);
+}
+
 export function isValidPersistedAttempt(value: unknown, worldId?: WorldId): value is PersistedAttempt {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<PersistedAttempt>;
@@ -73,7 +195,7 @@ export function isValidPersistedAttempt(value: unknown, worldId?: WorldId): valu
   return Array.isArray(candidate.log) && Array.isArray(candidate.snapshots);
 }
 
-function readFrom(storage: Pick<Storage, "getItem" | "setItem">, key: string, worldId?: WorldId): PersistedAttempt | null {
+function readFrom(storage: AttemptStorage, key: string, worldId?: WorldId): PersistedAttempt | null {
   const raw = storage.getItem(key);
   if (!raw) return null;
   try {
@@ -84,10 +206,10 @@ function readFrom(storage: Pick<Storage, "getItem" | "setItem">, key: string, wo
     if (isValidPersistedAttempt(parsed, worldId)) return { ...parsed, meta: { ...parsed.meta, assignmentId: parsed.meta.assignmentId ?? "" } };
     // Only unreadable work is backed up. An attempt that is simply another world's is
     // readable, is not ours, and must survive untouched.
-    if (!isValidPersistedAttempt(parsed)) storage.setItem(`bow.backup.${Date.now()}`, raw);
+    if (!isValidPersistedAttempt(parsed)) backUp(storage, raw);
     return null;
   } catch {
-    storage.setItem(`bow.backup.${Date.now()}`, raw);
+    backUp(storage, raw);
     return null;
   }
 }
@@ -116,7 +238,7 @@ export function lastWorldPlayed(storage: Pick<Storage, "getItem"> = window.local
  */
 export function loadAttemptFor<T extends PersistedAttempt = PersistedAttempt>(
   worldId: WorldId,
-  storage: Pick<Storage, "getItem" | "setItem"> = window.localStorage,
+  storage: AttemptStorage = window.localStorage,
 ): T | null {
   // A world this build cannot render is a world whose attempt must not be restored: the
   // student would land on a board with no story behind it, priced by a fallback economy.
@@ -138,7 +260,7 @@ export function loadAttemptFor<T extends PersistedAttempt = PersistedAttempt>(
  * priced by the wrong economy, writing evidence about a game nobody played. A caller reads
  * `meta.worldId` first and then asks for that world's own shape.
  */
-export function loadAttempt(storage: Pick<Storage, "getItem" | "setItem"> = window.localStorage): PersistedAttempt | null {
+export function loadAttempt(storage: AttemptStorage = window.localStorage): PersistedAttempt | null {
   return loadAttemptFor(lastWorldPlayed(storage), storage);
 }
 

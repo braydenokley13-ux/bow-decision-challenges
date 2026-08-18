@@ -1,10 +1,13 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type Dispatch, type PropsWithChildren } from "react";
+import { createContext, useCallback, useContext, useMemo, useReducer, useState, type Dispatch, type PropsWithChildren } from "react";
 import { challengeReducer } from "../domain/machine/reducer";
 import { createInitialState, type ChallengeState } from "../domain/machine/state";
 import type { ChallengeAction } from "../domain/machine/actions";
 import type { WorldId } from "../domain/core/ids";
-import { ATTEMPT_KEY, attemptKeyForWorld, lastWorldPlayed, loadAttemptFor, saveAttempt } from "../domain/io/persistence";
+import { clearAttemptFor, clearEveryAttempt, lastWorldPlayed, loadAttemptFor } from "../domain/io/persistence";
+import { useAttemptAutosave, useRunLock, useSingleFireDispatch } from "./attemptStore";
+import { PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
+import { Button } from "../components/primitives/Button";
 import { DEFAULT_WORLD_ID } from "../domain/scenario/registry";
 import { deliverWithRetry, type DeliveryState, type EvidenceTransport } from "../platform/evidence/transport";
 import { transportFromEnvironment } from "../platform/evidence/transports";
@@ -29,6 +32,15 @@ interface ChallengeContextValue {
   setOffer: (offer: WorldOffer) => void;
   /** Leaves this provider's world and opens another one's machine. */
   enterWorld: (worldId: WorldId) => void;
+  /**
+   * Hands the device to somebody else: every world's attempt cleared, back to the join form.
+   *
+   * It is not `reset` with a wider broom. `reset` is one student starting their own run
+   * again; this is a different person sitting down, and the difference matters because a
+   * restored attempt in the *other* world would put them straight back inside the last
+   * student's run through a door nobody was watching.
+   */
+  handOver: () => void;
 }
 
 const ChallengeContext = createContext<ChallengeContextValue | null>(null);
@@ -62,43 +74,39 @@ export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT }: P
   );
   const [activeWorldId, setActiveWorldId] = useState<WorldId>(restoredWorld);
   const [offer, setOffer] = useState<WorldOffer | null>(null);
-  const timer = useRef<number | null>(null);
-  const savedStage = useRef<string | null>(null);
   const [delivery, setDelivery] = useState<DeliveryState>({ status: "idle" });
+  // One browser runs this attempt once. A second tab is told so rather than allowed to write
+  // its own older copy over the tab the student is actually working in.
+  const run = useRunLock();
 
-  // The reducer stays pure, so the clock is read here and travelled with the action. This
-  // is the only place the app learns what time it is.
-  const dispatch = useCallback<Dispatch<ChallengeAction>>((action) => rawDispatch({ ...action, at: Date.now() }), []);
+  // The reducer stays pure, so the clock is read here and travelled with the action, and a
+  // press that arrives twice is recorded once. This is the only place the app learns what
+  // time it is.
+  const dispatch = useSingleFireDispatch<ChallengeAction>(rawDispatch);
 
-  useEffect(() => {
-    // Only the world on screen writes. Saving is what moves the "last world played" pointer,
-    // and a background provider that kept saving would drag a student back into this world
-    // on the next reload while they were three screens into the other one.
-    if (activeWorldId !== state.meta.worldId) return;
-    // A screen the student has actually reached is written down at once. Everything else is
-    // debounced, because a board being adjusted changes state on every keypress — but a
-    // reload a moment after arriving somewhere used to land the student back at the join
-    // form with the screen they had reached still sitting in a 250ms timer.
-    if (savedStage.current !== state.stage) {
-      savedStage.current = state.stage;
-      saveAttempt(state);
-      return;
-    }
-    if (timer.current !== null) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => saveAttempt(state), 250);
-    return () => {
-      if (timer.current !== null) window.clearTimeout(timer.current);
-    };
-  }, [state, activeWorldId]);
+  // Only the world on screen writes, and only from the tab that holds the run. Saving is what
+  // moves the "last world played" pointer, and a background provider that kept saving would
+  // drag a student back into this world on the next reload while they were three screens into
+  // the other one.
+  useAttemptAutosave(state, activeWorldId === state.meta.worldId && !run.shadowed);
 
   const reset = useCallback(() => {
-    // Both keys: the per-world one every attempt is written to now, and the pre-world one an
-    // attempt started before the second world shipped is still sitting in. Clearing only the
-    // second used to hand the student back the very plan they asked to start again from.
-    window.localStorage.removeItem(attemptKeyForWorld(DEFAULT_WORLD_ID));
-    window.localStorage.removeItem(ATTEMPT_KEY);
+    // Every key the loader reads for this world, not the two somebody remembered: the
+    // unversioned one it still falls back to used to survive this and hand the student back
+    // the very plan they had asked to start again from. Drafts go with it, because a
+    // half-written defence from the abandoned run is the abandoned run.
+    clearAttemptFor(activeWorldId);
+    run.release();
     window.location.assign("/");
-  }, []);
+  }, [activeWorldId, run]);
+
+  const handOver = useCallback(() => {
+    clearEveryAttempt();
+    run.release();
+    // Straight back to the join form rather than to the front door: the next person is here
+    // to do the work, and the one screen they need is the one asking for their seat.
+    window.location.assign(PLAN_UNDER_PRESSURE.route);
+  }, [run]);
 
   const enterWorld = useCallback((worldId: WorldId) => setActiveWorldId(worldId), []);
 
@@ -128,10 +136,40 @@ export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT }: P
   }, [transport, state.meta, state.log]);
 
   const value = useMemo(
-    () => ({ state, dispatch, reset, transport, delivery, deliver, activeWorldId, offer, setOffer, enterWorld }),
-    [state, dispatch, reset, transport, delivery, deliver, activeWorldId, offer, enterWorld],
+    () => ({ state, dispatch, reset, transport, delivery, deliver, activeWorldId, offer, setOffer, enterWorld, handOver }),
+    [state, dispatch, reset, transport, delivery, deliver, activeWorldId, offer, enterWorld, handOver],
   );
-  return <ChallengeContext.Provider value={value}>{children}</ChallengeContext.Provider>;
+  return (
+    <ChallengeContext.Provider value={value}>
+      {run.shadowed ? <RunElsewhere onTakeOver={run.takeOver} /> : children}
+    </ChallengeContext.Provider>
+  );
+}
+
+/**
+ * What the second tab gets instead of the run.
+ *
+ * It replaces the whole challenge rather than sitting on top of it, and that is deliberate: a
+ * banner over a live board is a board a student will use, and every press on it would be a
+ * press this tab cannot save. The run is not lost and this does not throw anything away — the
+ * work is in the tab that holds it, and taking it over here re-reads that work rather than
+ * overwriting it.
+ */
+function RunElsewhere({ onTakeOver }: { onTakeOver: () => void }) {
+  return (
+    <div className="run-elsewhere">
+      <main>
+        <p className="eyebrow">This tab is not the one running it</p>
+        <h1>Your challenge is open in another tab.</h1>
+        <p>
+          Two copies of the same run cannot both save, so this one is not saving anything. Go
+          back to the other tab and carry on there — everything you have done is in it.
+        </p>
+        <p>If you cannot find it, or you closed it, you can move the run into this tab instead.</p>
+        <Button type="button" variant="secondary" onClick={onTakeOver}>Move the run to this tab</Button>
+      </main>
+    </div>
+  );
 }
 
 export function useChallenge() {
