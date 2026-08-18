@@ -70,6 +70,18 @@ describe("the points model stays out of the lead", () => {
   it("shows the gradebook line once, and says what it counts", () => {
     expect(source.match(/function Gradebook/g)).toHaveLength(1);
     expect(source.match(/<Gradebook /g)).toHaveLength(1);
-    expect(source).toContain("It counts marks.");
+    // The sentence may be rewritten; what it has to keep doing is telling a teacher the
+    // number is a mark and pointing them at the states as the account of the student.
+    expect(source).toContain("It is a mark for a gradebook.");
+    expect(source).toContain("What the student can actually do is the states above.");
+  });
+
+  it("refuses to print a points denominator a world cannot earn", () => {
+    // The eighteen micro-skills behind the total are Basketball's. A market run printing
+    // "2 of 90 structured" is a number the world has no way to earn, stated as though the
+    // student failed to earn it — and it would be copied into a real gradebook.
+    const gradebook = source.slice(source.indexOf("function Gradebook"), source.indexOf("function MicroSkillTrail"));
+    expect(gradebook).toContain('row.worldId !== "basketball"');
+    expect(gradebook).toContain("No points total for this world");
   });
 });

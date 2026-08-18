@@ -5,10 +5,13 @@ import { EducatorShell } from "./EducatorShell";
 import { useClassEvidence, type ClassEvidenceState, type OverrideRequest } from "./useClassEvidence";
 import { EvidenceTrailPanel, StudentSummary } from "./EvidenceTrailPanel";
 import type { AttributedSubmission } from "../platform/classes/types";
-import { seatList, type ChoiceDistribution, type ClassAnalysis, type StudentRow } from "./analysis";
+import { decisionsByWorld, seatList, type ChoiceDistribution, type ClassAnalysis, type StudentRow } from "./analysis";
 import { formatDollars } from "../domain/core/money";
 import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
+import { WORLD_REGISTRY } from "../domain/scenario/registry";
+import { POP_UP_SCENARIO } from "../domain/scenario/worlds/food-truck";
+import { derivePopUpFacts } from "../domain/scenario/worlds/food-truck/facts";
 import { STRUCTURED_MICRO_SKILLS } from "../domain/blueprint/microSkills";
 import { CONCEPTS } from "../domain/blueprint/concepts";
 import { COMPETENCY_STATE_HEADLINES, COMPETENCY_STATE_LABELS, STATUS_LABELS, TRAJECTORY_LABELS } from "./labels";
@@ -74,7 +77,7 @@ function NothingYet({ code, label }: { code: string; label: string }) {
     <>
       <header className="class-header">
         <div>
-          <p className="eyebrow">{label} · {BASKETBALL_SCENARIO.title}</p>
+          <p className="eyebrow">{label}</p>
           <h1>Nothing turned in yet.</h1>
         </div>
         <div><span>0 turned in</span></div>
@@ -94,6 +97,20 @@ function NothingYet({ code, label }: { code: string; label: string }) {
       </section>
     </>
   );
+}
+
+/**
+ * What this class actually played, named from the evidence rather than assumed.
+ *
+ * Every class used to be titled "Eight Weeks to the Showcase" whether or not a single
+ * student had opened it. With two worlds in the product that is a false label on the first
+ * line of the page, and a class where students chose differently has two worlds to name.
+ */
+function worldsPlayed(rows: readonly StudentRow[]): string | null {
+  const titles = [...new Set(rows.map((row) => row.worldId))]
+    .map((worldId) => WORLD_REGISTRY[worldId]?.title)
+    .filter((title): title is string => title !== undefined);
+  return titles.length > 0 ? titles.join(" · ") : null;
 }
 
 /** One decision, and who made each call. Counts, and the seats behind every count. */
@@ -186,7 +203,7 @@ export function RealClassOverview() {
           <>
             <header className="class-header">
               <div>
-                <p className="eyebrow">{record.label} · {BASKETBALL_SCENARIO.title}</p>
+                <p className="eyebrow">{[record.label, worldsPlayed(analysis.rows)].filter(Boolean).join(" · ")}</p>
                 <ClassLead spine={spine} />
               </div>
               <div>
@@ -251,17 +268,24 @@ export function RealClassOverview() {
                 distributions, so they wait until there is a class to distribute. */}
             {spine.narratable && (
               <>
-                <section className="dashboard-section">
-                  <div className="section-heading">
-                    <p className="eyebrow">The decisions</p>
-                    <h2>What they decided</h2>
-                  </div>
-                  <div className="choice-grid">
-                    {analysis.distributions.map((distribution) => (
-                      <Distribution key={distribution.id} distribution={distribution} />
-                    ))}
-                  </div>
-                </section>
+                {/* One section per world, because the questions are the world's. A class
+                    where students chose differently was asked two different sets of
+                    questions, and each set has its own denominator. */}
+                {decisionsByWorld(analysis.rows).map((group) => (
+                  <section className="dashboard-section" key={group.worldId}>
+                    <div className="section-heading">
+                      <p className="eyebrow">
+                        {WORLD_REGISTRY[group.worldId]?.title ?? group.worldId} · {group.seats} {group.seats === 1 ? "student" : "students"}
+                      </p>
+                      <h2>What they decided</h2>
+                    </div>
+                    <div className="choice-grid">
+                      {group.distributions.map((distribution) => (
+                        <Distribution key={distribution.id} distribution={distribution} />
+                      ))}
+                    </div>
+                  </section>
+                ))}
 
                 <section className="dashboard-section">
                   <div className="section-heading">
@@ -621,8 +645,32 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride }: 
   );
 }
 
+/**
+ * The points line, for the world that has one.
+ *
+ * The eighteen micro-skills this total is built from are Basketball's, and only Basketball's
+ * screens can produce them. Printing "2 of 90 structured" under a market run stated a number
+ * the world cannot earn as though the student had failed to earn it — a figure that would
+ * have been copied into a real gradebook. A world without a points spine says so and lets
+ * the states stand as the account, which is what they are on every world anyway.
+ */
 function Gradebook({ row, structured, structuredMaximum }: { row: StudentRow; structured: number; structuredMaximum: number }) {
   const final = row.result.grade.finalPoints;
+  if (row.worldId !== "basketball") {
+    return (
+      <section className="gradebook">
+        <p className="field-label">Gradebook line</p>
+        <p className="gradebook__figure">
+          <strong>No points total for this world</strong>
+          <span>
+            The points total is built from Eight Weeks to the Showcase&rsquo;s own eighteen steps, and this
+            student played {WORLD_REGISTRY[row.worldId]?.title ?? "another world"}. What they showed is above,
+            requirement by requirement, and it is the same reading either world produces.
+          </span>
+        </p>
+      </section>
+    );
+  }
   return (
     <section className="gradebook">
       <p className="field-label">Gradebook line</p>
@@ -633,7 +681,7 @@ function Gradebook({ row, structured, structuredMaximum }: { row: StudentRow; st
           {row.reasoningPoints === null
             ? ", and no reasoning marks until you read the writing."
             : ` plus ${row.reasoningPoints} reasoning points you recorded.`}
-          {" "}It counts marks. What the student can do is the states above.
+          {" "}It is a mark for a gradebook. What the student can actually do is the states above.
         </span>
       </p>
       <details className="gradebook__working">
@@ -659,8 +707,18 @@ function Gradebook({ row, structured, structuredMaximum }: { row: StudentRow; st
   );
 }
 
-/** One line describing what this student actually did, never how well they did it. */
+/**
+ * One line describing what this student actually did, never how well they did it.
+ *
+ * Read from the world the student was actually in. This used to name Avery's housing, the
+ * course seat and the Saturday clinics whatever the log said — so a market run was described
+ * to a teacher as "No place chosen · waited on the course · kept the Saturdays", three
+ * sentences about decisions that student was never offered. A false fact on the first line a
+ * teacher reads costs more trust than a missing one, so a world with nothing to say here says
+ * nothing rather than borrowing the other world's.
+ */
 function summarise(row: StudentRow): string {
+  if (row.worldId === "food-truck") return popUpSummary(row);
   const place = BASKETBALL_SCENARIO.setups.find((setup) => setup.id === row.setupId)?.title ?? "No place chosen";
   const bits = [
     place,
@@ -668,6 +726,20 @@ function summarise(row: StudentRow): string {
     row.tookClinics ? "took the clinics" : "kept the Saturdays",
   ];
   if (row.resolution) bits.push(row.resolution.attendanceHeld ? "made every session" : "lost the bonus");
+  return bits.join(" · ");
+}
+
+/** The same line for a market run, in the market's own nouns. */
+function popUpSummary(row: StudentRow): string {
+  const facts = derivePopUpFacts(row.log);
+  const spot = POP_UP_SCENARIO.spots.find((entry) => entry.id === facts.spotId)?.title;
+  const counted = [facts.counted.catering ? "the catering job" : null, facts.counted.rebate ? "the sell-out rebate" : null]
+    .filter((entry): entry is string => entry !== null);
+  const bits = [
+    spot ?? "No booth taken",
+    counted.length > 0 ? `counted ${counted.join(" and ")}` : "counted neither conditional payment",
+  ];
+  if (facts.repair.saved) bits.push(facts.repair.residual > 0 ? "finished the swap still short" : "covered the swap");
   return bits.join(" · ");
 }
 

@@ -109,9 +109,11 @@ export function SeasonWeeks() {
                     <span>−{formatDollars(week.setupThisWeek + week.essentialsThisWeek)}</span>
                     <span>{hoursPerWeek(week.hoursThisWeek)} on the road</span>
                   </p>
-                  {/* The drain itself: what was still in the account at the end of this week,
-                      drawn against what had arrived by then. It is the one line on this screen
-                      that answers differently for two students who chose differently. */}
+                  {/* What was still in the account at the end of this week, drawn against
+                      what had arrived by then. Pay lands weekly and outruns the weekly costs,
+                      so this climbs — the housing choice shows up as how fast. It is the one
+                      line on this screen that answers differently for two students who chose
+                      differently. */}
                   <p className="post__hand">
                     <span>Left in hand</span>
                     <strong className="money">{formatDollars(week.inHand)}</strong>

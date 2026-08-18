@@ -1,4 +1,4 @@
-import type { CategoryId, SetupId } from "../domain/core/ids";
+import type { CategoryId, SetupId, WorldId } from "../domain/core/ids";
 import { dollars, type Dollars } from "../domain/core/money";
 import { deriveFacts } from "../domain/evidence/facts";
 import { deriveResult } from "../domain/evidence/result";
@@ -7,9 +7,12 @@ import { resolveSeason, type SeasonResolution } from "../domain/finance/resoluti
 import type { PlanAmounts } from "../domain/finance/types";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
+import { POP_UP_SCENARIO } from "../domain/scenario/worlds/food-truck";
+import { derivePopUpFacts } from "../domain/scenario/worlds/food-truck/facts";
 import { CONCEPTS } from "../domain/blueprint/concepts";
 import type { ReasoningScores } from "../domain/blueprint/reasoning";
 import type { ConceptId } from "../domain/blueprint/types";
+import { worldOfSubmission } from "./objectiveResults";
 import type { SubmissionRecord } from "../platform/classes/types";
 import { CHOICE_LABELS } from "../components/financial/choices";
 import { MINIMUM_RESULTS_FOR_CLASS_NARRATION } from "../domain/competency/objectiveState";
@@ -32,6 +35,10 @@ import { MINIMUM_RESULTS_FOR_CLASS_NARRATION } from "../domain/competency/object
 export interface StudentRow {
   seatCode: string;
   sessionId: string;
+  /** Which world this attempt was actually played in, read off the student's own events. */
+  worldId: WorldId;
+  /** The student's own events, so a world that is not Basketball can read its own facts. */
+  log: readonly EvidenceEvent[];
   submittedAt: number;
   reasoningPoints: number | null;
   /** The same reading, criterion by criterion. Absent until a person has recorded one. */
@@ -51,8 +58,19 @@ export interface StudentRow {
   defense: { text: string; tileIds: string[] } | null;
 }
 
+/**
+ * The written answer, whichever world asked for it.
+ *
+ * Both worlds ask the same question in their own voice and record the same two things: what
+ * the student wrote, and which of their own numbers they chose to stand on. Reading only
+ * Basketball's event told a teacher that a market student "turned in no written explanation"
+ * while their paragraph sat in the log — so the one promise BOW makes to a student in their
+ * own words, that a person reads it, was false for half the product.
+ */
+const WRITTEN_ANSWER_EVENTS = new Set(["DEFENSE_SUBMITTED", "POPUP_WRITEUP_SUBMITTED"]);
+
 function defenseFrom(log: EvidenceEvent[]): StudentRow["defense"] {
-  const event = log.filter((item) => item.type === "DEFENSE_SUBMITTED").at(-1);
+  const event = log.filter((item) => WRITTEN_ANSWER_EVENTS.has(item.type)).at(-1);
   if (!event) return null;
   const payload = event.payload as { text?: unknown; tileIds?: unknown };
   return {
@@ -67,6 +85,8 @@ export function readSubmission(record: SubmissionRecord): StudentRow {
   return {
     seatCode: record.seatCode,
     sessionId: record.sessionId,
+    worldId: worldOfSubmission(record),
+    log: record.log,
     submittedAt: record.submittedAt,
     reasoningPoints: record.reasoningPoints,
     reasoningCriteria: record.reasoningCriteria,
@@ -111,7 +131,17 @@ function share(rows: StudentRow[], id: string, label: string, matches: (row: Stu
   return { id, label, seats: rows.filter(matches).map((row) => row.seatCode) };
 }
 
-export function choiceDistributions(rows: StudentRow[]): ChoiceDistribution[] {
+/**
+ * What the room decided, asked only of the students who were actually asked.
+ *
+ * Every share below is a Basketball decision. Counting a market run under "waited and paid
+ * the full price" is not a rounding error — it is BOW telling a teacher, by seat number,
+ * that a child made a choice they were never offered, on the surface whose entire job is to
+ * be checkable. So the rows are filtered to the world that asked the question, and the
+ * denominator the page prints is that world's.
+ */
+export function choiceDistributions(everyRow: StudentRow[]): ChoiceDistribution[] {
+  const rows = everyRow.filter((row) => row.worldId === "basketball");
   const housing = BASKETBALL_SCENARIO.setups.map((setup) =>
     share(rows, setup.id, setup.title, (row) => row.setupId === setup.id));
   const deposit = [
@@ -138,6 +168,45 @@ export function choiceDistributions(rows: StudentRow[]): ChoiceDistribution[] {
     { id: "clinics", question: "Did they take the paid Saturdays?", shares: clinics },
     { id: "bonus", question: "Did the final plan still count the attendance bonus?", shares: bonus },
   ];
+}
+
+/** The same question of a market class, in the decisions that market actually offered. */
+export function popUpDistributions(everyRow: StudentRow[]): ChoiceDistribution[] {
+  const rows = everyRow.filter((row) => row.worldId === "food-truck");
+  const facts = new Map(rows.map((row) => [row.seatCode, derivePopUpFacts(row.log)]));
+  const of = (row: StudentRow) => facts.get(row.seatCode)!;
+  const booths = POP_UP_SCENARIO.spots.map((spot) =>
+    share(rows, spot.id, spot.title, (row) => of(row).spotId === spot.id));
+  const catering = [
+    share(rows, "counted", "Counted the catering job", (row) => of(row).counted.catering),
+    share(rows, "excluded", "Left it out", (row) => !of(row).counted.catering),
+  ];
+  const rebate = [
+    share(rows, "counted", "Counted the sell-out rebate", (row) => of(row).counted.rebate),
+    share(rows, "excluded", "Left it out", (row) => !of(row).counted.rebate),
+  ];
+  const swap = [
+    share(rows, "covered", "Covered the generator in full", (row) => of(row).repair.saved && of(row).repair.residual === 0),
+    share(rows, "short", "Finished still short, and said so", (row) => of(row).repair.saved && of(row).repair.residual > 0),
+    share(rows, "unfinished", "Never settled the repair", (row) => !of(row).repair.saved),
+  ];
+  return [
+    { id: "booth", question: "Which booth did they take?", shares: booths },
+    { id: "catering", question: "Did they plan around the catering job?", shares: catering },
+    { id: "rebate", question: "Did they plan around the sell-out rebate?", shares: rebate },
+    { id: "swap", question: "How did the generator end?", shares: swap },
+  ];
+}
+
+/** Each world that actually appears in this class, with the decisions it put to students. */
+export function decisionsByWorld(rows: StudentRow[]): { worldId: WorldId; seats: number; distributions: ChoiceDistribution[] }[] {
+  const groups: { worldId: WorldId; seats: number; distributions: ChoiceDistribution[] }[] = [];
+  for (const worldId of [...new Set(rows.map((row) => row.worldId))]) {
+    const seats = rows.filter((row) => row.worldId === worldId).length;
+    const distributions = worldId === "food-truck" ? popUpDistributions(rows) : choiceDistributions(rows);
+    groups.push({ worldId, seats, distributions });
+  }
+  return groups;
 }
 
 export interface AdaptationSummary {

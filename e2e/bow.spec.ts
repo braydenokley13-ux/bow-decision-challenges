@@ -567,7 +567,7 @@ studentTest("student entry screens do not spill sideways at a 640px-wide viewpor
 //     so what the screen has to prove is that the drain is this student's own.
 // ---------------------------------------------------------------------------
 
-studentTest("Weeks 1 to 4 resolve on one screen and show the drain at the rate this housing charges", async ({ page, classCode }) => {
+studentTest("Weeks 1 to 4 resolve on one screen and move the account at the rate this housing charges", async ({ page, classCode }) => {
   await gotoFreshChallenge(page);
   await enterChallenge(page, { classCode });
   await completeSetupStage(page, 2); // cousin-room: nearly free, nearly unreachable
@@ -584,11 +584,17 @@ studentTest("Weeks 1 to 4 resolve on one screen and show the drain at the rate t
   expect(await read(".season-ledger__row[data-tone='time'] strong")).toBe(N.load.commuteBlocks["cousin-room"] * 4);
   expect(await read(".season-ledger__row[data-tone='money'] strong")).toBeGreaterThan(0);
 
-  // The drain itself: what was left in hand falls week on week rather than holding still.
+  // What is in hand moves every week rather than holding still, and it moves the way this
+  // season actually runs: pay arrives weekly and outruns the weekly costs, so the account
+  // climbs. It is what a student would find if they counted, which is the only reason to
+  // print it — the cost of the choice they made shows up as the rate, and the test below
+  // pins that a costlier place climbs more slowly.
   const inHand = await page.locator(".post__hand strong").allInnerTexts();
   const series = inHand.map((text) => Number(text.replace(/[^0-9]/g, "")));
   expect(series).toHaveLength(4);
-  expect(series[3]).toBeLessThan(series[0]);
+  for (let week = 1; week < series.length; week += 1) {
+    expect(series[week], `week ${week + 1} against week ${week}`).toBeGreaterThan(series[week - 1]);
+  }
 });
 
 studentTest("a costlier place leaves Avery visibly poorer by Week 4 than a cheaper one", async ({ page, classCode }) => {
@@ -1026,7 +1032,7 @@ studentTest("an educator reads one student's evidence and scores their writing",
   // The together-figure only exists once a person has read the writing, and it is a
   // gradebook line at the bottom of the page that says what it counts.
   await expect(page.locator(".gradebook")).toContainText("of 100");
-  await expect(page.locator(".gradebook")).toContainText("It counts marks.");
+  await expect(page.locator(".gradebook")).toContainText("It is a mark for a gradebook.");
   await expect(page.locator(".student-evidence-header")).not.toContainText("of 100");
   await noSeriousAxeViolations(page);
 });

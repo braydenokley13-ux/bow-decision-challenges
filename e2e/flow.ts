@@ -125,12 +125,37 @@ export async function gotoFreshChallenge(page: Page) {
   await page.reload();
 }
 
-/** Joins the class and steps past the contract. Seats differ so runs never collide. */
+/**
+ * Joins the class, picks the season where the class offers a choice, and steps past the
+ * contract. Seats differ so runs never collide.
+ *
+ * A class set to let students choose opens on the picker, which is the product working: this
+ * helper drives the Basketball path, so it answers that question rather than assuming the
+ * screen is not there.
+ */
 export async function enterChallenge(page: Page, options: { classCode: string; seatCode?: string }) {
   await page.getByLabel("Class code").fill(options.classCode);
   await page.getByLabel("Seat", { exact: true }).fill(options.seatCode ?? "7");
   await page.getByRole("button", { name: "Start the eight weeks" }).click();
+  await chooseSeasonIfOffered(page);
   await page.getByRole("button", { name: "Find Avery a place" }).click();
+}
+
+/**
+ * Answers the world choice with Basketball, where this class was set to offer one.
+ *
+ * Which screen comes next depends on the class, so this waits for whichever one actually
+ * arrives before deciding. Asking whether the picker is visible the instant after the join
+ * button is pressed answers "no" for a class that is about to show it, which is how a
+ * whole run ends up stranded on a screen it never meant to skip.
+ */
+export async function chooseSeasonIfOffered(page: Page) {
+  const picker = page.getByRole("heading", { name: /Pick a world/i });
+  const contract = page.getByRole("button", { name: "Find Avery a place" });
+  await expect(picker.or(contract)).toBeVisible();
+  if (await picker.isVisible()) {
+    await page.getByRole("button", { name: /Start this one/ }).first().click();
+  }
 }
 
 export const SETUP_ORDER = ["gym-sublet", "teammate-share", "cousin-room"] as const;

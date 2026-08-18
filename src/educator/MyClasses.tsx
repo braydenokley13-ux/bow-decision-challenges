@@ -5,6 +5,7 @@ import { EducatorShell } from "./EducatorShell";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import { CLASS_ERROR_MESSAGES, CLASS_RETENTION_DAYS, isClassError, type ClassCreation } from "../platform/classes/types";
 import { durationLabel, PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
+import { DEFAULT_WORLD_ID, PLAYABLE_WORLDS, WORLD_REGISTRY } from "../domain/scenario/registry";
 import { assessableStandards, FRAMEWORKS, labelsFor, standardByRef } from "../domain/standards";
 import type { FrameworkId } from "../domain/standards";
 import { forgetClass, rememberClass, rememberedClasses } from "./classMemory";
@@ -52,6 +53,10 @@ export function MyClasses() {
   const [objectiveCode, setObjectiveCode] = useState(
     () => (requested && objectives.some((entry) => entry.code === requested) ? requested : objectives[0]?.code ?? NO_OBJECTIVE),
   );
+  // §17.2 step 2: student choice, every built world selected. A teacher who wants one world
+  // for everyone says so; a teacher who does nothing gets the promise the product makes to
+  // students on the front of the box.
+  const [studentPicks, setStudentPicks] = useState(true);
   const [assigning, setAssigning] = useState<string | null>(null);
   const [assigned, setAssigned] = useState<string | null>(null);
   const framework = FRAMEWORKS[FRAMEWORK_ID];
@@ -83,7 +88,11 @@ export function MyClasses() {
         await fetch(`${CLASS_API_BASE}/classes/${record.code}/assignments`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": record.teacherKey },
-          body: JSON.stringify({ objectiveRef: { frameworkId: FRAMEWORK_ID, code: objectiveCode } }),
+          body: JSON.stringify({
+            objectiveRef: { frameworkId: FRAMEWORK_ID, code: objectiveCode },
+            allowedWorldIds: studentPicks ? PLAYABLE_WORLDS.map((world) => world.id) : [DEFAULT_WORLD_ID],
+            studentChoosesWorld: studentPicks,
+          }),
         });
       }
       rememberClass(record);
@@ -106,7 +115,11 @@ export function MyClasses() {
       const response = await fetch(`${CLASS_API_BASE}/classes/${record.code}/assignments`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": record.teacherKey },
-        body: JSON.stringify({ objectiveRef: { frameworkId: FRAMEWORK_ID, code: objectiveCode } }),
+        body: JSON.stringify({
+            objectiveRef: { frameworkId: FRAMEWORK_ID, code: objectiveCode },
+            allowedWorldIds: studentPicks ? PLAYABLE_WORLDS.map((world) => world.id) : [DEFAULT_WORLD_ID],
+            studentChoosesWorld: studentPicks,
+          }),
       });
       if (!response.ok) {
         const body: unknown = await response.json();
@@ -153,6 +166,34 @@ export function MyClasses() {
           ? "Students still play the challenge and you still see everything they did. Nothing is reported against a state objective."
           : framework?.labels.attribution}
       </p>
+      <fieldset className="class-form__worlds">
+        <legend>Which challenge</legend>
+        <label>
+          <input
+            type="radio"
+            name="class-worlds"
+            checked={studentPicks}
+            onChange={() => setStudentPicks(true)}
+          />
+          <span>
+            <b>Students pick</b>
+            {PLAYABLE_WORLDS.map((world) => world.title).join(" or ")}. Both collect the same evidence,
+            so the results pool either way.
+          </span>
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="class-worlds"
+            checked={!studentPicks}
+            onChange={() => setStudentPicks(false)}
+          />
+          <span>
+            <b>One for everyone</b>
+            {WORLD_REGISTRY[DEFAULT_WORLD_ID]?.title}.
+          </span>
+        </label>
+      </fieldset>
       <Button type="button" aria-disabled={working} onClick={() => void create()}>
         {working ? "Creating…" : "Create the class"}
       </Button>

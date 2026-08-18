@@ -842,6 +842,14 @@ p { color: var(--ink-2); }
 .class-form select { min-height: var(--tap); padding: 0 var(--s-4); font: var(--t-body-lg); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
 .class-form__note { max-width: var(--measure); margin: 0; color: var(--ink-3); font: var(--t-micro); }
 
+/* Which challenge the class runs. Two answers to one question, so they are radios and the
+   consequence of each is written beside it rather than left to be inferred. */
+.class-form__worlds { display: grid; gap: var(--s-3); padding: var(--s-4); border: 1px solid var(--border-strong); border-radius: var(--r-sm); background: var(--surface-raised); }
+.class-form__worlds legend { padding-inline: var(--s-2); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.class-form__worlds label { display: grid; grid-template-columns: auto 1fr; gap: var(--s-3); align-items: start; font: var(--t-sm); letter-spacing: normal; text-transform: none; color: var(--ink-2); }
+.class-form__worlds input { min-height: 0; margin-block-start: 0.2em; accent-color: var(--navy); }
+.class-form__worlds b { display: block; color: var(--ink-1); }
+
 /* ---------------------------------------------------------------------------
  * Objective Map. A coverage document, not a dashboard: five bands of ruled
  * type on the cream, with status carried by the geometry of a mark and by a
