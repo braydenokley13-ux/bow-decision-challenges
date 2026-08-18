@@ -1,8 +1,6 @@
 import { Link, Navigate, Route, Routes } from "react-router-dom";
 import { ChallengeProvider } from "./app/ChallengeContext";
 import { AppMark } from "./components/primitives/AppMark";
-import { CourtBackdrop } from "./components/story/CourtBackdrop";
-import { RosterCard } from "./components/story/RosterCard";
 import { StudentChallenge } from "./stages/StudentChallenge";
 import { ClassOverview, ConceptDrilldown, EducatorGuide, ReasoningReview, StandardsView, StudentEvidence, TeachingCompanion } from "./educator/EducatorPages";
 import { MyClasses } from "./educator/MyClasses";
@@ -12,26 +10,53 @@ import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPage
 import { ReadingQueue } from "./educator/ReadingQueue";
 import { Debrief } from "./educator/Debrief";
 import { PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
+import { StudentJoin } from "./student/Join";
+import { StudentHome } from "./student/Home";
+import { PLAYABLE_WORLDS } from "./domain/scenario/registry";
 
+/**
+ * The front door, and the one screen that has to be true of the whole product.
+ *
+ * It used to be Basketball's: the navy court, Avery's roster card, "Eight weeks to the
+ * showcase", and one button that started that world. The very next screen then said "Two ways
+ * in. You pick one." — so a student who chose the night market had pressed a button promising
+ * eight weeks of basketball, and a teacher arriving to evaluate a two-world product met a
+ * one-world advertisement.
+ *
+ * So the door names the challenge rather than a story inside it, and sends a student to the
+ * place they can actually get in from: a class code. Nothing here starts a run, because a run
+ * that is not attached to a class produces evidence nobody can read.
+ */
 function Home() {
   return (
-    <main className="home scene" data-world="basketball">
-      <CourtBackdrop />
+    <main className="home scene">
       <header className="home__bar">
         <AppMark />
         <Link to="/educator/guide">For educators</Link>
       </header>
       <section className="home__grid">
         <div className="home__copy">
-          <p className="eyebrow">Plan Under Pressure · Basketball</p>
-          <h1>Eight weeks to the showcase.</h1>
-          <p className="home__deck">Avery Reyes just got the last roster spot. Avery plays. You handle the money.</p>
+          <p className="eyebrow">{PLAN_UNDER_PRESSURE.pillar} · {PLAN_UNDER_PRESSURE.grades}</p>
+          <h1>Somebody has to decide where the money goes.</h1>
+          <p className="home__deck">
+            Two worlds, one job. {PLAYABLE_WORLDS.map((world) => world.title).join(" or ")} — you handle the money,
+            and you find out what your decisions cost.
+          </p>
           <div className="home__actions">
-            <Link className="button button--primary" to={PLAN_UNDER_PRESSURE.route}>Start the challenge</Link>
+            <Link className="button button--primary" to="/join">I have a class code</Link>
+            <Link className="button button--secondary" to="/home">Come back to my class</Link>
           </div>
         </div>
         <aside className="home__side">
-          <RosterCard note="Eight weeks. One shot at the sports-media course." />
+          <ul className="home__worlds">
+            {PLAYABLE_WORLDS.map((world) => (
+              <li key={world.id} data-world={world.id}>
+                <strong>{world.title}</strong>
+                <span>{world.subtitle}</span>
+                <span className="home__worlds-length">{world.durationMinutes.min}–{world.durationMinutes.max} minutes</span>
+              </li>
+            ))}
+          </ul>
         </aside>
       </section>
     </main>
@@ -42,6 +67,11 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      {/* A student signs in once and comes back to a screen that is theirs. The three
+          actions are the same every time: class code, tap your name, type the code on your
+          card. Nothing here asks for a name, an email address or a birthday. */}
+      <Route path="/join" element={<StudentJoin />} />
+      <Route path="/home" element={<StudentHome />} />
       <Route path={PLAN_UNDER_PRESSURE.route} element={<ChallengeProvider><StudentChallenge /></ChallengeProvider>} />
       {/* The route this shipped on. Class codes and bookmarks already point at it, so it
           redirects rather than 404s — and keeps redirecting after Challenge #2 lands. */}

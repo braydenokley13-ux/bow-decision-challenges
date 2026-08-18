@@ -1,0 +1,140 @@
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { AppMark } from "../components/primitives/AppMark";
+import { Button } from "../components/primitives/Button";
+import { PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
+import { stageLabel, WORLD_REGISTRY } from "../domain/scenario/registry";
+import { forgetStudent, readMyClasses, studentToken, type StudentClass } from "./session";
+
+/**
+ * The whole of a student's own screen.
+ *
+ * It answers three questions and refuses every other job: **what can I do**, **what was I
+ * doing**, and **what did my teacher say**. There are no tabs, no streak, no badges, no
+ * points, no feed and no notifications, because none of those makes a decision better, makes
+ * a student's thinking more visible, or makes a teacher's job easier — which is the test every
+ * feature in this product has to pass.
+ *
+ * The third question is the one that did not exist. A student used to spend twenty minutes
+ * deciding, write four sentences explaining why, read *"Your plan is with your teacher"*, and
+ * that was the end of the product. Their teacher read the paragraph, scored it criterion by
+ * criterion, sometimes disagreed with BOW on the record — and none of it ever came back. So
+ * what a teacher wrote sits at the top of this page, above the work, because it is the reason
+ * a student would open it again.
+ */
+export function StudentHome() {
+  const navigate = useNavigate();
+  const [state, setState] = useState<{ status: "loading" } | { status: "error"; message: string } | { status: "ready"; classes: StudentClass[] }>({ status: "loading" });
+
+  useEffect(() => {
+    if (!studentToken()) {
+      navigate("/join", { replace: true });
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const result = await readMyClasses();
+      if (cancelled) return;
+      if (!result.ok) {
+        // A dead session is not an error to explain, it is a sign-in to do again.
+        forgetStudent();
+        navigate("/join", { replace: true });
+        return;
+      }
+      setState({ status: "ready", classes: result.body.classes });
+    })();
+    return () => { cancelled = true; };
+  }, [navigate]);
+
+  if (state.status === "loading") {
+    return <main className="student-home"><p aria-live="polite">Getting your classes…</p></main>;
+  }
+  if (state.status === "error") {
+    return <main className="student-home"><p role="alert">{state.message}</p></main>;
+  }
+
+  const signedInAs = state.classes[0]?.displayName ?? null;
+
+  return (
+    <main className="student-home">
+      <header className="student-home__bar">
+        <AppMark />
+        <div>
+          {/* Whose screen this is, on every screen. On a shared machine the previous student's
+              session used to be indistinguishable from your own — and the way out of that is
+              not a warning, it is saying whose it is before anything else loads. */}
+          {signedInAs && <span>{signedInAs}</span>}
+          <Button variant="quiet" onClick={() => { forgetStudent(); navigate("/join", { replace: true }); }}>Not you?</Button>
+        </div>
+      </header>
+
+      {state.classes.length === 0 && (
+        <section className="student-home__empty">
+          <h1>You are not in a class yet.</h1>
+          <p>Ask your teacher for the class code, then come back.</p>
+          <Link className="button button--primary" to="/join">Type a class code</Link>
+        </section>
+      )}
+
+      {state.classes.map((entry) => (
+        <ClassBlock key={entry.classCode} entry={entry} />
+      ))}
+
+      {state.classes.length > 0 && (
+        <footer className="student-home__foot">
+          <Link to="/join">Join another class</Link>
+        </footer>
+      )}
+    </main>
+  );
+}
+
+function ClassBlock({ entry }: { entry: StudentClass }) {
+  const world = entry.inProgress ? WORLD_REGISTRY[entry.inProgress.worldId] : undefined;
+  return (
+    <section className="student-class">
+      <p className="eyebrow">{entry.label}</p>
+
+      {entry.feedback.length > 0 && (
+        <div className="student-feedback">
+          <p className="field-label">From your teacher</p>
+          {entry.feedback.map((note) => (
+            <blockquote key={note.at}>
+              {note.body}
+              <cite>{new Date(note.at).toLocaleDateString()}</cite>
+            </blockquote>
+          ))}
+        </div>
+      )}
+
+      {entry.inProgress ? (
+        <div className="student-card student-card--live">
+          <h2>{world?.title ?? "Your run"}</h2>
+          <p>You stopped at <strong>{stageLabel(entry.inProgress.worldId, entry.inProgress.stage)}</strong>.</p>
+          <Link className="button button--primary" to={PLAN_UNDER_PRESSURE.route}>Carry on</Link>
+        </div>
+      ) : entry.completed.length === 0 ? (
+        <div className="student-card">
+          <h2>{PLAN_UNDER_PRESSURE.title}</h2>
+          {/* The challenge's own line, not one world's. `subtitle` is Basketball's
+              ("Eight weeks to the showcase"), and printing it above a button that may open
+              the night market is the same false promise the front door used to make. */}
+          <p>You handle the money. {PLAN_UNDER_PRESSURE.duration.min}–{PLAN_UNDER_PRESSURE.duration.max} minutes.</p>
+          <Link className="button button--primary" to={PLAN_UNDER_PRESSURE.route}>Start</Link>
+        </div>
+      ) : null}
+
+      {entry.completed.map((done) => (
+        <div className="student-card student-card--done" key={done.sessionId}>
+          <h2>{done.worldId ? WORLD_REGISTRY[done.worldId]?.title ?? "Turned in" : "Turned in"}</h2>
+          <p>
+            Turned in {new Date(done.submittedAt).toLocaleDateString()}.
+            {entry.feedback.some((note) => note.sessionId === done.sessionId)
+              ? " Your teacher has written back."
+              : " Your teacher has it."}
+          </p>
+        </div>
+      ))}
+    </section>
+  );
+}
