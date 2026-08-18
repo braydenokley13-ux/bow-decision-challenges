@@ -559,6 +559,45 @@ describe("an attempt belongs to a person, on any device", () => {
   });
 });
 
+describe("a student can read back the thing they made", () => {
+  it("hands a student their own finished run, and nobody else's", async () => {
+    const store = memoryStore();
+    const teacher = await signUp(store, "ms.chen@example.org");
+    const created = await openClass(store, teacher.token);
+    const [ana, devon] = await paste(store, created.code, teacher.token, ["Ana R.", "Devon P."]);
+    const anaIn = (await join(store, created.code, ana!)).body as { token: string };
+    const devonIn = (await join(store, created.code, devon!)).body as { token: string };
+
+    await api(store)("POST", `/classes/${created.code}/submissions`, {
+      classCode: created.code,
+      seatCode: ana!.seatCode,
+      sessionId: "session-ana-0001",
+      challengeId: PLAN_UNDER_PRESSURE.id,
+      challengeVersion: PLAN_UNDER_PRESSURE.version,
+      log: logFor("session-ana-0001"),
+    }, bearer(anaIn.token));
+
+    // Hers. The whole log, because it is the record of what she did and everything a screen
+    // could say about it should be derived from that in front of her.
+    const mine = await api(store)("GET", "/me/runs/session-ana-0001", undefined, bearer(anaIn.token));
+    expect(mine.status).toBe(200);
+    const body = mine.body as { sessionId: string; seatCode: string; log: unknown[]; label: string };
+    expect(body.sessionId).toBe("session-ana-0001");
+    expect(body.seatCode).toBe(ana!.seatCode);
+    expect(body.log).toHaveLength(logFor("session-ana-0001").length);
+    // And nothing a person marked. A teacher's reading reaches a student by its own route,
+    // written in their teacher's own words, rather than as a number attached to the record.
+    expect(JSON.stringify(mine.body)).not.toContain("reasoning");
+    expect(JSON.stringify(mine.body)).not.toContain("override");
+
+    // Devon holds a seat in the same class and still cannot open Ana's run.
+    expect((await api(store)("GET", "/me/runs/session-ana-0001", undefined, bearer(devonIn.token))).status).toBe(404);
+    // Nor can a teacher, on a student's route, nor anybody with no session at all.
+    expect((await api(store)("GET", "/me/runs/session-ana-0001", undefined, bearer(teacher.token))).status).toBe(401);
+    expect((await api(store)("GET", "/me/runs/session-ana-0001")).status).toBe(401);
+  });
+});
+
 describe("nobody reads a room they are not in", () => {
   it("refuses another teacher, a student, and no session at all", async () => {
     const store = memoryStore();

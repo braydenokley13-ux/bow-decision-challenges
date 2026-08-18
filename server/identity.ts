@@ -429,6 +429,47 @@ export async function handleIdentityRequest(
     return { status: 200, body: { classes: rows.filter((row) => row !== null) } };
   }
 
+  // -- GET /me/runs/:sessionId — a student reading back their own finished run. --
+  //
+  // The student had no way to see the thing they made. Their own home screen knew a run
+  // existed, when it was turned in and which story it was, and nothing about what happened in
+  // it — so between "turned in" and "your teacher wrote back" there was a void, and after it
+  // there was still nothing that said what the run had shown about the decisions they made.
+  //
+  // What comes back is the log they turned in and nothing else: no marks, no levels, no
+  // reasoning scores. Not because those are secret — a teacher's note reaches them by its own
+  // route, and should — but because this is the raw record of what a student did, and anything
+  // a machine says about it should be derived from that in front of them rather than handed
+  // down as a verdict.
+  //
+  // It is theirs and only theirs: the seat is resolved from the session, so a caller who does
+  // not hold the seat a run was filed under gets a 404 rather than somebody else's work.
+  if (request.method === "GET" && head === "me" && second === "runs" && third) {
+    const caller = await callerOf(request.headers, context);
+    if (caller?.kind !== "student") return identityFail(401, "no_session");
+    for (const held of await store.listSeatsForStudent(caller.id)) {
+      const seat = await seatOf(store, caller.id, held.classCode);
+      if (!seat) continue;
+      const record = await store.getClass(held.classCode);
+      if (!record || record.expiresAt <= now) continue;
+      const mine = (await store.listSubmissions(held.classCode))
+        .find((entry) => entry.sessionId === third && entry.seatCode === seat.seatCode);
+      if (!mine) continue;
+      return {
+        status: 200,
+        body: {
+          sessionId: mine.sessionId,
+          classCode: held.classCode,
+          label: record.label,
+          seatCode: seat.seatCode,
+          submittedAt: mine.submittedAt,
+          log: mine.log,
+        },
+      };
+    }
+    return identityFail(404, "seat_not_found");
+  }
+
   // -- PUT /me/attempt — the checkpoint that makes an unfinished run a real thing. --
   if (request.method === "PUT" && head === "me" && second === "attempt") {
     const caller = await callerOf(request.headers, context);
