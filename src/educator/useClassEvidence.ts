@@ -6,6 +6,8 @@ import { reasoningTotal, type ReasoningScores } from "../domain/blueprint/reason
 import type { EvidenceRequirementId, RubricLevel } from "../domain/competency/types";
 import { analyseClass, type ClassAnalysis } from "./analysis";
 import { keyForClass, rememberClass } from "./classMemory";
+import type { RosterRow } from "./names";
+import type { ProgressRow, TeacherFeedback } from "../platform/identity/types";
 
 /**
  * A real class, loaded from the service.
@@ -28,7 +30,21 @@ export interface OverrideRequest {
 export type ClassEvidenceState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; record: ClassRecord; assignments: Assignment[]; submissions: AttributedSubmission[]; analysis: ClassAnalysis };
+  | {
+      status: "ready";
+      record: ClassRecord;
+      assignments: Assignment[];
+      submissions: AttributedSubmission[];
+      analysis: ClassAnalysis;
+      /** The teacher's own labels for the seats in this class. Empty where they have not made one. */
+      roster: RosterRow[];
+      /** Seats that are mid-run right now. Empty where nobody is, which is the normal case after a lesson. */
+      progress: ProgressRow[];
+      /** What the teacher has already written back, newest first per seat. */
+      feedback: TeacherFeedback[];
+      /** When this reading was fetched. Every "how long ago" on the page is measured from it. */
+      loadedAt: number;
+    };
 
 export function useClassEvidence(code: string | undefined): {
   state: ClassEvidenceState;
@@ -36,6 +52,7 @@ export function useClassEvidence(code: string | undefined): {
   reload: () => void;
   scoreReasoning: (seatCode: string, sessionId: string, scores: ReasoningScores | null) => Promise<boolean>;
   recordOverride: (seatCode: string, sessionId: string, override: OverrideRequest) => Promise<boolean>;
+  sendFeedback: (seatCode: string, sessionId: string, body: string, flagged: boolean) => Promise<boolean>;
 } {
   const [params] = useSearchParams();
   // The key comes from the link the educator was given, or from this browser if they have
@@ -66,7 +83,14 @@ export function useClassEvidence(code: string | undefined): {
           setFetched({ status: "error", message: isClassError(body) ? CLASS_ERROR_MESSAGES[body.error] : CLASS_ERROR_MESSAGES.unavailable });
           return;
         }
-        const payload = body as { class: ClassRecord; assignments: Assignment[]; submissions: AttributedSubmission[] };
+        const payload = body as {
+          class: ClassRecord;
+          assignments: Assignment[];
+          submissions: AttributedSubmission[];
+          roster?: RosterRow[];
+          progress?: ProgressRow[];
+          feedback?: TeacherFeedback[];
+        };
         // Opening a class from a link is how a teacher on a second device gets it back.
         rememberClass({ code: payload.class.code, label: payload.class.label, teacherKey, createdAt: payload.class.createdAt });
         setFetched({
@@ -75,6 +99,10 @@ export function useClassEvidence(code: string | undefined): {
           assignments: payload.assignments,
           submissions: payload.submissions,
           analysis: analyseClass(payload.submissions),
+          roster: payload.roster ?? [],
+          progress: payload.progress ?? [],
+          feedback: payload.feedback ?? [],
+          loadedAt: Date.now(),
         });
       } catch {
         if (!cancelled) setFetched({ status: "error", message: CLASS_ERROR_MESSAGES.unavailable });
@@ -96,6 +124,37 @@ export function useClassEvidence(code: string | undefined): {
           method: "PATCH",
           headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
           body: JSON.stringify({ reasoningPoints: scores ? reasoningTotal(scores) : null, reasoningCriteria: scores, sessionId }),
+        });
+        if (response.ok) reload();
+        return response.ok;
+      } catch {
+        return false;
+      }
+    },
+    [code, teacherKey, reload],
+  );
+
+  /**
+   * The half of the loop that did not exist.
+   *
+   * A student spent twenty minutes deciding, wrote a paragraph explaining why, and read
+   * "Your plan is with your teacher." The teacher read the paragraph, scored four criteria,
+   * and could disagree with any judgement on the record — and **none of it was ever visible
+   * to the student**. There was no route, no screen and no data path. So the product taught a
+   * twelve-year-old that explaining your thinking is something you do into a box, which is the
+   * opposite of the thing it exists to be evidence of.
+   *
+   * One short message per attempt, and deliberately not a thread. What this closes is "the
+   * student finds out what their teacher thought"; a conversation is a different product.
+   */
+  const sendFeedback = useCallback(
+    async (seatCode: string, sessionId: string, body: string, flagged: boolean): Promise<boolean> => {
+      if (!code || !teacherKey) return false;
+      try {
+        const response = await fetch(`${CLASS_API_BASE}/classes/${code}/feedback`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
+          body: JSON.stringify({ seatCode, sessionId, body, flagged }),
         });
         if (response.ok) reload();
         return response.ok;
@@ -131,5 +190,5 @@ export function useClassEvidence(code: string | undefined): {
     [code, teacherKey, reload],
   );
 
-  return { state: blocked ?? fetched, teacherKey, reload, scoreReasoning, recordOverride };
+  return { state: blocked ?? fetched, teacherKey, reload, scoreReasoning, recordOverride, sendFeedback };
 }

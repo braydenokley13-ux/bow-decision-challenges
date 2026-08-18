@@ -5,6 +5,7 @@ import { EVIDENCE_EVENT_TYPES } from "../src/domain/evidence/types";
 import { evidenceRequirementById } from "../src/domain/competency/competencies";
 import type { EvidenceRequirementId, RubricLevel } from "../src/domain/competency/types";
 import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
+import { hasWrittenAnswer } from "../src/domain/evidence/writtenAnswer";
 import { clampCriterion, REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../src/domain/blueprint/reasoning";
 import { challengeById, PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 import { contractFor } from "../src/domain/scenario/contracts";
@@ -494,6 +495,14 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       ? submissions.find((item) => item.seatCode === seatCode && item.sessionId === body.sessionId)
       : submissions.filter((item) => item.seatCode === seatCode).at(-1);
     if (!target) return fail(404, "class_not_found", "No submission from that seat.");
+    // **There has to be something to have read.** A mark against an empty answer became a
+    // rubric level, printed under the heading `BOW` beside the rule it was supposed to have
+    // met, on a page that said lower down that the student wrote nothing. Clearing a score
+    // is always allowed; recording one is not, when there is no writing behind it.
+    const scoring = criteria !== null || points !== null;
+    if (scoring && !hasWrittenAnswer(target.log)) {
+      return fail(409, "bad_request", "There is no written explanation on this attempt to score.");
+    }
     // Clamping lives in the grader too, but a score arriving over the wire has to be
     // clamped where it is stored or the grader is not the only thing that can set it. The
     // total is recomputed from the marks whenever they are sent, so the number a teacher

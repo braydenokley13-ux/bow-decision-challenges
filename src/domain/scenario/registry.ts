@@ -18,6 +18,57 @@ import type { ScenarioNumbers, WorldRegistryEntry, WorldStory } from "./types";
  * says the interior belongs to the world and a registry that knew all of it would be a world
  * template with two entries in it.
  */
+/**
+ * What each world calls the screen a student is on, in words a teacher reads.
+ *
+ * It lives beside the registry rather than in the educator layer because a stage id is the
+ * world's own vocabulary and only the world can name it. The educator surface used to hold
+ * one table covering Basketball's stages, so a market student's evidence trail printed
+ * `popup-spot | POPUP_SUM_SUBMITTED | event-6` — a log file, on the screen whose entire job
+ * is letting a teacher check what BOW saw.
+ */
+export const WORLD_STAGE_LABELS: Partial<Record<WorldId, Record<string, string>>> = {
+  basketball: {
+    entry: "Getting in",
+    join: "Getting in",
+    "choose-world": "Choosing a world",
+    "role-contract": "The terms",
+    "setup-comparison": "Choosing where to live",
+    "working-plan": "The first plan",
+    "fallback-version": "The plan without the bonus",
+    "season-weeks": "Weeks 1–4",
+    "deposit-deadline": "Week 4 · the course seat",
+    "week5-event": "Week 5 · the news",
+    "first-response": "Week 5 · first response",
+    "opportunity-final-repair": "Week 5 · the two calls",
+    "remaining-risk-preview": "Week 5 · the last check",
+    "week8-resolution": "Week 8",
+    defense: "Explaining the plan",
+    submitted: "Turned in",
+  },
+  "food-truck": {
+    entry: "Getting in",
+    join: "Getting in",
+    "choose-world": "Choosing a world",
+    "popup-pitch": "The pitch",
+    "popup-spot": "Choosing a booth",
+    "popup-money": "The money with a rule on it",
+    "popup-plan": "The opening plan",
+    "popup-first-saturday": "Saturday 1",
+    "popup-standing-order": "Saturdays 2 and 3",
+    "popup-generator": "The generator",
+    "popup-repair": "Repairing the plan",
+    "popup-settle": "Saturday 4 and the settle-up",
+    "popup-writeup": "Writing it up",
+    "popup-submitted": "Turned in",
+  },
+};
+
+/** What this world calls that screen, or the id where nothing does. */
+export function stageLabel(worldId: WorldId, stage: string): string {
+  return WORLD_STAGE_LABELS[worldId]?.[stage] ?? stage;
+}
+
 export const WORLD_REGISTRY: Partial<Record<WorldId, WorldRegistryEntry>> = {
   basketball: {
     id: "basketball",

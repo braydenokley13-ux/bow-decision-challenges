@@ -1,6 +1,7 @@
 import type { CategoryId, SetupId, WorldId } from "../domain/core/ids";
 import { dollars, type Dollars } from "../domain/core/money";
 import { deriveFacts } from "../domain/evidence/facts";
+import { writtenAnswerFrom } from "../domain/evidence/writtenAnswer";
 import { deriveResult } from "../domain/evidence/result";
 import type { AssessmentFacts, AssessmentResult, EvidenceEvent, MasteryStatus } from "../domain/evidence/types";
 import { resolveSeason, type SeasonResolution } from "../domain/finance/resolution";
@@ -8,6 +9,7 @@ import type { PlanAmounts } from "../domain/finance/types";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { POP_UP_SCENARIO } from "../domain/scenario/worlds/food-truck";
+import { WORLD_REGISTRY } from "../domain/scenario/registry";
 import { derivePopUpFacts } from "../domain/scenario/worlds/food-truck/facts";
 import { CONCEPTS } from "../domain/blueprint/concepts";
 import type { ReasoningScores } from "../domain/blueprint/reasoning";
@@ -67,16 +69,9 @@ export interface StudentRow {
  * while their paragraph sat in the log — so the one promise BOW makes to a student in their
  * own words, that a person reads it, was false for half the product.
  */
-const WRITTEN_ANSWER_EVENTS = new Set(["DEFENSE_SUBMITTED", "POPUP_WRITEUP_SUBMITTED"]);
-
 function defenseFrom(log: EvidenceEvent[]): StudentRow["defense"] {
-  const event = log.filter((item) => WRITTEN_ANSWER_EVENTS.has(item.type)).at(-1);
-  if (!event) return null;
-  const payload = event.payload as { text?: unknown; tileIds?: unknown };
-  return {
-    text: typeof payload.text === "string" ? payload.text : "",
-    tileIds: Array.isArray(payload.tileIds) ? payload.tileIds.filter((id): id is string => typeof id === "string") : [],
-  };
+  const answer = writtenAnswerFrom(log);
+  return answer ? { text: answer.text, tileIds: [...answer.tileIds] } : null;
 }
 
 export function readSubmission(record: SubmissionRecord): StudentRow {
@@ -196,6 +191,143 @@ export function popUpDistributions(everyRow: StudentRow[]): ChoiceDistribution[]
     { id: "rebate", question: "Did they plan around the sell-out rebate?", shares: rebate },
     { id: "swap", question: "How did the generator end?", shares: swap },
   ];
+}
+
+/**
+ * One world's account of what its own students did.
+ *
+ * Everything a teacher reads about a class used to be computed over every row and printed
+ * with the whole class as its denominator, while only the distributions had been split by
+ * world. The result was not a rounding error. A mixed class read
+ * *"6 of 15 cut sports-media course first"* when eight students had ever seen Week 5, and
+ * *"Backup money absorbed a loss — 0 of 15"* rendered seven absences as measured zeros. A
+ * market-only class was told, in print, on the page designed to be read aloud to the room,
+ * *"You all played it the same way — all 7 made the same call on every major decision"* two
+ * sections below a table showing they had taken three different booths.
+ *
+ * So every claim about a room is now made about the room that was asked the question, and
+ * carries that room's own count. A world with nothing to say about a section renders no
+ * section rather than a section full of zeros.
+ */
+export interface WorldSection {
+  worldId: WorldId;
+  title: string;
+  seats: number;
+  rows: StudentRow[];
+  distributions: ChoiceDistribution[];
+  /** What moved when this world's shock landed, in this world's own words. */
+  adaptation: { heading: string; cuts: { label: string; seats: string[] }[]; lines: { label: string; count: number }[] } | null;
+  contrast: [StudentRow, StudentRow] | null;
+  prompts: DiscussionPrompt[];
+  /** Students who wrote something, for a teacher to read out. Seat order. */
+  quotes: { seatCode: string; text: string }[];
+}
+
+function quotesOf(rows: StudentRow[]): { seatCode: string; text: string }[] {
+  return rows
+    .flatMap((row) => (row.defense && row.defense.text.trim().length > 0 ? [{ seatCode: row.seatCode, text: row.defense.text.trim() }] : []))
+    .sort((a, b) => Number(a.seatCode) - Number(b.seatCode));
+}
+
+/** Basketball's shock, over Basketball's students. */
+function basketballAdaptation(rows: StudentRow[]): WorldSection["adaptation"] {
+  const summary = adaptationSummary(rows);
+  return {
+    heading: `After Week ${SCENARIO_NUMBERS.disruptionWeek}`,
+    cuts: summary.cutFirst.map((entry) => ({ label: entry.label.toLowerCase(), seats: entry.seats })),
+    lines: [
+      { label: "Backup money absorbed a loss", count: summary.buffered.length },
+      { label: "Finished with something uncovered", count: summary.leftUncovered.length },
+      { label: "Landed a plan they never changed", count: summary.unchanged.length },
+    ],
+  };
+}
+
+/** The market's shock, over the market's students. */
+function popUpAdaptation(rows: StudentRow[]): WorldSection["adaptation"] {
+  const facts = rows.map((row) => ({ row, facts: derivePopUpFacts(row.log) }));
+  const settled = facts.filter((entry) => entry.facts.repair.saved);
+  return {
+    heading: "After the generator broke",
+    cuts: [],
+    lines: [
+      { label: "Covered the replacement in full", count: settled.filter((entry) => entry.facts.repair.residual === 0).length },
+      { label: "Finished still short, and said so", count: settled.filter((entry) => entry.facts.repair.residual > 0).length },
+      { label: "Reached for money already spent", count: facts.filter((entry) => entry.facts.repair.lockedMoveAttempts > 0).length },
+      { label: "Never settled the repair", count: facts.length - settled.length },
+    ],
+  };
+}
+
+export function worldSections(everyRow: StudentRow[]): WorldSection[] {
+  return [...new Set(everyRow.map((row) => row.worldId))].map((worldId) => {
+    const rows = everyRow.filter((row) => row.worldId === worldId);
+    const market = worldId === "food-truck";
+    return {
+      worldId,
+      title: WORLD_REGISTRY[worldId]?.title ?? worldId,
+      seats: rows.length,
+      rows,
+      distributions: market ? popUpDistributions(rows) : choiceDistributions(rows),
+      adaptation: market ? popUpAdaptation(rows) : basketballAdaptation(rows),
+      contrast: market ? null : contrastingPair(rows),
+      prompts: market ? popUpPrompts(rows) : discussionPrompts(rows),
+      quotes: quotesOf(rows),
+    };
+  });
+}
+
+/**
+ * Prompts the market's own disagreements earn.
+ *
+ * Written rather than derived from Basketball's, because the questions are not the same
+ * questions. Before this existed the market fell through `discussionPrompts`, found none of
+ * Basketball's decisions, and emitted the consensus fallback — which is how a room that had
+ * taken three different booths was told it had done the same thing.
+ */
+export function popUpPrompts(rows: StudentRow[]): DiscussionPrompt[] {
+  if (rows.length === 0) return [];
+  const prompts: DiscussionPrompt[] = [];
+  const distributions = popUpDistributions(rows);
+  const used = (id: string) => distributions.find((entry) => entry.id === id)?.shares.filter((share) => share.seats.length > 0) ?? [];
+
+  const booths = used("booth");
+  if (booths.length > 1) {
+    prompts.push({
+      id: "booth-split",
+      prompt: `You took ${booths.length} different booths and every one of them could work. What was each one buying?`,
+      because: booths.map((entry) => `${entry.seats.length} took ${entry.label}`).join(", ") + ".",
+    });
+  }
+
+  for (const [id, question] of [["catering", "the catering job"], ["rebate", "the sell-out rebate"]] as const) {
+    const shares = used(id);
+    if (shares.length > 1) {
+      prompts.push({
+        id: `${id}-split`,
+        prompt: `Some of you planned around ${question} and some of you did not. What did counting it buy, and what did it cost?`,
+        because: shares.map((entry) => `${entry.seats.length} ${entry.label.toLowerCase()}`).join(", ") + ".",
+      });
+    }
+  }
+
+  const swap = used("swap");
+  if (swap.length > 1) {
+    prompts.push({
+      id: "swap-split",
+      prompt: "The generator broke for all of you and it did not cost you all the same. What was different about the plans that absorbed it?",
+      because: swap.map((entry) => `${entry.seats.length} ${entry.label.toLowerCase()}`).join(", ") + ".",
+    });
+  }
+
+  if (prompts.length === 0 && rows.length >= MINIMUM_RESULTS_FOR_CLASS_NARRATION) {
+    prompts.push({
+      id: "consensus",
+      prompt: "You all ran it the same way. What would have had to be different for another plan to be the better one?",
+      because: `All ${rows.length} made the same call on every major decision.`,
+    });
+  }
+  return prompts;
 }
 
 /** Each world that actually appears in this class, with the decisions it put to students. */
@@ -392,6 +524,14 @@ export function discussionPrompts(rows: StudentRow[]): DiscussionPrompt[] {
 
 export interface ClassAnalysis {
   rows: StudentRow[];
+  /**
+   * One block per world this class actually played, each carrying its own denominator.
+   *
+   * Every surface reads this rather than the whole-class fields below it. `distributions`,
+   * `adaptation`, `contrast` and `prompts` are kept only because the fixture pages and the
+   * older tests still read them; nothing a teacher sees about a real class does.
+   */
+  worlds: WorldSection[];
   distributions: ChoiceDistribution[];
   adaptation: AdaptationSummary;
   concepts: ConceptSummary[];
@@ -411,6 +551,7 @@ export function analyseClass(records: SubmissionRecord[]): ClassAnalysis {
   return {
     rows,
     distributions: choiceDistributions(rows),
+    worlds: worldSections(rows),
     adaptation: adaptationSummary(rows),
     concepts,
     contrast: contrastingPair(rows),

@@ -1,3 +1,4 @@
+import { writtenAnswerFrom } from "../domain/evidence/writtenAnswer";
 import { evidenceRequirementById } from "../domain/competency/competencies";
 import { isShortfall, levelFor } from "../domain/competency/teachNext";
 import type { CompetencyResult, EvidenceRequirementId, RubricLevel } from "../domain/competency/types";
@@ -64,13 +65,8 @@ export interface SeatResults {
  * actually turned in.
  */
 export function writtenExplanationOf(submission: AttributedSubmission): string | null {
-  for (let index = submission.log.length - 1; index >= 0; index -= 1) {
-    const event = submission.log[index];
-    if (event?.type !== "DEFENSE_SUBMITTED") continue;
-    const text = (event.payload as { text?: unknown }).text;
-    return typeof text === "string" && text.trim().length > 0 ? text.trim() : null;
-  }
-  return null;
+  const answer = writtenAnswerFrom(submission.log);
+  return answer && answer.text.length > 0 ? answer.text : null;
 }
 
 /**

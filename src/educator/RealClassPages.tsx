@@ -5,16 +5,19 @@ import { EducatorShell } from "./EducatorShell";
 import { useClassEvidence, type ClassEvidenceState, type OverrideRequest } from "./useClassEvidence";
 import { EvidenceTrailPanel, StudentSummary } from "./EvidenceTrailPanel";
 import type { AttributedSubmission } from "../platform/classes/types";
-import { decisionsByWorld, seatList, type ChoiceDistribution, type ClassAnalysis, type StudentRow } from "./analysis";
+import { type ChoiceDistribution, type ClassAnalysis, type StudentRow } from "./analysis";
+import { SeatNamesContext, seatLabels, seatNames, useSeatLabel, useSeatNames, type RosterRow } from "./names";
+import { gradebookLineFor, gradebookTsv } from "./gradebook";
+import { MAX_FEEDBACK_LENGTH, type TeacherFeedback } from "../platform/identity/types";
+import type { ProgressRow } from "../platform/identity/types";
+import { stageLabel } from "../domain/scenario/registry";
 import { dollars, formatDollars } from "../domain/core/money";
 import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { WORLD_REGISTRY } from "../domain/scenario/registry";
 import { POP_UP_SCENARIO } from "../domain/scenario/worlds/food-truck";
 import { derivePopUpFacts } from "../domain/scenario/worlds/food-truck/facts";
-import { STRUCTURED_MICRO_SKILLS } from "../domain/blueprint/microSkills";
-import { CONCEPTS } from "../domain/blueprint/concepts";
-import { COMPETENCY_STATE_HEADLINES, COMPETENCY_STATE_LABELS, STATUS_LABELS, TRAJECTORY_LABELS } from "./labels";
+import { COMPETENCY_STATE_HEADLINES, COMPETENCY_STATE_LABELS } from "./labels";
 import { REASONING_MAXIMUM } from "../domain/evidence/grade";
 import { REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 import { MINIMUM_ASSESSED_FOR_A_STATE, MINIMUM_RESULTS_FOR_CLASS_NARRATION } from "../domain/competency/objectiveState";
@@ -62,7 +65,11 @@ function ClassFrame({ state, children, title }: {
       </EducatorShell>
     );
   }
-  return <EducatorShell>{children(state)}</EducatorShell>;
+  return (
+    <EducatorShell>
+      <SeatNamesContext.Provider value={seatNames(state.roster)}>{children(state)}</SeatNamesContext.Provider>
+    </EducatorShell>
+  );
 }
 
 /**
@@ -115,6 +122,7 @@ function worldsPlayed(rows: readonly StudentRow[]): string | null {
 
 /** One decision, and who made each call. Counts, and the seats behind every count. */
 function Distribution({ distribution }: { distribution: ChoiceDistribution }) {
+  const names = useSeatNames();
   return (
     <article className="choice-dist">
       <h3>{distribution.question}</h3>
@@ -125,7 +133,7 @@ function Distribution({ distribution }: { distribution: ChoiceDistribution }) {
             <span>{share.label}</span>
             {/* Every count links back to the students inside it, so nothing here is a
                 number a teacher has to take on faith. */}
-            <span className="choice-dist__seats">{share.seats.length > 0 ? seatList(share.seats) : "Nobody"}</span>
+            <span className="choice-dist__seats">{seatLabels(share.seats, names)}</span>
           </li>
         ))}
       </ul>
@@ -175,6 +183,187 @@ function ClassLead({ spine }: { spine: ClassSpine }) {
   );
 }
 
+
+/**
+ * Where the room is, right now.
+ *
+ * The class page could previously show a student in exactly two states: turned in, or not
+ * present at all. Nothing was written to the service until the final screen, so a teacher
+ * walking the room could not see who had not started, who was mid-run, or who had stopped on
+ * Tuesday and not come back. This is the smallest thing that answers those questions: a
+ * count per bucket, and — for anybody still working — which screen and how long since they
+ * last did anything.
+ *
+ * There is no per-second tracking behind it and there is not going to be. A stage and a
+ * last-touched time are what a teacher can act on; anything finer would be surveillance
+ * bought with nothing.
+ */
+function LiveState({ roster, progress, turnedIn, code, keyQuery, loadedAt }: {
+  roster: readonly RosterRow[];
+  progress: readonly ProgressRow[];
+  turnedIn: readonly string[];
+  code: string;
+  keyQuery: string;
+  /** When this page was fetched. Elapsed time is measured from it so the render is a function of its input. */
+  loadedAt: number;
+}) {
+  const label = useSeatLabel();
+  const live = roster.filter((row) => !row.removedAt);
+  if (live.length === 0 && progress.length === 0) return null;
+  const done = new Set(turnedIn);
+  const working = progress.filter((row) => !done.has(row.seatCode));
+  const workingSeats = new Set(working.map((row) => row.seatCode));
+  const notStarted = live.filter((row) => !done.has(row.seatCode) && !workingSeats.has(row.seatCode));
+
+  return (
+    <section className="dashboard-section live-state">
+      <div className="section-heading">
+        <p className="eyebrow">Right now</p>
+        <h2>Where the room is</h2>
+      </div>
+      <dl className="live-state__counts">
+        <div><dt>Turned in</dt><dd>{done.size}</dd></div>
+        <div><dt>Still working</dt><dd>{working.length}</dd></div>
+        <div><dt>Not started</dt><dd>{live.length > 0 ? notStarted.length : "—"}</dd></div>
+      </dl>
+      {working.length > 0 && (
+        <ul className="live-state__list">
+          {working
+            .slice()
+            .sort((a, b) => a.updatedAt - b.updatedAt)
+            .map((row) => {
+              const quiet = Math.max(0, Math.round((loadedAt - row.updatedAt) / 60_000));
+              return (
+                <li key={row.seatCode}>
+                  <Link to={`/educator/class/${code}/students/${row.seatCode}${keyQuery}`}>{label(row.seatCode)}</Link>
+                  <span>{stageLabel(row.worldId, row.stage)}</span>
+                  {/* Said as elapsed time rather than a clock, because what a teacher does
+                      with it is decide whether to walk over. */}
+                  <span className="live-state__quiet">{quiet < 1 ? "just now" : `${quiet} min ago`}</span>
+                </li>
+              );
+            })}
+        </ul>
+      )}
+      {live.length > 0 && notStarted.length > 0 && (
+        <p className="live-state__waiting">Not started: {seatLabels(notStarted.map((row) => row.seatCode), seatNames(roster))}.</p>
+      )}
+      {live.length === 0 && (
+        <p className="class-state">
+          This class has no student list, so BOW cannot say who has not started — only who has.
+          Add one from the class setup and every seat gets a name.
+        </p>
+      )}
+    </section>
+  );
+}
+
+
+/**
+ * The class, as something that can leave.
+ *
+ * A teacher's Friday used to be twenty-nine manual copy steps, because nothing in this
+ * product could be exported. It is tab-separated and copied to the clipboard rather than
+ * downloaded, because what a teacher does next is paste it into a column of a gradebook they
+ * already have open — a file to find in a Downloads folder is a step further from that, not
+ * closer.
+ */
+function ExportClass({ submissions, roster, label }: {
+  submissions: readonly AttributedSubmission[];
+  roster: readonly RosterRow[];
+  label: string;
+}) {
+  const [said, setSaid] = useState<string | null>(null);
+  const names = seatNames(roster);
+  if (submissions.length === 0) return null;
+  const copy = () => {
+    const lines = submissions.map((submission) =>
+      gradebookLineFor(submission, names.get(submission.seatCode) ?? null));
+    void navigator.clipboard
+      .writeText(gradebookTsv(lines))
+      .then(() => setSaid(`${lines.length} rows copied. Paste into a spreadsheet.`))
+      .catch(() => setSaid("Could not reach the clipboard. Select the table and copy it instead."));
+  };
+  return (
+    <div className="class-export">
+      <Button variant="secondary" onClick={copy}>Copy {label} for a gradebook</Button>
+      <p aria-live="polite">{said}</p>
+    </div>
+  );
+}
+
+
+/**
+ * What the teacher says back, and the only thing in this product that travels that way.
+ *
+ * Four hundred characters, one message, no thread, no draft state, no send-later. The point
+ * is that a student who wrote four sentences about why they protected the backup money hears
+ * something from the person who read them. Anything more than that is a messaging system, and
+ * a messaging system between adults and children in a school product is a different
+ * conversation with a district than this one is.
+ *
+ * "Worth talking about in person" is a flag on the teacher's own list. It is never shown to
+ * the student, because a child reading "your teacher flagged you" learns nothing and worries.
+ */
+function Feedback({ seatCode, sessionId, existing, onSend }: {
+  seatCode: string;
+  sessionId: string;
+  existing: TeacherFeedback | undefined;
+  onSend: (body: string, flagged: boolean) => Promise<boolean>;
+}) {
+  const [body, setBody] = useState("");
+  const [flagged, setFlagged] = useState(existing?.flagged ?? false);
+  const [said, setSaid] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const trimmed = body.trim();
+
+  const send = async () => {
+    if (trimmed.length === 0 || sending) return;
+    setSending(true);
+    const ok = await onSend(trimmed, flagged);
+    setSending(false);
+    setSaid(ok ? "Sent. They will see it next time they open BOW." : "That did not send. Try again.");
+    if (ok) setBody("");
+  };
+
+  return (
+    <section className="feedback">
+      <div className="section-heading">
+        <p className="eyebrow">Write back</p>
+        <h3>What they hear from you</h3>
+      </div>
+      {existing && (
+        <blockquote className="feedback__sent">
+          {existing.body}
+          <cite>Sent {new Date(existing.at).toLocaleDateString()}</cite>
+        </blockquote>
+      )}
+      <label className="field" htmlFor={`feedback-${seatCode}-${sessionId}`}>
+        <span className="field-label">{existing ? "Say something else" : "One or two sentences"}</span>
+        <textarea
+          id={`feedback-${seatCode}-${sessionId}`}
+          value={body}
+          maxLength={MAX_FEEDBACK_LENGTH}
+          rows={3}
+          onChange={(event) => setBody(event.target.value)}
+          placeholder="Name one thing they did and one thing to try next time."
+        />
+      </label>
+      <label className="checkline">
+        <input type="checkbox" checked={flagged} onChange={(event) => setFlagged(event.target.checked)} />
+        <span>Worth talking about in person — for your list, not theirs.</span>
+      </label>
+      <div className="feedback__actions">
+        <Button variant="primary" aria-disabled={trimmed.length === 0 || sending} onClick={() => void send()}>
+          {sending ? "Sending…" : "Send it"}
+        </Button>
+        <span>{MAX_FEEDBACK_LENGTH - body.length} left</span>
+      </div>
+      <p aria-live="polite">{said}</p>
+    </section>
+  );
+}
+
 export function RealClassOverview() {
   const { code } = useParams();
   const [params] = useSearchParams();
@@ -186,6 +375,7 @@ export function RealClassOverview() {
     <ClassFrame state={state}>
       {(ready) => {
         const { analysis, record, assignments, submissions } = ready;
+        const names = seatNames(ready.roster);
         if (analysis.rows.length === 0) return <NothingYet code={record.code} label={record.label} />;
         const spine = classSpineFrom({ record, assignments, submissions });
         const total = analysis.rows.length;
@@ -215,6 +405,15 @@ export function RealClassOverview() {
                   : <span>Every explanation read</span>}
               </div>
             </header>
+
+            <LiveState
+              roster={ready.roster}
+              progress={ready.progress}
+              turnedIn={analysis.rows.map((row) => row.seatCode)}
+              code={record.code}
+              keyQuery={keyQuery}
+              loadedAt={ready.loadedAt}
+            />
 
             {!spine.narratable && (
               <p className="class-guard">
@@ -271,50 +470,55 @@ export function RealClassOverview() {
                 {/* One section per world, because the questions are the world's. A class
                     where students chose differently was asked two different sets of
                     questions, and each set has its own denominator. */}
-                {decisionsByWorld(analysis.rows).map((group) => (
-                  <section className="dashboard-section" key={group.worldId}>
+                {/* One block per world, each with its own denominator. Nothing on this page
+                    divides one world's question by the whole class any more. */}
+                {analysis.worlds.map((world) => (
+                  <section className="dashboard-section" key={world.worldId}>
                     <div className="section-heading">
                       <p className="eyebrow">
-                        {WORLD_REGISTRY[group.worldId]?.title ?? group.worldId} · {group.seats} {group.seats === 1 ? "student" : "students"}
+                        {world.title} · {world.seats} {world.seats === 1 ? "student" : "students"}
                       </p>
                       <h2>What they decided</h2>
                     </div>
                     <div className="choice-grid">
-                      {group.distributions.map((distribution) => (
+                      {world.distributions.map((distribution) => (
                         <Distribution key={distribution.id} distribution={distribution} />
                       ))}
                     </div>
+                    {world.adaptation && (
+                      <div className="adaptation">
+                        <div className="section-heading">
+                          <p className="eyebrow">{world.adaptation.heading}</p>
+                          <h3>What moved</h3>
+                        </div>
+                        {world.adaptation.cuts.length > 0 && (
+                          <ul className="cut-list">
+                            {world.adaptation.cuts.map((entry) => (
+                              <li key={entry.label}>
+                                <b>{entry.seats.length}</b>
+                                <span>of {world.seats} cut <strong>{entry.label}</strong> first</span>
+                                <span className="choice-dist__seats">{seatLabels(entry.seats, names)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <dl className="adaptation-lines">
+                          {world.adaptation.lines.map((line) => (
+                            <div key={line.label}><dt>{line.label}</dt><dd>{line.count} of {world.seats}</dd></div>
+                          ))}
+                        </dl>
+                      </div>
+                    )}
                   </section>
                 ))}
-
-                <section className="dashboard-section">
-                  <div className="section-heading">
-                    <p className="eyebrow">After Week 5</p>
-                    <h2>What they gave up first</h2>
-                  </div>
-                  {analysis.adaptation.cutFirst.length === 0 ? (
-                    <p className="class-state">No student reduced any part of their plan after Week 5.</p>
-                  ) : (
-                    <ul className="cut-list">
-                      {analysis.adaptation.cutFirst.map((entry) => (
-                        <li key={entry.category}>
-                          <b>{entry.seats.length}</b>
-                          <span>of {total} cut <strong>{entry.label.toLowerCase()}</strong> first</span>
-                          <span className="choice-dist__seats">{seatList(entry.seats)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <dl className="adaptation-lines">
-                    <div><dt>Backup money absorbed a loss</dt><dd>{analysis.adaptation.buffered.length} of {total}</dd></div>
-                    <div><dt>Finished with something uncovered</dt><dd>{analysis.adaptation.leftUncovered.length} of {total}</dd></div>
-                    <div><dt>Landed a plan they never changed</dt><dd>{analysis.adaptation.unchanged.length} of {total}</dd></div>
-                  </dl>
-                </section>
               </>
             )}
 
             {spine.narratable && students}
+
+            <section className="dashboard-section">
+              <ExportClass submissions={submissions} roster={ready.roster} label={record.label} />
+            </section>
 
             <section className="class-foot">
               <div>
@@ -353,6 +557,7 @@ function StudentRows({ rows, submissions, code, keyQuery }: {
   code: string;
   keyQuery: string;
 }) {
+  const label = useSeatLabel();
   return (
     <div className="row-list">
       {rows.map((row) => {
@@ -361,7 +566,7 @@ function StudentRows({ rows, submissions, code, keyQuery }: {
         return (
           <Link key={row.sessionId} to={`/educator/class/${code}/students/${row.seatCode}${keyQuery}`}>
             <div>
-              <small>Seat {row.seatCode}</small>
+              <small>{label(row.seatCode)}</small>
               <h3>{spine ? COMPETENCY_STATE_HEADLINES[spine.lead] : "No result"}</h3>
               <small>{spine ? shortfallLine(spine, row) : "This attempt could not be read."}</small>
             </div>
@@ -389,7 +594,7 @@ function shortfallLine(spine: StudentSpine, row: StudentRow): string {
 export function RealStudentEvidence() {
   const { code, seatCode } = useParams();
   const [params] = useSearchParams();
-  const { state, scoreReasoning, recordOverride } = useClassEvidence(code);
+  const { state, scoreReasoning, recordOverride, sendFeedback } = useClassEvidence(code);
   const keyQuery = params.get("key") ? `?key=${params.get("key")}` : "";
 
   return (
@@ -400,7 +605,7 @@ export function RealStudentEvidence() {
           return (
             <header className="page-header page-header--with-back">
               <Link to={`/educator/class/${code}${keyQuery}`}>← Class evidence</Link>
-              <p className="eyebrow">Seat {seatCode}</p>
+              <p className="eyebrow">{`Seat ${seatCode}`}</p>
               <h1>Nothing from this seat.</h1>
               <p>No student has turned work in from seat {seatCode} in this class.</p>
             </header>
@@ -417,6 +622,10 @@ export function RealStudentEvidence() {
             onScore={scoreReasoning}
             {...(submission ? { submission } : {})}
             onOverride={(override) => recordOverride(row.seatCode, row.sessionId, override)}
+            onFeedback={(body, flagged) => sendFeedback(row.seatCode, row.sessionId, body, flagged)}
+            {...(ready.feedback.filter((entry) => entry.seatCode === row.seatCode && entry.sessionId === row.sessionId).sort((a, b) => b.at - a.at)[0]
+              ? { feedback: ready.feedback.filter((entry) => entry.seatCode === row.seatCode && entry.sessionId === row.sessionId).sort((a, b) => b.at - a.at)[0]! }
+              : {})}
           />
         );
       }}
@@ -477,13 +686,15 @@ function StudentLead({ spine, awaitingReading }: { spine: StudentSpine; awaiting
   );
 }
 
-function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride }: {
+function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride, onFeedback, feedback }: {
   row: StudentRow;
   code: string;
   keyQuery: string;
   onScore: (seat: string, session: string, scores: ReasoningScores | null) => Promise<boolean>;
   submission?: AttributedSubmission;
   onOverride: (override: OverrideRequest) => Promise<boolean>;
+  onFeedback: (body: string, flagged: boolean) => Promise<boolean>;
+  feedback?: TeacherFeedback;
 }) {
   // Opens on the trail, because the reason to open one student is to check a conclusion —
   // and because §19.1 says the chain is read in order, not picked from.
@@ -495,8 +706,8 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride }: 
   const total = reasoningTotal(scores);
   // Every criterion has to have been answered before this is a reading rather than a blank.
   const complete = REASONING_CRITERIA.every((criterion) => scores[criterion.id] !== undefined);
-  const grade = row.result.grade;
   const spine = submission ? studentSpineFor(submission) : null;
+  const label = useSeatLabel();
 
   return (
     <>
@@ -504,7 +715,7 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride }: 
         <div>
           <Link to={`/educator/class/${code}${keyQuery}`}>← Class evidence</Link>
           <p className="eyebrow">Turned in {new Date(row.submittedAt).toLocaleString()}</p>
-          <h1>Seat {row.seatCode}</h1>
+          <h1>{label(row.seatCode)}</h1>
           <p>{summarise(row)}</p>
         </div>
         {spine
@@ -644,7 +855,14 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride }: 
           computed has not changed. What changed is that it no longer sits at the top of the
           page contradicting the states above: it is one line, it says what it counts, and
           the working behind it is one disclosure away. */}
-      <Gradebook row={row} structured={grade.structuredPoints} structuredMaximum={grade.structuredMaximum} />
+      {submission && <Gradebook submission={submission} displayName={label(row.seatCode) === `Seat ${row.seatCode}` ? null : label(row.seatCode)} />}
+
+      <Feedback
+        seatCode={row.seatCode}
+        sessionId={row.sessionId}
+        {...(feedback ? { existing: feedback } : { existing: undefined })}
+        onSend={onFeedback}
+      />
     </>
   );
 }
@@ -714,55 +932,46 @@ function PopUpPlanTab({ row }: { row: StudentRow }) {
  * have been copied into a real gradebook. A world without a points spine says so and lets
  * the states stand as the account, which is what they are on every world anyway.
  */
-function Gradebook({ row, structured, structuredMaximum }: { row: StudentRow; structured: number; structuredMaximum: number }) {
-  const final = row.result.grade.finalPoints;
-  if (row.worldId !== "basketball") {
-    return (
-      <section className="gradebook">
-        <p className="field-label">Gradebook line</p>
-        <p className="gradebook__figure">
-          <strong>No points total for this world</strong>
-          <span>
-            The points total is built from Eight Weeks to the Showcase&rsquo;s own eighteen steps, and this
-            student played {WORLD_REGISTRY[row.worldId]?.title ?? "another world"}. What they showed is above,
-            requirement by requirement, and it is the same reading either world produces.
-          </span>
-        </p>
-      </section>
-    );
-  }
+function Gradebook({ submission, displayName }: { submission: AttributedSubmission; displayName: string | null }) {
+  const line = gradebookLineFor(submission, displayName);
   return (
     <section className="gradebook">
       <p className="field-label">Gradebook line</p>
+      <dl className="gradebook__counts">
+        <div><dt>Required parts shown</dt><dd>{line.requirements.met}</dd></div>
+        <div><dt>Fell short</dt><dd>{line.requirements.short}</dd></div>
+        {/* Never folded into "fell short". A question nobody asked is not a question failed,
+            and this is the one artefact that gets copied somewhere nothing can explain it. */}
+        <div><dt>Never asked</dt><dd>{line.requirements.neverAsked}</dd></div>
+      </dl>
       <p className="gradebook__figure">
-        <strong>{final === null ? `${structured} of ${structuredMaximum} structured` : `${final} of 100`}</strong>
+        <strong>
+          {line.reasoning.total === null
+            ? "Reasoning not read yet"
+            : `Reasoning ${line.reasoning.total} of ${line.reasoning.maximum}`}
+        </strong>
         <span>
-          {structured} structured points
-          {row.reasoningPoints === null
-            ? ", and no reasoning marks until you read the writing."
-            : ` plus ${row.reasoningPoints} reasoning points you recorded.`}
-          {" "}It is a mark for a gradebook. What the student can actually do is the states above.
+          {line.reasoning.total === null
+            ? "The only number that leaves BOW is the one a person records after reading the writing. Nobody has read this yet."
+            : "Your own marks, criterion by criterion. BOW adds nothing to it."}
         </span>
       </p>
-      <details className="gradebook__working">
-        <summary>Where the points came from</summary>
-        <table className="grade-ledger">
-          <thead><tr><th scope="col">What it shows</th><th scope="col">How it went</th><th scope="col">Points</th></tr></thead>
-          <tbody>
-            {row.result.concepts.map((result) => (
-              <tr key={result.conceptId}>
-                <th scope="row">{CONCEPTS.find((concept) => concept.id === result.conceptId)?.label ?? result.conceptId}</th>
-                <td>
-                  <span className="status-badge" data-status={result.status}>{STATUS_LABELS[result.status]}</span>
-                  <span className="grade-ledger__how">{TRAJECTORY_LABELS[result.trajectory]}</span>
-                </td>
-                <td className="money">{result.points === null ? "—" : `${result.points}/${result.maxPoints}`}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <MicroSkillTrail observations={row.result.observations} />
-      </details>
+      {line.reasoning.total !== null && (
+        <dl className="gradebook__criteria">
+          {line.reasoning.criteria.map((criterion) => (
+            <div key={criterion.id}>
+              <dt>{criterion.label}</dt>
+              <dd>{criterion.mark === null ? "—" : `${criterion.mark}/${criterion.maximum}`}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {line.teacherReadings > 0 && (
+        <p className="gradebook__note">
+          You have recorded {line.teacherReadings} {line.teacherReadings === 1 ? "reading" : "readings"} of your own on this
+          attempt, and {line.teacherReadings === 1 ? "it stands" : "they stand"} above BOW&rsquo;s.
+        </p>
+      )}
     </section>
   );
 }
@@ -810,44 +1019,5 @@ function popUpSummary(row: StudentRow): string {
  * moment it came from — not that all eighteen are on screen at once. So the exceptions are
  * open, the rest is summarised in a line, and the complete trail is one disclosure away.
  */
-function MicroSkillTrail({ observations }: { observations: StudentRow["result"]["observations"] }) {
-  const label = (id: string) => STRUCTURED_MICRO_SKILLS.find((skill) => skill.id === id)?.label ?? id;
-  const exceptions = observations.filter((observation) => observation.points !== 5);
-  const table = (rows: typeof observations) => (
-    <table className="micro-table">
-      <thead><tr><th scope="col">Micro-skill</th><th scope="col">Outcome</th><th scope="col">Why</th></tr></thead>
-      <tbody>
-        {rows.map((observation) => (
-          <tr key={observation.microSkillId}>
-            <th scope="row"><code>{observation.microSkillId}</code>{label(observation.microSkillId)}</th>
-            <td>{observation.points === null ? "Not observed" : `${observation.points}/5`}</td>
-            <td>{observation.reason}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-
-  return (
-    <>
-      {exceptions.length === 0 ? (
-        <p className="class-state">
-          All {observations.length} micro-skills scored full marks. These are points, not the requirement states above.
-        </p>
-      ) : (
-        <>
-          <p className="class-state">
-            {exceptions.length} of {observations.length} scored below full marks.
-          </p>
-          {table(exceptions)}
-        </>
-      )}
-      <details className="micro-trail">
-        <summary>Show all {observations.length}</summary>
-        {table(observations)}
-      </details>
-    </>
-  );
-}
 
 export type { ClassAnalysis };

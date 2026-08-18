@@ -17,8 +17,18 @@ function api(store: ClassStore, now = NOW) {
     );
 }
 
+/**
+ * A whole run, in miniature: a student sat down and, at the end, wrote something.
+ *
+ * The written answer is here rather than being the one event this fixture omits, because the
+ * service now refuses to record a reasoning mark against an attempt that contains no writing
+ * — a mark on an empty string used to become a rubric level printed under the heading BOW.
+ * A fixture that could be scored without any writing in it was describing a submission the
+ * product does not accept.
+ */
 const log: EvidenceEvent[] = [
   { id: "event-1", sequence: 1, timestamp: NOW, type: "SESSION_STARTED", stage: "entry", challengeId: PLAN_UNDER_PRESSURE.id, challengeVersion: PLAN_UNDER_PRESSURE.version, sessionId: "session-aaaaaaaa", worldId: "basketball", conceptIds: [], competencyIds: [], evidenceRequirementIds: [], payload: {}, supportLevel: "standard_access" },
+  { id: "event-2", sequence: 2, timestamp: NOW, type: "DEFENSE_SUBMITTED", stage: "defense", challengeId: PLAN_UNDER_PRESSURE.id, challengeVersion: PLAN_UNDER_PRESSURE.version, sessionId: "session-aaaaaaaa", worldId: "basketball", conceptIds: [], competencyIds: [], evidenceRequirementIds: [], payload: { text: "I kept the backup money because the bonus is not guaranteed.", tileIds: ["reserve"] }, supportLevel: "standard_access" },
 ];
 
 const submission = {

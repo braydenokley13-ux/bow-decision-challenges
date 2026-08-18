@@ -67,21 +67,39 @@ describe("the points model stays out of the lead", () => {
     expect(rows).not.toMatch(/structuredPoints|finalPoints|\/100/);
   });
 
-  it("shows the gradebook line once, and says what it counts", () => {
+  it("shows one gradebook line, and no composite total anywhere", () => {
     expect(source.match(/function Gradebook/g)).toHaveLength(1);
     expect(source.match(/<Gradebook /g)).toHaveLength(1);
-    // The sentence may be rewritten; what it has to keep doing is telling a teacher the
-    // number is a mark and pointing them at the states as the account of the student.
-    expect(source).toContain("It is a mark for a gradebook.");
-    expect(source).toContain("What the student can actually do is the states above.");
+    // The hundred-point total is gone and must not come back. It added ninety points of
+    // support-capped machine observation to ten points a person typed after reading a
+    // paragraph, summed absences as zeros, and existed in one of the two worlds — so a class
+    // that let students choose put a number beside half the room and an explanation beside
+    // the other half. A single figure over that sum cannot be traced to either half of it.
+    // Code, not prose: a comment may still explain what was removed and why.
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    expect(code).not.toMatch(/finalPoints|structuredPoints|structuredMaximum/);
+    expect(code).not.toContain("of 100");
+    expect(code).not.toContain("of 90");
   });
 
-  it("refuses to print a points denominator a world cannot earn", () => {
-    // The eighteen micro-skills behind the total are Basketball's. A market run printing
-    // "2 of 90 structured" is a number the world has no way to earn, stated as though the
-    // student failed to earn it — and it would be copied into a real gradebook.
-    const gradebook = source.slice(source.indexOf("function Gradebook"), source.indexOf("function MicroSkillTrail"));
-    expect(gradebook).toContain('row.worldId !== "basketball"');
-    expect(gradebook).toContain("No points total for this world");
+  it("counts what was never asked separately from what fell short", () => {
+    const gradebook = source.slice(source.indexOf("function Gradebook"), source.indexOf("function summarise"));
+    expect(gradebook).toContain("Never asked");
+    expect(gradebook).toContain("Fell short");
+    expect(gradebook).toContain("line.requirements.neverAsked");
+  });
+
+  it("says the same thing in both worlds", () => {
+    // The line is derived from the shared competency spine and the person's own reasoning
+    // marks, so there is no branch on the world in it at all. A student is not penalised for
+    // choosing the story the product offered them.
+    const gradebook = source.slice(source.indexOf("function Gradebook"), source.indexOf("function summarise"));
+    expect(gradebook).not.toMatch(/basketball|food-truck|worldId/);
+  });
+
+  it("names the reasoning number as a person's own, and leaves it blank until it is one", () => {
+    const gradebook = source.slice(source.indexOf("function Gradebook"), source.indexOf("function summarise"));
+    expect(gradebook).toContain("Reasoning not read yet");
+    expect(gradebook).toContain("BOW adds nothing to it.");
   });
 });

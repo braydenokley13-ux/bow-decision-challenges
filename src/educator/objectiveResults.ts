@@ -1,3 +1,4 @@
+import { evidenceRequirementById } from "../domain/competency/competencies";
 import { observeCompetencies } from "../domain/competency/observe";
 import {
   objectiveResultFrom,
@@ -92,7 +93,57 @@ export function worldOfSubmission(submission: SubmissionRecord) {
 export function competencyObservationsFor(submission: SubmissionRecord): readonly EvidenceRequirementObservation[] {
   const contract = contractFor(worldOfSubmission(submission));
   if (!contract) return [];
-  return contract.observe(submission.log, { reasoningCriteria: submission.reasoningCriteria });
+  return withTeacherJudgement(
+    contract.observe(submission.log, { reasoningCriteria: submission.reasoningCriteria }),
+    submission,
+  );
+}
+
+/**
+ * The teacher's reading, where they have recorded one.
+ *
+ * §19.4 says a teacher may disagree with a machine judgement on the record, and the record
+ * was being kept faithfully and read by nothing. Every roll-up in the product — the student
+ * headline, the class share, the teach-next reading, the objective map — went through this
+ * function and none of them saw an override, so a teacher who wrote *"they told me they just
+ * tapped the button; this was not a planned figure"* against a requirement then read
+ * **Demonstrated** at the top of the same page and found their student counted among the
+ * demonstrators on the next one. That is worse than not having the feature: it takes the
+ * disagreement and reports the opposite.
+ *
+ * Overrides are appended, so the standing level per requirement is the teacher's last word,
+ * and the machine's original is untouched in the log and still shown beside it in the trail.
+ * The support cap is not re-applied: a person who has read the run has already accounted for
+ * whatever help the student had, and capping their judgement would be the engine overruling
+ * the human it exists to defer to.
+ */
+export function withTeacherJudgement(
+  observed: readonly EvidenceRequirementObservation[],
+  submission: Pick<SubmissionRecord, "overrides">,
+): readonly EvidenceRequirementObservation[] {
+  const overrides = submission.overrides ?? [];
+  if (overrides.length === 0) return observed;
+  // Oldest first in the record, so the last entry for a requirement is the current reading.
+  const latest = new Map<string, (typeof overrides)[number]>();
+  for (const override of overrides) latest.set(override.evidenceRequirementId, override);
+
+  const judged: EvidenceRequirementObservation[] = [];
+  for (const override of latest.values()) {
+    const requirement = evidenceRequirementById(override.evidenceRequirementId);
+    if (!requirement) continue;
+    judged.push({
+      evidenceRequirementId: requirement.id,
+      // Stated as the requirement's own kind so the engine accepts it. This is the one place
+      // a level for a written explanation may arrive without a world having inferred it,
+      // because a person typed it.
+      kind: requirement.kind,
+      level: override.level,
+      supportLevel: "standard_access",
+      evidenceRefs: [],
+      reason: `A teacher read this differently: ${override.note}`,
+    });
+  }
+  return [...observed, ...judged];
 }
 
 export function competencyResultsFor(submission: AttributedSubmission): readonly CompetencyResult[] {

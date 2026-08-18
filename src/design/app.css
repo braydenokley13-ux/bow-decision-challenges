@@ -52,6 +52,11 @@ p { color: var(--ink-2); }
 .challenge-shell[data-chapter="pressure"] { --chapter-ground: var(--ground-pressure); --chapter-accent: var(--fin-over); }
 .challenge-shell[data-chapter="resolution"] { --chapter-ground: var(--ground-resolution); --chapter-accent: var(--bow-brand-strong); }
 
+/* Both shells pin a bar to the top of the window, so every scroll the browser performs —
+   moving focus to a heading, revealing a section, jumping to an anchor — has to stop short of
+   it. Without this a keyboard user is sent to a control drawn underneath the top bar. */
+:root { scroll-padding-top: 88px; }
+
 /* The chapter's colour is carried on the topbar's own border rather than a pseudo-element,
    so releasing `position` for a full-page screenshot cannot detach it from the bar. */
 .challenge-topbar { height: 72px; position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-5); padding: 0 var(--gutter); background: var(--surface-raised); border-bottom: 3px solid var(--chapter-accent, var(--border-default)); box-shadow: var(--shadow-rail); transition: border-color var(--dur-stage) var(--ease-standard); }
@@ -66,7 +71,25 @@ p { color: var(--ink-2); }
 .season-strip li[data-state="played"] i { background: var(--bow-brand); }
 .season-strip li[data-state="current"] { color: var(--ink-1); font-weight: 800; }
 .season-strip li[data-state="current"] i { height: 9px; margin-top: -2px; background: var(--chapter-accent, var(--bow-brand)); }
-.contract-drawer { justify-self: end; position: relative; }
+.challenge-topbar__end { justify-self: end; display: flex; align-items: center; gap: var(--s-3); }
+.contract-drawer { position: relative; }
+
+/* The seat this run belongs to, and the way out of it. Same disclosure shape as the payments
+   drawer beside it, because it is the same kind of thing: a panel the top bar can open. */
+.run-menu { position: relative; }
+.run-menu summary { min-height: 40px; display: flex; align-items: center; gap: var(--s-2); padding: 0 var(--s-4); border: 1px solid var(--border-default); white-space: nowrap; cursor: pointer; color: var(--ink-2); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
+.run-menu > div { width: min(320px, calc(100vw - 24px)); position: absolute; right: 0; top: 52px; z-index: 30; padding: var(--s-6); background: var(--surface-raised); border: 1px solid var(--border-default); box-shadow: var(--shadow-overlay); }
+.run-menu h2 { margin: 0 0 var(--s-3); font: var(--t-title3); }
+.run-menu p { margin: 0 0 var(--s-3); color: var(--ink-2); font: var(--t-sm); }
+.run-menu__cost { color: var(--ink-1); font-weight: 600; }
+.run-menu__confirm { display: grid; gap: var(--s-2); }
+
+/* The second tab, told plainly rather than allowed to overwrite the first one. */
+.run-elsewhere { min-height: 100vh; display: grid; place-items: center; padding: var(--gutter); background: var(--canvas); }
+.run-elsewhere main { width: min(52ch, 100%); display: grid; gap: var(--s-4); padding: var(--s-7); background: var(--surface-raised); border: 1px solid var(--border-default); box-shadow: var(--shadow-overlay); }
+.run-elsewhere h1 { margin: 0; font: var(--t-title1); }
+.run-elsewhere p { margin: 0; color: var(--ink-2); }
+.run-elsewhere .button { justify-self: start; }
 .contract-drawer summary { min-height: 40px; display: flex; align-items: center; gap: var(--s-2); border: 1px solid var(--border-default); padding: 0 var(--s-4); white-space: nowrap; cursor: pointer; color: var(--bow-brand); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
 .contract-drawer > div { width: 360px; position: absolute; right: 0; top: 52px; padding: var(--s-6); background: var(--surface-raised); border: 1px solid var(--border-default); box-shadow: var(--shadow-overlay); }
 .contract-drawer dl { margin: var(--s-4) 0 0; }
@@ -472,7 +495,7 @@ p { color: var(--ink-2); }
   .stage-heading { scroll-margin-top: 140px; }
   .season-strip { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; }
   .season-strip ol { flex-basis: 100%; }
-  .contract-drawer { grid-column: 2; grid-row: 1; }
+  .challenge-topbar__end { grid-column: 2; grid-row: 1; }
   .contract-drawer > div { width: min(350px, calc(100vw - 24px)); }
   .stage-main { width: calc(100% - 24px); }
   .setup-grid, .exposure-summary, .class-foot, .standards-list, .prerequisite-list { grid-template-columns: 1fr; }
@@ -872,6 +895,7 @@ p { color: var(--ink-2); }
 .map-filters label { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
 .map-filters select { min-height: var(--tap); padding: 0 var(--s-3); font: var(--t-ui); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
 .map-required { display: inline-flex; align-items: center; gap: var(--s-2); text-transform: none; letter-spacing: 0; font: var(--t-ui); color: var(--ink-2); }
+.map-topic-description { flex-basis: 100%; margin: 0; color: var(--ink-3); font: var(--t-micro); }
 .view-switch { display: inline-flex; border: 1px solid var(--border-ink); border-radius: var(--r-sm); overflow: hidden; }
 .view-switch button { min-height: var(--tap); padding: 0 var(--s-5); border: 0; background: var(--surface); color: var(--ink-2); font: var(--t-ui); cursor: pointer; }
 .view-switch button + button { border-left: 1px solid var(--border-ink); }
@@ -1015,6 +1039,8 @@ p { color: var(--ink-2); }
 .objective-coming ul { margin: 0; padding-left: var(--s-6); color: var(--ink-2); font: var(--t-body); }
 .objective-coming__exit { margin-top: var(--s-3); }
 
+.objective-bar-note { max-width: var(--measure); margin: var(--s-5) 0 0; padding: var(--s-4); background: var(--surface-sunken); color: var(--ink-2); font: var(--t-body); border-left: 3px solid var(--fin-adjustable); }
+
 /* What BOW cannot assess yet: listed, because a teacher planning a year needs it, and
    quiet, because absence had been given twenty-two full table rows on the first screen a
    district ever saw. The hairline comes from the items rather than from a fill behind them,
@@ -1048,3 +1074,44 @@ p { color: var(--ink-2); }
 .coverage-chip { display: inline-block; padding: 2px var(--s-3); border-radius: var(--r-pill); color: var(--ink-2); background: var(--surface-sunken); font: var(--t-micro); letter-spacing: 0.04em; text-transform: uppercase; }
 .coverage-chip[data-coverage="full"] { color: var(--fin-reliable-ink); background: var(--fin-reliable-soft); }
 
+/* Where the room is, right now — three counts and, for anybody still working, which screen
+   and how long since they last did anything. Nothing finer than that is recorded. */
+.live-state__counts { display: flex; flex-wrap: wrap; gap: var(--s-6); margin: 0 0 var(--s-4); }
+.live-state__counts div { display: grid; gap: 2px; }
+.live-state__counts dt { color: var(--ink-3); font: var(--t-label); letter-spacing: var(--track-label); text-transform: uppercase; }
+.live-state__counts dd { margin: 0; font: var(--m-md); font-feature-settings: var(--num); }
+.live-state__list { display: grid; gap: var(--s-2); margin: 0 0 var(--s-3); padding: 0; list-style: none; }
+.live-state__list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-3); padding: var(--s-2) 0; border-bottom: 1px solid var(--border-subtle); }
+.live-state__list span { color: var(--ink-2); font: var(--t-sm); }
+.live-state__quiet { margin-left: auto; color: var(--ink-3); font-feature-settings: var(--num); }
+.live-state__waiting { margin: 0; color: var(--ink-2); font: var(--t-sm); }
+
+/* What moved when a world's shock landed. One block per world, each with its own count. */
+.adaptation { margin-top: var(--s-6); padding-top: var(--s-5); border-top: 1px solid var(--border-subtle); }
+
+/* The class as something that can leave, for the gradebook a teacher already has open. */
+.class-export { display: grid; gap: var(--s-2); justify-items: start; }
+.class-export p { margin: 0; color: var(--ink-2); font: var(--t-sm); }
+
+.gradebook__counts { display: flex; flex-wrap: wrap; gap: var(--s-6); margin: 0 0 var(--s-4); }
+.gradebook__counts div { display: grid; gap: 2px; }
+.gradebook__counts dt { color: var(--ink-3); font: var(--t-label); letter-spacing: var(--track-label); text-transform: uppercase; }
+.gradebook__counts dd { margin: 0; font: var(--m-md); font-feature-settings: var(--num); }
+.gradebook__criteria { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s-3); margin: var(--s-4) 0 0; }
+.gradebook__criteria div { display: grid; gap: 2px; }
+.gradebook__criteria dt { color: var(--ink-2); font: var(--t-sm); }
+.gradebook__criteria dd { margin: 0; font-feature-settings: var(--num); font-weight: 600; }
+.gradebook__note { margin: var(--s-4) 0 0; color: var(--ink-2); font: var(--t-sm); }
+
+/* The half of the loop that reaches the student. One short message, never a thread. */
+.feedback { margin: var(--s-7) 0 0; padding: var(--s-5); background: var(--surface); border-top: 1px solid var(--border-default); display: grid; gap: var(--s-3); }
+.feedback textarea { width: 100%; max-width: var(--measure); padding: var(--s-3); font: var(--t-ui); }
+.feedback__sent { max-width: var(--measure); margin: 0; padding: var(--s-3) var(--s-4); border-left: 3px solid var(--bow-brand); background: var(--ground); font-style: italic; }
+.feedback__sent cite { display: block; margin-top: var(--s-2); color: var(--ink-3); font: var(--t-sm); font-style: normal; }
+.feedback__actions { display: flex; align-items: center; gap: var(--s-4); }
+.feedback__actions span { color: var(--ink-3); font: var(--t-sm); font-feature-settings: var(--num); }
+.checkline { display: flex; align-items: flex-start; gap: var(--s-3); color: var(--ink-2); font: var(--t-sm); }
+.checkline input { margin-top: 2px; }
+
+/* One block per world on the printed debrief, so neither world's students are unmentioned. */
+.debrief__world { margin-bottom: var(--s-5); }

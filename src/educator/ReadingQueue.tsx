@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { EducatorShell } from "./EducatorShell";
+import { SeatNamesContext, seatNames, useSeatLabel } from "./names";
 import { REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 import { REASONING_MAXIMUM } from "../domain/evidence/grade";
 import { useClassEvidence } from "./useClassEvidence";
@@ -61,6 +62,7 @@ export function ReadingQueue() {
 
   return (
     <EducatorShell>
+      <SeatNamesContext.Provider value={seatNames(state.roster)}>
       <header className="page-header page-header--with-back">
         <Link to={`/educator/class/${state.record.code}${keyQuery}`}>← Class evidence</Link>
         <p className="eyebrow">{state.record.label} · Reading queue</p>
@@ -75,6 +77,7 @@ export function ReadingQueue() {
       {rows.length > 0 && (
         <Queue rows={rows} code={state.record.code} keyQuery={keyQuery} onScore={scoreReasoning} />
       )}
+      </SeatNamesContext.Provider>
     </EducatorShell>
   );
 }
@@ -139,6 +142,7 @@ function ReadingCard({ row, position, count, code, keyQuery, headingRef, onMove,
 }) {
   const [scores, setScores] = useState<ReasoningScores>(() => row.reasoningCriteria ?? {});
   const [saved, setSaved] = useState<string | null>(null);
+  const label = useSeatLabel();
   const complete = REASONING_CRITERIA.every((criterion) => scores[criterion.id] !== undefined);
   const total = reasoningTotal(scores);
   const last = position === count - 1;
@@ -157,7 +161,7 @@ function ReadingCard({ row, position, count, code, keyQuery, headingRef, onMove,
           ← Previous
         </Button>
         <p aria-live="polite">
-          {position + 1} of {count} · Seat {row.seatCode} · {row.reasoningPoints === null ? "unread" : `scored ${row.reasoningPoints}/${REASONING_MAXIMUM}`}
+          {position + 1} of {count} · {label(row.seatCode)} · {row.reasoningPoints === null ? "unread" : `scored ${row.reasoningPoints}/${REASONING_MAXIMUM}`}
         </p>
         <Button variant="quiet" aria-disabled={last} onClick={() => !last && onMove(position + 1)}>
           Next →
@@ -168,7 +172,7 @@ function ReadingCard({ row, position, count, code, keyQuery, headingRef, onMove,
         <div className="student-response">
           {/* Focus lands here on every move, so a keyboard reader is told which seat they
               are on rather than left on a button while the page changes underneath. */}
-          <h2 ref={headingRef} tabIndex={-1}>Seat {row.seatCode}</h2>
+          <h2 ref={headingRef} tabIndex={-1}>{label(row.seatCode)}</h2>
           {row.defense && row.defense.text.trim()
             ? <blockquote>{row.defense.text}</blockquote>
             : <p className="class-state">This student turned in no written explanation.</p>}

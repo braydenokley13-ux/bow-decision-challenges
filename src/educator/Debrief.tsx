@@ -2,6 +2,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { EducatorShell } from "./EducatorShell";
 import { useClassEvidence } from "./useClassEvidence";
 import { seatList, type StudentRow } from "./analysis";
+import { seatLabel, seatNames } from "./names";
 import { formatDollars } from "../domain/core/money";
 import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
@@ -46,7 +47,9 @@ export function Debrief() {
     );
   }
 
-  const { analysis, record, assignments, submissions } = state;
+  const { analysis, record, assignments, submissions, roster } = state;
+  const names = seatNames(roster);
+  const nameFor = (seatCode: string) => seatLabel(seatCode, names);
   const total = analysis.rows.length;
 
   if (total === 0) {
@@ -68,7 +71,7 @@ export function Debrief() {
     <EducatorShell measure="read">
       <article className="debrief">
         <header className="debrief__head">
-          <p className="eyebrow">{record.label} · {BASKETBALL_SCENARIO.title}</p>
+          <p className="eyebrow">{[record.label, ...analysis.worlds.map((world) => world.title)].join(" · ")}</p>
           <h1>Debrief</h1>
           <p className="lede">
             {total} {total === 1 ? "student" : "students"} finished. <DebriefLead spine={spine} />
@@ -86,59 +89,84 @@ export function Debrief() {
               Under {MINIMUM_RESULTS_FOR_CLASS_NARRATION} results, this opens on the plans below rather than on
               anything about the class.
             </p>
-          ) : analysis.prompts.length === 0 ? (
+          ) : analysis.worlds.every((world) => world.prompts.length === 0) ? (
             <p>Nothing this class did splits it, so there is no disagreement to open on.</p>
           ) : (
-            <ol className="debrief__prompts">
-              {analysis.prompts.map((prompt) => (
-                <li key={prompt.id}>
-                  <p className="debrief__ask">“{prompt.prompt}”</p>
-                  <p className="debrief__because">{prompt.because}</p>
-                </li>
-              ))}
-            </ol>
+            /* One list per world, because the questions are the world's own. A class where
+               students chose differently disagreed about two different sets of things, and
+               printing one set under both names was how seven market students came to be
+               told they had all made the same call. */
+            analysis.worlds.map((world) => (
+              <div key={world.worldId} className="debrief__world">
+                {analysis.worlds.length > 1 && <p className="eyebrow">{world.title} · {world.seats} {world.seats === 1 ? "student" : "students"}</p>}
+                {world.prompts.length === 0
+                  ? <p>Nothing these {world.seats} did splits them.</p>
+                  : (
+                    <ol className="debrief__prompts">
+                      {world.prompts.map((prompt) => (
+                        <li key={prompt.id}>
+                          <p className="debrief__ask">“{prompt.prompt}”</p>
+                          <p className="debrief__because">{prompt.because}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+              </div>
+            ))
           )}
         </section>
 
         <section className="debrief__section">
           <h2>2 · Put two real plans side by side</h2>
-          {analysis.contrast ? (
-            <div className="debrief__contrast">
-              {analysis.contrast.map((row) => (
-                <ContrastCard key={row.sessionId} row={row} submissions={submissions} />
-              ))}
+          {analysis.worlds.map((world) => (
+            <div key={world.worldId}>
+              {analysis.worlds.length > 1 && <p className="eyebrow">{world.title}</p>}
+              {world.contrast ? (
+                <div className="debrief__contrast">
+                  {world.contrast.map((row) => (
+                    <ContrastCard key={row.sessionId} row={row} submissions={submissions} />
+                  ))}
+                </div>
+              ) : (
+                <p>
+                  {world.seats < 2
+                    ? `One student ran ${world.title}, so there is no second plan to set beside it yet.`
+                    : world.worldId === "food-truck"
+                      ? "Two market plans side by side is not built yet. Their decisions are on the class page, and their own words are below."
+                      : "Every finished plan made the same calls. Ask what would have made another plan the better one."}
+                </p>
+              )}
             </div>
-          ) : (
-            <p>
-              {total < 2
-                ? "One student has finished, so there is no second plan to set beside it yet."
-                : "Every finished plan made the same calls. Ask what would have made another plan the better one."}
-            </p>
-          )}
+          ))}
         </section>
 
         <section className="debrief__section">
-          <h2>3 · What changed after Week 5</h2>
-          {analysis.adaptation.cutFirst.length === 0 ? (
-            <p>No student reduced any part of their plan after Week 5.</p>
-          ) : (
-            <>
-              <p>When the money got tight, this is what went first:</p>
-              <ul className="debrief__list">
-                {analysis.adaptation.cutFirst.map((entry) => (
-                  <li key={entry.category}>
-                    <b>{entry.seats.length} of {total}</b> cut <strong>{entry.label.toLowerCase()}</strong> first
-                    <span> — {seatList(entry.seats)}</span>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-          <ul className="debrief__list">
-            <li><b>{analysis.adaptation.buffered.length} of {total}</b> had backup money that absorbed a loss they had planned for.</li>
-            <li><b>{analysis.adaptation.leftUncovered.length} of {total}</b> finished with money still uncovered.</li>
-            <li><b>{analysis.adaptation.unchanged.length} of {total}</b> landed a plan they never had to reduce.</li>
-          </ul>
+          <h2>3 · What changed when it went wrong</h2>
+          {analysis.worlds.map((world) => (
+            <div key={world.worldId}>
+              {analysis.worlds.length > 1 && <p className="eyebrow">{world.title} · {world.seats} {world.seats === 1 ? "student" : "students"}</p>}
+              {!world.adaptation ? <p>Nothing to report for this world yet.</p> : (
+                <>
+                  <p className="debrief__because">{world.adaptation.heading}</p>
+                  {world.adaptation.cuts.length > 0 && (
+                    <ul className="debrief__list">
+                      {world.adaptation.cuts.map((entry) => (
+                        <li key={entry.label}>
+                          <b>{entry.seats.length} of {world.seats}</b> cut <strong>{entry.label}</strong> first
+                          <span> — {seatList(entry.seats)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <ul className="debrief__list">
+                    {world.adaptation.lines.map((line) => (
+                      <li key={line.label}><b>{line.count} of {world.seats}</b> {line.label.toLowerCase()}.</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          ))}
         </section>
 
         <section className="debrief__section">
@@ -148,21 +176,28 @@ export function Debrief() {
 
         <section className="debrief__section">
           <h2>5 · Read these explanations aloud</h2>
-          {/* Real student writing, unedited, and never machine-scored. */}
-          {analysis.rows.filter((row) => row.defense?.text.trim()).length === 0 ? (
+          {/* Real student writing, unedited, and never machine-scored. Taken per world and
+              capped per world: this used to be the first four rows in seat order, and market
+              seats sort last, so in a mixed class half the room's writing could never appear
+              on the one page a teacher reads out. */}
+          {analysis.worlds.every((world) => world.quotes.length === 0) ? (
             <p>No written explanations have come in yet.</p>
           ) : (
-            <ul className="debrief__quotes">
-              {analysis.rows
-                .filter((row) => row.defense?.text.trim())
-                .slice(0, 4)
-                .map((row) => (
-                  <li key={row.sessionId}>
-                    <blockquote>{row.defense!.text}</blockquote>
-                    <cite>Seat {row.seatCode}</cite>
-                  </li>
-                ))}
-            </ul>
+            analysis.worlds.map((world) => (
+              <div key={world.worldId}>
+                {analysis.worlds.length > 1 && <p className="eyebrow">{world.title}</p>}
+                {world.quotes.length === 0 ? <p>Nobody in this world has written yet.</p> : (
+                  <ul className="debrief__quotes">
+                    {world.quotes.slice(0, 4).map((quote) => (
+                      <li key={quote.seatCode}>
+                        <blockquote>{quote.text}</blockquote>
+                        <cite>{nameFor(quote.seatCode)}</cite>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ))
           )}
         </section>
       </article>
