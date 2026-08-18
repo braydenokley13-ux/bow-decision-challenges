@@ -50,7 +50,10 @@ function Home() {
           <p className="eyebrow">{PLAN_UNDER_PRESSURE.pillar} · {PLAN_UNDER_PRESSURE.grades}</p>
           <h1>Somebody has to decide where the money goes.</h1>
           <p className="home__deck">
-            Two worlds, one job. {PLAYABLE_WORLDS.map((world) => world.title).join(" or ")} — you handle the money,
+            {/* "Story", not "world". The educator surface has just been moved onto one set of
+                words and this is the first sentence anybody reads; a front door speaking the
+                schema is where a vocabulary starts coming back. */}
+            Two stories, one job. {PLAYABLE_WORLDS.map((world) => world.title).join(" or ")} — you handle the money,
             and you find out what your decisions cost.
           </p>
           <div className="home__actions">

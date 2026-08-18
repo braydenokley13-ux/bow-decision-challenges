@@ -295,15 +295,23 @@ export function StudentSummary({ submission }: { submission: SubmissionRecord })
             </ul>
           ) : <p className="class-state">Nothing on this attempt came out short.</p>}
         </div>
+        {/* Grouped by level rather than labelled row by row. Ten chips each ending "— Right
+            first time" is the same word ten times and the eye stops reading it; the level is
+            the heading, the count is beside it, and the chips are the work. */}
         <div className="student-summary__could">
-          <p className="field-label">What they did · {did.length}</p>
-          {did.length > 0 ? (
-            <ul className="student-summary__chips" data-tone="good">
-              {did.map((judgement) => (
-                <li key={judgement.evidenceRequirementId}>{judgement.label} — {levelLabel(readAs(judgement))}</li>
-              ))}
-            </ul>
-          ) : <p className="class-state">Nothing reached this bar on this attempt.</p>}
+          <p className="field-label">What they did</p>
+          {did.length > 0 ? LEVEL_ORDER.flatMap((level) => {
+            const group = did.filter((judgement) => (readAs(judgement) ?? "null") === level);
+            if (group.length === 0) return [];
+            return [(
+              <div key={String(level)}>
+                <p className="field-label">{levelLabel(level === "null" ? null : level)} · {group.length}</p>
+                <ul className="student-summary__chips" data-tone="good">
+                  {group.map((judgement) => <li key={judgement.evidenceRequirementId}>{judgement.label}</li>)}
+                </ul>
+              </div>
+            )];
+          }) : <p className="class-state">Nothing reached this bar on this attempt.</p>}
         </div>
       </div>
       {/* The same rule as the trail: the words on this page, each with its sentence, once. */}

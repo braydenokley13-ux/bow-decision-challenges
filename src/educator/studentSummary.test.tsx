@@ -62,9 +62,14 @@ describe("the student summary under an override", () => {
     expect(strength).toBeDefined();
   });
 
-  it("lists the machine reading when no override exists, with its level beside it", () => {
+  it("lists the machine reading when no override exists, under its own level", () => {
     render(<StudentSummary submission={submission} />);
-    expect(rowFor(strength.label)).toHaveTextContent(levelLabel(strength.level));
+    // The level is the group heading rather than a word repeated on every chip: ten chips
+    // each ending "— Right first time" is the same word ten times and the eye stops reading
+    // it. What matters is that the level word is on the page and that this requirement sits
+    // under the right one, which is what the enclosing block asserts.
+    const block = rowFor(strength.label).closest("div");
+    expect(block).toHaveTextContent(levelLabel(strength.level));
   });
 
   it("drops a requirement the teacher has set to not observed, rather than restoring BOW's level", () => {
@@ -80,7 +85,8 @@ describe("the student summary under an override", () => {
     const item = rowFor(strength.label);
     expect(item.closest("ul")).toHaveAttribute("data-tone", "gap");
     // And it says which level put it there, in the words the trail and the override control
-    // both use. The heading no longer carries a level word of its own.
+    // both use. On this side the level is on the row, because these levels genuinely mix and
+    // every row carries a paragraph of its own reason underneath.
     expect(item).toHaveTextContent(levelLabel(0));
   });
 

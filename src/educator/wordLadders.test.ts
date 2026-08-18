@@ -69,7 +69,7 @@ function withoutComments(source: string): string {
  * `allowedWorldIds` and `WORLD_REGISTRY` live in the same file as a scan that bans the word
  * *world* from a teacher's screen.
  */
-function readableText(source: string): string[] {
+function readableText(source: string, jsx: boolean): string[] {
   const stripped = withoutComments(source)
     // Module specifiers are addresses, not English. `../domain/competency/types` is the path
     // to a type, and Rule 0 exempts type names.
@@ -80,11 +80,37 @@ function readableText(source: string): string[] {
     .replace(/\$\{[^{}]*\}/g, " ");
   const quoted = [...stripped.matchAll(/"([^"\n]*)"|'([^'\n]*)'|`([^`]*)`/g)]
     .map((match) => match[1] ?? match[2] ?? match[3] ?? "");
-  // JSX text: what sits between a `>` and a `<` with no braces or tags in it. The lookbehind
-  // keeps `=>` out — an arrow function opens a run of code that ends at the next `<`, which
-  // is how a comparison operator came to be read as a sentence.
-  const jsx = [...stripped.matchAll(/(?<![=!<>])>([^<>{}]*[A-Za-z][^<>{}]*)</g)].map((match) => match[1] ?? "");
-  return [...quoted, ...jsx].filter(isEnglish);
+  // JSX text: a run of prose between a tag or an expression and the next one.
+  //
+  // Both ends matter. A sentence that ends at an interpolation rather than at a closing tag
+  // — `>No single requirement reached {GAP}% of the {n} assessed students.` — is invisible to
+  // a pattern that needs a `<` before the first brace, and that is the shape most of this
+  // product's prose actually has. So the run may open at `>` or `}` and close at `<` or `{`.
+  //
+  // The lookbehind keeps `=>` out, and `looksLikeCode` throws away what opening at `}` drags
+  // in: a run holding `=`, `;` or a backtick is a statement, not a sentence a teacher reads.
+  const between = jsx
+    ? [...stripped.matchAll(/(?<![=!<>])[>}]([^<>{}]*[A-Za-z][^<>{}]*)[<{]/g)]
+      .map((match) => match[1] ?? "")
+      .filter((text) => !looksLikeCode(text))
+    : [];
+  // A quoted string with no space in it is a class name, a route, an id or an enum member.
+  // A JSX text node with no space in it is a word on the screen — `<td>Built</td>` is the
+  // engineering schedule printed in a standards table, and it is exactly what this scan is
+  // for — so the one-word rule applies to quotes only.
+  return [...quoted.filter((text) => isEnglish(text, false)), ...between.filter((text) => isEnglish(text, true))];
+}
+
+/**
+ * A run that opened at a closing brace and is plainly a statement rather than a sentence.
+ *
+ * Opening at `}` is what lets the scan see a sentence that ends at an interpolation, and it
+ * is also what drags in `} for (const row of world.rows) {`. None of the six characters below
+ * appears in a sentence a teacher reads anywhere in this product — checked by grep before
+ * this list was written — and every one of them is a reliable sign of a statement.
+ */
+function looksLikeCode(text: string): boolean {
+  return /[=;`()]/.test(text);
 }
 
 /**
@@ -95,10 +121,10 @@ function readableText(source: string): string[] {
  * are all quoted strings and none of them is read by a person, so they are excluded by shape:
  * anything with no space in it, or with a slash or an underscore in it, is machinery.
  */
-function isEnglish(text: string): boolean {
+function isEnglish(text: string, single: boolean): boolean {
   const trimmed = text.trim();
   if (!/[A-Za-z]/.test(trimmed)) return false;
-  if (!/\s/.test(trimmed)) return false;
+  if (!single && !/\s/.test(trimmed)) return false;
   if (/[/_]/.test(trimmed)) return false;
   return true;
 }
@@ -126,6 +152,13 @@ const RETIRED: readonly { readonly word: RegExp; readonly instead: string }[] = 
   { word: /\bexecutable\b/i, instead: "plain English about what the plan does" },
   { word: /\bviable\b/i, instead: "a plan that works" },
   { word: /\bstructured\b/i, instead: "nothing — it named a points model that no longer exists" },
+  // Not on the audit's retired list, added here. Ladder 3 replaced *demonstrated*, *not yet
+  // demonstrated* and *demonstrated with support* in one move, and the word survived that
+  // change in four places anyway — a class headline reading "83% demonstrated", a debrief
+  // lede, an objective bar note and a guide sentence — because it is ordinary enough to type
+  // without noticing. A vocabulary that is retired everywhere except the sentences nobody
+  // rereads is not retired.
+  { word: /\bdemonstrat(?:e|ed|es|ing|ion)\b/i, instead: "showed it — `SKILL_STATE_LABELS`" },
   { word: /^Built$|^None yet$/i, instead: "Yes / Not yet — `Can BOW see it yet?`" },
 ];
 
@@ -147,7 +180,7 @@ const ALLOWED: readonly RegExp[] = [
 
 function offencesIn(path: string): string[] {
   const offences: string[] = [];
-  for (const text of readableText(readFileSync(path, "utf8"))) {
+  for (const text of readableText(readFileSync(path, "utf8"), path.endsWith(".tsx"))) {
     if (ALLOWED.some((allowed) => allowed.test(text))) continue;
     for (const retired of RETIRED) {
       if (retired.word.test(text)) {
@@ -180,7 +213,7 @@ describe("one vocabulary on the teacher's screen", () => {
       'label: "Construct a viable budget",',
       '<td>Built</td>',
     ].join("\n");
-    const found = readableText(before).flatMap((text) => RETIRED.filter((retired) => retired.word.test(text)));
+    const found = readableText(before, true).flatMap((text) => RETIRED.filter((retired) => retired.word.test(text)));
     expect(found.length, "the extraction stopped seeing prose").toBeGreaterThanOrEqual(5);
 
     // And the other half: it must not fire on the things Rule 0 exempts.
@@ -191,7 +224,7 @@ describe("one vocabulary on the teacher's screen", () => {
       'const spine = studentSpineFor(submission);',
       '<p>{worldTitle(candidate.worldId)}</p>',
     ].join("\n");
-    expect(readableText(exempt).flatMap((text) => RETIRED.filter((retired) => retired.word.test(text)))).toEqual([]);
+    expect(readableText(exempt, true).flatMap((text) => RETIRED.filter((retired) => retired.word.test(text)))).toEqual([]);
   });
 
   it("keeps no exemption for a string that has already been fixed", () => {

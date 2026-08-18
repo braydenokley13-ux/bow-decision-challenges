@@ -335,14 +335,21 @@ export async function completeWorkingCalcs(page: Page, opts: { attendance?: bool
 export const TO_DEPOSIT = `Week ${N.course.depositDeadlineWeek} · the course office is calling`;
 
 /**
- * Reads the four weeks and answers the course-deposit deadline that follows them.
+ * Answers Week 3's competing claims, then the course-deposit deadline that follows them.
  *
- * Weeks 1–4 used to be four presses of "Play Week N" charging the same rent and taking the
- * same hours every time, and the deadline was a panel at the bottom of that page. The weeks
- * now resolve together and the deadline is its own screen, so this is one press to leave the
- * season and one decision on the screen after it.
+ * Weeks 1–4 used to be four presses of "Play Week N" charging the same rent every time, then
+ * one press that resolved them together. There is a decision in the middle of them now: Avery
+ * is handed cash three things want and cannot all have, and the week does not end until the
+ * student has funded something and said what made them leave the rest out. So the helper does
+ * what a student does — takes one claim, gives a reason — rather than pressing past a beat the
+ * product will refuse to let anybody press past.
+ *
+ * `claim` is which of the three, in the order the screen lists them. The first fits inside the
+ * cash on its own and the other two then cannot, which is the shape of the decision.
  */
-export async function playSeasonWeeks(page: Page, opts: { deposit?: boolean } = {}) {
+export async function playSeasonWeeks(page: Page, opts: { deposit?: boolean; claim?: number; reason?: number } = {}) {
+  await page.locator(".claims__list button").nth(opts.claim ?? 0).click();
+  await page.locator(".claims__why button").nth(opts.reason ?? 0).click();
   await page.getByRole("button", { name: TO_DEPOSIT }).click();
   await page.getByRole("button", { name: opts.deposit ? "Reserve it now" : "Wait and decide later" }).click();
   await page.getByRole("button", { name: "Lock it in and play Week 5" }).click();

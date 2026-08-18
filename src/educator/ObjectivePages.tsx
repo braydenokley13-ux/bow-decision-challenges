@@ -404,7 +404,12 @@ export function ObjectiveDetail() {
           <tbody>
             {covering.map((entry) => (
               <tr key={entry.competency.id}>
-                <th scope="row"><code>{entry.competency.displayCode}</code> {entry.competency.statement}</th>
+                {/* No `BOW-B2` badge. It is BOW's own handle for a skill, it appears nowhere
+                    else a teacher can reach, and no key for it exists anywhere in the product
+                    — a code with no key is a thing a reader has to ignore, printed on a page
+                    they were told to hand to a department head. The skill's own sentence is
+                    the name. */}
+                <th scope="row">{entry.competency.statement}</th>
                 <td><span className="coverage-chip" data-coverage={entry.coverage}>{COVERAGE_LABELS[entry.coverage]}</span></td>
                 <td>{isCompetencyAvailable(entry.competency.id) ? "Yes" : "Not yet"}</td>
                 <td>{entry.rationale}</td>

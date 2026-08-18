@@ -47,6 +47,9 @@ import { LEVEL_LABELS } from "../src/educator/labels";
  */
 
 const API = "http://127.0.0.1:4180/api";
+
+/** Full marks on all four criteria, which is ten and is what the reading queue totals. */
+const RUBRIC_MARKS = [["Workability", 2], ["Protected priority", 2], ["Tradeoff / opportunity cost", 2], ["Numerical evidence", 4]] as const;
 const MARKET_COPY = POP_UP_SCENARIO.screens;
 const BOOTH = POP_UP_SCENARIO.spots.find((spot) => spot.id === "middle-row") ?? POP_UP_SCENARIO.spots[0];
 
@@ -154,6 +157,13 @@ async function playMarket(page: Page, answer: string) {
   await orderTrays(page, 3);
   await checkSum(page, MARKET_COPY.saturday.order.label, orderCost(MARKET, 3));
   await page.getByRole("button", { name: MARKET_COPY.saturday.open }).click();
+
+  // The tips jar: money that is not the truck's, three things that want it, and a reason for
+  // the one left out. The night does not end until both halves are answered, which is the beat
+  // and not an obstacle to it.
+  await page.locator(".maybe-grid button").first().click();
+  await page.locator(".helper-card__ask .binary-choice button").first().click();
+  await page.getByRole("button", { name: MARKET_COPY.tips.title }).click();
 
   await page.getByRole("button", { name: MARKET_COPY.standing.alone }).click();
   await orderTrays(page, 3);
@@ -438,7 +448,7 @@ test("golden 6: a student turns in, a teacher reads it, and the student hears ba
   // The teacher reads the writing in the queue and scores it criterion by criterion.
   await page.goto(`/educator/class/${created.code}/reading?key=${created.teacherKey}`);
   await expect(page.locator(".reading-queue__bar p")).toContainText(card.displayName);
-  for (const [label, mark] of [["Workability", 2], ["Protected priority", 2], ["Tradeoff / opportunity cost", 2], ["Numerical evidence", 4]] as const) {
+  for (const [label, mark] of RUBRIC_MARKS) {
     await page.getByRole("button", { name: `${label}: ${mark} of ${mark}` }).click();
   }
   await page.getByRole("button", { name: "Save review" }).click();
@@ -588,4 +598,93 @@ test("golden 8: a mixed class counts as one class", async ({ page, context }) =>
   await page.goto(`/educator/class/${classCode}/share-out?key=${key}`);
   await expect(page.locator("body")).toContainText(basketball.card.displayName);
   await expect(page.locator("body")).toContainText(market.card.displayName);
+});
+
+/* ---------------------------------------------------------------------------
+   9 — a teacher's classes survive their laptop.
+   --------------------------------------------------------------------------- */
+
+test("golden 9: a teacher's classes survive their laptop", async ({ page, browser }) => {
+  // The teacher critic's single blocker, and the worst failure in the product before accounts
+  // existed: a class lived in one browser's storage, so a reimaged laptop permanently destroyed
+  // twenty-eight children's assessed work with nothing to recover it from. What this journey
+  // asserts is not that a code appears in a list on another machine — it is that the work and
+  // the mark a person gave it are still there.
+  const password = "a-long-enough-password";
+  const email = `golden9.${Date.now()}@example.org`;
+  const defence = "I kept the course money where I set it and gave up part of the reserve after Week 5.";
+
+  // A class made the way a teacher makes one on the first Monday: no account, no sign-in.
+  await page.goto("/educator/classes/new");
+  await page.getByLabel("Name this class").fill("Golden 9 · Period 5");
+  await page.getByRole("button", { name: "Create the class" }).click();
+  const code = (await page.locator(".class-created__code strong").innerText()).trim();
+  const teacherKey = new URL(await page.locator(".class-created__key code").innerText()).searchParams.get("key") ?? "";
+
+  await page.goto(`/educator/class/${code}/roster?key=${teacherKey}`);
+  await page.getByLabel("One name per line").fill("Ana R.");
+  await page.getByRole("button", { name: "Add them and make the cards" }).click();
+  const card = page.locator(".join-card").first();
+  const displayName = (await card.locator(".join-card__name").innerText()).trim();
+  const joinCode = (await card.locator("dd").nth(1).innerText()).trim();
+
+  // The student, on their own device, does the work.
+  const theirs = await browser.newContext();
+  const student = await theirs.newPage();
+  try {
+    await student.goto("/");
+    await signIn(student, { classCode: code, seatCode: "1", displayName, joinCode });
+    await openTheRun(student);
+    await chooseSeasonIfOffered(student);
+    await playBasketball(student, defence);
+  } finally {
+    await theirs.close();
+  }
+
+  // The teacher reads it and marks it, still with no account.
+  await page.goto(`/educator/class/${code}/reading?key=${teacherKey}`);
+  for (const [label, mark] of RUBRIC_MARKS) {
+    await page.getByRole("button", { name: `${label}: ${mark} of ${mark}` }).click();
+  }
+  await page.getByRole("button", { name: "Save review" }).click();
+  await expect(page.getByText("Saved.")).toBeVisible();
+
+  // Then makes an account from the same browser, which is the only moment the recovery code
+  // exists: it is shown once and never again, so the screen has to say so where it is shown.
+  await page.goto("/educator/sign-in");
+  await page.getByRole("button", { name: "Make an account" }).click();
+  await page.getByLabel("Your work email").fill(email);
+  await page.getByLabel(/A new password/).fill(password);
+  await page.getByRole("button", { name: "Make the account" }).click();
+  await expect(page.getByRole("heading", { name: /recovery code/i })).toBeVisible();
+  await expect(page.locator(".recovery-code")).not.toBeEmpty();
+  await page.getByRole("button", { name: "I have written it down" }).click();
+
+  // The laptop is wiped. A different machine, nothing carried over but what the teacher knows.
+  const reimaged = await browser.newContext();
+  const after = await reimaged.newPage();
+  try {
+    await after.goto("/educator/sign-in");
+    await after.getByLabel("Your work email").fill(email);
+    await after.getByLabel("Password", { exact: true }).fill(password);
+    await after.getByRole("button", { name: "Sign in", exact: true }).click();
+    // Waited on rather than navigated past: signing in is a round trip, and a test that walked
+    // to the class list while it was still in flight would report "the classes did not come
+    // back" about a request that had not finished being asked.
+    await expect(after.getByRole("heading", { name: /Your class|Your \d+ classes/ })).toBeVisible();
+    await expect(after.locator(".row-list")).toContainText(code);
+    await after.locator(".row-list a").filter({ hasText: code }).click();
+    await expect(after.locator("body")).toContainText(displayName);
+
+    // The promise, and the whole reason the journey is written: the child's work and the mark a
+    // person gave it, both still there on a machine that has never seen either.
+    const key = new URL(after.url()).searchParams.get("key") ?? "";
+    expect(key.length).toBeGreaterThan(16);
+    await after.goto(`/educator/class/${code}/students/1?key=${key}`);
+    await after.getByRole("tab", { name: "The explanation" }).click();
+    await expect(after.locator(".student-response")).toContainText("I kept the course money where I set it");
+    await expect(after.locator(".rubric-panel footer strong")).toContainText("10/10");
+  } finally {
+    await reimaged.close();
+  }
 });

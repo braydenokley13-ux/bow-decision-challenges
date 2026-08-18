@@ -224,9 +224,9 @@ function DebriefLead({ spine }: { spine: ClassSpine }) {
     return <>Nobody has a usable result yet{spine.awaitingReading > 0 ? `, because ${spine.awaitingReading} of the written explanations have not been read` : ""}.</>;
   }
   if (spine.reading.result.percentDemonstrated === null) {
-    return <>{spine.reading.result.demonstrated} of {spine.assessed} assessed showed the skill.</>;
+    return <>{spine.reading.result.demonstrated} of {spine.assessed} assessed showed it.</>;
   }
-  return <>{spine.reading.result.percentDemonstrated}% of the {spine.assessed} assessed students demonstrated it.</>;
+  return <>{spine.reading.result.percentDemonstrated}% of the {spine.assessed} assessed students showed it.</>;
 }
 
 /**
@@ -258,8 +258,9 @@ function WhatToReview({ spine, classCode, keyQuery }: { spine: ClassSpine; class
   if (reading.state === "no-single-gap") {
     return (
       <p>
-        No single requirement reached {GAP_THRESHOLD_PERCENT}% of the {reading.assessed} assessed students. The class
-        is spread across small issues rather than one shared misunderstanding — review individual students.
+        Nothing the work had to show reached {GAP_THRESHOLD_PERCENT}% of the {reading.assessed} assessed
+        students. The class is spread across small issues rather than one shared misunderstanding — review
+        individual students.
       </p>
     );
   }

@@ -272,7 +272,7 @@ function summaryOf(submission: AttributedSubmission): string {
  * note is the teacher's own, and there is no second screen to put it on — so it is not on the
  * slide, not in `ShareOutSlide`, and not reachable from here at all.
  */
-function Present({ slides, onClose }: { slides: readonly ShareOutSlide[]; onClose: () => void }) {
+export function Present({ slides, onClose }: { slides: readonly ShareOutSlide[]; onClose: () => void }) {
   const [at, setAt] = useState(0);
   const slide = slides[Math.min(at, slides.length - 1)]!;
   const heading = useRef<HTMLHeadingElement>(null);
