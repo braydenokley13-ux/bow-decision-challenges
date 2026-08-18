@@ -33,19 +33,21 @@ function withoutComments(path: string): string {
 }
 
 /**
- * The files this rule does not reach, and why each one is on the list.
+ * The files this rule does not reach, and why the one that is on the list is on it.
  *
- * - `labels.ts` composes the words out of the framework's own labels. It is the file the
- *   rule exists to route everything through, so it is the one place a name may appear.
- * - `EducatorPages.tsx` is the fixture surface, and its standards page renders the legacy
- *   five-objective alignment from `blueprint/standards.ts` — a pre-framework model that
- *   predates `FrameworkLabels` and names New York in its own data. It is not a real-class
- *   surface, and the Objective Map replaces it outright. Rewriting it to compose labels it
- *   has no framework behind would be dressing a fixture up as the thing that replaces it.
+ * `labels.ts` composes the words out of the framework's own labels. It is the file the rule
+ * exists to route everything through, so it is the one place a name may appear.
+ *
+ * `EducatorPages.tsx` used to be here too, on the theory that its standards page rendered a
+ * pre-framework model (`blueprint/standards.ts`) that predated `FrameworkLabels` and had no
+ * framework behind it to compose from. That model is deleted; `AlignmentBlock` and
+ * `StandardsView` now read `src/domain/standards/` and compose every name through
+ * `labelsFor` the same as the real surfaces do, so the exemption is gone with it — this file
+ * is what proves that stayed true rather than merely happening to be true today.
  *
  * The list is asserted below, so a new file cannot join it by accident.
  */
-const EXEMPT = ["src/educator/labels.ts", "src/educator/EducatorPages.tsx"];
+const EXEMPT = ["src/educator/labels.ts"];
 
 const FRAMEWORK_NAMES = Object.values(FRAMEWORKS).flatMap((framework) => [
   framework.labels.frameworkShort,
@@ -59,9 +61,9 @@ describe("no teacher-facing string hardcodes a framework", () => {
     expect(sources).toContain("src/educator/ObjectivePages.tsx");
     expect(sources).toContain("src/educator/EducatorShell.tsx");
     expect(sources.length).toBeGreaterThan(10);
-    // The exemptions, pinned. A third one has to be argued for here rather than added
+    // The exemption, pinned. A second one has to be argued for here rather than added
     // quietly to make a failing scan go green.
-    expect(EXEMPT).toEqual(["src/educator/labels.ts", "src/educator/EducatorPages.tsx"]);
+    expect(EXEMPT).toEqual(["src/educator/labels.ts"]);
     for (const path of EXEMPT) expect(sources).toContain(path);
   });
 

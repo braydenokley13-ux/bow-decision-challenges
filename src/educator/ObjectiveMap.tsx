@@ -4,6 +4,7 @@ import { EducatorShell } from "./EducatorShell";
 import {
   districtProfile,
   FRAMEWORKS,
+  gradeBandLabel,
   labelsFor,
   NYSED_2026_TOPICS,
   type FrameworkId,
@@ -115,7 +116,7 @@ export function ObjectiveMap() {
           belongs here is their own record: what they have taught, and what has come back. */}
       <header className="map-header">
         <div>
-          <p className="eyebrow">{labels?.frameworkShort} · {framework?.version}</p>
+          <p className="eyebrow">{labels?.frameworkShort} · {gradeBandLabel(FRAMEWORK_ID)} · {framework?.version}</p>
           <h1>What your classes have covered.</h1>
         </div>
         <dl className="map-tally">
@@ -136,10 +137,19 @@ export function ObjectiveMap() {
           </select>
 
           <label htmlFor="map-topic">{labels?.groupNoun}</label>
+          {/* NYSED's own one-line definition rides along on each option as its title — a
+              teacher who does not already know what "Risk Management" covers in this
+              framework can hover rather than guess, and it is the framework's own word for
+              it rather than BOW's paraphrase. */}
           <select id="map-topic" value={filters.topicCode ?? ""} onChange={(event) => setFilters({ ...filters, topicCode: event.target.value || null })}>
             <option value="">All</option>
-            {NYSED_2026_TOPICS.map((topic) => <option key={topic.code} value={topic.code}>{topic.code}. {topic.name}</option>)}
+            {NYSED_2026_TOPICS.map((topic) => <option key={topic.code} value={topic.code} title={topic.description}>{topic.code}. {topic.name}</option>)}
           </select>
+          {filters.topicCode && (
+            <p className="map-topic-description">
+              {NYSED_2026_TOPICS.find((topic) => topic.code === filters.topicCode)?.description}
+            </p>
+          )}
 
           <label htmlFor="map-state">Status</label>
           <select id="map-state" value={filters.state ?? ""} onChange={(event) => setFilters({ ...filters, state: (event.target.value || null) as ObjectiveMapState | null })}>
@@ -242,7 +252,7 @@ export function ObjectiveMap() {
         <section className="dashboard-section map-table-wrap">
           <table className="map-table">
             <caption>
-              {labels?.frameworkShort} {labels?.unitNoun}s ·{" "}
+              {labels?.frameworkShort} · {gradeBandLabel(FRAMEWORK_ID)} · {labels?.unitNoun}s ·{" "}
               {classCode ? classes.find((entry) => entry.record.code === classCode)?.record.label : "All classes"}
             </caption>
             <thead>
@@ -275,7 +285,7 @@ export function ObjectiveMap() {
       <p className="framework-attribution map-note">
         {framework?.labels.attribution}{" "}
         <a href={framework?.sourceUrl} rel="noreferrer noopener" target="_blank">{framework?.name}</a>{" "}
-        · wording checked {framework?.verifiedOn} · {byCode.size} of {rows.length} shown
+        · {gradeBandLabel(FRAMEWORK_ID)} · wording checked {framework?.verifiedOn} · {byCode.size} of {rows.length} shown
       </p>
     </EducatorShell>
   );

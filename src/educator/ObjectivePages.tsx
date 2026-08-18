@@ -7,6 +7,7 @@ import {
   competenciesFor,
   FRAMEWORKS,
   demandFor,
+  gradeBandLabel,
   isAssessable,
   isCompetencyAvailable,
   labelsFor,
@@ -51,6 +52,13 @@ function matches(standard: Standard, query: string): boolean {
     .some((field) => field.toLowerCase().includes(needle));
 }
 
+/**
+ * Every place a teacher is told which framework this is composes it here, once — including
+ * the grade band. NYSED's own document publishes 70 objectives across three bands (K–4: 14,
+ * 5–8: 23, 9–12: 33); this deployment carries only 5–8, and a count or a framework name
+ * printed without that band reads as the whole document to a reviewer who opens the source
+ * and counts 70.
+ */
 function Attribution({ frameworkId }: { frameworkId: FrameworkId }) {
   const framework = FRAMEWORKS[frameworkId];
   if (!framework) return null;
@@ -58,7 +66,7 @@ function Attribution({ frameworkId }: { frameworkId: FrameworkId }) {
     <p className="framework-attribution">
       {framework.labels.attribution}{" "}
       <a href={framework.sourceUrl} rel="noreferrer noopener" target="_blank">{framework.name}</a>{" "}
-      · wording checked {framework.verifiedOn}
+      · {gradeBandLabel(frameworkId)} · wording checked {framework.verifiedOn}
     </p>
   );
 }
@@ -79,11 +87,11 @@ export function ObjectiveList() {
   return (
     <EducatorShell>
       <header className="page-header">
-        <p className="eyebrow">{labels?.frameworkShort} · {labels?.unitNoun}s</p>
+        <p className="eyebrow">{labels?.frameworkShort} · {gradeBandLabel(FRAMEWORK_ID)} · {labels?.unitNoun}s</p>
         <h1>What do you want to assess?</h1>
         <p>
-          BOW can assess {readyTotal} of the {standards.length} in this framework today. The rest are matched to a
-          skill and waiting for a challenge that can observe it.
+          BOW can assess {readyTotal} of the {standards.length} {gradeBandLabel(FRAMEWORK_ID)} {labels?.unitNounShort.toLowerCase()}s in
+          this framework today. The rest are matched to a skill and waiting for a challenge that can observe it.
         </p>
       </header>
 
@@ -258,12 +266,28 @@ export function ObjectiveDetail() {
   const evidence = useObjectiveEvidence(standard ? ref : null);
 
   if (!standard) {
+    // Two different unknowns, and one sentence used to speak for both: an unrecognised
+    // *framework* id in the URL — the only way this route is actually reached wrong, since
+    // every in-product link supplies a code that exists — produced "Nothing in this
+    // framework carries the code 1.3," which blames the code for a framework this page
+    // never resolved. The framework in the URL is checked first, because a wrong framework
+    // id needs a different sentence than a framework that simply has no such code.
+    const framework = FRAMEWORKS[frameworkId];
     return (
       <EducatorShell>
         <header className="page-header page-header--with-back">
           <Link to="/educator/objectives">← All {labels?.unitNounShort.toLowerCase() ?? "objective"}s</Link>
-          <h1>No such {labels?.unitNounShort.toLowerCase() ?? "objective"}.</h1>
-          <p>Nothing in this framework carries the code “{params.code}”.</p>
+          {framework ? (
+            <>
+              <h1>No such {labels?.unitNounShort.toLowerCase()}.</h1>
+              <p>{framework.name} carries no code “{params.code}”.</p>
+            </>
+          ) : (
+            <>
+              <h1>No such framework.</h1>
+              <p>BOW does not carry a framework called “{params.frameworkId}”.</p>
+            </>
+          )}
         </header>
       </EducatorShell>
     );
@@ -361,6 +385,19 @@ export function ObjectiveDetail() {
             ))}
           </tbody>
         </table>
+        {/* Said once, here, where a teacher reading a negative result for 1.3 would land to
+            find out why. BOW's bar for 1.3 is higher than NYSED's own — "not yet
+            demonstrated" is a fact about BOW's stricter bar, not about NYSED's objective,
+            and nothing else on this page or the results below it makes that distinction. */}
+        {standard.code === "1.3" && (
+          <p className="objective-bar-note">
+            BOW's bar here is higher than {labels?.frameworkShort}'s own. {labels?.frameworkShort} 1.3 asks only for a budget
+            that fits a hypothetical income and includes planned expenses and savings; the skill above additionally
+            requires conditional money handled correctly, savings set before discretionary spending, and a tradeoff
+            explained with one of the student's own numbers. A class that has not yet demonstrated this has not
+            failed {labels?.frameworkShort}'s 1.3 — they have not yet cleared BOW's stricter bar for it.
+          </p>
+        )}
       </section>
 
       <section className="dashboard-section">

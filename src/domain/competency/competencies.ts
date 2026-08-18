@@ -137,6 +137,25 @@ const ADAPT_A_PLAN_EVIDENCE: readonly EvidenceRequirement[] = [
   }),
 ] as const;
 
+/**
+ * `save-toward-a-goal` — mapped `full` to NYSED 5.1, which is two clauses joined by "and":
+ * identify common reasons people save money, and build a plan that reaches a short-term
+ * goal within a year. ER1 through ER4 are the plan; none of them ever touches the first
+ * clause — a target and a date, a per-period amount, protecting it, and reaching it are all
+ * about the goal, never about why it exists.
+ *
+ * **ER5 is required for exactly that reason.** It was written optional once, on the theory
+ * that a plan speaks for itself and the reason behind it is a nice-to-have. It is not: with
+ * ER5 optional, a world could produce every *required* requirement — the whole bar
+ * `isCompetencyAvailable` checks — without the student ever naming a reason to save, and
+ * this competency would still report `full` coverage of an objective whose first clause it
+ * had never reached. `full` promises a student who demonstrates the competency has done
+ * everything the standard asks; a demonstration with ER5 unobserved would break that
+ * promise silently, because `null` — the world never asked — reads identically to a pass in
+ * every roll-up above this file. Requiring it is what makes the `full` claim on 5.1 true
+ * rather than merely convenient. `coverageClaims.test.ts` asserts the general rule this one
+ * change is an instance of: a `full` mapping may not stand on an optional requirement.
+ */
 const SAVE_TOWARD_A_GOAL_EVIDENCE: readonly EvidenceRequirement[] = [
   requirement("save-toward-a-goal", 1, {
     label: "Sets a target and a date",
@@ -169,7 +188,7 @@ const SAVE_TOWARD_A_GOAL_EVIDENCE: readonly EvidenceRequirement[] = [
   requirement("save-toward-a-goal", 5, {
     label: "Says what the saving was for",
     kind: "explanation",
-    required: false,
+    required: true,
     observableRule: "Connects the amount to the reason",
     misconceptionIfNot: null,
   }),
@@ -512,7 +531,9 @@ export const COMPETENCIES: readonly Competency[] = [
       "A goal is a wish, not a per-period number",
     ],
     gradeBand: "5-8",
-    explanationRequired: false,
+    // ER5 — the "why" behind the target — is required now, so the flag that says whether a
+    // written explanation is required evidence has to agree with the array it describes.
+    explanationRequired: true,
     assessmentShape: "plan-and-repair",
   },
   {

@@ -11,10 +11,11 @@ import type { Framework, FrameworkTopic, Standard } from "../types";
  * teacher reads on a screen next to their own students' results, and a paraphrase would be
  * spotted immediately and would cost more credibility than it saves keystrokes.
  *
- * Five of these objectives were already carried verbatim in
- * `src/domain/blueprint/standards.ts`, verified 2026-08-11. That wording is reused rather
- * than retyped, and `nysedWording.test.ts` holds the two copies to being identical for as
- * long as both exist.
+ * Five of these objectives were once also carried, independently, in
+ * `src/domain/blueprint/standards.ts` — a pre-framework model the educator surfaces read
+ * before they were migrated onto this layer. That file is deleted now that nothing reads
+ * it; while it existed, `nysedWording.test.ts` held the two copies to being identical, on
+ * the theory that two copies that can disagree are worse than one copy that is wrong.
  *
  * ⚠️ **The topic order below is NYSED's own and must not be re-ordered or renamed.** NYSED
  * presents its topics alphabetically, which puts Earning Income at 3, Risk Management at 4
@@ -25,13 +26,16 @@ import type { Framework, FrameworkTopic, Standard } from "../types";
 export const NYSED_2026_SOURCE_URL = "https://www.nysed.gov/standards-instruction/personal-finance-topics-grade-bands";
 export const NYSED_2026_SOURCE_PDF_URL = "https://www.nysed.gov/sites/default/files/programs/standards-instruction/ny-personal-finance-learning-objectives_march-2026.pdf";
 
-/** NYSED's five topics, in NYSED's order, with NYSED's names. 23 objectives across them. */
+/**
+ * NYSED's five topics, in NYSED's order, with NYSED's names and NYSED's own one-line
+ * definitions — not BOW's paraphrase of what each topic covers. 23 objectives across them.
+ */
 export const NYSED_2026_TOPICS: readonly FrameworkTopic[] = [
-  { code: "1", name: "Budgeting and Money Management" },
-  { code: "2", name: "Credit and Debt Management" },
-  { code: "3", name: "Earning Income" },
-  { code: "4", name: "Risk Management" },
-  { code: "5", name: "Saving and Investing" },
+  { code: "1", name: "Budgeting and Money Management", description: "The understanding of how to allocate one's financial resources to meet life goals" },
+  { code: "2", name: "Credit and Debt Management", description: "The understanding of the role of credit in personal finance and how to avoid potential pitfalls of debt" },
+  { code: "3", name: "Earning Income", description: "The understanding of how income is earned and how taxes impact the money that is taken home" },
+  { code: "4", name: "Risk Management", description: "The understanding that risks are a part of life and strategies to manage that risk, including insurance policies" },
+  { code: "5", name: "Saving and Investing", description: "The understanding of the role of putting money aside to plan for longer-term expenditures" },
 ] as const;
 
 const TOPIC_NAME_BY_CODE: Record<string, string> = Object.fromEntries(
@@ -196,6 +200,14 @@ export const NYSED_2026: Framework = {
   sourceUrl: NYSED_2026_SOURCE_URL,
   sourcePdfUrl: NYSED_2026_SOURCE_PDF_URL,
   verifiedOn: "2026-08-16",
+  // The PDF at `sourcePdfUrl` was re-issued under this same "March 2026" label on
+  // 2026-07-16 — before this verification, but proof that the label alone does not pin the
+  // file. These three numbers are what was actually downloaded and checked on `verifiedOn`,
+  // so the next re-verification has something to diff the new download against instead of
+  // trusting a version string that already lied once.
+  sourcePdfSha256: "0402cea2057df89bbcb9d0a4e56e0b1d066e864a553a7010888411063a29c6d7",
+  sourcePdfBytes: 873_070,
+  sourcePdfPages: 14,
   topics: NYSED_2026_TOPICS,
   labels: {
     unitNoun: "Learning Objective",

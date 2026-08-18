@@ -3,13 +3,37 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { CONCEPTS } from "../domain/blueprint/concepts";
 import { STRUCTURED_MICRO_SKILLS } from "../domain/blueprint/microSkills";
-import { ALIGNMENT_DISCLAIMER, NYSED_OBJECTIVES, STANDARDS_ROWS } from "../domain/blueprint/standards";
 import type { MasteryStatus, Trajectory } from "../domain/evidence/types";
+import {
+  competenciesFor,
+  FRAMEWORKS,
+  gradeBandLabel,
+  isAssessable,
+  labelsFor,
+  standardByRef,
+  type FrameworkId,
+  type StandardRef,
+} from "../domain/standards";
 import { aggregateConcepts, aggregateMicroSkills, classSummary, contingencyRoutes, DEMO_LABEL, DEMO_STUDENTS, reviewQueue, teachNext, type DemoStudent } from "../fixtures/demoClass";
 import { EducatorShell } from "./EducatorShell";
 import { durationLabel, PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { RETEACH_TOPICS } from "../domain/competency/reteach";
+
+/**
+ * The framework this fixture surface names, and the objectives Plan Under Pressure's
+ * competencies actually reach.
+ *
+ * `AlignmentBlock` and `StandardsView` used to read `src/domain/blueprint/standards.ts`, a
+ * pre-framework model that hard-coded a strength ("Primary", "Partial") by objective id
+ * rather than deriving it from what BOW can actually assess. That let the guide badge 1.2
+ * "Primary" the same week `/educator/objectives` correctly reported 1.2 as not yet
+ * assessable — two live surfaces, one account of coverage each, disagreeing about the same
+ * objective. Reading `src/domain/standards/` here instead means there is exactly one
+ * account in the product: whatever `isAssessable` and the mapping table actually say.
+ */
+const GUIDE_FRAMEWORK_ID: FrameworkId = "nysed-pf-2026";
+const GUIDE_OBJECTIVE_CODES = ["1.1", "1.2", "1.3", "4.1", "5.1"] as const;
 
 const STATUS_LABELS: Record<MasteryStatus, string> = {
   demonstrated_independently: "Independent",
@@ -28,7 +52,9 @@ const TRAJECTORY_LABELS: Record<Trajectory, string> = {
   insufficient_evidence: "Insufficient evidence",
 };
 
-const objective = (id: string) => NYSED_OBJECTIVES.find((item) => item.objectiveId === id)!;
+function objectivePath(ref: StandardRef): string {
+  return `/educator/objectives/${ref.frameworkId}/${ref.code}`;
+}
 
 /** Copy-to-clipboard that confirms it worked, and says so when the browser blocks it. */
 function CopyButton({ text, label = "Copy the reteach" }: { text: string; label?: string }) {
@@ -59,17 +85,41 @@ function CopyButton({ text, label = "Copy the reteach" }: { text: string; label?
 const DEMO_RETEACH = RETEACH_TOPICS.find((topic) => topic.id === "certain-and-conditional")!;
 const RETEACH_SCRIPT = `${DEMO_RETEACH.title}. ${DEMO_RETEACH.moves.join(" ")}`;
 
+/**
+ * Standards alignment, read live from the audited layer rather than restated by hand.
+ *
+ * Every badge here is `isAssessable` and nothing else — the same function
+ * `/educator/objectives` calls to decide "Ready to assign" from "Mapped, not yet
+ * assessable." Neither this page nor `StandardsView` below carries its own opinion about
+ * how strong an objective's coverage is, because the day it did was the day the two
+ * surfaces could disagree again.
+ */
 function AlignmentBlock() {
+  const labels = labelsFor(GUIDE_FRAMEWORK_ID);
+  const framework = FRAMEWORKS[GUIDE_FRAMEWORK_ID];
   return (
     <section className="alignment-block">
-      <div className="section-heading"><p className="eyebrow">Standards alignment</p><h2>Mapped to NYSED objectives, not scored against them.</h2></div>
+      <div className="section-heading"><p className="eyebrow">Standards alignment</p><h2>Mapped to {labels?.frameworkShort} objectives, not scored against them.</h2></div>
       <div className="alignment-grid">
-        {["1.2", "1.3", "5.1", "1.1", "4.1"].map((id) => {
-          const item = objective(id);
-          return <article key={id}><span>{id === "1.2" || id === "1.3" ? "Primary" : id === "4.1" ? "Partial" : "Supporting"}</span><h3>{id} · {item.shortLabel}</h3><p>{id === "4.1" ? "Advance-planning portion only; insurance is not assessed." : item.officialObjective}</p><a href={item.officialUrl} target="_blank" rel="noreferrer">Official source ↗</a></article>;
+        {GUIDE_OBJECTIVE_CODES.map((code) => {
+          const ref: StandardRef = { frameworkId: GUIDE_FRAMEWORK_ID, code };
+          const standard = standardByRef(ref);
+          if (!standard) return null;
+          const assessable = isAssessable(ref);
+          return (
+            <article key={code} data-code={code}>
+              <span data-assessable={assessable}>{assessable ? "Ready to assign" : "Mapped, not yet assessable"}</span>
+              <h3>{code} · {standard.shortLabel}</h3>
+              <p>{standard.text}</p>
+              <Link to={objectivePath(ref)}>What BOW measures for this ↗</Link>
+            </article>
+          );
         })}
       </div>
-      <p className="disclaimer">{ALIGNMENT_DISCLAIMER}</p>
+      <p className="disclaimer">
+        {framework?.labels.attribution} {gradeBandLabel(GUIDE_FRAMEWORK_ID)} ·{" "}
+        <a href={framework?.sourceUrl} target="_blank" rel="noreferrer">Official {labels?.frameworkShort} source ↗</a>
+      </p>
     </section>
   );
 }
@@ -209,10 +259,15 @@ export function ClassOverview() {
   const summary = classSummary(DEMO_STUDENTS);
   const routes = contingencyRoutes(DEMO_STUDENTS);
   const reviewStudents = reviewQueue(DEMO_STUDENTS);
+  const labels = labelsFor(GUIDE_FRAMEWORK_ID);
   return (
     <EducatorShell demo>
       <header className="class-header"><div><p className="eyebrow">{DEMO_LABEL} · {BASKETBALL_SCENARIO.title}</p><h1>Sample class</h1><p>{summary.total} hypothetical records, so you can read the shape of the evidence before you run it with anybody.</p></div><div><span>{summary.total} turned in</span><span>{summary.reviewed} read</span><span>{summary.pending} awaiting reading</span></div></header>
-      <section className="teach-next"><p className="eyebrow">Teach next · C4</p><h2>Build a complete fallback.</h2><p><b>{summary.persistentFallbackGap} of {summary.total}</b> students finished with a backup plan that does not cover the risk. Another <b>{summary.laterCorrected}</b> left the opening fallback short and closed it themselves during Week 5, and <b>{summary.completedWithSupport}</b> got there after using a scaffold.</p><div><Link className="button button--primary" to={`/educator/demo/concepts/${insight?.conceptId}`}>Open C4 evidence</Link><CopyButton text={RETEACH_SCRIPT} /></div><span className="standard-chip">NYSED 1.2 · 4.1 partial</span></section>
+      {/* Partial evidence toward both, stated as such: `adapt-a-plan` and
+          `plan-for-the-unexpected` are `partial` on 1.2 and 4.1 alike, and neither number
+          gets the unqualified badge — a bare "NYSED 1.2" beside "4.1 partial" read as a
+          stronger claim for 1.2 than the mapping table makes for either. */}
+      <section className="teach-next"><p className="eyebrow">Teach next · C4</p><h2>Build a complete fallback.</h2><p><b>{summary.persistentFallbackGap} of {summary.total}</b> students finished with a backup plan that does not cover the risk. Another <b>{summary.laterCorrected}</b> left the opening fallback short and closed it themselves during Week 5, and <b>{summary.completedWithSupport}</b> got there after using a scaffold.</p><div><Link className="button button--primary" to={`/educator/demo/concepts/${insight?.conceptId}`}>Open C4 evidence</Link><CopyButton text={RETEACH_SCRIPT} /></div><span className="standard-chip">Partial evidence toward {labels?.frameworkShort} 1.2 · 4.1</span></section>
       <section className="dashboard-section"><div className="section-heading"><p className="eyebrow">Concept matrix</p><h2>Current evidence by financial concept</h2></div><StatusKey /><Matrix records={DEMO_STUDENTS} /></section>
       <section className="trajectory-panel"><div><p className="eyebrow">How they got there · C4</p><h2>Every student is in exactly one of these four.</h2><p>Same 28 records as the matrix, grouped by the route they took to a backup plan.</p></div><div className="route-grid">{routes.map((group) => (
         <article key={group.route} data-route={group.route}>
@@ -232,9 +287,13 @@ export function ConceptDrilldown() {
   const { conceptId = "contingency" } = useParams();
   const concept = CONCEPTS.find((item) => item.id === conceptId) ?? CONCEPTS[3]!;
   const affected = DEMO_STUDENTS.filter((student) => ["developing", "not_demonstrated"].includes(student.concepts.find((result) => result.conceptId === concept.id)?.status ?? ""));
+  const labels = labelsFor(GUIDE_FRAMEWORK_ID);
   return (
     <EducatorShell demo>
-      <header className="page-header page-header--with-back"><Link to="/educator/demo">← Sample class</Link><p className="eyebrow">{concept.code} · Concept drill-down</p><h1>{concept.label}</h1><p>{concept.description}</p><div className="tag-row"><span>NYSED 1.2</span>{concept.id === "contingency" && <span>4.1 partial</span>}</div></header>
+      {/* The tag used to print "NYSED 1.2" on every concept's page, C1 through C6 — a
+          leftover from when this only ever rendered C4. Only C4 (contingency) is actually
+          partial evidence toward 1.2 and 4.1; every other concept correctly shows nothing. */}
+      <header className="page-header page-header--with-back"><Link to="/educator/demo">← Sample class</Link><p className="eyebrow">{concept.code} · Concept drill-down</p><h1>{concept.label}</h1><p>{concept.description}</p>{concept.id === "contingency" && <div className="tag-row"><span>Partial evidence toward {labels?.frameworkShort} 1.2</span><span>4.1 partial</span></div>}</header>
       <section className="drill-grid">
         <div className="drill-main"><div className="section-heading"><p className="eyebrow">Micro-skill distribution</p><h2>Where the evidence separates</h2></div><table className="micro-table"><caption>Counts across {DEMO_STUDENTS.length} hypothetical records</caption><thead><tr><th scope="col">Micro-skill</th><th scope="col">Independent</th><th scope="col">Support</th><th scope="col">Partial / not</th></tr></thead><tbody>{aggregateMicroSkills(DEMO_STUDENTS, concept.id).map(({ id, label, independent, support, partial }) => <tr key={id}><th scope="row"><code>{id}</code>{label}</th><td>{independent}</td><td>{support}</td><td>{partial}</td></tr>)}</tbody></table>{concept.id === "contingency" && <p className="context-note">C4 observation context is shown for every student: <b>Opening income fallback</b> or <b>Week 5 cost response</b>.</p>}
           <div className="misconception-list"><h2>How each pattern is identified</h2><p className="misconception-list__note">These are fixed rules applied to the financial states a student saved. The same evidence always produces the same flag — nothing here is inferred or AI-generated.</p>{[
@@ -323,11 +382,39 @@ export function ReasoningReview() {
   );
 }
 
+/**
+ * The demo's own standards page — nine micro-skills used to hang off 1.2 here on the
+ * strength of the legacy blueprint layer, while `/educator/objectives` correctly reported
+ * 1.2 as not yet assessable. Reading the audited layer means this page and that one now
+ * agree about 1.2 because they read the same mapping table, not because anybody kept two
+ * copies in sync by hand.
+ */
 export function StandardsView() {
+  const labels = labelsFor(GUIDE_FRAMEWORK_ID);
+  const framework = FRAMEWORKS[GUIDE_FRAMEWORK_ID];
   return (
     <EducatorShell demo>
-      <header className="page-header page-header--with-back"><Link to="/educator/demo">← Sample class</Link><p className="eyebrow">Standards evidence view · {DEMO_LABEL}</p><h1>Evidence connected to NYSED objectives.</h1><p>The same micro-skill observations are regrouped here. There is no separate standards score and no NYSED mastery claim. Each chip below is one micro-skill: its code, then what it observes.</p></header>
-      <div className="standards-list">{NYSED_OBJECTIVES.map((item) => { const rows = STANDARDS_ROWS.filter((row) => row.objectiveId === item.objectiveId); const strength = item.objectiveId === "4.1" ? "Partial alignment" : rows.some((row) => row.strength === "primary") ? "Primary" : "Supporting"; return <article key={item.objectiveId}><header><span>{strength}</span><b>{item.objectiveId}</b></header><h2>{item.shortLabel}</h2><blockquote>{item.officialObjective}</blockquote><ul className="skill-chips">{[...new Set(rows.map((row) => row.microSkillId))].map((id) => <li key={id}><code>{id}</code>{STRUCTURED_MICRO_SKILLS.find((skill) => skill.id === id)?.label ?? id}</li>)}</ul>{item.objectiveId === "4.1" && <p>Advance planning for unexpected events only. Insurance is not taught or assessed.</p>}<a href={item.officialUrl} target="_blank" rel="noreferrer">Open official NYSED source ↗</a></article>; })}</div><p className="disclaimer">{ALIGNMENT_DISCLAIMER}</p>
+      <header className="page-header page-header--with-back"><Link to="/educator/demo">← Sample class</Link><p className="eyebrow">Standards evidence view · {DEMO_LABEL}</p><h1>Evidence connected to {labels?.frameworkShort} objectives.</h1><p>The same evidence is regrouped here. There is no separate standards score and no {labels?.frameworkShort} mastery claim. Each chip below is one BOW skill: how much of the objective it covers, then what it observes.</p></header>
+      <div className="standards-list">{GUIDE_OBJECTIVE_CODES.map((code) => {
+        const ref: StandardRef = { frameworkId: GUIDE_FRAMEWORK_ID, code };
+        const standard = standardByRef(ref);
+        if (!standard) return null;
+        const assessable = isAssessable(ref);
+        const covering = competenciesFor(GUIDE_FRAMEWORK_ID, code);
+        return (
+          <article key={code} data-code={code}>
+            <header><span data-assessable={assessable}>{assessable ? "Ready to assign" : "Mapped, not yet assessable"}</span><b>{code}</b></header>
+            <h2>{standard.shortLabel}</h2>
+            <blockquote>{standard.text}</blockquote>
+            <ul className="skill-chips">{covering.map((entry) => (
+              <li key={entry.competency.id}><code data-coverage={entry.coverage}>{entry.coverage}</code>{entry.competency.statement}</li>
+            ))}</ul>
+            {code === "4.1" && <p>Advance planning for unexpected events only. Insurance is not taught or assessed by Basketball.</p>}
+            <a href={framework?.sourceUrl} target="_blank" rel="noreferrer">Open official {labels?.frameworkShort} source ↗</a>
+          </article>
+        );
+      })}</div>
+      <p className="disclaimer">{framework?.labels.attribution} {gradeBandLabel(GUIDE_FRAMEWORK_ID)}.</p>
     </EducatorShell>
   );
 }

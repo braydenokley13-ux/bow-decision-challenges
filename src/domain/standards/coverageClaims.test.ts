@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { WorldEvidenceCoverage } from "../competency/availability";
 import { BUILT_WORLD_COVERAGE, availableCompetencyIds, worldsAssessing } from "../competency/availability";
-import { COMPETENCIES, evidenceRequirementById, requiredEvidenceRequirementsFor } from "../competency/competencies";
+import { COMPETENCIES, competencyById, evidenceRequirementById, requiredEvidenceRequirementsFor } from "../competency/competencies";
 import type { CompetencyId } from "../competency/types";
 import { NYSED_2026_STANDARDS } from "./frameworks/nysed-2026";
+import { NYSED_2026_MAPPINGS } from "./mappings/nysed-2026";
 import {
   assessableStandards,
   isAssessable,
@@ -214,6 +215,36 @@ describe("what BOW may claim about an objective", () => {
       expect(isAssessable(ref("1.7"), everything)).toBe(false);
       expect(isAssessable(ref("6.1"), everything)).toBe(false);
       expect(resolveObjectiveCoverage(ref("1.7"), everything)).toBe("not-assessed");
+    });
+  });
+
+  describe("a full mapping may not stand on an optional requirement", () => {
+    /**
+     * `full` promises a student who demonstrates the competency has done everything the
+     * standard asks. `isCompetencyAvailable` only ever checks *required* requirements — an
+     * optional one can sit unreached, forever `null`, while the competency still reports
+     * available. So the moment a `full`-mapped competency carries even one optional
+     * requirement, the mapping is promising more than the bar it is actually held to: a
+     * student can clear `full` coverage without the world ever asking for whatever that
+     * optional row was there to observe.
+     *
+     * That is exactly how `save-toward-a-goal` → 5.1 shipped wrong. NYSED 5.1 is two
+     * clauses — identify a reason to save, and build the plan — and only ER5 touched the
+     * first one. ER5 was optional, so a world could satisfy `full` coverage of 5.1 without a
+     * student ever naming a reason to save. Making ER5 required fixed that one row; this
+     * test is the general form, so the next competency that ships an optional requirement
+     * while `full`-mapped fails the build instead of shipping the same defect under a
+     * different id.
+     */
+    it("never lets a full-mapped competency carry an optional evidence requirement", () => {
+      const fullyMappedCompetencyIds = new Set(
+        NYSED_2026_MAPPINGS.filter((mapping) => mapping.coverage === "full").map((mapping) => mapping.competencyId),
+      );
+      expect(fullyMappedCompetencyIds.size).toBeGreaterThan(0);
+      for (const competencyId of fullyMappedCompetencyIds) {
+        const optional = competencyById(competencyId).evidenceRequirements.filter((requirement) => !requirement.required);
+        expect(optional.map((requirement) => requirement.id), competencyId).toEqual([]);
+      }
     });
   });
 });

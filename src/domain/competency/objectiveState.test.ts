@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { requiredEvidenceRequirementsFor } from "./competencies";
+import { evidenceRequirementById, requiredEvidenceRequirementsFor } from "./competencies";
 import { competencyResultFor } from "./observe";
 import {
   DEVELOPING_THRESHOLD_PERCENT,
@@ -22,12 +22,17 @@ import type { CompetencyId, CompetencyResult, EvidenceRequirementId, EvidenceReq
  * be computed from a handful of students and read as a fact about a class.
  */
 
+// The engine discards an observation whose `kind` disagrees with the requirement's own —
+// exactly the case `trail.test.ts` covers for an explanation offered as a decision. A fixed
+// "decision" here used to work only because every competency this suite exercised had
+// nothing but decision requirements; `save-toward-a-goal.er5` is an explanation, so the kind
+// has to come from the requirement itself or its observation is silently dropped.
 const observation = (
   id: EvidenceRequirementId,
   level: RubricLevel | null,
 ): EvidenceRequirementObservation => ({
   evidenceRequirementId: id,
-  kind: "decision",
+  kind: evidenceRequirementById(id)?.kind ?? "decision",
   level,
   supportLevel: "standard_access",
   evidenceRefs: [`event:${id}`],
