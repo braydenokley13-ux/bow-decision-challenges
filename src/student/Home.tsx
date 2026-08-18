@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AppMark } from "../components/primitives/AppMark";
 import { Button } from "../components/primitives/Button";
@@ -54,6 +54,24 @@ export function StudentHome() {
   }
 
   const signedInAs = state.classes[0]?.displayName ?? null;
+  return <Ready classes={state.classes} signedInAs={signedInAs} onSignOut={() => { forgetStudent(); navigate("/join", { replace: true }); }} />;
+}
+
+/**
+ * The screen, once there is one.
+ *
+ * Split out for one reason: arriving here is a page change a keyboard or screen-reader user is
+ * entitled to be told about. Signing in used to end with focus on `<body>`, so somebody using
+ * the door with a screen reader typed two codes, pressed Enter, and was told nothing at all
+ * about having arrived anywhere. The heading takes focus, once, on arrival.
+ */
+function Ready({ classes, signedInAs, onSignOut }: {
+  classes: readonly StudentClass[];
+  signedInAs: string | null;
+  onSignOut: () => void;
+}) {
+  const title = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { title.current?.focus(); }, []);
 
   return (
     <main className="student-home">
@@ -64,23 +82,28 @@ export function StudentHome() {
               session used to be indistinguishable from your own — and the way out of that is
               not a warning, it is saying whose it is before anything else loads. */}
           {signedInAs && <span>{signedInAs}</span>}
-          <Button variant="quiet" onClick={() => { forgetStudent(); navigate("/join", { replace: true }); }}>Not you?</Button>
+          <Button variant="quiet" onClick={onSignOut}>Not you?</Button>
         </div>
       </header>
 
-      {state.classes.length === 0 && (
+      {classes.length === 0 ? (
         <section className="student-home__empty">
-          <h1>You are not in a class yet.</h1>
+          <h1 tabIndex={-1} ref={title}>You are not in a class yet.</h1>
           <p>Ask your teacher for the class code, then come back.</p>
           <Link className="button button--primary" to="/join">Type a class code</Link>
         </section>
+      ) : (
+        /* The page had no heading at all until a student had no classes, which left the one
+           screen a student comes back to with nothing for a screen reader to land on and a
+           heading order that started at h2. */
+        <h1 className="student-home__title" tabIndex={-1} ref={title}>Your work is here.</h1>
       )}
 
-      {state.classes.map((entry) => (
+      {classes.map((entry) => (
         <ClassBlock key={entry.classCode} entry={entry} />
       ))}
 
-      {state.classes.length > 0 && (
+      {classes.length > 0 && (
         <footer className="student-home__foot">
           <Link to="/join">Join another class</Link>
         </footer>

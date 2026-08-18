@@ -1,0 +1,3 @@
+# Anonymous forged submission accepted on an OPEN (no-roster) class with class code alone
+POST /classes/HXUPM/submissions (no Authorization) with seatCode 7 -> 202 Accepted; landed in evidence room.
+Roster classes (default) require a student bearer token and reject this (403).

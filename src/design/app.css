@@ -444,7 +444,7 @@ p { color: var(--ink-2); }
 .selected-evidence span { padding: var(--s-3); background: var(--fin-adjustable-soft); font: var(--t-micro); }
 .response-note { margin: var(--s-5) 0 0; color: var(--ink-3); font: var(--t-micro); }
 .student-worklist p { font-family: var(--font-mono); }
-.rubric-row { display: grid; grid-template-columns: 1fr auto; gap: var(--s-5); padding: var(--s-4) 0; border-bottom: 1px solid var(--border-default); }
+.rubric-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-5); padding: var(--s-4) 0; border-bottom: 1px solid var(--border-default); }
 .rubric-row b, .rubric-row span { display: block; }
 .rubric-row span { margin-top: var(--s-2); color: var(--ink-3); font: var(--t-micro); }
 .rubric-row > div:last-child { display: flex; gap: var(--s-1); }
@@ -494,14 +494,23 @@ p { color: var(--ink-2); }
   .gap-tiles button { grid-template-columns: 1fr auto; }
   .gap-tiles__kind { grid-column: 1 / -1; }
   .tradeoff-pair > div { grid-template-columns: 1fr; gap: var(--s-1); }
-  .challenge-topbar { height: auto; min-height: 64px; grid-template-columns: 1fr auto; padding: var(--s-3); }
+
+  /* The whole reason every challenge screen scrolled sideways on a phone.
+     Measured at 360px: the bar resolved to `231.25px 371.109px` plus a gap — a 618px floor
+     inside a 360px viewport — because the wordmark and both drawer summaries were
+     `white-space: nowrap`, and the season strip below inherited that grid width. The strip
+     was the visible symptom; these two columns were the cause. `minmax(0, …)` is what lets a
+     grid column go narrower than its content, and it is the piece that was missing. */
+  .challenge-topbar { height: auto; min-height: 64px; grid-template-columns: minmax(0, 1fr) minmax(0, auto); padding: var(--s-3); }
+  .app-mark b, .app-mark small { white-space: normal; }
+  .run-menu summary, .contract-drawer summary { white-space: normal; }
 
   /* Two rows of top chrome down here, and the strip can wrap to three. The heading has to
      clear all of it: "WHICH PLACE COSTS THE" used to arrive sliced through the middle. */
   .stage-heading { scroll-margin-top: 140px; }
   .season-strip { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; }
-  .season-strip ol { flex-basis: 100%; }
-  .challenge-topbar__end { grid-column: 2; grid-row: 1; }
+  .season-strip ol { min-width: 0; flex-basis: 100%; }
+  .challenge-topbar__end { min-width: 0; flex-wrap: wrap; grid-column: 2; grid-row: 1; justify-content: flex-end; }
   .contract-drawer > div { width: min(350px, calc(100vw - 24px)); }
   .stage-main { width: calc(100% - 24px); }
   .setup-grid, .exposure-summary, .class-foot, .standards-list, .prerequisite-list { grid-template-columns: 1fr; }
@@ -1027,9 +1036,17 @@ p { color: var(--ink-2); }
 .map-filters select:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 
 /* A real segmented control, for the places that were bordered squares. */
-.segmented { display: inline-flex; border: 1px solid var(--border-ink); border-radius: var(--r-sm); overflow: hidden; }
+
+/* `overflow: hidden` was here only to clip the rounded corners, and at 400% zoom it clipped
+   the scores instead: on the ten-point rubric the box measured 113px against 228px of buttons,
+   so 2, 3 and 4 were drawn outside it with no scrollbar and no way to reach them. A teacher
+   who zooms could not award a student full marks. Wrapping costs the single-row look at one
+   width and costs nothing at any other. */
+.segmented { display: inline-flex; flex-wrap: wrap; max-width: 100%; border: 1px solid var(--border-ink); border-radius: var(--r-sm); }
 .segmented button { min-width: var(--tap); min-height: 38px; padding: 0 var(--s-4); border: 0; background: var(--surface-raised); color: var(--ink-2); font: var(--m-xs); font-feature-settings: var(--num); cursor: pointer; }
 .segmented button + button { border-left: 1px solid var(--border-default); }
+.segmented button:first-child { border-start-start-radius: var(--r-sm); border-end-start-radius: var(--r-sm); }
+.segmented button:last-child { border-start-end-radius: var(--r-sm); border-end-end-radius: var(--r-sm); }
 .segmented button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); }
 
 /* A row that goes somewhere looks like it does, rather than parking an arrow at the far edge. */
@@ -1206,3 +1223,51 @@ p { color: var(--ink-2); }
 .present__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); padding-top: var(--s-4); border-top: 1px solid var(--border-default); }
 .present__moves { display: flex; gap: var(--s-3); }
 .present__note { margin: 0; max-width: 34rem; color: var(--ink-3); font: var(--t-sm); text-align: right; }
+
+
+/* ---------------------------------------------------------------------------
+   The class list, and the cards that come off it.
+
+   The cards block is the only moment a join code exists anywhere a person can read it, so it
+   is sized and coloured like the thing it is: a sheet to print, not a notification. The card
+   geometry is literal — a dashed edge and enough room to write on — because a teacher is about
+   to cut these up with scissors.
+   --------------------------------------------------------------------------- */
+.roster-add textarea { padding: var(--s-3); color: var(--ink-1); background: var(--surface); border: 1.5px solid var(--border-ink); font: var(--t-body); resize: vertical; }
+.roster-add__note { max-width: 62ch; margin: var(--s-3) 0 var(--s-4); color: var(--ink-3); font: var(--t-micro); }
+.roster-list { display: grid; gap: 1px; margin: 0; padding: 0; background: var(--border-subtle); list-style: none; }
+.roster-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: var(--s-3) var(--s-5); padding: var(--s-4) var(--s-5); background: var(--surface); }
+.roster-list strong { display: block; color: var(--ink-1); font: var(--t-title3); }
+.roster-list__seat { color: var(--ink-3); font: var(--t-micro); }
+.roster-list__state { color: var(--ink-3); font: var(--t-micro); }
+.roster-list__state[data-claimed="true"] { color: var(--ink-2); }
+.roster-list__acts { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+
+.cards-sheet { margin: 0 0 var(--s-6); padding: var(--s-5); background: var(--surface-raised); border: 2px solid var(--bow-brand); box-shadow: var(--shadow-card); }
+.cards-sheet__head { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: var(--s-4); }
+.cards-sheet__head h2 { margin: var(--s-2) 0; color: var(--ink-1); font: var(--t-title2); }
+.cards-sheet__head p { max-width: 54ch; margin: 0; color: var(--ink-2); font: var(--t-ui); }
+.cards-sheet__acts { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.cards-sheet__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--s-4); margin: var(--s-5) 0 0; padding: 0; list-style: none; }
+.join-card { padding: var(--s-4); background: var(--surface); border: 1.5px dashed var(--border-ink); }
+.join-card__name { margin: 0 0 var(--s-3); color: var(--ink-1); font: var(--t-title3); }
+.join-card dl { display: grid; gap: var(--s-2); margin: 0; }
+.join-card dt { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
+.join-card dd { margin: 0; color: var(--ink-1); font: var(--m-md); font-feature-settings: var(--num); letter-spacing: 0.14em; }
+.join-card__where { margin: var(--s-3) 0 0; color: var(--ink-3); font: var(--t-micro); }
+
+@media (max-width: 760px) {
+  .roster-list li { grid-template-columns: 1fr; }
+}
+
+/* Paper. Everything except the cards goes, because the one reason to print this page is to
+   cut it up, and a teacher should not spend a sheet on navigation. */
+@media print {
+  .educator-topbar, .page-header, .dashboard-section, .cards-sheet__acts, .join-error { display: none; }
+  .cards-sheet { border: 0; box-shadow: none; }
+  .cards-sheet__grid { grid-template-columns: repeat(3, 1fr); }
+  .join-card { break-inside: avoid; }
+}
+
+.student-home__title { margin: 0 0 var(--s-4); color: var(--ink-1); font: var(--t-scene); letter-spacing: var(--display-tracking-tight); text-transform: uppercase; }
+.student-home__title:focus-visible, .join-step h1:focus-visible { outline: 2px solid var(--bow-brand); outline-offset: 4px; }

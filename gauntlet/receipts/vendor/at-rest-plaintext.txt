@@ -1,0 +1,10 @@
+# On-disk PII at rest (file store) — everything plaintext except password/joincode/recovery hashes
+
+## class.json (teacherKey + label in plaintext):
+{"code":"QRRX9","label":"Period 3 <img src=x onerror=alert(1)>","challengeId":"plan-under-pressure","createdAt":1787088816766,"expiresAt":1797456816766,"teacherKey":"6JQYYV9ENRRGATD3TXAX6CT7","joinMode":"roster","teacherId":"t_af8aeb36852a4d4a945fbc2ac95a8d07"}
+## roster/1.json (child displayName in plaintext, joinCode hashed):
+{"id":"r_b7d7cddbce9342ecb520b377807771d4","classCode":"QRRX9","seatCode":"2","displayName":"<script>alert(document.domain)</script>","studentId":null,"addedAt":1787088816802,"joinCodeHash":"scrypt$32768$8$1$Xg1Vl9v9DGFc-BfpjHmHEQ$qBVeEIxkTP6OunJLmPz3yeQYTK65ecQVNhzZRHqM9zM","joinCodeIndex":"617d5e6ccef89b44d1061294e9a6602f"}
+## teacher account (email plaintext, password/recovery scrypt-hashed):
+{"id":"t_af5d20c7c9bb4b108e68bb986f33327f","email":"t2@example.edu","createdAt":1787088805009,"passwordHash":"scrypt$32768$8$1$aiEZN7vXejd88q7Go0OVjA$WDJqFy6jO56BGVdMB0fmlNxTNYVXKxc_DCHH4CQ2UIU","recoveryHash":"scrypt$32768$8$1$vKVNr66JqgOQU8ahzq9uJg$0XPBynsiHLj-lfl0S09X49PsdNBrlH76dqDOMcQDh7k"}{"id":"t_af8aeb36852a4d4a945fbc2ac95a8d07","email":"t1@example.edu","createdAt":1787088791887,"passwordHash":"scrypt$32768$8$1$t8d9ZDHazOMF-LV11Jf0pg$absy7_wSV2LjAxC1EijB8YsBjT8qcR22tEOvj8681Ow","recoveryHash":"scrypt$32768$8$1$CpSitlhwjHxOdRGeEsowSQ$BW7ToBxEwQ9FWJHkIsHhwsd7oTQ0VYXn8bUb3KzsYCI"}
+## session-signing secret in plaintext on disk (forges any token):
+{"secret":"VZYSM3CRy6IfsVhWyxjBjnMUohDxG58IL-UKcLt5Hu2HcFeXKMYKcTIvRz599BBtJ8FueZGBT3feqRi8azecEg"}

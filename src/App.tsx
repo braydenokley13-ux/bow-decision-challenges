@@ -9,6 +9,7 @@ import { ObjectiveMap } from "./educator/ObjectiveMap";
 import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPages";
 import { ReadingQueue } from "./educator/ReadingQueue";
 import { Debrief } from "./educator/Debrief";
+import { Roster } from "./educator/Roster";
 import { ShareOut } from "./educator/ShareOut";
 import { PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
 import { StudentJoin } from "./student/Join";
@@ -106,6 +107,10 @@ export function App() {
       <Route path="/educator/class/:code/debrief" element={<Debrief />} />
       {/* Select, sequence, project. Nothing is shown to a room unless a teacher chose it. */}
       <Route path="/educator/class/:code/share-out" element={<ShareOut />} />
+      {/* The class list and the cards that come off it. Every route behind this screen has
+          existed since accounts shipped; until this screen there was no way for a teacher to
+          reach any of them, which made the whole account system reachable only by curl. */}
+      <Route path="/educator/class/:code/roster" element={<Roster />} />
       {/* The sample class. `DEMO_CLASS_CODE` cannot be a real class's code — real codes are
           five characters from `CODE_ALPHABET`, this one is four — so this is the exact same
           `RealClassOverview` a real class opens, fed evidence `useClassEvidence` builds from
