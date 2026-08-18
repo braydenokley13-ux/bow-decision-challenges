@@ -25,6 +25,37 @@ export default defineConfig({
       testIgnore: "**/walkthrough.spec.ts",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 600 } },
     },
+    /**
+     * The narrowest screen this product has to work on, and the only project that runs the
+     * reflow sweep.
+     *
+     * 360px is a school phone and the width WCAG 1.4.10 is written against. Nothing in the
+     * suite was measuring it: twenty-one surfaces scrolled sideways there and every test
+     * passed, because the two widths above are wide enough to hide a `nowrap` in a top bar.
+     * It greps for a tag rather than running everything again — one pass over the student path
+     * at the width that breaks first, not a third copy of the whole suite. The tag is `@reflow`
+     * rather than the word itself because Playwright matches a grep against the whole title
+     * path, project name included, so a project called `chromium-zoom` greppping for "zoom"
+     * quietly runs the entire suite.
+     */
+    {
+      name: "chromium-360",
+      grep: /@reflow/,
+      use: { ...devices["Desktop Chrome"], viewport: { width: 360, height: 740 } },
+    },
+    /**
+     * 400% zoom, the way a browser's own zoom control does it.
+     *
+     * A teacher who needs large text gets a viewport a quarter of the width with everything in
+     * it four times the size, which is 320×256 CSS pixels at a device scale of 4 standing in
+     * for 400% on a 1280×1024 window. `document.body.style.zoom` is not this and passes things
+     * a real Ctrl+Plus fails, so the emulation is the one WCAG 1.4.10 is written against.
+     */
+    {
+      name: "chromium-zoom",
+      grep: /@zoom/,
+      use: { ...devices["Desktop Chrome"], viewport: { width: 320, height: 256 }, deviceScaleFactor: 4 },
+    },
     {
       name: "walkthrough",
       testMatch: "**/walkthrough.spec.ts",

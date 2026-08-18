@@ -164,7 +164,41 @@ deployment with nowhere durable to write answers `503` with the environment vari
 A throwaway demo can opt out with `BOW_ALLOW_EPHEMERAL_STORE=1`, and still reports
 `durable: false` so nothing can call it classroom-ready.
 
-Self-hosting instead: `npm run api` runs the same service on Node with a file store.
+Self-hosting instead: `npm run api` runs the same service on Node with a file store. Two
+things are required rather than recommended, and the service will not run a class without the
+first of them.
 
-Classes and their evidence are kept for 120 days, then deleted. A student's in-progress
-attempt stays in their own browser.
+**`BOW_STORE_KEY` — 32 random bytes, base64 or hex.** `openssl rand -base64 32`. Every record
+the durable store writes is sealed with it (AES-256-GCM), and the secret that signs every
+session token is derived from it rather than written anywhere. Without it the service refuses
+to open a class and says so, because the records this store holds are children's names, their
+written explanations and every teacher key — and a security review found all of it in plain
+JSON beside the token-signing secret, which made one disk image the whole deployment. Keep the
+key where your other secrets live, keep a copy, and do not put it in the data directory.
+Losing it loses every class; changing it makes every existing class unreadable.
+
+**TLS in front of it.** `npm run api` is plain HTTP and now binds loopback by default. Set
+`BOW_BIND_HOST` to open it wider, and put a TLS terminator in front before any class uses it —
+otherwise children's names and their written work cross the school network in the clear.
+
+The managed path runs without `BOW_STORE_KEY`, because at-rest encryption there is the KV
+subprocessor's control and belongs in a data processing agreement. Setting it anyway means the
+subprocessor holds ciphertext, which is a materially different conversation with a privacy
+officer.
+
+### What is kept, and what deletes it
+
+Classes and their evidence are kept for 120 days, then deleted. That is now executed rather
+than asserted: a sweep runs hourly on a long-running server, and opportunistically at most once
+an hour on a serverless one, and `GET /api/health` reports when it last ran and how many
+classes it removed. It used to be a sentence with no code behind it — expired classes were
+hidden from reads and kept on disk indefinitely.
+
+A district can also erase one child without touching the rest of the class:
+`DELETE /api/classes/:code/roster/:seat?erase=1`, or the **Erase** control on the class list.
+That takes the name, every submission, every checkpoint and every note their teacher wrote back.
+Taking a student *off the list* is the different, reversible thing: they stop being able to sign
+in and their work stays in the evidence.
+
+A student's in-progress attempt stays in their own browser, and is also checkpointed to their
+class so they can carry on from a different device.

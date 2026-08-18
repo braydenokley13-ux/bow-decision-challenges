@@ -1,7 +1,7 @@
 import type { StageId } from "../../../evidence/types";
 
 /**
- * The eleven screens of Run the Pop-Up, and how long each is designed to take.
+ * The ten screens of Run the Pop-Up, and how long each is designed to take.
  *
  * The budget is Basketball's `machine/pacing.ts` idea applied to a different world, and it
  * lives here rather than there because it is a fact about this world's screens. Nothing in
@@ -14,12 +14,11 @@ import type { StageId } from "../../../evidence/types";
  * the middle of it. No human has been timed, and no test in this repository can claim one has.
  */
 export type PopUpStageId =
-  | "popup-pitch" | "popup-spot" | "popup-money" | "popup-plan" | "popup-first-saturday"
+  | "popup-spot" | "popup-money" | "popup-plan" | "popup-first-saturday"
   | "popup-standing-order" | "popup-generator" | "popup-repair" | "popup-settle"
   | "popup-writeup" | "popup-submitted";
 
 export const POP_UP_STAGES: readonly PopUpStageId[] = [
-  "popup-pitch",
   "popup-spot",
   "popup-money",
   "popup-plan",
@@ -39,16 +38,15 @@ export interface PopUpStageBudget {
 }
 
 export const POP_UP_STAGE_BUDGET: Record<PopUpStageId, PopUpStageBudget> = {
-  "popup-pitch": { seconds: 60, basis: "Read who you are, what the market is, and what is already owed." },
-  "popup-spot": { seconds: 115, basis: "Compare three booth spots on price and crowd, pick one, and total what is owed before the first Saturday." },
-  "popup-money": { seconds: 95, basis: "Read two pieces of money with a rule attached, decide about each, and work out what is left to plan with." },
-  "popup-plan": { seconds: 165, basis: "Set three lines, name the line that takes the rest, and say what gives if conditional money does not come." },
-  "popup-first-saturday": { seconds: 110, basis: "Order trays for opening night, price the order, then read what sold and what went in the bin." },
-  "popup-standing-order": { seconds: 130, basis: "Set the order for two more Saturdays, answer the friend on the window, then read both nights and the studio's answer." },
-  "popup-generator": { seconds: 100, basis: "Read what happened to the generator and work out what the shop still wants." },
-  "popup-repair": { seconds: 130, basis: "Free the money from lines that can still move, then set the last Saturday's order." },
-  "popup-settle": { seconds: 90, basis: "Read the last Saturday and the settle-up: sold, binned, banked." },
-  "popup-writeup": { seconds: 145, basis: "Pick two or three of their own numbers and write two to four sentences for the organiser." },
+  "popup-spot": { seconds: 150, basis: "Read who you are and what is already owed, compare three booths on price and on four different crowds, pick one, and total what is owed before the first Saturday." },
+  "popup-money": { seconds: 90, basis: "Read two pieces of money with a rule attached, decide about each, and work out what is left to plan with." },
+  "popup-plan": { seconds: 160, basis: "Set three lines, name the line that takes the rest, and say what gives if conditional money does not come." },
+  "popup-first-saturday": { seconds: 95, basis: "Order trays for opening night against one stated crowd, price the order, then read what sold and what went in the bin." },
+  "popup-standing-order": { seconds: 130, basis: "Weigh one order against two unequal nights, answer the friend on the window, then read both nights and the studio's answer." },
+  "popup-generator": { seconds: 95, basis: "Read what happened to the generator and work out what the shop still wants." },
+  "popup-repair": { seconds: 125, basis: "Free the money from lines that can still move, then set the last Saturday's order." },
+  "popup-settle": { seconds: 85, basis: "Read the last Saturday, the settle-up, and what each call actually did." },
+  "popup-writeup": { seconds: 140, basis: "Pick two or three of their own numbers and write two to four sentences for the organiser." },
   "popup-submitted": { seconds: 20, basis: "Confirmation that the work reached the class." },
 };
 
@@ -69,7 +67,6 @@ export interface MarketPosition {
 }
 
 const MARKET_POSITIONS: Partial<Record<StageId, MarketPosition>> = {
-  "popup-pitch": { caption: "Before the market", played: 0, current: null },
   "popup-spot": { caption: "Before the market", played: 0, current: null },
   "popup-money": { caption: "Before the market", played: 0, current: null },
   "popup-plan": { caption: "Before the market", played: 0, current: null },

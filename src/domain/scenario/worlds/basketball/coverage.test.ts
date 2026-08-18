@@ -98,7 +98,7 @@ describe("Basketball's coverage claim is backed by its observer", () => {
     // is not available. The observations still carry those four — the evidence trail shows
     // what the student did even where the competency cannot be claimed.
     const claimed = basketballClaims.map((claim) => claim.competencyId).sort();
-    expect(claimed).toEqual(["adapt-a-plan", "plan-within-income"]);
+    expect(claimed).toEqual(["adapt-a-plan", "plan-within-income", "sort-by-need-want-goal"]);
     const results = observeCompetencies(observeBasketballFromLog(seat14Log()), { submitted: true });
     expect(results.map((result) => result.competencyId).sort()).toEqual(claimed);
   });

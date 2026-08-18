@@ -11,8 +11,10 @@ import type { DemandProfile } from "../../demand";
  *   they chose, what Avery can count on, what is already owed, and what Week 5 cost. All
  *   four are add/subtract or a single multiply-then-add; nothing asks for a percentage.
  * - **Decisions that move money**: which place to live, whether to count each of the two
- *   bonuses, how to split what is left, whether to reserve the course seat, whether to take
- *   the clinics, and whether the attendance bonus stays in the plan.
+ *   bonuses, how to split what is left, how to settle Week 3's three competing claims,
+ *   whether to reserve the course seat, whether to take the clinics, and whether the
+ *   attendance bonus stays in the plan. Saying which value drove the Week 3 call is counted
+ *   with the call rather than beside it: it is one decision stated twice, not two.
  * - **Simultaneous constraints**: money, and Avery's week. Two.
  * - **Adaptation events**: one. Week 5.
  * - **Design minutes**: the pacing table's own budget for the longest path.
@@ -25,11 +27,21 @@ export const BASKETBALL_DEMAND: DemandProfile = {
   // through — when the second world shipped its own. The original 5.4 came from an
   // instrument this repository does not contain, and a declared fact §9.2 calls checkable
   // has to come from the ruler that checks it.
-  readingGradeLevel: 4.2,
-  totalWordsStudentReads: 1180,
+  // Re-measured after the density pass. It had already drifted to 3.71 against a declared
+  // 4.2 before a word of this pass was cut — 0.49 of the 0.5 tolerance, spent — and shortening
+  // two contract lines took it to 3.65. Lower is easier, which is the direction this world
+  // wants to move in, and the number is now what the ruler says rather than what it said.
+  readingGradeLevel: 3.65,
+  // Was 1180, asserted on nothing. It counted the world's story — the strings in
+  // `scenario.ts` — and not the run: a critic who played the whole thing and counted what was
+  // on the glass measured 3,167, and the only test looking at this field was the pop-up's,
+  // which filtered through `isProse` and so could not see a button, a table header or a money
+  // figure. This number is now the one `stages/readingLoad.test.tsx` renders and counts,
+  // screen by screen along the shortest complete path, and that test fails if the two drift.
+  totalWordsStudentReads: 2688,
   arithmeticOperations: 4,
   arithmeticComplexity: "multiply",
-  decisionsRequired: 7,
+  decisionsRequired: 8,
   simultaneousConstraints: 2,
   adaptationEvents: 1,
   designMinutes: 23,

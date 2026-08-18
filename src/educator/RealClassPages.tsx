@@ -79,7 +79,7 @@ function ClassFrame({ state, children, title }: {
  * can read it from their seats. So the code is the page, at the size a projector needs, with
  * the address they type beside it.
  */
-function NothingYet({ code, label }: { code: string; label: string }) {
+function NothingYet({ code, label, keyQuery, hasRoster }: { code: string; label: string; keyQuery: string; hasRoster: boolean }) {
   return (
     <>
       <header className="class-header">
@@ -98,7 +98,19 @@ function NothingYet({ code, label }: { code: string; label: string }) {
         <div className="class-created__body">
           <h2>Students go here</h2>
           <p className="join-address"><code>{window.location.origin}{PLAN_UNDER_PRESSURE.route}</code></p>
-          <p>Each student types the code and picks a seat number. No accounts, no email addresses, no names.</p>
+          {/* What a student actually meets, which is no longer a seat number to pick: a class
+              with a list hands out cards and the card decides the seat, and a class without
+              one asks the student for the name their teacher will see. A launch instruction
+              that describes neither sends a room of thirty looking for a control. */}
+          {hasRoster ? (
+            <p>Each student types the code, then the code on their own card. No accounts and no email addresses.</p>
+          ) : (
+            <p>Each student types the code and the name you will see beside their work. No accounts, no email addresses.</p>
+          )}
+          <p>
+            {hasRoster ? "Their cards are on the " : "Or hand out named cards instead — "}
+            <Link to={`/educator/class/${code}/roster${keyQuery}`}>{hasRoster ? "class list" : "make the class list"}</Link>.
+          </p>
           <Button variant="secondary" onClick={() => window.location.reload()}>Check again</Button>
         </div>
       </section>
@@ -254,7 +266,17 @@ function LiveState({ roll, roster, progress, code, keyQuery, loadedAt }: {
       {!roll.hasRoster && (
         <p className="class-state">
           This class has no student list, so BOW cannot say who has not started — only who has.
-          Add one from the class setup and every seat gets a name.
+          {" "}<Link to={`/educator/class/${code}/roster${keyQuery}`}>Add one</Link> and every seat gets a name.
+        </p>
+      )}
+      {/* Said out loud rather than left as a difference between two numbers. Work from a seat
+          the teacher removed is kept and is not counted anywhere on this page, and a teacher
+          who is not told that has to work it out from an arithmetic that no longer adds up. */}
+      {roll.excluded.length > 0 && (
+        <p className="live-state__waiting">
+          {roll.excluded.length} {roll.excluded.length === 1 ? "attempt" : "attempts"} from{" "}
+          {new Set(roll.excluded.map((row) => row.seatCode)).size === 1 ? "a seat" : "seats"} you removed
+          {" "}from the list. Kept, and counted nowhere on this page.
         </p>
       )}
     </section>
@@ -397,7 +419,7 @@ export function RealClassOverview() {
         // student list and the export — so two of them cannot disagree about the same room.
         // They used to be computed five ways and three of them were on screen at once.
         const roll = classRoll({ rows: analysis.rows, roster: ready.roster, progress: ready.progress });
-        if (roll.rows.length === 0) return <NothingYet code={record.code} label={record.label} />;
+        if (roll.rows.length === 0) return <NothingYet code={record.code} label={record.label} keyQuery={keyQuery} hasRoster={roll.hasRoster} />;
         // The spine is read against the same class: one attempt per student still in the
         // room, so "turned in" in the headline is the same number as "turned in" in the tile.
         const counted = roll.rows.flatMap((row) => submissions.filter((entry) => entry.sessionId === row.sessionId));
@@ -551,6 +573,14 @@ export function RealClassOverview() {
                 <p>Two real plans, what changed after Week 5, and what to review — from this class's evidence.</p>
                 <Link className="button button--primary" to={`/educator/class/${record.code}/debrief${keyQuery}`}>Open the debrief</Link>
                 <Link className="button button--secondary" to={`/educator/class/${record.code}/share-out${keyQuery}`}>Pick what the room sees</Link>
+              </div>
+              <div>
+                <span>This class</span>
+                <strong>Who is in this class</strong>
+                {/* The list is what turns every seat number on this page into a name, so the
+                    way to it belongs beside the things a teacher does with the names. */}
+                <p>Names, join cards, a card reissued for a student who lost theirs, and taking somebody off the list.</p>
+                <Link className="button button--secondary" to={`/educator/class/${record.code}/roster${keyQuery}`}>Class list</Link>
               </div>
             </section>
           </>

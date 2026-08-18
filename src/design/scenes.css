@@ -885,3 +885,89 @@
 .opening__job .join-status { color: var(--ink-2); }
 .opening__job .join-status--problem { color: var(--fin-over-ink); }
 .opening__job .privacy-note { color: var(--ink-3); }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Week 3 — three claims on one week's cash, and the reason one was left out.
+   Added with the Week 3 decision that replaced the four-card season feed. Owned
+   by src/stages/SeasonWeeks.tsx; nothing else uses these class names.
+   Built single-column first so it holds at 360px without sideways scroll — every
+   grid below only gains columns above a width where they fit.
+   ───────────────────────────────────────────────────────────────────────────── */
+.claims { display: grid; gap: var(--s-4); }
+.claims__list { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.claims__list > li { display: grid; }
+.claims__list button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-3);
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  text-align: left;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.claims__list button b { font: var(--t-ui); }
+.claims__list button strong { justify-self: end; font: var(--m-sm); font-feature-settings: var(--num); }
+.claims__list button span,
+.claims__list button em { grid-column: 1 / -1; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.claims__list button em { color: var(--ink-3); font-style: normal; }
+.claims__list button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); border-color: var(--ink-1); }
+.claims__list button[aria-pressed="true"] span { color: var(--surface-sunken); }
+.claims__list button[aria-disabled="true"] { cursor: default; opacity: 0.55; }
+
+.claims__left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-3);
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-sunken);
+  border-radius: var(--r-md);
+}
+.claims__left strong { font: var(--m-lg); font-feature-settings: var(--num); }
+.claims__left span { flex: 1 1 20ch; min-width: 0; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+
+.claims__why { display: grid; gap: var(--s-2); }
+.claims__why ul { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.claims__why button {
+  width: 100%;
+  padding: var(--s-2) var(--s-4);
+  text-align: left;
+  color: inherit;
+  font: var(--t-sm);
+  font-weight: 400;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-pill);
+  cursor: pointer;
+}
+.claims__why button[aria-pressed="true"] { color: var(--ink-invert); background: var(--ink-1); border-color: var(--ink-1); }
+
+.season-run { display: grid; gap: var(--s-2); }
+.season-run > .field-label { margin: 0; }
+.season-run ol { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.season-run li {
+  display: grid;
+  grid-template-columns: 7ch minmax(0, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s-3);
+}
+.season-run li > span { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.08em; text-transform: uppercase; }
+.season-run li > strong { font: var(--m-xs); font-feature-settings: var(--num); }
+.season-run li > i {
+  height: 6px;
+  display: block;
+  max-width: 100%;
+  background: var(--fin-reliable);
+  border-radius: var(--r-pill);
+}
+.season-run li[data-now="true"] > span { color: var(--world-accent); }
+
+@media (min-width: 640px) {
+  .claims__list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
+  .claims__why ul { grid-template-columns: 1fr 1fr; }
+}

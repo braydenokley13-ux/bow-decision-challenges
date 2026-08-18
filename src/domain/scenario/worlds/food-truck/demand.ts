@@ -48,12 +48,24 @@ import type { DemandProfile } from "../../demand";
  * checkable fact about the world into a claim about children.
  */
 export const POP_UP_DEMAND: DemandProfile = {
-  readingGradeLevel: 3.5,
-  totalWordsStudentReads: 1866,
+  // Re-measured after the density pass. Cutting the pitch screen, the settle table and three
+  // summary sentences the ending's verdicts now say better took the copy from 3.78 to here.
+  readingGradeLevel: 3.44,
+  // Two rulers reach this number and it has to satisfy both. `worldParity.test.ts` counts the
+  // prose in `scenario.ts` — every branch, including the twenty-six ending verdicts a single
+  // run never prints — and measures 2290. `stages/readingLoad.test.tsx` renders the ten
+  // screens of the shortest complete path and counts what is actually on the glass: 1932.
+  // The declaration sits between them, inside fifteen per cent of each, because a number that
+  // matched one and not the other would be true of a run nobody has.
+  totalWordsStudentReads: 2120,
   arithmeticOperations: 4,
   arithmeticComplexity: "multiply",
   decisionsRequired: 8,
   simultaneousConstraints: 2,
   adaptationEvents: 1,
-  designMinutes: 22,
+  // `stages.ts` budgets the ten screens at 18m 10s, down from 19m 20s across eleven: the
+  // pitch screen is gone, the ending's table is gone, and the two screens that grew — the
+  // booths, which absorbed the pitch's facts and now states four different crowds, and the
+  // settle-up, which now names what each call did — were paid for out of the cut.
+  designMinutes: 21,
 };

@@ -8,6 +8,20 @@ import { PLAN_UNDER_PRESSURE } from "../challenges/registry";
 import type { ClassCreation } from "../classes/types";
 import type { EvidenceEvent } from "../../domain/evidence/types";
 import { MAX_FEEDBACK_LENGTH, type JoinCard, type TeacherFeedback } from "./types";
+import { vault } from "../../../server/vault";
+import { randomBytes } from "node:crypto";
+
+/**
+ * A real vault, with a throwaway key.
+ *
+ * The file store will not write without one — a durable store that could be started with no
+ * key would be a durable store somebody starts with no key — so a test that reaches for the
+ * disk makes one, which also means these tests exercise the sealed path rather than a
+ * plaintext path nothing ships.
+ */
+function sealed() {
+  return vault(randomBytes(32));
+}
 
 /**
  * What a teacher writes back stays written.
@@ -252,7 +266,7 @@ describe("a note is delivered whole or refused, never quietly cut", () => {
 describe("notes written before feedback was a sequence are not lost", () => {
   it("keeps delivering a note stored under the old one-per-attempt shape, and adds to it", async () => {
     const root = await mkdtemp(join(tmpdir(), "bow-feedback-"));
-    const store = fileStore(root);
+    const store = fileStore(root, sealed());
     const place = await room(store, "session-legacy");
 
     // Exactly what the old code wrote: no id, filed under the attempt it was about.

@@ -19,6 +19,19 @@ export type IncomeSourceId = "saved-500" | "base-4500" | "completion-800" | "out
 export type CategoryId = "goal" | "reserve" | "flexibleCash";
 export type CalcId = "chosen-setup-total" | "essentials-total" | "reliable-floor" | "week5-change";
 
+/**
+ * Why a student left one of several competing claims unpaid.
+ *
+ * Written in no world's vocabulary on purpose. A claim on limited money is either something
+ * only wanted, something nobody else is depending on, something that can be put off at a
+ * price, or — and this is the one the competency exists to catch — the cheapest thing on
+ * the list. Those four hold of a night market's stock order and a basketball season's week
+ * alike, so a second world producing `COMPETING_CLAIMS_SETTLED` says the same four things
+ * and its evidence pools with this one's. The claims themselves are the world's; this is
+ * not.
+ */
+export type ClaimReasonId = "only-wanted" | "no-one-counting" | "can-wait" | "cheapest";
+
 export const CALCULATION_IDS: readonly CalcId[] = [
   "chosen-setup-total",
   "essentials-total",

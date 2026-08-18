@@ -39,6 +39,29 @@ export interface CourseNumbers {
   depositDeadlineWeek: number;
 }
 
+/**
+ * The one week Avery is handed money the plan never sees.
+ *
+ * A teammate's shift, covered on a Tuesday, paid in cash. It is deliberately not income:
+ * it never reaches the planning board, never touches the season ledger, and cannot be
+ * banked. That is what makes it usable as a values decision rather than as a fourth axis
+ * of the budget — `balance.ts` sweeps the strategy space of the plan, and money that can
+ * be moved into the plan would multiply that space for a beat whose whole subject is which
+ * of three claims matters most.
+ *
+ * The three claims add up to more than the cash on purpose, and to more than any two of
+ * them can be paid for from what one of them leaves behind. There is no combination that
+ * funds all three and there is no combination that is obviously right, which is the same
+ * standard every other decision in this world is held to.
+ */
+export interface Week3Numbers {
+  /** The week the shift is covered and the money arrives. */
+  week: number;
+  cash: Dollars;
+  /** What each claim costs. Keyed by the world's own claim ids. */
+  claimCosts: Record<string, Dollars>;
+}
+
 export interface ScenarioNumbers {
   version: string;
   weeks: 8;
@@ -56,6 +79,8 @@ export interface ScenarioNumbers {
   load: LoadNumbers;
   setupCosts: Record<SetupId, Dollars>;
   setupEventCosts: Record<SetupId, Dollars>;
+  /** The Week 3 cash and the three things that want it. Outside the plan, on purpose. */
+  week3: Week3Numbers;
   requiredWeek5Cost: Dollars;
   optionalWorkIncome: Dollars;
   /** What coaching the clinics costs Avery out of pocket — travel, and the extra physio. */

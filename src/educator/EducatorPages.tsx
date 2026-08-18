@@ -85,7 +85,11 @@ function BriefAnswers() {
         <div><dt>What do students do?</dt><dd>They handle the money in one of two situations, and they pick which. <b>Eight Weeks to the Showcase</b>: a player’s season, where they choose housing, build a plan, absorb a Week 5 loss and a new required cost, and repair it. <b>Run the Pop-Up</b>: four Saturdays at a night market, where they take a booth, decide how much food to cook against the crowd it draws, and cover a generator that dies with the biggest night still ahead. Both ask for a plan that fits the money, both break it, and both end with the student explaining in writing what they did.</dd></div>
         <div><dt>Do the two give me the same thing back?</dt><dd>Yes, and that is the point of having two. They collect evidence against the same named requirements and are judged on the same rubric, so a class where students chose differently still produces one answer about the class. What differs is the story, the decisions and the numbers — never what is being looked for.</dd></div>
         <div><dt>What do I get back?</dt><dd>For each student, what the evidence shows against each skill — requirement by requirement, every judgement traceable to the moment in their own run. Plus what the class decided, and one written explanation you read and score yourself. A points total for your gradebook comes with it.</dd></div>
-        <div><dt>How do I launch it?</dt><dd>Create a class, read out the code, and give each student a seat number. No accounts, no email addresses, no names, no roster.</dd></div>
+        {/* Every clause after the first used to be false: there are accounts now, teachers do
+            give an email address, the roster is where the names live, and there is no seat
+            number to give out — a student signs in with a class code and the code on a card.
+            A teacher following the old sentence would have lost the lesson in the room. */}
+        <div><dt>How do I launch it?</dt><dd>Create a class, paste your class list, and print the cards — one per student. Put the class code on the board; a student types that code and the code on their own card. They never type an email address, a password or a birthday. No list to hand? Students type the class code and their own first name instead.</dd></div>
       </dl>
       <div className="brief-answers__links">
         <Link to="/educator/classes">Run this with my class →</Link>
@@ -145,7 +149,7 @@ export function EducatorGuide() {
           <h2>Running it</h2>
         </div>
         <ol>
-          <li><Link to="/educator/classes">Create a class</Link>, read out the code, and give each student a seat number.</li>
+          <li><Link to="/educator/classes">Create a class</Link>, paste your class list, print the cards and hand them out. Students type the class code from the board and the code on their card.</li>
           <li>Allow {durationLabel(PLAN_UNDER_PRESSURE)}. Do not coach a financial strategy.</li>
           <li>Read and score the written explanations. Nothing a student writes is machine-scored.</li>
           <li>Open the class: what the evidence shows, and what to teach next.</li>

@@ -12,7 +12,9 @@ import {
   SETUP_TITLES,
   rankPlacesCorrectly,
   seatOnRoster,
+  signIn,
   chooseSeasonIfOffered,
+  type JoinCard,
   completeSetupStage,
   completeWorkingCalcs,
   decideOpportunity,
@@ -417,8 +419,6 @@ studentTest("the opening screens work with a keyboard only", async ({ page, clas
   await codeField.fill(classCode);
   await page.getByRole("button", { name: "Next" }).focus();
   await page.keyboard.press("Enter");
-  await page.getByRole("button", { name: card.displayName, exact: true }).focus();
-  await page.keyboard.press("Enter");
   const keyField = page.getByLabel("Your code");
   await keyField.focus();
   await keyField.fill(card.joinCode);
@@ -499,8 +499,10 @@ studentTest("key screens have no serious or critical accessibility violations", 
   await expect(page.getByRole("heading", { name: "What does Avery do with the rest?" })).toBeVisible();
   await noSeriousAxeViolations(page);
 
+  // A second pass through the run is a second student: a seat belongs to a person on the
+  // roster now, and the same one cannot be claimed twice.
   await gotoFreshChallenge(page);
-  await enterChallenge(page, { classCode });
+  await enterChallenge(page, { classCode, seatCode: "11" });
   await completeSetupStage(page, 2);
   await completeWorkingCalcs(page);
   const scanned: PlanContext = { setupId: "cousin-room" };
@@ -1355,6 +1357,35 @@ studentTest("naming the row is operable from the keyboard and never overfills th
 //      loud before it will commit.
 // ---------------------------------------------------------------------------
 
+/**
+ * Enters the run as a student of a class this test made through the educator's own screens.
+ *
+ * `enterChallenge` looks the teacher key up in the fixture that created the class. A class a
+ * teacher creates in the browser has its key on screen instead and nowhere else, so the seat
+ * is put on the roster with that key and everything after it is the door a student uses. It
+ * seats in order, exactly as the service hands seats out, so asking for seat 9 puts nine
+ * students on the list and takes the last of them.
+ */
+async function enterChallengeWithKey(page: Page, options: { classCode: string; teacherKey: string; seatCode: string }) {
+  const wanted = Number(options.seatCode);
+  const headers = { "X-BOW-Teacher-Key": options.teacherKey };
+  const listed = await page.request.get(`http://127.0.0.1:4180/api/classes/${options.classCode}/roster`, { headers });
+  const already = ((await listed.json()) as { roster?: readonly { seatCode: string }[] }).roster ?? [];
+  let card = already.find((row) => row.seatCode === options.seatCode) as JoinCard | undefined;
+  if (!card) {
+    const names = Array.from({ length: wanted - already.length }, (_, index) => `Test Student ${already.length + index + 1}`);
+    const created = await page.request.post(`http://127.0.0.1:4180/api/classes/${options.classCode}/roster`, { headers, data: { names } });
+    expect(created.status(), await created.text()).toBe(201);
+    card = ((await created.json()) as { cards: JoinCard[] }).cards.at(-1);
+  }
+  if (!card) throw new Error(`Could not seat ${options.seatCode} in ${options.classCode}.`);
+  await signIn(page, { ...card, classCode: options.classCode });
+  await page.getByRole("link", { name: /^(Start|Carry on)$/ }).click();
+  await page.getByRole("button", { name: /Start the eight weeks|Go in/ }).click();
+  await chooseSeasonIfOffered(page);
+  await page.getByRole("button", { name: "Find Avery a place" }).click();
+}
+
 /** The attempt as this browser has it stored, which is what a reload restores from. */
 async function storedAttempt(page: Page) {
   const raw = await page.evaluate(() => localStorage.getItem("bow.attempt.v2.plan-under-pressure.basketball"));
@@ -1424,6 +1455,100 @@ studentTest("an opening plan that balances exactly is still closed by naming a r
 });
 
 // ---------------------------------------------------------------------------
+// 27c. Reflow. Every screen a student passes through, at the width a school
+//      phone actually is. Runs only in the 360px project.
+// ---------------------------------------------------------------------------
+
+studentTest("@reflow every screen of the run fits the width it is given", async ({ page, classCode }) => {
+  // WCAG 1.4.10, and the reason it is its own test: at 1366 and 1024 a top bar that refuses
+  // to wrap has room to hide in, so a sideways scroll on a phone is invisible to every other
+  // test in this file. The check is cheap; what is expensive is not doing it, because a
+  // student on a phone meets it on the first screen and has no way to report it.
+  const plan: PlanContext = { setupId: "cousin-room" };
+  await gotoFreshChallenge(page);
+  await noHorizontalOverflow(page);
+
+  await enterChallenge(page, { classCode });
+  await noHorizontalOverflow(page);
+
+  await rankPlacesCorrectly(page);
+  await noHorizontalOverflow(page);
+  await page.locator(".place-card").nth(2).getByRole("button", { name: "Choose this setup" }).click();
+  await page.getByLabel(`What the ${SETUP_TITLES["cousin-room"]} costs Avery`).fill(String(N.setupCosts["cousin-room"]));
+  await page.locator(".chosen-total").getByRole("button", { name: "Check" }).click();
+  await noHorizontalOverflow(page);
+  await page.getByRole("button", { name: "Build the plan" }).click();
+
+  await completeWorkingCalcs(page);
+  await noHorizontalOverflow(page);
+  await savePlan(page, "working", plan);
+  await noHorizontalOverflow(page);
+
+  await page.getByRole("button", { name: TO_DEPOSIT }).click();
+  await noHorizontalOverflow(page);
+  await page.getByRole("button", { name: "Wait and decide later" }).click();
+  await page.getByRole("button", { name: "Lock it in and play Week 5" }).click();
+  await noHorizontalOverflow(page);
+
+  await passWeek5Calculation(page, String(week5TotalFor(plan)));
+  await noHorizontalOverflow(page);
+  await savePlan(page, "week5-first-response", plan);
+  await noHorizontalOverflow(page);
+  await decideOpportunity(page, { clinics: false, countBonus: false });
+  await savePlan(page, "final", { ...plan, clinics: false, countCompletionFinal: false });
+  await noHorizontalOverflow(page);
+
+  await readWeek8Resolution(page);
+  await noHorizontalOverflow(page);
+  await submitDefense(page, "I kept the course money where I set it and gave up part of the reserve after Week 5, because the seat is the thing Avery is playing for.");
+  await waitForDelivery(page);
+  await noHorizontalOverflow(page);
+});
+
+/** How far past the window a screen reaches, in CSS pixels. Zero is the only good answer. */
+async function overflowOf(page: Page): Promise<number> {
+  return page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+}
+
+/**
+ * Says which screens spill sideways and by how much, in one message.
+ *
+ * One assertion per screen would report the first offender and stop, and the useful thing
+ * about a reflow failure is the whole list: the same `nowrap` in one top bar shows up on
+ * every screen that bar sits on, and a list of six is one fix rather than six.
+ */
+function reportOverflow(measured: readonly { screen: string; px: number }[]) {
+  const spilling = measured.filter((entry) => entry.px > 1);
+  expect(spilling.map((entry) => `${entry.screen}: ${entry.px}px`), "screens that scroll sideways").toEqual([]);
+}
+
+studentTest("@zoom the student path holds at 400% and so does the class page", async ({ page, classCode }) => {
+  // 1.4.10 again, at the other end of the same rule: a teacher who zooms to 400% gets a
+  // window a quarter as wide, and a bar that refuses to wrap runs straight off the side of it.
+  const measured: { screen: string; px: number }[] = [];
+  const note = async (screen: string) => measured.push({ screen, px: await overflowOf(page) });
+
+  await gotoFreshChallenge(page);
+  await note("front door");
+  await enterChallenge(page, { classCode });
+  await note("the deal");
+  await rankPlacesCorrectly(page);
+  await note("setup ranking, checked");
+  await page.locator(".place-card").nth(2).getByRole("button", { name: "Choose this setup" }).click();
+  await page.getByLabel(`What the ${SETUP_TITLES["cousin-room"]} costs Avery`).fill(String(N.setupCosts["cousin-room"]));
+  await page.locator(".chosen-total").getByRole("button", { name: "Check" }).click();
+  await page.getByRole("button", { name: "Build the plan" }).click();
+  await note("plan, question 1");
+  await completeWorkingCalcs(page);
+  await note("plan, the board");
+
+  await page.goto(`/educator/class/${classCode}?key=${createClassKeyFor(classCode)}`);
+  await note("the class page");
+
+  reportOverflow(measured);
+});
+
+// ---------------------------------------------------------------------------
 // 28. A teacher creates a class against an objective, a student joins with the
 //     code, and the evidence that comes back knows what it was for.
 // ---------------------------------------------------------------------------
@@ -1465,7 +1590,7 @@ test("a teacher creates a class with an objective and a student joins with the c
 
   const plan: PlanContext = { setupId: "cousin-room" };
   await gotoFreshChallenge(page);
-  await enterChallenge(page, { classCode: code, seatCode: "9" });
+  await enterChallengeWithKey(page, { classCode: code, teacherKey, seatCode: "9" });
   await completeSetupStage(page, 2);
   await completeWorkingCalcs(page);
   await savePlan(page, "working", plan);
@@ -1608,7 +1733,7 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
     const student = await context.newPage();
     try {
       await gotoFreshChallenge(student);
-      await enterChallenge(student, { classCode: code, seatCode: seat });
+      await enterChallengeWithKey(student, { classCode: code, teacherKey, seatCode: seat });
       await completeSetupStage(student, 2);
       await completeWorkingCalcs(student);
       // Closed by naming the row that takes the rest, which is what makes the savings figure

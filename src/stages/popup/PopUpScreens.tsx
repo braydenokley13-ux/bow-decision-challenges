@@ -10,7 +10,8 @@ import {
   cashToPlan, crowdOn, orderCost, owedUpFront, sellCap, serveCap, swapBill,
   type SaturdayOutcome,
 } from "../../domain/scenario/worlds/food-truck/economy";
-import { ledgerOf, previewSaturday, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
+import { ledgerInputFor, ledgerOf, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
+import { resolveMarket, type MarketVerdict } from "../../domain/scenario/worlds/food-truck/resolution";
 import { POP_UP_NUMBERS as N } from "../../domain/scenario/worlds/food-truck/numbers";
 import { POP_UP_LINES, type PopUpLineId, type PopUpSourceId, type PopUpSumId, type SaturdayNumber, type SpotId } from "../../domain/scenario/worlds/food-truck/types";
 import type { PopUpSumCopy } from "../../domain/scenario/worlds/food-truck/scenario";
@@ -80,25 +81,35 @@ function Settled({ label, amount }: { label: string; amount: number }) {
 }
 
 /**
- * How many trays to cook, and what that would do before it is done.
+ * How many trays to cook, against what the nights it covers will actually take.
  *
- * The preview is the whole point of the control. A student who orders eight trays into a
- * booth that shifts thirty-eight plates should be able to see the bin filling before they pay
- * for it — and then choose to do it anyway, because a night that sells out early has turned
- * people away and that is a real trade rather than a mistake.
+ * This control used to answer the question it exists to ask. Above the stepper it printed
+ * PLATES COOKED, YOU WOULD SELL and WOULD GO IN THE BIN, live, and drew the plates in two
+ * colours — so the world's declared tension, *anything you do not sell is money in the bin*,
+ * was a slider you dragged until the third number read zero. There was nothing left to weigh.
+ *
+ * What it prints now is the two facts and not the answer: how many plates this order cooks,
+ * and how many the crowd will take on each night it covers. The subtraction is the student's,
+ * and on the standing order there are two subtractions that pull opposite ways.
  */
 function TrayOrder({ saturday, nights, max, trays, onTrays }: {
   saturday: SaturdayNumber;
+  /** One night, or the standing order that covers Saturdays 2 and 3 at once. */
   nights: 1 | 2;
   max: number;
   trays: number;
   onTrays: (trays: number) => void;
 }) {
   const { state } = usePopUp();
-  const preview = previewSaturday(state, saturday, trays);
   const spot = state.spotId;
-  const crowd = spot ? crowdOn(N, spot, saturday) : 0;
-  const cap = spot ? sellCap(N, spot, saturday, state.helper === true) : 0;
+  const helper = state.helper === true;
+  const covers: SaturdayNumber[] = nights === 2 ? [2, 3] : [saturday];
+  const willTake = covers.map((night) => ({
+    night,
+    plates: spot ? sellCap(N, spot, night, helper) : 0,
+    handsBound: spot ? serveCap(N, night, helper) < crowdOn(N, spot, night) : false,
+  }));
+  const cooked = trays * N.platesPerTray;
   return (
     <div className="tray-order">
       <div className="tray-order__set">
@@ -114,20 +125,24 @@ function TrayOrder({ saturday, nights, max, trays, onTrays }: {
           <small>{max} {COPY.saturday.affordable}</small>
         </p>
       </div>
-      {/* What the plates would do. Drawn, because a row of plates emptying says what a
-          sentence about spoilage cannot. */}
+      {/* The plates, drawn in one colour. How many of them sell is what the student is here
+          to work out, and colouring them in advance would be the screen doing it for them. */}
       <div className="tray-order__read">
         <p className="tray-plates" aria-hidden="true">
-          {Array.from({ length: Math.min(trays * N.platesPerTray, 120) }, (_, index) => (
-            <i key={index} data-state={preview && index < preview.sold ? "sold" : "binned"} />
-          ))}
+          {Array.from({ length: Math.min(cooked, 120) }, (_, index) => <i key={index} data-state="cooking" />)}
         </p>
         <dl className="tray-order__facts">
-          <div><dt>{COPY.saturday.cooked}</dt><dd>{trays * N.platesPerTray}</dd></div>
-          <div><dt>{COPY.saturday.willSell}</dt><dd>{preview?.sold ?? 0}</dd></div>
-          <div data-alert={(preview?.spoiled ?? 0) > 0}><dt>{COPY.saturday.willBin}</dt><dd>{preview?.spoiled ?? 0}</dd></div>
+          <div><dt>{COPY.saturday.cooked}</dt><dd>{cooked}</dd></div>
+          {willTake.map(({ night, plates }) => (
+            <div key={night}>
+              <dt>{nights === 2 ? `${COPY.settle.saturdayLabel} ${night} ${COPY.saturday.nightBuys}` : COPY.saturday.crowdWillBuy}</dt>
+              <dd>{plates}</dd>
+            </div>
+          ))}
         </dl>
-        <p className="tray-order__crowd">{Math.min(crowd, cap)} {COPY.saturday.crowd}</p>
+        {willTake.some((night) => night.handsBound) && (
+          <p className="tray-order__crowd">{serveCap(N, willTake[0]!.night, helper)} {COPY.saturday.capped}</p>
+        )}
       </div>
     </div>
   );
@@ -177,16 +192,53 @@ function NightResult({ outcome, saturday, spot, helper, compact = false }: {
 }
 
 /* ---------------------------------------------------------------------------
-   Beat 1 — the situation.
+   Beat 1 — the plan. Three screens: the booth, the money with a rule on it,
+   and the board that splits what is left.
+
+   There used to be a screen in front of these that said who Mo was and then listed the three
+   decisions the game was about to make. The facts moved onto the booth screen, which is where
+   they are needed; the list of decisions did not move anywhere, because a table of contents
+   for a story that explains itself in its own voice is strictly worse than the voice.
    --------------------------------------------------------------------------- */
 
-export function PitchStage() {
+/**
+ * The four Saturdays at one booth, before anybody has taken it.
+ *
+ * The world's own fiction says the four nights are different — lights and a first crowd, rain
+ * that clears, a cold evening, fireworks — and for three of them it used to be decoration
+ * over one number. It is four numbers now, and they are on the first screen that asks for a
+ * decision, because a night that turns out different is a lottery and a night you were told
+ * about and planned wrong for is a decision.
+ */
+function CrowdByNight({ spotId }: { spotId: SpotId }) {
+  return (
+    <div className="spot-card__nights">
+      <p className="field-label">{COPY.spot.crowdLabel}</p>
+      <ol>
+        {Array.from({ length: N.saturdays }, (_, index) => {
+          const saturday = (index + 1) as SaturdayNumber;
+          return (
+            <li key={saturday}>
+              <span>{COPY.spot.nightShort} {saturday}</span>
+              <b>{crowdOn(N, spotId, saturday)}</b>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
+}
+
+export function SpotStage() {
   const { state, dispatch } = usePopUp();
+  const chosen = state.spotId;
+  const owedDone = state.sums["owed-up-front"]?.correct === true;
+  const ready = chosen !== null && owedDone;
   return (
     <PopUpShell
-      stage="popup-pitch"
-      kicker={S.pitch.kicker}
-      title={S.pitch.headline}
+      stage="popup-spot"
+      kicker={COPY.spot.kicker}
+      title={COPY.spot.title}
       tone="dark"
       ledger={ledgerOf(state)}
       banner={
@@ -197,38 +249,10 @@ export function PitchStage() {
         </dl>
       }
     >
-      <div className="pitch">
-        <div className="pitch__say">
-          <p className="stage-deck">{S.pitch.body}</p>
-          <p className="pitch__role">{S.pitch.role}</p>
-        </div>
-        <ul className="pitch__decisions">
-          {S.pitch.decisions.map((decision) => (
-            <li key={decision.title}><b>{decision.title}</b><span>{decision.detail}</span></li>
-          ))}
-        </ul>
-      </div>
-      <div className="popup-action">
-        <p>{S.role.description}</p>
-        <Button type="button" onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "popup-spot" })}>{COPY.pitch.action}</Button>
-      </div>
-    </PopUpShell>
-  );
-}
-
-/* ---------------------------------------------------------------------------
-   Beat 2 — the plan. Three screens: the booth, the money with a rule on it,
-   and the board that splits what is left.
-   --------------------------------------------------------------------------- */
-
-export function SpotStage() {
-  const { state, dispatch } = usePopUp();
-  const chosen = state.spotId;
-  const owedDone = state.sums["owed-up-front"]?.correct === true;
-  const ready = chosen !== null && owedDone;
-  return (
-    <PopUpShell stage="popup-spot" kicker={COPY.spot.kicker} title={COPY.spot.title} ledger={ledgerOf(state)}>
-      <p className="stage-deck">{COPY.spot.deck}</p>
+      <p className="stage-deck">{S.pitch.body}</p>
+      <p className="pitch__role">{S.pitch.role}</p>
+      <h2 className="popup-subhead">{COPY.spot.boothsTitle}</h2>
+      <p className="stage-deck">{COPY.spot.deck} {COPY.spot.crowdNote}</p>
       <div className="permit-slip">
         <div>
           <p className="field-label">{COPY.spot.permit.label}</p>
@@ -245,7 +269,7 @@ export function SpotStage() {
                 <b>{spot.title}</b>
               </div>
               <p className="spot-card__terms">{spot.terms}</p>
-              <p className="spot-card__crowd"><span>{COPY.spot.crowdLabel}</span>{spot.crowd}</p>
+              <CrowdByNight spotId={spot.id} />
               <p className="spot-card__tradeoff">{spot.tradeoff}</p>
               <Button
                 type="button"
@@ -528,12 +552,24 @@ export function StandingOrderStage() {
       <section className="standing-next">
         <h2>{COPY.standing.next}</h2>
         <p>{COPY.standing.nextNote}</p>
+        {/* Both nights, said before the order rather than reported after it. One of them fills
+            late and one of them is cold, and a single order has to answer to both. */}
+        <ol className="standing-next__nights">
+          {[2, 3].map((night) => (
+            <li key={night}>
+              <b>{S.saturdays[night - 1]?.title}</b>
+              <span>{S.saturdays[night - 1]?.note}</span>
+            </li>
+          ))}
+        </ol>
         <LinesHeld plan={held} label={COPY.plan.placedLabel} />
         <TrayOrder saturday={2} nights={2} max={max} trays={trays} onTrays={setWanted} />
       </section>
 
       <div className="popup-action">
-        <p>{S.saturdays[1]?.note}</p>
+        {/* The two nights' own notes are on the order above, where the decision is. Repeating
+            one of them here was the screen saying the same thing twice. */}
+        <p>{COPY.saturday.trayHint}</p>
         <Button type="button" aria-disabled={!decided} onClick={() => decided && dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 2, trays })}>
           {decided ? COPY.standing.action : COPY.standing.gate}
         </Button>
@@ -730,20 +766,25 @@ export function RepairStage() {
    Beat 5 — how it came out, and what the organiser asks.
    --------------------------------------------------------------------------- */
 
+/** The four words this product uses for what a decision did, in the order the panel sorts. */
+const OUTCOME_LABEL: Record<MarketVerdict["outcome"], string> = {
+  paid_off: COPY.settle.verdicts.outcomes.paidOff,
+  cost_you: COPY.settle.verdicts.outcomes.costYou,
+  fell_short: COPY.settle.verdicts.outcomes.fellShort,
+  no_effect: COPY.settle.verdicts.outcomes.noEffect,
+};
+
 export function SettleStage() {
   const { state, dispatch } = usePopUp();
   const ledger = ledgerOf(state);
+  const resolution = resolveMarket(ledgerInputFor(state));
   const spot = state.spotId;
   const last = ledger.saturdays.find((day) => day.saturday === 4);
   if (!spot) return null;
-  const capped = ledger.saturdays.some((day) =>
-    day.sold >= serveCap(N, day.saturday, state.helper === true) && crowdOn(N, spot, day.saturday) > day.sold);
-  // The other half of the same trade, and the one this world punishes most quietly: a night
-  // that sold everything it had while the queue was still there.
-  const ranOut = ledger.saturdays.some((day) =>
-    day.cooked > 0 && day.spoiled === 0
-    && day.sold < serveCap(N, day.saturday, state.helper === true)
-    && crowdOn(N, spot, day.saturday) > day.sold);
+  // A crowd bigger than the window, and a night that sold out with the queue still there, used
+  // to be two summary sentences here. Both are decisions with money on them, so both are now
+  // read off the ledger by `resolveMarket` and printed as verdicts with what they cost.
+  //
   // A run that never cooked a plate. It is reachable in one tap — send the last of the money
   // to a line that is not stock — and it used to come out the other end wearing the good news:
   // nothing in the bin, a green verdict, and the ordinary reflection screen after it, as if a
@@ -759,30 +800,10 @@ export function SettleStage() {
         ? <NightResult outcome={last} saturday={4} spot={spot} helper={state.helper === true} />
         : <p className="popup-verdict popup-verdict--banner" data-tone="hard">{COPY.settle.missedLast}</p>}
     >
-      <p className="stage-deck">{S.settle.note}</p>
-      <table className="season-table">
-        <caption>{S.title}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{COPY.settle.saturdayLabel}</th>
-            <th scope="col">{COPY.night.cooked}</th>
-            <th scope="col">{COPY.night.sold}</th>
-            <th scope="col">{COPY.night.binned}</th>
-            <th scope="col">{COPY.night.takings}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {ledger.saturdays.map((day) => (
-            <tr key={day.saturday}>
-              <th scope="row">{day.saturday}</th>
-              <td>{day.cooked}</td>
-              <td>{day.sold}</td>
-              <td data-alert={day.spoiled > 0}>{day.spoiled}</td>
-              <td className="money">{formatDollars(day.takings)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* The four-row table that used to sit here restated four result panels the student had
+          already read one at a time, under a strip that already prints what each night sold.
+          It is gone, and what replaced it is the thing the ending never had: what each call
+          actually did, and what would have happened otherwise. */}
       <dl className="settle-figures">
         <div><dt>{COPY.settle.platesSold}</dt><dd>{ledger.plates.sold}</dd></div>
         <div data-alert={ledger.binned > 0}><dt>{COPY.settle.inTheBin}</dt><dd className="money">{formatDollars(ledger.binned)}</dd></div>
@@ -793,22 +814,26 @@ export function SettleStage() {
         <div><dt>{COPY.settle.startedWith}</dt><dd className="money">{formatDollars(N.startCash)}</dd></div>
         <div data-lead="true"><dt>{COPY.settle.inHandLabel}</dt><dd className="money">{formatDollars(ledger.endMoney)}</dd></div>
       </dl>
-      {/* Green only where the food actually worked out. A run that sold every plate and still
-          turned people away is not a clean night, and colouring it like one would be the
-          screen congratulating a student on a decision that cost them. */}
-      <p className="popup-verdict" data-tone={neverCooked || ledger.binned > 0 ? "hard" : ranOut ? "plain" : "good"}>
-        {neverCooked
-          ? COPY.settle.neverCooked
-          : (
-            <>
-              {ledger.binned > 0
-                ? <><strong className="money">{formatDollars(ledger.binned)}</strong> {COPY.settle.spoilage}</>
-                : COPY.settle.noSpoilage}
-              {capped ? ` ${COPY.settle.capped}` : ""}
-              {ranOut ? ` ${COPY.settle.ranOut}` : ""}
-            </>
-          )}
-      </p>
+      {/* The one sentence the verdict list underneath cannot say better. It used to be four:
+          what went in the bin, whether the crowd outran the window, whether the truck ran out
+          — all three of which the verdicts now say with the money attached, which is the
+          difference between a summary and a reason. A run that never cooked a plate has no
+          decision to weigh, so it is still said plainly here. */}
+      {neverCooked && <p className="popup-verdict" data-tone="hard">{COPY.settle.neverCooked}</p>}
+      <section className="resolve-risks" aria-labelledby="popup-verdicts">
+        <h2 id="popup-verdicts">{COPY.settle.verdicts.title}</h2>
+        <ul>
+          {resolution.verdicts.map((verdict) => (
+            <li key={verdict.id} data-outcome={verdict.outcome} data-taken={verdict.taken}>
+              <span className="resolve-risks__verdict">{OUTCOME_LABEL[verdict.outcome]}</span>
+              <div>
+                <b>{verdict.label}</b>
+                <p>{verdict.detail}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
       <div className="popup-action">
         {/* Not the question itself. It is asked on the next screen, and asking it twice would
             be the product using the organiser's one line as a button caption. */}
@@ -902,15 +927,9 @@ export function SubmittedStage() {
         {delivery.status === "failed" && delivery.retryable && (
           <Button type="button" variant="secondary" onClick={() => void deliver()}>{COPY.submitted.retry}</Button>
         )}
-        <div className="handed-in__record">
-          <p className="field-label">{COPY.submitted.record}</p>
-          <blockquote>{state.writeUp.text}</blockquote>
-          <dl className="settle-figures">
-            <div><dt>{COPY.settle.takingsLabel}</dt><dd className="money">{formatDollars(ledger.takings)}</dd></div>
-            <div><dt>{COPY.settle.inTheBin}</dt><dd className="money">{formatDollars(ledger.binned)}</dd></div>
-            <div><dt>{COPY.settle.bankedLabel}</dt><dd className="money">{formatDollars(ledger.banked)}</dd></div>
-          </dl>
-        </div>
+        {/* The paragraph the student just wrote, and three figures they have already read
+            twice, used to be printed back here. A confirmation screen's whole job is saying
+            the work arrived. */}
       </section>
       <div className="popup-action">
         <p>{COPY.submitted.againNote}</p>

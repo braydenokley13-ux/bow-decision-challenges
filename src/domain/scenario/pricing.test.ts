@@ -53,6 +53,12 @@ function pricedLiterals(): { value: number; label: string }[] {
     { value: n.optionalWorkIncome, label: "optionalWorkIncome" },
     { value: n.optionalWorkCost, label: "optionalWorkCost" },
     { value: n.load.blockBuybackCost, label: "load.blockBuybackCost" },
+    // Week 3's cash and the three claims on it. They are the newest amounts in the scenario
+    // and the most tempting to spell, because they are small enough to look like layout
+    // arithmetic and they appear on the one screen and in the one verdict that both quote
+    // them back to the student.
+    { value: n.week3.cash, label: "week3.cash" },
+    ...Object.entries(n.week3.claimCosts).map(([id, value]) => ({ value, label: `week3.claimCosts.${id}` })),
     ...Object.entries(n.setupCosts).map(([id, value]) => ({ value, label: `setupCosts.${id}` })),
   ];
 }

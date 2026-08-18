@@ -1,4 +1,5 @@
-import { createHash } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { plainVault, readStoreKey, STORE_KEY_HELP, vault, type Vault } from "./vault";
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { CLASS_RETENTION_DAYS, type Assignment, type ClassRecord, type SubmissionRecord } from "../src/platform/classes/types";
@@ -110,6 +111,31 @@ export interface ClassStore {
    */
   deleteClass(code: string): Promise<void>;
 
+  /**
+   * Every class whose retention window has passed and whose data is still on this store.
+   *
+   * A vendor review found the promise in the README — "kept for 120 days, then deleted" —
+   * executed by nothing. `deleteClass` had exactly one caller, the manual route, and reads
+   * merely gated on `expiresAt` and answered 404, so a self-hosted district accumulated
+   * children's names and written explanations on disk for ever while the product said it did
+   * not. Hidden is not deleted, and a retention policy nothing runs is a sentence in a
+   * document rather than a property of the system.
+   *
+   * A store whose records expire by themselves answers with an empty list and is telling the
+   * truth: there is nothing left for a sweeper to do.
+   */
+  expiredClassCodes(now: number): Promise<string[]>;
+
+  /**
+   * One child's name and everything they did, gone, with the rest of the class untouched.
+   *
+   * Taking a seat off the roster is a tombstone on purpose — a teacher who removes a student
+   * mid-term keeps the evidence that student produced. Erasure is the other request, and it is
+   * the one a parent makes: a district could previously honour it only by destroying the other
+   * twenty-nine students' work.
+   */
+  eraseSeat(code: string, seatCode: string): Promise<void>;
+
   // -- Identity. See src/platform/identity/types.ts for what is deliberately not stored. --
 
   /**
@@ -219,7 +245,8 @@ export function memoryStore(): ClassStore {
   const shareOuts = new Map<string, ShareOutSelection>();
   // A process-lifetime secret. Correct for a store that keeps nothing: a test that restarted
   // and kept signing tokens with the same key would be testing something no deployment does.
-  const secret = createHash("sha256").update(`memory-${Math.random()}-${Date.now()}`).digest("base64url");
+  const secret = randomBytes(32).toString("base64url");
+  void plainVault;
 
   const bucket = <T>(map: Map<string, Map<string, T>>, code: string) => {
     const existing = map.get(code);
@@ -254,6 +281,21 @@ export function memoryStore(): ClassStore {
       shareOuts.delete(code);
       for (const set of teacherClasses.values()) set.delete(code);
       for (const [id, seats] of studentSeats) studentSeats.set(id, seats.filter((seat) => seat.classCode !== code));
+      return Promise.resolve();
+    },
+    expiredClassCodes: (now) =>
+      Promise.resolve([...classes.values()].filter((record) => record.expiresAt <= now).map((record) => record.code)),
+    eraseSeat: (code, seatCode) => {
+      const roster = bucket(rosters, code);
+      roster.delete(seatCode);
+      submissions.set(code, (submissions.get(code) ?? []).filter((record) => record.seatCode !== seatCode));
+      for (const [key, record] of bucket(checkpoints, code)) if (record.seatCode === seatCode) bucket(checkpoints, code).delete(key);
+      for (const [key, record] of bucket(feedback, code)) if (record.seatCode === seatCode) bucket(feedback, code).delete(key);
+      const chosen = shareOuts.get(code);
+      if (chosen) shareOuts.set(code, { ...chosen, items: chosen.items.filter((item) => item.seatCode !== seatCode) });
+      for (const [id, seats] of studentSeats) {
+        studentSeats.set(id, seats.filter((seat) => !(seat.classCode === code && seat.seatCode === seatCode)));
+      }
       return Promise.resolve();
     },
 
@@ -306,7 +348,7 @@ function bySeat(a: { seatCode: string }, b: { seatCode: string }): number {
  * document — a class of thirty submitting inside the same minute is the normal case here,
  * not an edge one.
  */
-export function fileStore(root: string): ClassStore {
+export function fileStore(root: string, keeper: Vault): ClassStore {
   const classPath = (code: string) => join(root, code, "class.json");
   const assignmentPath = (code: string, id: string) => join(root, code, "assignments", `${id}.json`);
   const submissionPath = (code: string, record: Pick<SubmissionRecord, "seatCode" | "sessionId">) =>
@@ -314,15 +356,17 @@ export function fileStore(root: string): ClassStore {
 
   async function writeAtomic(path: string, value: unknown): Promise<void> {
     await mkdir(dirname(path), { recursive: true });
-    const temporary = `${path}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`;
-    await writeFile(temporary, JSON.stringify(value), "utf8");
+    const temporary = `${path}.${process.pid}.${randomUUID()}.tmp`;
+    // Sealed on the way out, always. There is no branch here where a record reaches the disk
+    // in the clear — a name, a written explanation and a teacher's key are all one call.
+    await writeFile(temporary, keeper.seal(value), "utf8");
     const { rename } = await import("node:fs/promises");
     await rename(temporary, path);
   }
 
   async function readJson<T>(path: string): Promise<T | null> {
     try {
-      return JSON.parse(await readFile(path, "utf8")) as T;
+      return keeper.open<T>(await readFile(path, "utf8"));
     } catch {
       return null;
     }
@@ -379,17 +423,65 @@ export function fileStore(root: string): ClassStore {
       }
       const record = await readJson<StoredClass>(classPath(code));
       if (record?.teacherId) await rm(indexPath("teacher", record.teacherId, code), { force: true });
+      // The account records a deleted class leaves behind. A student account holds `{id,
+      // createdAt}` and no personal information at all, but an orphan is still a row nobody
+      // can reach and nobody meant to keep, and a retention promise that leaves litter is a
+      // retention promise a reviewer stops believing.
+      for (const entry of await readFolder<StoredRosterEntry>(code, "roster")) {
+        if (!entry.studentId) continue;
+        const remaining = await readIndex<StudentSeat>("student", entry.studentId);
+        if (remaining.length === 0) await rm(accountPath("students", entry.studentId), { force: true });
+      }
       await rm(join(root, code), { recursive: true, force: true });
     },
-
-    sessionSecret: async () => {
-      const path = join(root, "_accounts", "session-secret.json");
-      const existing = await readJson<{ secret: string }>(path);
-      if (existing?.secret) return existing.secret;
-      const secret = createHash("sha512").update(`${Math.random()}${Date.now()}${process.pid}`).digest("base64url");
-      await writeAtomic(path, { secret });
-      return secret;
+    expiredClassCodes: async (now) => {
+      let names: string[];
+      try {
+        names = await readdir(root);
+      } catch {
+        return [];
+      }
+      const codes = await Promise.all(names
+        .filter((name) => !name.startsWith("_"))
+        .map(async (name) => {
+          const record = await readJson<StoredClass>(classPath(name));
+          return record && record.expiresAt <= now ? record.code : null;
+        }));
+      return codes.filter((code): code is string => code !== null);
     },
+    eraseSeat: async (code, seatCode) => {
+      const entry = (await readFolder<StoredRosterEntry>(code, "roster")).find((row) => row.seatCode === seatCode);
+      if (entry?.studentId) {
+        await rm(indexPath("student", entry.studentId, code), { force: true });
+        if ((await readIndex<StudentSeat>("student", entry.studentId)).length === 0) {
+          await rm(accountPath("students", entry.studentId), { force: true });
+        }
+      }
+      await rm(join(root, code, "roster", `${seatCode}.json`), { force: true });
+      for (const folder of ["submissions", "checkpoints", "feedback"] as const) {
+        let names: string[];
+        try {
+          names = await readdir(join(root, code, folder));
+        } catch {
+          continue;
+        }
+        for (const name of names) {
+          const record = await readJson<{ seatCode?: string }>(join(root, code, folder, name));
+          if (record?.seatCode === seatCode) await rm(join(root, code, folder, name), { force: true });
+        }
+      }
+      const chosen = await readJson<ShareOutSelection>(join(root, code, "shareout.json"));
+      if (chosen) {
+        await writeAtomic(join(root, code, "shareout.json"), { ...chosen, items: chosen.items.filter((item) => item.seatCode !== seatCode) });
+      }
+    },
+
+    // Derived, never stored. It used to be minted from `Math.random()` and written to
+    // `_accounts/session-secret.json` beside the data it protects, so reading one file let
+    // anybody forge a valid token for any teacher or any child in the deployment. It now comes
+    // out of the same key that seals the records, which lives in the operator's secret manager
+    // and touches no disk this process owns.
+    sessionSecret: () => Promise.resolve(keeper.derive("session")),
     getTeacher: (id) => readJson<StoredTeacher>(accountPath("teachers", id)),
     getTeacherByEmail: async (email) => {
       const pointer = await readJson<{ id: string }>(accountPath("teachers-by-email", emailKey(email)));
@@ -428,12 +520,12 @@ export function fileStore(root: string): ClassStore {
  * fetch call, works unchanged inside a serverless function, and does not add a dependency
  * to a product that otherwise has four.
  */
-export function redisRestStore(url: string, token: string): ClassStore {
+export function redisRestStore(url: string, token: string, keeper?: Vault): ClassStore {
   async function command<T>(...args: (string | number)[]): Promise<T | null> {
     const response = await fetch(url, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(args),
+      body: put(args),
     });
     if (!response.ok) throw new Error(`Class store rejected ${args[0]}: ${response.status}`);
     const body = (await response.json()) as { result?: T };
@@ -442,6 +534,19 @@ export function redisRestStore(url: string, token: string): ClassStore {
 
   const ttl = (record: { expiresAt: number }) => Math.max(60, Math.round((record.expiresAt - Date.now()) / 1000));
 
+  /**
+   * Every value in and out of the managed store, sealed when this deployment has a key.
+   *
+   * At-rest encryption on this path is the subprocessor's control and belongs in a data
+   * processing agreement — but a key here means a district's names and evidence are ciphertext
+   * to the subprocessor as well, which is a materially different conversation to have with a
+   * privacy officer. Optional rather than required, because unlike the disk this is not the
+   * configuration a district self-hosts, and refusing to start a working managed deployment on
+   * an upgrade would take a lesson down to fix a paperwork question.
+   */
+  const put = (value: unknown): string => (keeper ? keeper.seal(value) : JSON.stringify(value));
+  const get = <T,>(raw: string): T | null => (keeper ? keeper.open<T>(raw) : (JSON.parse(raw) as T));
+
   /** One hash per class per kind of record, read back as whatever the REST API felt like returning. */
   async function readHash<T>(key: string): Promise<T[]> {
     const raw = await command<Record<string, string>>("HGETALL", key);
@@ -449,7 +554,7 @@ export function redisRestStore(url: string, token: string): ClassStore {
       // The REST API returns HGETALL as a flat [field, value, field, value] array.
       ? (raw as unknown as string[]).filter((_, index) => index % 2 === 1)
       : Object.values(raw ?? {});
-    return values.map((value) => JSON.parse(value) as T);
+    return values.flatMap((value) => { const record = get<T>(value); return record ? [record] : []; });
   }
 
   /** The hash outlives nothing: it expires with the class it belongs to. */
@@ -461,22 +566,22 @@ export function redisRestStore(url: string, token: string): ClassStore {
     durable: true,
     getClass: async (code) => {
       const raw = await command<string>("GET", `class:${code}`);
-      return raw ? (JSON.parse(raw) as StoredClass) : null;
+      return raw ? get<StoredClass>(raw) : null;
     },
     putClass: async (record) => {
-      await command("SET", `class:${record.code}`, JSON.stringify(record), "EX", ttl(record));
+      await command("SET", `class:${record.code}`, put(record), "EX", ttl(record));
     },
     listAssignments: async (code) =>
       (await readHash<Assignment>(`assignments:${code}`)).sort((a, b) => a.createdAt - b.createdAt),
     putAssignment: async (record) => {
-      await command("HSET", `assignments:${record.classId}`, record.id, JSON.stringify(record));
+      await command("HSET", `assignments:${record.classId}`, record.id, put(record));
       await keepWithClass(`assignments:${record.classId}`);
     },
     listSubmissions: async (code) =>
       (await readHash<SubmissionRecord>(`submissions:${code}`))
         .sort((a, b) => Number(a.seatCode) - Number(b.seatCode) || a.submittedAt - b.submittedAt),
     putSubmission: async (record) => {
-      await command("HSET", `submissions:${record.classCode}`, submissionKey(record), JSON.stringify(record));
+      await command("HSET", `submissions:${record.classCode}`, submissionKey(record), put(record));
       await keepWithClass(`submissions:${record.classCode}`);
     },
     deleteClass: async (code) => {
@@ -484,7 +589,7 @@ export function redisRestStore(url: string, token: string): ClassStore {
         if (entry.studentId) await command("HDEL", `student-seats:${entry.studentId}`, code);
       }
       const raw = await command<string>("GET", `class:${code}`);
-      const record = raw ? (JSON.parse(raw) as StoredClass) : null;
+      const record = raw ? get<StoredClass>(raw) : null;
       if (record?.teacherId) await command("HDEL", `teacher-classes:${record.teacherId}`, code);
       await command(
         "DEL",
@@ -492,27 +597,56 @@ export function redisRestStore(url: string, token: string): ClassStore {
         `roster:${code}`, `checkpoints:${code}`, `feedback:${code}`, `shareout:${code}`,
       );
     },
+    // Every key this driver writes carries a TTL tied to the class's own expiry, so retention
+    // is executed by the store rather than by a sweeper this process has to remember to run.
+    // An empty list is the true answer here, not a stub: there is nothing left to delete.
+    expiredClassCodes: () => Promise.resolve([]),
+    eraseSeat: async (code, seatCode) => {
+      const entry = (await readHash<StoredRosterEntry>(`roster:${code}`)).find((row) => row.seatCode === seatCode);
+      if (entry?.studentId) await command("HDEL", `student-seats:${entry.studentId}`, code);
+      await command("HDEL", `roster:${code}`, seatCode);
+      for (const record of await readHash<SubmissionRecord>(`submissions:${code}`)) {
+        if (record.seatCode === seatCode) await command("HDEL", `submissions:${code}`, submissionKey(record));
+      }
+      for (const record of await readHash<AttemptCheckpoint>(`checkpoints:${code}`)) {
+        if (record.seatCode === seatCode) await command("HDEL", `checkpoints:${code}`, checkpointKey(record));
+      }
+      for (const record of await readHash<TeacherFeedback>(`feedback:${code}`)) {
+        if (record.seatCode === seatCode) await command("HDEL", `feedback:${code}`, feedbackKey(record));
+      }
+      const chosenRaw = await command<string>("GET", `shareout:${code}`);
+      const chosen = chosenRaw ? get<ShareOutSelection>(chosenRaw) : null;
+      if (chosen) {
+        await command("SET", `shareout:${code}`, put({ ...chosen, items: chosen.items.filter((item) => item.seatCode !== seatCode) }));
+      }
+    },
 
     sessionSecret: async () => {
+      // Derived from the operator's key when there is one, and then it touches no store at all.
+      if (keeper) return keeper.derive("session");
       const existing = await command<string>("GET", "bow:session-secret");
       if (existing) return existing;
-      const secret = createHash("sha512").update(`${Math.random()}${Date.now()}`).digest("base64url");
+      // `Math.random()` was here, which this codebase already knows better than — `crypto.ts`
+      // replaced it for class codes for exactly this reason, and left the most important secret
+      // in the system on the weak generator.
+      const secret = randomBytes(32).toString("base64url");
+  void plainVault;
       // NX so two functions cold-starting in the same second cannot sign with different keys.
       await command("SET", "bow:session-secret", secret, "NX");
       return (await command<string>("GET", "bow:session-secret")) ?? secret;
     },
     getTeacher: async (id) => {
       const raw = await command<string>("GET", `teacher:${id}`);
-      return raw ? (JSON.parse(raw) as StoredTeacher) : null;
+      return raw ? get<StoredTeacher>(raw) : null;
     },
     getTeacherByEmail: async (email) => {
       const id = await command<string>("GET", `teacher-email:${emailKey(email)}`);
       if (!id) return null;
       const raw = await command<string>("GET", `teacher:${id}`);
-      return raw ? (JSON.parse(raw) as StoredTeacher) : null;
+      return raw ? get<StoredTeacher>(raw) : null;
     },
     putTeacher: async (record) => {
-      await command("SET", `teacher:${record.id}`, JSON.stringify(record));
+      await command("SET", `teacher:${record.id}`, put(record));
       await command("SET", `teacher-email:${emailKey(record.email)}`, record.id);
     },
     listClassesForTeacher: async (teacherId) =>
@@ -523,12 +657,12 @@ export function redisRestStore(url: string, token: string): ClassStore {
 
     getStudent: async (id) => {
       const raw = await command<string>("GET", `student:${id}`);
-      return raw ? (JSON.parse(raw) as StudentAccount) : null;
+      return raw ? get<StudentAccount>(raw) : null;
     },
-    putStudent: async (record) => { await command("SET", `student:${record.id}`, JSON.stringify(record)); },
+    putStudent: async (record) => { await command("SET", `student:${record.id}`, put(record)); },
     listSeatsForStudent: (studentId) => readHash<StudentSeat>(`student-seats:${studentId}`),
     linkSeatToStudent: async (studentId, seat) => {
-      await command("HSET", `student-seats:${studentId}`, seat.classCode, JSON.stringify(seat));
+      await command("HSET", `student-seats:${studentId}`, seat.classCode, put(seat));
     },
     unlinkSeatFromStudent: async (studentId, seat) => {
       await command("HDEL", `student-seats:${studentId}`, seat.classCode);
@@ -536,25 +670,25 @@ export function redisRestStore(url: string, token: string): ClassStore {
 
     listRoster: async (code) => (await readHash<StoredRosterEntry>(`roster:${code}`)).sort(bySeat),
     putRosterEntry: async (record) => {
-      await command("HSET", `roster:${record.classCode}`, record.seatCode, JSON.stringify(record));
+      await command("HSET", `roster:${record.classCode}`, record.seatCode, put(record));
       await keepWithClass(`roster:${record.classCode}`);
     },
     listCheckpoints: async (code) => (await readHash<AttemptCheckpoint>(`checkpoints:${code}`)).sort(bySeat),
     putCheckpoint: async (record) => {
-      await command("HSET", `checkpoints:${record.classCode}`, checkpointKey(record), JSON.stringify(record));
+      await command("HSET", `checkpoints:${record.classCode}`, checkpointKey(record), put(record));
       await keepWithClass(`checkpoints:${record.classCode}`);
     },
     listFeedback: async (code) => (await readHash<TeacherFeedback>(`feedback:${code}`)).map(withFeedbackId).sort(byWhenWritten),
     putFeedback: async (record) => {
-      await command("HSET", `feedback:${record.classCode}`, feedbackKey(record), JSON.stringify(record));
+      await command("HSET", `feedback:${record.classCode}`, feedbackKey(record), put(record));
       await keepWithClass(`feedback:${record.classCode}`);
     },
     getShareOut: async (code) => {
       const raw = await command<string>("GET", `shareout:${code}`);
-      return raw ? (JSON.parse(raw) as ShareOutSelection) : null;
+      return raw ? get<ShareOutSelection>(raw) : null;
     },
     putShareOut: async (record) => {
-      await command("SET", `shareout:${record.classCode}`, JSON.stringify(record), "EX", ttl({ expiresAt: Date.now() + 1000 * 60 * 60 * 24 * CLASS_RETENTION_DAYS }));
+      await command("SET", `shareout:${record.classCode}`, put(record), "EX", ttl({ expiresAt: Date.now() + 1000 * 60 * 60 * 24 * CLASS_RETENTION_DAYS }));
     },
   };
 }
@@ -590,6 +724,8 @@ export function unconfiguredStore(reason: string): ClassStore {
     listSubmissions: refuse,
     putSubmission: refuse,
     deleteClass: refuse,
+    expiredClassCodes: refuse,
+    eraseSeat: refuse,
     sessionSecret: refuse,
     getTeacher: refuse,
     getTeacherByEmail: refuse,
@@ -612,6 +748,8 @@ export function unconfiguredStore(reason: string): ClassStore {
   };
 }
 
+const NO_STORE_KEY = `This deployment has no store key, so it will not write a class. ${STORE_KEY_HELP}`;
+
 const NO_DURABLE_STORE =
   "This deployment has no durable class store. Set KV_REST_API_URL and KV_REST_API_TOKEN "
   + "(Vercel KV or Upstash) and redeploy. Classes are refused until then so none is lost.";
@@ -631,10 +769,24 @@ function hasEphemeralDisk(env: Record<string, string | undefined>): boolean {
  */
 export function storeFromEnvironment(env: Record<string, string | undefined> = process.env): ClassStore {
   if (env.BOW_CLASS_STORE === "memory") return memoryStore();
+  // The key that seals what a durable store writes and derives the session-signing secret.
+  const key = readStoreKey(env.BOW_STORE_KEY);
+  const keeper = key ? vault(key) : undefined;
   const url = env.KV_REST_API_URL ?? env.UPSTASH_REDIS_REST_URL;
   const token = env.KV_REST_API_TOKEN ?? env.UPSTASH_REDIS_REST_TOKEN;
-  if (url && token) return redisRestStore(url, token);
-  const disk = fileStore(env.BOW_CLASS_DIR ?? join(process.cwd(), ".bow-classes"));
+  // The managed path runs without one. At-rest encryption there is the subprocessor's control
+  // and belongs in a data processing agreement; a key still seals the values and lifts the
+  // signing secret off the store, so it is worth having and is not worth taking a working
+  // deployment down over on an upgrade.
+  if (url && token) return redisRestStore(url, token, keeper);
+  // A disk is different, and this is the one place the product refuses to run. Self-hosted, the
+  // records this writes are children's names, their written explanations and every teacher key
+  // — and a vendor review found all of it in plain JSON, beside the HMAC secret that signs
+  // every session token, so one disk image was the whole district. Encryption of student data
+  // in a vendor's custody is an affirmative obligation, not a setting. Refusing to boot costs a
+  // line in a log; the alternative costs a breach notification nobody knew to send.
+  if (!keeper) return unconfiguredStore(NO_STORE_KEY);
+  const disk = fileStore(env.BOW_CLASS_DIR ?? join(process.cwd(), ".bow-classes"), keeper);
   if (!hasEphemeralDisk(env)) return disk;
   // The escape hatch exists for a throwaway demo on a serverless host, and it is explicit
   // because the cost of taking it by accident is a lost class. Even then the store reports

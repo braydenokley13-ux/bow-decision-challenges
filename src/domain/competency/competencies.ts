@@ -99,6 +99,73 @@ const PLAN_WITHIN_INCOME_EVIDENCE: readonly EvidenceRequirement[] = [
   }),
 ] as const;
 
+/**
+ * `sort-by-need-want-goal` — the competency the product could declare and not observe.
+ *
+ * It sat here with an empty array for as long as no world had a moment where several
+ * claims wanted the same money at once. Every other beat in both worlds divides money the
+ * student already controls into rows a plan names; none of them makes a *person* the thing
+ * on the other side of the decision. So there was nothing to write an observable rule
+ * about, and writing one anyway would have produced a rubric row nothing could fill.
+ *
+ * The four below are written against a moment that now exists: a fixed sum, three claims
+ * that cost more than it together, and one required statement about what made the student
+ * leave one of them out. They divide as three decisions and one explanation, and the split
+ * is not arbitrary.
+ *
+ * **ER1** is arithmetic and neutral: it asks whether the money was spent as far as it
+ * reaches, which more than one allocation satisfies and which none of them is right for.
+ *
+ * **ER2 and ER3 are separate on purpose, and a teacher can tell them apart at a glance.**
+ * ER2 asks whether the reason was the right *kind* — about what the thing was, not what it
+ * cost. ER3 asks whether that reason was *true* of what actually went unpaid. They fail
+ * independently and they mean different things: a student who says "it was the cheapest one
+ * to drop" has not made a values judgement at all, and a student who says "it was the one I
+ * only wanted" about the shoes that were splitting has made one and got it wrong. The first
+ * needs the difference between price and worth taught; the second needs the difference
+ * between wanting and needing taught. One row could not say which.
+ *
+ * **ER4 is required and may not be dropped.** The objective this competency covers in full
+ * ends "and explain how each influences spending and savings decisions"; the verb is
+ * *explain*, and a closed-set tap is not an explanation however well it is scored. It is
+ * aimed deliberately at the *basis* rather than the trade, because `plan-within-income.er5`
+ * already scores the trade — "names something given up, says what it was given up for, and
+ * refers to at least one of their own numbers" — and two rubric rows a teacher cannot tell
+ * apart is a defect this product names out loud elsewhere. ER4 asks what made one claim
+ * matter more than another. ER5 asks what was given up and what for. A student can answer
+ * either one well and the other badly.
+ */
+const SORT_BY_NEED_WANT_GOAL_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("sort-by-need-want-goal", 1, {
+    label: "Fits the choice to the money there is",
+    kind: "decision",
+    required: true,
+    observableRule: "Pays for as much as the money in hand can actually reach, and commits no more than there is",
+    misconceptionIfNot: null,
+  }),
+  requirement("sort-by-need-want-goal", 2, {
+    label: "Chooses on what the claim is, not what it costs",
+    kind: "decision",
+    required: true,
+    observableRule: "Says what the unpaid claim was to them — something needed, something promised, or something only wanted — rather than that it was the cheapest one to drop",
+    misconceptionIfNot: null,
+  }),
+  requirement("sort-by-need-want-goal", 3, {
+    label: "The reason holds up against what they did",
+    kind: "decision",
+    required: true,
+    observableRule: "The reason given is true of something they left unpaid and not of what they paid for, so it accounts for this choice rather than any choice",
+    misconceptionIfNot: "A need is anything I feel strongly about",
+  }),
+  requirement("sort-by-need-want-goal", 4, {
+    label: "Says what made one claim matter more",
+    kind: "explanation",
+    required: true,
+    observableRule: "Names what made one claim matter more than another — something needed, a promise to somebody, or something they were saving toward — rather than what it cost",
+    misconceptionIfNot: null,
+  }),
+] as const;
+
 const ADAPT_A_PLAN_EVIDENCE: readonly EvidenceRequirement[] = [
   requirement("adapt-a-plan", 1, {
     label: "Works out the size of the change",
@@ -222,7 +289,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "Give up something they wanted to protect something they needed or had committed to.",
       "Say which value drove it.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: SORT_BY_NEED_WANT_GOAL_EVIDENCE,
     misconceptions: [
       "A need is anything I feel strongly about",
       "A goal is a wish, not a line in the budget",

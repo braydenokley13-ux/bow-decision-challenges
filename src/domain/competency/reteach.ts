@@ -115,6 +115,18 @@ export const RETEACH_TOPICS: readonly ReteachTopic[] = [
     minutes: 12,
   },
   {
+    id: "need-is-not-a-feeling",
+    misconception: "A need is anything I feel strongly about",
+    title: "What makes something a need",
+    focus: "A student can say what a claim on their money actually is — needed, promised, or wanted — separately from how much they want it.",
+    moves: [
+      "Put three things on the board that all cost about the same and ask, for each one, what happens if nobody pays for it. Write the three answers down before ranking anything.",
+      "Sort the same three by who else is affected: only me, somebody I told I would, nobody at all. Then ask which of the three sorts is about wanting.",
+      "Give one that only gets more expensive the longer it waits. Ask whether that makes it a need, and make the class say what it does make it.",
+    ],
+    minutes: 12,
+  },
+  {
     id: "goal-as-a-rate",
     misconception: "A goal is a wish, not a per-period number",
     title: "Turn a goal into a weekly number",

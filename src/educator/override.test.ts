@@ -5,6 +5,7 @@ import { PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
 import type { ClassCreation, SubmissionRecord, TeacherOverride } from "../platform/classes/types";
 import { buildSubmission } from "../test/runChallenge";
 import { competencyResultsFor } from "./objectiveResults";
+import { signedInSeat } from "../test/asStudent";
 
 /**
  * §19.4 — a teacher disagreeing with BOW, on the record.
@@ -26,11 +27,13 @@ async function room() {
   );
   const record = created.body as ClassCreation;
   const built = buildSubmission({ seatCode: "7" });
+  // Signed in as that seat, because work arrives from the person who did it.
+  const { token } = await signedInSeat(store, record, built.seatCode, NOW);
   await handleApiRequest(
     {
       method: "POST",
       path: `/classes/${record.code}/submissions`,
-      headers: {},
+      headers: { authorization: `Bearer ${token}` },
       body: { classCode: record.code, seatCode: built.seatCode, sessionId: built.sessionId, challengeId: built.challengeId, challengeVersion: built.challengeVersion, log: built.log },
     },
     options,

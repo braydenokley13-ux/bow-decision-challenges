@@ -59,6 +59,10 @@ export function Roster() {
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
+  // Which seat has been asked to be erased, and is one press from being erased. Erasure is the
+  // one thing on this page that cannot be undone, so it asks — once, in place, naming the
+  // person — rather than firing off a control that sits beside "Print a new card".
+  const [erasing, setErasing] = useState<string | null>(null);
 
   const call = useCallback(async (path: string, init: RequestInit = {}) => {
     const response = await fetch(`${CLASS_API_BASE}${path}`, {
@@ -131,6 +135,20 @@ export function Roster() {
       await load();
     } catch (error) {
       setProblem(error instanceof Error ? error.message : "That student was not removed.");
+    }
+    setBusy(false);
+  };
+
+  const erase = async (row: RosterRow) => {
+    if (busy) return;
+    setBusy(true);
+    setProblem(null);
+    try {
+      await call(`/classes/${code}/roster/${row.seatCode}?erase=1`, { method: "DELETE" });
+      setErasing(null);
+      await load();
+    } catch (error) {
+      setProblem(error instanceof Error ? error.message : "That student was not erased.");
     }
     setBusy(false);
   };
@@ -225,8 +243,25 @@ export function Roster() {
                   {row.claimed ? `Signed in ${row.claimedAt ? new Date(row.claimedAt).toLocaleDateString() : ""}` : "Has not signed in"}
                 </span>
                 <div className="roster-list__acts">
-                  <Button variant="quiet" onClick={() => void reissue(row.seatCode)}>Print a new card</Button>
-                  <Button variant="quiet" onClick={() => void remove(row)}>Take off the list</Button>
+                  {erasing === row.seatCode ? (
+                    <>
+                      {/* Said in the sentence, not in a dialog: what goes, what it cannot be
+                          undone from, and that the rest of the class is untouched. */}
+                      <p className="roster-list__warn">
+                        Erase {row.displayName}? Their name, everything they turned in and everything you
+                        wrote back are deleted from BOW. It cannot be undone, and the rest of the class is
+                        not affected.
+                      </p>
+                      <Button variant="primary" onClick={() => void erase(row)}>Erase everything</Button>
+                      <Button variant="quiet" onClick={() => setErasing(null)}>Keep it</Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button variant="quiet" onClick={() => void reissue(row.seatCode)}>Print a new card</Button>
+                      <Button variant="quiet" onClick={() => void remove(row)}>Take off the list</Button>
+                      <Button variant="quiet" onClick={() => setErasing(row.seatCode)}>Erase</Button>
+                    </>
+                  )}
                 </div>
               </li>
             ))}
@@ -234,8 +269,10 @@ export function Roster() {
         )}
         {/* What each control actually does, once, rather than a confirm dialog per press. */}
         <p className="roster-add__note">
-          A new card stops the old one working. Taking a student off the list keeps everything
-          they turned in — it stops them signing in, and their work stays in the evidence.
+          A new card stops the old one working. Taking a student off the list keeps everything they
+          turned in — it stops them signing in, and their work stays in the evidence. <strong>Erase</strong>
+          {" "}is the other one: it deletes the name and everything that student did, for a family who has
+          asked you to. Nobody else in the class is affected, and it cannot be undone.
         </p>
       </section>
 

@@ -28,10 +28,15 @@ export const STUDENT_COPY = {
        The lede used to open "Type the code your teacher put up" — which was true when this
        screen was also the sign-in and became false the day it stopped being one. A student
        reaching it has already signed in at /join, and being told to do the thing they just
-       did is the product not knowing where they are. */
+       did is the product not knowing where they are.
+
+       The lede is one clause long because the next screen is the picker, and the picker's own
+       deck already says the money is the student's to move and the choices theirs to explain.
+       Saying it here as well was twenty-four words spent telling a student what the screen
+       after this one was about to tell them. */
     chooseKicker: "Before you start",
     chooseHeadline: "Two ways in. You pick one.",
-    chooseLede: "Next you choose which one you want to run. The money is yours to handle either way, and either one answers the same question about you.",
+    chooseLede: "Either way, the money is yours to handle.",
     /* What BOW itself stores, stated precisely, on a screen that is now showing the student a
        name. The name is one their teacher typed about their own class; the account behind it
        holds no personal information at all, and that distinction is the honest sentence. */
@@ -83,7 +88,7 @@ export const STUDENT_COPY = {
    */
   plan: {
     title: "Build Avery’s plan.",
-    deck: "Four questions, one at a time. Avery’s money stays beside you the whole way.",
+    deck: "Four questions, one at a time. Avery’s money stays beside you.",
     /** What the rail calls each question, in order. Short enough to read at a glance. */
     map: ["Money coming in", "The two bonuses", "Money already owed", "What Avery does with the rest"],
     steps: {
@@ -112,7 +117,9 @@ export const STUDENT_COPY = {
         name: "Money already spoken for",
         title: "What does Avery already owe?",
         ask: "How much is gone before Avery chooses anything?",
-        why: "You already worked out what the room costs. This is everything else Avery owes every week.",
+        /* The room is on screen, priced, in the locked row directly above this line. Naming
+           it again was the copy explaining a thing the screen was already showing. */
+        why: "Everything else Avery owes every week, on top of the room.",
         settled: "You worked this out.",
         next: "Now decide what Avery protects",
       },
@@ -129,7 +136,7 @@ export const STUDENT_COPY = {
         /* Said as what it is. A row of marked cards under a question reads as a choice the
            screen is waiting on, and a reader who thinks the plan cannot be checked until
            they answer it is a reader the shortcut has cost time rather than saved it. */
-        shortcut: "A shortcut. Or use − and + above to split it your own way.",
+        shortcut: "A shortcut. Or use − and + above.",
         done: "Nothing is left over. Every dollar already has a job.",
       },
       review: {

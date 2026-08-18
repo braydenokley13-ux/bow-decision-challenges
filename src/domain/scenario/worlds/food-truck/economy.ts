@@ -35,10 +35,20 @@ export function swapBill(n: PopUpNumbers): Dollars {
   return dollars(n.generator.replacement - n.generator.deposit);
 }
 
-/** Plates this spot's crowd will buy on this Saturday. The last one runs late and is bigger. */
+/**
+ * Plates this spot's crowd will buy on this Saturday.
+ *
+ * Two facts multiplied: how many people walk past this booth on an ordinary night, and what
+ * this particular Saturday does to that. Three of the four used to return the same figure,
+ * so a world that printed weather over every night resolved three of them identically and the
+ * standing order that covered two of them was one question wearing two dates.
+ *
+ * The pull is stated on the booth card before a booth is taken and again on the order screen
+ * before the order is placed, so a student who cooks for the wrong night mis-planned rather
+ * than got unlucky. Nothing is rolled: same booth, same night, same number, every run.
+ */
 export function crowdOn(n: PopUpNumbers, spotId: SpotId, saturday: SaturdayNumber): number {
-  const spot = n.spots[spotId];
-  return saturday === n.saturdays ? spot.lastCrowd : spot.crowd;
+  return Math.round((n.spots[spotId].crowd * n.nights[saturday].pull) / 100);
 }
 
 /**

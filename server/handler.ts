@@ -1,4 +1,5 @@
 import { allocateClassCode, generateTeacherKey, isWellFormedClassCode, isWellFormedSeatCode, normaliseClassCode, normaliseSeatCode } from "../src/platform/classes/codes";
+import { lastSweepResult, sweepIfDue } from "./retention";
 import { assignmentBelongsToClass, assignmentIdFor, assignmentsForClass, generateAssignmentId, readAssignmentRequest } from "../src/platform/classes/assignments";
 import { CLASS_RETENTION_DAYS, type Assignment, type AttributedSubmission, type ClassErrorCode, type EvidenceSubmission, type SubmissionRecord, type TeacherOverride } from "../src/platform/classes/types";
 import { EVIDENCE_EVENT_TYPES } from "../src/domain/evidence/types";
@@ -200,9 +201,26 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       // A deployment that cannot start a class says so in the status line too, so a smoke
       // test that only checks for 200 still catches it.
       status: store.blockedReason ? 503 : 200,
-      body: { ok: !store.blockedReason, store: store.id, durable: store.durable, classroomReady, reason, challenges: [PLAN_UNDER_PRESSURE.id], at: now },
+      body: {
+        ok: !store.blockedReason,
+        store: store.id,
+        durable: store.durable,
+        classroomReady,
+        reason,
+        challenges: [PLAN_UNDER_PRESSURE.id],
+        // What the retention promise has actually done, so a district can see the control
+        // rather than take it on trust. `null` until the first sweep of this process; a
+        // driver whose records expire by themselves sweeps and correctly finds nothing.
+        retention: { days: CLASS_RETENTION_DAYS, lastSweepAt: lastSweepResult()?.at ?? null, lastSweepDeleted: lastSweepResult()?.deleted.length ?? null },
+        at: now,
+      },
     };
   }
+
+  // A host with no timer of its own — a serverless function is a process per request — still
+  // has to execute the retention promise. This claims the hour before it awaits anything and
+  // never blocks the request it rode in on, so a burst of thirty submissions starts one sweep.
+  if (!store.blockedReason) sweepIfDue(store, now);
 
   // Anything past here touches the store. A deployment with nowhere durable to write says
   // so once, in words, rather than failing later as an unexplained 503.
@@ -330,13 +348,24 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
     // class with no roster is a class created before accounts existed, or one whose teacher
     // has not built one, and it keeps the behaviour it has always had — because refusing
     // those would be refusing work students have already done.
+    // Work arrives from the person who did it, in every class, with no exception.
+    //
+    // This used to apply only where the class had a roster, and the reasoning at the time was
+    // that a class with none was one created before accounts existed and refusing it would be
+    // refusing work students had already done. That reasoning has expired: the only door into
+    // this product is `/join`, and it issues a session on the open path too, so there is no
+    // student anywhere who reaches the end of a run without one. What the exception left behind
+    // was an unauthenticated write endpoint keyed on a code written on a whiteboard — a vendor
+    // review posted a fabricated run under seat 7 of a class it had never joined and got a 202,
+    // and the work landed in the teacher's evidence room looking exactly like a child's.
+    const student = await callerOf(request.headers, { store, now });
+    if (!student || student.kind !== "student") {
+      return fail(403, "not_authorised", "Sign in as yourself before turning this in.");
+    }
     const roster = await store.listRoster(record.code);
-    if (roster.length > 0) {
-      const student = await callerOf(request.headers, { store, now });
-      const seat = roster.find((entry) => entry.seatCode === submission.seatCode && !entry.removedAt);
-      if (!student || student.kind !== "student" || !seat || seat.studentId !== student.id) {
-        return fail(403, "not_authorised", "Sign in as yourself before turning this in.");
-      }
+    const seat = roster.find((entry) => entry.seatCode === submission.seatCode && !entry.removedAt);
+    if (!seat || seat.studentId !== student.id) {
+      return fail(403, "not_authorised", "Sign in as yourself before turning this in.");
     }
     if (submission.challengeId !== record.challengeId) {
       return fail(409, "challenge_mismatch", "That class is running a different challenge.");

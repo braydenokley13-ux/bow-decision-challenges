@@ -53,7 +53,12 @@ function service(initial: Row[] = []) {
       return json({ card: { seatCode, displayName: row.displayName, joinCode } });
     }
     if (method === "DELETE") {
-      const seatCode = url.split("/").at(-1)!;
+      const seatCode = url.split("?")[0]!.split("/").at(-1)!;
+      if (url.includes("erase=1")) {
+        const at = rows.findIndex((entry) => entry.seatCode === seatCode);
+        rows.splice(at, 1);
+        return json({ seatCode, erasedAt: 1 });
+      }
       const row = rows.find((entry) => entry.seatCode === seatCode)!;
       row.removedAt = 1;
       return json({ seatCode, removedAt: 1 });
@@ -140,6 +145,32 @@ describe("the class list is the way a teacher runs a rostered class", () => {
     await waitFor(() => expect(screen.queryByText("Devon P.")).not.toBeInTheDocument());
     expect(screen.getByText("Ana R.")).toBeInTheDocument();
     expect(screen.getByText(/keeps everything\s+they turned in/i)).toBeInTheDocument();
+  });
+
+  it("asks before erasing a child, names them, and says the rest of the class is untouched", async () => {
+    const api = service([
+      { seatCode: "1", displayName: "Ana R.", claimed: true, claimedAt: 1, removedAt: null },
+      { seatCode: "2", displayName: "Devon P.", claimed: false, claimedAt: null, removedAt: null },
+    ]);
+    vi.stubGlobal("fetch", api.fetcher);
+    open();
+    await screen.findByText("Ana R.");
+
+    // Erasure is the one thing here that cannot be undone, and it is what a district needs to
+    // answer a parent — so it exists, and it does not sit one stray click away from "Print a
+    // new card". Nothing happens until the sentence naming the child has been read.
+    await userEvent.click(screen.getAllByRole("button", { name: "Erase" })[0]!);
+    expect(screen.getByText(/Erase Ana R\.\?/)).toBeInTheDocument();
+    expect(screen.getByText(/rest of the class is\s+not affected/)).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /Keep it/ }));
+    expect(screen.queryByText(/Erase Ana R\.\?/)).not.toBeInTheDocument();
+    expect(api.fetcher.mock.calls.some(([, init]) => init?.method === "DELETE")).toBe(false);
+
+    await userEvent.click(screen.getAllByRole("button", { name: "Erase" })[0]!);
+    await userEvent.click(screen.getByRole("button", { name: /Erase everything/ }));
+    await waitFor(() => expect(screen.queryByText("Ana R.")).not.toBeInTheDocument());
+    expect(screen.getByText("Devon P.")).toBeInTheDocument();
   });
 
   it("says what it holds a name for, where a teacher is about to type one", async () => {

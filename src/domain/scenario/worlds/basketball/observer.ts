@@ -9,11 +9,13 @@ import type {
 } from "../../../competency/types";
 import { evidenceRequirementById } from "../../../competency/competencies";
 import type { CategoryId } from "../../../core/ids";
+import { formatDollars } from "../../../core/money";
 import { deriveFacts } from "../../../evidence/facts";
 import { observeStructured } from "../../../evidence/observe";
-import type { EvidenceEvent, MicroSkillObservation, RemainderChoice } from "../../../evidence/types";
+import type { CompetingClaimsSettlement, EvidenceEvent, MicroSkillObservation, RemainderChoice } from "../../../evidence/types";
 import { SCENARIO_NUMBERS } from "../../numbers";
 import type { ScenarioNumbers } from "../../types";
+import { claimReason, isClaimReasonId, reachesAsFarAsItGoes, week3Claims, type CompetingClaim } from "./claims";
 
 /**
  * Basketball, speaking competencies.
@@ -59,6 +61,17 @@ export type BasketballRouteVia =
        * order three steppers were touched in.
        */
       via: "remainder-declaration";
+    }
+  | {
+      /**
+       * Read off the one week where three claims wanted the same money.
+       *
+       * `reads` names which of the settlement's three separable facts this requirement is
+       * judged from, because one action carries three of them and a route that did not say
+       * which would be three rows standing on the same sentence.
+       */
+      via: "competing-claims";
+      reads: "reach" | "kind-of-reason" | "reason-holds";
     }
   | {
       /** Examined and declined. `note` says what stops it. */
@@ -109,6 +122,38 @@ export const BASKETBALL_EVIDENCE_ROUTES: readonly BasketballEvidenceRoute[] = [
     evidenceRequirementId: "plan-within-income.er5",
     via: "written-defense",
     note: "Avery's defense is where the student names what they gave up and what they gave it up for.",
+  },
+
+  // ── sort-by-need-want-goal — all four, from Week 3 and the defense ───────────
+  // This world could not produce any of these until it had a moment where more than one
+  // person wanted the same money at once. Every board before Week 3 divides money the
+  // student controls into rows the plan names; nothing on any of them is a claim somebody
+  // else is making. The four below read one settlement and one paragraph, and none of them
+  // reads how much any claim cost — which is what keeps the two allocations that spend the
+  // money as far as it goes worth the same, and stops this competency quietly deciding that
+  // shoes matter more than a promise or the other way round.
+  {
+    evidenceRequirementId: "sort-by-need-want-goal.er1",
+    via: "competing-claims",
+    reads: "reach",
+    note: "Making one week's cash reach as far as it can across three claims that together cost more than it — committing no more than there is, and leaving nothing behind that one of the unpaid claims could still have taken.",
+  },
+  {
+    evidenceRequirementId: "sort-by-need-want-goal.er2",
+    via: "competing-claims",
+    reads: "kind-of-reason",
+    note: "Saying what the unpaid claim was to Avery rather than what it cost. Price is a fact about a claim and it is not a judgement about whether the claim matters, and this row is where the difference between the two shows.",
+  },
+  {
+    evidenceRequirementId: "sort-by-need-want-goal.er3",
+    via: "competing-claims",
+    reads: "reason-holds",
+    note: "Whether the reason the student gave is actually true of what they left unpaid, and not equally true of what they paid for. A basis that fits both halves of a choice explains neither of them.",
+  },
+  {
+    evidenceRequirementId: "sort-by-need-want-goal.er4",
+    via: "written-defense",
+    note: "Avery's defense is where the student says what made one claim matter more than another — something needed, a promise to somebody, or something they were saving toward.",
   },
 
   // ── adapt-a-plan — all five ────────────────────────────────────────────────────────
@@ -216,7 +261,22 @@ export interface BasketballObserverInput {
    * which is `null` evidence and not a low score.
    */
   openingRemainder?: readonly RemainderChoice[];
+  /**
+   * How Week 3's three claims were settled, if the student got that far.
+   *
+   * Absent means the run never reached the week, which is `null` evidence on all three of
+   * the decision requirements it carries and is not a low score on any of them. An attempt
+   * saved before this week existed contains no such event and reads exactly the same way.
+   */
+  competingClaims?: SettledClaims;
   scoredExplanations?: ScoredExplanations;
+}
+
+/** One settlement, with the event it came from. */
+export interface SettledClaims {
+  settlement: CompetingClaimsSettlement;
+  evidenceRef: string;
+  supportLevel: SupportLevel;
 }
 
 /**
@@ -354,6 +414,158 @@ function combine(
   };
 }
 
+/**
+ * Week 3, read three ways.
+ *
+ * One action, three separable facts, and they are kept separate because they fail
+ * independently and mean different things to the person who has to do something about it.
+ *
+ * **What none of these read is how much a claim cost.** The world puts three claims in
+ * front of the student that cost more together than the money will cover, and two of the
+ * ways to spend it reach as far as the money goes: the shoes on their own, or the trip and
+ * the present together. One protects what Avery's body needs, the other keeps a promise to
+ * a coach and a promise to a sister, and this file has no opinion about which is better. An
+ * observer that scored *which* claims survived would be scoring a set of values, and the
+ * whole reason `balance.ts` sweeps this world is to keep it from doing that anywhere.
+ */
+function claimsObservation(
+  route: BasketballEvidenceRoute & { via: "competing-claims" },
+  kind: EvidenceKind,
+  settled: SettledClaims | undefined,
+): EvidenceRequirementObservation {
+  if (!settled) {
+    return {
+      evidenceRequirementId: route.evidenceRequirementId,
+      kind,
+      level: null,
+      supportLevel: "standard_access",
+      evidenceRefs: ["not-observed:competing-claims"],
+      reason: `${route.note} The run never reached the week where the three claims arrive, so this world saw neither answer.`,
+    };
+  }
+  const { settlement, evidenceRef, supportLevel } = settled;
+  const claims = week3Claims();
+  const named = (ids: readonly string[]) =>
+    claims.filter((claim) => ids.includes(claim.id)).map((claim) => claim.title).join(" and ");
+  const built = read(route.reads, settlement, claims, named);
+  return {
+    evidenceRequirementId: route.evidenceRequirementId,
+    kind,
+    level: built.level,
+    supportLevel,
+    evidenceRefs: [evidenceRef],
+    reason: `${route.note} ${built.detail}`,
+  };
+}
+
+/** What one of the three facts came to, and the sentence that says why. */
+interface ClaimsRead {
+  level: RubricLevel;
+  detail: string;
+}
+
+function read(
+  reads: "reach" | "kind-of-reason" | "reason-holds",
+  settlement: CompetingClaimsSettlement,
+  claims: readonly CompetingClaim[],
+  named: (ids: readonly string[]) => string,
+): ClaimsRead {
+  if (reads === "reach") return reachRead(settlement, named);
+  const reason = isClaimReasonId(settlement.reason) ? claimReason(settlement.reason) : undefined;
+  if (!reason) {
+    return {
+      level: 0,
+      detail: "The settlement carries a reason this world does not offer, so nothing about it can be read either way.",
+    };
+  }
+  return reads === "kind-of-reason" ? kindRead(reason.holdsOf !== null, reason.label) : holdsRead(settlement, claims, reason.holdsOf, reason.said, named);
+}
+
+/**
+ * `er1` — how far the money was made to reach.
+ *
+ * Arithmetic, and neutral by construction: more than one allocation satisfies it and it is
+ * indifferent between them. The cash never enters the plan and cannot be banked — the
+ * screen says so before the student decides — so a dollar not spent on one of these three
+ * is a dollar spent on nothing, which is why leaving a claim affordable and unpaid is a
+ * real gap rather than a preference.
+ */
+function reachRead(settlement: CompetingClaimsSettlement, named: (ids: readonly string[]) => string): ClaimsRead {
+  const cash = formatDollars(settlement.cash);
+  const spent = formatDollars(settlement.spent);
+  const left = formatDollars(settlement.leftOver);
+  if (settlement.spent > settlement.cash) {
+    return { level: 0, detail: `The claims taken on came to ${spent} against ${cash} in hand, which is more money than the week had in it.` };
+  }
+  if (settlement.fundedIds.length === 0) {
+    return { level: 0, detail: `Nothing on the list was paid for, so the whole ${cash} sat in a week where it could not be saved and could not be spent on anything else.` };
+  }
+  if (reachesAsFarAsItGoes(settlement.fundedIds)) {
+    return { level: 5, detail: `${named(settlement.fundedIds)} took ${spent} of the ${cash}, and the ${left} left over could not have covered ${named(settlement.unfundedIds)}.` };
+  }
+  return { level: 2, detail: `${named(settlement.fundedIds)} took ${spent} of the ${cash}, and the ${left} still in hand could have covered something on the unpaid list as well.` };
+}
+
+/**
+ * `er2` — whether the reason was about what the claim was or about what it cost.
+ *
+ * Deliberately the whole of this row and nothing else. "It was the cheapest one to drop" is
+ * the misconception this competency exists to catch: price is a fact about a claim and it
+ * is not a judgement about whether the claim matters. A student can spend the money
+ * perfectly and still say only that, and this is the row that has to notice.
+ *
+ * There is no middle level here, because the tap has no middle. Whether the basis given was
+ * the right *kind* is a yes or a no; whether it was *true* is the next row down, and that
+ * one does have a middle.
+ */
+function kindRead(isValuesBasis: boolean, label: string): ClaimsRead {
+  return isValuesBasis
+    ? { level: 5, detail: `They gave a reason about what the claim was — “${label}” — rather than about its price.` }
+    : { level: 0, detail: `They gave the price as the reason — “${label}” — which says which claim was smallest and nothing about which one mattered.` };
+}
+
+/**
+ * `er3` — whether the reason they gave is true of what they actually left unpaid.
+ *
+ * Two ways to miss it, and they are different mistakes. A reason that is true of nothing
+ * they left unpaid contradicts what they did: calling the shoes that were splitting the one
+ * they only wanted is a claim about the world that the world does not support. A reason
+ * that is true of something they left unpaid *and* of something they paid for did not do
+ * the separating: "nobody else was counting on it" is true of the shoes and of the present
+ * alike, so a student who funds one of them and drops the other has named a fact rather
+ * than a reason. Both read as a real gap; only the first is a contradiction.
+ */
+function holdsRead(
+  settlement: CompetingClaimsSettlement,
+  claims: readonly CompetingClaim[],
+  holdsOf: ((claim: CompetingClaim) => boolean) | null,
+  said: string,
+  named: (ids: readonly string[]) => string,
+): ClaimsRead {
+  if (!holdsOf) {
+    return { level: 0, detail: `The reason given was the price, so nothing was claimed about ${named(settlement.unfundedIds)} that could be true or false of it.` };
+  }
+  const holds = (ids: readonly string[]) => claims.filter((claim) => ids.includes(claim.id) && holdsOf(claim));
+  const unpaidThatFit = holds(settlement.unfundedIds);
+  const paidThatFit = holds(settlement.fundedIds);
+  if (unpaidThatFit.length === 0) {
+    return { level: 0, detail: `They left ${named(settlement.unfundedIds)} unpaid and ${said}, and that is not what this world says ${settlement.unfundedIds.length > 1 ? "either of them was" : "it was"}.` };
+  }
+  if (settlement.fundedIds.length === 0) {
+    return { level: 2, detail: `${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} — but nothing was paid for, so the reason has nothing to explain the choosing of.` };
+  }
+  if (paidThatFit.length > 0) {
+    return {
+      level: 2,
+      detail: `${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} — and just as true of ${named(paidThatFit.map((claim) => claim.id))}, which they did pay for, so it does not account for this choice.`,
+    };
+  }
+  return {
+    level: 5,
+    detail: `${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} and of nothing they paid for.`,
+  };
+}
+
 function explanationObservation(
   route: BasketballEvidenceRoute,
   kind: EvidenceKind,
@@ -397,6 +609,7 @@ export function observeBasketballEvidence(
     if (route.via === "remainder-declaration") {
       return [remainderObservation(route, requirement.kind, input.openingRemainder ?? [])];
     }
+    if (route.via === "competing-claims") return [claimsObservation(route, requirement.kind, input.competingClaims)];
     const combined = combine(route.microSkillIds, byId);
     return [{
       evidenceRequirementId: route.evidenceRequirementId,
@@ -424,12 +637,24 @@ export function observeBasketballFromLog(
   const numbers = options.numbers ?? SCENARIO_NUMBERS;
   const facts = deriveFacts([...log], numbers);
   const defenseEvents = log.filter((event) => event.type === "DEFENSE_SUBMITTED");
+  // The last settlement stands, for the same reason the last remainder declaration does:
+  // a student who revisited a judgement is judged on where they ended, not where they began.
+  const settled = log.filter((event) => event.type === "COMPETING_CLAIMS_SETTLED").at(-1);
   return observeBasketballEvidence({
     observations: observeStructured(facts, numbers),
     defense: { submitted: defenseEvents.length > 0, evidenceRefs: defenseEvents.map((event) => event.id) },
     // The opening plan only. Later boards repair a plan that already exists, and ER3 is
     // about the one moment money is being divided for the first time.
     openingRemainder: (facts.remainderChoices ?? []).filter((choice) => choice.mode === "working"),
+    ...(settled
+      ? {
+          competingClaims: {
+            settlement: settled.payload as CompetingClaimsSettlement,
+            evidenceRef: settled.id,
+            supportLevel: settled.supportLevel,
+          },
+        }
+      : {}),
     ...(options.scoredExplanations ? { scoredExplanations: options.scoredExplanations } : {}),
   });
 }

@@ -7,17 +7,19 @@ import { rememberedClasses } from "./classMemory";
 /**
  * Every class this browser can open, opened once.
  *
- * There is no server-side index of a teacher's classes and V1 will not have one: a class is
- * a code and a key, the key never leaves the educator's browser, and a service that could
- * list somebody's classes would need an account to list them for (§17.4). So the set is
- * whatever this browser remembers, each opened with the key it already holds.
+ * A signed-in teacher does have a server-side index — `GET /me/teaching` returns the classes
+ * their account owns, which is what makes a new laptop recoverable. This hook is the layer
+ * below it: whatever *this browser* remembers, each opened with the key it already holds, so a
+ * class created without an account still opens and still counts on every screen that reads
+ * across classes.
  *
  * It is one hook rather than one per screen because the Objective Map needs every class
  * against every objective. Fetching per objective would be twenty-three passes over the same
  * classes to answer one question about coverage.
  *
- * That is a real limit and the screens say so rather than hiding it: a teacher on a new
- * laptop sees nothing until they open a class link there once.
+ * That is a real limit for classes made without an account, and the screens say so rather than
+ * hiding it: a teacher on a new laptop sees nothing of those until they open a class link
+ * there once, or sign in to the account that owns them.
  */
 export interface OpenedClass {
   record: ClassRecord;

@@ -44,6 +44,17 @@ const STUDENTS: Student[] = [
   { seat: "19", index: 1, setupId: "teammate-share", clinics: false, deposit: true, countBonus: false },
 ];
 
+/**
+ * What the teacher's list calls the student in a seat.
+ *
+ * `seatOnRoster` fills a class up to the seat it is asked for, naming each row in order, so the
+ * student in seat N is "Test Student N". The educator surface shows that name rather than the
+ * seat number, which is the right way round — a teacher reads a room by who is in it.
+ */
+function nameFor(seat: string): string {
+  return `Test Student ${seat}`;
+}
+
 async function runStudent(page: Page, classCode: string, student: Student): Promise<number> {
   const started = Date.now();
   const opening: PlanContext = { setupId: student.setupId, countCompletion: student.countBonus };
@@ -143,9 +154,11 @@ test("a whole class runs end to end across separate devices and the educator rea
     await expect(housing).toContainText("Where did they put Avery?");
     await expect(housing.locator("li b").first()).not.toBeEmpty();
 
-    // The one who reserved the seat is still the only one who did.
+    // The one who reserved the seat is still the only one who did. The class page names a
+    // student the way their teacher's own list names them now, so the seat is read back as the
+    // person sitting in it rather than as a number.
     const deposit = page.locator(".choice-dist").filter({ hasText: "When did they commit to the course?" });
-    await expect(deposit).toContainText("seat 19");
+    await expect(deposit).toContainText(nameFor("19"));
 
     // No fixture anywhere: not its size, not its label, not its golden case.
     await expect(body).not.toContainText("Hypothetical demo data");

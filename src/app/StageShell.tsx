@@ -1,5 +1,5 @@
 import { useEffect, useRef, type PropsWithChildren, type ReactNode } from "react";
-import { useStageArrival } from "./useStageArrival";
+import { usePinnedTopBar, useStageArrival } from "./useStageArrival";
 import { CourtBackdrop } from "../components/story/CourtBackdrop";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { CONDITIONAL_INCOME_KEYS, incomeAmount, RELIABLE_INCOME_KEYS } from "../domain/scenario/expectations";
@@ -63,6 +63,8 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
   const { state, handOver } = useChallenge();
   const world = state.meta.worldId;
   const heading = useRef<HTMLElement>(null);
+  const topbar = useRef<HTMLElement>(null);
+  usePinnedTopBar(topbar);
   const first = useRef(true);
   useEffect(() => {
     if (focusKey === undefined) return;
@@ -76,7 +78,7 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
   useStageArrival(heading, stage);
   return (
     <div className="challenge-shell" data-world={world} data-chapter={chapterFor(stage)}>
-      <header className="challenge-topbar">
+      <header ref={topbar} className="challenge-topbar">
         <AppMark />
         <SeasonStrip position={position} announcement={announcement} />
         <div className="challenge-topbar__end">

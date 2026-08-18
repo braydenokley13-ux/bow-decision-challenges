@@ -21,9 +21,20 @@ export const POP_UP_NUMBERS: PopUpNumbers = {
   startCash: dollars(1900),
   permit: dollars(150),
   spots: {
-    "back-lane": { id: "back-lane", booth: dollars(90), crowd: 22, lastCrowd: 34 },
-    "middle-row": { id: "middle-row", booth: dollars(240), crowd: 38, lastCrowd: 57 },
-    "bridge-gate": { id: "bridge-gate", booth: dollars(480), crowd: 54, lastCrowd: 82 },
+    "back-lane": { id: "back-lane", booth: dollars(90), crowd: 22 },
+    "middle-row": { id: "middle-row", booth: dollars(240), crowd: 38 },
+    "bridge-gate": { id: "bridge-gate", booth: dollars(480), crowd: 54 },
+  },
+  // Four nights, four crowds, and the student reads all four off the booth card before they
+  // take a booth. The wet Saturday that clears fills the market late; the cold one empties it;
+  // the fireworks bring half the city. One standing order covers the middle two, which is the
+  // whole of the second Saturday decision: cook for the busy night and bin food on the cold
+  // one, or cook for the cold night and turn people away on the busy one.
+  nights: {
+    1: { pull: 100 },
+    2: { pull: 120 },
+    3: { pull: 65 },
+    4: { pull: 145 },
   },
   platesPerTray: 10,
   trayCost: dollars(60),

@@ -4,17 +4,21 @@ import { useDraft } from "../app/attemptStore";
 import { StageShell } from "../app/StageShell";
 import { Button } from "../components/primitives/Button";
 import { formatDollars } from "../domain/core/money";
-import { hours, hoursPerWeek } from "../domain/core/units";
+import type { ClaimReasonId } from "../domain/core/ids";
+import { hours } from "../domain/core/units";
 import { depositPreview, seasonLedger } from "../domain/finance/timeline";
 import type { PlanMode } from "../domain/finance/types";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
 import { weeksBeforeDisruption } from "../domain/scenario/season";
-import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
+import { CLAIM_REASONS, costOfClaims, week3Claims } from "../domain/scenario/worlds/basketball/claims";
 import { amountsFor } from "../domain/machine/selectors";
 
 const PLAYED_WEEKS = weeksBeforeDisruption(SCENARIO_NUMBERS);
 const DEADLINE = SCENARIO_NUMBERS.course.depositDeadlineWeek;
 const REMAINING_WEEKS = SCENARIO_NUMBERS.weeks - PLAYED_WEEKS.length;
+const CLAIMS = week3Claims();
+const CASH = SCENARIO_NUMBERS.week3.cash;
+const CASH_WEEK = SCENARIO_NUMBERS.week3.week;
 
 /** The plan the student is living on, and the place they chose to live in. */
 function useSeason() {
@@ -27,121 +31,140 @@ function useSeason() {
 }
 
 /**
- * Weeks 1 to 4, played in one screen.
+ * Weeks 1 to 4, and the one decision inside them.
  *
- * This beat has been rebuilt twice and for the same reason both times. It began as a static
- * feed of four cards and a Continue button. It became four presses of "Play Week N" — which
- * looked like play and was not: every week charged the same rent, took the same hours and
- * asked the student for nothing, so three of the four presses were ceremony over a number
- * that had already been decided on the planning board.
+ * This beat has been rebuilt three times. It began as a static feed of four cards and a
+ * Continue button; it became four presses of "Play Week N", which looked like play and was
+ * not; and it went back to a feed of four cards whose own deck opened with the sentence
+ * *"Nothing here is new."* Three hundred and twenty rendered words, one button, and — read
+ * back out of a real submission — an evidence log for the whole beat that said
+ * `season-weeks: 1 event → STAGE_ENTERED`.
  *
- * The weeks now resolve together, because that is what they are: one eight-week commitment
- * arriving on schedule. What is worth watching is not *whether* the money leaves, it is *how
- * fast it leaves for the plan this student built* — so the four weeks are drawn as a drain,
- * week by week, on their own account, and the hours their own housing charges pile up beside
- * it. Two students who chose differently read visibly different seasons off the same screen,
- * and neither is being punished: both are only seeing the bill for a decision they already
- * made.
+ * The four weeks still resolve together, because that is what they are: one eight-week
+ * commitment arriving on schedule, and watching it drain at the rate this student's housing
+ * charges is worth the strip it takes. What is gone is the narration around it. What is
+ * here instead is Week 3.
+ *
+ * **Week 3.** Avery covers a teammate's shift and is paid in cash. Three things want it in
+ * the same week and together they cost more than it, so something is going to go unpaid;
+ * and because the money is outside the plan and cannot be banked, the decision is not about
+ * arithmetic. Two ways of spending it reach as far as the money goes — the shoes on their
+ * own, or the trip and the present together — and they say opposite things about what
+ * matters. Nothing on this screen prefers either.
+ *
+ * **Why the money is outside the plan.** `balance.ts` sweeps the whole space of plans a
+ * student can reach and proves no strategy dominates. A new pot that could be moved into
+ * the plan would multiply that space, for a beat whose subject is not the plan at all. So
+ * this cash never touches the board, the snapshots, or the season ledger — and the sweep
+ * runs over exactly the model it ran over before.
  *
  * The deposit deadline used to sit at the bottom of this page, under about fourteen hundred
- * pixels of feed. It is the pivot the whole design turns on, so it is now its own screen.
+ * pixels of feed. It is the pivot the whole design turns on, so it is its own screen below.
  */
 export function SeasonWeeks() {
-  const { dispatch } = useChallenge();
-  const { setupId, amounts, ledger } = useSeason();
+  const { state, dispatch } = useChallenge();
+  const { setupId, ledger } = useSeason();
+  // Selecting is not deciding — nothing is recorded until the settle — but a student who
+  // has chosen and then reloads must not find the screen has forgotten, for the same reason
+  // the deposit screen remembers: a page refresh may not quietly reverse a decision.
+  const [funded, setFunded] = useDraft<string[]>(state.meta.worldId, "week3-claims", state.week3?.fundedIds ? [...state.week3.fundedIds] : []);
+  const [reason, setReason] = useDraft<ClaimReasonId | null>(state.meta.worldId, "week3-reason", state.week3?.reason ?? null);
   if (!setupId) return null;
 
-  const setup = BASKETBALL_SCENARIO.setups.find((item) => item.id === setupId)!;
   const closing = ledger.at(-1)!;
-  const opening = ledger[0]!;
-  const spent = closing.paid;
   const scale = Math.max(1, closing.received);
+  const spent = costOfClaims(funded);
+  const left = CASH - spent;
+
+  const toggle = (id: string) =>
+    setFunded(funded.includes(id) ? funded.filter((entry) => entry !== id) : [...funded, id]);
+
+  const settle = () => {
+    if (reason === null) return;
+    dispatch({ type: "COMPETING_CLAIMS_SETTLED", fundedIds: funded, reason });
+  };
 
   return (
     <StageShell
       stage="season-weeks"
       kicker={`Weeks 1 to ${PLAYED_WEEKS.length}`}
-      title="The season starts."
+      title={`Week ${CASH_WEEK} pays Avery in cash.`}
+      focusOnArrival
     >
       <p className="stage-deck">
-        Four weeks of the plan you built, paid out one week at a time. Nothing here is new —
-        it is the {formatDollars(spent)} you already committed, leaving the account on schedule.
+        Rent and the basics leave the account on schedule. Then Avery covers a teammate’s shift
+        and is handed {formatDollars(CASH)}. It is not in the plan and it cannot go in — and three
+        things want it before Sunday.
       </p>
-      <div className="season">
-        {/* The running state, kept beside the weeks rather than under them, so what a week
-            costs is legible at the moment it costs it. */}
-        <aside className="season-ledger" aria-label="Where Avery stands">
-          <p className="field-label">After Week {closing.week} · {setup.title}</p>
-          <div className="season-ledger__row" data-tone="money">
-            <span>Money in hand</span>
-            <strong className="money">{formatDollars(closing.inHand)}</strong>
-            <small>{formatDollars(closing.received)} arrived · {formatDollars(closing.paid)} gone</small>
-            <span className="season-ledger__bar" aria-hidden="true">
-              <i style={{ width: `${Math.round((closing.inHand / scale) * 100)}%` }} />
-            </span>
-          </div>
-          <div className="season-ledger__row" data-tone="time">
-            <span>Hours on the road</span>
-            <strong>{closing.hoursToDate}h</strong>
-            <small>{closing.hoursThisWeek}h of Avery’s {SCENARIO_NUMBERS.load.weeklyCapacity} free hours, every week</small>
-            <span className="season-ledger__bar" aria-hidden="true">
-              <i style={{ width: `${Math.min(100, Math.round((closing.hoursThisWeek / SCENARIO_NUMBERS.load.weeklyCapacity) * 100))}%` }} />
-            </span>
-          </div>
-          <dl className="season-ledger__plan">
-            <div><dt>Set aside for the course</dt><dd className="money">{formatDollars(amounts.goal)}</dd></div>
-            <div><dt>Backup money</dt><dd className="money">{formatDollars(amounts.reserve)}</dd></div>
-            <div><dt>Rides and rest</dt><dd className="money">{formatDollars(amounts.flexibleCash)}</dd></div>
-          </dl>
-          <p className="season-ledger__note">
-            These three have not been touched. Rent and the weekly basics are what came out.
-          </p>
-        </aside>
 
-        <ol className="feed feed--season">
-          {ledger.map((week, index) => {
-            const entry = BASKETBALL_SCENARIO.season[index]!;
+      <section className="claims" aria-labelledby="claims-heading">
+        <h2 className="visually-hidden" id="claims-heading">Week {CASH_WEEK}</h2>
+        <ul className="claims__list">
+          {CLAIMS.map((claim) => {
+            const chosen = funded.includes(claim.id);
+            const overBudget = !chosen && claim.cost > left;
             return (
-              <li key={week.week}>
-                <article className="post">
-                  <p className="post__tag">{entry.week}</p>
-                  <p className="post__note">{entry.note}</p>
-                  <p className="post__spend">
-                    <span>−{formatDollars(week.setupThisWeek + week.essentialsThisWeek)}</span>
-                    <span>{hoursPerWeek(week.hoursThisWeek)} on the road</span>
-                  </p>
-                  {/* What was still in the account at the end of this week, drawn against
-                      what had arrived by then. Pay lands weekly and outruns the weekly costs,
-                      so this climbs — the housing choice shows up as how fast. It is the one
-                      line on this screen that answers differently for two students who chose
-                      differently. */}
-                  <p className="post__hand">
-                    <span>Left in hand</span>
-                    <strong className="money">{formatDollars(week.inHand)}</strong>
-                    <span className="post__hand-bar" aria-hidden="true">
-                      <i style={{ width: `${Math.max(2, Math.round((week.inHand / scale) * 100))}%` }} />
-                    </span>
-                  </p>
-                  <blockquote className="post__voice">
-                    <span className="post__who" aria-hidden="true">#{BASKETBALL_SCENARIO.offer.jersey}</span>
-                    <cite>Avery</cite>
-                    <p>{entry.voice[setupId]}</p>
-                  </blockquote>
-                </article>
+              <li key={claim.id}>
+                <button
+                  type="button"
+                  aria-pressed={chosen}
+                  aria-disabled={overBudget}
+                  onClick={() => !overBudget && toggle(claim.id)}
+                >
+                  <b>{claim.title}</b>
+                  <strong className="money">{formatDollars(claim.cost)}</strong>
+                  <span>{claim.detail}</span>
+                  {/* Only where it is true, and where it is true it is the whole reason the
+                      card cannot be taken. A disabled control with no stated cause is a bug
+                      as far as the person pressing it is concerned. */}
+                  {overBudget && <em>More than the {formatDollars(left)} left.</em>}
+                </button>
               </li>
             );
           })}
+        </ul>
+        {/* The one figure the decision turns on, and the sentence that makes leaving money
+            behind a real cost rather than a saving. This cash never reaches the plan. */}
+        <p className="claims__left" aria-live="polite">
+          <strong className="money">{formatDollars(left)}</strong>
+          <span>left of {formatDollars(CASH)}. What Avery does not spend this week goes nowhere.</span>
+        </p>
+
+        <div className="claims__why">
+          <p className="field-label" id="why-heading">What made you leave the rest out?</p>
+          <ul aria-labelledby="why-heading">
+            {CLAIM_REASONS.map((entry) => (
+              <li key={entry.id}>
+                <button type="button" aria-pressed={reason === entry.id} onClick={() => setReason(entry.id)}>
+                  {entry.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* The drain, and nothing around it. Two students who chose differently read visibly
+          different seasons off the same four bars, and neither is being punished — both are
+          seeing the bill for a decision they already made. */}
+      <aside className="season-run" aria-label={`Weeks 1 to ${PLAYED_WEEKS.length}`}>
+        <p className="field-label">
+          Left in hand · {hours(closing.hoursToDate)} on the road
+        </p>
+        <ol>
+          {ledger.map((week) => (
+            <li key={week.week} data-now={week.week === CASH_WEEK}>
+              <span>Week {week.week}</span>
+              <strong className="money">{formatDollars(week.inHand)}</strong>
+              <i aria-hidden="true" style={{ width: `${Math.max(2, Math.round((week.inHand / scale) * 100))}%` }} />
+            </li>
+          ))}
         </ol>
-      </div>
+      </aside>
 
       <div className="stage-action">
-        <p aria-live="polite">
-          Four weeks at the {setup.title}: {formatDollars(spent)} gone, {hours(closing.hoursToDate)} on the road,
-          {" "}{formatDollars(closing.inHand)} still in hand. Week {opening.week} looked the same as Week {closing.week} — that is what a plan
-          holding is supposed to look like.
-        </p>
-        <Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "week5-transition" })}>
-          Week {DEADLINE} · the course office is calling
+        <Button aria-disabled={reason === null} onClick={settle}>
+          {reason === null ? "Say why to carry on" : `Week ${DEADLINE} · the course office is calling`}
         </Button>
       </div>
     </StageShell>

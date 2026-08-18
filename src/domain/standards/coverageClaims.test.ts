@@ -125,27 +125,36 @@ describe("what BOW may claim about an objective", () => {
     it("counts exactly what a built world can produce every requirement of", () => {
       // Two worlds now produce all five of `adapt-a-plan` and all five of
       // `plan-within-income`, and that is the point of §9.1 — a student who picks the night
-      // market instead of the season is measured on the same named things. Nothing else is
-      // available: the other nineteen competencies have a mapping and no world.
-      expect(availableCompetencyIds()).toEqual(new Set(["adapt-a-plan", "plan-within-income"]));
+      // market instead of the season is measured on the same named things. Basketball adds
+      // a third that the night market does not have a beat for yet, which is a real
+      // asymmetry and is written down as one rather than smoothed over.
+      expect(availableCompetencyIds()).toEqual(new Set(["sort-by-need-want-goal", "adapt-a-plan", "plan-within-income"]));
       expect(worldsAssessing("adapt-a-plan")).toEqual(["basketball", "food-truck"]);
       expect(worldsAssessing("plan-within-income")).toEqual(["basketball", "food-truck"]);
+      // One world, until the market has a week where several claims want the same money.
+      // The event that records it is named for the situation rather than for the season, so
+      // the second world produces the same evidence without a change to the spine.
+      expect(worldsAssessing("sort-by-need-want-goal")).toEqual(["basketball"]);
       // Neither world produces this one, and both say why in their own route tables. A gap in
       // both is honest; closing it in one would mean the choice of story changed what was
       // measured.
       expect(worldsAssessing("save-toward-a-goal")).toEqual([]);
     });
 
-    it("reports exactly one objective assessable today, and it is the one with a whole world behind it", () => {
-      // 1.3 is `full`-mapped to `plan-within-income` and carries no completion rule, so a
-      // world that produces every one of that competency's requirements is the entire bar,
-      // and it is now met. Nothing else moves with it. `adapt-a-plan` is `partial` on 1.2
-      // and `supporting` on 4.1; `save-toward-a-goal` is `partial` on 1.3 and Basketball
-      // produces none of it. A partial and a supporting mapping still make nothing
-      // assessable on their own, which is why 1.3 is alone here rather than first.
-      expect(assessableStandards(NYSED).map((standard) => standard.code)).toEqual(["1.3"]);
+    it("reports exactly two objectives assessable today, and both have a whole world behind them", () => {
+      // Both are `full`-mapped to one competency and carry no completion rule, so a world
+      // that produces every one of that competency's requirements is the entire bar. 1.3
+      // rests on `plan-within-income`; 1.1 rests on `sort-by-need-want-goal`, which was
+      // declared and unassessable by anything until Week 3 had a decision in it.
+      //
+      // Nothing else moves with them. `adapt-a-plan` is `partial` on 1.2 and `supporting` on
+      // 4.1; `save-toward-a-goal` is `partial` on 1.3 and no world produces it; 2.1 needs
+      // all three of its competencies and has one. A partial, a supporting and an unfinished
+      // completion rule still make nothing assessable on their own.
+      const assessable = ["1.1", "1.3"];
+      expect(assessableStandards(NYSED).map((standard) => standard.code)).toEqual(assessable);
       for (const standard of NYSED_2026_STANDARDS) {
-        expect(isAssessable(ref(standard.code)), `NYSED ${standard.code}`).toBe(standard.code === "1.3");
+        expect(isAssessable(ref(standard.code)), `NYSED ${standard.code}`).toBe(assessable.includes(standard.code));
       }
     });
 

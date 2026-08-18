@@ -2,12 +2,12 @@ import { useMemo } from "react";
 import { useChallenge } from "../app/ChallengeContext";
 import { StageShell } from "../app/StageShell";
 import { Button } from "../components/primitives/Button";
-import { formatDollars } from "../domain/core/money";
-import { resolveSeason, type RiskVerdict, type Week5Pressure } from "../domain/finance/resolution";
+import { dollars, formatDollars } from "../domain/core/money";
+import { resolveSeason, type CompetingClaimsOutcome, type RiskVerdict, type Week5Pressure } from "../domain/finance/resolution";
 import { assigned, balanceOf, residualOf } from "../domain/finance/formulas";
-import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
+import { claimReason, costOfClaims, week3Claims } from "../domain/scenario/worlds/basketball/claims";
 import { amountsFor, snapshotForMode } from "../domain/machine/selectors";
 
 const OUTCOME_LABEL: Record<RiskVerdict["outcome"], string> = {
@@ -57,24 +57,50 @@ export function Week8Resolution() {
       : undefined),
     [response, opening, final],
   );
+  /**
+   * Week 3, coming back.
+   *
+   * Something always went unpaid — three claims cost more than the cash between them — so
+   * the ending has something to say about this week for every student who reached it, and
+   * what it says is read off their own settlement rather than chosen from a list of
+   * outcomes. A run that never got there passes nothing and the panel is exactly as it was.
+   */
+  const claims = useMemo<CompetingClaimsOutcome | undefined>(() => {
+    if (!state.week3) return undefined;
+    const funded = state.week3.fundedIds;
+    const spent = costOfClaims(funded);
+    return {
+      cash: SCENARIO_NUMBERS.week3.cash,
+      spent: dollars(spent),
+      leftOver: dollars(SCENARIO_NUMBERS.week3.cash - spent),
+      paidFor: week3Claims().filter((claim) => funded.includes(claim.id)).map((claim) => claim.title),
+      unpaid: week3Claims()
+        .filter((claim) => !funded.includes(claim.id))
+        .map((claim) => ({ id: claim.id, label: claim.verdictLabel, cost: claim.cost, wentUnpaid: claim.wentUnpaid })),
+      reasonToldBack: claimReason(state.week3.reason).toldBack,
+    };
+  }, [state.week3]);
   const resolution = useMemo(
-    () => (final ? resolveSeason(final, SCENARIO_NUMBERS, opening, bonusLabel, pressure) : null),
-    [final, opening, bonusLabel, pressure],
+    () => (final ? resolveSeason(final, SCENARIO_NUMBERS, opening, bonusLabel, pressure, claims) : null),
+    [final, opening, bonusLabel, pressure, claims],
   );
   if (!final || !resolution) return null;
 
-  const setup = BASKETBALL_SCENARIO.setups.find((item) => item.id === final.setupId)!;
   const { load } = resolution;
 
   // Avery's own line, chosen by what actually happened rather than by how well it went.
   const decidingWeeks = resolution.weeks.length;
+  // "Put by" is a British idiom for *saved*, and it was landing in Avery's own voice at the
+  // peak of the story in front of American twelve-year-olds. The four lines are also shorter
+  // than they were: this is the one place on the screen where a sentence is doing emotional
+  // work rather than reporting, and a long one blunts it.
   const averyLine = !resolution.attendanceHeld
     ? resolution.uncovered > 0
-      ? `The weeks got away from me. I missed my first session in Week ${resolution.bonusLostWeek} and the bonus went with it — and we did not have the money put by.`
-      : `The weeks got away from me. I missed my first session in Week ${resolution.bonusLostWeek} and the bonus went with it — but you kept enough back that it did not sink us.`
+      ? `I missed a session in Week ${resolution.bonusLostWeek} and the bonus went with it. We had nothing saved for it.`
+      : `I missed a session in Week ${resolution.bonusLostWeek} and the bonus went with it. You kept enough back that it did not sink us.`
     : resolution.unplannedGain > 0
       ? `Every session, all ${decidingWeeks} weeks. The bonus turned up and neither of us was counting on it.`
-      : `Every session, all ${decidingWeeks} weeks. The bonus landed exactly like you planned it would.`;
+      : `Every session, all ${decidingWeeks} weeks. The bonus landed exactly as you planned.`;
 
   return (
     <StageShell
@@ -142,9 +168,13 @@ export function Week8Resolution() {
           <p className="field-label">{BASKETBALL_SCENARIO.goalLabel}</p>
           <strong className="money">{formatDollars(resolution.courseSaved)}</strong>
           <p>
+            {/* What happened to the goal, and nothing about how. A student who reserved the
+                seat gets the full price story from the verdict below, which also says what
+                reserving early saved them; saying it twice on one screen is what the ending
+                did before. */}
             {resolution.courseFunded
               ? final.depositTaken
-                ? `The seat was held from Week ${SCENARIO_NUMBERS.course.depositDeadlineWeek} and it is paid. Avery starts the week the season ends.`
+                ? "The seat is held and paid. Avery starts the week the season ends."
                 : `Enough for the ${formatDollars(resolution.coursePrice)} place. Avery starts the week the season ends.`
               : `${formatDollars(resolution.courseShort)} short of the ${formatDollars(resolution.coursePrice)} place. Avery does not start this term.`}
           </p>
@@ -189,48 +219,16 @@ export function Week8Resolution() {
         </ul>
       </section>
 
-      {/* Beat 4: the plan then against the plan now, which is the thing the written
-          explanation is about to ask them to account for. */}
-      {resolution.changes.length > 0 && (
-        <section className="resolve-changes" aria-labelledby="changes-heading">
-          <div className="section-heading">
-            <p className="eyebrow">Before Week 5 · After Week 5</p>
-            <h2 id="changes-heading">What moved after Week 5.</h2>
-          </div>
-          {/* This was a four-column table with green delta figures — an analytics widget at
-              the emotional end of a season. It is three sentences, and the lines that did
-              not move say so in a word instead of taking a row each. */}
-          <ul className="resolve-moves">
-            {CHOICE_ORDER.map((category) => {
-              const change = resolution.changes.find((item) => item.category === category)!;
-              return (
-                <li key={category} data-delta={change.delta === 0 ? "flat" : change.delta > 0 ? "up" : "down"}>
-                  <b>{CHOICE_LABELS[category]}</b>
-                  {change.delta === 0 ? (
-                    <span>stayed at <strong className="money">{formatDollars(change.after)}</strong></span>
-                  ) : (
-                    <span>
-                      went {change.delta > 0 ? "up" : "down"} to <strong className="money">{formatDollars(change.after)}</strong>
-                      {" "}from {formatDollars(change.before)}
-                    </span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-          {/* A plan can finish larger than it started, and a table that shows it growing
-              without saying what paid for the growth reads as a mistake. */}
-          <p className="resolve-changes__note">
-            Eight weeks at the {setup.title}.{" "}
-            {final.includeOptionalWork
-              ? `Coaching the Saturday clinics brought in ${formatDollars(SCENARIO_NUMBERS.optionalWorkIncome)} after Week 5, which is why the final plan holds more than the opening one.`
-              : "The Saturdays stayed Avery’s, so no new money came in after Week 5."}
-          </p>
-        </section>
-      )}
+      {/* Beat 4 used to sit here: "What moved after Week 5", three rows of before-and-after
+          and a note explaining why the plan finished larger. It is gone, and the reason is the
+          list directly above it. Every row it drew was the money consequence of a decision the
+          verdicts already name and price — its closing note, that coaching the Saturday clinics
+          is why the final plan holds more than the opening one, is verdict three said a second
+          time — and the three current amounts are on the money rail on every screen of the run.
+          Sixty words at the emotional end of a season, none of them new. */}
 
       <div className="stage-action">
-        <p>That is how it went. Now say why you played it that way.</p>
+        <p>Now say why you played it that way.</p>
         <Button onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "defense" })}>Explain my plan</Button>
       </div>
     </StageShell>

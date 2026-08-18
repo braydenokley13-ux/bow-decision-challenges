@@ -1026,6 +1026,26 @@
         "support": "standard_access"
       },
       {
+        "id": "sort-by-need-want-goal.er1",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
+        "id": "sort-by-need-want-goal.er2",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
+        "id": "sort-by-need-want-goal.er3",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
+        "id": "sort-by-need-want-goal.er4",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
         "id": "adapt-a-plan.er1",
         "level": 5,
         "support": "standard_access"
@@ -2401,6 +2421,26 @@
         "support": "standard_access"
       },
       {
+        "id": "sort-by-need-want-goal.er1",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
+        "id": "sort-by-need-want-goal.er2",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
+        "id": "sort-by-need-want-goal.er3",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
+        "id": "sort-by-need-want-goal.er4",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
         "id": "adapt-a-plan.er1",
         "level": 5,
         "support": "standard_access"
@@ -3600,6 +3640,26 @@
       },
       {
         "id": "plan-within-income.er5",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
+        "id": "sort-by-need-want-goal.er1",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
+        "id": "sort-by-need-want-goal.er2",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
+        "id": "sort-by-need-want-goal.er3",
+        "level": null,
+        "support": "standard_access"
+      },
+      {
+        "id": "sort-by-need-want-goal.er4",
         "level": null,
         "support": "standard_access"
       },

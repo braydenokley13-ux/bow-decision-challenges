@@ -45,10 +45,23 @@ export interface SpotNumbers {
   id: SpotId;
   /** What the four Saturdays cost at this spot. Due before the first one, and not refundable. */
   booth: Dollars;
-  /** Plates this spot's foot traffic will buy on a normal Saturday. */
+  /** Plates this spot's foot traffic will buy on an ordinary Saturday. */
   crowd: number;
-  /** Plates it will buy on the last Saturday, when the market runs late. */
-  lastCrowd: number;
+}
+
+/**
+ * What one Saturday does to the crowd at any booth, as a share of an ordinary night.
+ *
+ * The market's own weather, priced. It is a property of the *night* rather than of the spot,
+ * because a cold evening is cold at all three booths — so a student who has read what the
+ * next Saturday is can work out what it means wherever they set up, and two students at two
+ * booths are reading the same fact about the same market.
+ *
+ * `pull` is a whole percentage, not a multiplier, so the copy that states it before the order
+ * is placed and the arithmetic that resolves the night afterwards are the same number.
+ */
+export interface NightNumbers {
+  pull: number;
 }
 
 /**
@@ -73,6 +86,16 @@ export interface PopUpNumbers {
   /** The city permit for the four Saturdays. Due up front, and not refundable. */
   permit: Dollars;
   spots: Record<SpotId, SpotNumbers>;
+  /**
+   * The four Saturdays, and what each one does to a crowd.
+   *
+   * Every one of them is a different night, and the student is told which before they order
+   * for it. That is the difference between a market and a lottery: an evening that turns out
+   * colder than the last one is a surprise, and an evening you were told would be colder is a
+   * decision. Nothing here is rolled, so the same order on the same night always resolves the
+   * same way — which is what lets the balance harness sweep it and a teacher replay it.
+   */
+  nights: Record<SaturdayNumber, NightNumbers>;
   /** The supplier sells by the tray, so stock does not divide evenly into a crowd. */
   platesPerTray: number;
   trayCost: Dollars;

@@ -573,6 +573,32 @@ export async function handleIdentityRequest(
     return { status: 200, body: { card: { seatCode, displayName: entry.displayName, joinCode } satisfies JoinCard } };
   }
 
+  // -- DELETE /classes/:code/roster/:seat?erase=1 — one child, gone, class intact. --
+  //
+  // Taking a seat off the list is a tombstone on purpose: a teacher who removes a student
+  // mid-term keeps the evidence that student produced, and every count on their screens knows
+  // to leave it out. Erasure is the other request and it is the one a parent makes. Until this
+  // existed a district could honour it only by deleting the whole class, which is to say by
+  // destroying the other twenty-nine children's work — so in practice it could not honour it.
+  //
+  // It is a separate query rather than a separate verb because it is the same intent, taken
+  // further, and it is asked for explicitly because it cannot be undone: the name, every
+  // submission, every checkpoint, every note a teacher wrote to that child, and their place in
+  // any share-out. The account behind the seat goes too when it holds no other seat.
+  if (request.method === "DELETE" && third === "roster" && fourth && request.query.get("erase") === "1") {
+    const record = await store.getClass(code);
+    if (!record || record.expiresAt <= now) return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
+    const caller = await callerOf(request.headers, context);
+    if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
+      return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
+    }
+    const seatCode = normaliseSeatCode(fourth);
+    const entry = (await store.listRoster(code)).find((row) => row.seatCode === seatCode);
+    if (!entry) return identityFail(404, "seat_not_found");
+    await store.eraseSeat(code, seatCode);
+    return { status: 200, body: { seatCode, erasedAt: now } };
+  }
+
   // -- DELETE /classes/:code/roster/:seat — off the list, without deleting what they did. --
   if (request.method === "DELETE" && third === "roster" && fourth) {
     const record = await store.getClass(code);

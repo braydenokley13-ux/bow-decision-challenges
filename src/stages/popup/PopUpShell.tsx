@@ -1,5 +1,5 @@
 import { useEffect, useRef, type PropsWithChildren, type ReactNode } from "react";
-import { useStageArrival } from "../../app/useStageArrival";
+import { usePinnedTopBar, useStageArrival } from "../../app/useStageArrival";
 import { AppMark } from "../../components/primitives/AppMark";
 import { RunMenu } from "../../components/primitives/RunMenu";
 import { usePopUp } from "./PopUpContext";
@@ -17,7 +17,7 @@ const COPY = POP_UP_SCENARIO.screens;
 
 /** Which ground the screen sits on. The market's chapters, not the arena's. */
 function chapterFor(stage: StageId): string {
-  if (stage === "popup-pitch" || stage === "popup-spot" || stage === "popup-money" || stage === "popup-plan") return "plan";
+  if (stage === "popup-spot" || stage === "popup-money" || stage === "popup-plan") return "plan";
   if (stage === "popup-first-saturday" || stage === "popup-standing-order") return "market";
   if (stage === "popup-generator" || stage === "popup-repair") return "breakdown";
   return "settle";
@@ -50,6 +50,10 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
   const position = marketPositionFor(stage);
   const strip = marketStrip(ledger, position.current, N.saturdays);
   const heading = useRef<HTMLElement>(null);
+  const topbar = useRef<HTMLElement>(null);
+  // The same rule the other world's shell keeps: the bar's own height is what the page reserves
+  // when it scrolls something into view, so a control never arrives underneath it.
+  usePinnedTopBar(topbar);
   const first = useRef(true);
   useEffect(() => {
     if (focusKey === undefined) return;
@@ -61,7 +65,7 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
 
   return (
     <div className="popup-shell" data-world="food-truck" data-chapter={chapterFor(stage)}>
-      <header className="popup-topbar">
+      <header ref={topbar} className="popup-topbar">
         <AppMark />
         <div className="market-strip">
           <p className="market-strip__caption">{position.caption}</p>

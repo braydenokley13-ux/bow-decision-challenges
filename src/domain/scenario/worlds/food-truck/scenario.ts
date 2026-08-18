@@ -21,9 +21,13 @@ export interface PopUpSpotCopy {
   title: string;
   /** What the booth costs, spelled the way the organiser would say it. */
   terms: string;
-  /** What walks past, on a normal Saturday and on the last one. */
-  crowd: string;
-  /** The honest sentence about what you get and what it costs. */
+  /**
+   * The honest sentence about what you get and what it costs.
+   *
+   * What walks past is not written here. It is four different numbers now — one per Saturday
+   * — and they are read off `crowdOn` on the card itself, so a sentence can never describe a
+   * crowd the market does not actually bring.
+   */
   tradeoff: string;
 }
 
@@ -41,13 +45,19 @@ export interface PopUpScenario {
   subtitle: string;
   role: { name: string; description: string };
   numbers: PopUpNumbers;
+  /**
+   * Who you are and what is already owed, said on the booth screen rather than on one of its
+   * own.
+   *
+   * There used to be a screen in front of this whose second half was a list of the decisions
+   * the game was about to make — a table of contents for a story that explains itself better
+   * in its own voice. The facts survived it; the contents page did not.
+   */
   pitch: {
     kicker: string;
-    headline: string;
     body: string;
     role: string;
     facts: readonly { label: string; value: string }[];
-    decisions: readonly { title: string; detail: string }[];
   };
   spots: readonly PopUpSpotCopy[];
   conditional: Record<PopUpSourceId, PopUpConditionalCopy>;
@@ -64,7 +74,7 @@ export interface PopUpScenario {
     movable: string;
     locked: string;
   };
-  settle: { title: string; note: string };
+  settle: { title: string };
   writeUp: { kicker: string; prompt: string; note: string };
   /**
    * Every other sentence the eleven screens put in front of a student.
@@ -90,13 +100,18 @@ export interface PopUpSumCopy {
 }
 
 export interface PopUpScreenCopy {
-  pitch: { action: string };
   spot: {
     kicker: string;
     title: string;
     deck: string;
+    boothsTitle: string;
     permit: { label: string; note: string };
     crowdLabel: string;
+    /** The one thing about the four Saturdays that is true at every booth. */
+    crowdNote: string;
+    crowdUnit: string;
+    /** How a night is named in the four-cell strip. Short, because there are four of them. */
+    nightShort: string;
     take: string;
     /** What taking a booth just did, said once the student has taken one. */
     after: string;
@@ -139,9 +154,20 @@ export interface PopUpScreenCopy {
     trayLabel: string;
     trayHint: string;
     cooked: string;
-    willSell: string;
-    willBin: string;
-    crowd: string;
+    /**
+     * What the crowd will take, and nothing about what that leaves.
+     *
+     * The order control used to print YOU WOULD SELL and WOULD GO IN THE BIN live above the
+     * stepper, which answered the one question this world is made of before the student had
+     * been asked it: drag until the third number reads zero. It now prints the two facts —
+     * what you are cooking and what the crowd will buy — and leaves the subtraction where it
+     * belongs.
+     */
+    crowdWillBuy: string;
+    /** "Saturday 2 will buy" — the standing order faces two different nights. */
+    nightBuys: string;
+    /** Said only where one pair of hands, not the crowd, is the ceiling. */
+    capped: string;
     order: PopUpSumCopy;
     /** The ceiling on the order, said as a fact about their own plan. */
     affordable: string;
@@ -223,17 +249,30 @@ export interface PopUpScreenCopy {
     inHandLabel: string;
     startedWith: string;
     missedLast: string;
-    ranOut: string;
-    spoilage: string;
-    noSpoilage: string;
     /**
      * A whole run with nothing cooked. Said plainly, because "every plate you cooked went over
-     * the counter" is true of a truck that cooked none and reads as a clean night.
+     * the counter" is true of a truck that cooked none and reads as a clean night. It is the
+     * one summary line the verdict list underneath cannot say better — the rest of them said
+     * what "{binned} went in the bin" and "{unfed} people wanted a plate" now say with the
+     * money attached, and saying it twice is what the ending was already doing with its table.
      */
     neverCooked: string;
-    capped: string;
     handOff: string;
     action: string;
+    /**
+     * The ending's verdict list, in this world's own fiction and numbers.
+     *
+     * Every sentence here is a template rather than a finished line, because what a verdict
+     * says depends on what the student actually did and the numbers only exist once they have
+     * done it. `resolution.ts` fills the braces from the ledger and never from a table of
+     * outcomes — a verdict that would read the same for two different runs is not a verdict.
+     *
+     * They live in this file rather than beside the arithmetic for the reason the rest of the
+     * copy does: §9.2 calls the word count and the reading grade facts about the world,
+     * checkable by reading it, and prose written into a domain module is prose no ruler
+     * reaches.
+     */
+    verdicts: PopUpVerdictCopy;
   };
   writeUp: {
     title: string;
@@ -254,10 +293,45 @@ export interface PopUpScreenCopy {
     failed: string;
     person: string;
     retry: string;
-    record: string;
     again: string;
     againNote: string;
   };
+}
+
+/**
+ * What each call actually did, in the four words this product uses for it.
+ *
+ * The vocabulary is Basketball's on purpose — `paid off`, `cost you`, `fell short`, `no
+ * effect` — because a student who plays both worlds should not have to learn two sets of
+ * words for the same four things. Everything under it is this world's, because a booth and a
+ * tray of food are not a housing setup and a course seat.
+ */
+export interface PopUpVerdictCopy {
+  title: string;
+  outcomes: { paidOff: string; costYou: string; fellShort: string; noEffect: string };
+  booth: { label: string; paidOff: string; costYou: string; fellShort: string };
+  stock: { label: string; paidOff: string; costYou: string; fellShort: string; nothing: string };
+  helper: {
+    labelBooked: string;
+    labelAlone: string;
+    paidOff: string;
+    costYou: string;
+    noLast: string;
+    aloneCost: string;
+    aloneKept: string;
+    aloneNoEffect: string;
+  };
+  conditional: {
+    label: string;
+    cateringCounted: string;
+    uncovered: string;
+    rebateMissed: string;
+    rebateEarnedPlanned: string;
+    rebateWindfall: string;
+    noEffect: string;
+  };
+  repair: { label: string; paidOff: string; costYou: string; fellShort: string };
+  cut: { label: string; paidOff: string; fellShort: string; noEffect: string };
 }
 
 const trayNote = `Ramos Foods sells to the market by the tray, and a tray is ${N.platesPerTray} plates. Every tray costs you ${formatDollars(N.trayCost)}, and every plate you hand over the counter sells for ${formatDollars(N.platePrice)}. Trays do not come in halves, so you will almost never match the crowd exactly.`;
@@ -273,18 +347,12 @@ export const POP_UP_SCENARIO: PopUpScenario = {
   numbers: N,
   pitch: {
     kicker: "Riverside Night Market",
-    headline: "Four Saturdays. One truck.",
-    body: `Mo has been cooking at Salt and Smoke for two summers and has never had a booth of his own. The Riverside Night Market opens this Saturday and runs for four weeks. There is ${formatDollars(N.startCash)} in the truck's account, and the city permit and the booth are both paid for before anybody sells a single plate.`,
+    body: `Mo has cooked at Salt and Smoke for two summers and never had a booth of his own. The market runs for four Saturdays. There is ${formatDollars(N.startCash)} in the truck's account, and the permit and the booth are paid before anybody sells a plate.`,
     role: "Mo does the cooking. You handle the money, and you have four Saturdays to get it right.",
     facts: [
       { label: "In the account", value: formatDollars(N.startCash) },
       { label: "The market", value: `${N.saturdays} Saturdays` },
       { label: "Paid before you open", value: "City permit and booth" },
-    ],
-    decisions: [
-      { title: "Pick your spot", detail: "There are three booths going, and the price of each one tells you how many people walk past it." },
-      { title: "Buy the food", detail: "You order the stock every week, and anything you do not sell is money in the bin." },
-      { title: "Say what you keep", detail: "Some of this money is meant to end up as your own pay. You are the one who decides how much." },
     ],
   },
   spots: [
@@ -292,22 +360,19 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       id: "back-lane",
       title: "Back Lane",
       terms: `${formatDollars(N.spots["back-lane"].booth)} for the four Saturdays`,
-      crowd: `About ${N.spots["back-lane"].crowd} plates go on a normal Saturday, and about ${N.spots["back-lane"].lastCrowd} on the last one.`,
-      tradeoff: "This is the cheapest booth at the whole market, and it is quiet for a reason. Most of the crowd turns at the top of the lane and never comes down it.",
+      tradeoff: "The cheapest booth going, and quiet for a reason. Most of the crowd turns at the top of the lane.",
     },
     {
       id: "middle-row",
       title: "Middle Row",
       terms: `${formatDollars(N.spots["middle-row"].booth)} for the four Saturdays`,
-      crowd: `About ${N.spots["middle-row"].crowd} plates go on a normal Saturday, and about ${N.spots["middle-row"].lastCrowd} on the last one.`,
-      tradeoff: "You are halfway down the main run, right across from the band. People come past all evening, and the organiser charges you for every one of them.",
+      tradeoff: "Halfway down the main run, across from the band. People come past all evening and you are charged for every one.",
     },
     {
       id: "bridge-gate",
       title: "Bridge Gate",
       terms: `${formatDollars(N.spots["bridge-gate"].booth)} for the four Saturdays`,
-      crowd: `About ${N.spots["bridge-gate"].crowd} plates go on a normal Saturday, and about ${N.spots["bridge-gate"].lastCrowd} on the last one.`,
-      tradeoff: `Everybody who comes to the market walks in past this booth. It is the most expensive one going, and on your own you cannot hand over more than ${N.soloServeCap} plates in an evening however many people are waiting.`,
+      tradeoff: `Everybody walks in past this booth. It is the dearest going, and on your own you cannot hand over more than ${N.soloServeCap} plates in an evening.`,
     },
   ],
   conditional: {
@@ -334,17 +399,20 @@ export const POP_UP_SCENARIO: PopUpScenario = {
     },
   },
   coverPrompt: "There is money in this plan that only turns up if something else happens first. If it does not turn up, which line is going to give it back?",
-  supplier: { label: "Ramos Foods", note: trayNote },
+  supplier: { label: "Ramos Foods", note: "Ramos Foods delivers on the Saturday morning. What you order is what you have." },
   helper: {
     label: "Marisol on the window",
     note: `Marisol will work the last Saturday with you for ${formatDollars(N.helperCost)}.`,
     rule: `Two people can hand over ${N.helperServeCap} plates in an evening instead of ${N.soloServeCap}. She is turning down another shift to do it, so the moment you book her the money is spent.`,
   },
+  // Four nights, four crowds, and each note says which way this one goes before the order for
+  // it is placed. The weather used to be decoration over three Saturdays that resolved to the
+  // same number; it is now the reason they do not.
   saturdays: [
-    { title: "Saturday 1", note: "The market opens at five and the strings of lights go up over the lane. The first people come down looking for something to eat." },
-    { title: "Saturday 2", note: "It rains until four and then it clears up properly. The market fills late, and it stays busy until closing." },
-    { title: "Saturday 3", note: "A cold evening, and everybody is standing around with their hands in their pockets. The band plays anyway and the crowd stays for it." },
-    { title: "Saturday 4", note: "The last one, and the biggest. There are fireworks off the bridge at nine, and half the city comes down to watch them." },
+    { title: "Saturday 1", note: "The market opens at five and the strings of lights go up over the lane. A first Saturday brings a booth the crowd it usually gets." },
+    { title: "Saturday 2", note: "It rains until four and then it clears up properly. The market fills late and stays busy to closing, with about a fifth more people out than an ordinary Saturday." },
+    { title: "Saturday 3", note: "A cold evening, and everybody is standing around with their hands in their pockets. The band plays anyway, but about a third of the usual crowd stayed home." },
+    { title: "Saturday 4", note: "The last one, and the biggest. There are fireworks off the bridge at nine, and close to half as many people again as an ordinary Saturday come down to watch them." },
   ],
   breakdown: {
     source: "Ramos Rentals",
@@ -357,23 +425,23 @@ export const POP_UP_SCENARIO: PopUpScenario = {
     movable: "Stock money you have not spent yet, the cushion, and your own cut can all still be moved around.",
     locked: "The permit, the booth, the food you already cooked and Marisol's shift are paid for. None of that money is coming back.",
   },
-  settle: {
-    title: "The organiser settles up.",
-    note: "The market holds the takings for every stall and pays them out at the end of the run. Here is how your four Saturdays came out.",
-  },
+  settle: { title: "The organiser settles up." },
   writeUp: {
     kicker: "Nadia Okafor, market organiser",
     prompt: "Tell me how you would run it next season. What would you keep the same, and what would you do differently?",
     note: "A person reads this and writes back, so use your own numbers and say what you were thinking.",
   },
   screens: {
-    pitch: { action: "Pick your booth" },
     spot: {
-      kicker: "Three booths left",
-      title: "Where do you set up?",
+      kicker: "Riverside Night Market",
+      title: "Four Saturdays. One truck.",
       deck: "The organiser prices a booth by the crowd that walks past it. Take one.",
+      boothsTitle: "Where do you set up?",
       permit: { label: "City permit", note: `${formatDollars(N.permit)} for the four Saturdays. Every stall pays it.` },
-      crowdLabel: "The crowd",
+      crowdLabel: "Plates the crowd here will buy",
+      crowdNote: "The same four Saturdays at every booth: an opening night, a wet one that clears, a cold one, and the fireworks. What changes is how many walk past yours.",
+      crowdUnit: "plates",
+      nightShort: "Sat",
       take: "Take this booth",
       taken: "Booked",
       owed: {
@@ -437,10 +505,10 @@ export const POP_UP_SCENARIO: PopUpScenario = {
     saturday: {
       trayLabel: "Trays to cook",
       trayHint: `One tray is ${N.platesPerTray} plates and costs ${formatDollars(N.trayCost)}.`,
-      cooked: "plates cooked",
-      willSell: "You would sell",
-      willBin: "would go in the bin",
-      crowd: "plates is what this booth can shift tonight",
+      cooked: "Plates you are cooking",
+      crowdWillBuy: "The crowd will buy",
+      nightBuys: "will buy",
+      capped: "plates is all one pair of hands can hand over in an evening, however many people are waiting.",
       order: {
         label: "What the order costs",
         prompt: "The trays you are about to cook, at what Ramos Foods charges for one.",
@@ -479,7 +547,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       rebateMissedPlanned: "You did not sell out. The rebate is not coming, and your plan counted on it.",
       rebateMissedFree: "You did not sell out, so there is no rebate. Your plan never counted on it.",
       next: "The next two Saturdays",
-      nextNote: "One order covers both nights. You cook the same again on Saturday 3.",
+      nextNote: "One order covers both nights, and the two nights are not the same size. Whatever you cook for Saturday 2 you cook again on Saturday 3.",
       helperAsk: "Book her for the last Saturday?",
       helperBooked: "Booked. The money is spent whatever happens.",
       helperAlone: "You work the window on your own.",
@@ -538,13 +606,57 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       inHandLabel: "Money in hand",
       startedWith: "The account started at",
       missedLast: "The truck sat dark on the biggest night of the run.",
-      ranOut: "You ran out of food on a night that still had people queuing.",
-      spoilage: "of the food you bought was never sold.",
-      noSpoilage: "Every plate you cooked went over the counter.",
       neverCooked: "You never cooked a plate all run, so the truck had nothing to sell. The money stayed on the lines you put it on.",
-      capped: "The crowd was bigger than the window could serve.",
       handOff: "Nadia Okafor ran the market. She has one question for every stall that took a booth.",
       action: "Answer the organiser",
+      verdicts: {
+        title: "What each call actually did.",
+        outcomes: { paidOff: "Paid off", costYou: "Cost you", fellShort: "Fell short", noEffect: "No effect" },
+        booth: {
+          label: "The {booth} booth",
+          paidOff: "{rent} of rent, {sold} plates, {takings}. The same orders would have taken less at either other booth.",
+          costYou: "{rent} of rent. The same orders at {rival}, at {rival_rent}, would have left you {gap} better off.",
+          fellShort: "{rent} of rent and {sold} plates. The same orders at {rival}, at {rival_rent}, would have found {gap} more.",
+        },
+        stock: {
+          label: "What you cooked",
+          paidOff: "{cooked} plates cooked, {sold} sold, {takings}. No other standing order beats it on these four crowds.",
+          costYou: "{binned} went in the bin. {alt} trays a night on Saturdays 2 and 3, not {actual}, leaves you {gap} better off.",
+          fellShort: "{unfed} people wanted a plate you did not have. {alt} trays a night on Saturdays 2 and 3, not {actual}, takes {gap} more.",
+          nothing: "You never cooked a plate, so the truck opened four times with nothing on it and took {zero}.",
+        },
+        helper: {
+          labelBooked: "Booking Marisol",
+          labelAlone: "Working the last night alone",
+          paidOff: "{cost} for {plates} plates one pair of hands could not have handed over — {gain}.",
+          costYou: "{cost}, and the plates a second pair of hands added came to {gain}.",
+          noLast: "{cost}, and she turned down another shift for a Saturday that never happened.",
+          aloneCost: "You kept the {cost}. Saturday 4 wanted {crowd} plates, you handed over {served}, and {gain} went elsewhere.",
+          aloneKept: "You kept the {cost}. A second pair of hands would have added {gain}.",
+          aloneNoEffect: "One pair of hands was enough for every plate you cooked. {zero} either way.",
+        },
+        conditional: {
+          label: "Money with a rule on it",
+          cateringCounted: "Your plan spent Sunrise Yoga's {catering}. They never confirmed, so {covered} came back off the {line}.",
+          uncovered: "{uncovered} of it was never there to give back.",
+          rebateMissed: "Your plan spent the {rebate} rebate, the first Saturday did not sell out, and {covered} came off the {line}.",
+          rebateEarnedPlanned: "Your plan spent the {rebate} rebate and the first Saturday sold out, so nothing came back.",
+          rebateWindfall: "You spent nothing you did not hold. The first Saturday sold out anyway and the {rebate} rebate went to the cushion.",
+          noEffect: "You spent only money the truck already held. Neither amount came, and {zero} had to be found.",
+        },
+        repair: {
+          label: "Where the swap money came from",
+          paidOff: "{bill} off the {lines}. The last Saturday ran and took {last}.",
+          costYou: "{bill}, and {stock} of it off the stock line — Saturday 4 cooked {cooked} plates into a crowd wanting {crowd}.",
+          fellShort: "{bill} wanted, {freed} freed, {residual} missing. The truck sat dark on the biggest night.",
+        },
+        cut: {
+          label: "Your cut",
+          paidOff: "You set {cut} aside before the market opened and it was all still there at the end.",
+          fellShort: "You set {cut} aside and {taken} went back into the run. You banked {banked}.",
+          noEffect: "Your cut was {zero} from the first plan to the last. Every dollar stayed in the truck.",
+        },
+      },
     },
     writeUp: {
       title: "How would you run it again?",
@@ -572,9 +684,8 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       failed: "Your answer is saved, but not sent yet.",
       person: "A person reads what you wrote. Software can check whether the money adds up. It should not decide whether your thinking makes sense.",
       retry: "Try sending again",
-      record: "What you turned in",
       again: "Run the market again",
-      againNote: "Four different Saturdays would come out differently. Starting again does not take this run back.",
+      againNote: "The same four Saturdays come out differently if you order differently.",
     },
   },
 };
@@ -583,9 +694,9 @@ export const POP_UP_SCENARIO: PopUpScenario = {
 function screenCopy(s: PopUpScreenCopy): readonly string[] {
   const sums = [s.spot.owed, s.money.toPlan, s.saturday.order, s.generator.gap];
   return [
-    s.pitch.action,
-    s.spot.kicker, s.spot.title, s.spot.deck, s.spot.permit.label, s.spot.permit.note,
-    s.spot.crowdLabel, s.spot.take, s.spot.taken, s.spot.after, s.spot.action, s.spot.gate,
+    s.spot.kicker, s.spot.title, s.spot.deck, s.spot.boothsTitle, s.spot.permit.label, s.spot.permit.note,
+    s.spot.crowdLabel, s.spot.crowdNote, s.spot.crowdUnit, s.spot.nightShort,
+    s.spot.take, s.spot.taken, s.spot.after, s.spot.action, s.spot.gate,
     s.money.kicker, s.money.title, s.money.deck, s.money.ask, s.money.yes, s.money.no,
     s.money.counted, s.money.left, s.money.action, s.money.gate,
     ...sums.flatMap((sum) => [sum.label, sum.prompt, sum.terms, sum.scaffold, sum.low, sum.high]),
@@ -594,11 +705,11 @@ function screenCopy(s: PopUpScreenCopy): readonly string[] {
     s.plan.toPlanLabel, s.plan.placedLabel, s.plan.leftLabel,
     s.plan.balanced, s.plan.unassigned, s.plan.over, s.plan.commit, s.plan.check,
     s.plan.help.open, s.plan.help.steps, s.plan.help.supply, s.plan.help.supplyNote,
-    s.saturday.trayLabel, s.saturday.trayHint, s.saturday.cooked, s.saturday.willSell,
-    s.saturday.willBin, s.saturday.crowd, s.saturday.affordable, s.saturday.bothNights,
+    s.saturday.trayLabel, s.saturday.trayHint, s.saturday.cooked, s.saturday.crowdWillBuy,
+    s.saturday.nightBuys, s.saturday.capped, s.saturday.affordable, s.saturday.bothNights,
     s.saturday.open, s.saturday.gate,
     s.night.cooked, s.night.sold, s.night.binned, s.night.takings, s.night.soldOut,
-    s.night.someLeft, s.night.nothingBinned, s.night.binnedTrays, s.night.turnedAway,
+    s.night.someLeft, s.night.nothingCooked, s.night.nothingBinned, s.night.binnedTrays, s.night.turnedAway,
     s.first.kicker, s.first.title, s.first.deck,
     s.standing.kicker, s.standing.title, s.standing.rebateEarnedPlanned, s.standing.rebateEarnedWindfall,
     s.standing.rebateMissedPlanned, s.standing.rebateMissedFree, s.standing.next, s.standing.nextNote,
@@ -612,12 +723,17 @@ function screenCopy(s: PopUpScreenCopy): readonly string[] {
     s.repair.lastKicker, s.repair.lastTitle, s.repair.lastNote, s.repair.noLast, s.repair.noLastAction,
     s.settle.kicker, s.settle.saturdayLabel, s.settle.platesSold, s.settle.inTheBin,
     s.settle.takingsLabel, s.settle.bankedLabel, s.settle.inHandLabel, s.settle.startedWith,
-    s.settle.missedLast, s.settle.ranOut,
-    s.settle.spoilage, s.settle.noSpoilage, s.settle.capped, s.settle.handOff, s.settle.action,
+    s.settle.missedLast, s.settle.neverCooked, s.settle.handOff, s.settle.action,
+    // Every branch of the ending's verdict list, so the one a student actually reads is
+    // inside the measured word count rather than beside it.
+    s.settle.verdicts.title, ...Object.values(s.settle.verdicts.outcomes),
+    ...Object.values(s.settle.verdicts.booth), ...Object.values(s.settle.verdicts.stock),
+    ...Object.values(s.settle.verdicts.helper), ...Object.values(s.settle.verdicts.conditional),
+    ...Object.values(s.settle.verdicts.repair), ...Object.values(s.settle.verdicts.cut),
     s.writeUp.title, s.writeUp.tiles, ...Object.values(s.writeUp.tileLabels), s.writeUp.field, ...s.writeUp.starters,
     s.writeUp.pickMoreOne, s.writeUp.pickMore, s.writeUp.ready, s.writeUp.write, s.writeUp.longEnough, s.writeUp.submit,
     s.submitted.sent, s.submitted.saving, s.submitted.failed, s.submitted.person, s.submitted.retry,
-    s.submitted.record, s.submitted.again, s.submitted.againNote,
+    s.submitted.again, s.submitted.againNote,
   ];
 }
 
@@ -628,10 +744,9 @@ export function popUpStudentCopy(scenario: PopUpScenario = POP_UP_SCENARIO): rea
     ...screenCopy(scenario.screens),
     scenario.subtitle,
     scenario.role.description,
-    pitch.kicker, pitch.headline, pitch.body, pitch.role,
+    pitch.kicker, pitch.body, pitch.role,
     ...pitch.facts.flatMap((fact) => [fact.label, fact.value]),
-    ...pitch.decisions.flatMap((decision) => [decision.title, decision.detail]),
-    ...scenario.spots.flatMap((spot) => [spot.title, spot.terms, spot.crowd, spot.tradeoff]),
+    ...scenario.spots.flatMap((spot) => [spot.title, spot.terms, spot.tradeoff]),
     ...Object.values(scenario.conditional).flatMap((source) => [source.label, source.note, source.rule]),
     ...Object.values(scenario.lines).flatMap((line) => [line.label, line.job]),
     scenario.coverPrompt,
@@ -641,7 +756,7 @@ export function popUpStudentCopy(scenario: PopUpScenario = POP_UP_SCENARIO): rea
     breakdown.source, breakdown.title,
     ...breakdown.beats.flatMap((beat) => [beat.marker, beat.tag, beat.text]),
     breakdown.movable, breakdown.locked,
-    scenario.settle.title, scenario.settle.note,
+    scenario.settle.title,
     scenario.writeUp.kicker, scenario.writeUp.prompt, scenario.writeUp.note,
   ];
 }

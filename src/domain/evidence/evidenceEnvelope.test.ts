@@ -95,7 +95,7 @@ describe("the shared evidence envelope", () => {
     expect(floor?.evidenceRequirementIds).toEqual(["plan-within-income.er1"]);
     expect(floor?.competencyIds).toEqual(["plan-within-income"]);
     const defense = log.find((event) => event.type === "DEFENSE_SUBMITTED");
-    expect(defense?.competencyIds).toEqual(["plan-within-income", "adapt-a-plan"]);
+    expect(defense?.competencyIds).toEqual(["plan-within-income", "adapt-a-plan", "sort-by-need-want-goal"]);
   });
 
   it("tags savings-was-planned on the one statement that is evidence about it, and nowhere else", () => {

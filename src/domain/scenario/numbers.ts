@@ -41,6 +41,20 @@ export const SCENARIO_NUMBERS: ScenarioNumbers = {
   // reverse. The sweep in balance.ts is what settled these three against each other.
   setupCosts: { "gym-sublet": dollars(1800), "teammate-share": dollars(1000), "cousin-room": dollars(300) },
   setupEventCosts: { "gym-sublet": dollars(0), "teammate-share": dollars(150), "cousin-room": dollars(300) },
+  // Week 3's cash, and the three things that want it in the same week. $225 against $150:
+  // no combination pays for all three, and the two allocations that spend as far as the
+  // money reaches — the shoes on their own, or the trip and the present together — say
+  // opposite things about what matters. Neither is the answer. Nothing here enters the
+  // plan, so `balance.ts` sweeps exactly the space it swept before.
+  week3: {
+    week: 3,
+    cash: dollars(150),
+    claimCosts: {
+      "team-shoes": dollars(120),
+      "away-travel": dollars(60),
+      "sister-present": dollars(45),
+    },
+  },
   requiredWeek5Cost: dollars(700),
   optionalWorkIncome: dollars(500),
   optionalWorkCost: dollars(100),

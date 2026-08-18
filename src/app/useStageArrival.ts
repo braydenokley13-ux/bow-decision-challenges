@@ -26,3 +26,30 @@ export function useStageArrival(heading: RefObject<HTMLElement | null>, stage: s
     heading.current?.focus();
   }, [heading, stage]);
 }
+
+/**
+ * How much of the top of the window the pinned bar is standing on, kept as the page's own
+ * scroll padding.
+ *
+ * The stylesheet reserves a fixed step for it, which is right at the widths the bar was
+ * designed at and wrong everywhere else: at 400% zoom the same bar wraps to three rows and
+ * takes a third of the window, and a browser scrolling a control into view puts it underneath.
+ * The bar knows its own height, so it says so, and every scroll the browser performs — moving
+ * focus to a heading, revealing a section, following an anchor — stops short of it.
+ */
+export function usePinnedTopBar(bar: RefObject<HTMLElement | null>): void {
+  useEffect(() => {
+    const element = bar.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      document.documentElement.style.scrollPaddingTop = `${Math.ceil(element.getBoundingClientRect().height) + 12}px`;
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.scrollPaddingTop = "";
+    };
+  }, [bar]);
+}

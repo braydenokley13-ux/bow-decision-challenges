@@ -2,7 +2,7 @@ import { dollars } from "../core/money";
 import { DEFAULT_WORLD_ID, numbersFor, PLAN_UNDER_PRESSURE_LAUNCH } from "../scenario/registry";
 import { balanceOf, readoutFor, residualOf, unassignedOf } from "../finance/formulas";
 import type { PlanMode, SnapshotInputs } from "../finance/types";
-import type { EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../evidence/types";
+import type { CompetingClaimsSettlement, EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../evidence/types";
 import { competenciesForEvent, conceptsForEvent, evidenceRequirementsForEvent } from "../evidence/eventConcepts";
 import type { ChallengeAction } from "./actions";
 import { EMPTY_AMOUNTS, type ChallengeState } from "./state";
@@ -145,6 +145,29 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
           : state.drafts,
       };
       return append(next, action.type, action, "standard_access", undefined, at);
+    }
+    case "COMPETING_CLAIMS_SETTLED": {
+      // The one beat whose money never reaches the board. Nothing in `drafts`, `snapshots`
+      // or `saved` moves here, and nothing downstream re-prices a plan because of it — the
+      // whole point of the week is that it asks which of three claims matters most without
+      // adding a fourth axis to the strategy space the balance sweep proves is undominated.
+      const week3 = numbersOf(state).week3;
+      const claimIds = Object.keys(week3.claimCosts);
+      // Filtered against the world's own list rather than trusted from the caller, so a
+      // stale screen cannot record a claim this world does not offer.
+      const fundedIds = claimIds.filter((id) => action.fundedIds.includes(id));
+      const unfundedIds = claimIds.filter((id) => !fundedIds.includes(id));
+      const spent = fundedIds.reduce((total, id) => total + (week3.claimCosts[id] ?? 0), 0);
+      const settlement: CompetingClaimsSettlement = {
+        cash: week3.cash,
+        fundedIds,
+        unfundedIds,
+        spent: dollars(spent),
+        leftOver: dollars(week3.cash - spent),
+        reason: action.reason,
+      };
+      const next = { ...state, week3: { fundedIds, reason: action.reason } };
+      return goTo(append(next, action.type, settlement, "standard_access", undefined, at), "week5-transition", at);
     }
     case "INCOME_SOURCE_TOGGLED": {
       const key = action.sourceId === "completion-800" ? "includeCompletion" : "includeOutcome";

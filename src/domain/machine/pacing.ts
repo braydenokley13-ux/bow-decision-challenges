@@ -32,11 +32,13 @@ export const STAGE_BUDGET: Partial<Record<StageId, StageBudget>> = {
   "setup-comparison": { seconds: 115, basis: "Order three places by full cost, choose one, and total it across the season." },
   "working-plan": { seconds: 165, basis: "Two calculations, two decisions about conditional income, then split what is left and say which row takes the rest." },
   "fallback-version": { seconds: 50, basis: "One number to clear on a plan already built: one to three taps, or the steppers." },
-  // Was 145, covering three "Play Week N" presses and a deposit deadline buried under them.
-  // The weeks now resolve together, so what is left is reading four short weeks against one
-  // running figure — three presses and their re-renders are gone, and the decision that used
-  // to sit under them has its own budget below.
-  "season-weeks": { seconds: 75, basis: "Read four weeks of the plan draining at the rate this housing charges, and what is left in hand." },
+  // Was 145 when it was three "Play Week N" presses; then 75 when the weeks resolved
+  // together and the screen was a feed of four cards whose own deck opened "Nothing here is
+  // new." It is 95 now, and the twenty seconds are not prose: the screen lost 138 rendered
+  // words and gained the only decision in the first half of the season. Reading is 73 s of
+  // it at the rate above; the rest is four deliberate taps and a beat to weigh three claims
+  // that cannot all be paid for.
+  "season-weeks": { seconds: 95, basis: "Read the four weeks draining at the rate this housing charges, then settle three claims on one week's cash and say what made the rest go unpaid." },
   "week5-transition": { seconds: 55, basis: "Read two prices for the same seat and what each does to the movable money, pick one, read the effect, commit." },
   // Was 110. The card set now includes committed lines Week 5 does not move, so each card is
   // read against the plan rather than tapped, and the app no longer prints the running sum.

@@ -1,4 +1,4 @@
-import type { CalcId, CategoryId, SetupId, WorldId } from "../core/ids";
+import type { CalcId, CategoryId, ClaimReasonId, SetupId, WorldId } from "../core/ids";
 import type { Dollars } from "../core/money";
 import type { PlanAmounts, PlanMode, PlanReadout, SnapshotInputs } from "../finance/types";
 import type { StructuredMicroSkillId, EvidencePoints, ConceptId } from "../blueprint/types";
@@ -26,7 +26,7 @@ export type StageId =
   | "fallback-version" | "income-check" | "season-weeks" | "week5-transition" | "week5-event" | "first-response"
   | "opportunity-final-repair" | "remaining-risk-preview" | "week8-resolution" | "defense" | "submitted"
   // Run the Pop-Up, at the Riverside Night Market.
-  | "popup-pitch" | "popup-spot" | "popup-money" | "popup-plan" | "popup-first-saturday"
+  | "popup-spot" | "popup-money" | "popup-plan" | "popup-first-saturday"
   | "popup-standing-order" | "popup-generator" | "popup-repair" | "popup-settle"
   | "popup-writeup" | "popup-submitted";
 
@@ -60,6 +60,10 @@ export type EvidenceEventType =
   // Plan Under Pressure, in the basketball world.
   | "CALCULATION_SUBMITTED" | "SETUP_RANKED" | "SETUP_SELECTED"
   | "COURSE_DEPOSIT_DECIDED"
+  // Named for what it is rather than for where it happens: three claims wanted the same
+  // money, the student said which ones got it, and said what made them leave the rest.
+  // A second world with a week like this writes the same type and the same payload.
+  | "COMPETING_CLAIMS_SETTLED"
   | "INCOME_SOURCE_TOGGLED" | "PLAN_SAVE_REQUESTED" | "PLAN_SAVED" | "PLAN_REMAINDER_ASSIGNED" | "LOCKED_MOVE_ATTEMPTED"
   | "WEEK5_ADVANCE_CONFIRMED" | "GAP_TILE_TOGGLED" | "OPTIONAL_WORK_DECIDED"
   | "COMPLETION_INCOME_DECIDED"
@@ -74,6 +78,7 @@ export const EVIDENCE_EVENT_TYPES: readonly EvidenceEventType[] = [
   "SESSION_STARTED", "WORLD_CONFIRMED", "STAGE_ENTERED", "SCAFFOLD_OPENED", "SHOW_AND_CONTINUE_USED",
   "CALCULATION_SUBMITTED", "SETUP_RANKED", "SETUP_SELECTED",
   "COURSE_DEPOSIT_DECIDED",
+  "COMPETING_CLAIMS_SETTLED",
   "INCOME_SOURCE_TOGGLED", "PLAN_SAVE_REQUESTED", "PLAN_SAVED", "PLAN_REMAINDER_ASSIGNED", "LOCKED_MOVE_ATTEMPTED",
   "WEEK5_ADVANCE_CONFIRMED", "GAP_TILE_TOGGLED", "OPTIONAL_WORK_DECIDED",
   "COMPLETION_INCOME_DECIDED",
@@ -180,6 +185,32 @@ export interface RemainderChoice {
   sequence: number;
   supportLevel: SupportLevel;
   evidenceRef: string;
+}
+
+/**
+ * One week's worth of competing claims, settled.
+ *
+ * The payload of `COMPETING_CLAIMS_SETTLED`, and world-neutral in the same way the event
+ * name is: ids are the world's own strings, everything else is the shared vocabulary. It
+ * carries what was paid for, what was left unpaid, the reason the student gave, and the
+ * amounts — enough for an observer to judge it and enough for the world's own ending to
+ * say what actually happened, without either one re-deriving the other's half.
+ *
+ * `unfundedIds` is stored rather than computed from `fundedIds`, because the set of claims
+ * a world put in front of the student is a fact about the run and not about the world as it
+ * stands today. A log written by a version that offered a fourth claim has to still read.
+ */
+export interface CompetingClaimsSettlement {
+  /** The money that was on the table, and only for this. It never reaches the plan. */
+  cash: Dollars;
+  fundedIds: readonly string[];
+  unfundedIds: readonly string[];
+  /** What the funded claims cost together. */
+  spent: Dollars;
+  /** What was left over once they were paid for. */
+  leftOver: Dollars;
+  /** What the student said made them leave the rest out. */
+  reason: ClaimReasonId;
 }
 
 export interface AssessmentFacts {

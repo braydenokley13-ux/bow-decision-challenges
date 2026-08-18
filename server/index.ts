@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { handleApiRequest, type ApiRequest } from "./handler";
+import { startRetentionSweep } from "./retention";
 import { storeFromEnvironment, type ClassStore } from "./store";
 
 /**
@@ -62,6 +63,15 @@ export function createApiServer(store: ClassStore = storeFromEnvironment()) {
         "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization, X-BOW-Teacher-Key",
         "Vary": "Origin",
+        // Defence in depth on an API that only ever answers JSON. React's escaping is what
+        // actually stops the stored names a reviewer planted from executing; these are what
+        // stop the next mistake. `nosniff` because a JSON body containing markup must never be
+        // rendered as one, `DENY` because nothing here belongs in a frame, and no-store because
+        // a shared classroom machine's disk cache is not a place for a child's evidence.
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Referrer-Policy": "same-origin",
+        "Cache-Control": "no-store",
       };
       if (request.method === "OPTIONS") {
         response.writeHead(204, cors);
@@ -111,11 +121,33 @@ export function createApiServer(store: ClassStore = storeFromEnvironment()) {
   });
 }
 
+/**
+ * Where this server is willing to listen.
+ *
+ * `node:http` is cleartext. On a managed host TLS is terminated at the edge and this only ever
+ * hears from that edge; self-hosted, binding a public interface without a terminator in front
+ * means children's names and their written work crossing a school network in the clear, which
+ * is the same obligation the at-rest key exists for — §2-d asks for encryption in motion as
+ * well as in custody. So the default is loopback, and opening it wider is an explicit
+ * statement that something else is terminating TLS.
+ */
+export function bindHost(env: Record<string, string | undefined> = process.env): string {
+  return env.BOW_BIND_HOST ?? "127.0.0.1";
+}
+
 const isEntryPoint = process.argv[1]?.includes("server/index");
 if (isEntryPoint) {
   const port = Number(process.env.BOW_API_PORT ?? 4180);
   const store = storeFromEnvironment();
-  createApiServer(store).listen(port, () => {
-    process.stdout.write(`BOW class service on :${port} (${store.id} store)\n`);
+  // The retention promise, running. Hourly, unref'd, and it starts with the process rather
+  // than waiting for the first request — a server that is up for a term and never asked a
+  // question would otherwise keep a term of expired classes.
+  if (store.id !== "unconfigured") startRetentionSweep(store);
+  const host = bindHost();
+  createApiServer(store).listen(port, host, () => {
+    process.stdout.write(`BOW class service on ${host}:${port} (${store.id} store)\n`);
+    if (host !== "127.0.0.1" && host !== "localhost") {
+      process.stdout.write("This is plain HTTP. Put a TLS terminator in front of it before any class uses it.\n");
+    }
   });
 }

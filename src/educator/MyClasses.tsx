@@ -24,11 +24,11 @@ import { forgetClass, rememberClass, rememberedClasses } from "./classMemory";
  * objective it is for, and an existing class is set one from the same screen. The separate
  * assign flow was a third of this page on its own page, and it could create classes too.
  *
- * The setup step is deliberately the whole setup step: no accounts to make for anybody, no
- * email addresses, no passwords. A teacher names the class, gets a code to read out and a
- * private link to keep, and that is the pilot. A student types the code at /join and the name
- * their teacher will see their work under; nothing on the student's side is an account BOW
- * asks a child to create. The private link matters more than it looks:
+ * The setup step is deliberately the whole setup step: a teacher names the class, gets a code
+ * to read out and a private link to keep, and pastes their class list on the next screen to
+ * get one card per student. A student signs in with the class code and the code on their card;
+ * nothing asks a child for an email address, a password or a birthday. The private link
+ * matters more than it looks:
  * the class code goes on a whiteboard, so every student in the room has it — which means it
  * cannot be what opens the evidence. The key in this link is, and it is stored in this
  * browser and shown once.
@@ -139,6 +139,10 @@ export function MyClasses() {
   const evidencePath = (record: { code: string; teacherKey: string }) =>
     `/educator/class/${record.code}?key=${record.teacherKey}`;
 
+  /** Where the class list and the cards live. The first thing to do with a class that has just been made. */
+  const rosterPath = (record: { code: string; teacherKey: string }) =>
+    `/educator/class/${record.code}/roster?key=${record.teacherKey}`;
+
   const createBlock = (
     <section className="class-form">
       <label htmlFor="class-label">Name this class</label>
@@ -200,7 +204,7 @@ export function MyClasses() {
         {working ? "Creating…" : "Create the class"}
       </Button>
       <p id="class-form-status" className={`class-form__status${problem ? " class-form__status--problem" : ""}`} aria-live="polite">
-        {problem ?? `Students need the code and nothing else. Classes and their evidence are kept for ${CLASS_RETENTION_DAYS} days, then deleted.`}
+        {problem ?? `Students need the class code and the card you print for them. They never type an email address or a password. Classes and their evidence are kept for ${CLASS_RETENTION_DAYS} days, then deleted.`}
       </p>
     </section>
   );
@@ -220,18 +224,31 @@ export function MyClasses() {
           </div>
           <div className="class-created__body">
             <h2>{created.label}</h2>
+            {/* What a teacher and a student actually do, in the order they do it. This used to
+                read "give them the code above plus a seat number each" — and there is no seat
+                number anywhere in the student flow to give. A teacher who read that out handed
+                thirty students a number to type into a box that does not exist, in the first
+                two minutes of the lesson, in front of the room. */}
             <ol className="class-created__steps">
-              {/* What a student actually does, in the order they do it. This used to read
-                  "give them the code above plus a seat number each" — and there is no seat
-                  number anywhere in the student flow to give. A teacher who read that out
-                  handed thirty students a number to type into a box that does not exist. */}
               <li>
-                Send students to <code>{window.location.origin}/join</code> and read out the code above.
-                They type the code, then the name you will see their work under.
+                <Link to={rosterPath(created)}>Paste your class list</Link> and print the cards — one per
+                student, with their name and their own code on it.
+              </li>
+              <li>
+                Put the code above on the board and send students to <code>{window.location.origin}/join</code>.
+                They type the class code, then the code on their card. Nothing asks them for an email
+                address or a password.
               </li>
               <li>Allow about {durationLabel(PLAN_UNDER_PRESSURE)}. Do not coach a financial strategy.</li>
               <li>Open the evidence with your private link when they are finished.</li>
             </ol>
+            {/* The teacher who has four minutes and no list. Named as the fallback rather than
+                the default, because a class with a list is the one whose evidence has names on
+                it — which is the difference between marking a class and marking seat 17. */}
+            <p className="class-created__fallback">
+              No list to hand? Skip the cards: students type the class code and their own first name,
+              and BOW files their work under that.
+            </p>
             {/* Shown once, and kept in this browser. There is no account to recover it from,
                 so the page says so rather than letting a teacher find out in a week. */}
             <div className="class-created__key">
@@ -257,9 +274,9 @@ export function MyClasses() {
           <p className="eyebrow">My classes</p>
           <h1>Create your first class.</h1>
           <p>
-            You get a code to read out and a private link that opens the evidence. Students make no account
-            and give no email address — they type the code at <code>/join</code> and the name their work
-            comes back under.
+            You get a code to read out and a private link that opens the evidence. Paste your class list and
+            BOW prints one card per student; they sign in with the class code and the code on their card, and
+            never with an email address or a password.
           </p>
         </header>
         {createBlock}

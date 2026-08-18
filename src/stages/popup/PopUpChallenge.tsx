@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useChallenge } from "../../app/ChallengeContext";
 import { PopUpProvider, usePopUp } from "./PopUpContext";
 import {
-  FirstSaturdayStage, GeneratorStage, MoneyStage, PitchStage, PlanStage, RepairStage,
+  FirstSaturdayStage, GeneratorStage, MoneyStage, PlanStage, RepairStage,
   SettleStage, SpotStage, StandingOrderStage, SubmittedStage, WriteUpStage,
 } from "./PopUpScreens";
 
@@ -27,7 +27,6 @@ export function PopUpChallenge() {
 function PopUpStages() {
   const { state } = usePopUp();
   switch (state.stage) {
-    case "popup-pitch": return <PitchStage />;
     case "popup-spot": return <SpotStage />;
     case "popup-money": return <MoneyStage />;
     case "popup-plan": return <PlanStage />;

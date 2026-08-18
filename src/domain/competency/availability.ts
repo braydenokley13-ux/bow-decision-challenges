@@ -75,6 +75,32 @@ export const BUILT_WORLD_COVERAGE: readonly WorldEvidenceCoverage[] = [
       "adapt-a-plan.er5",
     ],
   },
+  /**
+   * `sort-by-need-want-goal` — declared for as long as this product has existed, and
+   * unassessable by any world in it until Week 3 had a decision in it.
+   *
+   * The competency's evidence requirements were an empty array, so nothing could produce
+   * them and `isCompetencyAvailable` correctly reported it unavailable. What changed is not
+   * a new reading of an old log: it is a week where three claims want the same money, the
+   * student says which ones get it, and says what made them leave the rest out. A log
+   * written before that week existed carries none of it and scores `null` on all four —
+   * which is what "the world never presented the opportunity" has always meant here.
+   *
+   * The fourth is the written one, and it is required. The objective this competency covers
+   * in full asks the student to *explain*; a world that offered only the closed-set tap and
+   * still claimed full coverage would be over-claiming, and `coverageClaims.test.ts` is
+   * where that stops being a matter of anybody's care.
+   */
+  {
+    worldId: "basketball",
+    competencyId: "sort-by-need-want-goal",
+    producedEvidenceRequirementIds: [
+      "sort-by-need-want-goal.er1",
+      "sort-by-need-want-goal.er2",
+      "sort-by-need-want-goal.er3",
+      "sort-by-need-want-goal.er4",
+    ],
+  },
   {
     worldId: "basketball",
     competencyId: "plan-within-income",

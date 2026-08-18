@@ -226,6 +226,14 @@
 .spot-card__terms { color: var(--ink-1); font: var(--m-sm); font-feature-settings: var(--num); }
 .spot-card__crowd { color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
 .spot-card__crowd span { display: block; color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* Four Saturdays, four crowds, on the card of the booth they belong to. */
+.spot-card__nights { padding: 0 var(--s-5); }
+.spot-card__nights .field-label { margin-bottom: var(--s-2); }
+.spot-card__nights ol { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 0; padding: 1px; background: var(--border-subtle); list-style: none; }
+.spot-card__nights li { display: grid; gap: 2px; padding: var(--s-2); background: var(--surface); text-align: center; }
+.spot-card__nights span { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
+.spot-card__nights b { font: var(--m-md); font-feature-settings: var(--num); }
 .spot-card__tradeoff { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
 .spot-card .button { margin: auto var(--s-5) 0; }
 .popup-sum { display: grid; gap: var(--s-3); max-width: 640px; }
@@ -341,7 +349,7 @@
 .tray-order__cost span { font: var(--m-md); font-feature-settings: var(--num); }
 .tray-order__cost small { color: var(--ink-3); font: var(--t-micro); }
 .tray-order__read { display: grid; align-content: start; gap: var(--s-3); }
-.tray-order__facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin: 0; }
+.tray-order__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--s-3); margin: 0; }
 .tray-order__facts > div { display: grid; gap: 2px; padding: var(--s-3); background: var(--surface); }
 .tray-order__facts dt { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
 .tray-order__facts dd { margin: 0; font: var(--m-md); font-feature-settings: var(--num); }
@@ -352,8 +360,12 @@
    difference survives greyscale and a printout. */
 .tray-plates, .night__plates { display: flex; flex-wrap: wrap; gap: 3px; margin: 0; min-height: 14px; }
 .tray-plates i, .night__plates i { width: 11px; height: 11px; display: block; border-radius: 2px; }
-.tray-plates i[data-state="sold"], .night__plates i[data-state="sold"] { background: var(--plate-sold); }
-.tray-plates i[data-state="binned"], .night__plates i[data-state="binned"] { background: var(--pat-over); border: 1px solid var(--fin-over); }
+
+/* An order draws what is being cooked and nothing about how it lands. Colouring the plates
+   sold and binned before the night happened answered the question the screen is asking. */
+.tray-plates i[data-state="cooking"] { background: var(--border-strong); }
+.night__plates i[data-state="sold"] { background: var(--plate-sold); }
+.night__plates i[data-state="binned"] { background: var(--pat-over); border: 1px solid var(--fin-over); }
 .night { display: grid; gap: var(--s-3); padding: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); border-left: 4px solid var(--world-accent); }
 .night--compact { padding: var(--s-4); }
 .night__day { margin: 0; color: var(--world-accent); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
@@ -383,6 +395,13 @@
 .standing-next { display: grid; gap: var(--s-4); }
 .standing-next h2 { margin: 0; font: var(--t-section); letter-spacing: var(--display-tracking); }
 .standing-next > p { max-width: 62ch; margin: 0; font: var(--t-body); }
+
+/* The two nights one order has to answer to, said before the order is placed. */
+.standing-next__nights { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.standing-next__nights li { display: grid; gap: var(--s-2); padding: var(--s-4); background: var(--surface); border-left: 4px solid var(--world-accent-soft); }
+.standing-next__nights b { font: var(--t-title3); }
+.standing-next__nights span { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.popup-subhead { margin: var(--s-6) 0 0; font: var(--t-section); letter-spacing: var(--display-tracking); }
 
 /* ---------------------------------------------------------------------------
    Beat 4 — the generator.

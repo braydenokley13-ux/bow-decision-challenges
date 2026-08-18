@@ -261,7 +261,10 @@ export function popUpReducer(state: PopUpState, action: TimestampedPopUpAction, 
         },
       };
       const started = append(next, action.type, decisionPayload(action), "standard_access", undefined, at);
-      return goTo(append(started, "WORLD_CONFIRMED", { worldId: "food-truck" }, "standard_access", undefined, at), "popup-pitch", at);
+      // Straight to the booth. The screen that used to stand in front of it said who Mo was
+      // and then listed the decisions the world was about to make; the first half moved onto
+      // the booth screen and the second half was a contents page.
+      return goTo(append(started, "WORLD_CONFIRMED", { worldId: "food-truck" }, "standard_access", undefined, at), "popup-spot", at);
     }
 
     case "POPUP_SUM_SUBMITTED": {

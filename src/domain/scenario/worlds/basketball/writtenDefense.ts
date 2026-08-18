@@ -22,6 +22,18 @@ import type { ScoredExplanations } from "./observer";
  * | --- | --- | --- |
  * | `plan-within-income.er5` | Names something given up, says what it was given up for, refers to one of their own numbers | tradeoff + priority + numbers |
  * | `adapt-a-plan.er5` | Names what they refused to cut and why | priority |
+ * | `sort-by-need-want-goal.er4` | Names what made one claim matter more than another, rather than what it cost | priority |
+ *
+ * **The last two stand on the same mark, and that is a statement rather than an oversight.**
+ * "Protected priority — names what they chose to keep, and why" is one judgement a person
+ * makes while reading one paragraph, and it is the judgement both of those requirements
+ * ask for, at two different moments of the run: what survived the Week 5 repair, and what
+ * made one of Week 3's three claims matter more than another. Splitting them would mean a
+ * fifth reasoning criterion, and a criterion is a row on a teacher's marking screen and a
+ * claim about what is worth marking — content work owned by a person, in the same way the
+ * eighteen unwritten competencies are. Restating one person's mark for two requirements is
+ * what this file already does with C6.2; inventing a criterion to keep them apart is not
+ * something an implementer gets to do.
  *
  * Workability is scored and used by neither: "why the plan holds" is a claim about the plan
  * rather than about a trade-off or a protected line, and filing it under a requirement it
@@ -31,7 +43,7 @@ import type { ScoredExplanations } from "./observer";
 /** The parts of `plan-within-income.er5`, and the mark that answers each. */
 const TRADE_OFF_PARTS = ["C6.3", "C6.2", "C6.4"] as const;
 
-/** The single part of `adapt-a-plan.er5`. */
+/** The single part of `adapt-a-plan.er5`, and of `sort-by-need-want-goal.er4`. */
 const PROTECTED_PART = "C6.2" as const;
 
 /**
@@ -72,5 +84,6 @@ export function scoredExplanationsFrom(scores: ReasoningScores | undefined): Sco
   return {
     "plan-within-income.er5": levelFrom(partsOf(scores, TRADE_OFF_PARTS)),
     "adapt-a-plan.er5": levelFrom(partsOf(scores, [PROTECTED_PART])),
+    "sort-by-need-want-goal.er4": levelFrom(partsOf(scores, [PROTECTED_PART])),
   };
 }

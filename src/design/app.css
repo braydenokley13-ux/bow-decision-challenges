@@ -1241,7 +1241,8 @@ p { color: var(--ink-2); }
 .roster-list__seat { color: var(--ink-3); font: var(--t-micro); }
 .roster-list__state { color: var(--ink-3); font: var(--t-micro); }
 .roster-list__state[data-claimed="true"] { color: var(--ink-2); }
-.roster-list__acts { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.roster-list__acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.roster-list__warn { flex-basis: 100%; max-width: 60ch; margin: 0 0 var(--s-2); color: var(--fin-over-ink); font: var(--t-sm); }
 
 .cards-sheet { margin: 0 0 var(--s-6); padding: var(--s-5); background: var(--surface-raised); border: 2px solid var(--bow-brand); box-shadow: var(--shadow-card); }
 .cards-sheet__head { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: var(--s-4); }

@@ -9,7 +9,7 @@ const CLINIC_SATURDAYS = clinicWeeks(SCENARIO_NUMBERS).length;
 export const BASKETBALL_SCENARIO: WorldScenario = {
   id: "basketball",
   title: "Eight Weeks to the Showcase",
-  subtitle: "Avery Reyes has eight weeks with the Harbor City Flight—and a plan that will not stay simple.",
+  subtitle: "Eight weeks with the Harbor City Flight, a course to pay for, and two payments that might not arrive.",
   role: {
     name: "Avery Reyes",
     age: 18,
@@ -20,17 +20,23 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
   incomeCopy: {
     savings: { label: "Already saved", note: "Money Avery already has." },
     base: { label: "Base pay after taxes", note: "Pay that arrives no matter how the team performs." },
+    // The two `ifNot` lines are the only place the cost of a condition not being met is
+    // stated, so neither of them may lose its consequence. What they lost is the second
+    // sentence: "nothing is paid for missing fewer" restated all-or-nothing in different
+    // words, and eleven players and a bracket were a roster count where "not Avery" was the
+    // whole point. Sentence-case labels, because every other amount on the screen beside
+    // them is sentence case.
     completion: {
-      label: "Perfect Attendance Bonus",
+      label: "Perfect attendance bonus",
       note: "Payment tied to making every practice and game.",
       rule: "Avery makes every practice and every game.",
-      ifNot: "Miss one session and the whole payment is gone. Nothing is paid for missing fewer.",
+      ifNot: "Miss one session and the whole payment is gone.",
     },
     outcome: {
-      label: "Making the Cut Bonus",
+      label: "Making the cut bonus",
       note: "Payment tied to reaching the showcase.",
       rule: "The Flight qualifies for the showcase.",
-      ifNot: "Avery cannot decide this one. Eleven other players and a bracket do.",
+      ifNot: "Avery cannot decide this one. The rest of the league does.",
     },
     optionalWork: { label: "Saturday clinics", note: "Coaching fee for the last four Saturdays." },
   },

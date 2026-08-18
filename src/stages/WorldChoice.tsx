@@ -101,9 +101,12 @@ export function WorldChoice() {
 
   return (
     <div className="worldpick">
+      {/* The bar used to carry `XPRGW · SEAT 1`. A seat is an internal allocation: since the
+          door moved to /join a student never sees one, never types one, and is never told
+          what one is — so the line was three words of vocabulary the run does not use, on the
+          one screen whose whole job is a comparison between two cards. */}
       <div className="worldpick__bar">
         <AppMark />
-        <span>{state.meta.classCode} · seat {state.meta.seatCode}</span>
       </div>
       <main className="worldpick__main">
         <header className="worldpick__say">

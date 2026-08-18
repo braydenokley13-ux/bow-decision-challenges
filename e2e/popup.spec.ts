@@ -75,9 +75,21 @@ async function setLine(page: Page, label: string, value: number) {
   await field.press("Tab");
 }
 
-/** Pitch → booth → the money with a rule on it → the opening board, committed. */
+/** The same walk as `buildOpeningPlan`, stopping on the board rather than committing it. */
+async function buildOpeningPlanUpToBoard(page: Page) {
+  await page.getByRole("button", { name: `${COPY.spot.take}: ${SPOT.title}` }).click();
+  await checkSum(page, COPY.spot.owed.label, owedUpFront(N, SPOT.id));
+  await page.getByRole("button", { name: COPY.spot.action }).click();
+  for (const source of ["catering", "rebate"] as const) {
+    await page.getByRole("button", { name: `${COPY.money.no}: ${POP_UP_SCENARIO.conditional[source].label}` }).click();
+  }
+  await checkSum(page, COPY.money.toPlan.label, cashToPlan(N, SPOT.id));
+  await page.getByRole("button", { name: COPY.money.action }).click();
+  await expect(page.getByRole("heading", { name: COPY.plan.title })).toBeVisible();
+}
+
+/** Booth → the money with a rule on it → the opening board, committed. */
 async function buildOpeningPlan(page: Page, plan: { stock: number; cushion: number }) {
-  await page.getByRole("button", { name: COPY.pitch.action }).click();
   await page.getByRole("button", { name: `${COPY.spot.take}: ${SPOT.title}` }).click();
   await checkSum(page, COPY.spot.owed.label, owedUpFront(N, SPOT.id));
   await page.getByRole("button", { name: COPY.spot.action }).click();
@@ -124,12 +136,11 @@ test.describe("Run the Pop-Up", () => {
     await expect(page.locator(".worldpick__cards")).not.toContainText(/recommended|easier|harder|difficulty/i);
     await pickPopUp(page);
 
-    // 2 — the pitch.
-    await expect(page.getByRole("heading", { name: POP_UP_SCENARIO.pitch.headline })).toBeVisible();
-    await page.getByRole("button", { name: COPY.pitch.action }).click();
-
-    // 3 — the booth, and the first sum: the permit plus the booth they took.
+    // 2 — the booth, and the first sum: the permit plus the booth they took. The market opens
+    // straight onto a decision now; the screen that used to stand in front of it announced
+    // what the game was about to ask instead of asking it.
     await expect(page.getByRole("heading", { name: COPY.spot.title })).toBeVisible();
+    await expect(page.getByRole("heading", { name: COPY.spot.boothsTitle })).toBeVisible();
     await page.getByRole("button", { name: `${COPY.spot.take}: ${SPOT.title}` }).click();
     await checkSum(page, COPY.spot.owed.label, owedUpFront(N, SPOT.id));
     await page.getByRole("button", { name: COPY.spot.action }).click();
@@ -223,7 +234,9 @@ test.describe("Run the Pop-Up", () => {
     await expect(page.getByRole("heading", { name: COPY.repair.lastTitle })).toBeVisible();
     await page.getByRole("button", { name: COPY.saturday.open }).click();
     await expect(page.getByRole("heading", { name: POP_UP_SCENARIO.settle.title })).toBeVisible();
-    await expect(page.locator(".season-table tbody tr")).toHaveCount(N.saturdays);
+    // The ending names decisions rather than restating a table of nights already watched.
+    await expect(page.locator(".season-table")).toHaveCount(0);
+    await expect(page.locator(".resolve-risks li").first()).toBeVisible();
     await page.getByRole("button", { name: COPY.settle.action }).click();
 
     // 11 — the organiser's question, and a person at the other end of it.
@@ -272,7 +285,7 @@ test.describe("Run the Pop-Up", () => {
     const classCode = await classWithOneWorld(request, "food-truck");
     await gotoFreshChallenge(page);
     await join(page, classCode, "4");
-    await expect(page.getByRole("heading", { name: POP_UP_SCENARIO.pitch.headline })).toBeVisible();
+    await expect(page.getByRole("heading", { name: COPY.spot.title })).toBeVisible();
     await expect(page.locator(".worldcard")).toHaveCount(0);
   });
 
@@ -285,7 +298,6 @@ test.describe("Run the Pop-Up", () => {
     await page.reload();
     await expect(page.getByRole("heading", { name: "Pick a world. Make it count." })).toBeVisible();
     await pickPopUp(page);
-    await page.getByRole("button", { name: COPY.pitch.action }).click();
     await page.getByRole("button", { name: `${COPY.spot.take}: ${SPOT.title}` }).click();
 
     // The attempt is written to this browser within a quarter of a second of a decision;
@@ -327,7 +339,6 @@ test.describe("Run the Pop-Up", () => {
     await popUpCard.focus();
     await popUpCard.press("Enter");
 
-    await page.getByRole("button", { name: COPY.pitch.action }).press("Enter");
     const booth = page.getByRole("button", { name: `${COPY.spot.take}: ${SPOT.title}` });
     await booth.focus();
     await booth.press("Enter");
@@ -403,7 +414,7 @@ test.describe("Run the Pop-Up", () => {
       await noHorizontalOverflow(page);
 
       await pickPopUp(page);
-      await expect(page.getByRole("button", { name: COPY.pitch.action })).toBeVisible();
+      await expect(page.getByRole("heading", { name: COPY.spot.title })).toBeVisible();
       await noHorizontalOverflow(page);
 
       await buildOpeningPlan(page, { stock: 600, cushion: 400 });
@@ -419,6 +430,70 @@ test.describe("Run the Pop-Up", () => {
       await expect(page.getByRole("heading", { name: POP_UP_SCENARIO.breakdown.title })).toBeVisible();
       await noHorizontalOverflow(page);
     }
+  });
+});
+
+test.describe("reflow", () => {
+  test("@reflow every market screen fits the width it is given", async ({ page, request }) => {
+    // The same sweep the other world gets, at whatever width the project is set to. It exists
+    // because the pop-up carries its own top bar with four Saturdays in it, and a strip of
+    // four cells is exactly the kind of thing that stops fitting before anybody notices.
+    const classCode = await classWithChoice(request);
+    await gotoFreshChallenge(page);
+    await noHorizontalOverflow(page);
+
+    await join(page, classCode, "2");
+    await noHorizontalOverflow(page);
+    await pickPopUp(page);
+    await noHorizontalOverflow(page);
+
+    await buildOpeningPlan(page, { stock: 600, cushion: 400 });
+    await noHorizontalOverflow(page);
+
+    await orderTrays(page, 3);
+    await checkSum(page, COPY.saturday.order.label, orderCost(N, 3));
+    await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await noHorizontalOverflow(page);
+
+    await page.getByRole("button", { name: COPY.standing.alone }).click();
+    await orderTrays(page, 3);
+    await page.getByRole("button", { name: COPY.standing.action }).click();
+    await noHorizontalOverflow(page);
+
+    await checkSum(page, COPY.generator.gap.label, swapBill(N));
+    await page.getByRole("button", { name: COPY.generator.action }).click();
+    await noHorizontalOverflow(page);
+
+    const cushionHeld = Number(await page.getByRole("spinbutton", { name: POP_UP_SCENARIO.lines.cushion.label }).inputValue());
+    await setLine(page, POP_UP_SCENARIO.lines.cushion.label, cushionHeld - swapBill(N));
+    await page.getByRole("button", { name: COPY.repair.commit }).click();
+    await noHorizontalOverflow(page);
+
+    await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await noHorizontalOverflow(page);
+    await page.getByRole("button", { name: COPY.settle.action }).click();
+    await noHorizontalOverflow(page);
+  });
+});
+
+test.describe("zoom", () => {
+  test("@zoom the choice and the market hold at 400%", async ({ page, request }) => {
+    const measured: { screen: string; px: number }[] = [];
+    const note = async (screen: string) => {
+      const px = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      measured.push({ screen, px });
+    };
+    const classCode = await classWithChoice(request);
+    await gotoFreshChallenge(page);
+    await join(page, classCode, "3");
+    await note("the world picker");
+    await pickPopUp(page);
+    await note("the booths");
+    await buildOpeningPlanUpToBoard(page);
+    await note("the opening board");
+
+    const spilling = measured.filter((entry) => entry.px > 1);
+    expect(spilling.map((entry) => `${entry.screen}: ${entry.px}px`), "screens that scroll sideways").toEqual([]);
   });
 });
 

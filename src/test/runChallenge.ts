@@ -1,5 +1,5 @@
 import { dollars } from "../domain/core/money";
-import type { CategoryId, SetupId } from "../domain/core/ids";
+import type { CategoryId, ClaimReasonId, SetupId } from "../domain/core/ids";
 import { challengeReducer, type TimestampedAction } from "../domain/machine/reducer";
 import { createInitialState, type ChallengeState } from "../domain/machine/state";
 import { availableFor, lockedFor, week5Change } from "../domain/finance/formulas";
@@ -37,6 +37,14 @@ export interface RunOptions {
    * the whole reason this module exists. `goal` is the savings-as-leftovers behaviour.
    */
   closeOpeningInto?: CategoryId;
+  /**
+   * How Week 3's cash is settled: which of the three claims get paid, and what the student
+   * says made them leave the rest out. The default pays for the away trip and the present
+   * and says the shoes could wait — one of the two allocations that spend the money as far
+   * as it reaches, with a reason that is true of what it left behind.
+   */
+  week3Funded?: readonly string[];
+  week3Reason?: ClaimReasonId;
   defenseText?: string;
   startedAt?: number;
 }
@@ -51,6 +59,8 @@ const DEFAULTS: Required<Omit<RunOptions, "startedAt">> = {
   countCompletionFinal: false,
   split: { goal: 0.4, reserve: 0.3 },
   closeOpeningInto: "flexibleCash",
+  week3Funded: ["away-travel", "sister-present"],
+  week3Reason: "can-wait",
   defenseText: "My plan still works because every dollar has a job after Week 5. I protected the course money and gave up part of the reserve.",
 };
 
@@ -113,7 +123,9 @@ export function runChallenge(options: RunOptions = {}): ChallengeState {
   savePlan("working");
   if (state.stage === "fallback-version") savePlan("fallback");
 
-  // Weeks 1–4 play, then the course-deposit deadline closes them.
+  // Weeks 1–4 play. Week 3 hands Avery cash the plan never sees and three things that want
+  // it, and the student says which ones got it and why. Then the deposit deadline closes them.
+  send({ type: "COMPETING_CLAIMS_SETTLED", fundedIds: opts.week3Funded, reason: opts.week3Reason });
   send({ type: "COURSE_DEPOSIT_DECIDED", taken: opts.reserveSeat });
   send({ type: "WEEK5_ADVANCE_CONFIRMED" });
 

@@ -97,7 +97,7 @@ describe("Seat 14, read as competencies", () => {
     // a page about a child would make it look like a fact about the child.
     expect(byId.has("save-toward-a-goal")).toBe(false);
     expect(byId.has("plan-for-the-unexpected")).toBe(false);
-    expect([...byId.keys()].sort()).toEqual(["adapt-a-plan", "plan-within-income"]);
+    expect([...byId.keys()].sort()).toEqual(["adapt-a-plan", "plan-within-income", "sort-by-need-want-goal"]);
   });
 
   it("stamps every result with the model and rubric it was computed under", () => {

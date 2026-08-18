@@ -28,8 +28,38 @@ import type { PlanAmounts, SnapshotInputs } from "./types";
  * spent sensibly and came up short that they made a mistake, which is both untrue and the
  * fastest way to teach that the safe move is never to spend.
  */
+/**
+ * A claim on one week's cash that the student did not pay for, handed to the ending.
+ *
+ * The world composes the words — what the claim was called, and the one line that says what
+ * Avery was actually left with — and this module composes the arithmetic around them, out
+ * of the student's own settlement. Nothing here is a template with a blank in it: which
+ * claims are on this list at all, what the money went on instead, whether the leftover
+ * would have covered it, and what the student said about leaving it out are four different
+ * readings of one log, and two students get two different sentences.
+ */
+export interface UnpaidClaim {
+  id: string;
+  /** What the verdict is headed. */
+  label: string;
+  cost: Dollars;
+  /** What Avery was left with. The world's sentence, in the world's voice. */
+  wentUnpaid: string;
+}
+
+export interface CompetingClaimsOutcome {
+  cash: Dollars;
+  spent: Dollars;
+  leftOver: Dollars;
+  /** What was paid for, in the order the world lists them. */
+  paidFor: readonly string[];
+  unpaid: readonly UnpaidClaim[];
+  /** What the student said made them leave the rest out, said back to them in one line. */
+  reasonToldBack: string;
+}
+
 export interface RiskVerdict {
-  id: "attendance-bonus" | "clinics" | "buying-time" | "course-deposit";
+  id: "attendance-bonus" | "clinics" | "buying-time" | "course-deposit" | `unpaid-claim:${string}`;
   label: string;
   /** Whether the student took this risk at all. */
   taken: boolean;
@@ -181,7 +211,45 @@ function depositVerdict(final: SnapshotInputs, n: ScenarioNumbers, pressure: Wee
   };
 }
 
-function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, bonusLabel: string, pressure: Week5Pressure): RiskVerdict[] {
+/**
+ * The week the plan never saw, coming back.
+ *
+ * Three things wanted the same cash and it would not stretch, so something went unpaid —
+ * always, on every allocation, because the three of them cost more than the money. Each one
+ * that did gets a verdict here in the same shape as the season's own, for the reason the
+ * panel exists at all: a student should be able to trace an ending to the call that caused
+ * it, and a decision whose consequence is never shown is a decision the product asked for
+ * and then threw away.
+ *
+ * **None of these is ever `no_effect`.** A birthday that passed, a bus Avery said they
+ * would be on, a pair of shoes taped twice — money changed hands or failed to, and a
+ * verdict headed "No effect" over a line saying what it cost teaches a student to stop
+ * reading the labels. That was already true of the course seat and it is true here.
+ */
+function unpaidClaimVerdicts(outcome: CompetingClaimsOutcome): RiskVerdict[] {
+  const wentOn = outcome.paidFor.length > 0
+    ? `${formatDollars(outcome.spent)} went on ${listOf(outcome.paidFor)} instead.`
+    : `None of the ${formatDollars(outcome.cash)} was spent on any of them.`;
+  return outcome.unpaid.map((claim) => ({
+    id: `unpaid-claim:${claim.id}` as const,
+    label: claim.label,
+    taken: false,
+    outcome: "cost_you" as const,
+    // The last clause only appears where it is true, and where it is true it is the whole
+    // finding: money was left in a week it could not be saved in, beside a claim it covered.
+    detail: `${claim.wentUnpaid} ${wentOn} ${outcome.reasonToldBack}${
+      claim.cost <= outcome.leftOver ? ` The ${formatDollars(outcome.leftOver)} left over would have covered it.` : ""
+    }`,
+  }));
+}
+
+/** "a and b", "a, b and c" — one comma rule, so no branch of the ending reads as a list. */
+function listOf(items: readonly string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  return `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
+}
+
+function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, bonusLabel: string, pressure: Week5Pressure, claims?: CompetingClaimsOutcome): RiskVerdict[] {
   const withoutTimeMoney = heldWith(final, n, { timeMoney: dollars(0) });
   const withoutClinics = heldWith(final, n, { clinics: false });
   const bonus = formatDollars(n.completionIncome);
@@ -256,6 +324,11 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
             : `It bought ${loadFor({ setupId: final.setupId, rehabActive: true, clinicsAccepted: final.includeOptionalWork, timeMoney: final.amounts.flexibleCash }, n).bought} hours back, and Avery still did not have enough week left.`,
     },
     depositVerdict(final, n, pressure),
+    // Appended before the sort rather than merged into it, so that within one outcome the
+    // season's own calls still read first: `sort` is stable, and one week's cash is small
+    // beside a plan of thousands. It is the last thing in the list that costs, not the
+    // first thing on the screen.
+    ...(claims ? unpaidClaimVerdicts(claims) : []),
   ];
   return verdicts.sort((a, b) => VERDICT_WEIGHT[a.outcome] - VERDICT_WEIGHT[b.outcome]);
 }
@@ -282,6 +355,7 @@ export function resolveSeason(
   opening?: PlanAmounts,
   bonusLabel = "attendance bonus",
   week5?: Week5Pressure,
+  claims?: CompetingClaimsOutcome,
 ): SeasonResolution {
   /**
    * Absent, the season is read as one Week 5 never put under: no shortfall, and whatever the
@@ -339,7 +413,7 @@ export function resolveSeason(
     courseShort,
     endCash: dollars(bufferHeld - absorbed + unplannedGain),
     spentOnTime: final.amounts.flexibleCash,
-    risks: riskVerdicts(final, n, attendanceHeld, bonusLabel, pressure),
+    risks: riskVerdicts(final, n, attendanceHeld, bonusLabel, pressure, claims),
     changes: opening
       ? (["goal", "reserve", "flexibleCash"] as const).map((category) => ({
           category,
