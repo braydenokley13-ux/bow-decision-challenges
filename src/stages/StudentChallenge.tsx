@@ -1306,7 +1306,16 @@ function DefenseStage() {
           <CourtBackdrop variant="key" />
           <p className="eyebrow">Season review</p>
           <h2>Why does your plan hold up?</h2>
-          <p>Say how it worked after Week 5, what you protected, and what you gave up.</p>
+          {/* Two sentences, one box, because a second textarea would be a second writing task in
+              a run already measured as more reading than deciding. The second sentence is the
+              one BOW-B1's explanation requirement is scored against — what made one claim matter
+              more than another — and it names the misconception out loud, because a rubric row
+              that catches "it was the cheapest" is worth more if the student was told first. */}
+          <p>
+            Say how it worked after Week 5, what you protected, and what you gave up. And say what
+            made the thing you left unpaid in Week&nbsp;3 matter less than the ones you paid for —
+            &ldquo;it was the cheapest&rdquo; is not an answer.
+          </p>
           {/* The numbers are the interaction, so they carry a mark. Without one they read
               as a list of facts and a student can sit in front of the screen never
               discovering that the core control of the page is a control at all. */}

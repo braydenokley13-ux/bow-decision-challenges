@@ -177,6 +177,10 @@ JSON beside the token-signing secret, which made one disk image the whole deploy
 key where your other secrets live, keep a copy, and do not put it in the data directory.
 Losing it loses every class; changing it makes every existing class unreadable.
 
+For local work there is `npm run api:dev`, which runs the same service on the memory store: no
+key, nothing on disk, and nothing kept past the process. It is what the browser suite uses. It
+is not a class — `GET /api/health` reports `classroomReady: false` and says why.
+
 **TLS in front of it.** `npm run api` is plain HTTP and now binds loopback by default. Set
 `BOW_BIND_HOST` to open it wider, and put a TLS terminator in front before any class uses it —
 otherwise children's names and their written work cross the school network in the clear.
