@@ -17,6 +17,16 @@
  */
 
 const TOKEN_KEY = "bow.student.v1.token";
+/**
+ * Whose session this is, kept beside the token.
+ *
+ * Not for display — a student's name comes from their teacher's class list and is read back
+ * from the service. This is here so the browser can answer one question: *is the person
+ * signing in now the same person who was signing in last time*. Everything about clearing a
+ * shared machine turns on that answer, and the token itself cannot give it, because a token is
+ * opaque and a new one is issued on every sign-in.
+ */
+const WHO_KEY = "bow.student.v1.id";
 
 /** Storage that is not there — a locked-down browser profile, or a test — reads as signed out. */
 function storage(): Storage | null {
@@ -41,9 +51,25 @@ export function rememberStudent(token: string, store: Pick<Storage, "setItem"> |
   } catch { /* a full or blocked store is a sign-in that does not persist, not a crash */ }
 }
 
+/** Which account this browser is holding a session for, or nothing. */
+export function studentIdHeld(store: Pick<Storage, "getItem"> | null = storage()): string | null {
+  try {
+    return store?.getItem(WHO_KEY) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function rememberStudentId(id: string, store: Pick<Storage, "setItem"> | null = storage()): void {
+  try {
+    store?.setItem(WHO_KEY, id);
+  } catch { /* see above */ }
+}
+
 export function forgetStudent(store: Pick<Storage, "removeItem"> | null = storage()): void {
   try {
     store?.removeItem(TOKEN_KEY);
+    store?.removeItem(WHO_KEY);
   } catch { /* nothing to forget if there is nowhere to forget it from */ }
 }
 

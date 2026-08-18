@@ -1,7 +1,7 @@
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import type { Assignment } from "../platform/classes/types";
 import type { ClassDoor, DeviceClass } from "../platform/identity/types";
-import { forgetStudent, rememberStudent, studentAuthHeaders, studentToken } from "../platform/identity/token";
+import { forgetStudent, rememberStudent, rememberStudentId, studentAuthHeaders, studentIdHeld, studentToken } from "../platform/identity/token";
 import type { WorldId } from "../domain/core/ids";
 
 /**
@@ -17,7 +17,7 @@ import type { WorldId } from "../domain/core/ids";
  * from. These re-exports are the student screens' own way in.
  */
 
-export { forgetStudent, rememberStudent, studentToken };
+export { forgetStudent, rememberStudent, rememberStudentId, studentIdHeld, studentToken };
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<{ ok: true; body: T } | { ok: false; message: string }> {
   try {

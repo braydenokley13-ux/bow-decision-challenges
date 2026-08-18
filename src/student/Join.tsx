@@ -5,7 +5,8 @@ import { Button } from "../components/primitives/Button";
 import { CODE_LENGTH, isWellFormedClassCode, normaliseClassCode } from "../platform/classes/codes";
 import { MAX_DISPLAY_NAME, type ClassDoor, type DeviceClass } from "../platform/identity/types";
 import { STUDENT_COPY } from "../content/studentCopy";
-import { claimSeat, readClassDoor, rememberStudent } from "./session";
+import { claimSeat, readClassDoor, rememberStudent, rememberStudentId, studentIdHeld } from "./session";
+import { clearEveryAttempt } from "../domain/io/persistence";
 
 /**
  * Fifteen seconds, and the same fifteen every time.
@@ -76,7 +77,21 @@ export function StudentJoin() {
       setProblem(result.message);
       return;
     }
+    // A different person has sat down. Everything the last one left on this machine goes.
+    //
+    // This was the failure the whole account system was built to stop, surviving in the one
+    // place accounts do not reach. A student signing in with their own card on a shared
+    // classroom computer was shown the previous student's turned-in plan and their private
+    // written explanation — because the attempt lives in `localStorage` and nothing about
+    // signing in had ever touched it. They then played a whole run inside somebody else's
+    // session state and were refused at submission, so both children lost the lesson.
+    //
+    // The comparison is the account id rather than the token, because a token is opaque and a
+    // fresh one is issued on every sign-in. Same person signing in again on their own machine
+    // keeps their work; anybody else's presence clears the board.
+    if (studentIdHeld() !== result.body.studentId) clearEveryAttempt();
     rememberStudent(result.body.token);
+    rememberStudentId(result.body.studentId);
     navigate("/home", { replace: true });
   };
 
