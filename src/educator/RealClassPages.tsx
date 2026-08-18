@@ -6,7 +6,7 @@ import { useClassEvidence, type ClassEvidenceState, type OverrideRequest } from 
 import { EvidenceTrailPanel, StudentSummary } from "./EvidenceTrailPanel";
 import type { AttributedSubmission } from "../platform/classes/types";
 import { decisionsByWorld, seatList, type ChoiceDistribution, type ClassAnalysis, type StudentRow } from "./analysis";
-import { formatDollars } from "../domain/core/money";
+import { dollars, formatDollars } from "../domain/core/money";
 import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { WORLD_REGISTRY } from "../domain/scenario/registry";
@@ -598,6 +598,10 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride }: 
       </div>
 
       <div role="tabpanel" id="student-panel-plan" aria-labelledby="student-tab-plan" hidden={tab !== "plan"}>
+      {/* The plan a teacher opened this tab to read, in whichever world the student built
+          one. This tab used to render nothing at all for a market run — the one view of
+          what the student actually made, silently blank. */}
+      {row.worldId !== "basketball" && <PopUpPlanTab row={row} />}
       {row.resolution && (
         <section className="dashboard-section">
           <div className="section-heading">
@@ -642,6 +646,62 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride }: 
           the working behind it is one disclosure away. */}
       <Gradebook row={row} structured={grade.structuredPoints} structuredMaximum={grade.structuredMaximum} />
     </>
+  );
+}
+
+/** What a market student planned, and what the generator did to it. */
+function PopUpPlanTab({ row }: { row: StudentRow }) {
+  const saved = row.log.filter((event) => event.type === "POPUP_PLAN_SAVED");
+  const boardOf = (board: string) =>
+    saved.filter((event) => (event.payload as { board?: string }).board === board).at(-1);
+  const planOf = (board: string) => {
+    const payload = boardOf(board)?.payload as { snapshot?: { plan?: Record<string, number> } } | undefined;
+    return payload?.snapshot?.plan ?? null;
+  };
+  const opening = planOf("opening");
+  const repair = planOf("repair");
+  if (!opening) {
+    return (
+      <section className="dashboard-section">
+        <div className="section-heading">
+          <p className="eyebrow">The plan</p>
+          <h2>No plan was ever committed</h2>
+        </div>
+        <p className="class-state">This student did not save an opening plan, so there is nothing here to read.</p>
+      </section>
+    );
+  }
+  const lines: { id: string; label: string }[] = [
+    { id: "stock", label: "Stock" },
+    { id: "cushion", label: "Cushion" },
+    { id: "cut", label: "Your cut" },
+  ];
+  return (
+    <section className="dashboard-section">
+      <div className="section-heading">
+        <p className="eyebrow">{repair ? "Before and after the generator" : "The opening plan"}</p>
+        <h2>What this student planned</h2>
+      </div>
+      <table className="resolve-changes-table">
+        <thead>
+          <tr>
+            <th scope="col">Where the money went</th>
+            <th scope="col">Opening</th>
+            {repair && <th scope="col">After the swap</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {lines.map((line) => (
+            <tr key={line.id}>
+              <th scope="row">{line.label}</th>
+              <td className="money">{formatDollars(dollars(opening[line.id] ?? 0))}</td>
+              {repair && <td className="money">{formatDollars(dollars(repair[line.id] ?? 0))}</td>}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {!repair && <p className="class-state">The repair board was never settled, so there is no after.</p>}
+    </section>
   );
 }
 

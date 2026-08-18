@@ -78,6 +78,10 @@ function OpeningStage() {
   // prefilled: a default class code that happened to resolve would start a room of
   // students in somebody else's class.
   const valid = isWellFormedClassCode(classCode) && isWellFormedSeatCode(seatCode);
+  // Whether a picker exists at all. The class decides whether it is offered, and that is not
+  // known until the code is checked — but a build with one world can never show one, and a
+  // build with two should not promise either before the student has chosen.
+  const choosing = WORLD_CHOICE_UI_READY && PLAYABLE_WORLDS.length > 1;
 
   const start = async () => {
     if (!valid || joining) return;
@@ -122,16 +126,25 @@ function OpeningStage() {
           Below 760px the columns stack in source order, which is the fix for the one screen
           where the thing a student has to do was entirely below the fold. */}
       <div className="opening__grid">
-        {/* Avery, and the one thing Avery is playing for. The arena stays behind the person
-            rather than behind the whole screen. */}
+        {/* Avery, and the one thing Avery is playing for — but only where Avery is what the
+            student is about to play. With a picker one screen away, this panel sold one of
+            the two worlds before the student had been offered either, and a student who
+            went on to choose the market had pressed a button promising eight weeks of
+            basketball. Where there is a choice to make, the code is the story. */}
         <aside className="opening__side scene">
-          <CourtBackdrop />
-          <RosterCard />
-          <div className="goal-strip">
-            <strong className="money">{formatDollars(numbers.goalCap)}</strong>
-            <div><b>{offer.want}</b><span>{offer.wantDetail}</span></div>
-          </div>
-          <p className="opening__span">Eight weeks · ends at the regional showcase</p>
+          {choosing ? (
+            <p className="opening__span">{PLAYABLE_WORLDS.map((world) => world.title).join(" · ")}</p>
+          ) : (
+            <>
+              <CourtBackdrop />
+              <RosterCard />
+              <div className="goal-strip">
+                <strong className="money">{formatDollars(numbers.goalCap)}</strong>
+                <div><b>{offer.want}</b><span>{offer.wantDetail}</span></div>
+              </div>
+              <p className="opening__span">Eight weeks · ends at the regional showcase</p>
+            </>
+          )}
           <div className="opening__job">
             <p className="stamp">Your class code gets you in</p>
             <div className="opening__codes">
@@ -162,7 +175,7 @@ function OpeningStage() {
               </label>
             </div>
             <Button type="button" aria-disabled={!valid || joining} onClick={() => void start()}>
-              {joining ? "Checking the code…" : "Start the eight weeks"}
+              {joining ? "Checking the code…" : choosing ? "Go in" : "Start the eight weeks"}
             </Button>
             <hr className="perf-rule" />
             {/* One live region for every outcome, so a screen reader hears the result of
@@ -183,10 +196,20 @@ function OpeningStage() {
             the join card off a 640px screen. The card above says what the student is being
             asked to do; this says who they are doing it for. */}
         <section className="opening__story">
-          <p className="eyebrow">{invitation.kicker}</p>
-          <h1>{invitation.headline}</h1>
-          <p className="opening__lede"><strong>{offer.headline}</strong> {offer.body}</p>
-          <p className="opening__role">{invitation.role}</p>
+          {choosing ? (
+            <>
+              <p className="eyebrow">{STUDENT_COPY.join.chooseKicker}</p>
+              <h1>{STUDENT_COPY.join.chooseHeadline}</h1>
+              <p className="opening__lede">{STUDENT_COPY.join.chooseLede}</p>
+            </>
+          ) : (
+            <>
+              <p className="eyebrow">{invitation.kicker}</p>
+              <h1>{invitation.headline}</h1>
+              <p className="opening__lede"><strong>{offer.headline}</strong> {offer.body}</p>
+              <p className="opening__role">{invitation.role}</p>
+            </>
+          )}
         </section>
       </div>
     </div>

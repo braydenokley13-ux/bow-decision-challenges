@@ -1,4 +1,5 @@
 import { useEffect, useRef, type PropsWithChildren, type ReactNode } from "react";
+import { useStageArrival } from "./useStageArrival";
 import { CourtBackdrop } from "../components/story/CourtBackdrop";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { CONDITIONAL_INCOME_KEYS, incomeAmount, RELIABLE_INCOME_KEYS } from "../domain/scenario/expectations";
@@ -70,6 +71,8 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
   useEffect(() => {
     if (focusOnArrival) heading.current?.focus();
   }, [focusOnArrival]);
+  // Every new stage opens at the top, with its own heading announced.
+  useStageArrival(heading, stage);
   return (
     <div className="challenge-shell" data-world={world} data-chapter={chapterFor(stage)}>
       <header className="challenge-topbar">

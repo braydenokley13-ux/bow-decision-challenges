@@ -58,6 +58,16 @@ describe("a market run, read by the educator layer", () => {
     expect(groups[0]!.worldId).toBe("basketball");
   });
 
+  it("kept a plan a teacher can read, rather than a blank tab", () => {
+    // The one view of what the student actually built. It rendered nothing at all for this
+    // world, silently — a teacher would read it as "this student did nothing".
+    const saved = popUp.log.filter((event) => event.type === "POPUP_PLAN_SAVED");
+    expect(saved.length).toBeGreaterThan(0);
+    const plan = (saved.at(-1)!.payload as { snapshot?: { plan?: Record<string, number> } }).snapshot?.plan;
+    expect(plan).toBeDefined();
+    for (const line of ["stock", "cushion", "cut"]) expect(plan![line]).toBeTypeOf("number");
+  });
+
   it("still analyses a mixed class without inventing a row", () => {
     const analysis = analyseClass([basketball, popUp]);
     expect(analysis.rows).toHaveLength(2);

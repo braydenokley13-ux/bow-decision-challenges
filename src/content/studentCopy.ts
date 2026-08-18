@@ -21,6 +21,12 @@
  */
 export const STUDENT_COPY = {
   join: {
+    /* Shown where the class may offer a choice, in place of one world's story. It says what
+       is about to happen and nothing about which world, because the student has not picked
+       one yet and a promise made here would be a promise to half of them. */
+    chooseKicker: "Before you start",
+    chooseHeadline: "Two ways in. You pick one.",
+    chooseLede: "Type the code your teacher put up. Then you choose which one you want to run, and the money is yours to handle either way.",
     privacy: "No name, no email, nothing about your real money. Your seat code is how your work gets back to your teacher.",
     /* A student who arrived without a code used to meet a form they could not fill in and no
        way forward. One line, stated as a fact rather than an apology. */

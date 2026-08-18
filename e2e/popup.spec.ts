@@ -46,7 +46,7 @@ async function classWithOneWorld(request: APIRequestContext, worldId: string): P
 async function join(page: Page, classCode: string, seatCode: string) {
   await page.getByLabel("Class code").fill(classCode);
   await page.getByLabel("Seat", { exact: true }).fill(seatCode);
-  await page.getByRole("button", { name: "Start the eight weeks" }).click();
+  await page.getByRole("button", { name: /Start the eight weeks|Go in/ }).click();
 }
 
 async function pickPopUp(page: Page) {
@@ -247,7 +247,7 @@ test.describe("Run the Pop-Up", () => {
     await codeField.fill(classCode);
     await page.keyboard.press("Tab");
     await page.keyboard.type("6");
-    const enter = page.getByRole("button", { name: "Start the eight weeks" });
+    const enter = page.getByRole("button", { name: /Start the eight weeks|Go in/ });
     await enter.focus();
     await enter.press("Enter");
 
@@ -329,7 +329,7 @@ test.describe("Run the Pop-Up", () => {
       await gotoFreshChallenge(page);
 
       // The join card leads at narrow widths: the one thing a student has to do is on screen.
-      await expect(page.getByRole("button", { name: "Start the eight weeks" })).toBeInViewport();
+      await expect(page.getByRole("button", { name: /Start the eight weeks|Go in/ })).toBeInViewport();
       await noHorizontalOverflow(page);
 
       await join(page, classCode, viewport.width === 640 ? "8" : "9");

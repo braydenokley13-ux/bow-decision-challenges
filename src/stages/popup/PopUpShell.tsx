@@ -1,4 +1,5 @@
 import { useEffect, useRef, type PropsWithChildren, type ReactNode } from "react";
+import { useStageArrival } from "../../app/useStageArrival";
 import { AppMark } from "../../components/primitives/AppMark";
 import { MarketBackdrop } from "../../components/story/MarketBackdrop";
 import { formatDollars } from "../../domain/core/money";
@@ -52,6 +53,8 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
     if (first.current) { first.current = false; return; }
     heading.current?.focus();
   }, [focusKey]);
+  // Every new Saturday opens at the top of itself, the generator screen included.
+  useStageArrival(heading, stage);
 
   return (
     <div className="popup-shell" data-world="food-truck" data-chapter={chapterFor(stage)}>

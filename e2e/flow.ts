@@ -136,7 +136,7 @@ export async function gotoFreshChallenge(page: Page) {
 export async function enterChallenge(page: Page, options: { classCode: string; seatCode?: string }) {
   await page.getByLabel("Class code").fill(options.classCode);
   await page.getByLabel("Seat", { exact: true }).fill(options.seatCode ?? "7");
-  await page.getByRole("button", { name: "Start the eight weeks" }).click();
+  await page.getByRole("button", { name: /Start the eight weeks|Go in/ }).click();
   await chooseSeasonIfOffered(page);
   await page.getByRole("button", { name: "Find Avery a place" }).click();
 }

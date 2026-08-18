@@ -409,7 +409,7 @@ studentTest("the opening screens work with a keyboard only", async ({ page, clas
   const seatField = page.getByLabel("Seat", { exact: true });
   await seatField.focus();
   await seatField.fill("9");
-  const enterButton = page.getByRole("button", { name: "Start the eight weeks" });
+  const enterButton = page.getByRole("button", { name: /Start the eight weeks|Go in/ });
   await enterButton.focus();
   await enterButton.press("Enter");
   const dealButton = page.getByRole("button", { name: "Find Avery a place" });
@@ -747,7 +747,7 @@ test("a class code that does not exist is refused before the challenge starts", 
   await gotoFreshChallenge(page);
   await page.getByLabel("Class code").fill("QQQQQ");
   await page.getByLabel("Seat", { exact: true }).fill("4");
-  await page.getByRole("button", { name: "Start the eight weeks" }).click();
+  await page.getByRole("button", { name: /Start the eight weeks|Go in/ }).click();
 
   await expect(page.locator("#join-status")).toContainText("No class with that code");
   await expect(page.getByRole("heading", { name: "What the eight weeks pay." })).not.toBeVisible();
