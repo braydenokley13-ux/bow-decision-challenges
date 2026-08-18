@@ -63,7 +63,7 @@ function restoredWorld(): WorldId {
   return loadAttemptFor(last) ? last : DEFAULT_WORLD_ID;
 }
 
-export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT, initial }: PropsWithChildren<{
+export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT, initial, initialWorldId }: PropsWithChildren<{
   transport?: EvidenceTransport;
   /**
    * An attempt this browser did not write.
@@ -74,6 +74,16 @@ export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT, ini
    * it. Absent on every other route, where the answer is whatever this machine remembers.
    */
   initial?: ChallengeState;
+  /**
+   * Which world's screens to open on, when something outside this provider already knows.
+   *
+   * `restoredWorld()` answers from this machine's own storage, which is the right answer on the
+   * machine the run was made on and no answer at all on a different one. A student resuming the
+   * market on a second device landed on the world picker and was asked to choose again — and
+   * the market's own gate, which restores its run, only runs once its screens are mounted, so
+   * the run stayed unrestored behind a question the student had already answered.
+   */
+  initialWorldId?: WorldId;
 }>) {
   // Basketball's attempt, by name. This provider holds Basketball's reducer, and with a second
   // world in the browser "whatever was open last" is no longer the same question as "what does
@@ -84,7 +94,7 @@ export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT, ini
     undefined,
     () => initial ?? loadAttemptFor<ChallengeState>(DEFAULT_WORLD_ID) ?? createInitialState(Date.now()),
   );
-  const [activeWorldId, setActiveWorldId] = useState<WorldId>(restoredWorld);
+  const [activeWorldId, setActiveWorldId] = useState<WorldId>(() => initialWorldId ?? restoredWorld());
   const [offer, setOffer] = useState<WorldOffer | null>(null);
   const [delivery, setDelivery] = useState<DeliveryState>({ status: "idle" });
   // One browser runs this attempt once. A second tab is told so rather than allowed to write

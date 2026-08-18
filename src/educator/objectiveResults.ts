@@ -91,12 +91,27 @@ export function worldOfSubmission(submission: SubmissionRecord) {
  * rules, which would publish a judgement about a game the student never played.
  */
 export function competencyObservationsFor(submission: SubmissionRecord): readonly EvidenceRequirementObservation[] {
+  return withTeacherJudgement(machineObservationsFor(submission), submission);
+}
+
+/**
+ * What the world's own observer said, before anybody disagreed with it.
+ *
+ * Every roll-up in the product wants the version with the teacher's last word folded in —
+ * that is the whole point of an override, and `competencyObservationsFor` is what they call.
+ * The evidence trail is the one surface that wants the other thing, and it wants it for the
+ * reason the override exists at all: it prints BOW's reading and the teacher's side by side,
+ * so a second teacher can see what the first one disagreed with.
+ *
+ * It was reading the folded version, so after an override the row said **You: Part of it** and
+ * **BOW: Part of it** — the machine's original reading vanished from the only screen that
+ * showed it, while a comment two lines away promised "both, always". An override that hides
+ * what it overrode is not a record of a disagreement, it is a rewrite of one.
+ */
+export function machineObservationsFor(submission: SubmissionRecord): readonly EvidenceRequirementObservation[] {
   const contract = contractFor(worldOfSubmission(submission));
   if (!contract) return [];
-  return withTeacherJudgement(
-    contract.observe(submission.log, { reasoningCriteria: submission.reasoningCriteria }),
-    submission,
-  );
+  return contract.observe(submission.log, { reasoningCriteria: submission.reasoningCriteria });
 }
 
 /**

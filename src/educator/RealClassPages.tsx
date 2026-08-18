@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
-import { EducatorShell } from "./EducatorShell";
+import { EducatorShell, StateKey } from "./EducatorShell";
 import { useClassEvidence, type ClassEvidenceState, type OverrideRequest } from "./useClassEvidence";
 import { EvidenceTrailPanel, StudentSummary } from "./EvidenceTrailPanel";
 import type { AttributedSubmission } from "../platform/classes/types";
@@ -17,11 +17,11 @@ import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { WORLD_REGISTRY } from "../domain/scenario/registry";
 import { POP_UP_SCENARIO } from "../domain/scenario/worlds/food-truck";
 import { derivePopUpFacts } from "../domain/scenario/worlds/food-truck/facts";
-import { COMPETENCY_STATE_HEADLINES, COMPETENCY_STATE_LABELS } from "./labels";
+import type { CompetencyResultState } from "../domain/competency/types";
+import { levelLabel, skillStateKey, skillStateInSentence, LEVEL_BUCKET_DESCRIPTIONS, LEVEL_BUCKET_LABELS, SKILL_STATE_LABELS, TERMS } from "./labels";
 import { REASONING_MAXIMUM } from "../domain/evidence/grade";
 import { REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 import { MINIMUM_ASSESSED_FOR_A_STATE, MINIMUM_RESULTS_FOR_CLASS_NARRATION } from "../domain/competency/objectiveState";
-import { PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
 import { classSpineFrom, type ClassSpine } from "./classSpine";
 import { studentSpineFor, type StudentSpine } from "./studentSpine";
 import { TeachNext } from "./TeachNext";
@@ -79,16 +79,31 @@ function ClassFrame({ state, children, title }: {
  * can read it from their seats. So the code is the page, at the size a projector needs, with
  * the address they type beside it.
  */
-function NothingYet({ code, label, keyQuery, hasRoster }: { code: string; label: string; keyQuery: string; hasRoster: boolean }) {
+function NothingYet({ code, label, keyQuery, hasRoster, roll, roster, progress, loadedAt }: {
+  code: string;
+  label: string;
+  keyQuery: string;
+  hasRoster: boolean;
+  roll: ClassRoll;
+  roster: readonly RosterRow[];
+  progress: readonly ProgressRow[];
+  loadedAt: number;
+}) {
+  // A lesson that has started and finished nothing is not an empty class, and it is the exact
+  // moment this page is most use. It used to answer "Nothing turned in yet · 0 turned in" to a
+  // teacher standing in a room where twenty-eight students were working — the code poster,
+  // which is the right screen five minutes earlier and the wrong one now.
+  const working = progress.length > 0;
   return (
     <>
       <header className="class-header">
         <div>
           <p className="eyebrow">{label}</p>
-          <h1>Nothing turned in yet.</h1>
+          <h1>{working ? "Nobody has finished yet." : "Nothing turned in yet."}</h1>
         </div>
         <div><span>0 turned in</span></div>
       </header>
+      {working && <LiveState roll={roll} roster={roster} progress={progress} code={code} keyQuery={keyQuery} loadedAt={loadedAt} />}
       <section className="class-created">
         <div className="class-created__code class-created__code--projector">
           <p className="field-label">Class code</p>
@@ -97,7 +112,10 @@ function NothingYet({ code, label, keyQuery, hasRoster }: { code: string; label:
         </div>
         <div className="class-created__body">
           <h2>Students go here</h2>
-          <p className="join-address"><code>{window.location.origin}{PLAN_UNDER_PRESSURE.route}</code></p>
+          {/* The sign-in, not the run. A student typing the challenge route with no session is
+              bounced to this address anyway, and an address a teacher reads to a room should be
+              the one that works rather than the one that redirects. */}
+          <p className="join-address"><code>{window.location.origin}/join</code></p>
           {/* What a student actually meets, which is no longer a seat number to pick: a class
               with a list hands out cards and the card decides the seat, and a class without
               one asks the student for the name their teacher will see. A launch instruction
@@ -419,7 +437,20 @@ export function RealClassOverview() {
         // student list and the export — so two of them cannot disagree about the same room.
         // They used to be computed five ways and three of them were on screen at once.
         const roll = classRoll({ rows: analysis.rows, roster: ready.roster, progress: ready.progress });
-        if (roll.rows.length === 0) return <NothingYet code={record.code} label={record.label} keyQuery={keyQuery} hasRoster={roll.hasRoster} />;
+        if (roll.rows.length === 0) {
+          return (
+            <NothingYet
+              code={record.code}
+              label={record.label}
+              keyQuery={keyQuery}
+              hasRoster={roll.hasRoster}
+              roll={roll}
+              roster={ready.roster}
+              progress={ready.progress}
+              loadedAt={ready.loadedAt}
+            />
+          );
+        }
         // The spine is read against the same class: one attempt per student still in the
         // room, so "turned in" in the headline is the same number as "turned in" in the tile.
         const counted = roll.rows.flatMap((row) => submissions.filter((entry) => entry.sessionId === row.sessionId));
@@ -490,22 +521,35 @@ export function RealClassOverview() {
                   <h2>Where the class is on each skill</h2>
                 </div>
                 <table className="micro-table">
-                  <caption>Counts across {spine.assessed} of {total} with a usable result</caption>
+                  <caption>
+                    Counts across the {spine.assessed} of {total} with a usable result — one whose written
+                    explanation somebody has read.
+                  </caption>
                   <thead><tr><th scope="col">Skill</th><th scope="col">Where the class is</th></tr></thead>
                   <tbody>
                     {spine.reading.competencies.map((row) => (
                       <tr key={row.competencyId}>
                         <th scope="row">{competencyStatement(row.competencyId, submissions)}</th>
+                        {/* Counts of students, so the words are Ladder 3 — one claim about
+                            one child, added up. Lowercased by the same table, not a second one. */}
                         <td>
                           {Object.entries(row.counts)
                             .filter(([, count]) => count > 0)
-                            .map(([entry, count]) => `${count} ${COMPETENCY_STATE_LABELS[entry as keyof typeof COMPETENCY_STATE_LABELS]}`)
+                            .map(([entry, count]) => `${count} ${skillStateInSentence(entry as CompetencyResultState)}`)
                             .join(" · ")}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                {/* Once for the page. The class list further down leads every row with one of
+                    these same six words, so a teacher meets the key before the rows. */}
+                <StateKey
+                  title="What these words mean"
+                  entries={skillStateKey(spine.reading.competencies.flatMap((row) =>
+                    (Object.entries(row.counts) as [CompetencyResultState, number][])
+                      .filter(([, count]) => count > 0).map(([state]) => state)))}
+                />
               </section>
             )}
 
@@ -622,7 +666,7 @@ function StudentRows({ rows, submissions, code, keyQuery }: {
           <Link key={row.sessionId} to={`/educator/class/${code}/students/${row.seatCode}${keyQuery}`}>
             <div>
               <small>{label(row.seatCode)}</small>
-              <h3>{spine ? COMPETENCY_STATE_HEADLINES[spine.lead] : "No result"}</h3>
+              <h3>{spine ? SKILL_STATE_LABELS[spine.lead] : "No result"}</h3>
               <small>{spine ? shortfallLine(spine, row) : "This attempt could not be read."}</small>
             </div>
           </Link>
@@ -632,18 +676,25 @@ function StudentRows({ rows, submissions, code, keyQuery }: {
   );
 }
 
-/** The one requirement a teacher would open this student for, said in their own words. */
+/**
+ * The one thing a teacher would open this student for, said in their own words.
+ *
+ * Every verdict here is Ladder 2, read from the table. It used to improvise three of them —
+ * "not shown", "partly shown" and "Showed every required part." — none of which appeared
+ * anywhere else in the product, on the row a teacher clicks to reach a page that then said
+ * the same fact two further ways.
+ */
 function shortfallLine(spine: StudentSpine, row: StudentRow): string {
   const [first, ...rest] = spine.shortfalls;
   if (first) {
-    const verdict = first.level === 0 ? "not shown" : "partly shown";
-    return `${first.label} — ${verdict}${rest.length > 0 ? ` · ${rest.length} more` : ""}`;
+    return `${first.label} — ${levelLabel(first.level)}${rest.length > 0 ? ` · ${rest.length} more` : ""}`;
   }
-  if (row.reasoningPoints === null) return "Written explanation not read yet.";
+  if (row.reasoningPoints === null) return "Written explanation still to read.";
   if (spine.notObserved.length > 0) {
-    return `${spine.notObserved.length} requirement${spine.notObserved.length === 1 ? "" : "s"} never came up in this run.`;
+    const count = spine.notObserved.length;
+    return `${count} ${count === 1 ? "thing" : "things"} the work had to show ${count === 1 ? "was" : "were"} never asked in this run.`;
   }
-  return "Showed every required part.";
+  return `${LEVEL_BUCKET_LABELS.met} — everything the work had to show.`;
 }
 
 export function RealStudentEvidence() {
@@ -714,12 +765,12 @@ function StudentLead({ spine, awaitingReading }: { spine: StudentSpine; awaiting
   return (
     <div className="student-lead" data-state={spine.lead}>
       <p className="field-label">What the evidence shows</p>
-      <strong>{COMPETENCY_STATE_HEADLINES[spine.lead]}</strong>
+      <strong>{SKILL_STATE_LABELS[spine.lead]}</strong>
       <ul className="student-lead__skills">
         {spine.competencies.map((line) => (
           <li key={line.competencyId}>
             <span>{line.statement}</span>
-            <b>{COMPETENCY_STATE_LABELS[line.state]}</b>
+            <b>{SKILL_STATE_LABELS[line.state]}</b>
           </li>
         ))}
       </ul>
@@ -727,7 +778,7 @@ function StudentLead({ spine, awaitingReading }: { spine: StudentSpine; awaiting
         <ul className="student-lead__flags">
           {spine.shortfalls.map((flag) => (
             <li key={flag.evidenceRequirementId}>
-              {flag.label} — {flag.level === 0 ? "not shown" : "partly shown"}
+              {flag.label} — {levelLabel(flag.level)}
             </li>
           ))}
         </ul>
@@ -737,8 +788,8 @@ function StudentLead({ spine, awaitingReading }: { spine: StudentSpine; awaiting
       )}
       {spine.notObserved.length > 0 && (
         <p className="student-lead__absence">
-          {spine.notObserved.length} required {spine.notObserved.length === 1 ? "requirement" : "requirements"} never came
-          up in this run. Absences, not zeros.
+          {spine.notObserved.length} {spine.notObserved.length === 1 ? "thing" : "things"} the work had to
+          show {spine.notObserved.length === 1 ? "was" : "were"} never asked in this run. Absences, not zeros.
         </p>
       )}
     </div>
@@ -781,6 +832,12 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride, on
           ? <StudentLead spine={spine} awaitingReading={row.reasoningPoints === null} />
           : <p className="class-state">This attempt could not be opened in full.</p>}
       </header>
+
+      {/* The Ladder-3 words the panel above just used, each with its sentence, once — above
+          the tabs, because the header stays put while the tabs swap under it. Ladder 2's key
+          belongs to the trail, which is the tab every Ladder-2 word on this page appears on
+          and the one this panel opens to. */}
+      {spine && <StateKey title="What these words mean" entries={skillStateKey(spine.competencies.map((line) => line.state))} />}
 
       {/* §19.1 says the chain is read in an order. The four tabs are that order cut into the
           four things a teacher opens a student to do, and every one of them is one click from
@@ -995,14 +1052,16 @@ function Gradebook({ submission, displayName }: { submission: AttributedSubmissi
   const line = gradebookLineFor(submission, displayName);
   return (
     <section className="gradebook">
-      <p className="field-label">Gradebook line</p>
+      <p className="field-label">Gradebook line · {TERMS.requirement}</p>
       <dl className="gradebook__counts">
-        <div><dt>Required parts shown</dt><dd>{line.requirements.met}</dd></div>
-        <div><dt>Fell short</dt><dd>{line.requirements.short}</dd></div>
-        {/* Never folded into "fell short". A question nobody asked is not a question failed,
-            and this is the one artefact that gets copied somewhere nothing can explain it. */}
-        <div><dt>Never asked</dt><dd>{line.requirements.neverAsked}</dd></div>
+        <div><dt>{LEVEL_BUCKET_LABELS.met}</dt><dd>{line.requirements.met}</dd></div>
+        <div><dt>{LEVEL_BUCKET_LABELS.short}</dt><dd>{line.requirements.short}</dd></div>
+        {/* Never folded into the one above it. A question nobody asked is not a question
+            failed, and this is the one artefact that gets copied somewhere nothing can
+            explain it — which is why the export names these three the same way. */}
+        <div><dt>{LEVEL_BUCKET_LABELS.neverAsked}</dt><dd>{line.requirements.neverAsked}</dd></div>
       </dl>
+      <p className="gradebook__note">{LEVEL_BUCKET_DESCRIPTIONS.met} {LEVEL_BUCKET_DESCRIPTIONS.neverAsked}</p>
       <p className="gradebook__figure">
         <strong>
           {line.reasoning.total === null

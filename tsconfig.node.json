@@ -11,5 +11,10 @@
   // The browser suite reads the scenario's own numbers, so the domain it imports is
   // part of this project too — and so is the headless run harness, which is how a domain
   // test gets a log that a real student could have produced rather than one it typed.
-  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "eslint.config.js", "e2e/**/*.ts", "server/**/*.ts", "api/**/*.ts", "src/domain/**/*.ts", "src/platform/**/*.ts", "src/test/**/*.ts", "src/components/financial/choices.ts"]
+  //
+  // `labels.ts` is here for the same reason as `choices.ts`: it is the one table of words the
+  // educator surface renders, and a browser test that spelled a level itself would pass while
+  // the screen said something else. Reading it is what let the golden journeys survive the
+  // vocabulary rename without a single assertion being edited.
+  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "eslint.config.js", "e2e/**/*.ts", "server/**/*.ts", "api/**/*.ts", "src/domain/**/*.ts", "src/platform/**/*.ts", "src/test/**/*.ts", "src/components/financial/choices.ts", "src/educator/labels.ts"]
 }
