@@ -170,12 +170,19 @@ export function SeasonWeeks() {
           })}
         </ul>
         {/* The one figure the decision turns on, and the sentence that makes leaving money
-            behind a real cost rather than a saving. This cash never reaches the plan. */}
+            behind a real cost here rather than a free saving.
+
+            It used to read "Cash Avery does not spend this week goes nowhere", which is a
+            claim about money and not a true one: a person handed cash can keep it. What is
+            true is narrower and is what it says now — this cash does not reach the plan, and
+            none of these three claims is served by holding on to it. An economics review
+            found the false version in both worlds; `worlds/basketball/claims.ts` records why
+            the beat is walled off from the plan and what a real fourth "keep it" option would
+            cost. "What Avery does not spend" was also read as though it could mean the plan;
+            it is the cash and only the cash, and the sentence has to survive one reading. */}
         <p className="claims__left" aria-live="polite">
           <strong className="money">{formatDollars(left)}</strong>
-          {/* "What Avery does not spend" read as though it could mean the plan. It is the
-              cash and only the cash, and the sentence has to survive being read once. */}
-          <span>left of {formatDollars(CASH)}. Cash Avery does not spend this week goes nowhere.</span>
+          <span>left of {formatDollars(CASH)}. What Avery keeps in hand does nothing for any of these three.</span>
         </p>
 
         {/* Not asked until something has actually been left out. Asked at the top of the
@@ -231,7 +238,7 @@ export function SeasonWeeks() {
         {refusal !== null && (
           <p className="claims__refusal" role="alert">
             {refusal === "nothing-paid"
-              ? <><b>Nothing paid for yet.</b> The {formatDollars(CASH)} cannot be saved and cannot go into the plan, so leaving it is not one of the choices. Pay for at least one of the three.</>
+              ? <><b>Nothing paid for yet.</b> This money is Avery’s, not the plan’s, so it does not reach the plan. These three are what it can do something about this week — pay for at least one of them.</>
               : <><b>One thing left.</b> Say what made you leave {formatDollars(CASH - spent)} worth of it out.</>}
           </p>
         )}

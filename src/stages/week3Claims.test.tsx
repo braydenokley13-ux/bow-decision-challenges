@@ -155,7 +155,15 @@ describe("the primary control answers every press", () => {
     expect(alert).toHaveTextContent(/Nothing paid for yet/);
     // The whole justification for treating an unspent dollar as a gap, said where it is
     // refused rather than only in the deck.
-    expect(alert).toHaveTextContent(/cannot be saved and cannot go into the plan/);
+    //
+    // This assertion used to read /cannot be saved and cannot go into the plan/, and it held
+    // that sentence in place for as long as it ran. The sentence is false — a person handed
+    // cash can keep it — and a test asserting it made the false half as load-bearing as the
+    // true half. What the refusal owes the student is the narrow constraint and a way on, so
+    // that is what is asserted: the money does not reach the plan, and there is something to
+    // press. `savingIsPossible.test.ts` is what stops the old wording coming back.
+    expect(alert).toHaveTextContent(/does not reach the plan/);
+    expect(alert).toHaveTextContent(/pay for at least one of them/i);
     expect(dispatch).not.toHaveBeenCalled();
   });
 

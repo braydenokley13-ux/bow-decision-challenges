@@ -562,10 +562,18 @@ function read(
  * `er1` — how far the money was made to reach.
  *
  * Arithmetic, and neutral by construction: more than one allocation satisfies it and it is
- * indifferent between them. The cash never enters the plan and cannot be banked — the
- * screen says so before the student decides — so a dollar not spent on one of these three
- * is a dollar spent on nothing, which is why leaving a claim affordable and unpaid is a
- * real gap rather than a preference.
+ * indifferent between them. The cash never enters the plan — the screen says so before the
+ * student decides — so a dollar not spent on one of these three does nothing for any of
+ * them this week, which is why leaving a claim affordable and unpaid is a real gap rather
+ * than a preference.
+ *
+ * This note used to end *"and cannot be banked"*, and the level-0 sentence below said the
+ * money *"could not be saved"*. Neither is true of cash in a person's hand, and stating it
+ * as the ground for a zero is the worst place in the product to state it: an economics
+ * review found the same claim on the screens, and a teacher defending this mark to a parent
+ * would have been quoting it. The reach rule itself has not changed — what changed is that
+ * the sentence now says what the money failed to do rather than what the world forbade it
+ * to be. `claims.ts` carries why the beat is walled off from the plan at all.
  */
 function reachRead(settlement: CompetingClaimsSettlement, named: (ids: readonly string[]) => string): ClaimsRead {
   const cash = formatDollars(settlement.cash);
@@ -575,7 +583,7 @@ function reachRead(settlement: CompetingClaimsSettlement, named: (ids: readonly 
     return { level: 0, detail: `The claims taken on came to ${spent} against ${cash} in hand, which is more money than the week had in it.` };
   }
   if (settlement.fundedIds.length === 0) {
-    return { level: 0, detail: `Nothing on the list was paid for, so the whole ${cash} sat in a week where it could not be saved and could not be spent on anything else.` };
+    return { level: 0, detail: `Nothing on the list was paid for, so none of the ${cash} did anything for the three claims in front of it.` };
   }
   if (reachesAsFarAsItGoes(settlement.fundedIds)) {
     return { level: 5, detail: `${spent} of the ${cash} went on ${named(settlement.fundedIds)}, and the ${left} left over could not have covered ${named(settlement.unfundedIds)}.` };

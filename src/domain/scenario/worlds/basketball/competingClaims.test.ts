@@ -267,9 +267,9 @@ describe("Week 8 says what happened to what went unpaid", () => {
     // Funding only the away share leaves more than the present costs. That is the whole of
     // `er1`'s gap, said in the ending in the words a student can check.
     //
-    // It is a fact about the week — money left in a week it could not be saved in — so it is
-    // said once and names whichever claims it is true of, rather than being appended to every
-    // card. Repeated per claim it was the third identical sentence a student who spent little
+    // It is a fact about the week — money left over with nothing in front of it that it
+    // could have paid for — so it is said once and names whichever claims it is true of,
+    // rather than being appended to every card. Repeated per claim it was the third identical sentence a student who spent little
     // met on the last screen of the run.
     const outcome = outcomeFor(["away-travel"], "only-wanted");
     const risks = resolveSeason(finalOf({}), N, undefined, "attendance bonus", undefined, outcome).risks

@@ -293,6 +293,10 @@ describe("what this product promises about where a child's data goes", () => {
       expect(shapesIn(claim), claim).not.toEqual([]);
     }
     // And nothing fires on the fiction, or the world's own money would be a privacy claim.
+    // The first of these is retired product copy — an economics review had it deleted for
+    // telling a child their money could not be saved — and it is kept here as a case rather
+    // than as a quotation: the discrimination it proves is what stops the next sentence about
+    // Avery's cash being read as a promise about a student's data.
     for (const fiction of [
       "Cash Avery does not spend this week goes nowhere.",
       "Your plan is saved, but not sent yet.",

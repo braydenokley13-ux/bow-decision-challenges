@@ -561,10 +561,15 @@ interface ClaimsRead {
  * `er1` — how far the jar was made to reach.
  *
  * Arithmetic, and neutral by construction: more than one allocation satisfies it and it is
- * indifferent between them. The tips never enter the plan and cannot be banked — the screen
- * says so before the student decides — so a dollar not spent on one of these three is a
- * dollar spent on nothing, which is why leaving a claim affordable and unpaid is a real gap
+ * indifferent between them. The tips never reach the truck's three lines — the screen says
+ * so before the student decides — so a dollar not spent on one of these three does nothing
+ * for any of them tonight, which is why leaving a claim affordable and unpaid is a real gap
  * rather than a preference.
+ *
+ * This note used to end *"and cannot be banked"*, and the level-0 sentence below said the
+ * money sat in a jar that *"could not be banked"*. Neither is true of cash in a person's
+ * hand. Basketball's `reachRead` carries the whole of why that mattered most in the sentence
+ * that grounds a zero; `claims.ts` carries why the jar is walled off from the lines at all.
  */
 function tipsReachRead(
   settlement: CompetingClaimsSettlement,
@@ -578,7 +583,7 @@ function tipsReachRead(
     return { level: 0, detail: `The claims taken on came to ${spent} against ${cash} in the jar, which is more money than was in it.` };
   }
   if (settlement.fundedIds.length === 0) {
-    return { level: 0, detail: `Nothing on the list was paid for, so the whole ${cash} sat in a jar that could not be banked and could not be spent on anything else.` };
+    return { level: 0, detail: `Nothing on the list was paid for, so none of the ${cash} did anything for the three things waiting on it.` };
   }
   if (tipsReachAsFarAsTheyGo(settlement.fundedIds, n)) {
     return { level: 5, detail: `${named(settlement.fundedIds)} took ${spent} of the ${cash}, and the ${left} left over could not have covered ${named(settlement.unfundedIds)}.` };

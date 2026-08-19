@@ -12,7 +12,10 @@ import type { PopUpNumbers, TipClaimId } from "./types";
  * combination pays for all three.
  *
  * **The money is outside the plan, and that is the design.** It never reaches stock, the
- * cushion or the cut, it cannot be banked, and it does not appear in `ledger.ts` anywhere.
+ * cushion or the cut, no beat in this world offers a way to put it by, and it does not appear
+ * in `ledger.ts` anywhere. That is a statement about how far this beat was built and it is
+ * deliberately not phrased as "it cannot be banked": the screens said that to a child for a
+ * release, and `savingIsPossible.test.ts` now stops them saying it again.
  * That is the same decision Basketball made about Avery's Week 3 cash and it is made here
  * for the same reason: `balance.ts` sweeps the strategy space to prove no plan dominates,
  * and threading a fourth pot through the three lines would multiply that space for a beat
