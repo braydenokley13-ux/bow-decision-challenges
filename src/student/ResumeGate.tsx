@@ -6,7 +6,7 @@ import { Button } from "../components/primitives/Button";
 import type { ChallengeState } from "../domain/machine/state";
 import type { WorldId } from "../domain/core/ids";
 import { DEFAULT_WORLD_ID } from "../domain/scenario/registry";
-import { loadAttemptFor, saveAttempt, type PersistedAttempt } from "../domain/io/persistence";
+import { loadAttemptFor, saveAttempt } from "../domain/io/persistence";
 import { readMyAttempt, studentToken } from "./session";
 
 interface Restored {
@@ -94,7 +94,7 @@ export function ResumeGate({ children }: { children: React.ReactNode }) {
       // Adopted, and written down before the student touches anything. Without the write the
       // next reload compares this device's abandoned copy against the service all over again
       // and says the same thing a second time.
-      saveAttempt(there as unknown as PersistedAttempt);
+      saveAttempt(there);
       setRestored({ state: there, ...(answer.forked ? { setAside: true } : {}) });
     })();
     return () => { cancelled = true; };

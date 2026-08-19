@@ -1,4 +1,5 @@
 import { CODE_ALPHABET, isWellFormedSeatCode, normaliseSeatCode } from "../src/platform/classes/codes";
+import { asRunCopy, copyToKeep } from "../src/platform/identity/runCopies";
 import {
   IDENTITY_ERROR_MESSAGES,
   MAX_DISPLAY_NAME,
@@ -528,6 +529,34 @@ export async function handleIdentityRequest(
     // is a *different* attempt: a student going again is not still in the one they finished.
     const sameAttempt = !sessionId || !existing?.sessionId || existing.sessionId === sessionId;
     const stillSubmitted = sameAttempt ? existing?.submittedAt : undefined;
+
+    // Two devices, one seat, and the only place both copies of the run are ever in hand.
+    //
+    // This used to store whatever arrived, which is last-writer-wins, and last-writer-wins
+    // between two devices that have parted is not a rule at all — it is a coin the child
+    // flips every time they reload. A verifier ran it: one seat on two machines, the bonuses
+    // counted in on one and left out on the other, both reloaded twice, and the two screens
+    // still disagreed at the end. Neither device could see it, either, because a page that is
+    // going away checkpoints on `pagehide` — so by the time the next load asked what the
+    // service held, the service was holding the copy that device had just sent it. Each
+    // machine compared itself against itself, found no disagreement, and went on showing its
+    // own plan. Whichever one the child finished on was the plan the teacher graded.
+    //
+    // `copyToKeep` reads the two evidence logs against each other — see `runCopies` for the
+    // whole argument — and keeps the copy that descends from the other, or, where they have
+    // genuinely forked, the one carrying the decision the child made most recently. What
+    // matters as much as which copy wins is that the answer does not depend on **which order
+    // the two arrived in**: once both devices have checkpointed, the service holds the same
+    // copy whoever wrote last, so a reload cannot flip it and the two machines converge. The
+    // device that lost is told, by `ResumeGate`, on the machine it can be acted on.
+    //
+    // A checkpoint that loses is not an error and is not reported as one. Nothing was lost:
+    // the losing copy is still on its own device, and the moment that device is used again it
+    // produces a later decision and takes the run back — which is the property this has to
+    // have, because the child is sitting at one of these machines and it must be that one.
+    const keep = copyToKeep(asRunCopy(request.body.payload), asRunCopy(existing?.payload));
+    if (keep === "stored" && existing) return { status: 200, body: { savedAt: existing.updatedAt } };
+
     const checkpoint: AttemptCheckpoint = {
       classCode,
       seatCode: seat.seatCode,

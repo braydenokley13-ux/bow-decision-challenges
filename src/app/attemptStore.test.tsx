@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { challengeReducer } from "../domain/machine/reducer";
 import { createInitialState, type ChallengeState } from "../domain/machine/state";
 import { attemptKeyForWorld, loadAttemptFor } from "../domain/io/persistence";
-import { compareRuns, useAttemptAutosave, useDraft, useRunLock, useSingleFireDispatch } from "./attemptStore";
+import { compareRuns, copyToKeep, runToCarryOn, useAttemptAutosave, useDraft, useRunLock, useSingleFireDispatch } from "./attemptStore";
 
 /**
  * The three promises the attempt store makes, each of them a defect somebody reproduced.
@@ -300,5 +300,61 @@ describe("two copies of one run", () => {
 
   it("treats a run nobody has started as nobody's copy", () => {
     expect(compareRuns(createInitialState(at), run("one"))).toBe("different-run");
+  });
+  /**
+   * Two machines given the same pair of copies must reach the same answer.
+   *
+   * This is the property, and everything else is machinery for it: no message passes between
+   * two devices, so the only thing that can make them converge is a rule that is a function of
+   * the two copies rather than of who is asking. The obvious way to break the tie — `here >=
+   * there ? here : there` — is not a tie broken at all, because on two copies whose last
+   * decision carries the same clock *each machine calls itself the winner* and the two diverge
+   * for ever, which is the defect this file exists to remove.
+   *
+   * The clocks tie here because the events carry no clock at all, which is the same fact from
+   * the other side, and is exactly what a hand-built or a very old attempt looks like.
+   */
+  it("answers the same whichever copy asks, even when neither carries a clock", () => {
+    const one = { meta: { sessionId: "one" }, log: [{ id: "event-1" }, { id: "event-2", answer: "in" }] };
+    const other = { meta: { sessionId: "one" }, log: [{ id: "event-1" }, { id: "event-2", answer: "out" }] };
+    expect(compareRuns(one, other)).toBe("forked");
+
+    const fromOne = runToCarryOn(one, other);
+    const fromOther = runToCarryOn(other, one);
+    // One of them keeps its own copy and one of them adopts. What must never happen is both
+    // keeping — two machines each certain they hold the run, which is two plans for ever.
+    expect(fromOne.take === "here" && fromOther.take === "here").toBe(false);
+    expect(fromOne.take === "there" && fromOther.take === "there").toBe(false);
+    expect(fromOne.forked && fromOther.forked).toBe(true);
+
+    // And the service, asked the same question from either side, keeps the same copy — which
+    // is what stops a reload flipping the answer back.
+    expect(copyToKeep(one, other) === "incoming" ? one : other)
+      .toEqual(copyToKeep(other, one) === "incoming" ? other : one);
+  });
+
+  it("keeps the answer the child gave second when the clocks do separate them", () => {
+    const earlier = { meta: { sessionId: "one" }, log: [{ id: "event-1", timestamp: 10 }, { id: "event-2", answer: "in", timestamp: 20 }] };
+    const later = { meta: { sessionId: "one" }, log: [{ id: "event-1", timestamp: 10 }, { id: "event-2", answer: "out", timestamp: 30 }] };
+    expect(runToCarryOn(earlier, later)).toEqual({ take: "there", forked: true });
+    expect(runToCarryOn(later, earlier)).toEqual({ take: "here", forked: true });
+    expect(copyToKeep(earlier, later)).toBe("stored");
+    expect(copyToKeep(later, earlier)).toBe("incoming");
+  });
+
+  /**
+   * The one case the two functions answer differently, and it is not a subtlety.
+   *
+   * On a device, an attempt in local storage that is not this class's run is stale and the
+   * service's record wins. At the service, a checkpoint naming a different session is a second
+   * attempt — a student going again, or leaving one world for the other — and it replaces what
+   * is stored however short it is. Collapsing these into one function loses a child their
+   * second run or resurrects their first.
+   */
+  it("reads a different attempt as stale on a device and as a second run at the service", () => {
+    const first = { meta: { sessionId: "first-go" }, log: [{ id: "event-1" }, { id: "event-2" }] };
+    const second = { meta: { sessionId: "second-go" }, log: [{ id: "event-1" }] };
+    expect(runToCarryOn(second, first)).toEqual({ take: "there", forked: false });
+    expect(copyToKeep(second, first)).toBe("incoming");
   });
 });
