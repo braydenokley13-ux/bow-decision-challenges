@@ -67,7 +67,7 @@ An objective is *demonstrable* when a competency mapped `full` to it is built in
 
 ## Why the gap is the shape it is
 
-Of 21 competencies, **3 are built**. **13 have no evidence requirements written at all** — they are declared, grouped and mapped, and nothing has yet said what would count as a student demonstrating them, so no world can produce them and none is reported as assessable. **5** have their requirements written and no world that asks for them.
+Of 21 competencies, **3 are built**. **11 have no evidence requirements written at all** — they are declared, grouped and mapped, and nothing has yet said what would count as a student demonstrating them, so no world can produce them and none is reported as assessable. **7** have their requirements written and no world that asks for them.
 
 | Competency | State |
 | --- | --- |
@@ -84,8 +84,8 @@ Of 21 competencies, **3 are built**. **13 have no evidence requirements written 
 | `gross-to-net` BOW-E2 | 4 requirements written · no world produces them |
 | `what-taxes-fund` BOW-E3 | 3 requirements written · no world produces them |
 | `plan-for-the-unexpected` BOW-R1 | no evidence requirements written |
-| `use-insurance` BOW-R2 | no evidence requirements written |
-| `is-the-add-on-worth-it` BOW-R3 | no evidence requirements written |
+| `use-insurance` BOW-R2 | 4 requirements written · no world produces them |
+| `is-the-add-on-worth-it` BOW-R3 | 4 requirements written · no world produces them |
 | `protect-your-information` BOW-R4 | no evidence requirements written |
 | `save-toward-a-goal` BOW-S1 | 5 requirements written · no world produces them |
 | `how-savings-grow` BOW-S2 | no evidence requirements written |

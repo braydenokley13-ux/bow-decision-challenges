@@ -1094,3 +1094,48 @@
   .claims__list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
   .claims__why ul { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---------------------------------------------------------------------------
+   Short windows: the chrome stops floating.
+   --------------------------------------------------------------------------- */
+
+/* At 400% zoom a browser makes a 1280×1024 window into 320×256 CSS pixels, and this product
+   pins something to both edges of it. Measured there, on the ranking screen, a student cannot
+   press *Move earlier* at all: Playwright reports `<button>Check the order</button>` from
+   `.stage-action` intercepting the click, then — with that one unpinned — `.challenge-topbar`
+   and `.plan-rail` intercepting it in turn. Three bars, one window, nothing reachable between
+   them. The market fails the same way one screen in: *Take this booth* is visible, enabled, and
+   *"outside of the viewport"* after scrolling.
+
+   It is not any one bar and that is why it is fixed in one place. Each of these is a good idea
+   at 768px of height and they are the same idea at 256px, where together they are most of the
+   window. `.plan-rail` has been here before, at a narrow *width*, and the note at line 618
+   records what that cost: *"325px of it, 63.5 % of the viewport, covering the question, the
+   money field and both steppers."* The rule that fixed it pinned it to the bottom, which is
+   exactly what fails now on the other axis.
+
+   So below this height every one of them becomes what it already is in flow — content, in
+   order, that a student scrolls through. Nothing is lost that a 256px window had room to keep.
+   480px rather than 256px because a landscape phone and a short Chromebook window are the same
+   problem with more headroom.
+
+   Here, at the end of the last stylesheet `main.tsx` loads, because `scenes.css` is what makes
+   `.plan-rail` a bottom bar and a rule in `app.css` cannot reach past it. The selectors match
+   the ones they override — `.popup-main > .popup-action` does not yield to a bare
+   `.popup-action`, whatever order the files are in.
+
+   What actually guards this now is the `chromium-zoom` project in `playwright.config.ts`,
+   which is where the defect was found and which runs with the rest of the suite.
+   `visual/occlusion.spec.ts` has the 320×256 row too, but it is a manual instrument — its own
+   config, no `webServer`, nothing invoking it — so it is the second pair of eyes rather than
+   the gate. Its five viewports bottomed out at 600px of height, which is why this shipped: it
+   varies width, and this is a height defect. */
+@media (max-height: 480px) {
+  .challenge-topbar,
+  .popup-topbar,
+  .stage-action,
+  .plan-commit,
+  .plan-rail,
+  .popup-main > .popup-action,
+  .popup-board > .popup-commit { position: static; }
+}

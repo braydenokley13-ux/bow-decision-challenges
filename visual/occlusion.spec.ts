@@ -38,12 +38,29 @@ import { cashToPlan, orderCost, owedUpFront, swapBill } from "../src/domain/scen
  * the defect lived in; settled is the one a previous attempt at this created.
  */
 
+/**
+ * Five widths, and — since a defect got through the gap — one short window.
+ *
+ * The list was a width sweep with heights along for the ride: the shortest of the five is 600px,
+ * and every one of them has room for a bar pinned across the bottom. **400% zoom does not.** A
+ * browser's own zoom control at 400% on a 1280x1024 window is 320x256 CSS pixels, and
+ * `.stage-action` is about eighty of that height — enough that the ranking screen's *Move
+ * earlier* control sat underneath *Check the order* and could not be pressed at all. Playwright
+ * found it, sixteen retries deep, on the project that emulates zoom; this sweep could not,
+ * because it never asked for a window short enough.
+ *
+ * Named rather than left as a sixth row of numbers, because it is a different question from the
+ * others: the five above ask whether the layout fits sideways, and this one asks whether the
+ * chrome has eaten the screen.
+ */
 const WIDTHS = [
   { width: 1366, height: 768 },
   { width: 1024, height: 600 },
   { width: 768, height: 1024 },
   { width: 390, height: 844 },
   { width: 320, height: 640 },
+  // 400% zoom, the shape a browser's own control makes of a 1280x1024 window.
+  { width: 320, height: 256 },
 ] as const;
 
 const OUT = process.env.CRAFT_OUT ?? "/tmp/bow-craft";

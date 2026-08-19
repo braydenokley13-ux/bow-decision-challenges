@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { evidenceRequirementById, requiredEvidenceRequirementsFor } from "./competencies";
+import { COMPETENCIES, evidenceRequirementById, requiredEvidenceRequirementsFor } from "./competencies";
 import { competencyResultFor } from "./observe";
 import {
   DEVELOPING_THRESHOLD_PERCENT,
@@ -90,8 +90,17 @@ describe("one student, against one objective", () => {
     // evidence requirements would satisfy "every required one is at 4 or 5" vacuously, and
     // vacuous demonstration is the most dangerous kind — it reports a skill as shown
     // precisely because nobody has said what showing it would look like.
-    expect(competencyResultFor("use-insurance", [])).toBeNull();
-    expect(competencyResultFor("plan-for-the-unexpected", [])).toBeNull();
+    //
+    // Named two competencies, and one of them had its requirements written, at which point the
+    // test was asserting the rule about a competency the rule no longer covers. The set is
+    // derived now: whichever competencies are still unwritten today are the ones checked, so
+    // this keeps meaning the same thing as they are written one by one, and stops meaning
+    // anything only when the last one is — which is the day it should be deleted.
+    const unwritten = COMPETENCIES.filter((competency) => competency.evidenceRequirements.length === 0);
+    expect(unwritten.length, "every competency is written; this test has nothing left to guard").toBeGreaterThan(0);
+    for (const competency of unwritten) {
+      expect(competencyResultFor(competency.id, []), competency.id).toBeNull();
+    }
   });
 });
 

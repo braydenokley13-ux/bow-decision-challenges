@@ -31,6 +31,54 @@ export interface ReteachTopic {
 
 export const RETEACH_TOPICS: readonly ReteachTopic[] = [
   {
+    id: "cover-is-not-a-price-tag",
+    misconception: "A lower premium is always better",
+    title: "What the cheap one does not pay",
+    focus: "A student reads what a level of cover actually pays before comparing what it costs, and can say what a cheaper premium leaves them carrying.",
+    moves: [
+      "Put two levels side by side with their premiums covered up, and read only what each one pays. Ask which they would want if the worst happened, then reveal the prices.",
+      "Take one loss and settle it twice, once at each level. The difference between the two settlements is what the cheaper premium was buying you out of.",
+      "Then the honest other direction: find the case where the cheaper level is the right answer, so the rule the class leaves with is a comparison rather than \"always buy more\".",
+    ],
+    minutes: 15,
+  },
+  {
+    id: "the-year-nobody-claimed",
+    misconception: "Insurance is a scam if you don't claim",
+    title: "Read the whole pool, not your own row",
+    focus: "A student can explain a year in which they paid in and got nothing back, in terms of the losses the pool met for other people.",
+    moves: [
+      "Lay out a whole group's year — everybody's premiums on one side, everybody's losses on the other — and total both. Most people got nothing back, and the money is all accounted for.",
+      "Ask the class to find the person who would have been ruined without it, and then ask that person's question: what were the others paying for?",
+      "Finish on the honest limit. Some cover is bad value, and the test is not whether you claimed — it is what you would have been left carrying if you had needed it.",
+    ],
+    minutes: 15,
+  },
+  {
+    id: "against-what-it-would-cost-to-replace",
+    misconception: "The item's replacement cost does not matter",
+    title: "Price the cover against the thing",
+    focus: "A student judges an add-on by what replacing the item would do to them, rather than by whether the add-on feels expensive.",
+    moves: [
+      "Same cover price, two items: one they could replace out of a fortnight's money, one they could not. The price did not change and the answer did.",
+      "Write the sentence the decision actually turns on — \"if this breaks and I have no cover, I pay ___\" — and fill it in before anybody looks at the offer.",
+      "Ask when cover on a cheap item is still worth it, so the rule stays a comparison and does not become \"only insure expensive things\".",
+    ],
+    minutes: 12,
+  },
+  {
+    id: "one-outcome-is-not-a-record",
+    misconception: "Warranties always pay off",
+    title: "One thing breaking is not a failure rate",
+    focus: "A student decides a second offer from its own price and its own failure record, rather than from how the last one happened to turn out.",
+    moves: [
+      "Take a decision the class made and resolve it twice — once where the item fails and once where it does not — and ask whether the decision was different. It was not; only the luck was.",
+      "Give them the second offer, at different stakes, immediately after one outcome. The tell is who reverses, and the question to ask them is which number changed.",
+      "Put the failure record next to a single anecdote and ask which one they would bet on. Both directions of this misconception are one sample beating a record.",
+    ],
+    minutes: 15,
+  },
+  {
     id: "the-payment-is-not-the-price",
     misconception: "The monthly payment is the price",
     title: "Add up the whole thing before you agree to it",

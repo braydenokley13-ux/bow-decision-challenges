@@ -164,3 +164,68 @@ this world exists to prove has no right answer. Basketball's C4.1–C4.4 escape 
 workability has a right answer and a preference does not. Closing it needs a content change to a
 shipped world, and it closes no objective on its own — `plan-for-the-unexpected` is half of
 NYSED 4.1 and the other half is `use-insurance`.
+
+
+---
+
+## 6. Two worlds, neither operable at 400% zoom
+
+The `chromium-zoom` project emulates a browser's own zoom control at 400% on a 1280×1024
+window: a 320×256 CSS-pixel viewport at a device scale of 4, which is the emulation WCAG 1.4.10
+is written against. It is a separate Playwright project from the two the last section reports,
+and running it is the first time anybody has.
+
+**Three tests. Two fail, and both are the same class of defect in different worlds: a student
+who needs large text cannot finish the run.**
+
+| | What happens |
+| --- | --- |
+| Basketball · the ranking screen | `.stage-action`, the sticky commit bar, is about 80px of a 256px window pinned across the bottom. The third option's *Move earlier* control sits underneath it. Playwright: *"`<button>Check the order</button>` … intercepts pointer events"*, sixteen retries, then a five-minute timeout. |
+| The market · the booths screen | *Take this booth* resolves, is visible and enabled, scrolls into view — and is then *"outside of the viewport"*. Five minutes of retries. The control that starts the world cannot be reached. |
+
+**One of the two is fixed and one is not.** After the rule below, `chromium-zoom` reads
+**2 passed, 1 failed**: Basketball's ranking screen is operable at 400% and the market's booths
+screen is not. The market failure is a different mechanism from the occlusion one — the button
+is *visible, enabled and stable*, and the page simply cannot scroll it into the viewport, which
+is not something unpinning the chrome addresses. It is **open, reproducible in one command, and
+a launch blocker under §82**:
+
+```
+CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome \
+  npx playwright test --project=chromium-zoom -g "the choice and the market hold at 400%"
+```
+
+It is left open deliberately rather than chased further in this run: it is one screen of one
+world, the larger half of the same defect is closed, and the floor — four NYSED modules with no
+assessed coverage at all — is the larger obligation. Recorded here so it is a known blocker
+rather than a surprise.
+
+Neither is a stale test. Both are operability failures under §82, where accessibility is a
+release blocker and the signature mechanic has to preserve the financial construct.
+
+**The instrument that exists to catch this could not, and it would not have run anyway.**
+`visual/occlusion.spec.ts` sweeps `document.elementFromPoint()` over both stories at five
+viewports — 1366×768, 1024×600, 768×1024, 390×844, 320×640 — and the shortest of them is 600px.
+It varies width and takes height along for the ride. The defect is a height defect: a
+bottom-pinned bar is a convenience at 640px and a lid at 256px. The zoom viewport is a sixth
+row on that sweep now, named rather than left as more numbers, because it asks a different
+question from the other five — not whether the layout fits sideways, but whether the chrome has
+eaten the screen.
+
+Worth being exact about what that buys, because it is less than it sounds. `visual/` is not in
+the main config's `testDir`; it has its own config, with no `webServer`, and nothing in
+`package.json` or `verify-head.sh` invokes it. It is an instrument somebody runs by hand
+against a preview they started themselves. **The thing that will actually catch this again is
+the `chromium-zoom` project**, which runs with the suite and is where the defect surfaced.
+
+The codebase has already fought this exact battle one file over, for `.plan-rail`: *"325px of
+it, 63.5 % of the viewport, covering the question, the money field and both steppers."* The
+same failure returned on a different element because nothing measured the axis it lives on.
+
+**And it is not one element, which the first fix found out.** Unpinning `.stage-action` alone
+moved the defect rather than closing it: the next run reported `.challenge-topbar` intercepting
+the click, and then `.plan-rail` — the very bar whose narrow-width fix was to pin it to the
+bottom, which is what fails here on the other axis. Three bars, one 256px window, nothing
+reachable between them. So the rule is written once, over all of the sticky chrome, at the end
+of the last stylesheet `main.tsx` loads, because `scenes.css` is what makes the rail a bottom
+bar and a rule in `app.css` cannot reach past it.

@@ -472,6 +472,107 @@ const KEEP_CREDIT_COSTS_DOWN_EVIDENCE: readonly EvidenceRequirement[] = [
 ] as const;
 
 /**
+ * `use-insurance` — mapped `full` to NYSED 4.2, `partial` to 4.1 and 4.3.
+ *
+ * **ER2 is a demand on the world, and it is the hardest one in this file.** The shape is
+ * `compare-two-lives` and that is load-bearing rather than decorative: *shared risk* is
+ * invisible from one life. A student who only ever sees what happened to themselves has seen a
+ * premium and an outcome, and the misconception this competency exists to catch — *insurance is
+ * a scam if you don't claim* — is a claim about everybody else, which their own result cannot
+ * answer. So ER2 requires the student to reach the point where other participants' outcomes are
+ * readable, including at least one who paid in and claimed nothing.
+ *
+ * Anything that shows the student only their own result cannot assess 4.2 honestly, however
+ * good its copy is, and this row is what makes that a build failure rather than a review
+ * opinion.
+ *
+ * **The bad-thinking/good-outcome guard is ER3 and ER4 together.** A student who buys the
+ * cheapest cover and happens not to suffer a loss has learned nothing, and neither row can be
+ * satisfied from their own outcome: ER3 is read off a settled claim's split and ER4 off an
+ * account of the pool. Luck cannot produce either.
+ *
+ * All four `required`, as a `full` mapping demands. `explanationRequired` is already `true`.
+ */
+const USE_INSURANCE_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("use-insurance", 1, {
+    label: "Picks cover by what it reaches, not by price",
+    kind: "decision",
+    required: true,
+    observableRule: "Chooses among levels whose premiums and what they pay both differ, having read what more than one level covers, rather than taking the cheapest or the default",
+    misconceptionIfNot: "A lower premium is always better",
+  }),
+  requirement("use-insurance", 2, {
+    label: "Reads the pool, not only themselves",
+    kind: "decision",
+    required: true,
+    observableRule: "Reaches and reads outcomes belonging to other participants, including at least one who paid in and claimed nothing",
+    misconceptionIfNot: null,
+  }),
+  requirement("use-insurance", 3, {
+    label: "Says who paid what on a settled claim",
+    kind: "decision",
+    required: true,
+    observableRule: "For a loss that is settled, splits the bill between the participant and the pool at the cover level actually held",
+    misconceptionIfNot: null,
+  }),
+  requirement("use-insurance", 4, {
+    label: "Explains the result as shared risk",
+    kind: "explanation",
+    required: true,
+    observableRule: "Accounts for a term in which somebody paid in and got nothing back, using premiums paid by many against losses met by few, rather than as luck or as a bad deal for that person",
+    misconceptionIfNot: "Insurance is a scam if you don't claim",
+  }),
+] as const;
+
+/**
+ * `is-the-add-on-worth-it` — mapped `full` to NYSED 4.3, whose own text names a specific item.
+ *
+ * **ER4 is the whole competency and it is the reason this is not one decision.** A student who
+ * declines cover on something cheap, watches it survive, and then declines cover on something
+ * whose replacement they could not absorb has learned the wrong thing from one sample — and so
+ * has the student who buys cover on everything after one failure. Both look identical to a
+ * scorer reading only the first decision.
+ *
+ * So the competency requires a second offer, decided after an outcome is known and on its own
+ * two figures. Without it a single resolution decides the mark, which is `catastrophe roulette`
+ * — scored 32 and rejected — wearing a different hat. It is also a demand on the world: **the
+ * offer has to arrive at least twice, at different stakes.** A world that cannot do that cannot
+ * carry the `full` claim on 4.3.
+ *
+ * Every row a decision, which is what `explanationRequired: false` says, and every row required.
+ */
+const IS_THE_ADD_ON_WORTH_IT_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("is-the-add-on-worth-it", 1, {
+    label: "Prices the cover against the thing it covers",
+    kind: "decision",
+    required: true,
+    observableRule: "States what replacing the item would cost them, and decides against that figure rather than against the cover's price alone",
+    misconceptionIfNot: "The item's replacement cost does not matter",
+  }),
+  requirement("is-the-add-on-worth-it", 2, {
+    label: "Uses how likely it is to fail",
+    kind: "decision",
+    required: true,
+    observableRule: "Takes the stated failure record into the decision, rather than deciding on cost or on how bad the failure would be alone",
+    misconceptionIfNot: "Warranties always pay off",
+  }),
+  requirement("is-the-add-on-worth-it", 3, {
+    label: "Commits before the outcome is known",
+    kind: "decision",
+    required: true,
+    observableRule: "The decision is stamped before that item's outcome resolves, and the outcome then resolves in front of them",
+    misconceptionIfNot: null,
+  }),
+  requirement("is-the-add-on-worth-it", 4, {
+    label: "Answers a second offer on its own numbers",
+    kind: "decision",
+    required: true,
+    observableRule: "A later offer at different stakes is decided from that offer's own replacement cost and failure record, rather than reversed on how the first one happened to turn out",
+    misconceptionIfNot: null,
+  }),
+] as const;
+
+/**
  * The 21 competencies, in group order.
  *
  * **On the empty `evidenceRequirements` arrays.** Three competencies carry their evidence
@@ -743,7 +844,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "See the pool's outcomes across several participants, not only their own.",
       "Explain the result using shared risk rather than luck.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: USE_INSURANCE_EVIDENCE,
     misconceptions: [
       "Insurance is a scam if you don't claim",
       "A lower premium is always better",
@@ -762,7 +863,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "Decide, and live with whether the item fails.",
       "Weigh the price against the item's replacement cost.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: IS_THE_ADD_ON_WORTH_IT_EVIDENCE,
     misconceptions: [
       "Warranties always pay off",
       "The item's replacement cost does not matter",

@@ -286,3 +286,21 @@ So the three ways forward, and none of them is writing four rows:
 `partial` to 4.1, and 4.1's completion rule needs `use-insurance` too. So this is not floor
 work: it is half of NYSED 4.1 waiting for the other half, and it becomes worth doing on the day
 an insurance world exists — at which point (a) is the version that keeps the parity claim true.
+
+
+### Update: a purpose-built risk world produces `plan-for-the-unexpected` cleanly
+
+Three Module 4 designs are now in, and **all three carry `plan-for-the-unexpected` alongside
+`use-insurance` and `is-the-add-on-worth-it`** — the set that lights 4.1 through its completion
+rule, plus 4.2 and 4.3.
+
+That does not contradict the analysis above; it completes it. The market cannot produce this
+competency because its only protection decision is the size of a cushion, and `balance.ts`
+sweeps that market specifically to keep every repair line live — so scoring the cushion scores
+a preference. A world built around risk has structure the cushion does not: protection is
+chosen at a stated price against a stated exposure, so *whether the protection held* has an
+answer that is not a matter of taste.
+
+So option (c) — leave it — stands for the two shipped worlds, and the competency arrives with
+Module 4 rather than by retrofitting a content change onto the market. That is the cheaper
+route and the one that does not disturb a world already measured and balanced.
