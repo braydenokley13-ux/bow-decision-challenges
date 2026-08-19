@@ -4,6 +4,7 @@ import { AppMark } from "../components/primitives/AppMark";
 import { Button } from "../components/primitives/Button";
 import { CODE_LENGTH, isWellFormedClassCode, normaliseClassCode } from "../platform/classes/codes";
 import { MAX_DISPLAY_NAME, type ClassDoor, type DeviceClass } from "../platform/identity/types";
+import { ReadingTools } from "./reading";
 import { STUDENT_COPY } from "../content/studentCopy";
 import { claimSeat, readClassDoor, rememberStudent, rememberStudentId, studentIdHeld } from "./session";
 import { clearEveryAttempt } from "../domain/io/persistence";
@@ -197,6 +198,13 @@ export function StudentJoin() {
       )}
 
       <p className="join-error" role="alert">{problem}</p>
+      {/* The door is the first screen a student meets, and it was the one screen with no way to
+          hear it. A child who needs the words read to them needs that before they are inside the
+          run, not after — this is where they are asked for a class code, a card code, and in an
+          open class their own name, and getting any of it wrong is what stops them starting.
+          `step` keys the re-read, so moving from the code to the card re-reads the new step
+          rather than the one they have left. */}
+      <ReadingTools screenKey={`join-${step}`} />
     </main>
   );
 }
