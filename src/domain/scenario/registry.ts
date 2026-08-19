@@ -19,23 +19,36 @@ import type { ScenarioNumbers, WorldRegistryEntry, WorldStory } from "./types";
  * template with two entries in it.
  */
 /**
- * What each world calls the screen a student is on, in words a teacher reads.
+ * What each world calls the screen a student is on, and what it calls the things that
+ * happened there, in words a teacher reads.
  *
- * It lives beside the registry rather than in the educator layer because a stage id is the
- * world's own vocabulary and only the world can name it. The educator surface used to hold
- * one table covering Basketball's stages, so a market student's evidence trail printed
- * `popup-spot | POPUP_SUM_SUBMITTED | event-6` — a log file, on the screen whose entire job
- * is letting a teacher check what BOW saw.
+ * It lives beside the registry rather than in the educator layer because a stage id and an
+ * event type are the world's own vocabulary and only the world can name them. The educator
+ * layer used to hold one hand-maintained table covering Basketball's stages and Basketball's
+ * events, so a market student's evidence trail printed `popup-spot | POPUP_SUM_SUBMITTED |
+ * event-6` — a log file, on the screen whose entire job is letting a teacher check what BOW
+ * saw about a named child. You could date each surface by how much of that table somebody had
+ * got round to filling in: Basketball leaked exactly one constant, `COMPETING_CLAIMS_SETTLED`,
+ * and it was the stage that had been rebuilt three commits earlier.
+ *
+ * Two things stop it reopening. The tables are **per world, beside the world's own stage
+ * list**, so adding a world without naming its moments is a change in one place rather than a
+ * change somebody has to remember to make in another. And `momentNaming.test.ts` walks every
+ * registered world, drives its own reducer through a real run, and fails on any stage id or
+ * event type that would reach a teacher's screen unnamed.
  */
 export const WORLD_STAGE_LABELS: Partial<Record<WorldId, Record<string, string>>> = {
   basketball: {
     entry: "Getting in",
     join: "Getting in",
-    "choose-world": "Choosing a world",
+    "choose-world": "Choosing a story",
+    "the-offer": "The offer",
     "role-contract": "The terms",
     "setup-comparison": "Choosing where to live",
     "working-plan": "The first plan",
     "fallback-version": "The plan without the bonus",
+    "income-check": "Checking the money coming in",
+    "week5-transition": "Going on into Week 5",
     "season-weeks": "Weeks 1–4 · Week 3’s cash",
     "deposit-deadline": "Week 4 · the course seat",
     "week5-event": "Week 5 · the news",
@@ -49,7 +62,7 @@ export const WORLD_STAGE_LABELS: Partial<Record<WorldId, Record<string, string>>
   "food-truck": {
     entry: "Getting in",
     join: "Getting in",
-    "choose-world": "Choosing a world",
+    "choose-world": "Choosing a story",
     "popup-spot": "Choosing a booth",
     "popup-money": "The money with a rule on it",
     "popup-plan": "The opening plan",
@@ -63,9 +76,71 @@ export const WORLD_STAGE_LABELS: Partial<Record<WorldId, Record<string, string>>
   },
 };
 
+/**
+ * What each world calls the thing that happened, in the same register as the stage names.
+ *
+ * The five platform moments every world writes are named once, at the top, because a student
+ * signing in or opening a hint is the same act in any story. Everything under them is the
+ * world's own, and the two worlds deliberately do not share a sentence: Basketball's student
+ * saved a plan, the market's student saved a board of three lines, and telling a teacher the
+ * second thing in the first world's words is how the trail stopped describing the run.
+ */
+const PLATFORM_EVENT_LABELS: Record<string, string> = {
+  SESSION_STARTED: "Started the challenge",
+  WORLD_CONFIRMED: "Chose this story",
+  STAGE_ENTERED: "Reached this screen",
+  SCAFFOLD_OPENED: "Opened the step-by-step help",
+  SHOW_AND_CONTINUE_USED: "Was shown the answer",
+};
+
+export const WORLD_EVENT_LABELS: Partial<Record<WorldId, Record<string, string>>> = {
+  basketball: {
+    CALCULATION_SUBMITTED: "Worked out a total",
+    SETUP_RANKED: "Ordered the places by cost",
+    SETUP_SELECTED: "Chose a place to live",
+    COURSE_DEPOSIT_DECIDED: "Decided about the course seat",
+    COMPETING_CLAIMS_SETTLED: "Settled who got Week 3’s cash, and said why",
+    INCOME_SOURCE_TOGGLED: "Decided about a bonus",
+    PLAN_SAVE_REQUESTED: "Checked the plan",
+    PLAN_SAVED: "Saved the plan",
+    PLAN_REMAINDER_ASSIGNED: "Named the row that takes the rest",
+    LOCKED_MOVE_ATTEMPTED: "Tried to move committed money",
+    WEEK5_ADVANCE_CONFIRMED: "Went on into Week 5",
+    GAP_TILE_TOGGLED: "Counted up what Week 5 cost",
+    OPTIONAL_WORK_DECIDED: "Decided about the Saturday clinics",
+    COMPLETION_INCOME_DECIDED: "Decided about the attendance bonus",
+    DEFENSE_SUBMITTED: "Wrote the explanation",
+  },
+  "food-truck": {
+    POPUP_SUM_SUBMITTED: "Worked out a total",
+    POPUP_SPOT_SELECTED: "Chose a booth",
+    POPUP_CONDITIONAL_MONEY_DECIDED: "Decided about money with a rule on it",
+    POPUP_COVER_LINE_NAMED: "Named the line that gives that money back",
+    POPUP_PLAN_SAVE_REQUESTED: "Checked the three lines",
+    POPUP_PLAN_SAVED: "Saved the three lines",
+    POPUP_REMAINDER_ASSIGNED: "Named the line that takes the rest",
+    POPUP_LOCKED_MOVE_ATTEMPTED: "Tried to move money already spent",
+    POPUP_STOCK_ORDERED: "Ordered the food for a Saturday",
+    POPUP_HELPER_DECIDED: "Decided about a second pair of hands",
+    POPUP_SATURDAY_PLAYED: "Ran a Saturday",
+    COMPETING_CLAIMS_SETTLED: "Settled what the tips jar paid for, and said why",
+    POPUP_WRITEUP_SUBMITTED: "Wrote the explanation",
+  },
+};
+
 /** What this world calls that screen, or the id where nothing does. */
 export function stageLabel(worldId: WorldId, stage: string): string {
   return WORLD_STAGE_LABELS[worldId]?.[stage] ?? stage;
+}
+
+/** What this world calls that moment, or the type where nothing does. */
+export function eventLabel(worldId: WorldId, type: string): string {
+  return WORLD_EVENT_LABELS[worldId]?.[type] ?? PLATFORM_EVENT_LABELS[type] ?? type;
+}
+
+/** Whether both halves of a moment have a name in them. Used by the invariant, and by nothing else. */
+export function momentIsNamed(worldId: WorldId, stage: string, type: string): boolean {
+  return stageLabel(worldId, stage) !== stage && eventLabel(worldId, type) !== type;
 }
 
 export const WORLD_REGISTRY: Partial<Record<WorldId, WorldRegistryEntry>> = {
@@ -87,10 +162,13 @@ export const WORLD_REGISTRY: Partial<Record<WorldId, WorldRegistryEntry>> = {
     title: POP_UP_SCENARIO.title,
     subtitle: POP_UP_SCENARIO.subtitle,
     role: POP_UP_SCENARIO.pitch.role,
-    // Same instrument, same arithmetic, applied to this world's 2,145 words and its own
-    // stage budget. 18–24 was below this world's reading time alone at a realistic rate, so
-    // it could not have been true; the owner of this world should confirm the top of the band.
-    durationMinutes: { min: 20, max: 23 },
+    // Same instrument, same arithmetic, applied to this world's own words and stage budget.
+    // 18–24 was below this world's reading time alone at a realistic rate, so it could not
+    // have been true. The top moved from 23 to 24 when the turn-in screen stopped being a
+    // headline over an empty viewport and became the receipt the other story's turn-in has
+    // always been: a longer screen costs longer, and the number a teacher plans a lesson
+    // around says so rather than absorbing it.
+    durationMinutes: { min: 20, max: 24 },
     availability: "available",
     // Plus the two screens that belong to the platform rather than to either world: an
     // attempt saved on the join screen is a real attempt and has to restore.
