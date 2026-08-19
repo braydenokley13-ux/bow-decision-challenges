@@ -167,3 +167,20 @@ None of the six touches the student flow, the eighteen micro-skills, the rationa
 ---
 
 *No compliance claim is made or implied here — not FERPA, COPPA, NY Ed. Law §2-d, NYCPS, WCAG or district approval, and none by me. Where the product makes one, I have named it above; the only one I found is a non-claim (`"NYSED has not reviewed or endorsed BOW."`), which is the right shape.*
+
+---
+
+## Postscript — written after the verdict, having then read `gauntlet/DEFECTS.md`
+
+I wrote everything above from runs, without opening the build's own record. Having now read it:
+
+**My largest gap is already in the product's defect list, at HIGH, and it is still open at this SHA.** `DEFECTS.md` row **A3**: *"`masteryStateFor` tests for a level 0 before it tests for a missing level, so unread-and-flawed students enter the denominator as failures while unread-and-clean students are excluded. The page prints the opposite as a reassurance."* That is the same mechanism I reached from the outside, and row **A10** is the caption contradiction I reproduced on screen. So this is not a finding the build missed — it is a finding the build **has, understands precisely, and shipped anyway**, and the sentence that makes it dangerous ("one whose written explanation somebody has read") is still on the class page.
+
+That changes the weight of the verdict but not its direction. It means condition 1 and condition 3 are not discoveries to be triaged; they are already-diagnosed defects with a known one-function cause, which makes them cheaper to close than I estimated and less excusable to leave. It also means the honest reading of "GO WITH CONDITIONS" here is: **the conditions are a re-opening of items the team already agreed were wrong**, not new work.
+
+Two things I found that I do not see on that list, offered as additions rather than as disagreement:
+
+- The class-level consequence of A3 is worse than A3 states. It is not only that the denominator is skewed — it is that a `answer_supplied` observation, whose own on-screen rationale reads *"not evidence about them"*, becomes the **justification for a whole-class reteach recommendation naming five seats**. A3 describes a denominator; what a teacher actually receives is a lesson plan.
+- Marking does not clear it. Three papers at 10/10 left the class page reporting *"0% of the 5 read so far"* and *"Nobody's writing has been read yet"* unchanged, because a second, independent absence (`Savings is a planned amount` never asked of a student who balances by typing) holds those three students out permanently. A3 reads as a marking-pile-timing problem; for a common way of playing the board it is not one.
+
+Rows **A1**, **A2**, **A4** and **A5** are listed as CRITICAL/HIGH and I did not reproduce any of them at this SHA — A4's `37 of 90` is gone from the export I read, A2's override now has a mandatory reason and is stored, and my walked-away student was reported as an absence rather than as decisions made. If those were closed without the rows being updated, the list is running behind the tree, which is its own small hazard for whoever reads it next.
