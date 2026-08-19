@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { EducatorShell } from "./EducatorShell";
@@ -73,6 +73,25 @@ export function Roster() {
   // one thing on this page that cannot be undone, so it asks — once, in place, naming the
   // person — rather than firing off a control that sits beside "Print a new card".
   const [erasing, setErasing] = useState<string | null>(null);
+  /**
+   * The safe button, held by identity rather than found by position.
+   *
+   * Focus already landed here before this ref existed, and it landed here by luck. React
+   * reconciles a list of children by position: `Erase` is child index 2 of
+   * `.roster-list__acts`, and `Keep it` is index 2 of the confirmation that replaces it, so
+   * the node that had focus was updated in place into the safe button and kept it. Put the
+   * safe choice first — which is what most designs would do — and the same luck lands focus on
+   * **Erase everything**, one Enter from deleting a child's name, work and feedback with
+   * nothing to undo it from. A ref cannot be reordered into the wrong button.
+   *
+   * The raw `<button>` is why: `Button` is not a `forwardRef` component and nothing in this
+   * repository is, so a `ref` on it would be dropped. The two classes it would have added are
+   * written out instead, the way `Debrief.tsx` already does.
+   */
+  const keepIt = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (erasing) keepIt.current?.focus();
+  }, [erasing]);
 
   const call = useCallback(async (path: string, init: RequestInit = {}) => {
     const response = await fetch(`${CLASS_API_BASE}${path}`, {
@@ -346,14 +365,31 @@ export function Roster() {
                   {erasing === row.seatCode ? (
                     <>
                       {/* Said in the sentence, not in a dialog: what goes, what it cannot be
-                          undone from, and that the rest of the class is untouched. */}
-                      <p className="roster-list__warn">
+                          undone from, and that the rest of the class is untouched.
+
+                          Both buttons are described by it. Focus arriving on a button announces
+                          the button and nothing else, so the whole of what a screen-reader user
+                          heard was "Keep it, button" — keep *what*. `aria-describedby` rather
+                          than `role="alert"`: an alert announces text inserted into a node that
+                          is already in the tree, and this paragraph arrives with its text
+                          already in it, which is the case live regions are least reliable for.
+                          A description is read as part of the control, every time, on every
+                          reading of it — including the second one, when a teacher tabs back. */}
+                      <p className="roster-list__warn" id={`roster-erase-${row.seatCode}`}>
                         Erase {row.displayName}? Their name, everything they turned in and everything you
                         wrote back are deleted from BOW. It cannot be undone, and the rest of the class is
                         not affected.
                       </p>
-                      <Button variant="primary" onClick={() => void erase(row)}>Erase everything</Button>
-                      <Button variant="quiet" onClick={() => setErasing(null)}>Keep it</Button>
+                      <Button variant="primary" aria-describedby={`roster-erase-${row.seatCode}`} onClick={() => void erase(row)}>Erase everything</Button>
+                      <button
+                        type="button"
+                        className="button button--quiet"
+                        ref={keepIt}
+                        aria-describedby={`roster-erase-${row.seatCode}`}
+                        onClick={() => setErasing(null)}
+                      >
+                        Keep it
+                      </button>
                     </>
                   ) : (
                     <>

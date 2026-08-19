@@ -173,6 +173,71 @@ describe("the class list is the way a teacher runs a rostered class", () => {
     expect(screen.getByText("Devon P.")).toBeInTheDocument();
   });
 
+  /**
+   * Where focus lands when the confirmation opens, asserted by identity.
+   *
+   * It already landed on **Keep it** before this test existed, and it landed there by luck.
+   * React reconciles a list of children by position: `Erase` is child index 2 of
+   * `.roster-list__acts`, and in the confirmation that replaces it `Keep it` happens to be
+   * index 2 too, so the DOM node that had focus was updated in place into the safe button.
+   * Put the safe choice first — which is what most designs would do — and the same luck lands
+   * focus on **Erase everything**, one Enter away from deleting a child's name, work and
+   * feedback with nothing to undo it from.
+   *
+   * So this asks the question by identity and never by position: whatever has focus, is it the
+   * element whose accessible name is *Keep it*. A reorder cannot pass this test by accident,
+   * and a reorder that breaks the focus move fails it by name. Measured against a deliberately
+   * reordered `Roster.tsx` before the fix landed: focus was on "Erase everything".
+   */
+  it("puts focus on the keep button itself, whatever order the two are written in", async () => {
+    vi.stubGlobal("fetch", service([
+      { seatCode: "1", displayName: "Ana R.", claimed: true, claimedAt: 1, removedAt: null },
+    ]).fetcher);
+    open();
+    await screen.findByText("Ana R.");
+
+    await userEvent.click(screen.getAllByRole("button", { name: "Erase" })[0]!);
+    const keep = await screen.findByRole("button", { name: /Keep it/ });
+    await waitFor(() => expect(keep).toHaveFocus());
+    // Said the other way round as well, because `toHaveFocus` on the element a query found is
+    // exactly the assertion that survives a reorder, and the one below is the one that reads
+    // like the sentence a person would say about it.
+    expect(document.activeElement).toBe(keep);
+    expect(screen.getByRole("button", { name: /Erase everything/ })).not.toHaveFocus();
+  });
+
+  /**
+   * What a screen reader says on landing there.
+   *
+   * Focus arriving on a button announces the button and nothing else, so before this the whole
+   * of what a teacher heard was "Keep it, button" — keep *what*. The sentence naming the child
+   * and saying the deletion cannot be undone was on the screen and was never spoken.
+   *
+   * `aria-describedby` from both buttons rather than `role="alert"` on the paragraph: an alert
+   * announces text inserted into a node that is already in the tree, and this paragraph is
+   * inserted with its text already in it, which is the case live regions are least reliable
+   * for. A description is read as part of the focused control every time, on every reading.
+   */
+  it("tells a screen-reader user what they are keeping, from both buttons", async () => {
+    vi.stubGlobal("fetch", service([
+      { seatCode: "1", displayName: "Ana R.", claimed: true, claimedAt: 1, removedAt: null },
+    ]).fetcher);
+    open();
+    await screen.findByText("Ana R.");
+    await userEvent.click(screen.getAllByRole("button", { name: "Erase" })[0]!);
+
+    const warning = screen.getByText(/Erase Ana R\.\?/);
+    expect(warning.id).toBeTruthy();
+    for (const name of [/Erase everything/, /Keep it/]) {
+      const button = screen.getByRole("button", { name });
+      expect(button).toHaveAttribute("aria-describedby", warning.id);
+      // Asked of the button rather than of the paragraph, because the question is what a
+      // screen reader says when focus is on the control — it names the child, says it cannot
+      // be undone, and says the rest of the class is untouched.
+      expect(button).toHaveAccessibleDescription(/Erase Ana R\..*cannot be undone.*rest of the class is\s+not affected/s);
+    }
+  });
+
   it("says what it holds a name for, where a teacher is about to type one", async () => {
     vi.stubGlobal("fetch", service().fetcher);
     open();
