@@ -117,7 +117,6 @@ test("reflow sweep — a whole basketball run at this width", async ({ page, req
 test("reflow sweep — the educator side at this width", async ({ page, request }) => {
   test.setTimeout(600_000);
   const created = await createClass(request, `A11y-3 reflow edu ${project}`);
-  await seatOnRoster(page, created.code, "1");
   await seedRuns(request, created.code, [{ seat: "1" }, { seat: "2" }, { seat: "3" }, { seat: "4" }, { seat: "5" }]);
   const key = created.teacherKey;
   for (const [name, url] of [

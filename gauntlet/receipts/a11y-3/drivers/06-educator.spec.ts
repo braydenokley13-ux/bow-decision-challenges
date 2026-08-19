@@ -70,12 +70,28 @@ test("keyboard-only teacher: setup to grading", async ({ page, request }) => {
   await shot("04-roster-cards");
   await ring("roster with cards", 60);
 
-  // ---- 3. seed finished runs so the class has evidence in it -------------
-  // (the same authenticated path a student device posts on)
-  await seedRuns(request, code, [{ seat: "1" }, { seat: "2" }, { seat: "3" }, { seat: "4" }, { seat: "5" }]);
+  // ---- 2b. a client-side route change, which is the one the shell manages --
+  await page.goto(`/educator/class/${code}/roster?key=${teacherKey}`);
+  await page.waitForTimeout(700);
+  log(REL, `before a client-side route change: focus = ${await active(page)}`);
+  await kbActivate(page, /"Objectives"/, { trail: REL, cap: 60 });
+  await page.waitForTimeout(1000);
+  log(REL, `AFTER a client-side route change (nav link → /educator/objectives): focus = ${await active(page)}`);
+  log(REL, `  the page is now: ${page.url()}`);
+  await kbActivate(page, /"Guide"/, { trail: REL, cap: 60 });
+  await page.waitForTimeout(1000);
+  log(REL, `AFTER a second client-side route change (→ /educator/guide): focus = ${await active(page)}`);
+  await snap("04b-guide-after-route-change");
+
+  // ---- 3. a class with real evidence in it --------------------------------
+  // seeded through the same authenticated endpoint a student device posts on
+  const seeded = await createClass(request, "A11y-3 · seeded evidence");
+  const seededKey = seeded.teacherKey;
+  await seedRuns(request, seeded.code, [{ seat: "1" }, { seat: "2" }, { seat: "3" }, { seat: "4" }, { seat: "5" }]);
+  const evidenceCode = seeded.code;
 
   // ---- 4. the class overview ---------------------------------------------
-  await page.goto(`/educator/class/${code}?key=${teacherKey}`);
+  await page.goto(`/educator/class/${evidenceCode}?key=${seededKey}`);
   await page.waitForTimeout(1500);
   await arrival(page, "educator — class overview", REL);
   await snap("05-class-overview");
@@ -83,7 +99,7 @@ test("keyboard-only teacher: setup to grading", async ({ page, request }) => {
   await ring("class overview", 60);
 
   // ---- 5. the reading queue and marking a piece of writing ---------------
-  await page.goto(`/educator/class/${code}/reading?key=${teacherKey}`);
+  await page.goto(`/educator/class/${evidenceCode}/reading?key=${seededKey}`);
   await page.waitForTimeout(1200);
   await arrival(page, "educator — reading queue", REL);
   await snap("06-reading-queue");
@@ -95,7 +111,7 @@ test("keyboard-only teacher: setup to grading", async ({ page, request }) => {
   }
   log(REL, `after marking every criterion: focus = ${await active(page)}`);
   const before = (await announcements(page)).length;
-  await kbActivate(page, /"Save review"/, { trail: REL, cap: 120 });
+  await kbActivate(page, /"Save (review|and read the next)/, { trail: REL, cap: 120 });
   await page.waitForTimeout(1200);
   log(REL, `after Save review: focus = ${await active(page)}`);
   log(REL, `  announced: ${JSON.stringify((await announcements(page)).slice(before))}`);
@@ -103,7 +119,7 @@ test("keyboard-only teacher: setup to grading", async ({ page, request }) => {
   await shot("07-reading-saved");
 
   // ---- 6. one student's evidence page, and its tabs -----------------------
-  await page.goto(`/educator/class/${code}/students/1?key=${teacherKey}`);
+  await page.goto(`/educator/class/${evidenceCode}/students/1?key=${seededKey}`);
   await page.waitForTimeout(1200);
   await arrival(page, "educator — one student", REL);
   await snap("08-student-evidence");
@@ -124,7 +140,7 @@ test("keyboard-only teacher: setup to grading", async ({ page, request }) => {
   }
 
   // ---- 7. the debrief ------------------------------------------------------
-  await page.goto(`/educator/class/${code}/debrief?key=${teacherKey}`);
+  await page.goto(`/educator/class/${evidenceCode}/debrief?key=${seededKey}`);
   await page.waitForTimeout(1500);
   await arrival(page, "educator — debrief", REL);
   await snap("10-debrief");
@@ -132,7 +148,7 @@ test("keyboard-only teacher: setup to grading", async ({ page, request }) => {
   await ring("debrief", 60);
 
   // ---- 8. share-out and present mode --------------------------------------
-  await page.goto(`/educator/class/${code}/share-out?key=${teacherKey}`);
+  await page.goto(`/educator/class/${evidenceCode}/share-out?key=${seededKey}`);
   await page.waitForTimeout(1500);
   await arrival(page, "educator — share-out", REL);
   await snap("11-shareout");
@@ -164,5 +180,5 @@ test("keyboard-only teacher: setup to grading", async ({ page, request }) => {
     await snap(`20-${name.replace(/\s+/g, "-")}`);
     await shot(`20-${name.replace(/\s+/g, "-")}`);
   }
-  writeFileSync("/tmp/claude-0/-home-user-bow-decision-challenges/154df4db-b27f-5b40-abad-57bf3769b363/scratchpad/a11y3/educator-class.json", JSON.stringify({ code, teacherKey }));
+  writeFileSync("/tmp/claude-0/-home-user-bow-decision-challenges/154df4db-b27f-5b40-abad-57bf3769b363/scratchpad/a11y3/educator-class.json", JSON.stringify({ code, teacherKey, evidenceCode, seededKey }));
 });
