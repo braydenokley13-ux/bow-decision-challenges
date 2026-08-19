@@ -1,0 +1,54 @@
+States swept: 174339 (173613 viable)
+
+Best run under each set of priorities:
+  takings  bridge-gate  helper=true  rebate=false trays=4/3/8 cut=$0 repair=cushion → money=$2136 banked=$0 fed=178 binned=2
+  pocket   back-lane    helper=false rebate=false trays=2/0/0 cut=$1450 repair=stock   → money=$1660 banked=$1420 fed=20 binned=0
+  crowd    bridge-gate  helper=true  rebate=false trays=4/3/8 cut=$0 repair=cushion → money=$2136 banked=$0 fed=178 binned=2
+  steady   back-lane    helper=false rebate=true  trays=2/1/2 cut=$1450 repair=cut     → money=$1900 banked=$1180 fed=60 binned=0
+
+Every option, and who would pick it:
+  booth spot
+    back-lane                          best for: pocket,steady            live for: pocket,steady
+    middle-row                         best for: —                        live for: takings,steady
+    bridge-gate                        best for: takings,crowd            live for: takings,crowd
+  the last Saturday
+    put a second person on the window  best for: takings,crowd            live for: takings,pocket,crowd,steady
+    work the window alone              best for: pocket,steady            live for: takings,pocket,steady
+  the sell-out rebate
+    count it into the plan             best for: steady                   live for: takings,pocket,crowd,steady
+    plan without it                    best for: takings,pocket,crowd     live for: takings,pocket,crowd,steady
+  the extra tray
+    cook past what the crowd will take best for: takings,crowd            live for: takings,crowd,steady
+    never cook more than the crowd will take best for: pocket,steady            live for: takings,pocket,crowd,steady
+  your cut
+    bank something for yourself        best for: pocket,steady            live for: takings,pocket,crowd,steady
+    put it all back into the truck     best for: takings,crowd            live for: takings,crowd
+  the generator money
+    out of the stock                   best for: pocket                   live for: pocket
+    out of the cushion                 best for: takings,crowd            live for: takings,pocket,crowd,steady
+    out of the cut                     best for: steady                   live for: takings,pocket,crowd,steady
+
+Share of all possible priority weightings each option wins under:
+  booth spot
+    back-lane                           47.2%  ###################
+    middle-row                           9.1%  ####
+    bridge-gate                         43.7%  #################
+  the last Saturday
+    put a second person on the window   43.7%  #################
+    work the window alone               56.3%  #######################
+  the sell-out rebate
+    count it into the plan               6.9%  ###
+    plan without it                     93.1%  #####################################
+  the extra tray
+    cook past what the crowd will take  63.2%  #########################
+    never cook more than the crowd will take  36.8%  ###############
+  your cut
+    bank something for yourself         56.3%  #######################
+    put it all back into the truck      43.7%  #################
+  the generator money
+    out of the stock                    27.3%  ###########
+    out of the cushion                  65.8%  ##########################
+    out of the cut                       6.9%  ###
+
+Winning plans that throw food away: 146 of 231
+Distinct winning runs across priorities: 3 of 4

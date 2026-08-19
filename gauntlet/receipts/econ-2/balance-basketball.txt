@@ -1,0 +1,45 @@
+States swept: 9696 (9255 viable)
+
+Best plan under each set of priorities:
+  goal    cousin-room     deposit=true  clinics=true  count800=false course=$0 buffer=$1500 averyWeek=$0 → short=$0 cash=$1500 load=25 (bonus lost)
+  safety  cousin-room     deposit=true  clinics=true  count800=false course=$0 buffer=$1500 averyWeek=$0 → short=$0 cash=$1500 load=25 (bonus lost)
+  avery   gym-sublet      deposit=true  clinics=false count800=true  course=$0 buffer=$100 averyWeek=$600 → short=$0 cash=$100 load=0
+  flexible cousin-room     deposit=false clinics=true  count800=false course=$0 buffer=$2500 averyWeek=$0 → short=$1200 cash=$2500 load=25 (bonus lost)
+
+Every option, and who would pick it:
+  housing
+    gym-sublet                     best for: avery                    live for: goal,avery
+    teammate-share                 best for: —                        live for: goal,avery
+    cousin-room                    best for: goal,safety,flexible     live for: goal,safety,flexible
+  course deposit
+    reserve the seat early         best for: goal,safety,avery        live for: goal,safety,avery
+    pay full price later           best for: flexible                 live for: goal,avery,flexible
+  Saturday clinics
+    take the clinics               best for: goal,safety,flexible     live for: goal,safety,flexible
+    keep the Saturdays             best for: avery                    live for: goal,avery
+  attendance bonus
+    build the plan around it       best for: avery                    live for: goal,safety,avery,flexible
+    plan without it                best for: goal,safety,flexible     live for: goal,safety,flexible
+  buying time back
+    spend nothing on Avery's week  best for: goal,safety,flexible     live for: goal,safety,avery,flexible
+    spend something on Avery's week best for: avery                    live for: goal,safety,avery,flexible
+
+Share of all possible priority weightings each option wins under:
+  housing
+    gym-sublet                      53.2%  █████████████████████
+    teammate-share                  23.4%  █████████
+    cousin-room                     23.4%  █████████
+  course deposit
+    reserve the seat early          68.4%  ███████████████████████████
+    pay full price later            31.6%  █████████████
+  Saturday clinics
+    take the clinics                23.4%  █████████
+    keep the Saturdays              76.6%  ███████████████████████████████
+  attendance bonus
+    build the plan around it        42.0%  █████████████████
+    plan without it                 58.0%  ███████████████████████
+  buying time back
+    spend nothing on Avery's week   36.8%  ███████████████
+    spend something on Avery's week  63.2%  █████████████████████████
+
+Distinct winning plans across priorities: 3 of 4
