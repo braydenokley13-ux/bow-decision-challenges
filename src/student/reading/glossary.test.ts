@@ -223,6 +223,27 @@ describe("the panel shows the words on the screen a student is on", () => {
  * record of the ones that got a no, and the reason it is a list rather than a rule is that no
  * rule available here can tell *cushion* from *counter*: syllables cannot, length cannot, and
  * a frequency table would need shipping a corpus and would still miss every idiom in the run.
+ *
+ * **What this list has caught, and what it means that it caught it.** The first three words to
+ * arrive after it was written — *bring*, *knows*, *range* — came in together, from a change
+ * nobody involved in this file made: the market's last Saturday became a crowd the organiser
+ * cannot name, so `worlds/food-truck/scenario.ts` started saying *"the organiser gives you a
+ * range instead of a number"*. The suite went red naming all three. That is the whole design
+ * working: a person now has to decide about each of them before the run can ship, and nothing
+ * about the change itself made anybody think about vocabulary.
+ *
+ * *knows* and *bring* are here because *know* and *bring* are two of the most common verbs in
+ * English and a Grade 5 reader has both. (The neighbouring forms *knew* and *brings* were
+ * already on this list, which is what tells you nobody made a decision about the words — they
+ * arrived in a sentence.) *range* is deliberately **not** here: it is a real word for a real
+ * idea in this run, a student cannot order trays for that night without holding it, and it
+ * belongs in `glossary.ts`. It goes there the moment the copy that says it is committed, and
+ * not one minute before — the first assertion in this file fails on a definition for a word no
+ * screen says, so a glossary entry written ahead of its copy breaks the suite in the other
+ * direction. Until then this file is red by one word, on purpose, and the word is the answer.
+ *
+ * A word that gets added to this list because the suite named it, without anybody looking at
+ * it, defeats the only thing this list is for.
  */
 const PLAIN_ENOUGH = new Set<string>([
   "stands", "when",
@@ -233,7 +254,8 @@ const PLAIN_ENOUGH = new Set<string>([
   "away", "away-game", "back", "balances", "ball", "band", "bank", "bar", "basketball", "be",
   "because", "been", "before", "being", "below", "beside", "between", "biggest", "bill", "bills",
   "birthday", "block", "blocks", "body", "book", "booked", "booking", "both", "bottom", "bought",
-  "bow", "box", "break", "breaks", "bridge", "brings", "brought", "build", "building", "built",
+  "bow", "box", "break", "breaks", "bridge", "bring", "brings", "brought", "build", "building",
+  "built",
   "bus", "busy", "but", "button", "buy", "buying", "buys", "by", "call", "calling",
   "calls", "came", "can", "cancelled", "cannot", "card", "cards", "carry", "case", "cash",
   "certain", "chalkboard", "change", "changed", "changes", "charged", "charges", "cheaper", "cheapest", "check",
@@ -255,7 +277,8 @@ const PLAIN_ENOUGH = new Set<string>([
   "help", "her", "here", "hide", "high", "hint", "his", "hold", "holding", "holds",
   "hole", "home", "hour", "hours", "how", "however", "hurts", "i", "if", "increase",
   "instead", "into", "its", "jar", "just", "keep", "keeping", "kept", "knew", "land",
-  "landed", "lands", "lane", "last", "late", "later", "laundry", "league", "leaning", "least",
+  "knows", "landed", "lands", "lane", "last", "late", "later", "laundry", "league", "leaning",
+  "least",
   "leave", "leaves", "leaving", "length", "less", "lesson", "letters", "lid", "lights", "like",
   "lines", "list", "lived", "lives", "living", "long", "looked", "loose", "lost", "low",
   "made", "main", "make", "makes", "man", "many", "marisol", "marisol's", "market", "match",
