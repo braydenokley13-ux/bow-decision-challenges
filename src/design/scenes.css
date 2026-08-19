@@ -542,11 +542,49 @@
   .bulletin { grid-template-columns: 1fr; gap: var(--s-3); }
   .settled-calls { grid-template-columns: 1fr; }
   .choice-row { grid-template-columns: 6px minmax(0, 1fr) auto; row-gap: var(--s-3); }
-  .choice-row__action { grid-column: 2; grid-row: 2; justify-self: start; }
+
+  /* The shortcut's label is a whole sentence — "Take $1,000 out of Sports-media course" —
+     and it was `nowrap` at every width. Measured at 320: the button drew itself 297px wide
+     starting 43px in, so its right edge stood 20px past the window and the Week 5 board, the
+     one screen in the run where a student cannot skip the decision, scrolled sideways. It
+     wraps below this breakpoint, and it is bounded by its own column so it cannot do this
+     again at a width nobody has measured yet. */
+  .choice-row__action { grid-column: 2; grid-row: 2; justify-self: start; max-width: 100%; white-space: normal; text-align: left; }
   .choice-row__controls { grid-column: 3; grid-row: 2; justify-self: end; }
   .adjust__head, .adjust__rows, .supply-change { padding-left: var(--s-4); padding-right: var(--s-4); }
   .adjust .plan-help { margin-left: var(--s-4); margin-right: var(--s-4); }
   .closer { padding: var(--s-4); }
+}
+
+/* A phone, where a row's three controls and its name cannot share two columns.
+   Grid columns are shared down the whole row, so the steppers — the widest thing in the
+   second column — set the width for the name above them as well: measured at 320, "Sports-
+   media course" and its sentence of explanation were living in 60 pixels, two words to a
+   line. The steppers and the shortcut take a line each of their own, and the name gets the
+   width back. */
+@media (max-width: 480px) {
+  .choice-row__controls { grid-column: 2 / -1; grid-row: 2; justify-self: start; }
+  .choice-row__action { grid-column: 2 / -1; grid-row: 3; }
+}
+
+/* ---------------------------------------------------------------------------
+   The commit bar, at the width where its own rules turn against it.
+
+   `.plan-commit` is a wrapping flex row, and below 760px `app.css` turns it into a column. A
+   *wrapping column* puts whatever will not fit into a new column to the right — and
+   `.plan-commit__refusal` asks for `flex-basis: 100%`, which in a column means 100% of the
+   height, so the refusal line took the whole bar and the read-out and every button wrapped
+   off the side of the screen. Measured at 320px on the Week 5 board: the footer at 12–308
+   with its read-out and its actions at 296–540, and the document scrolling 220px sideways
+   with "Save it, $1,000 still missing" past the right-hand edge — on the one screen of the
+   run where a student cannot skip the decision.
+
+   These two belong beside their siblings in `app.css`, and they are here only because that
+   file is being rewritten by somebody else tonight. Move them when it is free.
+   --------------------------------------------------------------------------- */
+@media (max-width: 760px) {
+  .plan-commit { flex-wrap: nowrap; }
+  .plan-commit__refusal { flex-basis: auto; }
 }
 
 /*
