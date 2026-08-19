@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import {
   chooseSeasonIfOffered,
+  startIfConfirmAsked,
   completeSetupStage,
   completeWorkingCalcs,
   createClass,
@@ -102,7 +103,10 @@ async function cardFor(page: Page, classCode: string, seat: string): Promise<Joi
 /** From the student's own page into the run. */
 async function openTheRun(page: Page) {
   await page.getByRole("link", { name: /^(Start|Carry on)$/ }).click();
-  await page.getByRole("button", { name: /Start the eight weeks|Go in/ }).click();
+  // The confirm screen is gone for a signed-in student, so this button is not on the page and
+  // `click()` has no action timeout to end the wait. Both golden journeys hung here until the
+  // test timeout. `startIfConfirmAsked` presses it on the builds that still draw one.
+  await startIfConfirmAsked(page);
 }
 
 /** Answers the world choice where the class offers one, and does nothing where it does not. */

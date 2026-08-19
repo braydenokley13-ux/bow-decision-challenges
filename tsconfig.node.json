@@ -23,5 +23,12 @@
   // when it was rebuilt, leaving three assertions that were green against a page leaking the
   // fixture and green against a blank page equally. A "this must not appear" test is only worth
   // anything when the thing it names is read from whatever would produce it.
-  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "eslint.config.js", "e2e/**/*.ts", "server/**/*.ts", "api/**/*.ts", "src/domain/**/*.ts", "src/platform/**/*.ts", "src/test/**/*.ts", "src/components/financial/choices.ts", "src/educator/labels.ts", "src/fixtures/demoClass.ts"]
+  //
+  // `content/studentCopy.ts` joins them for the student half of the same argument. The world
+  // picker's title lives there, and `flow.ts` had it written out as `/Pick a world/i` — a
+  // regex over a sentence the product owns, in the one helper every student journey passes
+  // through. It happens to still match; the four educator literals this file's siblings were
+  // rewritten for happened to stop matching, and there is no way to tell which kind you have
+  // written except by reading the string from the place that renders it.
+  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "eslint.config.js", "e2e/**/*.ts", "server/**/*.ts", "api/**/*.ts", "src/domain/**/*.ts", "src/platform/**/*.ts", "src/test/**/*.ts", "src/components/financial/choices.ts", "src/content/studentCopy.ts", "src/educator/labels.ts", "src/fixtures/demoClass.ts"]
 }

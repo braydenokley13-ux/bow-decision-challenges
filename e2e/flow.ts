@@ -6,6 +6,7 @@ import type { ClassCreation } from "../src/platform/classes/types";
 import { buildSubmission } from "../src/test/runChallenge";
 import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
 import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
+import { STUDENT_COPY } from "../src/content/studentCopy";
 
 /**
  * One driver for both the assertion suite and the screenshot walkthrough.
@@ -292,7 +293,7 @@ export async function enterChallenge(page: Page, options: { classCode: string; s
  */
 export async function startIfConfirmAsked(page: Page) {
   const confirm = page.getByRole("button", { name: /^(Start the eight weeks|Go in)$/ });
-  const picker = page.getByRole("heading", { name: /Pick a world/i });
+  const picker = page.getByRole("heading", { name: STUDENT_COPY.choose.title });
   const contract = page.getByRole("button", { name: "Find Avery a place" });
   const ranking = page.getByRole("heading", { name: /Which place costs the least/i });
   await expect(confirm.or(picker).or(contract).or(ranking).first()).toBeVisible();
@@ -324,7 +325,7 @@ export async function stepPastTheDeal(page: Page) {
  * whole run ends up stranded on a screen it never meant to skip.
  */
 export async function chooseSeasonIfOffered(page: Page) {
-  const picker = page.getByRole("heading", { name: /Pick a world/i });
+  const picker = page.getByRole("heading", { name: STUDENT_COPY.choose.title });
   const contract = page.getByRole("button", { name: "Find Avery a place" });
   await expect(picker.or(contract)).toBeVisible();
   if (await picker.isVisible()) {

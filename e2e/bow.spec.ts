@@ -14,6 +14,7 @@ import {
   seatOnRoster,
   signIn,
   stepPastTheDeal,
+  startIfConfirmAsked,
   chooseSeasonIfOffered,
   type JoinCard,
   completeSetupStage,
@@ -36,8 +37,9 @@ import {
   API,
 } from "./flow";
 import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
-import { CLASS_STATE_LABELS, LEVEL_LABELS, TERMS, skillStateInSentence } from "../src/educator/labels";
+import { CLASS_STATE_LABELS, COVERAGE_LABELS, LEVEL_LABELS, TERMS, skillStateInSentence } from "../src/educator/labels";
 import { PLAYABLE_WORLDS } from "../src/domain/scenario/registry";
+import { STUDENT_COPY } from "../src/content/studentCopy";
 import { isAssessable, labelsFor, standardsIn, type FrameworkId } from "../src/domain/standards";
 import { DEMO_CLASS_LABEL } from "../src/fixtures/demoClass";
 
@@ -471,9 +473,23 @@ studentTest("the opening screens work with a keyboard only", async ({ page, clas
   await page.keyboard.press("Enter");
   await page.getByRole("link", { name: /^(Start|Carry on)$/ }).focus();
   await page.keyboard.press("Enter");
-  await page.getByRole("button", { name: /Start the eight weeks|Go in/ }).focus();
-  await page.keyboard.press("Enter");
-  await chooseSeasonIfOffered(page);
+  // Whichever screen the build actually opens on, driven from the keyboard. A signed-in
+  // student meets the world picker here, not the confirm button, and focusing a button that is
+  // not on the page waits forever: this test spent five minutes proving nothing before the
+  // per-test timeout ended it. The claim is that the next step is reachable without a pointer,
+  // and that is asserted on the step that is really there.
+  const confirm = page.getByRole("button", { name: /^(Start the eight weeks|Go in)$/ });
+  const picker = page.getByRole("heading", { name: STUDENT_COPY.choose.title });
+  await expect(confirm.or(picker).first()).toBeVisible();
+  if (await confirm.count()) {
+    await confirm.focus();
+    await page.keyboard.press("Enter");
+  }
+  const pickOne = page.getByRole("button", { name: STUDENT_COPY.choose.start });
+  if (await pickOne.count()) {
+    await pickOne.first().focus();
+    await page.keyboard.press("Enter");
+  }
   // The contract screen, where the build still has one, driven from the keyboard like every
   // step above it. It has come and gone twice while the beats either side of it were rebuilt,
   // and a keyboard test that insisted on finding it failed at a screen that was not there —
@@ -1597,7 +1613,13 @@ async function enterChallengeWithKey(page: Page, options: { classCode: string; t
   if (!card) throw new Error(`Could not seat ${options.seatCode} in ${options.classCode}.`);
   await signIn(page, { ...card, classCode: options.classCode });
   await page.getByRole("link", { name: /^(Start|Carry on)$/ }).click();
-  await page.getByRole("button", { name: /Start the eight weeks|Go in/ }).click();
+  // The confirm screen is gone for a signed-in student — `StudentChallenge.tsx` starts the
+  // session the moment a seat resolves, so the run opens on the world picker. This clicked
+  // that button unconditionally, and `click()` has no action timeout, so every journey through
+  // this helper hung on a button the product is right not to be showing until the whole test
+  // timed out. `startIfConfirmAsked` is the shape that survives both builds, and it is the
+  // helper `enterChallenge` two hundred lines up has used all along.
+  await startIfConfirmAsked(page);
   await chooseSeasonIfOffered(page);
   // Through the contract screen where the build still has one. It was a bare click on "Find
   // Avery a place" until that screen was rebuilt out from under it, and then eight tests that
@@ -1953,13 +1975,23 @@ test("the objective screens name one set of skills and one grammatical sentence"
   await expect(page.getByText("everything they need", { exact: false })).toHaveCount(0);
 
   await page.goto("/educator/objectives/nysed-pf-2026/1.3");
-  const skills = page.locator(".micro-table tbody th code");
+  // The three assertions below had not run since 6eed878, because the line above them died
+  // there — and all three were counting a table that has since been rewritten for stated
+  // reasons. The skill was a `BOW-B2` badge in a `<code>`; the badge was removed because it is
+  // BOW's own handle, appears nowhere else a teacher can reach, and had no key on a page they
+  // are told to hand to a department head. The skill's own sentence is the name now.
+  const skills = page.locator(".micro-table tbody th[scope='row']");
   await expect(skills).toHaveCount(2);
   // Coverage and assessability are different claims, and both are on the page a teacher can
   // actually act on. "full" alone would read as "BOW can assess this".
+  //
+  // Both columns printed a raw enum — `full` under "Covers", `Built` under "World" — and both
+  // now print the sentence the enum meant. So they are read from the table that renders them
+  // rather than spelled: the word "full" appearing on this page is the exact thing the rewrite
+  // set out to stop, so a test asserting it was asserting the defect.
   const row = page.locator(".micro-table tbody tr").first();
-  await expect(row).toContainText("full");
-  await expect(row).toContainText("Built");
+  await expect(row.locator(".coverage-chip")).toHaveText(COVERAGE_LABELS.full);
+  await expect(row.locator("td").nth(1)).toHaveText("Yes");
 });
 
 test("an objective with no world is a short honest page, not a dashboard of empty sections", async ({ page }) => {
