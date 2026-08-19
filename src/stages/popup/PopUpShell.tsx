@@ -35,13 +35,15 @@ function chapterFor(stage: StageId): string {
  * it, so a phone-width viewport spends its pixels on the decision rather than on two bars
  * repeating figures the page already shows.
  */
-export function PopUpShell({ stage, kicker, title, tone = "standard", banner, ledger, focusKey, children }: PropsWithChildren<{
+export function PopUpShell({ stage, kicker, title, tone = "standard", banner, ledger, live, focusKey, children }: PropsWithChildren<{
   stage: StageId;
   kicker: string;
   title: string;
   tone?: "standard" | "dark";
   banner?: ReactNode;
   ledger: PopUpLedger;
+  /** What is true this second, when a night is being served and not yet committed. */
+  live?: { cash: number; sold: number } | undefined;
   /** When this changes the screen opens at the top and the heading takes focus, so nobody —
    *  keyboard, screen reader or eyes — meets the new question from below it. */
   focusKey?: string | number;
@@ -75,6 +77,7 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
         <div className="popup-topbar__world">
           <WorldIdentity title={POP_UP_SCENARIO.title} place={POP_UP_SCENARIO.pitch.kicker} />
           <MotifHud
+            live={live}
             ledger={ledger}
             hasSpot={state.spotId !== null}
             openingCommitted={state.saved.opening !== undefined}

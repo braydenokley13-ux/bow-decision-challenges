@@ -162,6 +162,28 @@ async function settleTheTips(page: Page) {
   await page.getByRole("button", { name: COPY.tips.title }).click();
 }
 
+/**
+ * The window, run to closing.
+ *
+ * Ordering trays used to advance the stage on the press. It now opens the evening the order
+ * was for — the student watches their own counter empty against the crowd the booth card
+ * stated — and the stage advances when they shut the window. `serviceRun` guarantees the
+ * night adds up to exactly what `playSaturday` always computed, so nothing downstream of this
+ * helper changes: same event, same payload, later.
+ *
+ * It is tolerant of the service not being there, because only Saturday 1 opens the window so
+ * far and the other three still resolve on the press.
+ */
+async function runTheWindow(page: Page) {
+  const serving = page.getByRole("heading", { name: /^(Serving\.|The market is closing\.)$/ });
+  if (!(await serving.isVisible().catch(() => false))) return;
+  const auto = page.getByRole("button", { name: /^Run it$/ });
+  if (await auto.isVisible().catch(() => false)) await auto.click();
+  const close = page.getByRole("button", { name: /Cash up and see the night/ });
+  await close.waitFor({ state: "visible", timeout: 60_000 });
+  await close.click();
+}
+
 async function orderTrays(page: Page, trays: number) {
   const shown = page.locator(".tray-order output");
   for (let guard = 0; guard < 12; guard += 1) {
@@ -259,6 +281,7 @@ test.describe("Run the Pop-Up", () => {
     await orderTrays(page, 3);
     await checkSum(page, COPY.saturday.order.label, orderCost(N, 3));
     await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await runTheWindow(page);
 
     // 7 — the night resolves, and the rebate answers itself from what they cooked.
     await expect(page.getByRole("heading", { name: COPY.standing.title })).toBeVisible();
@@ -294,6 +317,7 @@ test.describe("Run the Pop-Up", () => {
     // 10 — the last Saturday, then the settle-up.
     await expect(page.getByRole("heading", { name: COPY.repair.lastTitle })).toBeVisible();
     await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await runTheWindow(page);
     await expect(page.getByRole("heading", { name: POP_UP_SCENARIO.settle.title })).toBeVisible();
     // The ending names decisions rather than restating a table of nights already watched.
     //
@@ -461,6 +485,7 @@ test.describe("Run the Pop-Up", () => {
     await orderTrays(page, 3);
     await checkSum(page, COPY.saturday.order.label, orderCost(N, 3));
     await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await runTheWindow(page);
     await settleTheTips(page);
     await page.getByRole("button", { name: COPY.standing.alone }).click();
     await orderTrays(page, 3);
@@ -509,6 +534,7 @@ test.describe("Run the Pop-Up", () => {
       await orderTrays(page, 3);
       await checkSum(page, COPY.saturday.order.label, orderCost(N, 3));
       await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await runTheWindow(page);
       await settleTheTips(page);
       await page.getByRole("button", { name: COPY.standing.alone }).click();
       await orderTrays(page, 3);
@@ -539,6 +565,7 @@ test.describe("reflow", () => {
     await orderTrays(page, 3);
     await checkSum(page, COPY.saturday.order.label, orderCost(N, 3));
     await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await runTheWindow(page);
     await noHorizontalOverflow(page);
 
     await settleTheTips(page);
@@ -557,6 +584,7 @@ test.describe("reflow", () => {
     await noHorizontalOverflow(page);
 
     await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await runTheWindow(page);
     await noHorizontalOverflow(page);
     await page.getByRole("button", { name: COPY.settle.action }).click();
     await noHorizontalOverflow(page);

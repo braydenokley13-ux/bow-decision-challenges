@@ -73,6 +73,19 @@
    cool, because the light source in this world is a bulb and not a floodlight. Every ink
    below is the dark ground's, and each was checked against `--surface` here. */
 .popup-shell.ground-dark {
+  /*
+   * Inside a world, the marker colour is the world's.
+   *
+   * `.stamp` paints itself `--bow-brand`, which is right on every BOW surface and wrong on
+   * this one: violet on a warm near-black lane measures about 3.9:1, and axe found it on the
+   * handed-in screen at the end of a full run — the last screen anybody looks at, and the one
+   * no earlier check had reached. Pointing the brand token at the lantern amber fixes every
+   * marker in the world at once and is the more correct answer anyway: a student standing in
+   * the market is in the market, not in BOW chrome.
+   */
+  --bow-brand: var(--world-accent);
+  --bow-brand-strong: var(--world-accent-ink);
+
   --canvas: #17100e;
   --surface: #241a15;
   --surface-raised: #2e211a;
@@ -648,4 +661,141 @@
   .night__figures, .tray-order__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .worldpick__cards { grid-template-columns: minmax(0, 1fr); }
   .season-table th, .season-table td { padding: var(--s-2) var(--s-3); }
+}
+
+/* ---------------------------------------------------------------------------
+   The window, open.
+
+   The one screen in this world where nothing is being decided, so nothing here
+   competes with the counter. Three panels, one of which is four times the
+   weight of the other two: what is in the lane, what is on the counter, what is
+   in the till. The counter wins because the counter is the evening.
+   --------------------------------------------------------------------------- */
+
+.service { display: grid; gap: var(--s-5); }
+
+.service__bar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-4); }
+.service__bar h2 { margin: var(--s-2) 0 0; font: var(--t-display3); letter-spacing: var(--display-tracking); }
+.service__bar h2:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+
+/* The clock is the only thing on screen that is allowed to feel like a machine. */
+.service__clock {
+  margin: 0;
+  padding: var(--s-2) var(--s-4);
+  color: var(--world-flare);
+  font: var(--m-md);
+  font-feature-settings: var(--num);
+  background: rgb(0 0 0 / 30%);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-sm);
+}
+
+.service__note { max-width: var(--measure); margin: 0; color: var(--ink-3); font: var(--t-body); }
+
+.service__floor {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+  align-items: start;
+  gap: var(--s-4);
+}
+
+/* The counter is the subject, so it takes twice the room wherever there is room to take. */
+@media (min-width: 900px) {
+  .service__floor { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr); }
+}
+
+.service__queue, .service__counter, .service__till {
+  padding: var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+}
+
+.service__counter { background: var(--surface-raised); border-color: var(--border-default); box-shadow: var(--shadow-card); }
+
+.service h3 {
+  margin: 0 0 var(--s-3);
+  color: var(--ink-3);
+  font: var(--t-label);
+  letter-spacing: var(--stamp-tracking);
+  text-transform: uppercase;
+}
+
+.service__waiting { margin: 0 0 var(--s-3); font: var(--t-body); }
+.service__waiting strong { font: var(--m-md); font-feature-settings: var(--num); }
+.service__waiting--empty { color: var(--ink-3); }
+.service__queue ul { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+
+.service__queue li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  background: var(--surface-sunken);
+  border-radius: var(--r-xs);
+  font: var(--t-sm);
+}
+
+.service__ticket { color: var(--ink-4); font-feature-settings: var(--num); }
+
+/* The number the evening turns on. */
+.service__plates { display: flex; align-items: baseline; gap: var(--s-3); margin: 0 0 var(--s-4); }
+.service__plates strong { font: var(--m-hero); font-feature-settings: var(--num); line-height: 1; }
+.service__plates span { color: var(--ink-3); font: var(--t-body); }
+.service__plates[data-bare="true"] strong { color: var(--fin-over); }
+
+/* Every plate cooked, drawn once. A plate that has gone out is not deleted — it is left
+   as a hole, so the counter empties in front of the student rather than resizing. */
+.service__plate-grid { display: flex; flex-wrap: wrap; gap: 4px; }
+
+.service__plate-grid i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--world-flare);
+  transition: background var(--dur-state) var(--ease-standard), opacity var(--dur-state) var(--ease-standard);
+}
+
+.service__plate-grid i[data-gone="true"] { background: transparent; border: 1px solid var(--border-default); opacity: 0.55; }
+.service__overflow { margin: var(--s-3) 0 0; color: var(--ink-4); font: var(--t-micro); font-feature-settings: var(--num); }
+
+.service__till dl { display: grid; gap: var(--s-3); margin: 0; }
+.service__till div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
+.service__till dt { color: var(--ink-3); font: var(--t-sm); }
+.service__till dd { margin: 0; font: var(--m-sm); font-feature-settings: var(--num); }
+.service__till dd.money { font: var(--m-md); color: var(--fin-balanced); }
+.service__till dd[data-loss="true"] { color: var(--fin-over); }
+
+/* Something a student needs to notice, said once, without saying what to do about it. */
+.service__alert {
+  margin: 0;
+  padding: var(--s-4) var(--s-5);
+  color: var(--fin-over-ink);
+  font: var(--t-body);
+  background: var(--fin-over-soft);
+  border-left: 3px solid var(--fin-over);
+  border-radius: var(--r-xs);
+}
+
+.service__alert--quiet { color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); border-left-color: var(--fin-conditional); }
+
+.service__controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); }
+
+.service__auto {
+  min-height: var(--tap);
+  padding: 0 var(--s-5);
+  color: var(--ink-2);
+  font: var(--t-ui);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+
+.service__auto[aria-pressed="true"] { color: var(--ink-1); background: var(--surface-raised); }
+.service__auto:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.service__progress { margin: 0; color: var(--ink-3); font: var(--t-sm); font-feature-settings: var(--num); }
+
+@media (prefers-reduced-motion: reduce) {
+  .service__plate-grid i { transition: none; }
 }

@@ -1,5 +1,7 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, type RefObject, useState} from "react";
 import { useDraft } from "../../app/attemptStore";
+import { RunSaturday } from "./RunSaturday";
+import { serviceRun } from "../../domain/scenario/worlds/food-truck/service";
 import { Button } from "../../components/primitives/Button";
 import { CalculationInput } from "../../components/primitives/CalculationInput";
 import { MoneyAmount } from "../../components/primitives/MoneyAmount";
@@ -600,6 +602,21 @@ export function PlanStage() {
 
 export function FirstSaturdayStage() {
   const { state, dispatch } = usePopUp();
+  /**
+   * Whether the window is open.
+   *
+   * The order used to dispatch straight through to the next stage, so the most consequential
+   * thing in the world — the night the order was for — happened between two screens and was
+   * reported back as a card of finished numbers on the one after. The dispatch now waits until
+   * the student has shut the window, and nothing else about it moves: same event, same payload,
+   * same reducer, later.
+   *
+   * Local rather than drafted, deliberately. A reload during service returns the student to the
+   * order with their tray count still in the draft, which is the honest place to come back to —
+   * the run has not been committed and re-serving it would be watching a night twice.
+   */
+  const [open, setOpen] = useState(false);
+  const [dealt, setDealt] = useState(0);
   const ledger = ledgerOf(state);
   const plan = ledger.held;
   const max = affordableTrays(plan.stock, N);
@@ -613,6 +630,36 @@ export function FirstSaturdayStage() {
   const sum = state.sums["first-order"];
   const ready = sum?.correct === true && sum.value === orderCost(N, trays);
   const left = plan.stock - orderCost(N, trays);
+
+  if (open) {
+    const spotId = state.spotId ?? "back-lane";
+    const run = serviceRun(N, spotId, 1, trays, false);
+    const served = run.orders.slice(0, dealt);
+    const till = served.reduce((total, order) => total + order.takings, 0);
+    const soldSoFar = served.reduce((total, order) => total + order.served, 0);
+    return (
+      <PopUpShell
+        stage="popup-first-saturday"
+        kicker={COPY.first.kicker}
+        title="The window is open"
+        ledger={ledger}
+        live={{ cash: ledger.cashToPlan + till, sold: soldSoFar }}
+      >
+        <RunSaturday
+          saturday={1}
+          spotId={spotId}
+          trays={trays}
+          helper={false}
+          note={S.saturdays[0]?.note}
+          closeLabel="Cash up and see the night"
+          dealt={dealt}
+          onDealt={setDealt}
+          onClose={() => dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 1, trays })}
+        />
+      </PopUpShell>
+    );
+  }
+
   return (
     <PopUpShell stage="popup-first-saturday" kicker={COPY.first.kicker} title={COPY.first.title} ledger={ledger}>
       <p className="stage-deck">{COPY.first.deck}</p>
@@ -634,7 +681,7 @@ export function FirstSaturdayStage() {
       </div>
       <div className="popup-action">
         <p>{S.saturdays[0]?.note}</p>
-        <Button type="button" aria-disabled={!ready} onClick={() => ready && dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 1, trays })}>
+        <Button type="button" aria-disabled={!ready} onClick={() => ready && setOpen(true)}>
           {ready ? COPY.saturday.open : COPY.saturday.gate}
         </Button>
       </div>

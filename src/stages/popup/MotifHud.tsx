@@ -93,6 +93,8 @@ interface MotifHudProps {
   /** Whether the opening plan has been saved — see `cashOnHand`. */
   openingCommitted: boolean;
   position: MarketPosition;
+  /** What is true this second, when a night is being served and not yet committed. */
+  live?: { cash: number; sold: number } | undefined;
 }
 
 /** "1 tray", not "1 trays" — the same rule `PopUpScreens.tsx` keeps for the same reason. */
@@ -114,11 +116,17 @@ function plateWord(count: number): string {
  * persists is the money that is still allowed to buy trays, and the trays it would currently
  * afford is printed beside it so the figure means something without doing arithmetic on it.
  */
-export function MotifHud({ ledger, hasSpot, openingCommitted, position }: MotifHudProps) {
-  const cash = cashOnHand(hasSpot, openingCommitted, ledger, N);
+export function MotifHud({ ledger, hasSpot, openingCommitted, position, live }: MotifHudProps) {
+  /*
+   * A night being served is not in the ledger yet — the reducer hears about it when the
+   * student shuts the window — so during service the bar reads the run instead. Without this
+   * the till on the counter said $156 while the bar three inches above it said `SOLD 0`, and
+   * a HUD that contradicts the screen it sits on is worse than no HUD at all.
+   */
+  const cash = live ? live.cash : cashOnHand(hasSpot, openingCommitted, ledger, N);
   const stock = ledger.afterRepair.stock;
   const trays = affordableTrays(stock, N);
-  const sold = ledger.plates.sold;
+  const sold = live ? live.sold : ledger.plates.sold;
   const when = motifSaturdayLabel(position, N.saturdays);
   return (
     <ul className="motif-hud" aria-label="This run's own numbers, right now">
