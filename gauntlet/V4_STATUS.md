@@ -215,6 +215,23 @@ world, the larger half of the same defect is closed, and the floor — four NYSE
 assessed coverage at all — is the larger obligation. Recorded here so it is a known blocker
 rather than a surprise.
 
+### And the second viewport, also run for the first time
+
+`chromium-1024` — the same 88 tests at 1024×600 — had never been run this session either.
+**86 passed, 1 failed**, and the failure is pre-existing rather than a consequence of the rule
+above. Checked rather than assumed: the same test against `scenes.css` as it stood *before* the
+short-viewport rule produces the identical message, to the pixel.
+
+```
+the way on sits at 530-606 in a 600px window on a 2182px page
+```
+
+The commit bar settles six pixels below the fold at one scroll position instead of pinning —
+its containing block ends before the viewport does, so `position: sticky` has nothing left to
+stick to and the bar sits at its natural place. The tolerance is one pixel. It is real and it
+is small: a student scrolls six pixels and the bar is whole. Open, low severity, and now
+written down, which it was not before, because nobody had run the project that measures it.
+
 Neither is a stale test. Both are operability failures under §82, where accessibility is a
 release blocker and the signature mechanic has to preserve the financial construct.
 
@@ -286,6 +303,25 @@ has no written row to hang them on. The difference in these two cases is that th
 somewhere to put the clause. Where there is not, the mapping should move; where there is, the
 row is what makes the claim true.
 
+### And the third instance was mine
+
+Reading the nine finished rubrics as one list — not running a test, reading them — turned up
+the same defect a third time, in a row written an hour earlier in this run.
+`is-the-add-on-worth-it` carries `explanationRequired: true`, and it always has. I had given it
+four decision rows and no explanation, under a docstring asserting the flag was `false`. NYSED
+4.3 says **analyze**.
+
+**No test caught it, and that is the more useful half.** `competencyShape.test.ts` held six
+named competencies to *carrying* the flag and nothing held any competency to *honouring* it —
+so a flag promising required written evidence, over an array with no required written row, was
+green. `isCompetencyAvailable` only ever checks required rows, so that promise was one no world
+could ever have been held to. The guard exists now, and it fails when the row is removed and
+passes when it is restored, which is the only way to know a test does anything.
+
+Three instances of one defect in one evening — 2.2, 5.5, 4.3 — is not three mistakes. It is
+what happens when a mapping table and a competency table are written by different hands at
+different times and only their *names* are joined by a test.
+
 **Nine competencies remain unwritten and none of them is needed for the floor.**
 `plan-for-the-unexpected` is held deliberately — writing it trips a tripwire demanding it be
 routed in Basketball, which would make Basketball measure something the market cannot. The
@@ -295,3 +331,38 @@ to build against is the paper coverage this product exists not to produce.
 **Coverage is unchanged at 1 of 23 and 1 of 5.** Nine rubrics moved the count of competencies
 with nothing written from seventeen to nine, and moved nothing a district reads. Only a world
 can do that.
+
+
+---
+
+## 8. The build order, and what one world is worth
+
+The rubrics are what a world is held to; the worlds are what a district reads. With nine
+competencies written, the arithmetic of which world to build first is no longer a matter of
+taste. Every figure below is what `MODULE_COVERAGE.md` would say the day that world lands.
+
+| World | Objectives it lights | New rubrics needed | What complicates it |
+| --- | --- | --- | --- |
+| **Saving** | **5.1, 5.2, 5.3, 5.5** — four | none | none |
+| **Risk** | 4.1, 4.2, 4.3 — three | `plan-for-the-unexpected` | writing that rubric trips a tripwire demanding Basketball route it, and Basketball would then measure something the market cannot |
+| **Credit** | 2.1, 2.2 — two | none | it must also produce `sort-by-need-want-goal`, which puts it in a comparable set with both shipped worlds and holds it to their equality bands |
+| **Paycheck** | 3.2, 3.3 — two | none | none |
+
+**Saving is first on every axis.** It lights the most objectives, needs no rubric that has not
+been written, has no parity entanglement, and a third of its evidence — `save-toward-a-goal`'s
+five requirements — was authored by a person before this run started, so that third carries
+none of the risk of a rubric written this evening. `how-savings-grow` covering both 5.2 and
+5.5 is what makes four objectives reachable from three competencies.
+
+Then Paycheck (nothing complicates it), then Credit (the parity constraint is real work: a
+third world in `sort-by-need-want-goal`'s comparable set must match the other two on
+`arithmeticOperations`, `arithmeticComplexity`, `simultaneousConstraints` and
+`adaptationEvents` exactly), then Risk (which needs the held rubric and a decision about the
+tripwire).
+
+**What one world is worth, stated plainly so it is not oversold:** Saving alone takes the
+product from **1 of 23 objectives to 5**, and from **1 of 5 topics to 2**. It does not reach
+the October floor, which asks for real assessed coverage in every module. All four do —
+roughly **12 of 23 objectives and 5 of 5 topics** — and that is the size of the remaining
+build, at somewhere near ten thousand lines a world once the twenty-one integration points
+outside a world's own directory are counted.

@@ -539,7 +539,16 @@ const USE_INSURANCE_EVIDENCE: readonly EvidenceRequirement[] = [
  * offer has to arrive at least twice, at different stakes.** A world that cannot do that cannot
  * carry the `full` claim on 4.3.
  *
- * Every row a decision, which is what `explanationRequired: false` says, and every row required.
+ * **ER5 was missing and the omission was mine.** Four decision rows were written here first,
+ * under a docstring asserting `explanationRequired: false` — which is not what this competency
+ * says. It carries `true`, and it always has. A flag promising that a written explanation is
+ * required evidence, over an array containing no explanation, is the same defect this run had
+ * already found twice on other people's rows: 2.2 and 5.5 both claimed `full` against
+ * objectives whose verbs ask for words, over competencies that required none. NYSED 4.3 says
+ * **analyze**. It was caught by reading the nine finished rubrics as one list rather than by
+ * any test, which is worth knowing about what the tests here do and do not cover.
+ *
+ * Every row required, as a `full` mapping demands.
  */
 const IS_THE_ADD_ON_WORTH_IT_EVIDENCE: readonly EvidenceRequirement[] = [
   requirement("is-the-add-on-worth-it", 1, {
@@ -568,6 +577,13 @@ const IS_THE_ADD_ON_WORTH_IT_EVIDENCE: readonly EvidenceRequirement[] = [
     kind: "decision",
     required: true,
     observableRule: "A later offer at different stakes is decided from that offer's own replacement cost and failure record, rather than reversed on how the first one happened to turn out",
+    misconceptionIfNot: null,
+  }),
+  requirement("is-the-add-on-worth-it", 5, {
+    label: "Says what the decision turned on",
+    kind: "explanation",
+    required: true,
+    observableRule: "Names what the item would cost to replace and how likely it was to fail, and says which of the two moved the decision — for one of the offers they answered, not for add-ons in general",
     misconceptionIfNot: null,
   }),
 ] as const;

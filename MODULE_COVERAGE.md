@@ -85,7 +85,7 @@ Of 21 competencies, **3 are built**. **9 have no evidence requirements written a
 | `what-taxes-fund` BOW-E3 | 3 requirements written · no world produces them |
 | `plan-for-the-unexpected` BOW-R1 | no evidence requirements written |
 | `use-insurance` BOW-R2 | 4 requirements written · no world produces them |
-| `is-the-add-on-worth-it` BOW-R3 | 4 requirements written · no world produces them |
+| `is-the-add-on-worth-it` BOW-R3 | 5 requirements written · no world produces them |
 | `protect-your-information` BOW-R4 | no evidence requirements written |
 | `save-toward-a-goal` BOW-S1 | 5 requirements written · no world produces them |
 | `how-savings-grow` BOW-S2 | 4 requirements written · no world produces them |
