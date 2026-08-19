@@ -85,10 +85,9 @@ function ClassFrame({ state, children, title }: {
  * can read it from their seats. So the code is the page, at the size a projector needs, with
  * the address they type beside it.
  */
-function NothingYet({ code, label, keyQuery, teacherKey, hasRoster, roll, roster, progress, loadedAt, spine }: {
+function NothingYet({ code, label, teacherKey, hasRoster, roll, roster, progress, loadedAt, spine }: {
   code: string;
   label: string;
-  keyQuery: string;
   teacherKey: string;
   hasRoster: boolean;
   roll: ClassRoll;
@@ -111,13 +110,13 @@ function NothingYet({ code, label, keyQuery, teacherKey, hasRoster, roll, roster
               children who have not got in — the only thing on this screen a teacher can walk
               across the room and fix. It used to read "Nothing turned in yet · 0 turned in":
               a count of nobody, against nothing. */}
-          <ClassLead spine={spine} roll={roll} code={code} keyQuery={keyQuery} />
+          <ClassLead spine={spine} roll={roll} code={code} />
         </div>
         <div className="page-header__meta">
           <span>{roll.seats.length} {roll.seats.length === 1 ? "student" : "students"} · 0 attempts</span>
         </div>
       </header>
-      {working && <LiveState roll={roll} roster={roster} progress={progress} code={code} keyQuery={keyQuery} loadedAt={loadedAt} />}
+      {working && <LiveState roll={roll} roster={roster} progress={progress} code={code} loadedAt={loadedAt} />}
       <section className="class-created">
         <div className="class-created__code class-created__code--projector">
           <p className="field-label">Class code</p>
@@ -160,7 +159,7 @@ function NothingYet({ code, label, keyQuery, teacherKey, hasRoster, roll, roster
           )}
           <p>
             {hasRoster ? "Their cards are on the " : "Or hand out named cards instead — "}
-            <Link to={`/educator/class/${code}/roster${keyQuery}`}>{hasRoster ? "class list" : "make the class list"}</Link>.
+            <Link to={`/educator/class/${code}/roster`}>{hasRoster ? "class list" : "make the class list"}</Link>.
           </p>
           <Button variant="secondary" onClick={() => window.location.reload()}>Check again</Button>
         </div>
@@ -308,11 +307,10 @@ function Distribution({ distribution }: { distribution: ChoiceDistribution }) {
  * `classLead.ts` decides which of those it is and writes the sentence; this renders it and
  * puts the next step under it as something to press. Nothing here composes a count.
  */
-function ClassLead({ spine, roll, code, keyQuery }: {
+function ClassLead({ spine, roll, code }: {
   spine: ClassSpine;
   roll: ClassRoll;
   code: string;
-  keyQuery: string;
 }) {
   const lead = classLeadFor({
     // The class as the roll counts it — one row per student still in the room — so the
@@ -338,7 +336,7 @@ function ClassLead({ spine, roll, code, keyQuery }: {
       {lead.note && <p className="class-state">{lead.note}</p>}
       {lead.action && (
         <p>
-          <Link className="button button--primary" to={`/educator/class/${code}/${lead.action.route}${keyQuery}`}>
+          <Link className="button button--primary" to={`/educator/class/${code}/${lead.action.route}`}>
             {lead.action.label} →
           </Link>
         </p>
@@ -406,13 +404,12 @@ function sinceLabel(elapsed: number): string {
  * last-touched time are what a teacher can act on; anything finer would be surveillance
  * bought with nothing.
  */
-function LiveState({ roll, roster, progress, code, keyQuery, loadedAt }: {
+function LiveState({ roll, roster, progress, code, loadedAt }: {
   /** The class, counted once, by the same function every other number on this page reads. */
   roll: ClassRoll;
   roster: readonly RosterRow[];
   progress: readonly ProgressRow[];
   code: string;
-  keyQuery: string;
   /** When this page was fetched. Elapsed time is measured from it so the render is a function of its input. */
   loadedAt: number;
 }) {
@@ -465,7 +462,7 @@ function LiveState({ roll, roster, progress, code, keyQuery, loadedAt }: {
             .sort((a, b) => a.updatedAt - b.updatedAt)
             .map((row) => (
               <li key={row.seatCode}>
-                <Link to={`/educator/class/${code}/students/${row.seatCode}${keyQuery}`}>{label(row.seatCode)}</Link>
+                <Link to={`/educator/class/${code}/students/${row.seatCode}`}>{label(row.seatCode)}</Link>
                 <span>{startedStageLabel(row.worldId, row.stage)}</span>
                 {/* Said as elapsed time rather than a clock, because what a teacher does with
                     it is decide whether to walk over — or, the next morning, whether to give
@@ -489,7 +486,7 @@ function LiveState({ roll, roster, progress, code, keyQuery, loadedAt }: {
       {!roll.hasRoster && (
         <p className="class-state">
           This class has no student list, so BOW cannot say who has not started — only who has.
-          {" "}<Link to={`/educator/class/${code}/roster${keyQuery}`}>Add one</Link> and every seat gets a name.
+          {" "}<Link to={`/educator/class/${code}/roster`}>Add one</Link> and every seat gets a name.
         </p>
       )}
       {/* Said out loud rather than left as a difference between two numbers. Work from a seat
@@ -627,10 +624,7 @@ function Feedback({ seatCode, sessionId, existing, onSend }: {
 
 export function RealClassOverview() {
   const { code } = useParams();
-  const [params] = useSearchParams();
-  const { state } = useClassEvidence(code);
-  const keyQuery = params.get("key") ? `?key=${params.get("key")}` : "";
-  const teacherKey = params.get("key") ?? "";
+  const { state, teacherKey } = useClassEvidence(code);
 
   return (
     <ClassFrame state={state}>
@@ -654,8 +648,7 @@ export function RealClassOverview() {
             <NothingYet
               code={record.code}
               label={record.label}
-              keyQuery={keyQuery}
-              teacherKey={teacherKey}
+              teacherKey={teacherKey ?? ""}
               hasRoster={roll.hasRoster}
               roll={roll}
               roster={ready.roster}
@@ -676,7 +669,6 @@ export function RealClassOverview() {
               rows={roll.rows}
               submissions={submissions}
               code={record.code}
-              keyQuery={keyQuery}
               attempts={new Map(roll.seats.map((seat) => [seat.seatCode, seat.attempts.length]))}
             />
           </section>
@@ -689,10 +681,10 @@ export function RealClassOverview() {
                 <ClassName
                   code={record.code}
                   label={record.label}
-                  teacherKey={teacherKey}
+                  teacherKey={teacherKey ?? ""}
                   worlds={worldsPlayed(roll.rows)}
                 />
-                <ClassLead spine={spine} roll={roll} code={record.code} keyQuery={keyQuery} />
+                <ClassLead spine={spine} roll={roll} code={record.code} />
               </div>
               <div className="page-header__meta">
                 {/* The unit, said out loud, on the surface a teacher reads a number off and
@@ -704,7 +696,7 @@ export function RealClassOverview() {
                 {/* The largest single job this product creates, and it used to be a
                     sentence. It is the way into the queue that does it. */}
                 {roll.awaitingReading.length > 0
-                  ? <Link to={`/educator/class/${record.code}/reading${keyQuery}`}>{roll.awaitingReading.length} awaiting your reading</Link>
+                  ? <Link to={`/educator/class/${record.code}/reading`}>{roll.awaitingReading.length} awaiting your reading</Link>
                   : <span>Every explanation read</span>}
               </div>
             </header>
@@ -714,7 +706,6 @@ export function RealClassOverview() {
               roster={ready.roster}
               progress={ready.progress}
               code={record.code}
-              keyQuery={keyQuery}
               loadedAt={ready.loadedAt}
             />
 
@@ -733,7 +724,7 @@ export function RealClassOverview() {
                   reading={spine.reading.teachNext}
                   spotlight={spine.reading.spotlight}
                   classCode={record.code}
-                  teacherKey={teacherKey}
+                  teacherKey={teacherKey ?? ""}
                 />
               </section>
             )}
@@ -852,8 +843,8 @@ export function RealClassOverview() {
                 <span>Next</span>
                 <strong>Run the debrief</strong>
                 <p>Two real plans, what changed after Week 5, and what to review — from this class's evidence.</p>
-                <Link className="button button--primary" to={`/educator/class/${record.code}/debrief${keyQuery}`}>Open the debrief</Link>
-                <Link className="button button--secondary" to={`/educator/class/${record.code}/share-out${keyQuery}`}>Pick what the room sees</Link>
+                <Link className="button button--primary" to={`/educator/class/${record.code}/debrief`}>Open the debrief</Link>
+                <Link className="button button--secondary" to={`/educator/class/${record.code}/share-out`}>Pick what the room sees</Link>
               </div>
               <div>
                 <span>This class</span>
@@ -861,7 +852,7 @@ export function RealClassOverview() {
                 {/* The list is what turns every seat number on this page into a name, so the
                     way to it belongs beside the things a teacher does with the names. */}
                 <p>Names, join cards, a card reissued for a student who lost theirs, and taking somebody off the list.</p>
-                <Link className="button button--secondary" to={`/educator/class/${record.code}/roster${keyQuery}`}>Class list</Link>
+                <Link className="button button--secondary" to={`/educator/class/${record.code}/roster`}>Class list</Link>
               </div>
             </section>
           </>
@@ -887,11 +878,10 @@ function competencyStatement(competencyId: string, submissions: readonly Attribu
  * everybody and says nothing about what to do next. It opens with the competency state and
  * the requirement that fell short, which is the sentence a teacher acts on.
  */
-function StudentRows({ rows, submissions, code, keyQuery, attempts }: {
+function StudentRows({ rows, submissions, code, attempts }: {
   rows: readonly StudentRow[];
   submissions: readonly AttributedSubmission[];
   code: string;
-  keyQuery: string;
   /** How many attempts each seat turned in. One row per student either way; the row says so. */
   attempts: ReadonlyMap<string, number>;
 }) {
@@ -905,7 +895,7 @@ function StudentRows({ rows, submissions, code, keyQuery, attempts }: {
         // difference is that the row now says which of their attempts it is describing.
         const count = attempts.get(row.seatCode) ?? 1;
         return (
-          <Link key={row.sessionId} to={`/educator/class/${code}/students/${row.seatCode}${keyQuery}`}>
+          <Link key={row.sessionId} to={`/educator/class/${code}/students/${row.seatCode}`}>
             <div>
               <small>{label(row.seatCode)}{count > 1 ? ` · attempt ${count} of ${count}` : ""}</small>
               <h3>{spine ? SKILL_STATE_LABELS[spine.lead] : "No result"}</h3>
@@ -943,7 +933,6 @@ export function RealStudentEvidence() {
   const { code, seatCode } = useParams();
   const [params] = useSearchParams();
   const { state, scoreReasoning, recordOverride, sendFeedback } = useClassEvidence(code);
-  const keyQuery = params.get("key") ? `?key=${params.get("key")}` : "";
 
   return (
     <ClassFrame state={state} title="That student's work did not open.">
@@ -961,7 +950,7 @@ export function RealStudentEvidence() {
         if (!row) {
           return (
             <header className="page-header page-header--with-back">
-              <Link to={`/educator/class/${code}${keyQuery}`}>← Class evidence</Link>
+              <Link to={`/educator/class/${code}`}>← Class evidence</Link>
               <p className="eyebrow">{`Seat ${seatCode}`}</p>
               <h1>Nothing from this seat.</h1>
               <p>No student has turned work in from seat {seatCode} in this class.</p>
@@ -975,7 +964,6 @@ export function RealStudentEvidence() {
           <StudentPanel
             row={row}
             code={code ?? ""}
-            keyQuery={keyQuery}
             attempt={{ number: index + 1, of: attempts.length }}
             onScore={scoreReasoning}
             {...(submission ? { submission } : {})}
@@ -1044,10 +1032,9 @@ function StudentLead({ spine, awaitingReading }: { spine: StudentSpine; awaiting
   );
 }
 
-function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride, onFeedback, feedback, attempt }: {
+function StudentPanel({ row, code, onScore, submission, onOverride, onFeedback, feedback, attempt }: {
   row: StudentRow;
   code: string;
-  keyQuery: string;
   /** Which of this seat's attempts is on screen, and how many there are. */
   attempt: { number: number; of: number };
   onScore: (seat: string, session: string, scores: ReasoningScores | null) => Promise<boolean>;
@@ -1073,7 +1060,7 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride, on
     <>
       <header className="page-header page-header--split">
         <div>
-          <Link to={`/educator/class/${code}${keyQuery}`}>← Class evidence</Link>
+          <Link to={`/educator/class/${code}`}>← Class evidence</Link>
           <p className="eyebrow">Turned in {new Date(row.submittedAt).toLocaleString()}</p>
           <h1>{label(row.seatCode)}</h1>
           {/* A student who turned in twice used to be shown their later attempt silently, on a
@@ -1089,7 +1076,7 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride, on
               {Array.from({ length: attempt.of }, (_, index) => index + 1)
                 .filter((number) => number !== attempt.number)
                 .map((number) => (
-                  <Link key={number} to={`/educator/class/${code}/students/${row.seatCode}${keyQuery ? `${keyQuery}&` : "?"}attempt=${number}`}>
+                  <Link key={number} to={`/educator/class/${code}/students/${row.seatCode}?attempt=${number}`}>
                     See attempt {number}
                   </Link>
                 ))}
@@ -1154,7 +1141,7 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride, on
             and you score it — which is what the student was told would happen.
           </p>
           <p className="response-note">
-            <Link to={`/educator/class/${code}/reading${keyQuery}`}>Read the whole class in one queue →</Link>
+            <Link to={`/educator/class/${code}/reading`}>Read the whole class in one queue →</Link>
           </p>
         </div>
         <div className="rubric-panel">

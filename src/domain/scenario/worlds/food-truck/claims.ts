@@ -48,7 +48,28 @@ export const TIP_CLAIM_IDS: readonly TipClaimId[] = ["cool-box", "cleaner-share"
  */
 export interface TipClaim {
   id: TipClaimId;
+  /** What the card is headed. */
   title: string;
+  /**
+   * The same claim, as it reads inside a sentence.
+   *
+   * The card heading and the middle of a sentence want different words, and this world had only
+   * the heading — so the evidence a teacher reads said *"the $25 left over could not have
+   * covered Your share of the night cleaner and A painted sign for the truck"*. A world-class
+   * review found eleven sentences like it. Basketball has carried `inSentence` since it shipped
+   * for exactly this; the market was built without it and every observer sentence about a claim
+   * has been printing a card heading ever since.
+   *
+   * Two fields rather than a capitalisation rule, for the reason basketball's own comment
+   * gives: the difference is an article and a lower-case letter and no rule gets both right —
+   * "A painted sign" wants "the painted sign", and "Your share of the night cleaner" wants "the
+   * share of the night cleaner", which is not a case change at all.
+   *
+   * It is third person because the sentence it lands in is: the evidence trail is a sentence a
+   * teacher reads *about* a student. What the student is told back is a different register and
+   * lives in `src/domain/recap/popup.ts`.
+   */
+  inSentence: string;
   cost: Dollars;
   /** What the claim is, in Mo's week. */
   detail: string;
@@ -70,6 +91,7 @@ export function tipClaims(n: PopUpNumbers = POP_UP_NUMBERS): readonly TipClaim[]
   return [
     {
       id: "cool-box",
+      inSentence: "the cool box seal",
       title: "A seal for the cool box",
       cost: costOf("cool-box", n),
       detail: "The rubber round the lid has perished. The box still holds cold for a night. It holds less every week.",
@@ -80,6 +102,7 @@ export function tipClaims(n: PopUpNumbers = POP_UP_NUMBERS): readonly TipClaim[]
     },
     {
       id: "cleaner-share",
+      inSentence: "the share of the night cleaner",
       title: "Your share of the night cleaner",
       cost: costOf("cleaner-share", n),
       detail: "Every stall on the row chips in for the man who sweeps the lane at midnight. You already said you were in.",
@@ -90,6 +113,7 @@ export function tipClaims(n: PopUpNumbers = POP_UP_NUMBERS): readonly TipClaim[]
     },
     {
       id: "truck-sign",
+      inSentence: "the painted sign for the truck",
       title: "A painted sign for the truck",
       cost: costOf("truck-sign", n),
       detail: "Salt and Smoke, in proper letters, instead of the chalkboard leaning against the wheel.",
@@ -125,7 +149,18 @@ export interface TipClaimReason {
   id: ClaimReasonId;
   /** What the student taps, in their own register. */
   label: string;
-  /** The claim it makes, restated for the evidence trail. */
+  /**
+   * The claim it makes, as a clause the evidence trail can put after "They said" — third
+   * person, because the trail is a sentence a teacher reads about a student.
+   *
+   * These were written in the second person ("you said it was the one you only wanted") and
+   * dropped straight into sentences that talk about the student as *they*, at the start of a
+   * sentence, after a full stop. So the teacher's page read *"A basis that fits both halves of a
+   * choice explains neither of them. you said it was the one you only wanted, which is true of A
+   * painted sign for the truck and of nothing they paid for."* — a lower-case sentence start and
+   * a person change inside one clause, in the prose a teacher may quote to a parent. What a
+   * student is told back is second person and correct, and lives in `src/domain/recap/popup.ts`.
+   */
   said: string;
   /**
    * Whether this reason is true of a given claim.
@@ -140,25 +175,25 @@ export const TIP_CLAIM_REASONS: readonly TipClaimReason[] = [
   {
     id: "only-wanted",
     label: "It was the one I only wanted.",
-    said: "you said it was the one you only wanted",
+    said: "that it was the one they only wanted",
     holdsOf: (claim) => claim.onlyWanted,
   },
   {
     id: "no-one-counting",
     label: "Nobody else was counting on it.",
-    said: "you said nobody else was counting on it",
+    said: "that nobody else was counting on it",
     holdsOf: (claim) => !claim.countedOnBySomeone,
   },
   {
     id: "can-wait",
     label: "It can wait, even if it costs more.",
-    said: "you said it could wait, even at a price",
+    said: "that it could wait, even at a price",
     holdsOf: (claim) => claim.waitsAtAPrice,
   },
   {
     id: "cheapest",
     label: "It was the cheapest one to drop.",
-    said: "you said it was the cheapest one to drop",
+    said: "that it was the cheapest one to drop",
     holdsOf: null,
   },
 ] as const;

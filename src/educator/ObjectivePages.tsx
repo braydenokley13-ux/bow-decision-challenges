@@ -18,7 +18,7 @@ import {
   type StandardRef,
 } from "../domain/standards";
 import { MINIMUM_ASSESSED_FOR_A_STATE, type ObjectiveResult } from "../domain/competency/objectiveState";
-import { rememberedClasses } from "./classMemory";
+import { keyForClass } from "./classMemory";
 import { useObjectiveEvidence } from "./useObjectiveEvidence";
 import type { ObjectiveClassResult } from "./objectiveResults";
 import { classStateKey, skillStateKey, skillStateInSentence, CLASS_STATE_LABELS, COVERAGE_LABELS, TERMS } from "./labels";
@@ -230,7 +230,6 @@ function ResultHeadline({ result, submitted, awaitingReading }: { result: Object
 
 /** `unit` is the framework's own word for the thing being reported on, composed by the caller. */
 function ClassResult({ entry, onThisObjective, unit }: { entry: ObjectiveClassResult; onThisObjective: readonly CompetencyId[]; unit: string }) {
-  const keyQuery = `?key=${rememberedClasses().find((known) => known.code === entry.record.code)?.teacherKey ?? ""}`;
   const shownSkills = entry.competencies.filter((row) => onThisObjective.includes(row.competencyId));
   const statesShown = shownSkills.flatMap((row) =>
     (Object.entries(row.counts) as [CompetencyResultState, number][]).filter(([, count]) => count > 0).map(([state]) => state));
@@ -312,9 +311,9 @@ function ClassResult({ entry, onThisObjective, unit }: { entry: ObjectiveClassRe
         reading={entry.teachNext}
         spotlight={entry.spotlight}
         classCode={entry.record.code}
-        teacherKey={rememberedClasses().find((known) => known.code === entry.record.code)?.teacherKey ?? ""}
+        teacherKey={keyForClass(entry.record.code) ?? ""}
       />
-      <Link className="button button--quiet" to={`/educator/class/${entry.record.code}${keyQuery}`}>Open this class’s evidence</Link>
+      <Link className="button button--quiet" to={`/educator/class/${entry.record.code}`}>Open this class’s evidence</Link>
     </article>
   );
 }

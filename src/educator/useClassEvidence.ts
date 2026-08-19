@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import { educatorClassError, isClassError, type Assignment, type AttributedSubmission, type ClassRecord } from "../platform/classes/types";
 import { reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 import type { EvidenceRequirementId, RubricLevel } from "../domain/competency/types";
 import { analyseClass, type ClassAnalysis } from "./analysis";
-import { keyForClass, rememberClass } from "./classMemory";
+import { rememberClass } from "./classMemory";
+import { useTeacherKey } from "./teacherKeyUrl";
 import type { RosterRow } from "./names";
 import type { ProgressRow, TeacherFeedback } from "../platform/identity/types";
 import { DEMO_CLASS_CODE, demoClassBundle } from "../fixtures/demoClass";
@@ -87,10 +87,11 @@ export function useClassEvidence(code: string | undefined): {
   sendFeedback: (seatCode: string, sessionId: string, body: string, flagged: boolean) => Promise<boolean>;
 } {
   const isDemo = code === DEMO_CLASS_CODE;
-  const [params] = useSearchParams();
   // The key comes from the link the educator was given, or from this browser if they have
-  // opened the class here before. It is never derivable from the class code.
-  const teacherKey = params.get("key") ?? (code ? keyForClass(code) : null);
+  // opened the class here before. It is never derivable from the class code, and it does not
+  // stay in the address bar: `useTeacherKey` files it here and rewrites the URL without it,
+  // because these are the pages with the children's names and the children's writing on them.
+  const teacherKey = useTeacherKey(code);
   const [fetched, setFetched] = useState<ClassEvidenceState>({ status: "loading" });
   const [nonce, setNonce] = useState(0);
 

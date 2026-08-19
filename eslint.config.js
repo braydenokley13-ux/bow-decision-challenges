@@ -22,6 +22,37 @@ const VIEW_FREE = {
   message: "Domain modules must remain pure and view-independent.",
 };
 
+/**
+ * The boundary between what ships to a child's browser and what holds every class's evidence.
+ *
+ * `server/**` is the class service: the vault key, the token signer, the store on disk. It runs
+ * in Node, it is built by `tsconfig.node.json`, and nothing in `src/**` may reach into it — the
+ * two talk over HTTP and that is the whole of their contract.
+ *
+ * This was the one boundary the config did not draw. An engineering review put
+ * `import { signToken } from "../../server/crypto"` into `src/student/session.ts` and watched it
+ * pass `tsc -b`, `eslint` and `vite build` with no error and no warning; the bundle grew thirty
+ * bytes, because Rollup externalised `node:crypto` rather than refusing. So the failure mode is
+ * not a build error a person would notice — it is a browser bundle that silently carries the
+ * shape of the service's secrets, and the next import of the same kind carrying the secret
+ * itself. `src/domain/** → src/educator/**` was already blocked and works; this is the same
+ * mechanism, pointed at the boundary that matters more.
+ *
+ * Depth-independent for the reason written over `VIEW_FREE`: `../../server/crypto` and
+ * `../../../../server/crypto` are the same import and a pattern that counts `../` catches one
+ * of them.
+ *
+ * Test files are exempt by `ignores` rather than by turning the rule off, because turning it
+ * off in a later block would replace whatever `no-restricted-imports` the file already had —
+ * which is exactly the footgun described above, and it would have cost `src/domain/**`'s view
+ * boundary on every domain test. `src/platform/**`'s service tests boot the real handler
+ * in-process and `src/test/asStudent.ts` drives it; none of them is bundled.
+ */
+const SERVER_FREE = {
+  group: ["**/server/**", "**/api/*"],
+  message: "The browser bundle never imports the class service. src/** talks to server/** over HTTP and nothing else.",
+};
+
 export default tseslint.config(
   // `scripts` holds standalone dev tooling that runs outside the app tsconfig.
   // `dist-*` rather than the two names that were listed: `.gitignore` has said `dist-*/` since
@@ -48,11 +79,20 @@ export default tseslint.config(
     },
   },
   {
+    // Everything the browser gets. Narrower blocks below re-state `SERVER_FREE` rather than
+    // inheriting it, because a later block replaces this rule instead of merging into it.
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/**/*.test.{ts,tsx}", "src/test/**/*.ts"],
+    rules: {
+      "no-restricted-imports": ["error", { "patterns": [SERVER_FREE] }]
+    }
+  },
+  {
     files: ["src/domain/**/*.{ts,tsx}"],
     rules: {
       // Depth-independent on purpose: the patterns used to be written as `../../educator/**`,
       // which a module three directories under `src/domain` escapes simply by being deeper.
-      "no-restricted-imports": ["error", { "patterns": [VIEW_FREE] }]
+      "no-restricted-imports": ["error", { "patterns": [VIEW_FREE, SERVER_FREE] }]
     }
   },
   {
@@ -65,6 +105,7 @@ export default tseslint.config(
       "no-restricted-imports": ["error", {
         "patterns": [
           VIEW_FREE,
+          SERVER_FREE,
           { "group": ["**/standards", "**/standards/**"], "message": "Competencies never reference a state framework. The mapping table joins them, from the standards side." }
         ]
       }]
@@ -76,6 +117,7 @@ export default tseslint.config(
       "no-restricted-imports": ["error", {
         "patterns": [
           VIEW_FREE,
+          SERVER_FREE,
           // Depth-independent, for the same reason the view group is: written as `../` and
           // `../../` these matched two directory depths and a module one level deeper walked
           // straight through them.

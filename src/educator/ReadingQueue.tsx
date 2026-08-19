@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { EducatorShell } from "./EducatorShell";
 import { SeatNamesContext, seatNames, useSeatLabel } from "./names";
@@ -38,9 +38,7 @@ function queueOrder(rows: readonly StudentRow[]): string[] {
 
 export function ReadingQueue() {
   const { code } = useParams();
-  const [params] = useSearchParams();
   const { state, scoreReasoning } = useClassEvidence(code);
-  const keyQuery = params.get("key") ? `?key=${params.get("key")}` : "";
 
   if (state.status === "loading") {
     return <EducatorShell><p className="class-state" aria-live="polite">Opening the class…</p></EducatorShell>;
@@ -69,7 +67,7 @@ export function ReadingQueue() {
     <EducatorShell>
       <SeatNamesContext.Provider value={seatNames(state.roster)}>
       <header className="page-header page-header--with-back">
-        <Link to={`/educator/class/${state.record.code}${keyQuery}`}>← Class evidence</Link>
+        <Link to={`/educator/class/${state.record.code}`}>← Class evidence</Link>
         <p className="eyebrow">{state.record.label} · Reading queue</p>
         <h1>Read and score the explanations.</h1>
         <p>
@@ -86,7 +84,6 @@ export function ReadingQueue() {
         <Queue
           rows={rows}
           code={state.record.code}
-          keyQuery={keyQuery}
           onScore={scoreReasoning}
           attempts={new Map(roll.seats.map((seat) => [seat.seatCode, seat.attempts.length]))}
         />
@@ -96,10 +93,9 @@ export function ReadingQueue() {
   );
 }
 
-function Queue({ rows, code, keyQuery, onScore, attempts }: {
+function Queue({ rows, code, onScore, attempts }: {
   rows: readonly StudentRow[];
   code: string;
-  keyQuery: string;
   onScore: (seatCode: string, sessionId: string, scores: ReasoningScores | null) => Promise<boolean>;
   /** How many attempts each seat turned in, so the card can say which one this is. */
   attempts: ReadonlyMap<string, number>;
@@ -138,7 +134,6 @@ function Queue({ rows, code, keyQuery, onScore, attempts }: {
       position={position}
       count={queue.length}
       code={code}
-      keyQuery={keyQuery}
       headingRef={headingRef}
       onMove={goTo}
       attempts={attempts.get(row.seatCode) ?? 1}
@@ -147,12 +142,11 @@ function Queue({ rows, code, keyQuery, onScore, attempts }: {
   );
 }
 
-function ReadingCard({ row, position, count, code, keyQuery, headingRef, onMove, onScore, attempts }: {
+function ReadingCard({ row, position, count, code, headingRef, onMove, onScore, attempts }: {
   row: StudentRow;
   position: number;
   count: number;
   code: string;
-  keyQuery: string;
   /** How many attempts this seat turned in. The queue reads their latest. */
   attempts: number;
   headingRef: React.RefObject<HTMLHeadingElement>;
@@ -206,7 +200,7 @@ function ReadingCard({ row, position, count, code, keyQuery, headingRef, onMove,
                 plan — the same child's other attempt — with nothing on either screen saying so.
                 Scoring "two accurate numbers from their own plan" against that marks a child
                 down for numbers that are nowhere in the plan in front of you. */}
-            <Link to={`/educator/class/${code}/students/${row.seatCode}${keyQuery ? `${keyQuery}&` : "?"}attempt=${attempts}`}>
+            <Link to={`/educator/class/${code}/students/${row.seatCode}?attempt=${attempts}`}>
               Open this student’s evidence →
             </Link>
           </p>

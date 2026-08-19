@@ -120,7 +120,11 @@ export const POP_UP_EVIDENCE_ROUTES: readonly PopUpEvidenceRoute[] = [
   {
     evidenceRequirementId: "plan-within-income.er3",
     via: "remainder-declaration",
-    note: "Closing the opening plan by sending the last of the money to a named line. Your cut is the money the student is banking for themselves, so a student who sends the leftovers there has let the arithmetic set their pay, and a student who sends them to stock or the cushion has set their cut themselves and let something else absorb the rest.",
+    // "the cut", not "Your cut". The board's control is headed *Your cut* and this note is read
+    // by a teacher about a student — `resolution.ts` carries the same rule and the same scar
+    // ("$270 off the Your cut"), which is a control's name dropped into a sentence written for
+    // somebody else.
+    note: "Closing the opening plan by sending the last of the money to a named line. The cut is the money the student is banking for themselves, so a student who sends the leftovers there has let the arithmetic set their pay, and a student who sends them to stock or the cushion has set their cut themselves and let something else absorb the rest.",
   },
   {
     evidenceRequirementId: "plan-within-income.er4",
@@ -387,16 +391,21 @@ function remainderPart(choices: readonly PopUpRemainderChoice[], opening: PopUpB
     ...(cutFigure ? { origin: { source: cutFigure.amountSource, revised: cutFigure.revised } } : {}),
   });
   const before = Number(held) - Number(closed?.amount ?? 0);
+  // "the cut", never "Your cut". Every one of these is a sentence a teacher reads about a
+  // student, and *Your cut* is the heading on a control the student was looking at — the same
+  // control-label-in-a-sentence mistake `resolution.ts` records having made once already
+  // ("$270 off the Your cut"). Six of the seven said it, and the world-class review's rule
+  // caught the seventh: a second-person pronoun in a sentence that is otherwise about "they".
   const detail: Record<SavingsVerdictId, string> = {
-    "never-opened": "Another line took the last of the money, and your cut was never moved off the figure the board opened on — so this run cannot say whether banking nothing was the plan or whether the line was never read.",
-    supplied: "The board filled in one split that adds up, so the figure on your cut was the one BOW suggested and the student did not change it.",
+    "never-opened": "Another line took the last of the money, and the cut was never moved off the figure the board opened on — so this run cannot say whether banking nothing was the plan or whether the line was never read.",
+    supplied: "The board filled in one split that adds up, so the figure on the cut was the one BOW suggested and the student did not change it.",
     "no-statement": choices.length === 0
       ? "The student closed the opening plan without saying which line took the rest, so this world saw neither answer."
       : "The student used the control to place a figure but finished the plan another way, so no line was ever named as taking the last of the money.",
-    leftovers: "Your cut took what the other lines left over, so what the student is banking is what the arithmetic came to rather than a figure they set.",
-    "topped-up": `Your cut was already holding $${before} when the student sent the last $${Number(closed?.amount ?? 0)} to it as well, so what they are banking is a figure they set and then added to rather than what the arithmetic left.`,
-    "set-and-closed-elsewhere": "Your cut held a figure the student set, and another line took the last of the money.",
-    "took-it-back": "The leftovers landed on your cut first and the student took them back off it and closed somewhere else, with nothing on screen but the board.",
+    leftovers: "The cut took what the other lines left over, so what the student is banking is what the arithmetic came to rather than a figure they set.",
+    "topped-up": `The cut was already holding $${before} when the student sent the last $${Number(closed?.amount ?? 0)} to it as well, so what they are banking is a figure they set and then added to rather than what the arithmetic left.`,
+    "set-and-closed-elsewhere": "The cut held a figure the student set, and another line took the last of the money.",
+    "took-it-back": "The leftovers landed on the cut first and the student took them back off it and closed somewhere else, with nothing on screen but the board.",
   };
   return {
     level: read.level,
@@ -539,8 +548,15 @@ function claimsPart(reads: "reach" | "kind-of-reason" | "reason-holds", facts: P
     return NOT_REACHED("The run never reached the night the tips jar is emptied, so this world saw no answer either way.", "tip-claims");
   }
   const claims = tipClaims(n);
-  const named = (ids: readonly string[]) =>
-    claims.filter((claim) => ids.includes(claim.id)).map((claim) => claim.title).join(" and ");
+  // `inSentence`, not `title`: these strings land in the middle of a sentence a teacher reads,
+  // and a card heading dropped there reads as a mistake — "could not have covered Your share of
+  // the night cleaner" is what this was printing. `claims.ts` carries the whole of why the two
+  // are separate fields rather than a capitalisation rule.
+  const named = (ids: readonly string[]) => {
+    const titles = claims.filter((claim) => ids.includes(claim.id)).map((claim) => claim.inSentence);
+    if (titles.length <= 1) return titles[0] ?? "";
+    return `${titles.slice(0, -1).join(", ")} and ${titles.at(-1)}`;
+  };
   const built = reads === "reach"
     ? tipsReachRead(settled.settlement, named, n)
     : reasonRead(reads, settled.settlement, claims, named);
@@ -585,10 +601,15 @@ function tipsReachRead(
   if (settlement.fundedIds.length === 0) {
     return { level: 0, detail: `Nothing on the list was paid for, so none of the ${cash} did anything for the three things waiting on it.` };
   }
+  // The money leads, not the claim. These sentences used to open on `named(...)`, and once that
+  // reads "the cool box seal" rather than "A seal for the cool box" the sentence starts with a
+  // lower-case letter directly after the note's full stop. Leading with the figure is what
+  // basketball's `reachRead` does and it is the right shape here for the same reason: the
+  // subject of the sentence is how far the jar was made to go.
   if (tipsReachAsFarAsTheyGo(settlement.fundedIds, n)) {
-    return { level: 5, detail: `${named(settlement.fundedIds)} took ${spent} of the ${cash}, and the ${left} left over could not have covered ${named(settlement.unfundedIds)}.` };
+    return { level: 5, detail: `${spent} of the ${cash} in the jar went on ${named(settlement.fundedIds)}, and the ${left} left over could not have covered ${named(settlement.unfundedIds)}.` };
   }
-  return { level: 2, detail: `${named(settlement.fundedIds)} took ${spent} of the ${cash}, and the ${left} still in the jar could have covered something on the unpaid list as well.` };
+  return { level: 2, detail: `${spent} of the ${cash} in the jar went on ${named(settlement.fundedIds)}, and the ${left} still in the jar could have covered something on the unpaid list as well.` };
 }
 
 function reasonRead(
@@ -636,19 +657,23 @@ function tipsHoldRead(
   const holds = (ids: readonly string[]) => claims.filter((claim) => ids.includes(claim.id) && holdsOf(claim));
   const unpaidThatFit = holds(settlement.unfundedIds);
   const paidThatFit = holds(settlement.fundedIds);
+  // Every one of these opens with "They said" rather than dropping the clause in bare. The
+  // clauses used to be written in the second person and started the sentence, so the page read
+  // "…explains neither of them. you said it was the one you only wanted, which is true of … and
+  // of nothing they paid for" — a lower-case sentence start and two people in one clause.
   if (unpaidThatFit.length === 0) {
-    return { level: 0, detail: `They left ${named(settlement.unfundedIds)} unpaid and ${said}, and that is not what this world says ${settlement.unfundedIds.length > 1 ? "either of them was" : "it was"}.` };
+    return { level: 0, detail: `They left ${named(settlement.unfundedIds)} unpaid and said ${said}, and that is not what this world says ${settlement.unfundedIds.length > 1 ? "either of them was" : "it was"}.` };
   }
   if (settlement.fundedIds.length === 0) {
-    return { level: 2, detail: `${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} — but nothing was paid for, so the reason has nothing to explain the choosing of.` };
+    return { level: 2, detail: `They said ${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} — but nothing was paid for, so the reason has nothing to explain the choosing of.` };
   }
   if (paidThatFit.length > 0) {
     return {
       level: 2,
-      detail: `${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} — and just as true of ${named(paidThatFit.map((claim) => claim.id))}, which they did pay for, so it does not account for this choice.`,
+      detail: `They said ${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} — and just as true of ${named(paidThatFit.map((claim) => claim.id))}, which they did pay for, so it does not account for this choice.`,
     };
   }
-  return { level: 5, detail: `${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} and of nothing they paid for.` };
+  return { level: 5, detail: `They said ${said}, which is true of ${named(unpaidThatFit.map((claim) => claim.id))} and of nothing they paid for.` };
 }
 
 function partFor(route: PopUpEvidenceRoute, input: PopUpObserverInput): Part {

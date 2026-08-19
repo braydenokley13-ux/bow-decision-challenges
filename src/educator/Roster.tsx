@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { EducatorShell } from "./EducatorShell";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
-import { keyForClass } from "./classMemory";
+import { useTeacherKey } from "./teacherKeyUrl";
 import { MAX_ROSTER_SIZE, type ClassJoinMode, type JoinCard } from "../platform/identity/types";
 
 /**
@@ -54,9 +54,8 @@ function normalName(name: string): string {
 
 export function Roster() {
   const { code } = useParams();
-  const [params] = useSearchParams();
-  const keyQuery = params.get("key") ? `?key=${params.get("key")}` : "";
-  const teacherKey = code ? params.get("key") ?? keyForClass(code) : null;
+  // Filed in this browser and taken out of the address bar. This page is every child's name.
+  const teacherKey = useTeacherKey(code);
   // A browser with no key for this class is a fact about the arrival, not a load that fails —
   // so it resolves during render rather than as the first thing an effect does.
   const [state, setState] = useState<State>(() => (code && teacherKey
@@ -275,7 +274,7 @@ export function Roster() {
   return (
     <EducatorShell>
       <header className="page-header page-header--with-back">
-        <Link to={`/educator/class/${code ?? ""}${keyQuery}`}>← Class evidence</Link>
+        <Link to={`/educator/class/${code ?? ""}`}>← Class evidence</Link>
         <p className="eyebrow">Class list</p>
         <h1>Who is in this class.</h1>
         <p>

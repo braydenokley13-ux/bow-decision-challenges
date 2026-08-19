@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MyClasses } from "./MyClasses";
+import { keyForClass } from "./classMemory";
 
 /**
  * What the class-created screen says about the private link, checked against what the next
@@ -60,6 +61,13 @@ describe("what the created screen says about the private link", () => {
    * The claim it makes instead, and the one the list has to honour. If a future change stops
    * filing the key — reverting to "write this down or lose it" — this fails, because the
    * sentence would be false again in the other direction.
+   *
+   * *Filed* is the word doing the work, and it is now the whole of the promise: the list opens
+   * the class because this browser holds the key, not because the key is written into the link.
+   * It used to be written into the link, and an engineering review drove that in Chromium and
+   * found it in `page.url()` on the roster while every child's name was on screen. So the
+   * assertion is in two halves that have to hold together — the row does not carry the key, and
+   * the key is nonetheless here.
    */
   it("promises the key is already filed, and the list keeps that promise", async () => {
     await createAClass();
@@ -70,7 +78,24 @@ describe("what the created screen says about the private link", () => {
     render(<MemoryRouter><MyClasses /></MemoryRouter>);
 
     const row = await screen.findByRole("link", { name: /Period 3/ });
-    expect(row).toHaveAttribute("href", expect.stringContaining(CREATED.teacherKey));
+    expect(row).toHaveAttribute("href", `/educator/class/${CREATED.code}`);
+    expect(row.getAttribute("href")).not.toContain(CREATED.teacherKey);
+    expect(keyForClass(CREATED.code)).toBe(CREATED.teacherKey);
+  });
+
+  /**
+   * The one place the key is still written out, and the reason it stays there.
+   *
+   * The private link is a hand-over rather than navigation: it is what a teacher copies to open
+   * this class on a second machine, and for a teacher with no account it is the only place the
+   * key exists outside this browser's storage. Following it does not leave the key on screen —
+   * `useTeacherKey` files it and rewrites the address bar — so what this pins is that the
+   * screen which promises a link a teacher can keep is actually printing one.
+   */
+  it("still prints a link a teacher can carry to another computer", async () => {
+    await createAClass();
+    const panel = keyLabel().closest("div")!;
+    expect(panel.textContent).toContain(`/educator/class/${CREATED.code}?key=${CREATED.teacherKey}`);
   });
 
   /**

@@ -135,7 +135,7 @@ function Spotlight({ spotlight, classCode, teacherKey }: { spotlight: Misconcept
                 <blockquote>{example.writing}</blockquote>
                 <cite>
                   Seat {example.seatCode} · {levelLabel(example.level).toLowerCase()}
-                  {teacherKey && <> · <Link to={`/educator/class/${classCode}/students/${example.seatCode}?key=${teacherKey}`}>open the evidence</Link></>}
+                  {teacherKey && <> · <Link to={`/educator/class/${classCode}/students/${example.seatCode}`}>open the evidence</Link></>}
                 </cite>
               </li>
             ))}
@@ -213,7 +213,7 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
             {needing.map((example) => (
               <li key={example.seatCode}>
                 {teacherKey
-                  ? <Link to={`/educator/class/${classCode}/students/${example.seatCode}?key=${teacherKey}`}>Seat {example.seatCode}</Link>
+                  ? <Link to={`/educator/class/${classCode}/students/${example.seatCode}`}>Seat {example.seatCode}</Link>
                   : <span>Seat {example.seatCode}</span>}
                 <small>{levelLabel(example.level)}</small>
               </li>

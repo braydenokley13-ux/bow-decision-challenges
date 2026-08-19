@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { EducatorShell } from "./EducatorShell";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
@@ -42,8 +42,6 @@ const PRESENT_BUTTON_ID = "share-out-present";
 
 export function ShareOut() {
   const { code } = useParams();
-  const [params] = useSearchParams();
-  const keyQuery = params.get("key") ? `?key=${params.get("key")}` : "";
   const { state, teacherKey } = useClassEvidence(code);
   const [selection, setSelection] = useState<ShareOutSelection | null>(null);
   const [presenting, setPresenting] = useState(false);
@@ -151,7 +149,7 @@ export function ShareOut() {
   return (
     <EducatorShell>
       <header className="page-header page-header--with-back">
-        <Link to={`/educator/class/${record.code}${keyQuery}`}>← Class evidence</Link>
+        <Link to={`/educator/class/${record.code}`}>← Class evidence</Link>
         <p className="eyebrow">{record.label} · Share-out</p>
         <h1>Pick what the room sees.</h1>
         <p>

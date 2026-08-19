@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { EducatorShell, StateKey } from "./EducatorShell";
 import { useClassEvidence } from "./useClassEvidence";
 import { classRoll, seatList, worldSections, type StudentRow } from "./analysis";
@@ -41,9 +41,7 @@ import { levelLabel, skillStateKey, SKILL_STATE_LABELS, TERMS } from "./labels";
  */
 export function Debrief() {
   const { code } = useParams();
-  const [params] = useSearchParams();
   const { state, teacherKey } = useClassEvidence(code);
-  const keyQuery = params.get("key") ? `?key=${params.get("key")}` : "";
   // §5 is the teacher's own selection, so this page has to ask for it rather than pick for
   // itself. `undefined` is the service not answering and leaves the last read standing;
   // nothing chosen and nothing readable both end as an empty §5, which is the safe end.
@@ -86,7 +84,7 @@ export function Debrief() {
           <h1>Nothing to debrief yet.</h1>
           <p>No runs turned in yet. The debrief opens when work arrives.</p>
         </header>
-        <Link className="button button--secondary" to={`/educator/class/${record.code}${keyQuery}`}>Back to the class</Link>
+        <Link className="button button--secondary" to={`/educator/class/${record.code}`}>Back to the class</Link>
       </EducatorShell>
     );
   }
@@ -136,7 +134,7 @@ export function Debrief() {
           {total} {total === 1 ? "student" : "students"} finished. <DebriefLead spine={spine} />
         </p>
         <div className="debrief__actions no-print">
-          <Link className="button button--secondary" to={`/educator/class/${record.code}${keyQuery}`}>Back to the class</Link>
+          <Link className="button button--secondary" to={`/educator/class/${record.code}`}>Back to the class</Link>
           <button type="button" className="button button--primary" onClick={() => window.print()}>Print this debrief</button>
         </div>
       </header>
@@ -238,7 +236,7 @@ export function Debrief() {
 
         <section className="debrief__section">
           <h2>4 · What to review</h2>
-          <WhatToReview spine={spine} classCode={record.code} keyQuery={keyQuery} />
+          <WhatToReview spine={spine} classCode={record.code} />
         </section>
 
         <section className="debrief__section">
@@ -262,7 +260,7 @@ export function Debrief() {
             <>
               <p>Nothing chosen. Student writing reaches the room only when you pick it.</p>
               <p className="no-print">
-                <Link to={`/educator/class/${record.code}/shareout${keyQuery}`}>Pick what the room sees.</Link>
+                <Link to={`/educator/class/${record.code}/shareout`}>Pick what the room sees.</Link>
               </p>
             </>
           ) : (
@@ -299,7 +297,7 @@ function DebriefLead({ spine }: { spine: ClassSpine }) {
  * class page. Where those two render the lesson in full, this renders the sentence a teacher
  * says out loud and links to the rest.
  */
-function WhatToReview({ spine, classCode, keyQuery }: { spine: ClassSpine; classCode: string; keyQuery: string }) {
+function WhatToReview({ spine, classCode }: { spine: ClassSpine; classCode: string }) {
   const reading: TeachNextReading | null = spine.reading?.teachNext ?? null;
   if (!reading || reading.state === "not-assessed") {
     return (
@@ -314,7 +312,7 @@ function WhatToReview({ spine, classCode, keyQuery }: { spine: ClassSpine; class
       <p>
         {reading.assessed} {reading.assessed === 1 ? "student has" : "students have"} a usable result. Under
         {" "}{MINIMUM_RESULTS_FOR_CLASS_NARRATION}, BOW does not name a lesson for the class.{" "}
-        <Link to={`/educator/class/${classCode}${keyQuery}`}>The counts are on the class page.</Link>
+        <Link to={`/educator/class/${classCode}`}>The counts are on the class page.</Link>
       </p>
     );
   }
@@ -349,7 +347,7 @@ function WhatToReview({ spine, classCode, keyQuery }: { spine: ClassSpine; class
         </p>
       )}
       <p className="no-print">
-        <Link to={`/educator/class/${classCode}${keyQuery}`}>The students who need it are on the class page.</Link>
+        <Link to={`/educator/class/${classCode}`}>The students who need it are on the class page.</Link>
       </p>
     </>
   );

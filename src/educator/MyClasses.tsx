@@ -9,7 +9,7 @@ import { PLAYABLE_WORLDS } from "../domain/scenario/registry";
 import type { WorldId } from "../domain/core/ids";
 import { assessableStandards, FRAMEWORKS, labelsFor, standardByRef } from "../domain/standards";
 import type { FrameworkId } from "../domain/standards";
-import { forgetClass, rememberClass } from "./classMemory";
+import { forgetEveryClass, rememberClass } from "./classMemory";
 import { useRememberedClasses } from "./useRememberedClasses";
 import { teacherToken } from "./teacherSession";
 import { TERMS } from "./labels";
@@ -189,12 +189,30 @@ export function MyClasses() {
     }
   };
 
-  const evidencePath = (record: { code: string; teacherKey: string }) =>
-    `/educator/class/${record.code}?key=${record.teacherKey}`;
+  /**
+   * Where a class opens from inside the product — the code, and nothing else.
+   *
+   * This used to be `?key=${record.teacherKey}`, which put the one credential that opens
+   * every child's name and every child's writing into the address bar of the roster and the
+   * evidence pages, and into the browser history of whatever machine a teacher was on. The
+   * key is already in this browser (that is what `rememberClass` is for) and the service has
+   * always taken it as a header, so a link from here does not need to carry it.
+   */
+  const evidencePath = (record: { code: string }) => `/educator/class/${record.code}`;
 
   /** Where the class list and the cards live. The first thing to do with a class that has just been made. */
-  const rosterPath = (record: { code: string; teacherKey: string }) =>
-    `/educator/class/${record.code}/roster?key=${record.teacherKey}`;
+  const rosterPath = (record: { code: string }) => `/educator/class/${record.code}/roster`;
+
+  /**
+   * The one link that still carries the key, and the only one that should.
+   *
+   * It is a hand-over rather than navigation: the thing a teacher copies to open this class on
+   * a second machine, or keeps because they have no account and this browser is the only place
+   * the key exists. `useTeacherKey` takes it back out of the address bar on arrival, so
+   * following it does not leave the key on screen.
+   */
+  const handoverLink = (record: { code: string; teacherKey: string }) =>
+    `${window.location.origin}/educator/class/${record.code}?key=${record.teacherKey}`;
 
   const createBlock = (
     <section className="class-form">
@@ -336,7 +354,7 @@ export function MyClasses() {
                 browser matters depends on whether you signed in. */}
             <div className="class-created__key">
               <p className="field-label">Your private link</p>
-              <code>{window.location.origin}{evidencePath(created)}</code>
+              <code>{handoverLink(created)}</code>
               <p>
                 This link is what opens this class’s evidence — the class code alone will not, which is
                 what stops students reading each other’s work. It is already in your class list, so you do
@@ -470,7 +488,7 @@ export function MyClasses() {
                 variant="primary"
                 aria-describedby="classes-forget-warn"
                 onClick={() => {
-                  known.forEach((record) => forgetClass(record.code));
+                  forgetEveryClass();
                   reloadKnown();
                   setForgetting(false);
                 }}
