@@ -10,6 +10,7 @@ import { AppMark } from "../components/primitives/AppMark";
 import { RunMenu } from "../components/primitives/RunMenu";
 import { useChallenge } from "./ChallengeContext";
 import { SeasonStrip } from "../components/story/SeasonStrip";
+import { ReadingTools } from "../student/reading";
 
 const { numbers, incomeCopy, goalLabel } = BASKETBALL_SCENARIO;
 
@@ -115,6 +116,11 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
         </header>
         {children}
       </main>
+      {/* The screen read out loud, and the words on it defined, for whoever wants either.
+          Outside `<main>` because it is not part of the stage; `screenKey` carries the
+          question as well as the stage id, so a stage that asks four of them under one id
+          stops the voice at each one rather than reading over the next. */}
+      <ReadingTools screenKey={focusKey === undefined ? stage : `${stage}:${focusKey}`} />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import { POP_UP_NUMBERS as N } from "../../domain/scenario/worlds/food-truck/num
 import { marketPositionFor } from "../../domain/scenario/worlds/food-truck/stages";
 import type { PopUpLineId, PopUpPlan } from "../../domain/scenario/worlds/food-truck/types";
 import { marketStrip } from "./popupView";
+import { ReadingTools } from "../../student/reading";
 
 const COPY = POP_UP_SCENARIO.screens;
 
@@ -95,6 +96,10 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
         </header>
         {children}
       </main>
+      {/* The same reading help the other world carries, on the same terms: outside `<main>`
+          so the voice reads the market and not the tools, and keyed on the question as well
+          as the stage so the repair screen's two halves are two screens to it. */}
+      <ReadingTools screenKey={focusKey === undefined ? stage : `${stage}:${focusKey}`} />
     </div>
   );
 }
