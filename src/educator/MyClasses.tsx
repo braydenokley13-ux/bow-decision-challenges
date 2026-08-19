@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { EducatorShell } from "./EducatorShell";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
-import { CLASS_ERROR_MESSAGES, CLASS_RETENTION_DAYS, isClassError, type ClassCreation } from "../platform/classes/types";
+import { CLASS_RETENTION_DAYS, educatorClassError, isClassError, type ClassCreation } from "../platform/classes/types";
 import { durationLabel, PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
 import { DEFAULT_WORLD_ID, PLAYABLE_WORLDS, WORLD_REGISTRY } from "../domain/scenario/registry";
 import { assessableStandards, FRAMEWORKS, labelsFor, standardByRef } from "../domain/standards";
@@ -66,6 +66,19 @@ export function MyClasses() {
   const [studentPicks, setStudentPicks] = useState(true);
   const [assigning, setAssigning] = useState<string | null>(null);
   const [assigned, setAssigned] = useState<string | null>(null);
+  // Whether "Forget these classes" has been asked and is one press from happening. Same shape
+  // as the roster's erase confirmation, for the same reason: it is the one control on this page
+  // that destroys something, and it sat unguarded next to "Start another class".
+  const [forgetting, setForgetting] = useState(false);
+  /**
+   * The safe button, held by identity rather than found by position — the reasoning is written
+   * out in full over `keepIt` in `Roster.tsx`. A raw `<button>` because `Button` is not a
+   * `forwardRef` component and would drop the ref.
+   */
+  const keepThem = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (forgetting) keepThem.current?.focus();
+  }, [forgetting]);
   const framework = FRAMEWORKS[FRAMEWORK_ID];
   const labels = labelsFor(FRAMEWORK_ID);
   const unit = labels?.unitNounShort ?? "Objective";
@@ -94,7 +107,7 @@ export function MyClasses() {
       });
       const body: unknown = await response.json();
       if (!response.ok) {
-        setProblem(isClassError(body) ? CLASS_ERROR_MESSAGES[body.error] : CLASS_ERROR_MESSAGES.unavailable);
+        setProblem(isClassError(body) ? educatorClassError(body.error) : educatorClassError("unavailable"));
         return;
       }
       const record = body as ClassCreation;
@@ -117,7 +130,7 @@ export function MyClasses() {
       reloadKnown();
       setCreated(record);
     } catch {
-      setProblem(CLASS_ERROR_MESSAGES.unavailable);
+      setProblem(educatorClassError("unavailable"));
     } finally {
       setWorking(false);
     }
@@ -141,12 +154,12 @@ export function MyClasses() {
       });
       if (!response.ok) {
         const body: unknown = await response.json();
-        setProblem(isClassError(body) ? CLASS_ERROR_MESSAGES[body.error] : CLASS_ERROR_MESSAGES.unavailable);
+        setProblem(isClassError(body) ? educatorClassError(body.error) : educatorClassError("unavailable"));
         return;
       }
       setAssigned(record.code);
     } catch {
-      setProblem(CLASS_ERROR_MESSAGES.unavailable);
+      setProblem(educatorClassError("unavailable"));
     } finally {
       setAssigning(null);
     }
@@ -269,15 +282,25 @@ export function MyClasses() {
               No list to hand? Skip the cards: students type the class code and their own first name,
               and BOW files their work under that.
             </p>
-            {/* Shown once, and kept in this browser. There is no account to recover it from,
-                so the page says so rather than letting a teacher find out in a week. */}
+            {/* Every clause here used to be false at once. It said the link "is not shown again",
+                and the very next screen — /educator/classes, one link away — renders each class as
+                an anchor whose href carries the key. It said the link "is saved in this browser"
+                in the same breath, which cannot both hold. And it said all of that identically to
+                a teacher who has an account, for whom the key is on the account and a wiped laptop
+                costs nothing. What is actually true is narrower and more useful: the key is the
+                thing that opens the evidence, it is already filed for you, and whether losing this
+                browser matters depends on whether you signed in. */}
             <div className="class-created__key">
               <p className="field-label">Your private link</p>
               <code>{window.location.origin}{evidencePath(created)}</code>
               <p>
-                Bookmark this. It is saved in this browser, it is the only thing that opens this class’s
-                evidence, and it is not shown again — the class code alone will not open it, which is what
-                stops students reading each other’s work.
+                This link is what opens this class’s evidence — the class code alone will not, which is
+                what stops students reading each other’s work. It is already in your class list, so you do
+                not have to copy it down.{" "}
+                {teacherToken()
+                  ? "It is on your account too, so it is on any computer you sign in on."
+                  : "It is kept in this browser only. With no account, a wiped laptop takes it, " +
+                    "and nothing here can bring it back."}
               </p>
             </div>
             <Link className="button button--primary" to={evidencePath(created)}>Open this class</Link>
@@ -382,14 +405,50 @@ export function MyClasses() {
           <h2>{arriving ? "Or start a new class" : "Start another class"}</h2>
         </div>
         {createBlock}
-        <p className="classes-forget">
-          <Button
-            variant="quiet"
-            onClick={() => { known.forEach((record) => forgetClass(record.code)); reloadKnown(); }}
-          >
-            Forget these classes on this computer
-          </Button>
-        </p>
+        {/* This fired on one press, with no confirmation and nothing to undo it from.
+            "on this computer" reads like a tidy-up — as if a copy survives somewhere — and for a
+            teacher with an account it is exactly that. For a teacher without one, on the screen
+            that says "Saved in this browser only." four inches higher, it was the single most
+            destructive control in the product: the teacher keys are the only thing that opens a
+            class, they exist nowhere else, and the classes and every student's work stay on the
+            server for the full retention window afterwards, unreachable by anyone. The roster
+            has asked before erasing a child since the day it shipped. This is the same question
+            about thirty of them at once, and it was not asking. */}
+        <div className="classes-forget">
+          {forgetting ? (
+            <>
+              <p className="classes-forget__warn" id="classes-forget-warn">
+                {teacherToken()
+                  ? `Forget ${known.length === 1 ? "this class" : `all ${known.length} classes`} on this computer? They are on your account, so signing in here again brings them back.`
+                  : `Forget ${known.length === 1 ? "this class" : `all ${known.length} classes`} on this computer? You have no account, so the links saved here are the only way in. The ${known.length === 1 ? "class" : "classes"} and everything your students turned in stay on the server for ${CLASS_RETENTION_DAYS} days and nothing will be able to open them. It cannot be undone.`}
+              </p>
+              <Button
+                variant="primary"
+                aria-describedby="classes-forget-warn"
+                onClick={() => {
+                  known.forEach((record) => forgetClass(record.code));
+                  reloadKnown();
+                  setForgetting(false);
+                }}
+              >
+                {teacherToken() ? "Forget them here" : "Forget them"}
+              </Button>
+              <button
+                type="button"
+                className="button button--quiet"
+                ref={keepThem}
+                aria-describedby="classes-forget-warn"
+                onClick={() => setForgetting(false)}
+              >
+                Keep them
+              </button>
+            </>
+          ) : (
+            <Button variant="quiet" onClick={() => setForgetting(true)}>
+              Forget these classes on this computer
+            </Button>
+          )}
+        </div>
       </section>
     </EducatorShell>
   );

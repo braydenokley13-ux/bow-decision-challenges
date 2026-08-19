@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
-import { CLASS_ERROR_MESSAGES, isClassError, type Assignment, type AttributedSubmission, type ClassRecord } from "../platform/classes/types";
+import { educatorClassError, isClassError, type Assignment, type AttributedSubmission, type ClassRecord } from "../platform/classes/types";
 import { reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 import type { EvidenceRequirementId, RubricLevel } from "../domain/competency/types";
 import { analyseClass, type ClassAnalysis } from "./analysis";
@@ -105,9 +105,9 @@ export function useClassEvidence(code: string | undefined): {
   const blocked: ClassEvidenceState | null = isDemo
     ? null
     : !code
-      ? { status: "error", message: CLASS_ERROR_MESSAGES.class_not_found }
+      ? { status: "error", message: educatorClassError("class_not_found") }
       : !teacherKey
-        ? { status: "error", message: CLASS_ERROR_MESSAGES.not_authorised }
+        ? { status: "error", message: educatorClassError("not_authorised") }
         : null;
 
   useEffect(() => {
@@ -125,7 +125,7 @@ export function useClassEvidence(code: string | undefined): {
         const body: unknown = await response.json();
         if (cancelled) return;
         if (!response.ok) {
-          setFetched({ status: "error", message: isClassError(body) ? CLASS_ERROR_MESSAGES[body.error] : CLASS_ERROR_MESSAGES.unavailable });
+          setFetched({ status: "error", message: isClassError(body) ? educatorClassError(body.error) : educatorClassError("unavailable") });
           return;
         }
         const payload = body as {
@@ -150,7 +150,7 @@ export function useClassEvidence(code: string | undefined): {
           loadedAt: Date.now(),
         });
       } catch {
-        if (!cancelled) setFetched({ status: "error", message: CLASS_ERROR_MESSAGES.unavailable });
+        if (!cancelled) setFetched({ status: "error", message: educatorClassError("unavailable") });
       }
     })();
     return () => { cancelled = true; };

@@ -185,3 +185,38 @@ export const CLASS_ERROR_MESSAGES: Record<ClassErrorCode, string> = {
 
 /** How long a class and its evidence are kept before the service drops them. */
 export const CLASS_RETENTION_DAYS = 120;
+
+/**
+ * The same eight failures, said to the adult. `CLASS_ERROR_MESSAGES` is written for the
+ * person who is eleven and stuck at the join screen, which is the right default — it is
+ * what almost every one of these renders to. But four of those sentences send the reader
+ * to their teacher, and on an educator surface the reader *is* the teacher. Telling a
+ * teacher whose class will not open to "check the letters with your teacher" is not a
+ * small infelicity: it is the product failing to know who it is talking to at the exact
+ * moment that person has lost a room full of student work and needs to be told what to do.
+ *
+ * Only the codes whose wording actually turns on the audience are overridden. The rest
+ * fall through to the student text on purpose, because "The class service is not reachable
+ * right now" is the same true sentence whoever is reading it, and a second copy of it is
+ * a second thing to keep in step.
+ */
+const EDUCATOR_OVERRIDES: Partial<Record<ClassErrorCode, string>> = {
+  class_not_found:
+    "No class with that code. Check the letters — it is not case sensitive. A class is kept for " +
+    `${CLASS_RETENTION_DAYS} days and then dropped, so a class from last term will not open.`,
+  class_expired:
+    `That class has closed. Classes are kept for ${CLASS_RETENTION_DAYS} days after they are created. ` +
+    "Its evidence is gone; start a new class for this group.",
+  assignment_not_found: "That class was not set that work. Set it from your class list, then reload.",
+  challenge_mismatch: "That class is running a different challenge. Open it from your own class list.",
+};
+
+/**
+ * The message to put in front of an educator for `code`. Every educator surface calls this
+ * rather than indexing `CLASS_ERROR_MESSAGES` directly, which is what keeps the two sets
+ * from drifting: adding a code to `ClassErrorCode` forces a student sentence, and this
+ * function decides whether the adult needs a different one.
+ */
+export function educatorClassError(code: ClassErrorCode): string {
+  return EDUCATOR_OVERRIDES[code] ?? CLASS_ERROR_MESSAGES[code];
+}
