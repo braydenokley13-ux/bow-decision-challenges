@@ -12,11 +12,35 @@ import type { ScenarioNumbers } from "../../types";
  * the cash, and no combination pays for all three.
  *
  * **The money is outside the plan, and that is the design.** It is not income, it does not
- * reach the planning board, it never touches the season ledger, and it cannot be banked.
- * Threading a new pot through the plan would multiply the strategy space `balance.ts`
- * sweeps for a beat whose entire subject is which of three claims matters most — and the
- * sweep exists to prove no strategy dominates, which is a claim about the plan. So the
- * plan is left exactly as it was, and this week asks a different question of the student.
+ * reach the planning board, and it never touches the season ledger. Threading a new pot
+ * through the plan would multiply the strategy space `balance.ts` sweeps for a beat whose
+ * entire subject is which of three claims matters most — and the sweep exists to prove no
+ * strategy dominates, which is a claim about the plan. So the plan is left exactly as it was,
+ * and this week asks a different question of the student.
+ *
+ * **What that does not license is telling a child that saving is not one of the choices**,
+ * and this note used to end with "and it cannot be banked" as though that were a fact about
+ * money rather than about how far this beat was built. It is not one: a person handed cash
+ * can always keep it, the product's own competency list is half about goals, and marking a
+ * student down for a dollar left in hand while a screen tells them saving is impossible is
+ * the kind of thing a financial-literacy course cannot afford to be caught doing. An
+ * economics review caught it in both worlds.
+ *
+ * The honest version of the constraint is narrow and it is what the screens now say: this
+ * cash does not reach the plan, and these three claims are what it can do something about
+ * this week. What the rubric reads is unchanged — whether the money was made to reach as far
+ * as it goes across the claims on the table, and whether the reason given is true of what
+ * went unpaid.
+ *
+ * **What a real fourth option would cost, for whoever picks this up.** Saving is not a claim
+ * of the shape the other three are: they have prices and are funded or not, and a savings
+ * option absorbs any amount, so "made the money reach as far as it goes" is satisfied by
+ * putting everything in it and `sort-by-need-want-goal.er1` stops separating anybody. It
+ * would need its own reach rule, a reason set that can say what the money is being kept
+ * *for*, and a re-count of the tap space — which is currently 2 of 20 combinations clearing
+ * all three requirements, the thing an assessment review named as the best item in the
+ * product. That is a rework of this beat in both worlds, not a fourth entry in the list
+ * below, and it wants a curriculum lead in the room.
  *
  * **What makes it a decision rather than a sum.** Two allocations spend as far as the
  * money reaches: the shoes on their own, or the trip and the present together. One protects

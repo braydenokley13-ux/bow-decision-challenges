@@ -458,6 +458,41 @@ export function resolveSeason(
   const uncovered = dollars(shortfall - absorbed);
   const unplannedGain = dollars(!countedOnBonus && attendanceHeld ? n.completionIncome : 0);
 
+  /**
+   * The course, priced against the goal row alone — and this is a known false ending that a
+   * reconciliation cannot fix on its own. Read this before changing it.
+   *
+   * `courseSaved` is the goal row and `endCash` below is the buffer that survived plus
+   * anything unplanned, and the two never meet. So a run can end *"short of the place — Avery
+   * does not start this term"* on the same screen as a *"What Avery ends with"* card holding
+   * more than the shortfall. Walking the ending grid at 6,552 reachable final states,
+   * **1,676 of them say that while holding enough in hand to close their own gap**. An
+   * economics review called it the one thing in this model that teaches something false about
+   * money without qualification, and they are right: the deposit screen tells the student the
+   * course still needs the rest of its price by the end of the season, the attendance payment
+   * lands with the last of the season's money, and nothing anywhere says the seat is gone.
+   *
+   * **The obvious fix was written and measured and it is worse.** Letting cash in hand pay the
+   * balance whenever it covers the whole of it — in here and in `scenario/balance.ts`, so the
+   * sweep and the ending agree — closes all 1,676 and puts a right answer in the challenge:
+   *
+   *     ALWAYS RIGHT (a hidden answer key): course deposit/reserve the seat early
+   *     DOMINATED HOUSING (beaten on money and on Avery's week at once): teammate-share
+   *     Distinct winning plans across priorities: 2 of 4   (was 3 of 4)
+   *
+   * — because the only thing that ever made reserving the seat cost anything was that it
+   * locked money into a row the ending would not spend on anything else. Make every dollar
+   * fungible at the settle-up and the early-bird discount is free money, best under all four
+   * priorities and 80.5% of the simplex. A challenge with an answer key is a worse defect than
+   * an ending that under-reports, so the reconciliation was reverted rather than shipped.
+   *
+   * What would actually fix it, and neither is a change to this line: **say what happened** on
+   * the Week 8 card — the screen already holds both figures and prints them inches apart, and
+   * a sentence naming the money in hand beside the shortfall would make the ending true
+   * without moving a dollar — or **re-price the deposit** so that reserving early still costs
+   * something once money is fungible, which is a re-tune of the economy and needs its own
+   * sweep. `gauntlet/critiques/econ-2.md` F6 is the finding.
+   */
   const coursePrice = courseCostFor(final, n);
   const courseSaved = final.depositTaken ? n.course.depositPrice : final.amounts.goal;
   const courseShort = dollars(Math.max(0, coursePrice - courseSaved));

@@ -726,7 +726,15 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       kicker: "The tips jar",
       title: "Three things want the tips.",
       deck: `You emptied the jar on the way home from the first Saturday: ${formatDollars(N.tips.cash)}, and it is yours. Three things want it and it does not stretch to all three.`,
-      outsideRule: "This money is not the truck's. It cannot go on the three lines and it cannot be banked, so a dollar you do not spend here is a dollar spent on nothing.",
+      // Says what is true of tonight rather than what is true of money. It used to read "it
+      // cannot go on the three lines and it cannot be banked" — the second half of which is
+      // not a fact about the world, it is a fact about how far this beat was built, and a
+      // financial-literacy product should not tell a twelve-year-old in a standing deck that
+      // saving is not one of the choices. What is true is that the jar is the student's own
+      // money, that it does not reach the truck's three lines, and that these three things
+      // are what it can do something about — which is also exactly what the rubric
+      // reads. `claims.ts` carries what a fourth claim would cost.
+      outsideRule: "This money is yours, not the truck's, so it does not go on the three lines. Three things want it, and what you leave in the jar does nothing for any of them.",
       jarLabel: "In the jar",
       spentLabel: "Spent",
       leftLabel: "Left over",
