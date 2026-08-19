@@ -246,3 +246,35 @@ and marking at 21–35 minutes per class. The product is deliberately built so s
 the expensive part is reading children's writing — which means setup is exactly where a teacher
 moves fast and gets it wrong, and the product's answer to a typo is currently *delete the class
 and lose everything in it*.
+
+
+## N (continued) · The headline claim, checked by the lead after the agent's evidence was lost
+
+**N6 — the instrument now tells a decision from a click, and I verified it at the layer a
+teacher reads.** The student red team's largest finding was that three students who left the
+savings line untouched were reported to their teachers as having planned a figure
+*Independently*, and that a run finished in 71.6 seconds of shortcut-clicking came back as a
+demonstrated competency. A fix landed; the container restart destroyed the agent's verification
+of it before it was written down.
+
+So I built two runs that are identical in every respect except **which row took the last of the
+money**, and read what the teacher's surface says about each. Both plans balance; both spend the
+same money; both were saved at the first attempt.
+
+| | `er3` — savings is a planned amount | competency |
+| --- | --- | --- |
+| the student named a spending row to take the remainder, and set the savings figure themselves | **5** | `incomplete` |
+| the student let the **savings** row take whatever was left | **0** | `not-yet-demonstrated` |
+
+The rule holds, and the reason sentence is a fact about the run rather than a verdict on the
+child: *"Where the figure on the course line came from when the opening plan was closed. The
+course is what Avery is saving into, so a student who let that row take what was left…"*
+
+Two things worth noting beyond the finding. The good run reads **`incomplete`**, not
+`demonstrated` — because `er5` is the written defence and it is `null` until a person has read
+it, which is the no-machine-marks-writing rule holding where it counts. And the requirement that
+moved is the one that *should* move: the arithmetic requirements are 5 in both runs, because the
+student did the arithmetic in both. A rule that had punished the whole competency would have been
+a blunter instrument, not a better one.
+
+Checked at HEAD by the lead, on the domain the educator surfaces read from, not on a screenshot.
