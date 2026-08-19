@@ -334,6 +334,92 @@ test.describe("what is on the screen at 1366x768", () => {
   });
 
   /**
+   * The teacher's pages at 320px, which is what a 1280px laptop gives a teacher at the 400%
+   * zoom WCAG 1.4.10 is written against.
+   *
+   * Three two-column grids starved their first track instead of stacking, and the cause is
+   * worth naming because it is invisible to every other kind of check: the narrow rules for
+   * two of them existed and were written *above* the base rules they override. A media query
+   * adds no specificity, so the later declaration won and the narrow layout never happened.
+   * Measured before: `.page-header--split` resolved to `0px 236px` — the page's own `<h1>` in a
+   * zero-width column, rendering as one or two letters per line — `.judgement` to `83px 120px`
+   * with 84 runs of text under 90px wide on one page, and `.rubric-row`, which is the rubric a
+   * teacher marks writing against, to `0px 206px`.
+   *
+   * The document never scrolls sideways in any of those states, which is why every overflow
+   * check in this suite passed over them. What sees it is the width of the box the text is in.
+   */
+  test("the teacher's pages reflow at 320px instead of starving a column", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    for (const route of ["/educator/class/DEMO", "/educator/class/DEMO/reading", "/educator/class/DEMO/students/1"]) {
+      await page.goto(route);
+      // Attached rather than visible: a heading laid out in a zero-width column is not
+      // "visible" to Playwright either, and the number is the finding — so let the width
+      // assertion below be the one that fails, with the width in the message.
+      await expect(page.locator("main h1")).toBeAttached();
+      await page.waitForTimeout(400);
+      const seen = await page.evaluate(() => {
+        // The used value, and only for boxes that are actually laid out: an element with no
+        // width — a panel this page is not showing — reports the specified value instead, and
+        // `minmax(0px, 1fr)` is one track however many spaces it contains.
+        const trackCount = (value: string) => {
+          let depth = 0;
+          let count = 1;
+          for (const character of value) {
+            if (character === "(") depth += 1;
+            else if (character === ")") depth -= 1;
+            else if (character === " " && depth === 0) count += 1;
+          }
+          return value.trim() === "none" ? 0 : count;
+        };
+        const tracks = (selector: string) => [...document.querySelectorAll(selector)]
+          .filter((element) => getComputedStyle(element).display.includes("grid") && element.getBoundingClientRect().width > 0)
+          .map((element) => getComputedStyle(element).gridTemplateColumns);
+        const heading = document.querySelector("main h1")!.getBoundingClientRect();
+        // Text set in a box narrower than about eleven characters is the symptom a reader
+        // meets. The wordmark is exempt — it is two words in a top bar that deliberately wraps
+        // at this width — and so are table cells, which live in a container that scrolls.
+        const squeezed: string[] = [];
+        const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        let node: Node | null;
+        while ((node = walk.nextNode())) {
+          const text = (node.textContent ?? "").trim();
+          const element = node.parentElement;
+          if (text.length < 8 || !element) continue;
+          if (element.closest(".app-mark, table")) continue;
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          const box = range.getBoundingClientRect();
+          if (box.width > 0 && box.width < 90 && box.height > 40) {
+            squeezed.push(`${Math.round(box.width)}x${Math.round(box.height)} "${text.slice(0, 40)}"`);
+          }
+        }
+        const columns = (selector: string) => tracks(selector).map((value) => ({ value, count: trackCount(value) }));
+        return {
+          headingWidth: Math.round(heading.width),
+          columns: {
+            header: columns(".page-header--split"),
+            judgement: columns(".judgement"),
+            rubric: columns(".rubric-row"),
+            trail: columns(".trail > li"),
+          },
+          squeezed,
+          sideways: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      });
+
+      expect(seen.headingWidth, `${route}: the page's own heading is ${seen.headingWidth}px wide at 320`).toBeGreaterThan(200);
+      for (const [what, found] of Object.entries(seen.columns)) {
+        for (const grid of found) {
+          expect(grid.count, `${route}: ${what} is still more than one column at 320 (${grid.value})`).toBe(1);
+        }
+      }
+      expect(seen.squeezed, `${route}: text set in a column too narrow to read`).toEqual([]);
+      expect(seen.sideways, `${route}: the page scrolls sideways at 320`).toBeLessThanOrEqual(HAIR);
+    }
+  });
+
+  /**
    * The arrival ring: off when nobody has touched the page, on when a keyboard brought you.
    *
    * Focus itself is not in question — it moves to the heading on every route on purpose, so

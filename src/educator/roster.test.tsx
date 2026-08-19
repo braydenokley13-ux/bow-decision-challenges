@@ -105,6 +105,49 @@ describe("the class list is the way a teacher runs a rostered class", () => {
     }
   });
 
+  /**
+   * Every control on a row says whose row it is.
+   *
+   * Six students on a list is eighteen buttons, and before this they carried three distinct
+   * accessible names between them: *Print a new card*, *Take off the list*, *Erase* — six
+   * copies each, with nothing saying which child any of them would act on, and *Erase* is the
+   * one that deletes a name, everything they turned in and everything the teacher wrote back.
+   * A screen-reader or voice-control user tabbing this list was choosing between six identical
+   * controls by counting stops.
+   *
+   * Asserted as a property of the list rather than as three strings: no two rows may offer a
+   * control with the same accessible name, whatever the controls are called next month. The
+   * visible label still leads each name, so a voice-control user can say what is written on the
+   * button (WCAG 2.2 · 2.5.3 Label in Name).
+   */
+  it("names the student in every control on their row", async () => {
+    const roll = [
+      { seatCode: "1", displayName: "Ana R.", claimed: true, claimedAt: 1, removedAt: null },
+      { seatCode: "2", displayName: "Devon P.", claimed: false, claimedAt: null, removedAt: null },
+      { seatCode: "3", displayName: "Leila H.", claimed: false, claimedAt: null, removedAt: null },
+    ];
+    vi.stubGlobal("fetch", service(roll).fetcher);
+    open();
+    await screen.findByText("Ana R.");
+
+    const rows = [...document.querySelectorAll(".roster-list li")];
+    expect(rows).toHaveLength(roll.length);
+    const names: string[] = [];
+    for (const [index, row] of rows.entries()) {
+      const student = roll[index]!.displayName;
+      const controls = [...row.querySelectorAll("button")];
+      expect(controls.length).toBeGreaterThan(0);
+      for (const control of controls) {
+        const label = control.getAttribute("aria-label") ?? control.textContent ?? "";
+        expect(label, `a control on ${student}'s row does not say whose row it is`).toContain(student);
+        // …and it still starts with the words a person can see on it.
+        expect(label.startsWith(control.textContent?.trim() ?? ""), `"${label}" does not lead with its own visible label`).toBe(true);
+        names.push(label);
+      }
+    }
+    expect(new Set(names).size, `${names.length} controls, ${new Set(names).size} distinct names`).toBe(names.length);
+  });
+
   it("never writes a join code anywhere it could be read again", async () => {
     const api = service();
     vi.stubGlobal("fetch", api.fetcher);
@@ -159,7 +202,7 @@ describe("the class list is the way a teacher runs a rostered class", () => {
     // Erasure is the one thing here that cannot be undone, and it is what a district needs to
     // answer a parent — so it exists, and it does not sit one stray click away from "Print a
     // new card". Nothing happens until the sentence naming the child has been read.
-    await userEvent.click(screen.getAllByRole("button", { name: "Erase" })[0]!);
+    await userEvent.click(screen.getAllByRole("button", { name: /^Erase (?!everything)/ })[0]!);
     expect(screen.getByText(/Erase Ana R\.\?/)).toBeInTheDocument();
     expect(screen.getByText(/rest of the class is\s+not affected/)).toBeInTheDocument();
 
@@ -167,7 +210,7 @@ describe("the class list is the way a teacher runs a rostered class", () => {
     expect(screen.queryByText(/Erase Ana R\.\?/)).not.toBeInTheDocument();
     expect(api.fetcher.mock.calls.some(([, init]) => init?.method === "DELETE")).toBe(false);
 
-    await userEvent.click(screen.getAllByRole("button", { name: "Erase" })[0]!);
+    await userEvent.click(screen.getAllByRole("button", { name: /^Erase (?!everything)/ })[0]!);
     await userEvent.click(screen.getByRole("button", { name: /Erase everything/ }));
     await waitFor(() => expect(screen.queryByText("Ana R.")).not.toBeInTheDocument());
     expect(screen.getByText("Devon P.")).toBeInTheDocument();
@@ -196,7 +239,7 @@ describe("the class list is the way a teacher runs a rostered class", () => {
     open();
     await screen.findByText("Ana R.");
 
-    await userEvent.click(screen.getAllByRole("button", { name: "Erase" })[0]!);
+    await userEvent.click(screen.getAllByRole("button", { name: /^Erase (?!everything)/ })[0]!);
     const keep = await screen.findByRole("button", { name: /Keep it/ });
     await waitFor(() => expect(keep).toHaveFocus());
     // Said the other way round as well, because `toHaveFocus` on the element a query found is
@@ -224,7 +267,7 @@ describe("the class list is the way a teacher runs a rostered class", () => {
     ]).fetcher);
     open();
     await screen.findByText("Ana R.");
-    await userEvent.click(screen.getAllByRole("button", { name: "Erase" })[0]!);
+    await userEvent.click(screen.getAllByRole("button", { name: /^Erase (?!everything)/ })[0]!);
 
     const warning = screen.getByText(/Erase Ana R\.\?/);
     expect(warning.id).toBeTruthy();
@@ -242,11 +285,14 @@ describe("the class list is the way a teacher runs a rostered class", () => {
     vi.stubGlobal("fetch", service().fetcher);
     open();
     await screen.findByRole("heading", { name: /Who is in this class/i });
-    // BOW stores no personal information about a student at all — the account is an id and a
-    // credential — and the only place that fact is load-bearing is the box a teacher types
-    // twenty-eight children's names into.
+    // The box a teacher types twenty-eight children's names into is the one place what BOW
+    // does with a name is load-bearing. It used to end "and never asks a student for a name of
+    // their own", which is true of a class with a list and false of the product: a class
+    // without one asks for exactly that at /join and files the work under it. What the sentence
+    // may promise is what having a list actually buys — see `dataClaims.test.ts`.
     const note = screen.getByText(/BOW never checks it against anything/i);
     expect(note).toBeInTheDocument();
-    expect(note.textContent).toMatch(/never asks a student for a name of their own/i);
+    expect(note.textContent).toMatch(/the class code and the code on their card, and types no name at all/i);
+    expect(note.textContent).not.toMatch(/never asks a student for a name/i);
   });
 });

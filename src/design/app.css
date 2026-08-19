@@ -720,10 +720,6 @@ p { color: var(--ink-2); }
   .trajectory-strip { grid-template-columns: 1fr 1fr; }
   .route-grid { grid-template-columns: 1fr; }
   .concept-matrix { display: block; overflow-x: auto; }
-  .judgement { grid-template-columns: minmax(0, 1fr); }
-  .judgement__verdicts { justify-items: start; }
-  .judgement__machine, .judgement__override { justify-items: start; text-align: left; }
-  .trail > li { grid-template-columns: minmax(0, 1fr); }
   .educator-topbar { grid-template-columns: 1fr auto; padding: var(--s-3); }
   .educator-topbar nav { grid-column: 1 / -1; flex-wrap: wrap; justify-content: start; }
   .demo-pill { grid-column: 2; grid-row: 1; }
@@ -1218,8 +1214,6 @@ p { color: var(--ink-2); }
 .taught-toggle input:disabled + span { color: var(--ink-4); }
 
 @media (max-width: 700px) {
-  .map-header, .map-controls { padding-left: var(--s-5); padding-right: var(--s-5); }
-  .topic-bands, .map-note { padding-left: var(--s-5); padding-right: var(--s-5); }
   .topic-band ul { grid-template-columns: 1fr; }
 }
 
@@ -1577,3 +1571,38 @@ p { color: var(--ink-2); }
 .sign-in__note { max-width: 46ch; margin: var(--s-4) 0 0; color: var(--ink-3); font: var(--t-micro); }
 .sign-in__switch { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); }
 .recovery-code { margin: var(--s-2) 0; color: var(--ink-1); font: var(--m-lg); font-feature-settings: var(--num); letter-spacing: 0.18em; }
+
+
+/* ---------------------------------------------------------------------------
+   The narrow window, last — because a rule that overrides another has to come after it.
+
+   Five of this sheet's responsive rules were written above the rules they meant to override,
+   and a media query adds no specificity, so the later declaration won and the narrow layout
+   never happened. Measured at 320px on the teacher's side, which is what a 1280px laptop gives
+   a teacher at the 400% zoom WCAG 1.4.10 is written against:
+
+     .judgement          256px  cols: 67px 120px    — 84 runs of text under 90px wide
+     .rubric-row         222px  cols: 0px 206px     — the criterion a teacher marks against
+     .page-header--split 288px  cols: 0px 236px     — the page's own <h1>, one letter per line
+     .trail > li         256px  cols: 220px 24px
+
+   The document never scrolls sideways in any of those states, so every overflow check in the
+   suite passed over a page whose heading was a vertical column of fragments.
+
+   `.page-header--split` had no narrow rule at all, and its first track is starved long before
+   320: `minmax(0, 1fr)` beside a `minmax(0, auto)` panel that asks for 460px resolves to 0px
+   at every width below 560 and to 56px at 620. It stacks while the panel would take more than
+   half the page, which is the width where the two of them stop being columns.
+   --------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .page-header--split { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 760px) {
+  .judgement { grid-template-columns: minmax(0, 1fr); }
+  .judgement__verdicts { justify-items: start; }
+  .judgement__machine, .judgement__override { justify-items: start; text-align: left; }
+  .trail > li { grid-template-columns: minmax(0, 1fr); }
+  .rubric-row { grid-template-columns: minmax(0, 1fr); }
+  .map-header, .map-controls, .topic-bands, .map-note { padding-left: var(--s-5); padding-right: var(--s-5); }
+}

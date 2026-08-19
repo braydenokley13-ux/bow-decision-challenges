@@ -401,9 +401,17 @@ export function Roster() {
                     </>
                   ) : (
                     <>
-                      <Button variant="quiet" onClick={() => void reissue(row.seatCode)}>Print a new card</Button>
-                      <Button variant="quiet" onClick={() => void remove(row)}>Take off the list</Button>
-                      <Button variant="quiet" onClick={() => setErasing(row.seatCode)}>Erase</Button>
+                      {/* Whose row this is, in the name of every control on it.
+                          A teacher reading this list with a screen reader met eighteen stops
+                          and three distinct names — six copies each of "Print a new card",
+                          "Take off the list" and "Erase" — with nothing in any of them saying
+                          which child it would act on, and Erase is the destructive one. The
+                          label a person sees is unchanged and comes first in each of these, so
+                          a voice-control user can still say what is written on the button
+                          (WCAG 2.5.3). */}
+                      <Button variant="quiet" aria-label={`Print a new card for ${row.displayName}`} onClick={() => void reissue(row.seatCode)}>Print a new card</Button>
+                      <Button variant="quiet" aria-label={`Take off the list: ${row.displayName}`} onClick={() => void remove(row)}>Take off the list</Button>
+                      <Button variant="quiet" aria-label={`Erase ${row.displayName}`} onClick={() => setErasing(row.seatCode)}>Erase</Button>
                     </>
                   )}
                 </div>
