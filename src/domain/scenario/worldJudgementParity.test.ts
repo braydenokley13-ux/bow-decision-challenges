@@ -10,6 +10,8 @@ import { createPopUpState, popUpReducer, type PopUpAction } from "./worlds/food-
 import { availableToPlan } from "./worlds/food-truck/economy";
 import { POP_UP_NUMBERS } from "./worlds/food-truck/numbers";
 import { SCENARIO_NUMBERS } from "./numbers";
+import { runChallenge } from "../../test/runChallenge";
+import { runPopUp } from "../../test/runPopUp";
 import { availableFor, lockedFor } from "../finance/formulas";
 
 /**
@@ -202,6 +204,32 @@ describe("the two worlds judge the same behaviour the same way", () => {
     expect(leftovers!.market()).toBe(0);
     expect(planned!.avery()).toBe(5);
     expect(planned!.market()).toBe(5);
+  });
+
+  it("reads a whole careful run and a whole leftovers run the same way in both worlds", () => {
+    // The archetypes above are built row by row so the behaviour can be matched exactly. This
+    // is the coarse net under them: two complete runs per world, played through each world's
+    // own driver, with every requirement both worlds produce compared. It is what catches a
+    // rule that starts disagreeing somewhere nobody wrote an archetype for.
+    const levels = (observations: readonly { evidenceRequirementId: string; level: RubricLevel | null }[]) =>
+      Object.fromEntries(observations.map((observation) => [observation.evidenceRequirementId, observation.level]));
+    const careful = {
+      season: levels(observeBasketballFromLog(runChallenge({ seatCode: "1" }).log)),
+      market: levels(observePopUpFromLog(runPopUp({ seatCode: "1" }).log)),
+    };
+    expect(careful.market).toEqual(careful.season);
+    // And the run this whole file exists for, end to end: the student who sets the other rows
+    // and lets savings have what is left.
+    const leftovers = {
+      season: levels(observeBasketballFromLog(runChallenge({ seatCode: "2", closeOpeningInto: "goal" }).log)),
+      market: levels(observePopUpFromLog(runPopUp({ seatCode: "2", closeOpeningInto: "cut" }).log)),
+    };
+    expect(leftovers.market).toEqual(leftovers.season);
+    expect(leftovers.season[ER3]).toBe(0);
+    // A guard on the guard: the comparison is only worth anything while both worlds actually
+    // produce the same requirements. If one gains a route the other has not, this says so here
+    // rather than letting the diff above quietly compare a shorter list.
+    expect(Object.keys(leftovers.market).sort()).toEqual(Object.keys(leftovers.season).sort());
   });
 
   it("records the arithmetic that makes one board closeable by typing and the other not", () => {
