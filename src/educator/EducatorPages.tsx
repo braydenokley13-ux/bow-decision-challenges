@@ -11,6 +11,7 @@ import {
 import { EducatorShell } from "./EducatorShell";
 import { TERMS } from "./labels";
 import { durationLabel, PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
+import { disclosureEscape } from "../components/primitives/disclosureEscape";
 
 /**
  * The framework this guide names, and the objectives Plan Under Pressure's competencies
@@ -255,7 +256,7 @@ export function EducatorGuide() {
             sentence that raises the question, instead of being the fourth educator
             surface a teacher has to know exists. Every word below is the page's own. */}
         <p className="companion-callout">Schools may use their own instruction.</p>
-        <details className="next-lesson__working">
+        <details className="next-lesson__working" onKeyDown={disclosureEscape()}>
           <summary>A two-day sample mini-unit, if you want one</summary>
           <p>
             This sample sequence shows the prerequisite skills students should learn before {PLAN_UNDER_PRESSURE.title}.

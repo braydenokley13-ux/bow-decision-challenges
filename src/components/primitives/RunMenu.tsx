@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { DeliveryState } from "../../platform/evidence/transport";
+import { disclosureEscape } from "./disclosureEscape";
 
 interface RunMenuProps {
   /** The class this run was joined with. Empty before anybody has joined. */
@@ -58,7 +59,6 @@ export function RunMenu({ classCode, seatCode, handIn, onLeave }: RunMenuProps) 
   const named = classCode !== "" && seatCode !== "";
   const costId = useId();
   const drawer = useRef<HTMLDetailsElement>(null);
-  const summary = useRef<HTMLElement>(null);
   /**
    * The safe button, held by identity rather than found by position, exactly as the roster's
    * erase confirmation holds its own.
@@ -91,20 +91,15 @@ export function RunMenu({ classCode, seatCode, handIn, onLeave }: RunMenuProps) 
       onToggle={() => setConfirming(false)}
       /* Escape closes the drawer and puts the student back on the control that opened it.
          A `<details>` does not do this on its own, so the only ways out of this menu were its
-         own two buttons — one of which is the destructive one. */
-      onKeyDown={(event) => {
-        if (event.key !== "Escape" || !drawer.current?.open) return;
-        event.stopPropagation();
-        drawer.current.open = false;
-        setConfirming(false);
-        summary.current?.focus();
-      }}
+         own two buttons — one of which is the destructive one. Shared with the contract
+         drawer in the same bar, which was missing it. */
+      onKeyDown={disclosureEscape(() => setConfirming(false))}
     >
       {/* The seat is the summary rather than a word like "menu", because the first job of this
           control is to tell a student whose work is on the screen in front of them. The spoken
           name contains the visible one word for word, so a student driving this by voice can
           ask for what they can see. */}
-      <summary ref={summary} aria-label={named ? `This run: ${classCode} · seat ${seatCode}` : "This run has no seat yet"}>
+      <summary aria-label={named ? `This run: ${classCode} · seat ${seatCode}` : "This run has no seat yet"}>
         {named ? `${classCode} · seat ${seatCode}` : "No seat yet"}
       </summary>
       <div>
