@@ -29,8 +29,17 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
     completion: {
       label: "Perfect attendance bonus",
       note: "Payment tied to making every practice and game.",
-      rule: "Avery makes every practice and every game.",
-      ifNot: "Miss one session and the whole payment is gone.",
+      // Says what actually decides it. The model has never read Avery's diligence: the payment
+      // turns on `load.attendanceHolds`, which is the hours the week already owes — the trip
+      // to and from the club, rehab from Week 6, the clinics if they are taken — against the
+      // hours the plan bought back. A card reading only "Avery makes every practice and every
+      // game" left a student to find that out at Week 8, on a screen that then reports three
+      // weeks of missed sessions to a child whose only decision was a cheaper room. Naming the
+      // week here does not settle the values objection to pricing a long commute as
+      // unreliability — `gauntlet/critiques/econ-2.md` F7, and it wants a curriculum lead —
+      // but it does stop the bet being about a quality of Avery's the world never models.
+      rule: "there is room in Avery's week for every practice and every game.",
+      ifNot: "A week too full to get to them all costs the whole payment.",
     },
     outcome: {
       label: "Making the cut bonus",
