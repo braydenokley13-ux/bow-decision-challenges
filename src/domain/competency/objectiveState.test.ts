@@ -41,7 +41,7 @@ const observation = (
 
 function resultAt(competencyId: CompetencyId, level: RubricLevel | null): CompetencyResult {
   const ids = requiredEvidenceRequirementsFor(competencyId).map((requirement) => requirement.id);
-  const result = competencyResultFor(competencyId, ids.map((id) => observation(id, level)), { submitted: true });
+  const result = competencyResultFor(competencyId, ids.map((id) => observation(id, level)));
   if (!result) throw new Error(`${competencyId} has no required evidence requirements`);
   return result;
 }
@@ -90,8 +90,8 @@ describe("one student, against one objective", () => {
     // evidence requirements would satisfy "every required one is at 4 or 5" vacuously, and
     // vacuous demonstration is the most dangerous kind — it reports a skill as shown
     // precisely because nobody has said what showing it would look like.
-    expect(competencyResultFor("use-insurance", [], { submitted: true })).toBeNull();
-    expect(competencyResultFor("plan-for-the-unexpected", [], { submitted: true })).toBeNull();
+    expect(competencyResultFor("use-insurance", [])).toBeNull();
+    expect(competencyResultFor("plan-for-the-unexpected", [])).toBeNull();
   });
 });
 

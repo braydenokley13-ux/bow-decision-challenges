@@ -23,7 +23,9 @@ function observation(id: StructuredMicroSkillId, quality: Quality, support: Supp
     microSkillId: id,
     conceptId: CONCEPT_BY_SKILL[id],
     points,
-    outcome: points >= 3 ? "demonstrated" : points === 2 ? "partial" : "not_demonstrated",
+    // `null` is the answer-supplied case and it is an absence, not a failure: the run has
+    // nothing to say about this skill because the number on the screen was BOW's.
+    outcome: points === null ? "not_observed" : points >= 3 ? "demonstrated" : points === 2 ? "partial" : "not_demonstrated",
     supportLevel: support,
     evidenceRefs: refs.length > 0 ? refs : [`derived:${id}`],
     reason,

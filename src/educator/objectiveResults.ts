@@ -162,7 +162,7 @@ export function withTeacherJudgement(
 }
 
 export function competencyResultsFor(submission: AttributedSubmission): readonly CompetencyResult[] {
-  return observeCompetencies(competencyObservationsFor(submission), { submitted: true });
+  return observeCompetencies(competencyObservationsFor(submission));
 }
 
 /**

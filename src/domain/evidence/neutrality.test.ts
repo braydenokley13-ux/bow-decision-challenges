@@ -191,8 +191,8 @@ describe("the shared engine cannot tell which world it is scoring", () => {
       { evidenceRequirementId: "adapt-a-plan.er3", kind: "decision", level: 5, supportLevel: "standard_access", evidenceRefs: [`${ref}:3`], reason: ref },
       { evidenceRequirementId: "adapt-a-plan.er4", kind: "decision", level: 4, supportLevel: "standard_access", evidenceRefs: [`${ref}:4`], reason: ref },
     ];
-    const fromOne = observeCompetencies(observation("basketball"), { submitted: true });
-    const fromAnother = observeCompetencies(observation("food-truck"), { submitted: true });
+    const fromOne = observeCompetencies(observation("basketball"));
+    const fromAnother = observeCompetencies(observation("food-truck"));
     expect(fromOne).toEqual(fromAnother);
     expect(fromOne[0]?.state).toBe("demonstrated");
   });

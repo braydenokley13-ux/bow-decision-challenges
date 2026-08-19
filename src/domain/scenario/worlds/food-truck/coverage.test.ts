@@ -111,9 +111,7 @@ describe("Run the Pop-Up's coverage claim is backed by its observer", () => {
 
   it("rolls a complete run up to all three competencies", () => {
     const results = observeCompetencies(
-      observePopUpFromLog(runPopUp().log, { scoredExplanations: popUpScoredExplanationsFrom(READ_AND_STRONG)! }),
-      { submitted: true },
-    );
+      observePopUpFromLog(runPopUp().log, { scoredExplanations: popUpScoredExplanationsFrom(READ_AND_STRONG)! }));
     expect(results.map((result) => result.competencyId).sort())
       .toEqual(["adapt-a-plan", "plan-within-income", "sort-by-need-want-goal"]);
     expect(results.find((result) => result.competencyId === "plan-within-income")?.state).toBe("demonstrated");
@@ -129,7 +127,7 @@ describe("Run the Pop-Up's coverage claim is backed by its observer", () => {
       const observed = observations.find((entry) => entry.evidenceRequirementId === requirement.id);
       expect(observed?.level, `${requirement.id} scored a level from a run that never met the generator`).toBeNull();
     }
-    const rolled = observeCompetencies(observations, { submitted: false });
+    const rolled = observeCompetencies(observations);
     expect(rolled.find((result) => result.competencyId === "adapt-a-plan")?.state).toBe("not-observed");
     // And the opening plan it did reach is still real evidence.
     expect(observations.find((entry) => entry.evidenceRequirementId === "plan-within-income.er4")?.level).toBe(5);

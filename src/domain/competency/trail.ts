@@ -162,7 +162,13 @@ export function judgementsOf(trail: EvidenceTrail): readonly TrailJudgement[] {
   return [...trail.moments.flatMap((moment) => moment.judgements), ...trail.notObserved];
 }
 
-/** What the rubric would have allowed at this level of support, for the cap's own sentence. */
-export function capFor(supportLevel: SupportLevel): RubricLevel {
+/**
+ * What the rubric would have allowed at this level of support, for the cap's own sentence.
+ *
+ * `null` where the support means nothing was observed — a supplied answer. A caller writing
+ * "the rubric caps this at 0" for that case would be saying the child was judged and failed,
+ * which is the sentence this whole change exists to stop.
+ */
+export function capFor(supportLevel: SupportLevel): RubricLevel | null {
   return SUPPORT_CAPS[supportLevel];
 }

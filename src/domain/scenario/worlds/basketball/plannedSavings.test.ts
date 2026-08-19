@@ -134,7 +134,7 @@ function er3(log: ReturnType<typeof opening>) {
 
 /** The level after the engine has applied the support caps, which is the level a teacher sees. */
 function standingEr3(log: ReturnType<typeof opening>) {
-  return observeCompetencies(observeBasketballFromLog(log), { submitted: true })
+  return observeCompetencies(observeBasketballFromLog(log))
     .find((result) => result.competencyId === "plan-within-income")
     ?.levels.find((level) => level.evidenceRequirementId === "plan-within-income.er3")?.level;
 }
@@ -333,7 +333,7 @@ describe("the record changes nothing that was already true", () => {
     const log = seat14Log();
     expect(deriveFacts(log).remainderChoices).toEqual([]);
     expect(deriveFacts(log).opening?.snapshot.inputs.amounts.goal).toBe(1200);
-    const result = observeCompetencies(observeBasketballFromLog(log), { submitted: true })
+    const result = observeCompetencies(observeBasketballFromLog(log))
       .find((entry) => entry.competencyId === "plan-within-income");
     expect(result?.levels.find((level) => level.evidenceRequirementId === "plan-within-income.er3")?.level).toBeNull();
   });

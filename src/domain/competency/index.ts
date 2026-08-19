@@ -47,7 +47,6 @@ export {
   requiredEvidenceRequirementsFor,
 } from "./competencies";
 
-export type { MasteryContext } from "./observe";
 export {
   SUPPORT_CAPS,
   competencyResultFor,

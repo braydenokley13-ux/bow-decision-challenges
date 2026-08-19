@@ -43,7 +43,7 @@ export function chainDocument(): string {
   const state = runChallenge(RUN);
   const log = state.log;
   const observations = observeBasketballFromLog(log);
-  const results = observeCompetencies(observations, { submitted: true });
+  const results = observeCompetencies(observations);
   const trail = evidenceTrail(log, observations);
 
   const kinds = [...new Set(log.map((event) => event.type))];

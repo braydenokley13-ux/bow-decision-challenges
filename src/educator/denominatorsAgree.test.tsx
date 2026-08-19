@@ -186,17 +186,31 @@ describe("a class nobody has started is described as one", () => {
 /**
  * The reading queue and the denominator, which are related and are not the same thing.
  *
- * This page carried the rule *"A student whose writing nobody has read yet is not counted as
- * assessed"* beside the two counts, and it is not a rule — a usable result needs a level for
- * everything the objective asks for, and a run can supply them all on its own. Measured on a
- * real class through the real service: seven turned in, two explanations unread, **seven
- * assessed**, with that sentence printed between the two numbers that contradict it.
+ * **This test asserted the opposite premise and the premise was an artefact of a defect.**
+ * It read: *the page carried the rule "A student whose writing nobody has read yet is not
+ * counted as assessed" beside the two counts, and it is not a rule — a usable result needs a
+ * level for everything the objective asks for, and a run can supply them all on its own.
+ * Measured on a real class through the real service: seven turned in, two explanations unread,
+ * **seven assessed**.* Those seven were assessed because they had a **zero** somewhere, and a
+ * zero used to settle a competency while the rest of its evidence was still missing. The
+ * fixture below is one of them — `closeOpeningInto: "goal"` is savings-as-leftovers, which
+ * scores `plan-within-income.er3` a zero — so the sentence "the derivation counts them
+ * assessed anyway" was reporting the asymmetry an assessment judge later traced, not a
+ * property of the derivation.
  *
- * The premise is checked here rather than assumed, so if the derivation ever does make unread
- * writing disqualifying, this test says so instead of quietly pinning the wrong copy.
+ * With the rule symmetric, the honest position is the one the copy was originally trying to
+ * state: **1.3 is `full`-mapped to `plan-within-income`, whose `er5` is required and is scored
+ * by a person**, so for this objective an unread explanation does keep a student out of the
+ * assessed count — for every student, in both directions, rather than for the ones who
+ * happened not to fail anything. What must not be claimed is the general rule across all
+ * objectives, because a competency with no required explanation row is assessable from the run
+ * alone.
+ *
+ * The premise is still checked rather than assumed, so if a future world supplies `er5` from a
+ * run, this test fails and says so instead of quietly pinning the wrong copy.
  */
-describe("unread writing is a reason, not a rule", () => {
-  it("never tells a teacher an unread explanation keeps a student out of a denominator it does not", async () => {
+describe("unread writing keeps a student out of this objective's denominator, and says so", () => {
+  it("counts nobody as assessed while the one required explanation is unread", async () => {
     const submissions = theQuietMarkingPile();
     const { roster, assignment } = theClass();
     const spine = classSpineFrom({
@@ -205,14 +219,33 @@ describe("unread writing is a reason, not a rule", () => {
       submissions: countedSubmissions(submissions.map((entry) => ({ ...entry, assignmentId: assignment.id })), roster),
     });
     expect(spine.awaitingReading, "the premise: nobody has read this student's explanation").toBe(1);
-    expect(spine.assessed, "and the derivation counts them assessed anyway").toBe(1);
+    expect(spine.assessed, "and 1.3 needs a row only a person can fill").toBe(0);
 
     const container = await openTheObjectivePage({ submissions });
     const text = container.textContent ?? "";
-    expect(text, "a page may not state as a rule the thing its own numbers disprove")
-      .not.toMatch(/not counted as assessed/i);
     // Reading can add a level and can never remove one, so it can only move this count up.
     expect(text).toMatch(/can only add to the assessed count/);
+  });
+
+  it("counts the run with a zero exactly as it counts the run without one", async () => {
+    // The asymmetry, at the surface a teacher divides by. Two runs that differ only in whether
+    // a row was failed must be in the denominator together or out of it together, or the class
+    // percentage is taken over a set the thing being measured chose.
+    const { roster, assignment } = theClass();
+    const spineFor = (submission: SubmissionRecord) => classSpineFrom({
+      record: { code: CODE, label: "Period 3", challengeId: "plan-under-pressure", createdAt: NOW, expiresAt: NOW + 1 },
+      assignments: [assignment],
+      submissions: countedSubmissions([{ ...submission, assignmentId: assignment.id }], roster),
+    });
+    const failedARow = record(
+      buildSubmission({ seatCode: "1", setupId: "cousin-room", closeOpeningInto: "goal", defenseText: "Nobody has read this yet." }),
+      { sessionId: "s-zero" },
+    );
+    const failedNothing = record(
+      buildSubmission({ seatCode: "1", setupId: "cousin-room", closeOpeningInto: "reserve", defenseText: "Nobody has read this yet." }),
+      { sessionId: "s-clean" },
+    );
+    expect(spineFor(failedARow).assessed).toBe(spineFor(failedNothing).assessed);
   });
 });
 

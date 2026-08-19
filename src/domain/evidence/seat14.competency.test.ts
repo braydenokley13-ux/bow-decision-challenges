@@ -21,7 +21,7 @@ const levelsOf = (result: CompetencyResult | undefined) =>
 describe("Seat 14, read as competencies", () => {
   const log = seat14Log();
   const observations = observeBasketballFromLog(log);
-  const results = observeCompetencies(observations, { submitted: false });
+  const results = observeCompetencies(observations);
   const byId = new Map(results.map((result) => [result.competencyId, result]));
 
   it("leaves the concept-level judgement exactly where it was", () => {
@@ -95,9 +95,7 @@ describe("Seat 14, read as competencies", () => {
     // score: nothing here says Seat 14 failed at anything, and nothing here claims they
     // demonstrated something the run cannot show.
     const scored = observeCompetencies(
-      observeBasketballFromLog(log, { scoredExplanations: { "plan-within-income.er5": 5 } }),
-      { submitted: true },
-    );
+      observeBasketballFromLog(log, { scoredExplanations: { "plan-within-income.er5": 5 } }));
     const planning = scored.find((result) => result.competencyId === "plan-within-income");
     expect(planning?.state).toBe("incomplete");
     expect(levelsOf(planning)["plan-within-income.er5"]).toBe(5);

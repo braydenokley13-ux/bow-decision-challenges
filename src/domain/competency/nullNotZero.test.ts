@@ -33,18 +33,19 @@ const decision = (
 /** Every required requirement of `adapt-a-plan`, in order, so the cases read as real runs. */
 const REQUIRED = requiredEvidenceRequirementsFor("adapt-a-plan").map((requirement) => requirement.id);
 
-const resultFrom = (levels: readonly (RubricLevel | null)[], submitted = true): CompetencyResult | null =>
+const resultFrom = (levels: readonly (RubricLevel | null)[]): CompetencyResult | null =>
   competencyResultFor(
     "adapt-a-plan",
     REQUIRED.map((id, index) => decision(id, levels[index] ?? null)),
-    { submitted },
   );
 
 describe("an unobserved requirement is absent, never a zero", () => {
   it("reports not observed when nothing was seen, rather than not yet demonstrated", () => {
     expect(resultFrom([null, null, null, null])?.state).toBe("not-observed");
-    expect(masteryStateFor([null, null], { submitted: true })).toBe("not-observed");
-    expect(masteryStateFor([null, null], { submitted: false })).toBe("not-observed");
+    // One assertion where there were two. They differed only by a `{ submitted }` flag that
+    // the engine no longer takes: missing evidence settles nothing whether or not the student
+    // pressed turn-in, so the pair had become the same call written twice.
+    expect(masteryStateFor([null, null])).toBe("not-observed");
   });
 
   it("never turns a missing requirement into a low result", () => {
@@ -67,19 +68,40 @@ describe("an unobserved requirement is absent, never a zero", () => {
     expect(observedLevels(missed)).toEqual(observedLevels(reached));
   });
 
-  it("still reports a real failure that sits beside a missing requirement", () => {
-    // The mirror image, and the reason "any null means incomplete" is not the rule. A
-    // student who was observed getting one wrong has produced evidence of a gap, and a
-    // second requirement they never reached does not erase it.
-    expect(resultFrom([0, 5, 5, null])?.state).toBe("not-yet-demonstrated");
-    expect(resultFrom([2, 5, 5, null])?.state).toBe("developing");
+  it("settles nothing while a requirement is missing, whichever way the observed ones went", () => {
+    // **This test used to assert the opposite** — `[0, 5, 5, null]` was
+    // `not-yet-demonstrated` and `[2, 5, 5, null]` was `developing` — under the reasoning
+    // *"a student who was observed getting one wrong has produced evidence of a gap, and a
+    // second requirement they never reached does not erase it."* That sentence is true about
+    // the **row**, which still shows the zero, and false about the **competency**, which is
+    // defined as all of its required requirements.
+    //
+    // What the old rule cost is what an assessment judge measured on a class page: a run with
+    // one zero and the rest unobserved reached a settled state and entered the denominator,
+    // while a run with three fives and one unmarked written explanation did not. So the class
+    // percentage was computed over the children the product had learned least about, a
+    // reteach plan was generated naming their seats, and marking the other children's writing
+    // did not let them in. Both directions now wait for the same thing.
+    expect(resultFrom([0, 5, 5, null])?.state).toBe("incomplete");
+    expect(resultFrom([2, 5, 5, null])?.state).toBe("incomplete");
+    expect(resultFrom([5, 5, 5, null])?.state).toBe("incomplete");
   });
 
-  it("separates a student who stopped from one who finished without showing everything", () => {
-    // The same shape `grade.ts` already holds: an unfinished attempt is incomplete, and a
-    // finished one is judged on what it contains.
-    expect(resultFrom([5, 5, 5, 5], false)?.state).toBe("demonstrated");
-    expect(resultFrom([5, 5, 5, null], false)?.state).toBe("incomplete");
+  it("judges a complete set on what it contains, in both directions", () => {
+    // And once every required requirement is in, nothing is held back. The zero is not lost;
+    // it was waiting for the rest of the evidence, which is the whole of the change.
+    expect(resultFrom([5, 5, 5, 5])?.state).toBe("demonstrated");
+    expect(resultFrom([0, 5, 5, 5])?.state).toBe("not-yet-demonstrated");
+    expect(resultFrom([2, 5, 5, 5])?.state).toBe("developing");
+  });
+
+  it("counts the same number of students in either direction, which is what a class page divides by", () => {
+    // The judge's own condition, stated as a test: two runs identical but for one level-0 are
+    // both countable or neither. A denominator that admits one and not the other is a class
+    // percentage taken over a set chosen by the thing being measured.
+    const withZero = resultFrom([0, 5, 5, null])?.state;
+    const withFive = resultFrom([5, 5, 5, null])?.state;
+    expect(withZero).toBe(withFive);
   });
 
   it("gives an unobserved requirement a null level rather than leaving the row out", () => {
@@ -108,6 +130,6 @@ describe("an unobserved requirement is absent, never a zero", () => {
   });
 
   it("produces no competency at all for observations nobody made", () => {
-    expect(observeCompetencies([], { submitted: true })).toEqual([]);
+    expect(observeCompetencies([])).toEqual([]);
   });
 });

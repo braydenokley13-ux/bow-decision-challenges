@@ -172,7 +172,7 @@ describe("what the student says is assessed, not merely collected", () => {
       expect(entry.level, entry.evidenceRequirementId).toBeNull();
       expect(entry.reason.length, entry.evidenceRequirementId).toBeGreaterThan(40);
     }
-    const result = competencyResultFor("sort-by-need-want-goal", observations, { submitted: true });
+    const result = competencyResultFor("sort-by-need-want-goal", observations);
     expect(result?.state).toBe("not-observed");
   });
 

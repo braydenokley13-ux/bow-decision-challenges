@@ -33,7 +33,7 @@ function reasonOf(log: readonly { id: string }[], id: EvidenceRequirementId): st
 /** The level after the engine has applied the support caps, which is the level a teacher sees. */
 function standing(log: readonly { id: string }[], id: EvidenceRequirementId) {
   const competencyId = id.startsWith("plan-within-income") ? "plan-within-income" : "adapt-a-plan";
-  return observeCompetencies(observePopUpFromLog(log as never), { submitted: true })
+  return observeCompetencies(observePopUpFromLog(log as never))
     .find((result) => result.competencyId === competencyId)
     ?.levels.find((level) => level.evidenceRequirementId === id)?.level;
 }

@@ -73,7 +73,7 @@ const STATE_SEVERITY: readonly CompetencyResultState[] = [
 ];
 
 export function studentSpineFor(submission: SubmissionRecord): StudentSpine {
-  const results = observeCompetencies(competencyObservationsFor(submission), { submitted: true });
+  const results = observeCompetencies(competencyObservationsFor(submission));
   const competencies: CompetencyLine[] = results.map((result) => ({
     competencyId: result.competencyId,
     statement: competencyById(result.competencyId)?.statement ?? result.competencyId,

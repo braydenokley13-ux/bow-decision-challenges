@@ -54,8 +54,8 @@ describe("the same actions produce the same market", () => {
     for (const options of OPTION_SETS) {
       const log = runPopUp(options).log;
       expect(observePopUpFromLog(log)).toEqual(observePopUpFromLog(log));
-      expect(observeCompetencies(observePopUpFromLog(log), { submitted: true }))
-        .toEqual(observeCompetencies(observePopUpFromLog(log), { submitted: true }));
+      expect(observeCompetencies(observePopUpFromLog(log)))
+        .toEqual(observeCompetencies(observePopUpFromLog(log)));
     }
   });
 
