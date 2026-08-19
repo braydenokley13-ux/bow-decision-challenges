@@ -304,3 +304,40 @@ answer that is not a matter of taste.
 So option (c) — leave it — stands for the two shipped worlds, and the competency arrives with
 Module 4 rather than by retrofitting a content change onto the market. That is the cheaper
 route and the one that does not disturb a world already measured and balanced.
+
+
+---
+
+## The 2.2 resolution, checked against how the other five were handled
+
+`docs/BOW_PRODUCT_DEFINITION.md` §6.1 is the mapping table as it was written before any of
+this was built. The shipped table disagrees with it in **five** places, and every one of them
+is a demotion from `full` to `partial` carrying a written reason:
+
+| | Definition | Shipped | Why it was demoted |
+| --- | --- | --- | --- |
+| 1.1 | full | partial | The objective names four categories and two kinds of decision; no claim in either world is money set aside toward a goal. |
+| 1.6 | full | partial | Reaches one payment method and two attributes of the four-by-four comparison the objective is built on. |
+| 2.3 | full | partial | The verb is *Explain*, and `keep-credit-costs-down` has `explanationRequired: false`. |
+| 2.4 | full | partial | *Describe*, same competency, same reason. |
+| 4.4 | full | partial | Reaches *identify*; the second clause asks the student to recommend an action and the competency requires no explanation. |
+
+**2.2 is the sixth candidate and it survived only because nobody had written
+`decide-to-borrow`'s requirements.** An unwritten competency cannot over-claim: it makes
+nothing assessable, so the row sat unexamined. Writing the rubric is what forced the question.
+
+And the pattern above decides it. 2.3 and 2.4 were demoted **because the verb asks for words
+and that competency has no written row**. 2.2's verbs also ask for words — *explain*,
+*describe* — and `decide-to-borrow` **does** carry a required written row, because
+`explanationRequired: true` was set on it long before this. The two cases are distinguished by
+exactly the thing that distinguishes them, and the answer falls out: put the plural clause on
+the written row and require it. Demoting would have been the right move if the competency had
+no explanation to hang it on, which is precisely why its neighbours were demoted.
+
+**One consequence to guard.** `keep-credit-costs-down` now has four requirements and every one
+is a decision. If anybody ever "restores" the definition's `full` on 2.3 or 2.4 from this
+table, `coverageClaims.test.ts` will pass — all four rows are `required` — and the claim will
+still be false, because the objective asks the student to *explain* and nothing in that
+competency asks them to say anything. The rule that catches optional rows does not catch this,
+and the reason those two are `partial` is written in the mapping file where somebody making
+that change would be standing.

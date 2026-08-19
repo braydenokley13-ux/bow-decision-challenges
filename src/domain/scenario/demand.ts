@@ -72,8 +72,12 @@ export interface ParityBreach {
 /**
  * A set of worlds that could honestly be offered to a student as alternatives.
  *
- * **Parity is a property of a choice, not of a catalogue**, and reading it as a property of
- * the catalogue is a mistake this file made until a third world was on the way. §9.1 is the
+ * **Parity is a property of a choice, not of a catalogue**, and reading it as a property of the
+ * catalogue is a mistake this file made until a third world was on the way — and a mistake the
+ * product definition never made. §9.2 states it in one sentence: *"`worldParity.test.ts` fails
+ * the build when **two worlds mapped to the same competency** fall outside these bands."* The
+ * code compared every world to every other, which passed only for as long as every world
+ * measured the same things. This is the specification being implemented rather than relaxed. §9.1 is the
  * claim that *which story a student picks does not change what is measured*; that claim only
  * has a subject where two worlds measure the same thing. Basketball and Run the Pop-Up assess
  * the same three competencies, so a teacher may offer either and the two must not differ much

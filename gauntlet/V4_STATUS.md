@@ -66,6 +66,21 @@ The move available at that point would have been to write a number into a declar
 because a test wanted it, and a profile written to pass is the one thing §9.2 profiles may not
 be: they are facts about the worlds, not claims about them.
 
+**And the implementation had drifted from its own specification.** §9.2 of
+`docs/BOW_PRODUCT_DEFINITION.md` states the rule in one sentence:
+
+> `worldParity.test.ts` fails the build when **two worlds mapped to the same competency** fall
+> outside these bands.
+
+That is the rule, written down before any of this was built, and it is not what the code did.
+`parityBreaches(demandProfiles())` compared every world to every other regardless of what they
+measured. It passed only because the two shipped worlds happen to assess the same three
+competencies — so the drift was invisible for exactly as long as there were no worlds it would
+have been wrong about, and it would have blocked the next one for a reason the specification
+never asked for.
+
+So this is not a rule being relaxed. It is a rule being implemented.
+
 Parity is now asked once per **choice a teacher could actually offer** — worlds that fully
 produce the same competency. §9.1's claim is that *which story a student picks does not change
 what is measured*, and that claim has a subject only where two worlds measure the same thing.
