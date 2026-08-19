@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { EducatorShell, StateKey } from "./EducatorShell";
 import { competencyById } from "../domain/competency/competencies";
@@ -99,10 +99,21 @@ function Attribution({ frameworkId }: { frameworkId: FrameworkId }) {
 export function ObjectiveList() {
   const [query, setQuery] = useState("");
   const labels = labelsFor(FRAMEWORK_ID);
-  const standards = useMemo(() => standardsIn(FRAMEWORK_ID), []);
-  const shown = standards.filter((standard) => matches(standard, query));
+  // Not memoised: it is a lookup over twenty-three static rows, and a hand-written useMemo
+  // here stops the React Compiler optimising the whole component for no measurable gain.
+  const standards = standardsIn(FRAMEWORK_ID);
   const readyTotal = standards.filter((standard) => isAssessable(refOf(standard))).length;
   const unit = labels?.unitNounShort.toLowerCase() ?? "objective";
+  // One list, and the ones a teacher can act on today at the top of it. Not two sections —
+  // that was the shape that stranded the search box inside the half headed with what BOW
+  // cannot do — but not framework order either, which would make a teacher's first click
+  // wrong twenty-two times out of twenty-three. The framework's own code is on every row and
+  // the search reaches all of them, so nothing is harder to find for being lower down.
+  const found = standards.filter((standard) => matches(standard, query));
+  const shown = [
+    ...found.filter((standard) => isAssessable(refOf(standard))),
+    ...found.filter((standard) => !isAssessable(refOf(standard))),
+  ];
 
   return (
     <EducatorShell>
@@ -111,8 +122,9 @@ export function ObjectiveList() {
         <h1>What do you want to assess?</h1>
         <p>
           BOW can assess {readyTotal} of the {standards.length} {gradeBandLabel(FRAMEWORK_ID)} {unit}s in
-          this framework today. The rest are matched to a {TERMS.skill} and waiting for a {TERMS.story} that
-          can show it. They report as coming, never as nobody having shown them.
+          this framework today, and {readyTotal === 1 ? "it leads" : "they lead"} the list below. The rest are
+          matched to a {TERMS.skill} and waiting for a {TERMS.story} that can show it. They report as coming,
+          never as nobody having shown them.
         </p>
       </header>
 

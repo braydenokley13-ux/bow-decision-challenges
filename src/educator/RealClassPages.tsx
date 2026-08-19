@@ -6,7 +6,7 @@ import { useClassEvidence, type ClassEvidenceState, type OverrideRequest } from 
 import { EvidenceTrailPanel, StudentSummary } from "./EvidenceTrailPanel";
 import type { AttributedSubmission } from "../platform/classes/types";
 import { attemptsFor, classRoll, worldSections, type ChoiceDistribution, type ClassAnalysis, type ClassRoll, type StudentRow } from "./analysis";
-import { SeatNamesContext, seatLabels, seatNames, useSeatLabel, useSeatNames, type RosterRow } from "./names";
+import { SeatNamesContext, endSentence, seatLabels, seatNames, useSeatLabel, useSeatNames, type RosterRow } from "./names";
 import { gradebookLineFor, gradebookRows, gradebookTsv } from "./gradebook";
 import { MAX_FEEDBACK_LENGTH, type TeacherFeedback } from "../platform/identity/types";
 import type { ProgressRow } from "../platform/identity/types";
@@ -102,7 +102,7 @@ function NothingYet({ code, label, keyQuery, teacherKey, hasRoster, roll, roster
   const working = progress.length > 0;
   return (
     <>
-      <header className="class-header">
+      <header className="page-header page-header--split">
         <div>
           <ClassName code={code} label={label} teacherKey={teacherKey} worlds={null} />
           {/* The same lead as every other moment of the lesson, and at this one it is the nine
@@ -111,7 +111,7 @@ function NothingYet({ code, label, keyQuery, teacherKey, hasRoster, roll, roster
               a count of nobody, against nothing. */}
           <ClassLead spine={spine} roll={roll} code={code} keyQuery={keyQuery} />
         </div>
-        <div>
+        <div className="page-header__meta">
           <span>{roll.seats.length} {roll.seats.length === 1 ? "student" : "students"} · 0 attempts</span>
         </div>
       </header>
@@ -446,7 +446,7 @@ function LiveState({ roll, roster, progress, code, keyQuery, loadedAt }: {
         // up — so "and 3 more" is three children she has been told about and cannot find. The
         // six-name cap belongs on lines that summarise; this one does not summarise.
         <p className="live-state__waiting">
-          Not started: {seatLabels(notStarted.map((seat) => seat.seatCode), seatNames(roster), notStarted.length)}.
+          {endSentence(`Not started: ${seatLabels(notStarted.map((seat) => seat.seatCode), seatNames(roster), notStarted.length)}`)}
         </p>
       )}
       {startedRows.length > 0 && (
@@ -675,7 +675,7 @@ export function RealClassOverview() {
 
         return (
           <>
-            <header className="class-header">
+            <header className="page-header page-header--split">
               <div>
                 <ClassName
                   code={record.code}
@@ -685,7 +685,7 @@ export function RealClassOverview() {
                 />
                 <ClassLead spine={spine} roll={roll} code={record.code} keyQuery={keyQuery} />
               </div>
-              <div>
+              <div className="page-header__meta">
                 {/* The unit, said out loud, on the surface a teacher reads a number off and
                     then says it to a room. One student who had two goes is one student and two
                     attempts, and the debrief, the queue and the export all count the first of
@@ -827,7 +827,7 @@ export function RealClassOverview() {
               <ExportClass roll={roll} submissions={submissions} roster={ready.roster} label={record.label} />
             </section>
 
-            <section className="class-foot">
+            <section className="card-grid class-foot">
               <div>
                 <span>Next</span>
                 <strong>Run the debrief</strong>
@@ -1051,7 +1051,7 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride, on
 
   return (
     <>
-      <header className="student-evidence-header">
+      <header className="page-header page-header--split">
         <div>
           <Link to={`/educator/class/${code}${keyQuery}`}>← Class evidence</Link>
           <p className="eyebrow">Turned in {new Date(row.submittedAt).toLocaleString()}</p>

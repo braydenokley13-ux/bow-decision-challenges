@@ -81,19 +81,23 @@ export function Debrief() {
 
   return (
     <EducatorShell measure="read">
+      {/* Outside `article.debrief`, and on `.page-header` like every other page in the
+          educator surface. It used to be inside the article, which sits on this page's `read`
+          measure — so the product's title started 303px from the left of a screen where its
+          sibling pages start theirs at 93. The body of a debrief is 760px of running text
+          because that is how running text is read; its title is not running text. */}
+      <header className="page-header">
+        <p className="eyebrow">{[record.label, ...analysis.worlds.map((world) => world.title)].join(" · ")}</p>
+        <h1>Debrief</h1>
+        <p className="lede">
+          {total} {total === 1 ? "student" : "students"} finished. <DebriefLead spine={spine} />
+        </p>
+        <div className="debrief__actions no-print">
+          <Link className="button button--secondary" to={`/educator/class/${record.code}${keyQuery}`}>Back to the class</Link>
+          <button type="button" className="button button--primary" onClick={() => window.print()}>Print this debrief</button>
+        </div>
+      </header>
       <article className="debrief">
-        <header className="debrief__head">
-          <p className="eyebrow">{[record.label, ...analysis.worlds.map((world) => world.title)].join(" · ")}</p>
-          <h1>Debrief</h1>
-          <p className="lede">
-            {total} {total === 1 ? "student" : "students"} finished. <DebriefLead spine={spine} />
-          </p>
-          <div className="debrief__actions no-print">
-            <Link className="button button--secondary" to={`/educator/class/${record.code}${keyQuery}`}>Back to the class</Link>
-            <button type="button" className="button button--primary" onClick={() => window.print()}>Print this debrief</button>
-          </div>
-        </header>
-
         <section className="debrief__section">
           <h2>1 · Open with the disagreement</h2>
           {!spine.narratable ? (

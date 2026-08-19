@@ -63,8 +63,27 @@ describe("one student's spine", () => {
 describe("the points model stays out of the lead", () => {
   const source = readFileSync("src/educator/RealClassPages.tsx", "utf8");
 
+  /**
+   * A slice of the source between two markers, which fails loudly when a marker has moved.
+   *
+   * Both markers used to be class names, and when the student page moved onto the shared
+   * `.page-header` the slice quietly became the empty string — `indexOf` returns -1,
+   * `slice(-1, …)` returns "", and an assertion that a paragraph does not contain
+   * `finalPoints` passes trivially against no paragraph at all. A test that can only fail
+   * when it finds something is not a test. So the markers are the names of the things
+   * themselves — a function, not the class its markup happens to carry this month — and a
+   * marker that is not there is an error rather than an empty answer.
+   */
+  const between = (from: string, to: string): string => {
+    const start = source.indexOf(from);
+    const end = source.indexOf(to, start + 1);
+    if (start < 0) throw new Error(`RealClassPages.tsx no longer contains "${from}", so this test read nothing.`);
+    if (end < 0) throw new Error(`RealClassPages.tsx no longer contains "${to}" after "${from}", so this test read nothing.`);
+    return source.slice(start, end);
+  };
+
   it("keeps the grade out of the student header and the class rows", () => {
-    const header = source.slice(source.indexOf("<header className=\"student-evidence-header\">"), source.indexOf("student-tabs"));
+    const header = between("function StudentPanel", "student-tabs");
     expect(header).toContain("StudentLead");
     expect(header).not.toMatch(/structuredPoints|finalPoints|REASONING_MAXIMUM/);
     // `COMPETENCY_STATE_HEADLINES` used to be the constant named here. It was one of two
@@ -75,7 +94,7 @@ describe("the points model stays out of the lead", () => {
     // one table. The claim this test makes is unchanged: **a class row leads with what the
     // student showed, not with a number**, and it names the surviving table so a row that
     // went back to spelling a state fails here.
-    const rows = source.slice(source.indexOf("function StudentRows"), source.indexOf("function shortfallLine"));
+    const rows = between("function StudentRows", "function shortfallLine");
     expect(rows).toContain("SKILL_STATE_LABELS");
     expect(rows).not.toMatch(/structuredPoints|finalPoints|\/100/);
   });

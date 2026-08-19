@@ -49,6 +49,18 @@ export function seatLabels(seatCodes: readonly string[], names: SeatNames, limit
 }
 
 /**
+ * One full stop at the end of a sentence, whoever supplied the last one.
+ *
+ * A teacher's class list is full of names written "Alex W.", so a sentence that appends its
+ * own terminator to a list of them reads "Not started: Priya S., Sam K. and Alex W..". The
+ * same line with no roster ends "Seat 3" and needs the stop. Neither the caller nor the list
+ * can know which, so the sentence asks here.
+ */
+export function endSentence(text: string): string {
+  return text.endsWith(".") || text.endsWith("!") || text.endsWith("?") ? text : `${text}.`;
+}
+
+/**
  * How far into a run a seat is, in the world's own words rather than in stage ids.
  *
  * The point of a live view is that a teacher walking the room knows who to stand next to. A

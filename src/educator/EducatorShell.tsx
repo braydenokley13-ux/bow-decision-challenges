@@ -6,13 +6,16 @@ import { DEMO_CLASS_CODE } from "../fixtures/demoClass";
 import { NAV_LABELS, type KeyEntry } from "./labels";
 
 /**
- * The measure a page is set to.
+ * The measure a page is set to. It is how wide the page's blocks are, and nothing else — every
+ * educator page starts at the same left edge whichever of these it picks.
  *
- * `evidence` is the dense default; `read` is for pages made of sentences, which own their
- * margins rather than stranding four hundred pixels of nothing beside them; `bleed` is the
- * two full-width editorial layouts that predate the measure and are composed for it.
+ * `evidence` is the dense default; `read` is for pages made of sentences, which are narrower
+ * because that is how running text is read. There was a third, `bleed`, for the two full-width
+ * editorial layouts that predated the measure — one of those pages is gone and the other is
+ * folded into the guide, and a measure kept for no page is a way out of the spine for the
+ * next one.
  */
-export type EducatorMeasure = "evidence" | "read" | "bleed";
+export type EducatorMeasure = "evidence" | "read";
 
 /**
  * Whether the page this shell is wrapping is the sample class, read from the URL rather

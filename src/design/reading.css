@@ -1,0 +1,282 @@
+/*
+ * Reading help: the corner control, the line the voice is on, and the words panel.
+ *
+ * Its own file so it can land on its own. Every colour is a token from `tokens.css` — this
+ * sheet invents no palette, because a reading aid that is the one bright thing on a screen is
+ * a reading aid that says out loud which children are using it.
+ */
+
+/* ---------------------------------------------------------------------------
+   The corner control
+   --------------------------------------------------------------------------- */
+
+.reading-tools {
+  position: fixed;
+  bottom: var(--gutter);
+  left: var(--gutter);
+  z-index: 40;
+  max-width: min(340px, calc(100vw - (var(--gutter) * 2)));
+  font: var(--t-ui);
+  color: var(--ink-1);
+
+  /* Printing a debrief should not print the control that was on screen while it was read. */
+  @media print { display: none; }
+}
+
+.reading-tools__pill,
+.reading-tools__button,
+.reading-tools__hide {
+  display: inline-flex;
+  gap: var(--s-2);
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--s-4);
+  color: var(--ink-1);
+  font: var(--t-ui);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background var(--dur-micro) var(--ease-standard), border-color var(--dur-micro) var(--ease-standard);
+}
+
+.reading-tools__pill {
+  box-shadow: var(--shadow-card);
+}
+
+.reading-tools__pill:hover,
+.reading-tools__button:hover,
+.reading-tools__hide:hover {
+  background: var(--surface);
+  border-color: var(--border-strong);
+}
+
+.reading-tools__button[data-reading="true"] {
+  color: var(--ink-invert);
+  background: var(--fin-reliable);
+  border-color: var(--fin-reliable-ink);
+}
+
+.reading-tools__panel {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+}
+
+.reading-tools__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  align-items: center;
+}
+
+.reading-tools__foot {
+  display: flex;
+  gap: var(--s-3);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.reading-tools__hide {
+  min-height: 32px;
+  margin-inline-start: auto;
+  padding: 0 var(--s-3);
+  color: var(--ink-3);
+  font: var(--t-sm);
+  border-color: transparent;
+}
+
+.reading-tools__icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.reading-tools__every {
+  display: flex;
+  gap: var(--s-3);
+  align-items: center;
+  color: var(--ink-2);
+  font: var(--t-sm);
+  cursor: pointer;
+}
+
+.reading-tools__every input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--fin-reliable);
+}
+
+.reading-tools__note {
+  max-width: 30ch;
+  margin: 0;
+  color: var(--ink-2);
+  font: var(--t-sm);
+}
+
+/* ---------------------------------------------------------------------------
+   The line being read
+
+   `::highlight()` paints a live Range from the stylesheet, which is how the voice can mark
+   where it is without a single node of the run's own markup being wrapped or replaced. Only
+   colour and text decoration are available to it; that is enough to say "here".
+   --------------------------------------------------------------------------- */
+
+::highlight(bow-read-aloud) {
+  color: var(--ink-1);
+  background-color: var(--fin-conditional-soft);
+  text-decoration: underline;
+  text-decoration-color: var(--fin-conditional);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+/* ---------------------------------------------------------------------------
+   The words panel
+   --------------------------------------------------------------------------- */
+
+.glossary {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: end start;
+  padding: var(--gutter);
+}
+
+.glossary__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgb(12 21 40 / 38%);
+}
+
+.glossary__card {
+  position: relative;
+  display: grid;
+  gap: var(--s-4);
+  width: min(460px, 100%);
+  max-height: min(70vh, 620px);
+  padding: var(--s-5);
+  overflow-y: auto;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-overlay);
+}
+
+.glossary__bar {
+  display: flex;
+  gap: var(--s-4);
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.glossary__bar h2 {
+  margin: 0;
+  font: var(--t-title2);
+}
+
+.glossary__bar h2:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.glossary__close,
+.glossary__read {
+  min-height: var(--tap);
+  padding: 0 var(--s-4);
+  color: var(--ink-1);
+  font: var(--t-ui);
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+
+.glossary__close {
+  min-height: 34px;
+  padding: 0 var(--s-3);
+}
+
+.glossary__read {
+  justify-self: start;
+}
+
+.glossary__close:hover,
+.glossary__read:hover {
+  border-color: var(--border-strong);
+}
+
+.glossary__none {
+  margin: 0;
+  color: var(--ink-2);
+  font: var(--t-body);
+}
+
+.glossary__terms {
+  display: grid;
+  gap: var(--s-4);
+  margin: 0;
+}
+
+.glossary__terms dt {
+  color: var(--ink-1);
+  font: var(--t-title3);
+}
+
+.glossary__terms dd {
+  margin: var(--s-1) 0 0;
+  color: var(--ink-2);
+  font: var(--t-body);
+}
+
+.glossary__all > summary {
+  padding: var(--s-2) 0;
+  list-style: none;
+  color: var(--ink-3);
+  font: var(--t-sm);
+  cursor: pointer;
+}
+
+.glossary__all > summary::-webkit-details-marker {
+  display: none;
+}
+
+.glossary__all > summary span {
+  margin-inline-start: var(--s-2);
+}
+
+.glossary__all .glossary__terms {
+  padding-block-start: var(--s-4);
+}
+
+/*
+ * A phone. The corner control gives up its corner and spans the width, because 340px of card
+ * beside a 360px screen is a card covering the decision.
+ */
+@media (max-width: 520px) {
+  .reading-tools {
+    right: var(--gutter);
+    max-width: none;
+  }
+
+  .reading-tools__row > .reading-tools__button {
+    flex: 0 1 auto;
+    padding: 0 var(--s-3);
+    white-space: nowrap;
+  }
+
+  .glossary {
+    place-items: stretch;
+  }
+
+  .glossary__card {
+    width: 100%;
+    max-height: 80vh;
+  }
+}

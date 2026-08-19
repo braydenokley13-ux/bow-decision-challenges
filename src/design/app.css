@@ -29,24 +29,38 @@ p { color: var(--ink-2); }
 .button--quiet { color: var(--ink-2); background: transparent; border-color: var(--border-default); border-width: 1px; font-weight: 500; }
 .button--danger { color: var(--fin-over-ink); background: var(--fin-over-soft); border-color: var(--fin-over); }
 
-/* The mark: a blue plate, the wordmark in ink, the product name in BOW blue caps. */
+/* The mark: a blue plate, the wordmark in ink, the product name in BOW blue caps. Geometry
+   only — every colour on it is in `brand.css`, in one block, so there is one place to read
+   what the mark looks like and one place it can be changed. */
 .app-mark { display: inline-flex; align-items: center; gap: var(--s-3); color: inherit; text-decoration: none; }
-.app-mark__monogram { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid currentColor; border-radius: var(--r-xs); color: var(--mark-plate-ink, var(--bow-brand-ink)); font: 800 1.05rem/1 var(--font-ui); letter-spacing: -0.02em; }
+.app-mark__monogram { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid; border-radius: var(--r-xs); font: 800 1.05rem/1 var(--font-ui); letter-spacing: -0.02em; }
 .app-mark b, .app-mark small { display: block; }
-
-/* Re-asserted at two classes, because two bar rules below win against one.
-   `.join-shell__bar span` and `.student-home__bar span` are class-plus-element (0,1,1) and
-   the monogram is a `<span>` inside those bars, so they were painting the letter in body ink
-   on the navy plate: measured 1.04:1 on /join (`#383e47` on `#123a8f`) and 1.76:1 on /home.
-   1.4.3 exempts a logotype, so neither is scored as a failure — but the letter could not be
-   seen, and a fix that only patched the two bars would break again on the third. White on the
-   plate measures 10.36:1. */
-.app-mark .app-mark__monogram { color: var(--mark-plate-ink, var(--bow-brand-ink)); }
 .app-mark > span { min-width: 0; }
 .app-mark b { font: 800 1rem/1 var(--font-ui); letter-spacing: 0.1em; white-space: nowrap; }
 .app-mark small { margin-top: 4px; font: var(--t-micro); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; }
-.section-heading { max-width: 720px; margin-bottom: var(--s-7); }
-.section-heading h2 { margin: 0; font: var(--t-display3); letter-spacing: var(--display-tracking); text-transform: uppercase; }
+
+/*
+ * One section heading, and this is the only one.
+ *
+ * There were two systems and the second one's comment claimed to be the first: `.section-head`
+ * ("One heading system: an eyebrow, a section head, and nothing between them") set
+ * `--t-section`, 30px/700, sentence case, and `.section-heading` set `--t-display3`, 25.6px/800,
+ * uppercase. The guide used both, on one page, four sections apart. `.debrief__section h2` was a
+ * third at `--t-title1`. `.section-heading` had twenty-odd uses to `.section-head`'s four, so
+ * `.section-head` is now a name for the same thing rather than a second thing, and no page had
+ * to be edited to make it so.
+ *
+ * A card title is a different job and is not on this list — `--t-title1` on `.student-card h2`,
+ * `.golden-case h2`, `.reading-queue h2`, `.trajectory-panel h2` is already one treatment used
+ * consistently for the title of a thing rather than the name of a section.
+ */
+.section-heading, .section-head { max-width: 720px; margin-bottom: var(--gap-block); }
+.section-heading h2, .section-head h2, .debrief__section h2 { margin: 0; font: var(--t-display3); letter-spacing: var(--display-tracking); text-transform: uppercase; }
+.section-heading > p:not(.eyebrow), .section-head > p:not(.eyebrow) { max-width: var(--measure); margin: var(--s-3) 0 0; color: var(--ink-2); font: var(--t-body); }
+
+/* The debrief opens each numbered section with a bare heading rather than a block, so the
+   heading carries the gap the block would have carried. Same size, weight and case. */
+.debrief__section h2 { margin-bottom: var(--s-4); }
 .stage-deck, .lede { max-width: var(--measure); font: var(--t-body-lg); }
 .disclaimer { max-width: 1000px; margin: var(--s-6) auto 0; color: var(--ink-3); font: var(--t-micro); }
 
@@ -266,16 +280,46 @@ p { color: var(--ink-2); }
 .educator-topbar nav a { padding: var(--s-3) 0; color: var(--ink-3); font: var(--t-ui); text-decoration: none; }
 .educator-topbar nav a.active { color: var(--ink-1); border-bottom: 2px solid var(--ink-1); }
 .demo-pill, .standard-chip, .tag-row span { padding: var(--s-2) var(--s-3); background: var(--surface-sunken); border-radius: var(--r-pill); color: var(--ink-2); font: var(--t-micro); }
-.educator-main { --measure-page: var(--w-evidence); padding: var(--s-7) 0 var(--s-9); }
-.educator-main > * { width: min(var(--measure-page), 100% - 2 * var(--gutter)); margin-inline: auto; }
+
+/*
+ * One spine for the whole educator surface.
+ *
+ * `--spine-inset` is where the page's left edge is — 93px at 1366, the gutter once the window
+ * is narrower than the evidence measure — and every block on every educator page starts
+ * there, whatever width it then takes. It used to be `margin-inline: auto` against a
+ * per-page `--measure-page`, which meant a page that narrowed its measure also moved its
+ * left edge: the debrief's 760px column centred itself and started 303px in, so a teacher
+ * moving between the class overview and the debrief watched the whole product slide sideways.
+ * Narrowing the column is a decision about reading; moving the page is not.
+ */
+.educator-main { --measure-page: var(--w-evidence); --spine-inset: max(var(--gutter), (100% - var(--w-evidence)) / 2); padding: var(--s-7) 0 var(--s-9); }
+.educator-main > * { width: min(var(--measure-page), 100% - 2 * var(--gutter)); margin-inline: var(--spine-inset) auto; }
 .educator-main > * + * { margin-top: var(--gap-section); }
 
 /* A page made of sentences owns its margins instead of stranding a column of nothing. */
 .educator-main[data-measure="read"] { --measure-page: var(--w-read); }
 
-/* The companion is a full-bleed editorial layout and predates the measure. */
-.educator-main[data-measure="bleed"] { --measure-page: var(--w-dash); }
-.educator-main[data-measure="bleed"] > * { width: min(var(--w-dash), 100%); }
+/* There is no third measure. `bleed` existed for `/educator/teaching-companion`, the one
+   page that put its content outside the page — and that page is gone, folded into the guide.
+   A measure with no pages is a way for the next page to leave the spine. */
+
+/*
+ * The page header is not subject to the page measure.
+ *
+ * Measured across the educator surfaces, the header started at four different x on six
+ * sibling pages — 93px on the guide, the objectives page, the queue, the share-out and the
+ * class list; 125px on the class overview and the student evidence page, because those two
+ * used bespoke headers with 32px of their own padding inside the same 1180 track; 303px on
+ * the debrief, because that page is `data-measure="read"` and its header was inside the
+ * narrow column; 80px on the companion, from a `bleed` override that padded the header by
+ * `clamp(40px, 6vw, 80px)`. Four x for one thing, and on the class overview the H1 and the
+ * H2 under it did not even share one.
+ *
+ * The body of a page can narrow — 760px of running text is better reading than 1180 — but
+ * the title of a page is the product's chrome and belongs on the product's spine. So the
+ * measure below the header is the page's choice and the header's own edge is not.
+ */
+.educator-main > .page-header { width: min(var(--w-evidence), 100% - 2 * var(--gutter)); }
 
 /* The guide is a quick start set to the ordinary page measure. The full-bleed editorial
    hero, the 90 + 10 = 100 circles and the six-panel process line are gone: none of them told
@@ -308,44 +352,80 @@ p { color: var(--ink-2); }
 
 /* Hero bands pad by content. The 100-250px of dead cream under every one of them was a
    min-height nobody had removed. */
+
+/*
+ * One page header, and every educator page uses it.
+ *
+ * Three pages used to bring their own — `.class-header`, `.student-evidence-header` and
+ * `.debrief__head` — and between them they produced four H1 sizes and two H1 weights
+ * (41.6/800, 52/800, 60.1/600, plus 87.4/700 on the front door). The student evidence page
+ * carried the only 600-weight heading in the product. None of that was a decision; each was
+ * a page that did not look at the one next to it.
+ *
+ * `--t-display2` is what the nine pages that already used this were set in, so it is what
+ * the other three moved onto. The measure is in `ch` so a title stays two or three lines at
+ * every width, and it is wide enough for the class overview's headline, which is a sentence
+ * about counts rather than a name.
+ */
 .page-header { padding: var(--gap-block) 0; background: none; border-bottom: 2px solid var(--border-ink); }
-.page-header h1 { max-width: 24ch; margin: 0 0 var(--s-4); font: var(--t-display2); letter-spacing: var(--display-tracking); }
+.page-header h1 { max-width: 32ch; margin: 0 0 var(--s-4); font: var(--t-display2); letter-spacing: var(--display-tracking); }
 .page-header > p:last-child { max-width: var(--measure); margin: 0; font: var(--t-body-lg); }
 .page-header--with-back > a { display: inline-block; margin-bottom: var(--s-5); color: var(--ink-2); font: var(--t-ui); }
-.educator-main[data-measure="bleed"] .page-header { padding: clamp(40px, 6vw, 80px); background: var(--surface); }
-.mini-unit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); padding: var(--s-7); }
+
+/*
+ * A header with a trailing column: what a page knows about itself, beside its title rather
+ * than under it. The class overview's student and attempt counts with the way into the
+ * reading queue; the student evidence page's judgement panel. Two classes rather than one,
+ * because they are two different things: `--split` is the layout, `__meta` is the small
+ * caps row. A page that wants the panel treatment uses the panel and the split, and the
+ * split does not need to know what is in the second column.
+ */
+.page-header--split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto); align-items: start; gap: var(--s-5) var(--s-7); }
+.page-header > div { min-width: 0; }
+
+/* Top of the column, level with the eyebrow: these are facts about the page, and the page's
+   title is the thing under them. Bottom-aligned — which is what the old `.class-header` did —
+   left them stranded under a call to action, 180px below the heading they belong to. */
+.page-header__meta { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); color: var(--ink-3); font: var(--t-micro); }
+
+/* The sample mini-unit, which is two cards on the page spine now rather than a full-bleed
+   band of its own. `padding: var(--s-7)` inset the cards 32px from the text introducing
+   them; the block padding is what it was actually for. */
+.mini-unit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--s-5); padding-block: var(--s-7); }
 .mini-unit-grid > article { background: var(--surface); border: 1px solid var(--border-default); }
-.mini-unit-grid article > header { min-height: 240px; padding: var(--s-6); color: var(--ink-invert); background: var(--bow-brand-strong); }
+
+/* Padded by content. `min-height: 240px` left 120px of empty navy under two lines of text —
+   the same dead band the hero rules above this one were stripped of. */
+.mini-unit-grid article > header { padding: var(--s-6); color: var(--ink-invert); background: var(--bow-brand-strong); }
 .mini-unit-grid article > header span { color: var(--fin-conditional); font: var(--font-mono); }
-.mini-unit-grid article > header h2 { margin: var(--s-8) 0 var(--s-3); font: var(--t-display2); letter-spacing: var(--display-tracking); }
+.mini-unit-grid article > header h3 { margin: var(--s-4) 0 var(--s-3); font: var(--t-title1); letter-spacing: var(--display-tracking); }
 .mini-unit-grid article > header p { color: var(--border-default); }
 .mini-unit-grid ol { margin: 0; padding: var(--s-6) var(--s-6) var(--s-4) 52px; }
 .mini-unit-grid li { padding: var(--s-3) 0; }
 .mini-unit-grid li p { margin: var(--s-2) 0; }
 .mini-unit-grid aside { margin: var(--s-5); padding: var(--s-4); background: var(--fin-adjustable-soft); }
-.teaching-boundary { margin: 0 var(--s-7) var(--s-8); padding: var(--s-6); background: var(--surface-sunken); }
-.educator-main[data-measure="bleed"] > .teaching-boundary { width: calc(min(var(--w-dash), 100%) - 2 * var(--s-7)); }
+.teaching-boundary { margin-block: 0 var(--s-8); padding: var(--s-6); background: var(--surface-sunken); }
 
 /* Educator dashboard */
 
-/* The class name and the two counts beside it, with somewhere to go.
-   Measured at 320 CSS px (400 % zoom of a 1280 window) the counts row ran 18.4px past the
-   window: `header.class-header > div` holding "4 turned in / 4 awaiting your reading" in a
-   `nowrap` flex line. Wrapping is the whole fix; nothing is hidden and nothing moves at any
-   width that already fitted. */
-.class-header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: var(--s-4) var(--s-6); padding: var(--s-7); }
-.class-header > * { min-width: 0; }
-.class-header h1 { margin: 0; font: var(--t-display1); letter-spacing: var(--display-tracking); }
-.class-header > div:last-child { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); color: var(--ink-3); font: var(--t-micro); }
+/* `.class-header` is gone: it was `.page-header` with a different H1 size, 32px of padding
+   that put its title 32px right of every sibling page's, and its own wrapping rule for the
+   counts row. The class overview uses `.page-header .page-header--split` and the counts row
+   is `.page-header__meta`, which still wraps — that fix was for 320 CSS px at 400 % zoom and
+   it survives, because wrapping is what the meta row does everywhere now. */
 .teach-next { position: relative; padding: clamp(32px, 5vw, 64px); background: var(--surface); border-top: 4px solid var(--fin-adjustable); border-bottom: 1px solid var(--border-default); }
 .teach-next h2 { max-width: 900px; margin: 0 0 var(--s-4); font: 600 clamp(2.5rem, 6vw, 5.6rem)/0.94 var(--font-ui); }
 .teach-next > p:not(.eyebrow) { max-width: 820px; font: var(--t-body-lg); }
 .teach-next > div { display: flex; gap: var(--s-3); margin-top: var(--s-5); }
 .teach-next .standard-chip { position: absolute; right: var(--s-6); top: var(--s-6); }
 .dashboard-section { padding: 0; }
-.educator-main[data-measure="bleed"] .dashboard-section { padding: var(--s-7); }
 .concept-matrix, .micro-table, .grade-ledger { width: 100%; border-collapse: collapse; background: var(--surface); }
-.concept-matrix caption { color: var(--ink-3); text-align: left; padding-bottom: var(--s-3); font: var(--t-micro); }
+
+/* Every caption in the educator surface, not just the one table that happened to have a
+   rule. `.micro-table`'s caption — "Counts across the 12 of 18 with a usable result" on the
+   class overview — was inheriting the user agent's `text-align: center` and was the only
+   centred text on a page where every other label is left-aligned. */
+.concept-matrix caption, .micro-table caption, .grade-ledger caption { color: var(--ink-3); text-align: left; padding-bottom: var(--s-3); font: var(--t-micro); }
 .concept-matrix th, .concept-matrix td, .micro-table th, .micro-table td, .grade-ledger th, .grade-ledger td { padding: var(--s-4); text-align: left; border-bottom: 1px solid var(--border-default); }
 .concept-matrix thead th, .micro-table thead th, .grade-ledger thead th { color: var(--ink-3); font: var(--t-micro); text-transform: uppercase; letter-spacing: 0.06em; }
 
@@ -399,9 +479,27 @@ p { color: var(--ink-2); }
 .student-worklist span, .student-worklist p { color: var(--ink-3); font: var(--t-micro); }
 .student-worklist h3 { margin: var(--s-2) 0; font: var(--t-title3); }
 .student-worklist > a > span { font: var(--t-title1); }
-.class-foot:has(> div:only-child) { grid-template-columns: minmax(0, 1fr); }
-.class-foot { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin: var(--s-7); padding: 1px; background: var(--border-default); }
-.class-foot div { padding: var(--s-5); background: var(--surface); }
+
+/*
+ * A card grid that does not render a hole where a card is not.
+ *
+ * `.class-foot` was `repeat(3, 1fr)` with a 1px gap over a `--border-default` ground — the
+ * hairline-rule trick, where the container's own colour shows through the gaps. With two
+ * cards in a three-track grid the third track showed the whole of it: a solid tan rectangle
+ * 392px wide at the foot of the class overview, which is what a hole looks like when the
+ * gaps are painted rather than empty. There was already a `:has(> div:only-child)` special
+ * case for one card, which is the tell — the grid had been patched for the count below and
+ * not for the count between.
+ *
+ * `auto-fit` collapses a track with nothing in it, so the cards divide the row however many
+ * there are, and the same rule handles the narrow width that used to need a media query.
+ */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--card-min, 260px), 1fr)); gap: 1px; padding: 1px; background: var(--border-default); }
+.card-grid > * { padding: var(--s-5); background: var(--surface); }
+
+/* `margin-block`: this sits on the page spine like every other block, and only its vertical
+   space is its own business. */
+.class-foot { margin-block: var(--s-7); }
 .class-foot span, .class-foot strong { display: block; }
 .class-foot span { color: var(--ink-3); font: var(--t-micro); text-transform: uppercase; }
 .class-foot strong { margin: var(--s-4) 0 var(--s-2); font: var(--t-title2); }
@@ -420,15 +518,11 @@ p { color: var(--ink-2); }
 .reteach-card { align-self: start; position: sticky; top: var(--s-6); padding: var(--s-6); color: var(--ink-invert); background: var(--bow-brand-strong); }
 .reteach-card p, .reteach-card li { color: var(--border-default); }
 .reteach-card h2 { margin: var(--s-7) 0 var(--s-4); font: var(--t-display2); letter-spacing: var(--display-tracking); }
-.student-evidence-header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(300px, 460px); gap: var(--s-7); align-items: start; padding: var(--s-7); background: var(--surface); border-bottom: 1px solid var(--border-default); }
-.student-evidence-header h1 { margin: var(--s-4) 0 var(--s-3); font: 600 clamp(2.6rem, 4.4vw, 4rem)/0.95 var(--font-ui); }
 
-/* The figures block on the fixture's student page. The real one carries the competency
-   reading here instead, which is a column of sentences rather than a pair of numbers. */
-.student-evidence-header > div:last-child:not(.student-lead) { display: grid; grid-template-columns: auto auto; gap: var(--s-2) var(--s-6); align-items: baseline; }
-.student-evidence-header > div:last-child:not(.student-lead) span { color: var(--ink-3); font: var(--t-micro); text-transform: uppercase; }
-.student-evidence-header > div:last-child:not(.student-lead) strong { font: var(--m-md); }
-.student-evidence-header .button { grid-column: 1 / -1; margin-top: var(--s-3); }
+/* `.student-evidence-header` is gone too. Its H1 was `600 clamp(2.6rem, 4.4vw, 4rem)` — the
+   only 600-weight heading anywhere in the product, and 60.1px against its siblings' 41.6 —
+   and its three sub-rules styled a figures block no component renders any more. The page
+   uses `.page-header .page-header--split`; the judgement panel is the trailing column. */
 .golden-case { margin: var(--s-7); padding: var(--s-6); color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); border-left: 4px solid var(--fin-adjustable); }
 .golden-case h2 { font: var(--t-title1); }
 .grade-ledger th:first-child { width: 290px; }
@@ -512,7 +606,7 @@ p { color: var(--ink-2); }
 }
 
 @media (max-width: 760px) {
-  .working-setup, .decision-row, .defense-layout, .gap-builder, .mini-unit-grid, .drill-grid, .student-evidence-header, .evidence-detail-grid, .reasoning-layout { grid-template-columns: 1fr; }
+  .working-setup, .decision-row, .defense-layout, .gap-builder, .drill-grid, .evidence-detail-grid, .reasoning-layout { grid-template-columns: 1fr; }
   .opening { min-height: 0; }
   .season-log li { grid-template-columns: 1fr; gap: var(--s-2); }
   .gap-tiles button { grid-template-columns: 1fr auto; }
@@ -553,7 +647,7 @@ p { color: var(--ink-2); }
   .challenge-topbar__end { min-width: 0; flex-wrap: wrap; grid-column: 2; grid-row: 1; justify-content: flex-end; }
   .contract-drawer > div { width: min(350px, calc(100vw - 24px)); }
   .stage-main { width: calc(100% - 24px); }
-  .setup-grid, .exposure-summary, .class-foot, .standards-list, .prerequisite-list { grid-template-columns: 1fr; }
+  .setup-grid, .exposure-summary, .standards-list, .prerequisite-list { grid-template-columns: 1fr; }
   .plan-commit, .stage-action { align-items: stretch; flex-direction: column; }
   .plan-commit__actions { flex-direction: column; }
   .calculation-help, .plan-help { flex-direction: column; }
@@ -569,7 +663,7 @@ p { color: var(--ink-2); }
   .educator-topbar { grid-template-columns: 1fr auto; padding: var(--s-3); }
   .educator-topbar nav { grid-column: 1 / -1; flex-wrap: wrap; justify-content: start; }
   .demo-pill { grid-column: 2; grid-row: 1; }
-  .page-header, .dashboard-section, .class-header, .reasoning-layout, .standards-list { padding: var(--s-5); }
+  .page-header, .dashboard-section, .reasoning-layout, .standards-list { padding: var(--s-5); }
   .brief-answers dl { grid-template-columns: 1fr; }
   .standards-list article:last-child { grid-column: auto; }
 }
@@ -580,7 +674,11 @@ p { color: var(--ink-2); }
 
 /* Left-aligned, not centred. This was the one centred block in the product, floating at
    a different left edge from its own heading. */
-.class-form { display: grid; gap: var(--s-3); max-width: 520px; margin-inline: 0; }
+
+/* `margin-inline: 0` was here to stop a 520px form centring itself under the old
+   `margin-inline: auto`. The spine sets the left edge now, so the override would only move
+   the form off it. */
+.class-form { display: grid; gap: var(--s-3); max-width: 520px; }
 .class-form label { font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
 .class-form input { min-height: var(--tap); padding: 0 var(--s-4); font: var(--t-body-lg); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
 .class-form__status { margin: 0; color: var(--ink-3); font: var(--t-sm); font-weight: 400; }
@@ -691,7 +789,13 @@ p { color: var(--ink-2); }
    row per judgement, because a conclusion whose evidence is a screen away is a
    conclusion that gets taken on trust or not at all.
    --------------------------------------------------------------------------- */
-.student-tabs { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: var(--s-6) 0 var(--s-5); border-bottom: 2px solid var(--border-default); }
+
+/* `margin-block`, not `margin`. A block that means "space above and below me" and writes it
+   as a four-value shorthand also says "no margin either side", which on a direct child of
+   `.educator-main` overwrites the page spine and drops the block to x=0. On the student
+   evidence page that was four blocks — the tabs, the objective note, the gradebook and the
+   write-back box — starting 93px left of the title above them. */
+.student-tabs { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-block: var(--s-6) var(--s-5); border-bottom: 2px solid var(--border-default); }
 .student-tabs button { min-height: var(--tap); padding: 0 var(--s-5); color: var(--ink-2); background: transparent; border: 0; border-bottom: 3px solid transparent; margin-bottom: -2px; cursor: pointer; font: var(--t-ui); font-weight: 700; }
 .student-tabs button:hover { color: var(--ink-1); }
 .student-tabs button[aria-selected="true"] { color: var(--ink-1); border-bottom-color: var(--bow-brand); }
@@ -699,7 +803,11 @@ p { color: var(--ink-2); }
 /* What the evidence shows, at the top of the page it is about. This replaced
    STRUCTURED 90/90 · REASONING 10/10 · TOGETHER 100/100, which was the largest thing on a
    page whose first content block said "Not demonstrated". */
-.student-lead { display: grid; align-content: start; gap: var(--s-3); min-width: min(360px, 100%); padding: var(--s-5); background: var(--surface-sunken); border-left: 4px solid var(--border-strong); }
+
+/* Sized here rather than by the header that happens to hold it: the panel used to get its
+   width from `.student-evidence-header`'s `minmax(300px, 460px)` track, so it only had a
+   shape on one page. */
+.student-lead { display: grid; align-content: start; gap: var(--s-3); min-width: min(360px, 100%); max-width: 460px; padding: var(--s-5); background: var(--surface-sunken); border-left: 4px solid var(--border-strong); }
 .student-lead[data-state="not-yet-demonstrated"] { border-left-color: var(--fin-over); }
 .student-lead[data-state="developing"] { border-left-color: var(--fin-conditional); }
 .student-lead[data-state="demonstrated"], .student-lead[data-state="demonstrated-with-support"] { border-left-color: var(--fin-balanced); }
@@ -712,7 +820,7 @@ p { color: var(--ink-2); }
 .student-lead__absence { margin: 0; color: var(--ink-3); font: var(--t-micro); }
 
 /* The other model, once, at the bottom, saying what it counts. */
-.gradebook { margin: var(--s-7) 0 0; padding: var(--s-5); background: var(--surface); border-top: 1px solid var(--border-default); }
+.gradebook { margin-block: var(--s-7) 0; padding: var(--s-5); background: var(--surface); border-top: 1px solid var(--border-default); }
 .gradebook .field-label { margin: 0 0 var(--s-2); }
 .gradebook__figure { display: grid; gap: var(--s-2); max-width: var(--measure); margin: 0; }
 .gradebook__figure strong { font: var(--m-md); font-feature-settings: var(--num); }
@@ -858,11 +966,12 @@ p { color: var(--ink-2); }
    --------------------------------------------------------------------------- */
 
 .debrief { max-width: 900px; }
-.debrief__head { margin-bottom: var(--s-8); }
-.debrief__head h1 { margin: var(--s-2) 0 var(--s-4); font: var(--t-display1); letter-spacing: var(--display-tracking); }
+
+/* `.debrief__head` is gone: it was the same header as every other page's, one size larger,
+   and it was inside `article.debrief` on a `read` measure, which put the product's title
+   303px from the left of a page whose siblings put theirs at 93. */
 .debrief__actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-5); }
 .debrief__section { margin-bottom: var(--s-8); padding-top: var(--s-6); border-top: 1px solid var(--border-default); }
-.debrief__section h2 { margin: 0 0 var(--s-4); font: var(--t-title1); }
 .debrief__prompts { display: grid; gap: var(--s-5); margin: 0; padding: 0; list-style: none; counter-reset: prompt; }
 .debrief__prompts li { padding-left: var(--s-6); border-left: 3px solid var(--world-accent); }
 .debrief__ask { margin: 0; font: var(--t-title3); font-weight: 500; }
@@ -890,6 +999,9 @@ p { color: var(--ink-2); }
 @media print {
   .educator-topbar, .no-print, .button { display: none !important; }
   .educator-main { width: 100%; margin: 0; padding: 0; }
+
+  /* The header is on the product's spine on screen; on paper the page is the spine. */
+  .educator-main > *, .educator-main > .page-header { width: 100%; margin-inline: 0; }
   body, .educator-shell { background: var(--print-paper); }
   .debrief { max-width: none; }
   .debrief__section { page-break-inside: avoid; border-top: 1px solid var(--print-rule); }
@@ -1061,10 +1173,8 @@ p { color: var(--ink-2); }
 .panel--raised { background: var(--surface-raised); box-shadow: var(--shadow-card); }
 .panel--inset { background: var(--surface-sunken); }
 
-/* One heading system: an eyebrow, a section head, and nothing between them. */
-.section-head { margin: 0 0 var(--gap-block); }
-.section-head h2 { margin: 0; font: var(--t-section); letter-spacing: var(--display-tracking); }
-.section-head p { max-width: var(--measure); margin: var(--s-3) 0 0; color: var(--ink-2); font: var(--t-body); }
+/* `.section-head` is `.section-heading` under an older name; both are declared together at
+   the top of this file, and neither has a rule of its own down here any more. */
 
 /* Form controls, styled once, so a native chevron never sits beside a custom button. */
 .field { display: grid; gap: var(--s-2); }
@@ -1120,7 +1230,7 @@ p { color: var(--ink-2); }
 .objective-coming ul { margin: 0; padding-left: var(--s-6); color: var(--ink-2); font: var(--t-body); }
 .objective-coming__exit { margin-top: var(--s-3); }
 
-.objective-bar-note { max-width: var(--measure); margin: var(--s-5) 0 0; padding: var(--s-4); background: var(--surface-sunken); color: var(--ink-2); font: var(--t-body); border-left: 3px solid var(--fin-adjustable); }
+.objective-bar-note { max-width: var(--measure); margin-block: var(--s-5) 0; padding: var(--s-4); background: var(--surface-sunken); color: var(--ink-2); font: var(--t-body); border-left: 3px solid var(--fin-adjustable); }
 
 /* What BOW cannot assess yet: listed, because a teacher planning a year needs it, and
    quiet, because absence had been given twenty-two full table rows on the first screen a
@@ -1185,7 +1295,7 @@ p { color: var(--ink-2); }
 .gradebook__note { margin: var(--s-4) 0 0; color: var(--ink-2); font: var(--t-sm); }
 
 /* The half of the loop that reaches the student. One short message, never a thread. */
-.feedback { margin: var(--s-7) 0 0; padding: var(--s-5); background: var(--surface); border-top: 1px solid var(--border-default); display: grid; gap: var(--s-3); }
+.feedback { margin-block: var(--s-7) 0; padding: var(--s-5); background: var(--surface); border-top: 1px solid var(--border-default); display: grid; gap: var(--s-3); }
 .feedback textarea { width: 100%; max-width: var(--measure); padding: var(--s-3); font: var(--t-ui); }
 .feedback__sent { max-width: var(--measure); margin: 0; padding: var(--s-3) var(--s-4); border-left: 3px solid var(--bow-brand); background: var(--canvas); font-style: italic; }
 .feedback__sent cite { display: block; margin-top: var(--s-2); color: var(--ink-3); font: var(--t-sm); font-style: normal; }
@@ -1216,7 +1326,11 @@ p { color: var(--ink-2); }
    down reads as still loading. */
 .join-shell > .join-step { align-content: center; padding-top: 0; }
 .join-shell__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); }
-.join-shell__bar span { color: var(--ink-2); font: var(--t-label); letter-spacing: var(--track-label); text-transform: uppercase; }
+
+/* The class label beside the mark, and only that. It used to be `.join-shell__bar span`,
+   which also matched the `<span>` inside the mark and painted the letter out of its own
+   plate. A bar styles the things a bar puts in it; it does not style through a component. */
+.join-shell__bar > span { color: var(--ink-2); font: var(--t-label); letter-spacing: var(--track-label); text-transform: uppercase; }
 .join-step { display: grid; align-content: start; justify-items: start; gap: var(--s-4); width: 100%; max-width: 34rem; margin: 0 auto; padding-top: var(--s-6); }
 .join-step h1 { margin: 0; font: var(--t-display2); }
 .join-step p { margin: 0; color: var(--ink-2); }
@@ -1234,7 +1348,7 @@ p { color: var(--ink-2); }
 .device-choice legend { padding: 0 0 var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: var(--track-label); text-transform: uppercase; }
 .device-choice label { display: flex; align-items: flex-start; gap: var(--s-3); min-height: 24px; padding-block: var(--s-2); color: var(--ink-2); font: var(--t-sm); }
 .device-choice input { flex: none; width: 24px; height: 24px; margin: 0; accent-color: var(--bow-brand); }
-.join-error { min-height: 1.5rem; margin: 0; color: var(--fin-over); font: var(--t-sm); text-align: center; }
+.join-error { min-height: 1.5rem; margin-block: 0; color: var(--fin-over); font: var(--t-sm); text-align: center; }
 
 .student-home { min-height: 100dvh; display: grid; align-content: start; gap: var(--s-6); width: 100%; max-width: 52rem; margin: 0 auto; padding: var(--s-5); background: var(--canvas); }
 
@@ -1245,7 +1359,9 @@ p { color: var(--ink-2); }
    reporting clientWidth 320 against scrollWidth 335. */
 .student-home__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); padding-bottom: var(--s-4); border-bottom: 1px solid var(--border-default); }
 .student-home__bar div { display: flex; align-items: center; gap: var(--s-3); }
-.student-home__bar span { color: var(--ink-1); font: var(--t-ui); font-weight: 600; }
+
+/* Whose screen this is, and only that — see the note on `.join-shell__bar > span`. */
+.student-home__bar > div > span { color: var(--ink-1); font: var(--t-ui); font-weight: 600; }
 .student-home__empty { display: grid; justify-items: start; gap: var(--s-4); }
 .student-home__foot { padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); }
 
@@ -1350,8 +1466,17 @@ p { color: var(--ink-2); }
 
 /* Paper. Everything except the cards goes, because the one reason to print this page is to
    cut it up, and a teacher should not spend a sheet on navigation. */
+
+/* Printing a sheet of join cards, which is a different job from printing a page.
+   `.page-header` was in this list unscoped, so the moment the debrief's title moved onto the
+   one page header — the debrief being the other surface in this product built to be printed —
+   this rule would have silently printed it without one. A print rule for one page names that
+   page. */
 @media print {
-  .educator-topbar, .page-header, .dashboard-section, .cards-sheet__acts, .join-error { display: none; }
+  .educator-topbar, .join-error { display: none; }
+  .educator-main:has(.cards-sheet) > .page-header,
+  .educator-main:has(.cards-sheet) .dashboard-section,
+  .cards-sheet__acts { display: none; }
   .cards-sheet { border: 0; box-shadow: none; }
   .cards-sheet__grid { grid-template-columns: repeat(3, 1fr); }
   .join-card { break-inside: avoid; }

@@ -40,8 +40,11 @@
 /* --- Public entry --------------------------------------------------------- */
 .home { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
 .home__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-5); padding: var(--s-4) clamp(20px, 4vw, 56px); border-bottom: 1px solid var(--world-hero-line); }
-.home__bar .app-mark { color: var(--world-hero-ink); }
-.home__bar .app-mark small { color: var(--world-hero-muted); }
+
+/* The mark is not repainted here. The front door used to give it `--world-hero-ink` and
+   `--world-hero-muted` and, through `.scene`, a cream plate with a navy letter — so the one
+   page a district administrator opens first carried a mark nothing else in the product
+   carried, on the same cream ground everything else sits on. */
 .home__bar > a { color: var(--world-hero-ink); font: var(--t-ui); text-underline-offset: 5px; }
 .home__grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr); align-items: center; gap: clamp(28px, 5vw, 80px); width: min(1440px, 100%); margin: auto; padding: clamp(28px, 5vw, 72px) clamp(20px, 4vw, 56px); }
 .home h1 { max-width: 13ch; margin: var(--s-3) 0 var(--s-5); font: 700 clamp(3rem, 6.4vw, 5.6rem)/0.92 var(--font-display); letter-spacing: var(--display-tracking-tight); }
@@ -355,12 +358,14 @@
 .choice-row__description { display: block; margin-top: 2px; color: var(--ink-3); font: var(--t-micro); }
 .choice-row small { display: block; margin-top: 2px; color: var(--ink-3); font: var(--t-micro); }
 .choice-row__value { font: var(--m-md); font-feature-settings: var(--num); }
-.choice-row__controls { display: grid; grid-template-columns: var(--tap) 74px var(--tap); }
+
+/* 74px held "1500"; it has to hold "$1,500", which is what the row beside it says. */
+.choice-row__controls { display: grid; grid-template-columns: var(--tap) 92px var(--tap); }
 .choice-row__controls button, .choice-row__controls input { min-height: var(--tap); min-width: var(--tap); border: 1px solid var(--border-strong); background: var(--surface); }
 .choice-row__controls button { cursor: pointer; font: var(--t-title2); }
 .choice-row__controls button:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
 .choice-row__controls button:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
-.choice-row__controls input { width: 100%; padding: 0 var(--s-2); text-align: center; border-right: 0; border-left: 0; font: var(--m-sm); }
+.choice-row__controls input { width: 100%; padding: 0 var(--s-2); text-align: center; border-right: 0; border-left: 0; font: var(--m-sm); font-feature-settings: var(--num); }
 
 /* --- Scene 5: the season feed --------------------------------------------- */
 .feed { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s-3); }

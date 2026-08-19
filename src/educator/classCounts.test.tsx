@@ -144,15 +144,40 @@ function tileCounts(container: HTMLElement): { label: string; count: number; of:
   });
 }
 
+/**
+ * One element, or an error naming what was looked for.
+ *
+ * `querySelector(…)?.textContent ?? ""` reads as care and behaves as the opposite: when the
+ * selector misses, every count parsed out of it is `NaN`, and `expect(NaN).toBe(NaN)` is the
+ * only assertion in this file that would then hold. That is exactly what happened when the
+ * class overview's header moved from `.class-header` onto the shared `.page-header` — the
+ * helper went on returning numbers, and one of them was not a number. A page this test cannot
+ * find its way around is a failure of this test, and it should say so.
+ */
+function only(container: HTMLElement, selector: string): HTMLElement {
+  const found = container.querySelectorAll<HTMLElement>(selector);
+  if (found.length === 0) throw new Error(`countsOnScreen: nothing on this page matches "${selector}".`);
+  if (found.length > 1) throw new Error(`countsOnScreen: ${found.length} elements match "${selector}"; it must name one.`);
+  return found[0]!;
+}
+
+/** A count this page has to be able to state, read out of one element with one pattern. */
+function count(source: HTMLElement | string, pattern: RegExp, what: string): number {
+  const text = typeof source === "string" ? source : source.textContent ?? "";
+  const found = pattern.exec(text);
+  if (!found) throw new Error(`countsOnScreen: no ${what} in ${JSON.stringify(text.slice(0, 120))}.`);
+  return Number(found[1]);
+}
+
 function countsOnScreen(container: HTMLElement) {
   const text = container.textContent ?? "";
   const tiles = tileCounts(container);
   const tile = (name: string) => tiles.find((entry) => entry.label === name);
-  const caption = container.querySelector(".micro-table caption")?.textContent ?? "";
+  const caption = only(container, ".micro-table caption").textContent ?? "";
   return {
     tiles,
     /** "6 of 9 turned in" in the headline. */
-    header: Number(/(\d+) of \d+ turned in/.exec(container.querySelector(".class-header")?.textContent ?? "")?.[1]),
+    header: count(only(container, ".page-header"), /(\d+) of \d+ turned in/, "\"N of M turned in\" in the page header"),
     /** The same claim in the sentence under the headline, or in the headline itself. */
     lead: Number(/(\d+) of \d+ turned in/.exec(text)?.[1]),
     turnedIn: tile("Turned in")?.count ?? NaN,
@@ -165,8 +190,8 @@ function countsOnScreen(container: HTMLElement) {
      * load-bearing and defined two sections further up the page, which is the wrong place
      * for the definition of the denominator every number under it is divided by.
      */
-    captionOf: Number(/of (\d+) with a usable result/.exec(caption)?.[1]),
-    captionAssessed: Number(/across the (\d+) of/.exec(caption)?.[1]),
+    captionOf: count(caption, /of (\d+) with a usable result/, "a denominator in the skill table's caption"),
+    captionAssessed: count(caption, /across the (\d+) of/, "an assessed count in the skill table's caption"),
     students: container.querySelectorAll(".row-list > a").length,
   };
 }
