@@ -521,3 +521,32 @@ describe("a class code the store could never turn into a filename", () => {
     expect((await readdir(root)).sort()).toEqual(before);
   });
 });
+
+/**
+ * What this source tells somebody reading it, which has to be what the code does.
+ *
+ * A district's reviewer reads `server/store.ts` — that is the point of writing the reasoning
+ * down there — and for one release it told them at-rest sealing on the managed path was
+ * "optional rather than required" while `storeFromEnvironment` had already started refusing a
+ * keyless managed deployment. A comment that outlives its code is a claim the product is
+ * making about itself, and this one made the weaker claim: it invited an operator to run the
+ * configuration the code will not start, and a reviewer to write down that BOW treats
+ * encryption of a managed store as a setting.
+ */
+describe("what the source says about at-rest encryption on the managed path", () => {
+  it("does not offer an operator a choice the code does not give them", async () => {
+    // What the code does.
+    const managed = storeFromEnvironment({ KV_REST_API_URL: "https://kv.test", KV_REST_API_TOKEN: "token" });
+    expect(managed.blockedReason).toContain("BOW_STORE_KEY");
+
+    // And what it says, in the two places that disagreed with it.
+    const source = await readFile("server/store.ts", "utf8");
+    expect(source).not.toContain("Optional rather than required");
+    expect(source).not.toContain("The managed path runs without one");
+    // The history is worth keeping — it is why the rule exists — so the rule is about tense
+    // rather than about the word: this file may say the key *was* optional, never that it is.
+    for (const [mention] of source.matchAll(/.{0,30}optional/gi)) {
+      expect(mention.toLowerCase()).toMatch(/\bwas\b/);
+    }
+  });
+});

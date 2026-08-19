@@ -639,14 +639,19 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
   const ttl = (record: { expiresAt: number }) => Math.max(60, Math.round((record.expiresAt - Date.now()) / 1000));
 
   /**
-   * Every value in and out of the managed store, sealed when this deployment has a key.
+   * Every value in and out of the managed store, sealed under the key this deployment was
+   * given — and it was given one, or it is not running.
    *
-   * At-rest encryption on this path is the subprocessor's control and belongs in a data
-   * processing agreement — but a key here means a district's names and evidence are ciphertext
-   * to the subprocessor as well, which is a materially different conversation to have with a
-   * privacy officer. Optional rather than required, because unlike the disk this is not the
-   * configuration a district self-hosts, and refusing to start a working managed deployment on
-   * an upgrade would take a lesson down to fix a paperwork question.
+   * At-rest encryption here is the subprocessor's control as well, and belongs in a data
+   * processing agreement, so a key on this path was optional for one release: the reasoning
+   * was that refusing to start a working managed deployment on an upgrade takes a lesson down
+   * over a paperwork question. It was never a paperwork question. A key means a
+   * district's names and evidence are ciphertext to the subprocessor too, which is a
+   * materially different conversation to have with a privacy officer — and a keyless managed
+   * deployment kept the token-signing secret in the same store as the names it protects.
+   * `storeFromEnvironment` answers a keyless managed configuration with
+   * `unconfiguredStore(NO_STORE_KEY)`, so this driver is never built without a `keeper`; the
+   * comment outlived that by a release and a vendor reviewer read it before they read the code.
    */
   const put = (value: unknown): string => (keeper ? keeper.seal(value) : JSON.stringify(value));
   const get = <T,>(raw: string): T | null => (keeper ? keeper.open<T>(raw) : (JSON.parse(raw) as T));
@@ -914,10 +919,6 @@ export function storeFromEnvironment(env: Record<string, string | undefined> = p
   const keeper = key ? vault(key) : undefined;
   const url = env.KV_REST_API_URL ?? env.UPSTASH_REDIS_REST_URL;
   const token = env.KV_REST_API_TOKEN ?? env.UPSTASH_REDIS_REST_TOKEN;
-  // The managed path runs without one. At-rest encryption there is the subprocessor's control
-  // and belongs in a data processing agreement; a key still seals the values and lifts the
-  // signing secret off the store, so it is worth having and is not worth taking a working
-  // deployment down over on an upgrade.
   // Same rule as the disk below, and for the same records. A managed store holds children's
   // names, their written explanations and every teacher key; the only difference is whose
   // hardware it is on, and that difference makes the case for encryption stronger rather than
