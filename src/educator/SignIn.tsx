@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { EducatorShell } from "./EducatorShell";
 import { CLASS_RETENTION_DAYS } from "../platform/classes/types";
 import { rememberedClasses } from "./classMemory";
-import { claimRememberedClasses, createAccount, myTeaching, recoverTeacher, rememberTeacher, signInTeacher } from "./teacherSession";
+import { changePassword, claimRememberedClasses, createAccount, forgetTeacher, myTeaching, recoverTeacher, rememberTeacher, signInTeacher, signOutEverywhere, teacherToken, whoAmI } from "./teacherSession";
 
 /**
  * The door a teacher did not have.
@@ -33,8 +33,135 @@ const MODES: Record<Mode, { heading: string; action: string }> = {
   lost: { heading: "Use your recovery code", action: "Set a new password" },
 };
 
+/**
+ * The account, once there is one.
+ *
+ * Two controls a teacher did not have, both of them routes that shipped with nothing calling
+ * them. **Changing a password** was impossible: the only route that would set one is
+ * `/auth/teacher/recovery`, which needs the code shown once at sign-up, so a teacher who thought
+ * somebody had seen their password and had not kept that code had no move at all. **Signing out**
+ * was `removeItem` on one browser's storage — the token stayed valid for its full thirty days,
+ * and a security review showed one captured token also hands back the long-lived key of every
+ * class the account owns.
+ *
+ * They sit on one screen because they are the same decision at two strengths: *somebody may have
+ * my password* and *somebody may have my session*. The page says which is which.
+ */
+function TeacherAccount({ onSignedOut }: { onSignedOut: (how: "everywhere" | "here") => void }) {
+  const heading = useRef<HTMLHeadingElement>(null);
+  const [email, setEmail] = useState<string | null>(null);
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [said, setSaid] = useState<string | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [ending, setEnding] = useState(false);
+
+  useEffect(() => { heading.current?.focus(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const me = await whoAmI();
+      if (!cancelled && me.ok && typeof me.body.email === "string") setEmail(me.body.email);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const change = async () => {
+    if (busy || current.length === 0 || next.length === 0) return;
+    setBusy(true);
+    setProblem(null);
+    setSaid(null);
+    const result = await changePassword(current, next);
+    setBusy(false);
+    if (!result.ok) { setProblem(result.message); return; }
+    // The service hands back a fresh token at the new generation and `changePassword` stores it,
+    // so the tab this was typed in keeps working while every other one stops.
+    setCurrent("");
+    setNext("");
+    setSaid(result.body.message);
+  };
+
+  const endEverywhere = async () => {
+    if (ending) return;
+    setEnding(true);
+    const result = await signOutEverywhere();
+    forgetTeacher();
+    onSignedOut(result.ok ? "everywhere" : "here");
+  };
+
+  return (
+    <EducatorShell measure="read">
+      <header className="page-header">
+        <p className="eyebrow">For teachers</p>
+        <h1 tabIndex={-1} ref={heading}>Your account.</h1>
+        <p>
+          {email
+            ? <>Signed in as <b>{email}</b>. Your classes are on this account, so they are here on any computer you sign in on.</>
+            : "Signed in. Your classes are on this account, so they are here on any computer you sign in on."}
+        </p>
+      </header>
+
+      <section className="dashboard-section sign-in">
+        <div className="section-heading">
+          <p className="eyebrow">If somebody may have your password</p>
+          <h2>Change your password</h2>
+        </div>
+        <p>
+          You need the one you use now. Your recovery code is not involved and does not change —
+          the one you wrote down at sign-up keeps working.
+        </p>
+        <label className="field" htmlFor="account-current">
+          <span className="field-label">The password you use now</span>
+          <input id="account-current" type="password" autoComplete="current-password" value={current} onChange={(event) => setCurrent(event.target.value)} />
+        </label>
+        <label className="field" htmlFor="account-next">
+          <span className="field-label">A new password — ten characters or more</span>
+          <input
+            id="account-next"
+            type="password"
+            autoComplete="new-password"
+            value={next}
+            onChange={(event) => setNext(event.target.value)}
+            onKeyDown={(event) => { if (event.key === "Enter") void change(); }}
+          />
+        </label>
+        <Button variant="primary" aria-disabled={busy || current.length === 0 || next.length === 0} onClick={() => void change()}>
+          {busy ? "One moment…" : "Change it"}
+        </Button>
+        {/* What it did, said by the service that did it. Changing a password ends every other
+            session — which is the whole point when the reason for changing it is that somebody
+            else has it — and a teacher who is not told that has to guess. */}
+        <p className="class-state" role="status">{said ?? ""}</p>
+      </section>
+
+      <section className="dashboard-section sign-in">
+        <div className="section-heading">
+          <p className="eyebrow">If somebody may be signed in as you</p>
+          <h2>Sign out everywhere</h2>
+        </div>
+        <p>
+          This ends every session on this account, on every device, including this one. Nothing
+          you or your students have done is affected, and signing in again brings your classes
+          back. It is what to press if you left yourself signed in on a machine you cannot get to.
+        </p>
+        <Button variant="secondary" aria-disabled={ending} onClick={() => void endEverywhere()}>
+          {ending ? "Signing out…" : "Sign out on every device"}
+        </Button>
+      </section>
+
+      <p className="join-error" role="alert">{problem}</p>
+    </EducatorShell>
+  );
+}
+
 export function TeacherSignIn() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  // Whether a token exists is read once per mount rather than watched: signing out reloads the
+  // page, and signing in navigates away, so there is no state in which this changes underneath.
+  const [signedIn, setSignedIn] = useState(() => Boolean(teacherToken()));
+  const ended = params.get("ended");
   const [mode, setMode] = useState<Mode>("in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -114,11 +241,33 @@ export function TeacherSignIn() {
     );
   }
 
+  if (signedIn) {
+    return (
+      <TeacherAccount
+        onSignedOut={(how) => { setSignedIn(false); void navigate(`/educator/sign-in?ended=${how}`, { replace: true }); }}
+      />
+    );
+  }
+
   return (
     <EducatorShell>
       <header className="page-header">
         <p className="eyebrow">For teachers</p>
         <h1 tabIndex={-1} ref={heading}>{MODES[mode].heading}</h1>
+        {/* What the control that brought them here actually did. "Sign out" ends every session
+            on the account; when the service could not be reached it ends this browser's copy and
+            nothing else, and those are different facts to act on. */}
+        {ended === "everywhere" && (
+          <p className="class-state" role="status">
+            Signed out. Every device signed in to this account has been signed out.
+          </p>
+        )}
+        {ended === "here" && (
+          <p className="class-state" role="status">
+            Signed out on this computer. BOW could not be reached, so any other device signed in
+            to this account is still signed in — sign in again from one of them and sign out there.
+          </p>
+        )}
         <p>
           An account is how your classes come back on another computer. Without one they live in
           this browser only, and a wiped laptop takes them with it.

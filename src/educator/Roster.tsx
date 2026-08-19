@@ -3,7 +3,9 @@ import { Link, useParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { EducatorShell } from "./EducatorShell";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
+import { rememberKey } from "./classMemory";
 import { useTeacherKey } from "./teacherKeyUrl";
+import { replaceClassKey, teacherToken } from "./teacherSession";
 import { MAX_ROSTER_SIZE, type ClassJoinMode, type JoinCard } from "../platform/identity/types";
 
 /**
@@ -68,6 +70,11 @@ export function Roster() {
   const [busy, setBusy] = useState(false);
   /** What the last thing a teacher pressed actually did. Announced, because she cannot see it. */
   const [said, setSaid] = useState<string | null>(null);
+  /** Whether replacing the class's key is one press from happening, and what happened after. */
+  const [replacing, setReplacing] = useState(false);
+  const [rekeySaid, setRekeySaid] = useState<string | null>(null);
+  /** The safe button, held by identity — the reasoning is written out in full over `keepIt`. */
+  const keepTheLink = useRef<HTMLButtonElement>(null);
   // A paste that is mostly names already on the list, held back with the question asked rather
   // than added. See `add` below.
   const [duplicates, setDuplicates] = useState<{ already: string[]; fresh: string[] } | null>(null);
@@ -97,6 +104,9 @@ export function Roster() {
   useEffect(() => {
     if (erasing) keepIt.current?.focus();
   }, [erasing]);
+  useEffect(() => {
+    if (replacing) keepTheLink.current?.focus();
+  }, [replacing]);
 
   const call = useCallback(async (path: string, init: RequestInit = {}) => {
     const response = await fetch(`${CLASS_API_BASE}${path}`, {
@@ -255,6 +265,26 @@ export function Roster() {
    * she would press it three times. The service has always answered with the number of sessions
    * it ended; nothing read it.
    */
+  /**
+   * Replace this class's key, and put the new one where this browser looks for it.
+   *
+   * The service hands the new key back once, here, and serves it from `GET /me/teaching`
+   * afterwards. Filing it immediately is what stops the teacher who just pressed this from being
+   * the first person locked out by it — this page's own fetches use the key it is holding.
+   */
+  const replaceTheKey = async () => {
+    if (busy || !code) return;
+    setBusy(true);
+    setRekeySaid(null);
+    setProblem(null);
+    const result = await replaceClassKey(code);
+    setBusy(false);
+    setReplacing(false);
+    if (!result.ok) { setProblem(result.message); return; }
+    rememberKey(code, result.body.teacherKey);
+    setRekeySaid(result.body.message);
+  };
+
   const signOutEveryone = async () => {
     if (busy) return;
     setBusy(true);
@@ -443,6 +473,60 @@ export function Roster() {
           {" "}is the other one: it deletes the name and everything that student did, for a family who has
           asked you to. Nobody else in the class is affected, and it cannot be undone.
         </p>
+      </section>
+
+      <section className="dashboard-section">
+        <div className="section-heading">
+          <p className="eyebrow">If the link got out</p>
+          <h2>Make a new private link</h2>
+        </div>
+        {/* The control there was no route for.
+            The teacher key opens every child's name and every child's written explanation in
+            this class for its whole retention window, and a security review found it in the
+            address bar of a projected screen. Until `POST /classes/:code/key` existed the only
+            remedy for a leaked key was deleting the class, which destroys the children's work —
+            a control whose price is the evidence it protects is a control nobody uses.
+
+            It is authenticated by the account that owns the class rather than by the key, which
+            is the route's own decision and the right one: the key is the thing being replaced,
+            so a stranger who read it off a projector could otherwise use it to lock the teacher
+            out permanently. That is why an unclaimed class is told to claim it rather than
+            refused. */}
+        <p>
+          Replacing this class&rsquo;s key stops every old link and bookmark opening it, on every
+          device including yours. Nothing your students have done changes: the class code, the
+          list, their work and everything you wrote back stay exactly as they are.
+        </p>
+        {/* The route is authenticated by the account, deliberately, so this says what to do
+            rather than offering a button that answers 401. A class made without signing in is
+            claimed by signing in on the browser that holds its key, which this one does. */}
+        {!teacherToken() ? (
+          <p className="class-state">
+            Replacing a key needs an account, because the key is the thing being replaced — a
+            stranger who read the old one off a screen must not be able to use it to lock you out.
+            {" "}<Link to="/educator/sign-in">Sign in</Link> on this computer and this class becomes
+            yours; then you can make a new link.
+          </p>
+        ) : replacing ? (
+          <div className="classes-forget">
+            <p className="classes-forget__warn" id="roster-rekey-warn">
+              Make a new link for this class? Any link you have saved elsewhere — a bookmark, an
+              email to yourself, another computer — stops working, and you open the class from My
+              classes afterwards.
+            </p>
+            <Button variant="primary" aria-describedby="roster-rekey-warn" aria-disabled={busy} onClick={() => void replaceTheKey()}>
+              Make a new link
+            </Button>
+            <button type="button" className="button button--quiet" ref={keepTheLink} aria-describedby="roster-rekey-warn" onClick={() => setReplacing(false)}>
+              Keep the one I have
+            </button>
+          </div>
+        ) : (
+          <Button variant="secondary" aria-disabled={busy} onClick={() => { setReplacing(true); setSaid(null); }}>
+            Make a new private link
+          </Button>
+        )}
+        <p className="class-state" role="status">{rekeySaid ?? ""}</p>
       </section>
 
       <section className="dashboard-section">

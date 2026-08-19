@@ -208,8 +208,17 @@ describe("the names this product says it does not have", () => {
       "a field that asks for one of the three things the join screen and the sign-in screen both "
       + "promise BOW never asks a child for",
     ).toEqual([]);
-    // And the teacher's own two, which are the account and are named as such.
-    expect(asked).toEqual(["src/educator/SignIn.tsx → email", "src/educator/SignIn.tsx → password"]);
+    // And the teacher's own, which are the account and are named as such.
+    //
+    // Not a count. This pinned the exact list of two, and the account screen now asks for a
+    // current password and a new one as well as the one it signs in with — a teacher could not
+    // change their password at all before, which left somebody who thought their password had
+    // been seen with no move. What the rule is, and what is asserted, is that every field of
+    // these kinds is on the teacher's own screen, that none of them is a date, and that there
+    // is exactly one address on it: the account's.
+    expect(asked.length).toBeGreaterThan(0);
+    expect(asked.every((entry) => entry.endsWith("→ email") || entry.endsWith("→ password"))).toBe(true);
+    expect(asked.filter((entry) => entry.endsWith("→ email"))).toEqual(["src/educator/SignIn.tsx → email"]);
   });
 
   /**

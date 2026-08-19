@@ -1,7 +1,7 @@
-import { useEffect, useRef, type PropsWithChildren } from "react";
+import { useEffect, useRef, useState, type PropsWithChildren } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { AppMark } from "../components/primitives/AppMark";
-import { forgetTeacher, teacherToken } from "./teacherSession";
+import { forgetTeacher, signOutEverywhere, teacherToken } from "./teacherSession";
 import { DEMO_CLASS_CODE } from "../fixtures/demoClass";
 import { NAV_LABELS, type KeyEntry } from "./labels";
 // Sets the flag `design/app.css` reads to keep the arrival ring off a page nobody has touched.
@@ -40,6 +40,25 @@ function isSampleClassRoute(pathname: string): boolean {
 export function EducatorShell({ children, measure = "evidence" }: PropsWithChildren<{ measure?: EducatorMeasure }>) {
   const { pathname } = useLocation();
   const main = useRef<HTMLElement>(null);
+  const [ending, setEnding] = useState(false);
+
+  /**
+   * Sign out, for real, and then say so.
+   *
+   * A full page load rather than a client-side navigation: the point of this control is that
+   * nothing of the old session survives, and a router transition keeps every component's state.
+   * The query flag is the only thing carried across, and it carries no secret — it is which of
+   * two sentences the sign-in page should say, because "we ended your sessions everywhere" and
+   * "we could not reach BOW, so only this computer is signed out" are different facts and a
+   * teacher acting on the first when the second is true is the reason to distinguish them.
+   */
+  const endEverySession = async () => {
+    if (ending) return;
+    setEnding(true);
+    const result = await signOutEverywhere();
+    forgetTeacher();
+    window.location.assign(`/educator/sign-in?ended=${result.ok ? "everywhere" : "here"}`);
+  };
   /**
    * Where focus goes when a teacher follows a link in the top bar.
    *
@@ -79,19 +98,35 @@ export function EducatorShell({ children, measure = "evidence" }: PropsWithChild
           <NavLink to="/educator/classes">My classes</NavLink>
           <NavLink to="/educator/objectives">{NAV_LABELS.objectives}</NavLink>
           <NavLink to="/educator/guide">Guide</NavLink>
+          {/* The one way to a password change, and to the sentence that says what signing out
+              did. `/educator/sign-in` is the account screen once there is an account — it knows
+              whether there is a token and renders the panel or the form — so this is the route
+              that already exists rather than a new one. It lives in the nav rather than beside
+              the button because the top bar is a three-column grid and a fourth item in the
+              last column pushes the row apart; the nav is a wrapping flex row. */}
+          {teacherToken() && <NavLink to="/educator/sign-in">Your account</NavLink>}
         </nav>
         {/* Whether this browser is anything more than a browser. Without an account a class
             lives here and nowhere else, and a wiped laptop takes a term of assessed work with
             it — so the offer to fix that belongs on every screen, not on one a teacher has to
-            already know about. */}
+            already know about.
+
+            Signing out used to be `removeItem` on this browser's storage and nothing else: the
+            token it threw away stayed valid for the rest of its thirty days, and a security
+            review found no route anywhere that would turn it off. It now ends every session on
+            the account, which is a bigger thing than it looks — so it says what it did, on the
+            screen it lands on, rather than leaving a teacher pressing it again. The local half
+            still runs whatever the service answers, because a teacher walking away from a
+            staffroom machine has to stop being signed in on it. */}
         {teacherToken()
           ? (
             <button
               type="button"
               className="educator-topbar__session"
-              onClick={() => { forgetTeacher(); window.location.assign("/educator/classes"); }}
+              aria-disabled={ending}
+              onClick={() => { void endEverySession(); }}
             >
-              Sign out
+              {ending ? "Signing out…" : "Sign out"}
             </button>
           )
           : <NavLink className="educator-topbar__session" to="/educator/sign-in">Sign in</NavLink>}
