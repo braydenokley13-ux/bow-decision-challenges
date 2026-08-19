@@ -1,8 +1,9 @@
 import { dollars, formatDollars, type Dollars } from "../core/money";
 import { hours } from "../core/units";
+import { SCENARIO_NUMBERS } from "../scenario/numbers";
 import type { ScenarioNumbers } from "../scenario/types";
 import { bonusWeeks } from "../scenario/season";
-import { assigned, courseCostFor, planMovements } from "./formulas";
+import { assigned, balanceOf, courseCostFor, planMovements, residualOf } from "./formulas";
 import { loadFor, type LoadReadout } from "./load";
 import type { PlanAmounts, SnapshotInputs } from "./types";
 
@@ -91,6 +92,43 @@ export interface ResolvedWeek {
  * caller already holds both — and nothing here is rolled or scored. This is the narrative on
  * the Week 8 ledger; no observation is produced from it.
  */
+/**
+ * What Week 5 asked of the plan the student walked into it with — as the Week 5 board itself
+ * measured it, and not as the rest of the run would later make it look.
+ *
+ * **The defect this exists to stop.** The ending printed *"Week 5 asked for $900"* to a student
+ * whose Week 5 board had said *"$800 still to find"* forty seconds of play earlier. A student
+ * judge ran the season twice, identical in every input except one, and got $900 against $800;
+ * the same $100 turns up in a badly-played run reporting $1,800 against its own tiles. I
+ * reproduced it at a different split and got **$1,100 against $1,000**.
+ *
+ * The cause is that the ending re-derived the shortfall from the *current* snapshot, and the
+ * clinics — `includeOptionalWork` — are offered **after** the Week 5 board is closed and book
+ * locked travel when taken. So a decision made after the event changed the number describing
+ * the event. It is a small figure and it flipped no verdict, and it is exactly the failure mode
+ * this product cannot survive: a screen telling a child a number about their own run that the
+ * product itself told them differently a moment earlier. The whole design trains them to check.
+ *
+ * So the ask is priced with the one field that could not have been in it. `includeOptionalWork`
+ * is forced to `false` rather than read, because at the moment the Week 5 board rendered it was
+ * `false` for every student in every run — the offer had not happened yet. That is a fact about
+ * the order of the season, so it is asserted here as one, and `week5AskIsFixed.test.ts` runs a
+ * season twice differing only after Week 5 and fails if the two answers part.
+ *
+ * Everything else is read off plans the student saved: the amounts are their pre-Week-5 ones,
+ * and a reserved seat has already emptied the course line, so the same sum is right either way.
+ */
+export function week5Ask(
+  response: SnapshotInputs,
+  opening: PlanAmounts,
+  n: ScenarioNumbers = SCENARIO_NUMBERS,
+): Week5Pressure {
+  return {
+    shortfall: residualOf(balanceOf({ ...response, amounts: opening, includeOptionalWork: false }, n)),
+    movable: assigned(opening),
+  };
+}
+
 export interface Week5Pressure {
   /** What the plan was over by the moment Week 5's bills landed on it. */
   shortfall: Dollars;

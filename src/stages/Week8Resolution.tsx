@@ -4,8 +4,7 @@ import { StageShell } from "../app/StageShell";
 import { Button } from "../components/primitives/Button";
 import { dollars, formatDollars } from "../domain/core/money";
 import { hours } from "../domain/core/units";
-import { resolveSeason, type CompetingClaimsOutcome, type RiskVerdict, type Week5Pressure } from "../domain/finance/resolution";
-import { assigned, balanceOf, residualOf } from "../domain/finance/formulas";
+import { resolveSeason, week5Ask, type CompetingClaimsOutcome, type RiskVerdict, type Week5Pressure } from "../domain/finance/resolution";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { claimReason, costOfClaims, week3Claims } from "../domain/scenario/worlds/basketball/claims";
@@ -57,12 +56,7 @@ export function Week8Resolution() {
    * derives it from the row's own ceiling.
    */
   const pressure = useMemo<Week5Pressure | undefined>(
-    () => (response
-      ? {
-          shortfall: residualOf(balanceOf({ ...response, amounts: opening }, SCENARIO_NUMBERS)),
-          movable: assigned(opening),
-        }
-      : undefined),
+    () => (response ? week5Ask(response, opening, SCENARIO_NUMBERS) : undefined),
     [response, opening],
   );
   /**
