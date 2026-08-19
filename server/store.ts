@@ -653,8 +653,12 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
    * `unconfiguredStore(NO_STORE_KEY)`, so this driver is never built without a `keeper`; the
    * comment outlived that by a release and a vendor reviewer read it before they read the code.
    */
-  const put = (value: unknown): string => (keeper ? keeper.seal(value) : JSON.stringify(value));
-  const get = <T,>(raw: string): T | null => (keeper ? keeper.open<T>(raw) : (JSON.parse(raw) as T));
+  // No unsealed branch. `keeper` is a required parameter, so the `keeper ? … : JSON.stringify`
+  // these used to carry could not run — but unreachable code that writes a child's name in
+  // plaintext is not harmless, because the next person to read it learns that this driver
+  // supports a keyless mode, and the comment above says at length that it must not.
+  const put = (value: unknown): string => keeper.seal(value);
+  const get = <T,>(raw: string): T | null => keeper.open<T>(raw);
 
   /** One hash per class per kind of record, read back as whatever the REST API felt like returning. */
   async function readHash<T>(key: string): Promise<T[]> {

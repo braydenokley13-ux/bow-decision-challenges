@@ -106,11 +106,23 @@ export function createApiServer(store: ClassStore = storeFromEnvironment()) {
       } catch (error) {
         // An unreachable store is the realistic failure here, and the client has a retry
         // path for it — so it has to arrive as a clean, named error rather than a hang.
+        //
+        // The exception's own text used to be in the body as `detail`. It is written by
+        // whatever threw, which includes the store drivers, and a message written for a
+        // developer reads out whatever it happened to be holding: a path inside the data
+        // directory, a class code, the shape of a record. An unauthenticated caller could
+        // read it by sending something malformed enough to throw. A vendor reviewer flagged
+        // it, and they were right to — the person who needs that string is the operator, and
+        // the operator has the log.
+        console.error("[bow] request failed", {
+          method: request.method,
+          path: url.pathname,
+          error: error instanceof Error ? error.message : String(error),
+        });
         response.writeHead(503, { ...cors, "Content-Type": "application/json" });
         response.end(JSON.stringify({
           error: "unavailable",
           message: "The class service is not reachable right now.",
-          detail: error instanceof Error ? error.message : undefined,
         }));
       }
     })();

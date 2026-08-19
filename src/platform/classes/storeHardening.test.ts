@@ -550,3 +550,33 @@ describe("what the source says about at-rest encryption on the managed path", ()
     }
   });
 });
+
+/**
+ * What an unauthenticated caller learns when something throws.
+ *
+ * The 503 body carried `detail: error.message`. The things that throw on this path are the
+ * store drivers, whose messages are written for a developer and read out whatever they were
+ * holding — a path inside the data directory, a class code, the shape of a record — and
+ * anybody could provoke one by sending something malformed enough to throw. A vendor reviewer
+ * flagged it. The operator who needs that string has the log; the stranger does not.
+ */
+describe("a failure says nothing about the inside of the service", () => {
+  it("keeps the exception's own words out of the response body", () => {
+    const source = readFileSync(new URL("../../../server/index.ts", import.meta.url), "utf8");
+    // The generic catch is the only place an arbitrary exception reaches a client.
+    expect(source).not.toMatch(/detail:\s*error/);
+    expect(source, "the operator still needs the message somewhere").toMatch(/console\.error/);
+  });
+
+  /**
+   * The unsealed branch this driver used to carry could not run — `keeper` is a required
+   * parameter. It is deleted rather than left unreachable, because the next person to read it
+   * learns that a keyless mode exists, while the comment above it argues at length that it
+   * must not, and code is the version people believe.
+   */
+  it("has no way to write a record to the managed store unsealed", () => {
+    const source = readFileSync(new URL("../../../server/store.ts", import.meta.url), "utf8");
+    expect(source).not.toMatch(/keeper \? keeper\.seal\(value\) : JSON\.stringify\(value\)/);
+    expect(source).not.toMatch(/keeper \? keeper\.open<T>\(raw\) : \(JSON\.parse\(raw\) as T\)/);
+  });
+});
