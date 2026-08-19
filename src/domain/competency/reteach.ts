@@ -31,6 +31,42 @@ export interface ReteachTopic {
 
 export const RETEACH_TOPICS: readonly ReteachTopic[] = [
   {
+    id: "take-home-is-the-real-number",
+    misconception: "Plan from the number on the offer letter",
+    title: "Plan from what lands, not from what was offered",
+    focus: "A student builds against the figure that reaches the account, and treats the advertised rate as the number before the subtractions.",
+    moves: [
+      "Put two figures on the board — an hourly rate times hours, and the amount that actually arrived — and ask which one a rent payment comes out of.",
+      "Hand out one offer and one stub for the same job. Everyone writes down the largest thing they could commit to, twice, once from each number, and says which commitment is safe.",
+      "Take a plan a student already built from a gross figure and cut it to the net one. The question is not what to remove; it is which lines could still move at that point.",
+    ],
+    minutes: 12,
+  },
+  {
+    id: "deductions-are-not-optional",
+    misconception: "Deductions are optional",
+    title: "What comes out before you see it",
+    focus: "A student can name what is withheld from a paycheque and knows that the payroll deductions on a first job are not a choice the earner makes.",
+    moves: [
+      "Read one stub together, line by line, and sort the lines into what the earner chose and what the earner did not. On a first job the second pile is nearly all of it.",
+      "Work the two rates on a gross figure everyone shares, then on a second, smaller gross figure. The point is that the rate stays and the amount moves.",
+      "Ask what would have to be true for a paycheque to arrive with none taken out, and let the class find that the answer is about how little was earned, not about opting out.",
+    ],
+    minutes: 15,
+  },
+  {
+    id: "where-the-deduction-goes",
+    misconception: "Taxes are money that disappears",
+    title: "Follow one deduction to somebody who receives it",
+    focus: "A student can name what one specific deduction from their own pay funds, and can say who is on the other end of it.",
+    moves: [
+      "Take one line off a stub and follow it to a dated payment to a named person. A benefit cheque to a retired worker is the clearest one, because the recipient is a person rather than a budget.",
+      "Then do the harder half: name three things the class uses every day — the school, the library, the road outside — and find out which taxes actually pay for them. None of the three is on the stub, and that is the lesson.",
+      "Ask the class to finish the sentence \"the money is gone\" with a person's name, and see whether they can. That is the whole misconception in one move.",
+    ],
+    minutes: 15,
+  },
+  {
     id: "savings-first",
     misconception: "Savings is leftover money",
     title: "Set the savings figure before anything else",

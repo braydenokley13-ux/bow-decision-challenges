@@ -264,6 +264,106 @@ const SAVE_TOWARD_A_GOAL_EVIDENCE: readonly EvidenceRequirement[] = [
 ] as const;
 
 /**
+ * `gross-to-net` — mapped `full` to NYSED 3.2 and `partial` to 3.3.
+ *
+ * **ER1 is not the interesting half and ER2 is.** The objective's own sentence is *analyze the
+ * difference between gross income and net income*, and an experience that stopped at the subtraction
+ * would be the pay-stub labelling exercise the Mechanics Lab scored 47/70 and called a support
+ * activity. What makes this a decision competency is that the student then **plans against the
+ * net number**, and the misconception it exists to catch — *plan from the number on the offer
+ * letter* — can only be caught by a world that lets them do exactly that and then shows them.
+ *
+ * So ER3 carries a demand on any world claiming this competency: there has to be a moment where
+ * a commitment is made while only the gross figure is on screen. Anything that shows take-home
+ * before the first commitment can never observe ER3, and four-fifths of a competency is nothing
+ * at all — `isCompetencyAvailable` is all-or-none by design.
+ *
+ * Every row is `required` because 3.2 is a `full` mapping, and `coverageClaims.test.ts` refuses
+ * a `full` mapping that stands on an optional row: an optional requirement can sit unreached
+ * and forever `null` while the competency still reports available, which would promise more
+ * than the bar it is actually held to.
+ *
+ * Three independent designs, written without sight of each other or of this file, decomposed
+ * this competency the same four ways. That is not proof they are right, and it is
+ * the strongest evidence available before a student has met one.
+ */
+const GROSS_TO_NET_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("gross-to-net", 1, {
+    label: "Works out take-home from gross",
+    kind: "decision",
+    required: true,
+    observableRule: "Takes the stated taxes and deductions off a gross figure they are given, and arrives at take-home before anything states it for them",
+    misconceptionIfNot: "Deductions are optional",
+  }),
+  requirement("gross-to-net", 2, {
+    label: "Plans against take-home, not gross",
+    kind: "decision",
+    required: true,
+    observableRule: "Every commitment made once take-home is known fits the take-home figure rather than the advertised one",
+    misconceptionIfNot: "Plan from the number on the offer letter",
+  }),
+  requirement("gross-to-net", 3, {
+    label: "Repairs what was committed on the gross figure",
+    kind: "decision",
+    required: true,
+    observableRule: "When a commitment priced off gross no longer fits, frees at least the shortfall from money that can still move, rather than leaving the plan overspent",
+    misconceptionIfNot: null,
+  }),
+  requirement("gross-to-net", 4, {
+    label: "Ends inside take-home, or says what is uncovered",
+    kind: "decision",
+    required: true,
+    observableRule: "The plan at the end fits what was actually taken home, or the amount still uncovered is stated as a figure",
+    misconceptionIfNot: null,
+  }),
+] as const;
+
+/**
+ * `what-taxes-fund` — mapped `full` to NYSED 3.3, whose verb is *explain*.
+ *
+ * The shape is `compare-two-lives` and it is load-bearing rather than decorative. *What taxes
+ * fund* is invisible from one life: a student who only ever sees the amount leaving their own
+ * cheque has seen a subtraction, and the misconception this competency exists to catch —
+ * *taxes are money that disappears* — is a claim about where the money went, which their own
+ * stub cannot answer. ER2 and ER3 are what reach the other life.
+ *
+ * **ER2 says "and not to one it does not" on purpose, and it is the accuracy gate for this
+ * whole module.** Social Security and Medicare are the two deductions a middle-school earner
+ * actually sees on a first pay stub, and neither of them funds schools, libraries or roads —
+ * those are property and sales taxes, which are not on that stub at all. An experience that lets a
+ * student route FICA to the local library and calls it right has taught something false, and
+ * it is the most natural false thing to teach here, because *schools and roads* is the answer
+ * every adult gives when asked what taxes pay for. Getting it right is also better content
+ * than getting it wrong: the thing a student uses most is funded by a tax their own pay packet
+ * has never met.
+ *
+ * All three required, for the `full` mapping, as above.
+ */
+const WHAT_TAXES_FUND_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("what-taxes-fund", 1, {
+    label: "Reads what a tax took from their own pay",
+    kind: "decision",
+    required: true,
+    observableRule: "States as an amount what each named tax took out of a gross figure that is the student's own, rather than naming the rate",
+    misconceptionIfNot: null,
+  }),
+  requirement("what-taxes-fund", 2, {
+    label: "Sends a deduction to what it actually funds",
+    kind: "decision",
+    required: true,
+    observableRule: "Connects each named deduction from their own pay to a public payment that deduction funds, and does not credit it with a service funded by some other tax",
+    misconceptionIfNot: null,
+  }),
+  requirement("what-taxes-fund", 3, {
+    label: "Says what the money bought, and who for",
+    kind: "explanation",
+    required: true,
+    observableRule: "Accounts for the reduction in their own take-home by naming something the money pays for and somebody who receives it, rather than treating it as money gone",
+    misconceptionIfNot: "Taxes are money that disappears",
+  }),
+] as const;
+
+/**
  * The 21 competencies, in group order.
  *
  * **On the empty `evidenceRequirements` arrays.** Three competencies carry their evidence
@@ -480,7 +580,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "Compute net from gross.",
       "Then plan against net, not gross.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: GROSS_TO_NET_EVIDENCE,
     misconceptions: [
       "Plan from the number on the offer letter",
       "Deductions are optional",
@@ -498,7 +598,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "Show how a deduction on their own pay reduces what they take home.",
       "Connect that deduction to a specific public service it funds.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: WHAT_TAXES_FUND_EVIDENCE,
     misconceptions: ["Taxes are money that disappears"],
     gradeBand: "5-8",
     explanationRequired: true,
