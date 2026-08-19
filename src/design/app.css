@@ -134,6 +134,15 @@ p { color: var(--ink-2); }
 
 /* The second tab, told plainly rather than allowed to overwrite the first one. */
 .run-elsewhere { min-height: 100vh; display: grid; place-items: center; padding: var(--gutter); background: var(--canvas); }
+
+/* An address that is not a page. Set on the page's own measure rather than centred in the
+   window, because the thing a person has come here to read is the address they typed. */
+.not-found { min-height: 100dvh; display: grid; align-content: center; padding: var(--gutter); background: var(--canvas); }
+.not-found > div { display: grid; justify-items: start; gap: var(--s-4); width: min(var(--w-read), 100%); margin-inline: auto; }
+.not-found h1 { margin: 0; font: var(--t-display2); }
+.not-found p { margin: 0; color: var(--ink-2); font: var(--t-body-lg); }
+.not-found code { padding: 2px var(--s-2); color: var(--ink-1); font: var(--m-sm); background: var(--surface-sunken); overflow-wrap: anywhere; }
+.not-found__doors { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: var(--s-3); }
 .run-elsewhere main { width: min(52ch, 100%); display: grid; gap: var(--s-4); padding: var(--s-7); background: var(--surface-raised); border: 1px solid var(--border-default); box-shadow: var(--shadow-overlay); }
 .run-elsewhere h1 { margin: 0; font: var(--t-title1); }
 .run-elsewhere p { margin: 0; color: var(--ink-2); }
@@ -1008,7 +1017,71 @@ p { color: var(--ink-2); }
 .student-summary__list[data-tone="supported"] li::before { content: "\2713"; color: var(--fin-conditional-ink); }
 .student-summary__list[data-tone="gap"] li::before { content: "\2717"; color: var(--fin-over-ink); }
 
-.class-state { margin: var(--s-6) 0; color: var(--ink-3); font: var(--t-body-lg); }
+/*
+ * `margin-block`, not `margin`, and that one word is where "Opening the class…" was rendering.
+ *
+ * `.educator-main > *` puts every block on this surface on the page's spine with
+ * `margin-inline: var(--spine-inset) auto` — 93px at 1366. Both selectors carry one class, so
+ * they tie on specificity and the later one wins, and this one is six hundred lines later: the
+ * shorthand's `0` was overwriting the inline margins of every `.class-state` that is a direct
+ * child of the page. On a loaded page that is nothing, because those all sit inside a section.
+ * On a **waiting** page the message is the whole page, so a teacher on a school network met the
+ * first screen of the product with its one sentence set flush at x=0, outside the gutter every
+ * other page keeps — which reads as a page that failed to load its stylesheet. Measured at
+ * 1366×768 with the class API held for six seconds: x=0 against a 93px spine, on five routes.
+ */
+.class-state { margin-block: var(--s-6); color: var(--ink-3); font: var(--t-body-lg); }
+
+/*
+ * A waiting page is the shape of the page that is coming, not a sentence on an empty ground.
+ *
+ * `:only-child` is the whole of the condition: a `.class-state` with siblings is an empty state
+ * *inside* a page that has already arrived — "Nothing paid for yet", "No matches" — and drawing
+ * a skeleton under one of those would be promising content that is never going to appear. A
+ * `.class-state` that is the entire page is the page still loading, and there the skeleton is
+ * true: a title, a lead, and the rows of a class, in the widths they will really have.
+ *
+ * Drawn in one pseudo-element rather than as markup because it is decoration for a state five
+ * different pages produce, and because a pseudo-element is not in the accessibility tree — the
+ * sentence above it is already a live region and says the honest thing to anybody listening.
+ * No shimmer: the product has three animations in total and a pulsing block on the first screen
+ * of a school day is not the fourth.
+ */
+.educator-main > .class-state:only-child {
+  color: var(--ink-2);
+}
+
+.educator-main > .class-state:only-child::after {
+  content: "";
+  display: block;
+  block-size: 328px;
+  margin-block-start: var(--s-5);
+  background:
+    linear-gradient(var(--surface-sunken) 0 0) 0 0 / 44% 40px no-repeat,
+    linear-gradient(var(--surface-sunken) 0 0) 0 64px / 70% 20px no-repeat,
+    repeating-linear-gradient(var(--surface-sunken) 0 64px, transparent 64px 84px) 0 128px / 100% 200px no-repeat;
+  border-block-start: 1px solid var(--border-subtle);
+  padding-block-start: var(--s-6);
+}
+
+/*
+ * The student's own waiting screens, held to the same rule: `/home` while the classes are being
+ * read, and the gate that finds where a run got to. Same `:only-child` condition, same reason.
+ */
+.student-home > p:only-child {
+  color: var(--ink-2);
+  font: var(--t-body-lg);
+}
+
+.student-home > p:only-child::after {
+  content: "";
+  display: block;
+  block-size: 248px;
+  margin-block-start: var(--s-5);
+  background:
+    linear-gradient(var(--surface-sunken) 0 0) 0 0 / 60% 36px no-repeat,
+    repeating-linear-gradient(var(--surface-sunken) 0 80px, transparent 80px 100px) 0 60px / 100% 180px no-repeat;
+}
 
 .empty-state { display: grid; gap: var(--s-5); justify-items: start; max-width: 720px; padding: var(--s-7); background: var(--surface); border: 1px solid var(--border-default); border-left: 3px solid var(--fin-conditional); }
 .empty-state p { margin: 0; font: var(--t-body-lg); }
@@ -1433,6 +1506,19 @@ p { color: var(--ink-2); }
 .device-choice label { display: flex; align-items: flex-start; gap: var(--s-3); min-height: 24px; padding-block: var(--s-2); color: var(--ink-2); font: var(--t-sm); }
 .device-choice input { flex: none; width: 24px; height: 24px; margin: 0; accent-color: var(--bow-brand); }
 .join-error { min-height: 1.5rem; margin-block: 0; color: var(--fin-over); font: var(--t-sm); text-align: center; }
+
+/*
+ * A message about a field, under that field.
+ *
+ * `.join-error` is the other shape — a line at the foot of a form, centred, holding its height
+ * so the page does not jump. Measured on `/join` with a correct class code and a wrong card
+ * code, that put *"That did not match. Check it and try again."* 367px below the box it is
+ * about. This one is 8px under its field, left-aligned with it, and only in the document when
+ * there is something to say; the field it belongs to points at it with `aria-describedby` and
+ * says `aria-invalid`, and takes focus, so the three ways of finding a message — hearing it,
+ * seeing it, and being put on the thing to fix — all arrive at the same place.
+ */
+.field-problem { margin: calc(var(--s-2) * -1) 0 0; color: var(--fin-over); font: var(--t-ui); font-weight: 600; }
 
 .student-home { min-height: 100dvh; display: grid; align-content: start; gap: var(--s-6); width: 100%; max-width: 52rem; margin: 0 auto; padding: var(--s-5); background: var(--canvas); }
 

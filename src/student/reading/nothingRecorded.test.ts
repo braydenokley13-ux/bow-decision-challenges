@@ -32,6 +32,11 @@ function sources(): { path: string; text: string }[] {
 /** What every module in here is allowed to reach for. Everything else is a new decision. */
 const ALLOWED_IMPORTS = [
   /^react$/,
+  // `react-dom`, for `createPortal` and nothing else. The opened panel docks to the bottom of
+  // the window, and it is rendered at the end of the document so that the order it is tabbed to
+  // matches the order it is read in. That is a renderer, not a transport: it can put an element
+  // somewhere else on this page and it cannot put anything anywhere else at all.
+  /^react-dom$/,
   /^\.\/[\w]+$/,
   /^\.\.\/\.\.\/design\/reading\.css$/,
   // One domain import, and it is the reading ruler: the voice and the word count have to

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   browserMarker, browserVoice, collectUnits, createReader, scrollUnitIntoView, speechAvailable, textOf,
   type Marker, type ReaderState, type Voice,
@@ -11,12 +12,35 @@ import "../../design/reading.css";
 /**
  * The two things a student can do about the reading on this screen: hear it, or look a word up.
  *
- * It sits in one corner and starts as one control, because thirteen screens of run are already
+ * It starts as one control in the page's own bar, because thirteen screens of run are already
  * carrying a money rail, a plan board and a decision, and an accommodation that takes a strip
  * of every screen from every student is an accommodation that gets removed. Pressing it opens
  * the tools, and **that stays open** — for this student, on this machine, across every screen
  * and every session after it. A child who needs the screen read does not press the same button
  * fourteen times a lesson.
+ *
+ * **The closed control is in a bar and not over one.** It was a fixed pill in the bottom-left
+ * corner at `z-index: 40`, and the bottom-left corner is where both worlds put the sentence
+ * that says what the screen is waiting for: measured across two complete runs at 1366×768,
+ * 1024×600, 768×1024, 390×844 and 320×640, `document.elementFromPoint` at the first readable
+ * pixel of a status line or at a corner of a primary button answered `BUTTON.reading-tools__pill`
+ * at **150 points on 25 screens** — over *"$4,900 still has no job."*, over *"Say what the jar
+ * pays for"*, over *"Check this plan"*. A tap there opened Reading help instead. Lifting the
+ * pill was tried twice and measured worse both times, because there is no height in that corner
+ * that is free on every screen at every scroll position.
+ *
+ * So the closed control stops floating. Every shell renders this component inside its own top
+ * bar — the challenge bar, the market bar, the picker's bar, the class door's bar, the home bar
+ * — and closed it is a control in that bar, in flow, laid out by the same grid as the wordmark
+ * beside it. A layout that places a control cannot also draw over it.
+ *
+ * Opened, the tools still take the bottom edge and the stage still gives up exactly
+ * `--bow-reading-tools` of itself, which is the half of this that was already right. The panel
+ * is portalled to `<body>` to keep that true of the keyboard as well as of the pixels: rendered
+ * where the pill sits, a toolbar drawn across the bottom of the window would be tabbed to
+ * immediately after the wordmark and before the stage it is offering to read, which is the
+ * mismatch between focus order and reading order that 2.4.3 is about. At the end of the document
+ * it is reached where it is seen.
  *
  * Off by default, for everybody. Nothing here is granted by a teacher, nothing is reported to
  * one, and nothing about who used it goes anywhere near the evidence a student turns in.
@@ -86,8 +110,8 @@ export function ReadingTools({ screenKey, region, voice, marker }: {
    * They sit over the run, and on a phone the run has a money rail stuck to the same edge. A
    * number in the stylesheet would be wrong twice over — the panel is a row taller on a screen
    * that changed under the voice, and shorter on a machine with no voice at all — so the panel
-   * measures itself and `reading.css` reserves exactly that. Zero when it is closed, because a
-   * pill in a corner takes nothing away from anybody.
+   * measures itself and `reading.css` reserves exactly that. Zero when it is closed, because the
+   * closed control stands in the page's own bar rather than over the run.
    */
   useLayoutEffect(() => {
     const root = document.documentElement;
@@ -119,10 +143,11 @@ export function ReadingTools({ screenKey, region, voice, marker }: {
     setShowWords(true);
   };
 
-  return (
-    // A landmark, because everything on a page belongs in one and this is the only thing on
-    // these screens that sits outside the stage. `data-read-aloud="skip"` keeps the voice from
-    // reading its own controls back, wherever a shell chooses to render it.
+  // A landmark, because everything on a page belongs in one and this is the only thing on
+  // these screens that sits outside the stage. `data-read-aloud="skip"` keeps the voice from
+  // reading its own controls back, wherever a shell chooses to render it — which now includes
+  // the two shells whose bar is inside their own `<main>`.
+  const tools = (
     <aside ref={box} className="reading-tools" aria-label="Reading help" data-read-aloud="skip" data-open={preference.toolsOpen ? "true" : "false"}>
       {preference.toolsOpen ? (
         <div className="reading-tools__panel">
@@ -152,7 +177,7 @@ export function ReadingTools({ screenKey, region, voice, marker }: {
             <button
               type="button"
               className="reading-tools__hide"
-              onClick={() => { reader.stop(); setPreference({ toolsOpen: false }); }}
+              onClick={() => { reader.stop(); setShowWords(false); setPreference({ toolsOpen: false }); }}
             >
               Hide
             </button>
@@ -187,6 +212,16 @@ export function ReadingTools({ screenKey, region, voice, marker }: {
       )}
     </aside>
   );
+
+  /*
+   * Closed, it stays in the bar it was rendered into. Opened, it leaves for the end of the
+   * document, where the bottom of the window is also the end of the reading order.
+   *
+   * `document.body` rather than a node this component has to find: there is nothing to look up,
+   * nothing to hold in state and nothing to be stale, which is the whole of why the panel moves
+   * at render time rather than in an effect.
+   */
+  return preference.toolsOpen ? createPortal(tools, document.body) : tools;
 }
 
 /**

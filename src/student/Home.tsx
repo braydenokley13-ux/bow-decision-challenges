@@ -119,6 +119,12 @@ function Ready({ classes, signedInAs, onSignOut }: {
               not a warning, it is saying whose it is before anything else loads. */}
           {signedInAs && <span>{signedInAs}</span>}
           <Button variant="quiet" onClick={onSignOut}>Not you?</Button>
+          {/* Reading help, on the screen a student comes back to. It lived inside the run only, so
+              the page that says what a student has done and what is left to do — and which of two
+              stories they are being offered — was one of three screens in the student's path where
+              the accommodation did not exist. In the bar on the same terms as both shells: closed
+              it is a control in a row of controls, and opened it docks to the bottom edge. */}
+          <ReadingTools screenKey="student-home" />
         </div>
       </header>
 
@@ -145,11 +151,6 @@ function Ready({ classes, signedInAs, onSignOut }: {
         </footer>
       )}
     </main>
-    {/* Reading help, on the screen a student comes back to. It lived inside the run only, so
-        the page that says what a student has done and what is left to do — and which of two
-        stories they are being offered — was one of three screens in the student's path where
-        the accommodation did not exist. Outside `<main>` on the same terms as both shells. */}
-    <ReadingTools screenKey="student-home" />
     </>
   );
 }

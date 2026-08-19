@@ -30,5 +30,9 @@
   // through. It happens to still match; the four educator literals this file's siblings were
   // rewritten for happened to stop matching, and there is no way to tell which kind you have
   // written except by reading the string from the place that renders it.
-  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "eslint.config.js", "e2e/**/*.ts", "server/**/*.ts", "api/**/*.ts", "src/domain/**/*.ts", "src/platform/**/*.ts", "src/test/**/*.ts", "src/components/financial/choices.ts", "src/content/studentCopy.ts", "src/educator/labels.ts", "src/fixtures/demoClass.ts"]
+  //
+  // `visual/**` is the craft suite: a second browser project that asks what is painted on top of
+  // what. It reads `e2e/flow.ts` and the scenario numbers like the assertion suite does, so it
+  // belongs to the same project rather than to a tsconfig of its own.
+  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "visual/**/*.ts", "eslint.config.js", "e2e/**/*.ts", "server/**/*.ts", "api/**/*.ts", "src/domain/**/*.ts", "src/platform/**/*.ts", "src/test/**/*.ts", "src/components/financial/choices.ts", "src/content/studentCopy.ts", "src/educator/labels.ts", "src/fixtures/demoClass.ts"]
 }

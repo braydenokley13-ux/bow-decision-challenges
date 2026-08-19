@@ -1,4 +1,6 @@
 import { Link, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { DocumentTitle } from "./app/DocumentTitle";
+import { NotFound } from "./app/NotFound";
 import { AppMark } from "./components/primitives/AppMark";
 import { StudentChallenge } from "./stages/StudentChallenge";
 import { EducatorGuide } from "./educator/EducatorPages";
@@ -11,6 +13,7 @@ import { ReadingQueue } from "./educator/ReadingQueue";
 import { Debrief } from "./educator/Debrief";
 import { Roster } from "./educator/Roster";
 import { ShareOut } from "./educator/ShareOut";
+import { DataProtection } from "./legal/DataProtection";
 import { PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
 import { StudentJoin } from "./student/Join";
 import { studentToken } from "./student/session";
@@ -86,6 +89,12 @@ function Home() {
 
 export function App() {
   return (
+    <>
+    {/* What the tab says. One element, because a title set page by page is a title the next
+        page forgets — and every route in this product answered to the same string until this
+        landed, including the address that is not a page. `src/app/pageTitles.ts` is the table,
+        and a test walks the route list below against it. */}
+    <DocumentTitle />
     <Routes>
       <Route path="/" element={<Home />} />
       {/* A student signs in once and comes back to a screen that is theirs. What the door asks
@@ -167,7 +176,29 @@ export function App() {
       {/* The routes the demo shipped on before that. */}
       <Route path="/educator/class" element={<Navigate to="/educator/demo" replace />} />
       <Route path="/educator/class/standards" element={<Navigate to="/educator/objectives" replace />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* The five addresses a vendor review types before it reads anything else. All five used
+          to render the front door, because the fallback below sent every unknown address there
+          — so a district looking for a privacy notice, a data inventory, a subprocessor list or
+          a security overview found the marketing headline five times and concluded, correctly,
+          that there was nothing to open.
+
+          One document answers all five, and `/privacy` is where it lives: `/security` and
+          `/legal` are the same disclosure under the names a reviewer reaches for, and `/terms`
+          and `/dpa` are addresses for documents that do not exist — which the page says, under
+          "What a district asks for that this product does not have", rather than leaving the
+          reviewer to find the silence themselves. Redirects rather than five copies, so there
+          is one URL to cite and one page to keep true. */}
+      <Route path="/privacy" element={<DataProtection />} />
+      <Route path="/security" element={<Navigate to="/privacy" replace />} />
+      <Route path="/legal" element={<Navigate to="/privacy" replace />} />
+      <Route path="/terms" element={<Navigate to="/privacy" replace />} />
+      <Route path="/dpa" element={<Navigate to="/privacy" replace />} />
+      {/* Everything above this line is a route or a redirect somebody can name. What falls
+          through is an address this product does not serve, and it says so rather than landing
+          quietly on the front door — a teacher who has lost a character out of a class link
+          needs to be told that, not shown a page that looks entirely correct. */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
+    </>
   );
 }

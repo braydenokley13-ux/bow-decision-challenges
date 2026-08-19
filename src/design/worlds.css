@@ -163,6 +163,12 @@
    --------------------------------------------------------------------------- */
 .popup-shell { min-height: 100vh; background: var(--chapter-ground, var(--canvas)); transition: background var(--dur-stage) var(--ease-standard); }
 .popup-topbar { min-height: 68px; position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-5); padding: var(--s-3) var(--gutter); background: var(--surface-raised); border-bottom: 3px solid var(--chapter-accent, var(--world-accent)); box-shadow: var(--shadow-rail); }
+
+/* The end of the bar: the way out of the run, and the offer to read the screen out loud. It is
+   a group rather than two grid children because the reading control is portalled in — the bar
+   nominates a box with `data-reading-anchor` and the component fills it, so this file does not
+   have to know how many controls end up here. */
+.popup-topbar__end { justify-self: end; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--s-3); min-width: 0; }
 .market-strip { display: flex; align-items: center; gap: var(--s-4); min-width: 0; }
 .market-strip__caption { flex: none; margin: 0; color: var(--ink-1); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
 .market-strip ol { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); flex: 1; min-width: 0; margin: 0; padding: 0; list-style: none; }
@@ -548,7 +554,7 @@
      gutter the mark's track was 103px against a 129px wordmark at 320 — the letters were
      drawn and then cut. */
   .popup-topbar { grid-template-columns: minmax(0, 1fr) minmax(0, auto); gap: var(--s-2) var(--s-3); padding: var(--s-3); }
-  .popup-topbar > .run-menu { grid-column: 2; grid-row: 1; justify-self: end; }
+  .popup-topbar > .popup-topbar__end { grid-column: 2; grid-row: 1; justify-self: end; }
   .market-strip { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; min-width: 0; }
   .market-strip ol { min-width: 0; flex-basis: 100%; }
   .popup-main { width: calc(100% - 24px); }

@@ -8,6 +8,7 @@ import { chapterFor, PROGRESS_STEPS, progressIndexFor, seasonPositionFor, type S
 import type { StageId } from "../domain/evidence/types";
 import { AppMark } from "../components/primitives/AppMark";
 import { RunMenu } from "../components/primitives/RunMenu";
+import { disclosureEscape } from "../components/primitives/disclosureEscape";
 import { useChallenge } from "./ChallengeContext";
 import { SeasonStrip } from "../components/story/SeasonStrip";
 import { ReadingTools } from "../student/reading";
@@ -92,7 +93,24 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
         <AppMark />
         <SeasonStrip position={position} announcement={announcement} />
         <div className="challenge-topbar__end">
-        <details className="contract-drawer">
+        {/* The screen read out loud, and the words on it defined, for whoever wants either.
+            It is in the bar because the bar is the one band of this screen the layout keeps for
+            chrome: closed, it was a fixed pill in the bottom-left corner and `elementFromPoint`
+            at the first readable pixel of *"$4,900 still has no job."* answered the pill, at
+            every width measured. `screenKey` carries the question as well as the stage id, so a
+            stage that asks four of them under one id stops the voice at each one rather than
+            reading over the next. Opened, it portals itself to the end of the document and docks
+            to the bottom edge, which is the height `--bow-reading-tools` reserves. */}
+        <ReadingTools screenKey={focusKey === undefined ? stage : `${stage}:${focusKey}`} />
+        {/* The four payments, and the way back out of them.
+
+            `Escape` closed the run menu beside this and left this one standing: measured on the
+            ranking screen, `document.querySelectorAll("details[open]").length` was still 1
+            after the key, with the drawer over the stage and no way to shut it except finding
+            its own summary again. Two `<details>` in one bar doing the same job, and the
+            behaviour written into one of them — so it is a shared function now rather than a
+            paragraph either one could be missing. */}
+        <details className="contract-drawer" onKeyDown={disclosureEscape()}>
           <summary>The four payments<span aria-hidden="true">▾</span></summary>
           <div>
             <h2>Where Avery’s money comes from</h2>
@@ -125,11 +143,6 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
         </header>
         {children}
       </main>
-      {/* The screen read out loud, and the words on it defined, for whoever wants either.
-          Outside `<main>` because it is not part of the stage; `screenKey` carries the
-          question as well as the stage id, so a stage that asks four of them under one id
-          stops the voice at each one rather than reading over the next. */}
-      <ReadingTools screenKey={focusKey === undefined ? stage : `${stage}:${focusKey}`} />
     </div>
   );
 }

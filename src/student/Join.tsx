@@ -42,6 +42,21 @@ import { clearEveryAttempt } from "../domain/io/persistence";
 
 type Step = "code" | "card" | "name";
 
+/** One id, because one step is on screen at a time and each step has one field. */
+const PROBLEM_ID = "join-problem";
+/** The standing fact about the class code, named so the field can point at it. */
+const CODE_HINT_ID = "join-code-hint";
+
+/**
+ * What went wrong, under the box it went wrong in.
+ *
+ * `role="alert"` so it is spoken the moment it arrives, and 8px under the field so it is *seen*
+ * — the two halves of the same requirement, which the old placement met one of.
+ */
+function Problem({ children }: { children: string }) {
+  return <p className="field-problem" id={PROBLEM_ID} role="alert">{children}</p>;
+}
+
 export function StudentJoin() {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("code");
@@ -52,9 +67,59 @@ export function StudentJoin() {
   const [device, setDevice] = useState<DeviceClass>("shared");
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /**
+   * The box the message is about, and where the message and the focus both go.
+   *
+   * *"That did not match. Check it and try again."* used to render at the foot of the page as a
+   * sibling of the form: measured at 1366×768 with a correct class code and a wrong card code,
+   * the field was at y=317 and the message at y=728 — **367px** below the box it is about, in
+   * red, with `aria-describedby` and `aria-invalid` both `null` and focus left on *Go in*. A
+   * screen reader announced it, because it is a live region. A child looking at their card and
+   * at the box did not see it at all, and that is the single most likely failure in a room of
+   * twenty-eight eleven-year-olds.
+   *
+   * So the message renders directly under the field, the field says it is invalid and names the
+   * message that says why, and the field takes focus — which on a phone also brings the keyboard
+   * back to the thing that has to be retyped. One ref for all three steps because each step is
+   * one field: the step that is on screen owns it.
+   */
+  const field = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (problem) field.current?.focus(); }, [problem]);
+  /** What the field advertises about itself while a message is standing against it. */
+  const invalid = problem ? { "aria-invalid": true as const, "aria-describedby": PROBLEM_ID } : {};
+
+  /**
+   * How long the code is, said once — when the student has stopped, not while they are typing.
+   *
+   * The hint under the box is right and it stays. What was wrong was that it was a live region,
+   * so it was *spoken on every keystroke*: typing `ABCD` into the first field in the product
+   * produced four polite interruptions — *"That is 1 — a class code is 5."*, *"That is 2 …"*,
+   * *"That is 3 …"*, *"That is 4 …"* — before a child had finished typing five characters. A
+   * screen reader queues those, so the interruption outlasts the typing that caused it.
+   *
+   * So the visible line is now an ordinary description the field points at, read once when the
+   * field is reached, and this region says the count only at the two moments a person has
+   * actually asked: leaving the box, and pressing *Next* with a code that is not five long.
+   * That second one was silent as well as still — the button is `aria-disabled` rather than
+   * `disabled`, so it is reachable and pressable, and pressing it did nothing and said nothing.
+   *
+   * `count` keys the text, because a second refusal of the same code is the same sentence and
+   * an unchanged region is not spoken.
+   */
+  const codeHint = classCode.length === 0
+    ? `${CODE_LENGTH} letters and numbers.`
+    : isWellFormedClassCode(classCode)
+      ? " "
+      : `That is ${classCode.length} — a class code is ${CODE_LENGTH}.`;
+  const [counted, setCounted] = useState({ text: "", count: 0 });
+  const sayHowLongTheCodeIs = () => {
+    if (classCode.length === 0 || isWellFormedClassCode(classCode)) return;
+    setCounted((last) => ({ text: codeHint, count: last.count + 1 }));
+  };
 
   const findClass = async () => {
-    if (!isWellFormedClassCode(classCode) || busy) return;
+    if (busy) return;
+    if (!isWellFormedClassCode(classCode)) { sayHowLongTheCodeIs(); return; }
     setBusy(true);
     setProblem(null);
     const result = await readClassDoor(normaliseClassCode(classCode));
@@ -104,9 +169,21 @@ export function StudentJoin() {
 
   return (
     <main className="join-shell">
+      {/* The door's own bar, and the room it keeps for the reading control. A class code, a
+          card code and a name are the three things on this screen a child can get wrong, and
+          the help that reads them out loud used to sit in the bottom corner on top of whatever
+          the step was asking for. */}
       <header className="join-shell__bar">
         <AppMark />
         {door && <span>{door.label}</span>}
+        {/* The door is the first screen a student meets, and it was the one screen with no way to
+            hear it. A child who needs the words read to them needs that before they are inside
+            the run, not after — this is where they are asked for a class code, a card code, and
+            in an open class their own name, and getting any of it wrong is what stops them
+            starting. `step` keys the re-read, so moving from the code to the card re-reads the
+            new step rather than the one they have left. In the bar, because the bottom corner it
+            used to sit in is where each step puts its own button. */}
+        <ReadingTools screenKey={`join-${step}`} />
       </header>
 
       {step === "code" && (
@@ -122,20 +199,27 @@ export function StudentJoin() {
               autoCapitalize="characters"
               autoComplete="off"
               spellCheck={false}
-              onChange={(event) => setClassCode(event.target.value.toUpperCase())}
+              ref={field}
+              {...invalid}
+              /* Both descriptions, in reading order: how long a code is, then what went wrong
+                 with this one. After the spread, so it carries the problem rather than losing
+                 it — the spread sets this attribute too. */
+              aria-describedby={problem ? `${CODE_HINT_ID} ${PROBLEM_ID}` : CODE_HINT_ID}
+              onChange={(event) => { setClassCode(event.target.value.toUpperCase()); setProblem(null); }}
+              onBlur={sayHowLongTheCodeIs}
               onKeyDown={(event) => { if (event.key === "Enter") void findClass(); }}
             />
           </label>
+          {problem && <Problem>{problem}</Problem>}
           {/* Said as a fact about the code rather than left for the student to discover by
               pressing a button that does nothing. A disabled control with no reason attached is
               a dead end to a twelve-year-old, and this screen is where they are least able to
               guess what is wrong. */}
-          <p className="join-step__hint" aria-live="polite">
-            {classCode.length === 0
-              ? `${CODE_LENGTH} letters and numbers.`
-              : isWellFormedClassCode(classCode)
-                ? " "
-                : `That is ${classCode.length} — a class code is ${CODE_LENGTH}.`}
+          <p className="join-step__hint" id={CODE_HINT_ID}>{codeHint}</p>
+          {/* Present from the first paint holding nothing: a live region inserted with its text
+              already inside it is not announced. */}
+          <p className="visually-hidden" aria-live="polite">
+            <span key={counted.count}>{counted.text}</span>
           </p>
           <Button variant="primary" aria-disabled={!isWellFormedClassCode(classCode) || busy} onClick={() => void findClass()}>
             {busy ? "Looking…" : "Next"}
@@ -158,10 +242,13 @@ export function StudentJoin() {
               autoCapitalize="characters"
               autoComplete="off"
               spellCheck={false}
-              onChange={(event) => setJoinCode(event.target.value.toUpperCase())}
+              ref={field}
+              {...invalid}
+              onChange={(event) => { setJoinCode(event.target.value.toUpperCase()); setProblem(null); }}
               onKeyDown={(event) => { if (event.key === "Enter" && joinCode.length >= 4) void finish({ joinCode }); }}
             />
           </label>
+          {problem && <Problem>{problem}</Problem>}
           <DeviceChoice device={device} onChange={setDevice} />
           <Button variant="primary" aria-disabled={joinCode.length < 4 || busy} onClick={() => void finish({ joinCode })}>
             {busy ? "Going in…" : "Go in"}
@@ -183,10 +270,13 @@ export function StudentJoin() {
               id="display-name"
               value={typedName}
               maxLength={MAX_DISPLAY_NAME}
-              onChange={(event) => setTypedName(event.target.value)}
+              ref={field}
+              {...invalid}
+              onChange={(event) => { setTypedName(event.target.value); setProblem(null); }}
               onKeyDown={(event) => { if (event.key === "Enter" && typedName.trim()) void finish({ displayName: typedName.trim() }); }}
             />
           </label>
+          {problem && <Problem>{problem}</Problem>}
           <DeviceChoice device={device} onChange={setDevice} />
           <Button variant="primary" aria-disabled={typedName.trim().length === 0 || busy} onClick={() => void finish({ displayName: typedName.trim() })}>
             {busy ? "Going in…" : "Go in"}
@@ -196,15 +286,6 @@ export function StudentJoin() {
           <Button variant="quiet" onClick={() => { setStep("card"); setProblem(null); }}>I have been here before</Button>
         </Step>
       )}
-
-      <p className="join-error" role="alert">{problem}</p>
-      {/* The door is the first screen a student meets, and it was the one screen with no way to
-          hear it. A child who needs the words read to them needs that before they are inside the
-          run, not after — this is where they are asked for a class code, a card code, and in an
-          open class their own name, and getting any of it wrong is what stops them starting.
-          `step` keys the re-read, so moving from the code to the card re-reads the new step
-          rather than the one they have left. */}
-      <ReadingTools screenKey={`join-${step}`} />
     </main>
   );
 }

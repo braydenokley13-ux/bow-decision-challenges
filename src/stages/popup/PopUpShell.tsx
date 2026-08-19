@@ -79,10 +79,18 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
             ))}
           </ol>
         </div>
-        {/* The same control the other world carries, for the same reason: a market restored on
-            a shared laptop has to be able to say whose it is, and a student who meant to play
-            the other one needs a door that is not "finish this first". */}
-        <RunMenu classCode={state.meta.classCode} seatCode={state.meta.seatCode} handIn={delivery.status} onLeave={handOver} />
+        {/* The same two controls the other world carries, for the same two reasons: a market
+            restored on a shared laptop has to be able to say whose it is, and a student who meant
+            to play the other one needs a door that is not "finish this first" — and the reading
+            help belongs in the bar rather than over the night's own numbers. */}
+        <div className="popup-topbar__end">
+          {/* The same reading help the other world carries, on the same terms and in the same
+              place: in the bar, where the layout has kept room for it, rather than over the
+              night's own numbers. Keyed on the question as well as the stage so the repair
+              screen's two halves are two screens to it. */}
+          <ReadingTools screenKey={focusKey === undefined ? stage : `${stage}:${focusKey}`} />
+          <RunMenu classCode={state.meta.classCode} seatCode={state.meta.seatCode} handIn={delivery.status} onLeave={handOver} />
+        </div>
       </header>
       <main className="popup-main" data-tone={tone}>
         <header ref={heading} className={`popup-heading${tone === "dark" ? " popup-heading--dark scene" : ""}`} tabIndex={-1}>
@@ -95,10 +103,6 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
         </header>
         {children}
       </main>
-      {/* The same reading help the other world carries, on the same terms: outside `<main>`
-          so the voice reads the market and not the tools, and keyed on the question as well
-          as the stage so the repair screen's two halves are two screens to it. */}
-      <ReadingTools screenKey={focusKey === undefined ? stage : `${stage}:${focusKey}`} />
     </div>
   );
 }

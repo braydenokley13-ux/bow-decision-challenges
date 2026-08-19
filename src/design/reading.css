@@ -1,5 +1,5 @@
 /*
- * Reading help: the corner control, the line the voice is on, and the words panel.
+ * Reading help: the control in the bar, the line the voice is on, and the words panel.
  *
  * Its own file so it can land on its own. Every colour is a token from `tokens.css` — this
  * sheet invents no palette, because a reading aid that is the one bright thing on a screen is
@@ -7,15 +7,10 @@
  */
 
 /* ---------------------------------------------------------------------------
-   The corner control
+   The control itself
    --------------------------------------------------------------------------- */
 
 .reading-tools {
-  position: fixed;
-  bottom: var(--gutter);
-  left: var(--gutter);
-  z-index: 40;
-  max-width: min(340px, calc(100vw - (var(--gutter) * 2)));
   font: var(--t-ui);
   color: var(--ink-1);
 
@@ -24,7 +19,7 @@
 }
 
 /*
- * Closed, it is a pill in a corner and it costs nothing. Opened, it docks.
+ * Closed, it stands in the page's own bar. Opened, it docks to the bottom edge.
  *
  * Measured as a floating card: at 1366 it sat over *Cheapest over eight weeks goes first.* —
  * the sentence that says what the ranking screen is asking for — and at 390 it sat over the
@@ -33,23 +28,66 @@
  * sometimes float over the decision that matters, and a twelve-year-old who cannot read the
  * screen is the last student who will work out that the missing sentence is behind it.
  *
- * So the opened tools take the bottom edge, and the stage gives up exactly that much of
+ * That was written about the opened panel and fixed for the opened panel. The **closed** pill
+ * went on floating for four more critiques and a judge: `position: fixed` in the bottom-left
+ * corner at `z-index: 40`, over a commit bar at `z-index: 5`. Measured across two complete runs
+ * at five widths, `document.elementFromPoint` at the first readable pixel of a status line or at
+ * a corner of a primary button answered `BUTTON.reading-tools__pill` at **150 points on 25
+ * screens**: *"$4,900 still has no job."*, *"$2,900 still to find."*, *"Say what the jar pays
+ * for"*, *"Check this plan"*, *"Explain my plan"*. Every one of them a sentence or a control the
+ * screen is waiting on, and a tap on any of them opened Reading help instead.
+ *
+ * Two attempts to move it up were measured worse — one landed the pill on *Check this plan* with
+ * the tools **closed**, hidden at 0 of 25 sample points. There is no height in that corner that
+ * is free on every screen at every scroll position, because both worlds put the sentence that
+ * says what the screen wants at the bottom of it. So the closed control is not in the corner any
+ * more: it is a control in the bar the shell nominates with `data-reading-anchor`, laid out by
+ * the same grid as the wordmark beside it, and there is nothing under it to cover.
+ *
+ * The opened tools still take the bottom edge, and the stage still gives up exactly that much of
  * itself. `--bow-reading-tools` is the panel's own measured height, published by the component
  * on every render, so a panel one row taller — a screen that changed under the voice, a machine
  * with no voice at all — reserves one row more. Nothing the run draws ends up underneath it,
  * and closed the property is `0px` and every rule here resolves to no reserve at all.
  *
- * A strip of every screen was rejected for *every student*, and it still is: this one is only
- * ever on a screen a student asked for it on.
+ * A strip of every screen was rejected for *every student*, and it still is: the tools are only
+ * ever on a screen a student asked for them on. A pill in a top bar is not that strip — it is
+ * one control among the three that bar already carries.
  */
 :root { --bow-reading-tools: 0px; }
 
-main:has(~ .reading-tools[data-open="true"]) {
+/*
+ * The stage gives up exactly the height the panel is standing on.
+ *
+ * Written as `main:has(~ .reading-tools[data-open="true"])` while the tools were a sibling of
+ * `<main>` in three of the five shells and a descendant of it in the other two — so the two
+ * shells whose bar is inside their own `<main>`, the class door and the student's home, never
+ * reserved anything and the panel covered the bottom of both. The panel is portalled to `<body>`
+ * now, which is a sibling of nothing in particular, so the question is asked of the document
+ * instead: if this page has the tools open, its stage stands on them.
+ */
+:root:has(.reading-tools[data-open="true"]) main {
   padding-block-end: var(--bow-reading-tools);
 }
 
+/*
+ * In the bar: laid out by the bar, sized by its own content, painting nothing it does not own.
+ *
+ * `width: max-content` is what stops a block-level `<aside>` in a shell that nominates no bar —
+ * `/home`, and anything added after this — from claiming a full-width strip of empty box below
+ * the run. It falls in flow there, under the last thing on the page, which is slower to find and
+ * covers nothing.
+ */
+.reading-tools:not([data-open="true"]) {
+  position: static;
+  width: max-content;
+  max-width: 100%;
+}
+
 .reading-tools[data-open="true"] {
+  position: fixed;
   inset: auto 0 0;
+  z-index: 40;
   max-width: none;
 }
 
@@ -97,28 +135,17 @@ main:has(~ .reading-tools[data-open="true"]) {
 }
 
 /*
- * Closed, only the pill itself catches a tap — the box around it does not.
+ * There used to be a `pointer-events: none` pair here, and the reason it is gone is the reason
+ * this file changed at all.
  *
- * `.reading-tools` is a fixed container up to 340px wide holding a 146px pill, and the empty
- * two thirds of it was swallowing pointer events. At 320, where the money rail is a bar across
- * the same bottom corner, asking `document.elementFromPoint` what is painted at the centre of
- * *See where the money goes* answered `aside.reading-tools` on five screens of the run: a tap
- * on the money breakdown opened the reading tools instead. Keyboard users never saw it,
- * because `Tab` and `Enter` do not care what is on top, so this only ever hit the student
- * using a finger — on a phone, or at 400% zoom, which is the same pixels.
- *
- * Lifting the pill clear of the rail was tried first and measured worse: it landed on
- * *Check this plan*, entirely hidden at 0 of 25 sample points, with the tools **closed** — a
- * 2.4.11 failure for every student rather than a tap collision for some. The pill stays where
- * it was designed to be, and stops claiming the space it does not paint.
+ * `.reading-tools` was a fixed container up to 340px wide holding a 146px pill, and the empty
+ * two thirds of it swallowed taps: at 320, `document.elementFromPoint` at the centre of *See
+ * where the money goes* answered `aside.reading-tools` on five screens of the run. The fix made
+ * the container transparent to the finger while the pill itself stayed live — correct for the
+ * box, and no answer at all for the pill, which went on catching the taps meant for the sentence
+ * underneath it. A control in the bar has no box to make transparent and nothing underneath it
+ * to catch, so both declarations were deleted rather than kept as a fix for a shape that is gone.
  */
-.reading-tools:not([data-open="true"]) {
-  pointer-events: none;
-}
-
-.reading-tools:not([data-open="true"]) .reading-tools__pill {
-  pointer-events: auto;
-}
 
 .reading-tools__pill,
 .reading-tools__button,
@@ -137,8 +164,12 @@ main:has(~ .reading-tools[data-open="true"]) {
   transition: background var(--dur-micro) var(--ease-standard), border-color var(--dur-micro) var(--ease-standard);
 }
 
+/*
+ * No shadow. A shadow says "this is floating above the page", which is exactly the claim the
+ * closed control no longer makes.
+ */
 .reading-tools__pill {
-  box-shadow: var(--shadow-card);
+  white-space: nowrap;
 }
 
 .reading-tools__pill:hover,
@@ -357,16 +388,16 @@ main:has(~ .reading-tools[data-open="true"]) {
 }
 
 /*
- * A phone. The closed pill gives up its corner and spans the width, because 340px of card
+ * A phone. The opened panel gives up the corner and spans the width, because 340px of card
  * beside a 360px screen is a card covering the decision, and the two controls stack rather
  * than crowd one line.
+ *
+ * The closed control keeps its words. It was going full-width here — 342px of pill across a
+ * 390px screen, over the docked money rail's *"Still to give a job $4,900"* — which was the
+ * widest single instance of the defect this file just closed; in a bar it is 146px of a row
+ * that already wraps.
  */
 @media (max-width: 520px) {
-  .reading-tools {
-    right: var(--gutter);
-    max-width: none;
-  }
-
   .reading-tools__row > .reading-tools__button {
     flex: 0 1 auto;
     padding: 0 var(--s-3);

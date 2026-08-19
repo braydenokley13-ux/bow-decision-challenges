@@ -99,6 +99,23 @@
 .opening__class { color: var(--ink-3); font: var(--t-micro); }
 .opening--waiting { align-content: start; gap: var(--s-5); }
 .opening--waiting > .join-status { padding: 0 clamp(20px, 4vw, 56px); }
+
+/*
+ * The shape of the run that is arriving, under the sentence that says it is arriving.
+ *
+ * `:not(:has(> .button))` is the whole guard: when the class cannot be reached this same line
+ * carries the problem and a *Try again* beside it, and a skeleton of a run that is not coming
+ * would be the screen promising something it has just said it cannot do.
+ */
+.opening--waiting:not(:has(> .button)) > .join-status::after {
+  content: "";
+  display: block;
+  block-size: 216px;
+  margin-block-start: var(--s-5);
+  background:
+    linear-gradient(var(--surface-sunken) 0 0) 0 0 / 52% 40px no-repeat,
+    repeating-linear-gradient(var(--surface-sunken) 0 52px, transparent 52px 72px) 0 64px / min(520px, 100%) 152px no-repeat;
+}
 .opening--waiting > .button { justify-self: start; margin-left: clamp(20px, 4vw, 56px); }
 .privacy-note { margin: var(--s-3) 0 0; color: var(--ink-3); font: var(--t-micro); }
 

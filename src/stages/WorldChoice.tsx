@@ -108,6 +108,13 @@ export function WorldChoice() {
           one screen whose whole job is a comparison between two cards. */}
       <div className="worldpick__bar">
         <AppMark />
+        {/* The same reading help every screen of a run carries, on the screen before the run.
+            It was the one screen in the student's path that asked them to read in order to
+            decide — two stories, a role each, a length each, and a commitment to one of them for
+            the next twenty-odd minutes — and the accommodation did not exist until after the
+            choice was made. In the bar, so the voice reads the two cards and not the control
+            offering to read them, and so it is over neither of them. */}
+        <ReadingTools screenKey="choose-world" />
       </div>
       <main className="worldpick__main">
         <header className="worldpick__say">
@@ -148,13 +155,6 @@ export function WorldChoice() {
           })}
         </ul>
       </main>
-      {/* The same reading help every screen of a run carries, on the screen before the run.
-          It was the one screen in the student's path that asked them to read in order to
-          decide — two stories, a role each, a length each, and a commitment to one of them for
-          the next twenty-odd minutes — and the accommodation did not exist until after the
-          choice was made. Outside `<main>` on the same terms as both shells, so the voice
-          reads the two cards and not the control offering to read them. */}
-      <ReadingTools screenKey="choose-world" />
     </div>
   );
 }
