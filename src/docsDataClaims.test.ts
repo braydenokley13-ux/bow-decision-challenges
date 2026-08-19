@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { handleApiRequest } from "../server/handler";
 import { memoryStore, type ClassStore } from "../server/store";
@@ -37,6 +37,30 @@ import { withoutComments } from "./test/source";
  */
 
 const DOCUMENTS = ["README.md", "ARCHITECTURE.md"] as const;
+
+/**
+ * The sentence a document has to carry if it is not one of the two.
+ *
+ * The repository root holds three more markdown files, all with authoritative names and all
+ * headed **Definitive**: the V2 master specification, the V2.1 interaction review and the V3
+ * architecture blueprint. They are the briefs this product was built *from*, and the V3 one
+ * names its reader in its own opening paragraph — *"a District 26 discovery conversation asked
+ * whether BOW has a stand-alone resource a curriculum lead could review without a BOW
+ * representative present"*. That curriculum lead opens this repository and finds five
+ * documents, two of which are true and three of which say the audience is Grades 6–8, the
+ * second world is Fashion, the grade is out of 100 and there is no backend. All four were true
+ * when they were written and none is true now.
+ *
+ * So the rule is: a markdown file at the root is **either** current — in `DOCUMENTS`, and held
+ * to every rule in this file — **or** it carries a provenance banner saying it is history and
+ * naming where it disagrees with the product. There is no third state, and adding a document
+ * to the root is now a decision about which of the two it is.
+ */
+const PROVENANCE = "Provenance — read this before anything below it";
+
+function rootDocuments(): string[] {
+  return readdirSync(".", { encoding: "utf8" }).filter((entry) => entry.endsWith(".md")).sort();
+}
 
 function sentencesOf(path: string): string[] {
   return withoutComments(readFileSync(path, "utf8"), { html: true })
@@ -252,6 +276,41 @@ describe("the README's account of what BOW holds is the handler's account", () =
       "The seat usually has a name on it",
     ]) {
       expect(flat, clause).toContain(clause);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 4. And no document at the root is silently out of date
+// ---------------------------------------------------------------------------
+
+describe("every document at the root is either current or marked as history", () => {
+  const roots = rootDocuments();
+
+  it("finds all five, so a sixth cannot arrive unnoticed", () => {
+    expect(roots).toEqual(expect.arrayContaining([...DOCUMENTS]));
+    expect(roots.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it.each(roots)("%s is in DOCUMENTS or carries the provenance banner", (path) => {
+    const current = (DOCUMENTS as readonly string[]).includes(path);
+    const marked = readFileSync(path, "utf8").includes(PROVENANCE);
+    expect(
+      current || marked,
+      `${path} is neither held to its claims by this file nor marked as an input brief. `
+      + "Add it to DOCUMENTS and make its claims true, or give it the provenance banner.",
+    ).toBe(true);
+    // Not both: a document that is held to its claims must not also excuse itself.
+    expect(current && marked, `${path} claims to be both current and history`).toBe(false);
+  });
+
+  it("puts the banner where a reader meets it, not at the bottom", () => {
+    for (const path of roots.filter((entry) => !(DOCUMENTS as readonly string[]).includes(entry))) {
+      const text = readFileSync(path, "utf8");
+      // Inside the first 40 lines, and after the title rather than before it.
+      const line = text.split("\n").findIndex((entry) => entry.includes(PROVENANCE));
+      expect(line, `${path}: the banner is ${line} lines down`).toBeGreaterThan(0);
+      expect(line, `${path}: the banner is ${line} lines down`).toBeLessThan(40);
     }
   });
 });

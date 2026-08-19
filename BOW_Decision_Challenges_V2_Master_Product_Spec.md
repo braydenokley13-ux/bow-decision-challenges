@@ -1,5 +1,28 @@
 # BOW Decision Challenges — V2 Master Product Specification
 
+> ## Provenance — read this before anything below it
+>
+> **This is an input brief, written before the product existed. It is kept for provenance and
+> it does not describe what shipped.** Where it and the running product disagree, the product
+> is right and this document is history. The current description of what exists is
+> [`README.md`](./README.md) and [`ARCHITECTURE.md`](./ARCHITECTURE.md), and those two are the
+> only documents in this repository held to their claims by a test (`src/docsDataClaims.test.ts`).
+>
+> Four things below are now false of the product, checked against it rather than remembered:
+>
+> | This document says | The product does |
+> | --- | --- |
+> | Audience **Grades 6–8** | **Grades 5–8** — the band NYSED's own objectives are written for (`domain/standards/frameworks/nysed-2026.ts`) |
+> | A second world called **Fashion** | A second world called **Run the Pop-Up**, a market food truck (`WORLD_IDS = ["basketball", "food-truck"]`) |
+> | A **90 + 10 / 100-point** grade | No composite at all. It was removed because it was the number that could not be defended to a parent (`educator/gradebook.ts`) |
+> | **localStorage** persistence, no backend | Teacher accounts, student seats, an authenticated API and a sealed durable store (`server/`) |
+>
+> It also names **"verified NYSED alignment"** as a build target. What the product honestly
+> claims today is **one** assessable objective — NYSED Personal Finance 1.3 — and
+> `domain/standards/coverageClaims.test.ts` is what holds it to that number. Nothing here is a
+> FERPA, COPPA, New York Education Law §2-d, NYCPS, WCAG-conformance or district-approval
+> determination, and neither is anything in the product.
+
 **Status:** Definitive replacement specification for the meeting MVP  
 **Product:** BOW Decision Challenges  
 **MVP challenge:** *Plan Under Pressure*  
