@@ -10,8 +10,8 @@ tree diverges in a way that matters, it is called out.
 **Reproduction environment.** Snapshot of `8685d0b`; `npx vite` on **127.0.0.1:5311**;
 Chromium `/opt/pw-browsers/chromium` (build **1194**) driven by Playwright 1.62.1 with
 `PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers` and an explicit `executablePath`. Two complete
-student journeys were played end to end in that browser, plus three partial ones to push on
-the hint ladder and the plan board.
+Basketball journeys and one Pop-Up journey were played in that browser, plus three partial runs
+to push on the hint ladder and the plan board.
 
 Receipts: `gauntlet/receipts/econ-2/`.
 
@@ -24,6 +24,7 @@ Receipts: `gauntlet/receipts/econ-2/`.
 | `ending-counterfactual.txt` | what the Week 8 verdict prints vs what the model requires |
 | `runs/runA-optimistic-frugal.txt` | full run: cousin's room, both bonuses counted, seat reserved, clinics taken |
 | `runs/runB-cautious.txt` | full run: gym sublet, no conditional money, seat deferred, Saturdays kept |
+| `runs/runC-popup-closed-truck.txt` | the market, played until the generator bill closes a truck holding $1,296 of takings |
 | `hintladder/`, `plan/`, `shortcut/` | the hint ladder pushed to its last rung; the opening board in three states |
 
 ---
@@ -184,6 +185,27 @@ the window over three Saturdays**, has **$250** reachable on the repair board, a
 **$270**. The largest sum ever taken over Saturdays 1–3 in any run is $1,500, and none of it is
 reachable.
 
+**Reproduced in the browser** (`runs/runC-popup-closed-truck.txt`). Middle Row booth, $1,500 of
+$1,510 onto the stock line, five trays on Saturday 1 and ten on the standing order. The run
+prints, on three consecutive screens, in the student's own words:
+
+| screen | what it says |
+| --- | --- |
+| `04-saturday-1` | SATURDAY 1 · **TAKINGS $456** |
+| `06-generator-dies` | SATURDAY 2 · **TAKINGS $540** — SATURDAY 3 · **TAKINGS $300** |
+| `07-repair-board` | THE SHOP WANTS **$270** · FREED SO FAR $0 · STILL TO FIND **$270** |
+
+The repair board then lists everything there is: Stock $0, Cushion $10, Your cut $0, and three
+*ALREADY SPENT* rows — City permit $150, Middle Row $240, Ramos Foods $1,500, the last of them
+captioned *"Food you already cooked **and sold**."* **$1,296 of takings has been printed to
+this student across the run and appears on neither list.** The screen closes with *"$270 still
+to find"* over a total of $10. The driver for run C stops there, and its own failure is the
+confirmation: it reaches for *Pay the shop* (`repair.commit`) and there is no such button,
+because on a plan that cannot meet the bill the product offers *"Save it, and say what is
+missing"* instead, and the screen after it reads *"No generator means no cooking. There is no
+last Saturday."* Everything the product does with this state is careful and humane. The state
+should not exist for a truck holding $1,296.
+
 **Why this one is not a matter of taste.** The product has already litigated this exact
 question and decided against itself, in `economy.ts`'s note on `foodLine`:
 
@@ -206,8 +228,12 @@ plan against, because a cushion is only meaningful once you know nothing else ca
 > **Nothing paid for yet.** The $150 cannot be saved and cannot go into the plan, so leaving it
 > is not one of the choices. Pay for at least one of the three.
 
-The pop-up's tips jar is identical by design (`PopUpScreens.tsx:593-595`: *"a dollar left in it
-is a dollar spent on nothing, because it never reaches the three lines and cannot be banked"*).
+The pop-up says it in the standing deck rather than in an alert, so every student who reaches
+the tips jar reads it whether they hesitate or not
+(`runs/runC-popup-closed-truck.txt`, `04-saturday-1`):
+
+> **This money is not the truck's. It cannot go on the three lines and it cannot be banked, so
+> a dollar you do not spend here is a dollar spent on nothing.**
 And the scoring enforces it: `reachRead` in the basketball observer scores **0/5** if nothing
 was funded and **2/5** if money is left that could have covered an unpaid claim.
 
@@ -437,7 +463,10 @@ absence of a fallback.
 At `8685d0b` every crowd figure in the market is printed on the booth card before a booth is
 taken and again on the order screen (`numbers.ts` `nights: {1:{pull:100}, 2:{pull:120},
 3:{pull:65}, 4:{pull:145}}`, all stated). Nothing is rolled. A student with a calculator can
-compute the profit-maximising plan before the first order.
+compute the profit-maximising plan before the first order — and the booth cards hand them the
+whole table on the first screen of the world (`runs/runC-popup-closed-truck.txt`, `01-booths`):
+*PLATES THE CROWD HERE WILL BUY · SAT 1 38 · SAT 2 46 · SAT 3 25 · SAT 4 55*, for all three
+booths at once, before anything is chosen.
 
 `balance.ts` states this honestly and at length, and its defence is coherent: the competencies
 being assessed are planning within money that is there and repairing a plan when a cost
