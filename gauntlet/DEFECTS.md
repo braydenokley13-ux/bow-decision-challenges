@@ -328,3 +328,20 @@ I also went looking for a defect here and did not find one: my first read showed
 where the concept name and its one-line meaning should be, and that was my probe using the wrong
 field names, not the product. Recorded because "checked and found nothing" is a result and
 because a finding filed without that check would have been wrong.
+
+
+**N10 — three things re-checked at HEAD in a real browser, after the educator surfaces were
+rewritten underneath them.**
+
+- **N3 is closed and I found it by tripping over it.** My old driver, written before the fix,
+  now hangs on a disabled *Create the class* button — because the class name is required and it
+  leaves the field empty. A regression check that fails because the product got stricter is the
+  good kind.
+- **The wiped-laptop case still holds.** A class made in one browser context, opened in a second
+  that had never seen the product, after signing in: *"Your class. On your account, so they are
+  here on any computer you sign in on."* That is the teacher critic's blocker, still closed
+  after the whole educator page-header layer was rewritten under it.
+- **The standards correction is on screen, not only in the data.** The objective picker on the
+  class-creation form now offers **one** objective — *1.3 · Create a budget* — where it offered
+  two this morning. The count is derived from `isAssessable` rather than restated, so correcting
+  the mapping corrected the form without anybody editing the form.
