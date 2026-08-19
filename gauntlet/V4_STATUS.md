@@ -12,6 +12,48 @@ artifact is evidence, and every number below names the command that produced it.
 
 ---
 
+## 0. Where this run stands
+
+Nine things changed in the product since the last summary, in order of what they cost a student
+or a teacher:
+
+1. **400% zoom is operable.** The market booths screen was unusable and the booths were not the
+   cause: `usePinnedTopBar` reserved 468px of scroll padding inside a 256px viewport, so every
+   scroll the browser performed on a student's behalf parked the target 212px below the fold.
+   Capped at a third of the window, and reserving nothing when the bar is not pinned. All three
+   `@zoom` tests pass — in 14 seconds rather than five minutes, because the click no longer
+   retries for the full timeout.
+2. **Twenty-six responsive grids can no longer floor a track wider than the screen**, with a
+   test that reads the stylesheets from disk. Found while chasing the above; not its cause.
+3. **Every coverage claim carries the competency contract it was checked against**, and the
+   build fails when a stamp and the competency disagree. This is the failure that put a wrong
+   coverage figure in front of a district: a world designed against four required rows, a fifth
+   added, nothing in the build capable of noticing.
+4. **`keep-credit-costs-down` gained two required written rows**, ruled on the merits and not on
+   the two objectives it happens to unlock — see `decisions/04-two-written-rows-on-credit.md`,
+   including what it cost Ferro's. NYSED 2.3 and 2.4 promoted to `full`.
+5. **A teacher is now told which second objective their assignment already settles.** Two skills
+   cover two objectives each; nothing on any screen said so, and an objective moving that nobody
+   assigned reads as a broken product.
+6. **The coverage court has one canonical test**, because four courts ran four and one was wrong
+   by two objectives. Plus seven house rules the read-and-judge war earned.
+7. **`OBJECTIVE_CLOSURE.md`** — generated, drift-tested: 1 done, 12 needing a world, 7 needing
+   rows *and then* a world, 3 out of reach. The middle two are not the same currency and the
+   plan that conflated them put Module 4 in the wrong queue for a cycle.
+8. **Module 4 re-audited against shipped contracts.** It lights 4.2 and only 4.2, it is a build
+   task rather than a content task, and two shipped observer files carried a routing claim the
+   code does not support.
+9. **The read-and-judge war ran and produced a verdict**: build D with nine changes, two
+   designs disqualified, the fourth mechanical family named and deliberately shelved.
+
+**The one thing a founder has to decide.** The four-world plan reaches 12 of 23 and the
+portfolio court will not sign three worlds by October — *"Three production Worlds by October is
+not a plan I would sign"* — and since it said that, Ferro's got heavier (six rows on
+`keep-credit-costs-down`, not four) and Topic 4 turned out to need a world of its own. Nothing
+in this run has made that arithmetic better. What ships in October is not a court's call.
+
+---
+
 ## 1. `main` had not built for 68 commits
 
 `d6ec525` committed `import { disclosureEscape } from "../components/primitives/disclosureEscape"`
