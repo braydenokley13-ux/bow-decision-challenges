@@ -426,3 +426,52 @@ Each is falsifiable today, and each currently fails.
 Close 1, 3 and 4 and I would sign this for a pilot without hesitation. Close 2 and 7 and it
 will stop regrowing defects like these. Close the art-direction gap and it stops being a very
 well-written worksheet and becomes the thing it is trying to be.
+
+---
+
+## Postscript — written after the verdict, having then read the build history
+
+I wrote everything above before opening `gauntlet/GAUNTLET_STATUS.md`, `gauntlet/DEFECTS.md`
+or anything in `gauntlet/critiques/`. Having read them, three things change the weight of what
+I found, and none of them changes the verdict.
+
+**1. Two of my three worst craft findings were already reported, and are still there.**
+
+- `gauntlet/critiques/worldclass-2.md`: *"The reading-support button covers the reading.
+  'Reading help' is a fixed pill at (24, 700); stage content occupies y 698–751 … On the Week 5
+  screen it covers Avery's own line."* I measured the pill at **(24, 700, 146, 44)** and found
+  it over Avery's Week 5 line. Same coordinates. Same screen. Unfixed.
+- `gauntlet/critiques/a11y-3.md` MAJOR 8 and MAJOR 12: the same defect, on the same screens,
+  with the same diagnosis — `reading.css` reserves `--bow-reading-tools` for the open panel and
+  exempts the closed pill from its own rule.
+- `gauntlet/critiques/a11y-responsive.md` m3: *"The join error is 327 px below the field it
+  belongs to … the field has no `aria-describedby` and no `aria-invalid`, and focus stays on the
+  Next button,"* with the fix written out to the line number. I measured **367px** at the
+  second step of the same screen, both attributes still null, focus still on the button.
+
+Three fresh-context critics and now a judge have found the same two defects. They are not in
+`DEFECTS.md`. That is the finding: this build loop is extraordinarily good at closing defects
+it writes down and has no mechanism for the ones it does not.
+
+**2. The mechanism is the thing nobody found.** No critique, and neither register, records that
+`npm run walkthrough` — the repository's own answer to "look at the screen", the one named in
+`README.md` — stops at 15 of ~25 screenshots and runs on no CI build. `recon-visual.md` even
+cites `e2e/walkthrough.spec.ts` approvingly for its sticky-header workaround without noticing it
+cannot finish. Every critic who looked at pixels built their own capture harness; the shared one
+has been dead the whole time. That is why a defect can be reported three times and survive: each
+report is a person's screenshots, and there is nothing that keeps looking after they leave.
+
+**3. Credit where it is due: the responsive work landed.** `recon-visual.md` CRITICAL-1 recorded
+*"every Basketball screen … renders 470px wide inside a 390px viewport … an 80px (20%) overflow"*
+for essentially the whole product. At HEAD I measured `scrollWidth - clientWidth === 0` on all
+fifty story screens and on six educator pages at five widths down to 320. That gap is closed,
+completely, and the fix held across two worlds. It is the strongest evidence I have that this
+team fixes what it can see — which is exactly why the thing that lets them see is the condition
+I would insist on hardest.
+
+One place where my brief and the lead's disagree, and I will not defer: `GAUNTLET_STATUS.md`
+names the largest remaining gap as *"the product says things about children that are not true."*
+Against the assessment bar, that is certainly the right answer. Against the world-class-product
+bar it is not the largest — a product can be truthful and still be a worksheet. Mine stands: the
+largest gap is that a game for twelve-year-olds about a basketball season and a night market
+contains no picture of either, and no typeface of its own to say them in.
