@@ -375,3 +375,49 @@ the October floor, which asks for real assessed coverage in every module. All fo
 roughly **12 of 23 objectives and 5 of 5 topics** — and that is the size of the remaining
 build, at somewhere near ten thousand lines a world once the twenty-one integration points
 outside a world's own directory are counted.
+
+
+---
+
+## 9. Looking at it, which nobody in this run had done
+
+Fifteen screenshots from the `walkthrough` project, read cold against §58's first-second test:
+*shown this with no explanation, what kind of product would somebody say this is?*
+
+**The door passes, and it passes well.** *"Somebody has to decide where the money goes."* set
+large over a cream ground, one blue button, no illustration. It avoids every one of §58's bad
+answers — worksheet, school dashboard, EdTech, generic SaaS, template — and the restraint reads
+as a choice rather than an absence. The nearest true answer is *polished consumer product*, or
+*editorial*. Not *game*, and not *simulation*.
+
+**The plan board is the strongest screen.** Real hierarchy, a money rail that is genuinely good
+information design, and one line doing more honest work than most of this category manages:
+*"$1,800 of this might not arrive. If neither bonus comes, Avery has $3,100 to decide."* The
+heading is a question, the steppers are unmistakable, and the right rail answers *what changed*
+without being asked.
+
+### The finding, and it is §59
+
+**The two worlds have no identity at the door.** Eight Weeks to the Showcase and Run the Pop-Up
+are two plain boxes, same ground, same type, same weight, one above the other. Swap the titles
+and nothing on that screen is wrong. §59 asks that a reviewer with the title removed could still
+say which world they are looking at, and at the entry point they could not — which is the one
+screen where a student chooses between them.
+
+The worlds *do* diverge inside: `worlds.css` carries `--world-accent`, `--chapter-ground` and a
+`market-backdrop`, and the market shifts ground colour per chapter. So this is a door problem
+rather than an art problem, and it is the cheapest visual work in the product — the identity
+already exists and the choosing screen does not use it.
+
+### A correction, before it became a finding
+
+The plan-board capture appears to show the commit bar painted over an `AVERY'S WEEK` heading,
+which is exactly the occlusion class this run has been fixing. **It is a capture artifact.**
+The walkthrough shoots full-page at 1,167px against a 768px viewport, and a `position: sticky`
+element renders at its pinned position in a full-page shot, over content a real student would
+have scrolled past it. Nearly filed; checked the capture height first.
+
+Worth stating because it cuts both ways: a screenshot is evidence of what a screen looks like
+and is not evidence of what a student can reach. The 400% zoom failures earlier in this run
+were found by a browser trying to click a control and failing, which is a different instrument
+answering a different question, and the one that found the real defects.
