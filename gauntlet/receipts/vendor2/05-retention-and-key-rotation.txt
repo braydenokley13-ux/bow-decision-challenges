@@ -1,0 +1,22 @@
+# Pinned SHA 300ce62.  Retention + key-rotation.
+
+## A) Previous MAJOR-2 (retention not executed): CLOSED on the file store.
+##    sweepExpiredClasses deletes the class directory and its indexes; live class survives:
+   before: LIVEE, OLDXX
+   sweep deleted: ["OLDXX"]
+   after: LIVEE
+   OLDXX getClass -> null | LIVEE -> LIVEE
+
+## B) FINDING: BOW_STORE_KEY cannot be rotated without total, SILENT data loss.
+##    Read the SAME sealed data dir with a different key: every class returns null/empty.
+   original key: class 9EVY6 -> Period 3 Financial Literacy | roster: Aaliyah Okonkwo-Reyes, Benjamin Hartsfield, Chidinma Adeyemi, Dmitri Volkov-Nguyen
+   rotated  key: class 9EVY6 -> null | roster: []
+
+## C) A botched rotation looks HEALTHY: GET /api/health reports classroomReady:true while
+##    every class 404s. (Separate server on :4478, same data dir, fresh key.)
+   health -> ok=true classroomReady=true reason="Classes are kept in the file store for 120 days."
+   GET /api/classes/9EVY6 -> HTTP 404
+
+# There is no re-encryption/migration path (STORE_KEY_HELP: 'changing it means every existing
+# class becomes unreadable'). A district that must rotate the key after a suspected compromise
+# cannot do so without destroying every class - the opposite of an incident-response posture.

@@ -1,0 +1,21 @@
+# Pinned SHA 300ce6280970405ec4fcd9d884c398ddd922b00f  file store, key set
+# Previous BLOCKER-1 (plaintext PII/keys/secret at rest): CLOSED on the file store.
+
+## Every file body on disk is a sealed AES-256-GCM envelope:
+$ cat .bow-classes/<CODE>/roster/1.json
+{"v":1,"iv":"bgyBkaCjuVpManJ/","tag":"odkS+ffp1lxzVyVs7d2/zA==","ct":"/dBBYIGoLSbMnlLUGkASwe8QN+uHk1Jy30lqqBFtvKere5G1CSg7BhljFQmyP8Eju0bi05abbBKZltmcLF3t9XejHrshhRh1YbF1th96F0YQDr4/vrs/XOWNEmtUbSAqqJcoD8pFNxsGwO3iavUedJjg87Uw9mCiXTUiv9OOMuLfQQWSQ0aSsdVFKe4DRtxtGRYSrqE0gSfnjdVhiSxQMx5GJcE131iyH2y2Q/YasbkPyAYa/JYZUcEjDKGyE4HgXWOY16O6xhV4WOQziKWWABMf8f4zSCqgLmWyfPl9xEZHebcQrF5A4A49hjN5OfrzjcHuMY7mHcJEDlFw2HodluIbjbkxqV9D3Aa1b13MkZ2J7BGin2eJ903hNQMWlaTGWTLTjHeMqf3SA98slJ1eI7imlW2l9t9xvhp03soPf6ovOLD8lo+tdFGqkuY3UKJwOd46SK3kdt8QGaegDLKf80RWrO+ZDutnIKUP2TNgMQ=="}
+
+## grep the entire data dir for the names/keys/secret we planted -> zero hits:
+  Okonkwo                    files: 0
+  Hartsfield                 files: 0
+  medical bill               files: 0
+  E4WHT9ATMKGTHMT77EDA7H9C   files: 0
+  ENNXF                      files: 0
+  marisol                    files: 0
+  session-secret             files: 0
+
+## no file escapes the seal (every file starts with the {"v":1,"iv" envelope):
+  (no UNSEALED lines above = all sealed)
+
+## session-signing secret is NOT on disk (derived from BOW_STORE_KEY):
+  find .bow-classes -iname '*session*' -> 0 files

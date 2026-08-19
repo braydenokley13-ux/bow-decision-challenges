@@ -11,10 +11,9 @@ import { clampCriterion, REASONING_CRITERIA, reasoningTotal, type ReasoningScore
 import { challengeById, PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 import { contractFor } from "../src/domain/scenario/contracts";
 import { DEFAULT_WORLD_ID } from "../src/domain/scenario/registry";
-import { standardByRef, type FrameworkId } from "../src/domain/standards";
 import type { ClassStore, StoredClass } from "./store";
 import { cryptoRandom } from "./crypto";
-import { callerOf, handleIdentityRequest, opensClass, withinRate } from "./identity";
+import { callerOf, cleanDisplayName, handleIdentityRequest, opensClass, withinRate } from "./identity";
 
 /**
  * The class service, as one function of (method, path, body) → (status, body).
@@ -192,20 +191,29 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
    * environment variable away from losing a class looked identical to a working one.
    */
   if (request.method === "GET" && segments.length === 1 && segments[0] === "health") {
-    const classroomReady = store.durable && !store.blockedReason;
+    // Can this store's key still open what this store already wrote? A rotated or mistyped
+    // key reads as an empty store rather than as an error, so without asking, a deployment
+    // holding a term of unreadable classes reports itself ready and a teacher finds out by
+    // standing in front of a class whose work has apparently never existed.
+    const key = (await store.keyCheck?.()) ?? "ok";
+    const lost = key === "mismatch";
+    const classroomReady = store.durable && !store.blockedReason && !lost;
     const reason = store.blockedReason
-      ?? (store.durable
-        ? `Classes are kept in the ${store.id} store for ${CLASS_RETENTION_DAYS} days.`
-        : `The ${store.id} store keeps nothing past this process. Fine for tests and demos, not for a class.`);
+      ?? (lost
+        ? `The ${store.id} store holds records this key cannot open. BOW_STORE_KEY has changed, or is not the one these classes were written with. Nothing has been deleted — put the original key back.`
+        : store.durable
+          ? `Classes are kept in the ${store.id} store for ${CLASS_RETENTION_DAYS} days.`
+          : `The ${store.id} store keeps nothing past this process. Fine for tests and demos, not for a class.`);
     return {
       // A deployment that cannot start a class says so in the status line too, so a smoke
-      // test that only checks for 200 still catches it.
-      status: store.blockedReason ? 503 : 200,
+      // test that only checks for 200 still catches it. A store nobody can read counts.
+      status: store.blockedReason || lost ? 503 : 200,
       body: {
-        ok: !store.blockedReason,
+        ok: !store.blockedReason && !lost,
         store: store.id,
         durable: store.durable,
         classroomReady,
+        storeKey: key,
         reason,
         challenges: [PLAN_UNDER_PRESSURE.id],
         // What the retention promise has actually done, so a district can see the control
@@ -411,6 +419,27 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
     return fail(403, "not_authorised", "This link does not open that class.");
   }
 
+  // PATCH /classes/:code — the name, and only the name.
+  //
+  // A class could not be renamed. Not by anybody, not ever: there was `POST /classes`, there
+  // was `DELETE`, and there was nothing in between — so a teacher who typed "Perido 6" between
+  // periods carried it for the class's whole hundred-and-twenty-day life, onto every printed
+  // card, the debrief they read aloud, and the exported gradebook. The product's only answer to
+  // a typo was to delete the class and lose the children's work inside it.
+  //
+  // Creation is deliberately four seconds long, which is exactly why this is needed: a setup
+  // that cheap is a setup a teacher does fast, and fast is where the typo comes from.
+  //
+  // The name is the only field this accepts. The code, the key, the owner and the dates are
+  // identity and provenance, and a route that could edit them would be a different and much
+  // more dangerous route wearing this one's name.
+  if (request.method === "PATCH" && segments.length === 2) {
+    const label = cleanDisplayName((body as { label?: unknown }).label);
+    if (!label) return fail(400, "bad_request", "Give the class a name.");
+    await store.putClass({ ...record, label: label.slice(0, 60) });
+    return { status: 200, body: { code: record.code, label: label.slice(0, 60) } };
+  }
+
   // DELETE /classes/:code — the class and everything in it, gone.
   //
   // The operation a district asks for and this service could not perform. A retention
@@ -480,26 +509,6 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
         feedback: await store.listFeedback(record.code),
       },
     };
-  }
-
-  // PUT /classes/:code/taught — the teacher records that this class has been taught an
-  // objective, or takes it back. Never derived from anything a student did (§15.3).
-  if (request.method === "PUT" && segments.length === 3 && segments[2] === "taught") {
-    const body = (request.body ?? {}) as { frameworkId?: unknown; standardCode?: unknown; taught?: unknown };
-    if (typeof body.frameworkId !== "string" || typeof body.standardCode !== "string" || typeof body.taught !== "boolean") {
-      return fail(400, "bad_request", "That coverage mark could not be read.");
-    }
-    if (!standardByRef({ frameworkId: body.frameworkId as FrameworkId, code: body.standardCode })) {
-      return fail(400, "bad_request", "No objective in this framework carries that code.");
-    }
-    const others = (record.taughtObjectives ?? []).filter(
-      (marker) => marker.frameworkId !== body.frameworkId || marker.standardCode !== body.standardCode,
-    );
-    const taughtObjectives = body.taught
-      ? [...others, { frameworkId: body.frameworkId, standardCode: body.standardCode, markedAt: now }]
-      : others;
-    await store.putClass({ ...record, taughtObjectives });
-    return { status: 200, body: { taughtObjectives } };
   }
 
   // POST /classes/:code/submissions/:seat/overrides — a teacher disagrees, on the record.

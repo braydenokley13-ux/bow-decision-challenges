@@ -20,6 +20,18 @@ import { createCipheriv, createDecipheriv, createHmac, randomBytes } from "node:
  * record edited on disk fails to open rather than opening as something else — which matters
  * here because these files are read back as authorisation decisions, not only as content.
  *
+ * That last sentence was false for one release and a second vendor review found it. `open()`
+ * passed any record that was not a sealed envelope straight through as plain JSON, so the
+ * seal protected confidentiality and nothing else: an attacker who could *write* one file —
+ * a read-write mount, a co-tenant, a restore host, an insider — replaced a sealed teacher
+ * record with a plaintext one carrying a password hash of their choosing, signed in, and read
+ * the whole evidence room decrypted. No key required. Tamper-evidence you can turn off by
+ * writing plaintext is not tamper-evidence.
+ *
+ * So a keyed vault now refuses an unsealed record. The migration case it existed for is real
+ * and still served, but by an operator turning it on for one boot (`acceptLegacyPlaintext`)
+ * rather than by every deployment accepting forged records forever.
+ *
  * The session secret is derived from the same key rather than stored, so it exists in memory
  * and in the operator's secret manager and nowhere else. A file nobody writes is a file
  * nobody can steal.
@@ -31,7 +43,7 @@ const IV_BYTES = 12;
 export interface Vault {
   /** The bytes to put on disk for one record. */
   seal(value: unknown): string;
-  /** A record back, whether it was sealed or written before sealing existed. */
+  /** A record back, or null if it was not written by this key. */
   open<T>(raw: string): T | null;
   /** A purpose-separated secret derived from the same key. Never written anywhere. */
   derive(purpose: string): string;
@@ -70,7 +82,14 @@ export const STORE_KEY_HELP =
   + "in the same place as your other secrets, keep a copy, and do not put it in the data directory. "
   + "Losing it means losing every class; changing it means every existing class becomes unreadable.";
 
-export function vault(key: Buffer): Vault {
+/**
+ * `acceptLegacyPlaintext` is the one-boot migration door, and it is off unless an operator
+ * opens it. While it is open the store will read records nobody's key wrote, which is exactly
+ * the property that makes it useful for converting a pre-encryption directory and exactly the
+ * property that makes it a forgery window. It belongs to a maintenance window, not to a
+ * default.
+ */
+export function vault(key: Buffer, options: { acceptLegacyPlaintext?: boolean } = {}): Vault {
   return {
     seal(value) {
       const iv = randomBytes(IV_BYTES);
@@ -90,10 +109,11 @@ export function vault(key: Buffer): Vault {
       } catch {
         return null;
       }
-      // Written before this existed. It opens, and the next write seals it — so a deployment
-      // that turns encryption on converts itself as it is used rather than needing a migration
-      // somebody has to remember to run.
-      if (!isSealed(parsed)) return parsed as T;
+      // Not sealed by anybody. Refused, because these records are read back as authorisation
+      // decisions: a teacher record decides who opens an evidence room, and a roster entry
+      // decides whose seat a child is sitting in. A deployment converting a pre-encryption
+      // directory opens the door deliberately, for as long as that takes.
+      if (!isSealed(parsed)) return options.acceptLegacyPlaintext ? (parsed as T) : null;
       try {
         const decipher = createDecipheriv("aes-256-gcm", key, Buffer.from(parsed.iv, "base64"));
         decipher.setAuthTag(Buffer.from(parsed.tag, "base64"));

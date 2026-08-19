@@ -154,7 +154,13 @@ describe("assignments survive the stores that claim to keep things", () => {
     }
     const original = globalThis.fetch;
     globalThis.fetch = fakeRedis();
-    return { store: redisRestStore("https://kv.test", "token"), done: () => { globalThis.fetch = original; } };
+    // Keyed, like every managed deployment now is. This argument was absent, and its absence
+    // is what let a release ship in which the driver sealed the whole Upstash command envelope
+    // rather than the value inside it: with no key there was nothing to seal, so the fake KV
+    // below — which parses the request body as the command array, exactly as Upstash does —
+    // never saw the shape a real deployment would have sent it. A driver test that does not
+    // exercise the configuration the product ships is a test of a configuration nobody runs.
+    return { store: redisRestStore("https://kv.test", "token", sealed()), done: () => { globalThis.fetch = original; } };
   }
 
   it.each(["file", "redis"] as const)("round-trips an assignment through the %s store", async (name) => {

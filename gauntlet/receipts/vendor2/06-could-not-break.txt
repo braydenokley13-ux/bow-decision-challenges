@@ -1,0 +1,16 @@
+# Pinned SHA 300ce62.  What I could NOT break (re-tested).
+
+## Token tamper family (HMAC-SHA256, no alg field) - all rejected:
+   payload swapped to teacher, old sig kept -> 401
+   payload with empty signature            -> 401
+   self-minted unsigned teacher token      -> 401
+   (all 401)
+
+## No third-party / model egress: every front-end fetch targets CLASS_API_BASE (same-origin).
+   Only server outbound is the configured KV REST call. Runtime deps: react, react-dom, react-router-dom, vite.
+   grep of src for external hosts (excluding same-origin API + static citation URLs): none.
+
+## Blind index is blind against a READ-only disk thief: joinCodeIndex is HMAC keyed by a secret
+   derived from BOW_STORE_KEY, and it lives inside sealed roster files - both the index values
+   and the key are unavailable without BOW_STORE_KEY, so no rainbow table over the 5-char space.
+   (Defeated only via the write-downgrade path, finding #2.)

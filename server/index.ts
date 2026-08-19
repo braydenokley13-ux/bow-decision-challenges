@@ -95,11 +95,7 @@ export function createApiServer(store: ClassStore = storeFromEnvironment()) {
         headers: Object.fromEntries(
           Object.entries(request.headers).map(([name, value]) => [name.toLowerCase(), Array.isArray(value) ? value[0] : value]),
         ),
-        // Only the rate limiter reads this, and it is never stored or logged. A proxy header
-        // is trusted only when one is configured, because a client can set it themselves.
-        clientId: (process.env.BOW_TRUST_PROXY === "1" ? String(request.headers["x-forwarded-for"] ?? "").split(",")[0]?.trim() : "")
-          || request.socket.remoteAddress
-          || "anonymous",
+        clientId: callerOf(request.headers["x-forwarded-for"], request.socket.remoteAddress),
         ...(body !== undefined ? { body } : {}),
       };
 
@@ -131,6 +127,30 @@ export function createApiServer(store: ClassStore = storeFromEnvironment()) {
  * well as in custody. So the default is loopback, and opening it wider is an explicit
  * statement that something else is terminating TLS.
  */
+/**
+ * Who the rate limiter is counting. Never stored, never logged, read in one place.
+ *
+ * `X-Forwarded-For` is a list a client can start. A proxy appends the address it saw to the
+ * right-hand end, so the rightmost entry is the one written by the hop nearest this process
+ * and every entry further left was written by somebody further away — including, at the far
+ * left, whatever the caller invented. Reading `[0]` therefore read the attacker's own string:
+ * a vendor review made three hundred wrong join-code guesses with a rotating first entry and
+ * had none of them blocked, which turns every per-address limit in the product off.
+ *
+ * So `BOW_TRUST_PROXY` is now a count of the proxies actually in front of this process, and
+ * the address is taken that many places in from the right. `1` — the value the old flag
+ * used — still means the single proxy case and now means it correctly. Unset means there is
+ * no proxy and the socket is the truth.
+ */
+export function callerOf(header: string | string[] | undefined, socketAddress?: string): string {
+  const hops = Number(process.env.BOW_TRUST_PROXY ?? 0);
+  const socket = socketAddress || "anonymous";
+  if (!Number.isInteger(hops) || hops < 1) return socket;
+  const chain = String(Array.isArray(header) ? header[0] : header ?? "")
+    .split(",").map((entry) => entry.trim()).filter(Boolean);
+  return chain[chain.length - hops] ?? socket;
+}
+
 export function bindHost(env: Record<string, string | undefined> = process.env): string {
   return env.BOW_BIND_HOST ?? "127.0.0.1";
 }

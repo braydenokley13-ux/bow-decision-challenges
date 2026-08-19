@@ -1,0 +1,15 @@
+# Pinned SHA 300ce62. FINDING: X-Forwarded-For spoof defeats every per-address rate limit.
+# server/index.ts trusts the LEFTMOST XFF value when BOW_TRUST_PROXY=1 (required behind an edge);
+# api/[[...route]].ts trusts it UNCONDITIONALLY on Vercel. The leftmost value is client-controlled.
+# This server runs with BOW_TRUST_PROXY=1.
+
+## Baseline: 130 wrong join attempts from a FIXED spoofed address -> limiter trips (429):
+   last status after 130 wrong joins (XFF=9.9.9.9): 429   (429 = limiter working)
+
+## Bypass: 300 wrong join attempts, each with a FRESH spoofed XFF -> limiter never trips:
+   number of 429s across 300 fresh-XFF attempts: 0   (0 = every rate limit bypassed)
+
+# Consequence: join-code brute force (wrong codes are cheap on the server too - no scrypt runs
+# unless the keyed index matches), teacher-account lockout floods, and signup/submission floods
+# all run unbounded. The code repeatedly calls this limiter 'the only thing standing between an
+# unauthenticated endpoint and a script' (handler.ts, identity.ts).

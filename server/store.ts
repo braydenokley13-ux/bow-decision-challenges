@@ -178,7 +178,24 @@ export interface ClassStore {
 
   getShareOut(code: string): Promise<ShareOutSelection | null>;
   putShareOut(record: ShareOutSelection): Promise<void>;
+  /**
+   * Whether this store's key still opens what this store already wrote.
+   *
+   * A rotated or mistyped `BOW_STORE_KEY` is indistinguishable from an empty store: every
+   * record fails to authenticate, every read answers null, and a vendor review found the
+   * health endpoint reporting `classroomReady: true` over a directory of classes nobody could
+   * open any more. A teacher would have discovered it by standing in front of a class whose
+   * work had apparently never existed. So a durable store keeps one sealed record of its own
+   * and is asked, on the one endpoint an operator actually looks at, whether it can still read
+   * it. `fresh` means nothing has been written yet and there is nothing to lose.
+   */
+  keyCheck?(): Promise<KeyCheck>;
 }
+
+export type KeyCheck = "ok" | "fresh" | "mismatch";
+
+/** What the canary holds. Its value is not a secret; its readability is the whole signal. */
+const VAULT_CANARY = "bow.vault.canary.v1";
 
 /** A stable, non-reversing key for an email address, so no address is a filename or a redis key. */
 export function emailKey(email: string): string {
@@ -350,6 +367,16 @@ function bySeat(a: { seatCode: string }, b: { seatCode: string }): number {
  */
 export function fileStore(root: string, keeper: Vault): ClassStore {
   const classPath = (code: string) => join(root, code, "class.json");
+  // Sealed with the same key as everything else, and the only record here whose contents
+  // nobody cares about: what it proves is that the key still opens this directory.
+  const canaryPath = join(root, "_vault-check.json");
+  async function plantCanary(): Promise<void> {
+    try {
+      await readFile(canaryPath, "utf8");
+    } catch {
+      await writeAtomic(canaryPath, VAULT_CANARY);
+    }
+  }
   const assignmentPath = (code: string, id: string) => join(root, code, "assignments", `${id}.json`);
   const submissionPath = (code: string, record: Pick<SubmissionRecord, "seatCode" | "sessionId">) =>
     join(root, code, "submissions", `${submissionKey(record)}.json`);
@@ -406,8 +433,20 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
   return {
     id: "file",
     durable: true,
+    keyCheck: async () => {
+      let raw: string;
+      try {
+        raw = await readFile(canaryPath, "utf8");
+      } catch {
+        return "fresh";
+      }
+      return keeper.open<string>(raw) === VAULT_CANARY ? "ok" : "mismatch";
+    },
     getClass: (code) => readJson<StoredClass>(classPath(code)),
-    putClass: (record) => writeAtomic(classPath(record.code), record),
+    putClass: async (record) => {
+      await writeAtomic(classPath(record.code), record);
+      await plantCanary();
+    },
     listAssignments: async (code) =>
       (await readFolder<Assignment>(code, "assignments")).sort((a, b) => a.createdAt - b.createdAt),
     putAssignment: (record) => writeAtomic(assignmentPath(record.classId, record.id), record),
@@ -520,12 +559,18 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
  * fetch call, works unchanged inside a serverless function, and does not add a dependency
  * to a product that otherwise has four.
  */
-export function redisRestStore(url: string, token: string, keeper?: Vault): ClassStore {
+export function redisRestStore(url: string, token: string, keeper: Vault): ClassStore {
   async function command<T>(...args: (string | number)[]): Promise<T | null> {
     const response = await fetch(url, {
       method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: put(args),
+      // The command itself, in the clear, because it is a wire protocol and not a record.
+      // This line read `put(args)` for one release, which sealed the whole `["SET", key, …]`
+      // envelope — so a deployment that set a store key sent Upstash ciphertext it could not
+      // parse and every single request 400'd. A vendor review found it by running the driver
+      // against a spec-correct mock: the security-conscious configuration was a total outage,
+      // which meant in practice that nobody would use it. What is sealed is `put(value)`,
+      // below, one argument in.
+      body: JSON.stringify(args),
     });
     if (!response.ok) throw new Error(`Class store rejected ${args[0]}: ${response.status}`);
     const body = (await response.json()) as { result?: T };
@@ -564,12 +609,21 @@ export function redisRestStore(url: string, token: string, keeper?: Vault): Clas
   return {
     id: "redis",
     durable: true,
+    keyCheck: async () => {
+      const raw = await command<string>("GET", "bow:vault-check");
+      if (!raw) return "fresh";
+      return get<string>(raw) === VAULT_CANARY ? "ok" : "mismatch";
+    },
     getClass: async (code) => {
       const raw = await command<string>("GET", `class:${code}`);
       return raw ? get<StoredClass>(raw) : null;
     },
     putClass: async (record) => {
       await command("SET", `class:${record.code}`, put(record), "EX", ttl(record));
+      // NX so the first class written under a key plants the canary and later ones leave it
+      // alone — the point is to hold the key this store's records were written with, not the
+      // key the most recent boot happened to have.
+      await command("SET", "bow:vault-check", put(VAULT_CANARY), "NX");
     },
     listAssignments: async (code) =>
       (await readHash<Assignment>(`assignments:${code}`)).sort((a, b) => a.createdAt - b.createdAt),
@@ -621,20 +675,13 @@ export function redisRestStore(url: string, token: string, keeper?: Vault): Clas
       }
     },
 
-    sessionSecret: async () => {
-      // Derived from the operator's key when there is one, and then it touches no store at all.
-      if (keeper) return keeper.derive("session");
-      const existing = await command<string>("GET", "bow:session-secret");
-      if (existing) return existing;
-      // `Math.random()` was here, which this codebase already knows better than — `crypto.ts`
-      // replaced it for class codes for exactly this reason, and left the most important secret
-      // in the system on the weak generator.
-      const secret = randomBytes(32).toString("base64url");
-  void plainVault;
-      // NX so two functions cold-starting in the same second cannot sign with different keys.
-      await command("SET", "bow:session-secret", secret, "NX");
-      return (await command<string>("GET", "bow:session-secret")) ?? secret;
-    },
+    // Derived, never stored — the same rule the disk follows, for the same reason. This used
+    // to fall back to minting a secret and keeping it at `bow:session-secret` whenever the
+    // deployment had no key, which put the HMAC that signs every token in the managed store
+    // beside the names and evidence it protects. One read of that key was the power to mint a
+    // valid session for any teacher or any child in the deployment, which is precisely the
+    // finding the disk was fixed for. A managed deployment now needs a key too.
+    sessionSecret: () => Promise.resolve(keeper.derive("session")),
     getTeacher: async (id) => {
       const raw = await command<string>("GET", `teacher:${id}`);
       return raw ? get<StoredTeacher>(raw) : null;
@@ -652,7 +699,11 @@ export function redisRestStore(url: string, token: string, keeper?: Vault): Clas
     listClassesForTeacher: async (teacherId) =>
       (await readHash<{ code: string }>(`teacher-classes:${teacherId}`)).map((entry) => entry.code),
     linkClassToTeacher: async (teacherId, code) => {
-      await command("HSET", `teacher-classes:${teacherId}`, code, JSON.stringify({ code }));
+      // Sealed like everything else. It is only a class code, but a store full of sealed
+      // records with one readable index is a store that tells a reader which teacher owns
+      // which classes — and "it is only metadata" is the sentence at the start of every
+      // re-identification.
+      await command("HSET", `teacher-classes:${teacherId}`, code, put({ code }));
     },
 
     getStudent: async (id) => {
@@ -778,7 +829,14 @@ export function storeFromEnvironment(env: Record<string, string | undefined> = p
   // and belongs in a data processing agreement; a key still seals the values and lifts the
   // signing secret off the store, so it is worth having and is not worth taking a working
   // deployment down over on an upgrade.
-  if (url && token) return redisRestStore(url, token, keeper);
+  // Same rule as the disk below, and for the same records. A managed store holds children's
+  // names, their written explanations and every teacher key; the only difference is whose
+  // hardware it is on, and that difference makes the case for encryption stronger rather than
+  // weaker, because a subprocessor is one more party who can read it. This was optional for
+  // one release, on the reasoning that refusing to boot would take a lesson down over a
+  // paperwork question — but a keyless managed deployment also put the token-signing secret in
+  // the same store as the data, so it was never a paperwork question.
+  if (url && token) return keeper ? redisRestStore(url, token, keeper) : unconfiguredStore(NO_STORE_KEY);
   // A disk is different, and this is the one place the product refuses to run. Self-hosted, the
   // records this writes are children's names, their written explanations and every teacher key
   // — and a vendor review found all of it in plain JSON, beside the HMAC secret that signs

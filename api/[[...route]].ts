@@ -17,6 +17,19 @@ import { storeFromEnvironment } from "../server/store";
  */
 const store = storeFromEnvironment();
 
+/**
+ * Who the rate limiter is counting, on a platform that always sits behind its own proxy.
+ *
+ * Never stored, never logged, read in one place. The platform's own header wins; failing
+ * that, the last entry of the forwarded chain — the one written by the hop nearest this
+ * function, rather than the first, which is written by the caller.
+ */
+function callerOf(realIp: string | null, forwarded: string | null): string {
+  if (realIp?.trim()) return realIp.trim();
+  const chain = (forwarded ?? "").split(",").map((entry) => entry.trim()).filter(Boolean);
+  return chain[chain.length - 1] ?? "anonymous";
+}
+
 export default async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const cors: Record<string, string> = {
@@ -24,6 +37,15 @@ export default async function handler(request: Request): Promise<Response> {
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-BOW-Teacher-Key",
     "Vary": "Origin",
+    // The same four the self-hosted server has sent for a while, and this path had none of
+    // them. `no-store` is the one that matters here: without it a shared classroom machine,
+    // or any cache between it and the platform, is free to keep a response containing a
+    // class's names and a child's written explanation. `nosniff` because a JSON body holding
+    // markup must never be rendered as one, `DENY` because nothing here belongs in a frame.
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "same-origin",
+    "Cache-Control": "no-store",
   };
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
 
@@ -47,7 +69,12 @@ export default async function handler(request: Request): Promise<Response> {
           "x-bow-teacher-key": request.headers.get("x-bow-teacher-key") ?? undefined,
           authorization: request.headers.get("authorization") ?? undefined,
         },
-        clientId: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "anonymous",
+        // The rightmost entry, not the leftmost. `X-Forwarded-For` is a list a caller can
+        // start and a proxy appends to, so the left-hand end is whatever the client typed —
+        // reading it turned every per-address rate limit in the product off, which a vendor
+        // review demonstrated with three hundred unblocked join-code guesses. `x-real-ip` is
+        // set by the platform rather than forwarded, so it is preferred where it exists.
+        clientId: callerOf(request.headers.get("x-real-ip"), request.headers.get("x-forwarded-for")),
         ...(body !== undefined ? { body } : {}),
       },
       { store },

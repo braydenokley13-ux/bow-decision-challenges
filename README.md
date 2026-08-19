@@ -62,7 +62,20 @@ flow and screenshots every stage at 1366×768, 1024×600 and 640px wide, reporti
 horizontal overflow or console error it finds. It runs through the same helpers as the
 assertion suite, so the two cannot describe different products.
 
-On a machine whose Chromium was not installed by Playwright, set `CHROMIUM_PATH`.
+On a machine whose Chromium was not installed by this exact Playwright, set `CHROMIUM_PATH`, and
+check that you did before believing any result. Playwright pins a browser build to the library
+version — 1.62.1 asks for chromium 1234 — and refuses to launch a different one it finds, so an
+image carrying, say, build 1194 fails every test in about three milliseconds with
+`browserType.launch: Executable doesn't exist`. Nothing launched and nothing was asserted; a
+report of the suite that does not say which browser it started is not a report of the suite.
+
+```
+ls /opt/pw-browsers                                    # what this image actually has
+CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npx playwright test
+```
+
+`playwright install` does not close the gap on a sandboxed image; it downloads nothing and
+leaves the same error behind a longer wait.
 
 ## How long it takes
 
@@ -146,9 +159,11 @@ BOW publishes the mapping as its own claim: **NYSED has not reviewed or endorsed
 A Vite SPA plus a small class service. `vercel.json` keeps `/api/*` off the SPA rewrite and
 routes it to `api/[[...route]].ts`.
 
-Before running a real class on serverless, set `KV_REST_API_URL` and `KV_REST_API_TOKEN`
-(Vercel KV or Upstash). Without them there is nowhere durable to write, and the service
-**refuses to open a class rather than accept one it is going to lose** — a serverless
+Before running a real class on serverless, set `KV_REST_API_URL`, `KV_REST_API_TOKEN`
+(Vercel KV or Upstash) **and `BOW_STORE_KEY`**. Without a durable store there is nowhere to
+write, and without a key the store holds children's names and the secret that signs every
+session token in the clear — so the service
+**refuses to open a class rather than accept one it is going to lose or leak** — a serverless
 deployment writing to a container disk answers every request successfully and then loses the
 class the first time the platform hands it a different container, which happens mid-lesson to
 work students have already turned in.
@@ -156,8 +171,15 @@ work students have already turned in.
 `GET /api/health` is the one thing to read after a deploy:
 
 ```json
-{ "ok": true, "store": "redis", "durable": true, "classroomReady": true, "reason": "…" }
+{ "ok": true, "store": "redis", "durable": true, "classroomReady": true, "storeKey": "ok", "reason": "…" }
 ```
+
+`storeKey` answers a question a deployment cannot otherwise be asked: does this key still open
+what this store already wrote? A rotated or mistyped `BOW_STORE_KEY` is indistinguishable from
+an empty store — every record fails to authenticate and every read answers "no such class" —
+so the store keeps one sealed record of its own and reports `mismatch` with a `503` rather than
+letting a health check go green over a term of classes nobody can open. Nothing is deleted when
+that happens. Put the original key back.
 
 `classroomReady` is false unless a class written now would still be there on Friday. A
 deployment with nowhere durable to write answers `503` with the environment variables to set.
@@ -185,10 +207,22 @@ is not a class — `GET /api/health` reports `classroomReady: false` and says wh
 `BOW_BIND_HOST` to open it wider, and put a TLS terminator in front before any class uses it —
 otherwise children's names and their written work cross the school network in the clear.
 
-The managed path runs without `BOW_STORE_KEY`, because at-rest encryption there is the KV
-subprocessor's control and belongs in a data processing agreement. Setting it anyway means the
-subprocessor holds ciphertext, which is a materially different conversation with a privacy
+**`BOW_STORE_KEY` is required on the managed path too**, and for the same records — the only
+difference is whose hardware they sit on, and a subprocessor is one more party who can read
+them. It was optional for one release, on the reasoning that at-rest encryption in a KV is the
+subprocessor's control and belongs in a data processing agreement. A second security review
+showed that was the wrong frame: a keyless managed deployment also kept the HMAC that signs
+every session token in the same store as the names it protects, so one read of that key was the
+power to mint a valid session for any teacher or any child. Set it, and the subprocessor holds
+ciphertext as well — which is a materially different conversation to have with a privacy
 officer.
+
+**`BOW_TRUST_PROXY` — how many proxies are in front of this process.** Unset by default, which
+means the socket address is the truth. `X-Forwarded-For` is a list a caller can start and each
+proxy appends to, so the *rightmost* entries are the trustworthy ones; set this to the number of
+hops you actually run and the rate limiter counts the address that many places in from the
+right. Trusting the leftmost entry — which the product did — lets any caller rotate a header and
+walk straight through every per-address limit in the service.
 
 ### What is kept, and what deletes it
 
