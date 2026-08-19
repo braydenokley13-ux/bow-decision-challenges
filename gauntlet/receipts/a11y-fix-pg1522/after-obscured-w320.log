@@ -3,7 +3,7 @@
 ######## PROBE G — w320, viewport {"width":320,"height":640} ########
 
 --- the opening plan board — reading tools CLOSED ---
-   1. [covered 73%] button.ledger__toggle "See where the money goes" at 64,592 232x44 — under aside.reading-tools — visible samples 5/25
+   1. [covered 73%] button.ledger__toggle "See where the money goes" at 64,592 232x44 — under aside.reading-tools — visible samples 17/25
    2. [clear] button "1Money coming in" at 12,185 153x34 — visible samples 25/25
    3. [clear] button "2The two bonuses" at 12,223 152x34 — visible samples 25/25
    4. [clear] button "3Money already owed" at 12,261 174x34 — visible samples 25/25
@@ -23,8 +23,8 @@
   18. [covered 10%] button.reading-tools__pill "Reading help" at 16,580 146x44 — under aside.plan-rail — visible samples 25/25
   20. [clear] a.app-mark "BOW Decision Challenges home" at 8,25 175x54 — visible samples 25/25
   21. [clear] summary "The four payments▾" at 187,8 125x40 — visible samples 25/25
-  22. [clear] summary "This run: VEVTR · seat 1" at 187,56 125x40 — visible samples 25/25
-  23. [covered 73%] button.ledger__toggle "See where the money goes" at 64,592 232x44 — under aside.reading-tools — visible samples 5/25
+  22. [clear] summary "This run: 44YWK · seat 1" at 187,56 125x40 — visible samples 25/25
+  23. [covered 73%] button.ledger__toggle "See where the money goes" at 64,592 232x44 — under aside.reading-tools — visible samples 17/25
   24. [clear] button "1Money coming in" at 12,340 153x34 — visible samples 25/25
   25. [clear] button "2The two bonuses" at 12,378 152x34 — visible samples 25/25
   26. [clear] button "3Money already owed" at 12,416 174x34 — visible samples 25/25
@@ -50,7 +50,7 @@
    4. [clear] button.reading-tools__hide "Hide" at 258,596 50x32 — visible samples 25/25
    6. [clear] a.app-mark "BOW Decision Challenges home" at 8,25 175x54 — visible samples 25/25
    7. [clear] summary "The four payments▾" at 187,8 125x40 — visible samples 25/25
-   8. [clear] summary "This run: VEVTR · seat 1" at 187,56 125x40 — visible samples 25/25
+   8. [clear] summary "This run: 44YWK · seat 1" at 187,56 125x40 — visible samples 25/25
    9. [clear] button.ledger__toggle "See where the money goes" at 64,483 232x44 — visible samples 25/25
   10. [clear] button "1Money coming in" at 12,285 153x34 — visible samples 25/25
   11. [clear] button "2The two bonuses" at 12,323 152x34 — visible samples 25/25
@@ -74,7 +74,7 @@
   29. [clear] button.reading-tools__hide "Hide" at 258,596 50x32 — visible samples 25/25
   31. [clear] a.app-mark "BOW Decision Challenges home" at 8,25 175x54 — visible samples 25/25
   32. [clear] summary "The four payments▾" at 187,8 125x40 — visible samples 25/25
-  33. [clear] summary "This run: VEVTR · seat 1" at 187,56 125x40 — visible samples 25/25
+  33. [clear] summary "This run: 44YWK · seat 1" at 187,56 125x40 — visible samples 25/25
   34. [clear] button.ledger__toggle "See where the money goes" at 64,483 232x44 — visible samples 25/25
   35. [clear] button "1Money coming in" at 12,285 153x34 — visible samples 25/25
   36. [clear] button "2The two bonuses" at 12,323 152x34 — visible samples 25/25

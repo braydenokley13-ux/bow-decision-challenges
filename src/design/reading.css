@@ -93,6 +93,31 @@ main:has(~ .reading-tools[data-open="true"]) {
   :root:has(.reading-tools[data-open="true"]) .plan-rail {
     bottom: var(--bow-reading-tools);
   }
+
+}
+
+/*
+ * Closed, only the pill itself catches a tap — the box around it does not.
+ *
+ * `.reading-tools` is a fixed container up to 340px wide holding a 146px pill, and the empty
+ * two thirds of it was swallowing pointer events. At 320, where the money rail is a bar across
+ * the same bottom corner, asking `document.elementFromPoint` what is painted at the centre of
+ * *See where the money goes* answered `aside.reading-tools` on five screens of the run: a tap
+ * on the money breakdown opened the reading tools instead. Keyboard users never saw it,
+ * because `Tab` and `Enter` do not care what is on top, so this only ever hit the student
+ * using a finger — on a phone, or at 400% zoom, which is the same pixels.
+ *
+ * Lifting the pill clear of the rail was tried first and measured worse: it landed on
+ * *Check this plan*, entirely hidden at 0 of 25 sample points, with the tools **closed** — a
+ * 2.4.11 failure for every student rather than a tap collision for some. The pill stays where
+ * it was designed to be, and stops claiming the space it does not paint.
+ */
+.reading-tools:not([data-open="true"]) {
+  pointer-events: none;
+}
+
+.reading-tools:not([data-open="true"]) .reading-tools__pill {
+  pointer-events: auto;
 }
 
 .reading-tools__pill,
