@@ -16,5 +16,12 @@
   // educator surface renders, and a browser test that spelled a level itself would pass while
   // the screen said something else. Reading it is what let the golden journeys survive the
   // vocabulary rename without a single assertion being edited.
-  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "eslint.config.js", "e2e/**/*.ts", "server/**/*.ts", "api/**/*.ts", "src/domain/**/*.ts", "src/platform/**/*.ts", "src/test/**/*.ts", "src/components/financial/choices.ts", "src/educator/labels.ts"]
+  //
+  // `fixtures/demoClass.ts` is here for the inverse reason. The pilot rehearsal's job is partly
+  // to prove no fixture ever reaches a real class, and it checked that by naming three strings
+  // the sample class used to contain — every one of which the sample class stopped containing
+  // when it was rebuilt, leaving three assertions that were green against a page leaking the
+  // fixture and green against a blank page equally. A "this must not appear" test is only worth
+  // anything when the thing it names is read from whatever would produce it.
+  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "eslint.config.js", "e2e/**/*.ts", "server/**/*.ts", "api/**/*.ts", "src/domain/**/*.ts", "src/platform/**/*.ts", "src/test/**/*.ts", "src/components/financial/choices.ts", "src/educator/labels.ts", "src/fixtures/demoClass.ts"]
 }

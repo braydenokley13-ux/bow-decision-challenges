@@ -5,11 +5,50 @@ export default defineConfig({
   fullyParallel: false,
   retries: 0,
   reporter: "list",
+  /**
+   * Twenty seconds for a single assertion, not Playwright's five.
+   *
+   * Five seconds was measuring how busy the machine is. Every screen this suite asserts on is
+   * behind at least one round trip to the class service, and the class page is behind three —
+   * the class, the roster and the progress — before it can lead with anything at all. Running
+   * two browsers on four cores put those over five seconds often enough that the same file
+   * passed alone and failed in company, and a suite whose answer depends on what else is
+   * running is not evidence about the product.
+   *
+   * It is a ceiling on patience, not a budget: an assertion that is going to pass still passes
+   * the moment it can, so this costs nothing except on the assertions that were going to fail
+   * anyway. Anything genuinely hung still fails on the per-test timeout above it.
+   */
+  expect: { timeout: 20_000 },
   use: {
     baseURL: "http://127.0.0.1:4173",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
-    // CI images that ship their own Chromium can point at it instead of downloading one.
+    /**
+     * CI images that ship their own Chromium point at it here instead of downloading one.
+     *
+     * **On an image whose Chromium was not installed by this exact Playwright, setting this is
+     * not optional — it is the difference between running the suite and not running it.**
+     * Playwright pins a browser build to the library version and refuses to launch anything
+     * else it finds: `@playwright/test` 1.62.1 asks for build 1234, and an image carrying build
+     * 1194 produces
+     *
+     *     Error: browserType.launch: Executable doesn't exist at
+     *     /opt/pw-browsers/chromium_headless_shell-1234/chrome-headless-shell-linux64/...
+     *
+     * on **every** test, in about three milliseconds each. A whole suite failing that fast
+     * reads like a broken product and is nothing of the kind: not one browser was started and
+     * not one assertion was evaluated. It is also why nobody should believe a report of the
+     * suite — green or red — that does not say which browser it launched.
+     *
+     * The incantation on an image like that, with the browser it actually has:
+     *
+     *     CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npx playwright test
+     *
+     * `ls /opt/pw-browsers` (or wherever `PLAYWRIGHT_BROWSERS_PATH` points) names the build
+     * that is really there. Do not run `playwright install` to close the gap: on a sandboxed
+     * image it downloads nothing and leaves the same error behind a longer wait.
+     */
     ...(process.env.CHROMIUM_PATH ? { launchOptions: { executablePath: process.env.CHROMIUM_PATH } } : {}),
   },
   projects: [

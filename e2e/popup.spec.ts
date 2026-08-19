@@ -2,6 +2,7 @@ import { expect, test, type APIRequestContext, type Page } from "@playwright/tes
 import { createClass, createClassKeyFor, gotoFreshChallenge, noHorizontalOverflow, noSeriousAxeViolations, seatOnRoster, signIn } from "./flow";
 import { PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 import { POP_UP_NUMBERS as N } from "../src/domain/scenario/worlds/food-truck/numbers";
+import { parseDollars } from "../src/domain/core/money";
 import { cashToPlan, orderCost, owedUpFront, swapBill } from "../src/domain/scenario/worlds/food-truck/economy";
 import { POP_UP_SCENARIO } from "../src/domain/scenario/worlds/food-truck";
 import { WORLD_REGISTRY } from "../src/domain/scenario/registry";
@@ -107,6 +108,36 @@ async function buildOpeningPlan(page: Page, plan: { stock: number; cushion: numb
 }
 
 /**
+ * What a money field currently holds, read the way the product writes it.
+ *
+ * These were `Number(await field.inputValue())`, which was right while the box held a bare
+ * `550` and silently became `NaN` the day it started holding `$550` — the field and the amount
+ * printed 40px to its left were two notations for one number, and the bare one was the one a
+ * child was asked to read a decision off, so the field now says what the row says. `NaN` is the
+ * worst possible failure here: it is arithmetic, so it propagates into the next `fill()`, the
+ * control rejects the unparseable value and keeps what it had, and the test fails three steps
+ * later on a button that never appeared. `parseDollars` is the product's own reader.
+ */
+async function heldInLine(page: Page, label: string): Promise<number> {
+  const shown = await page.getByRole("spinbutton", { name: label }).inputValue();
+  const parsed = parseDollars(shown);
+  expect(parsed, `could not read a money field: ${JSON.stringify(shown)}`).not.toBeNull();
+  return parsed!;
+}
+
+/** The card's own sentence for what a line leaves to cook, filled in the way the screen fills it. */
+function closerTrays(trays: number): string {
+  if (trays === 0) return COPY.plan.lineNotes.closerNothing;
+  if (trays === 1) return COPY.plan.lineNotes.closerTraysOne;
+  return COPY.plan.lineNotes.closerTrays.replace("{n}", String(trays));
+}
+
+/** Product copy read into a pattern is product copy, dots and dollar signs included. */
+function escapeForRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
  * The card that sends what is left to one line, found by the line it feeds.
  *
  * Its wording carries the amount and, since the shortcut started saying what it would leave
@@ -114,6 +145,19 @@ async function buildOpeningPlan(page: Page, plan: { stock: number; cushion: numb
  */
 function restLine(page: Page, line: "stock" | "cushion" | "cut") {
   return page.locator(`.popup-closer__choice button[data-line="${line}"]`);
+}
+
+/**
+ * The tips jar, answered.
+ *
+ * The one beat in this world where money will not stretch to everything with a claim on it.
+ * The night does not end until the student has said what the jar pays for and what made the
+ * rest matter less, which is the beat rather than an obstacle to it.
+ */
+async function settleTheTips(page: Page) {
+  await page.locator(".maybe-grid button").first().click();
+  await page.locator(".helper-card__ask .binary-choice button").first().click();
+  await page.getByRole("button", { name: COPY.tips.title }).click();
 }
 
 async function orderTrays(page: Page, trays: number) {
@@ -160,7 +204,12 @@ test.describe("Run the Pop-Up", () => {
     // that line took the lot. Sending it all to a line that is not stock is a legal plan that
     // opens four Saturdays with an empty window, and the card says so before it is pressed
     // rather than four Saturdays later.
-    await expect(restLine(page, "cut")).toHaveAccessibleName(new RegExp(`0 ${COPY.plan.lineNotes.stock}`));
+    // Composed as "0 trays of food to cook and sell." until the copy grew a sentence of its own
+    // for the nothing case — `closerNothing`, "Leaves nothing to cook." A count of zero read as
+    // a quantity where the card is trying to name a consequence, and the test was assembling
+    // that sentence out of two halves rather than reading the one the screen has. This reads
+    // the key the screen reads.
+    await expect(restLine(page, "cut")).toHaveAccessibleName(new RegExp(escapeForRegExp(closerTrays(0))));
     await expect(restLine(page, "cut")).toHaveAttribute("data-warn", "true");
     await expect(restLine(page, "stock")).toHaveAttribute("data-warn", "false");
 
@@ -189,8 +238,15 @@ test.describe("Run the Pop-Up", () => {
     await setLine(page, POP_UP_SCENARIO.lines.cushion.label, 400);
     const rest = cashToPlan(N, SPOT.id) - 1000;
     // With six hundred already on the stock line the same card is no longer a warning, and it
-    // says that too: ten trays, and the amount it would take.
-    await expect(restLine(page, "cut")).toHaveAccessibleName(new RegExp(`\\$${rest.toLocaleString("en-US")} 10 ${COPY.plan.lineNotes.stock}`));
+    // says that too: the trays that money buys, and the amount it would take.
+    //
+    // Composed as "10 trays of food to cook and sell." until the card's sentence was given its
+    // own copy key — `closerTrays`, "Leaves {n} trays to cook." — so the card names a
+    // consequence rather than reciting a quantity. The tray count is divided out of the stock
+    // line by the supplier's own price rather than written as ten.
+    const trays = 600 / N.trayCost;
+    await expect(restLine(page, "cut")).toHaveAccessibleName(
+      new RegExp(`\\$${rest.toLocaleString("en-US")} ${escapeForRegExp(closerTrays(trays))}`));
     await expect(restLine(page, "cut")).toHaveAttribute("data-warn", "false");
     await restLine(page, "cut").click();
     await expect(page.locator(".popup-commit")).toContainText(COPY.plan.balanced);
@@ -208,6 +264,9 @@ test.describe("Run the Pop-Up", () => {
     // Three trays into a booth that shifts thirty-eight plates sells out, so the organiser's
     // rebate lands as money this plan never counted on. The student's own stocking decided it.
     await expect(page.locator(".popup-verdict").first()).toContainText(COPY.standing.rebateEarnedWindfall);
+    // The tips jar: money that is not the truck's, three things that want it, and a reason for
+    // the one left out. The night does not end until both halves are answered.
+    await settleTheTips(page);
     await page.getByRole("button", { name: COPY.standing.alone }).click();
     await orderTrays(page, 3);
     await page.getByRole("button", { name: COPY.standing.action }).click();
@@ -226,7 +285,7 @@ test.describe("Run the Pop-Up", () => {
     // The cushion is holding the rebate the first Saturday earned as well as the 400 planned
     // into it, so the amount that frees exactly the bill is read off the row rather than
     // assumed.
-    const cushionHeld = Number(await page.getByRole("spinbutton", { name: POP_UP_SCENARIO.lines.cushion.label }).inputValue());
+    const cushionHeld = await heldInLine(page, POP_UP_SCENARIO.lines.cushion.label);
     await setLine(page, POP_UP_SCENARIO.lines.cushion.label, cushionHeld - swapBill(N));
     await page.getByRole("button", { name: COPY.repair.commit }).click();
 
@@ -235,7 +294,16 @@ test.describe("Run the Pop-Up", () => {
     await page.getByRole("button", { name: COPY.saturday.open }).click();
     await expect(page.getByRole("heading", { name: POP_UP_SCENARIO.settle.title })).toBeVisible();
     // The ending names decisions rather than restating a table of nights already watched.
-    await expect(page.locator(".season-table")).toHaveCount(0);
+    //
+    // That claim was checked as `.season-table` having no matches — a class name no component
+    // in this product has ever emitted. It survives only in `worlds.css`, so the assertion was
+    // true of the login screen, the front door and every screen in between, and would have
+    // stayed green if the four-row table had come back under any other name. What the ending
+    // actually promises is checked instead: no table at all on it, only the last night restated
+    // as the banner, and the figures that replaced the table on screen.
+    await expect(page.getByRole("table")).toHaveCount(0);
+    await expect(page.locator(".night")).toHaveCount(1);
+    await expect(page.locator(".settle-figures")).toBeVisible();
     await expect(page.locator(".resolve-risks li").first()).toBeVisible();
     await page.getByRole("button", { name: COPY.settle.action }).click();
 
@@ -277,7 +345,10 @@ test.describe("Run the Pop-Up", () => {
     const classCode = await classWithOneWorld(request, "basketball");
     await gotoFreshChallenge(page);
     await join(page, classCode, "3");
-    await expect(page.getByRole("button", { name: "Find Avery a place" })).toBeVisible();
+    // Straight into the season with nothing in between: the assertion is the absence of the
+    // picker plus arrival in Basketball's own story, named by the first screen that story has
+    // rather than by a contract screen the beats either side of it have twice moved.
+    await expect(page.getByRole("heading", { name: /Which place costs the least|Two of these payments have a rule/i })).toBeVisible();
     await expect(page.locator(".worldcard")).toHaveCount(0);
   });
 
@@ -377,6 +448,7 @@ test.describe("Run the Pop-Up", () => {
     await orderTrays(page, 3);
     await checkSum(page, COPY.saturday.order.label, orderCost(N, 3));
     await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await settleTheTips(page);
     await page.getByRole("button", { name: COPY.standing.alone }).click();
     await orderTrays(page, 3);
     await page.getByRole("button", { name: COPY.standing.action }).click();
@@ -424,6 +496,7 @@ test.describe("Run the Pop-Up", () => {
       await orderTrays(page, 3);
       await checkSum(page, COPY.saturday.order.label, orderCost(N, 3));
       await page.getByRole("button", { name: COPY.saturday.open }).click();
+      await settleTheTips(page);
       await page.getByRole("button", { name: COPY.standing.alone }).click();
       await orderTrays(page, 3);
       await page.getByRole("button", { name: COPY.standing.action }).click();
@@ -455,6 +528,7 @@ test.describe("reflow", () => {
     await page.getByRole("button", { name: COPY.saturday.open }).click();
     await noHorizontalOverflow(page);
 
+    await settleTheTips(page);
     await page.getByRole("button", { name: COPY.standing.alone }).click();
     await orderTrays(page, 3);
     await page.getByRole("button", { name: COPY.standing.action }).click();
@@ -464,7 +538,7 @@ test.describe("reflow", () => {
     await page.getByRole("button", { name: COPY.generator.action }).click();
     await noHorizontalOverflow(page);
 
-    const cushionHeld = Number(await page.getByRole("spinbutton", { name: POP_UP_SCENARIO.lines.cushion.label }).inputValue());
+    const cushionHeld = await heldInLine(page, POP_UP_SCENARIO.lines.cushion.label);
     await setLine(page, POP_UP_SCENARIO.lines.cushion.label, cushionHeld - swapBill(N));
     await page.getByRole("button", { name: COPY.repair.commit }).click();
     await noHorizontalOverflow(page);

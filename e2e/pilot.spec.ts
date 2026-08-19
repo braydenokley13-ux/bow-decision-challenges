@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { BACKUP_HEADING, savePlan, week5TotalFor, type PlanContext } from "./plan";
+import { BACKUP_HEADING, NUMBERS, savePlan, week5TotalFor, type PlanContext } from "./plan";
 import {
   completeSetupStage,
   completeWorkingCalcs,
@@ -14,6 +14,7 @@ import {
   submitDefense,
   waitForDelivery,
 } from "./flow";
+import { DEMO_CLASS_LABEL } from "../src/fixtures/demoClass";
 
 /**
  * The pilot rehearsal.
@@ -73,10 +74,10 @@ async function runStudent(page: Page, classCode: string, student: Student): Prom
 
   if (student.quirk === "refresh") {
     // A Chromebook lid closing mid-season. The attempt has to come back where it was.
-    await expect(page.getByRole("heading", { name: "The season starts." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: `Week ${NUMBERS.week3.week} pays Avery in cash.` })).toBeVisible();
     await page.waitForTimeout(600);
     await page.reload();
-    await expect(page.getByRole("heading", { name: "The season starts." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: `Week ${NUMBERS.week3.week} pays Avery in cash.` })).toBeVisible();
   }
 
   await playSeasonWeeks(page, { deposit: student.deposit });
@@ -136,14 +137,26 @@ test("a whole class runs end to end across separate devices and the educator rea
   const page = await context.newPage();
   try {
     await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}`);
-    await expect(page.locator(".class-header")).toContainText("3 turned in");
+    // The lead carries its denominator, which this did not: it asserted "3 turned in" from
+    // before every count on this page was rendered against the class it is a count of. The
+    // class list is as long as the highest seat any of these students took, because
+    // `seatOnRoster` fills the roster up to the seat it is asked for.
+    const inClass = Math.max(...STUDENTS.map((student) => Number(student.seat)));
+    // `.page-header`, not `.class-header`: the class page used to bring its own header wrapper
+    // and it was `.page-header` with a bigger H1 and its own padding, so it was folded into the
+    // shared one (`app.css`: "`.class-header` is gone"). A selector naming a wrapper that no
+    // longer exists finds nothing and reports it as the page not loading.
+    //
+    await expect(page.locator(".page-header h1")).toContainText(`${STUDENTS.length} of ${inClass} turned in`);
     // Three runs is not a class: counts and individual work, and nothing about the room.
     await expect(page.locator(".class-guard")).toContainText("individual work below");
     await expect(page.locator(".choice-dist")).toHaveCount(0);
 
-    // Every seat that ran, and no seat that did not.
+    // Every student who ran, named the way their teacher's own list names them. This asserted
+    // the page contained each seat *number* — "4", "11", "19" — which any page with a price on
+    // it satisfies by accident; "4" alone is in half the money figures in this product.
     const body = page.locator("body");
-    for (const student of STUDENTS) await expect(body).toContainText(student.seat);
+    for (const student of STUDENTS) await expect(body).toContainText(nameFor(student.seat));
 
     // Two more runs, posted the way a student's device posts them, and the same page
     // describes the class: the decisions, with the seats behind every count.
@@ -160,10 +173,17 @@ test("a whole class runs end to end across separate devices and the educator rea
     const deposit = page.locator(".choice-dist").filter({ hasText: "When did they commit to the course?" });
     await expect(deposit).toContainText(nameFor("19"));
 
-    // No fixture anywhere: not its size, not its label, not its golden case.
-    await expect(body).not.toContainText("Hypothetical demo data");
-    await expect(body).not.toContainText("94/100");
-    await expect(body).not.toContainText("28 students");
+    // No fixture anywhere: not its label, not the badge that marks its screens.
+    //
+    // This named three literals — "Hypothetical demo data", "94/100" and "28 students" — and
+    // the product contains none of them any more. The sample class was rebuilt as eighteen real
+    // runs driven through the reducer, relabelled, and moved onto the real class screens; the
+    // per-seat mark out of a hundred went with it. So all three were absences of nothing: green
+    // on this page, green on a page that was leaking the fixture, and green on a blank page.
+    // The label is read from the fixture itself now, and the badge is the one thing every
+    // sample-class screen shares — so both fail if a fixture ever reaches a real class again.
+    await expect(body).not.toContainText(DEMO_CLASS_LABEL);
+    await expect(page.locator(".demo-pill")).toHaveCount(0);
 
     // The debrief is built from the same three runs.
     await page.goto(`/educator/class/${created.code}/debrief?key=${created.teacherKey}`);
@@ -175,7 +195,8 @@ test("a whole class runs end to end across separate devices and the educator rea
     for (const student of STUDENTS) {
       await expect(page.locator(".debrief__quotes")).toContainText(`Seat ${student.seat}:`);
     }
-    await expect(page.locator("body")).not.toContainText("Hypothetical demo data");
+    await expect(page.locator("body")).not.toContainText(DEMO_CLASS_LABEL);
+    await expect(page.locator(".demo-pill")).toHaveCount(0);
   } finally {
     await context.close();
   }
@@ -205,8 +226,11 @@ test("the production build serves the same class path", async ({ browser, reques
     await runStudent(page, created.code, { seat: "31", index: 1, setupId: "teammate-share", clinics: false, deposit: false, countBonus: false });
 
     await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}`);
-    await expect(page.locator(".class-header")).toContainText("1 turned in");
-    await expect(page.locator(".row-list")).toContainText("Seat 31");
+    // Same two staleness fixes as the rehearsal above, in the test that only runs against a
+    // built server: the lead carries its denominator, and the list names the student rather
+    // than their seat number.
+    await expect(page.locator(".page-header h1")).toContainText("1 of 31 turned in");
+    await expect(page.locator(".row-list")).toContainText(nameFor("31"));
   } finally {
     await context.close();
   }

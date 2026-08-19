@@ -223,7 +223,19 @@ export async function signIn(page: Page, card: JoinCard & { classCode: string })
   // the door never has to publish who is in the class.
   await page.getByLabel("Your code").fill(card.joinCode);
   await page.getByRole("button", { name: "Go in" }).click();
-  await expect(page.getByRole("link", { name: /^(Start|Carry on)$/ })).toBeVisible();
+  // Arrived, and arrived as this student.
+  //
+  // This waited for a `Start`/`Carry on` link, which exists in only two of the student page's
+  // three states: a student who has already turned in is offered *Run it again?* instead, and
+  // deliberately — starting again must not read as the only thing left to do, and it does not
+  // take the last run back. So a journey that signed the same student in a second time to read
+  // their teacher's reply failed at the door, on a link the screen is right not to be showing.
+  //
+  // What is true in every state is that the page is theirs and says whose it is. Waiting on the
+  // name is also the stronger assertion: two students signing in one after the other on one
+  // Chromebook becoming one account is the defect this door was rebuilt to close, and a helper
+  // every student journey passes through is the right place to keep watching for it.
+  await expect(page.locator(".student-home__bar")).toContainText(card.displayName);
 }
 
 /**
@@ -240,7 +252,23 @@ export async function enterChallenge(page: Page, options: { classCode: string; s
   await page.getByRole("link", { name: /^(Start|Carry on)$/ }).click();
   await page.getByRole("button", { name: /Start the eight weeks|Go in/ }).click();
   await chooseSeasonIfOffered(page);
-  await page.getByRole("button", { name: "Find Avery a place" }).click();
+  await stepPastTheDeal(page);
+}
+
+/**
+ * The contract screen, where the build still has one.
+ *
+ * The beats either side of it have been rebuilt more than once and the screen itself has come
+ * and gone with them, so pressing through it unconditionally made every student test in the
+ * suite fail at the same line for a reason that had nothing to do with what any of them was
+ * checking. This waits for whichever screen actually arrives and steps past the deal only if
+ * the deal is one of them.
+ */
+export async function stepPastTheDeal(page: Page) {
+  const deal = page.getByRole("button", { name: "Find Avery a place" });
+  const ranking = page.getByRole("heading", { name: /Which place costs the least/i });
+  await expect(deal.or(ranking).first()).toBeVisible();
+  if (await deal.count()) await deal.click();
 }
 
 /**
@@ -318,13 +346,25 @@ export const PLAN_STEP = {
  * They used to be three stacked sections on one page revealed in order. They are now three
  * screens under one stage, so the suite presses the same buttons a student does rather than
  * filling a form that happens to be taller than the window.
+ *
+ * **Both bonuses are answered out loud, always, including when the answer is no.** This used to
+ * press a button only where the caller wanted a bonus counted and walk past the card otherwise,
+ * which worked while both cards opened with *No — leave it out* already pressed. That default
+ * was removed on purpose (`StudentChallenge.tsx`: a student who pressed Next without reading
+ * scored full marks on the micro-skill that asks whether conditional money was kept out of the
+ * total, for a decision they never made), and the step now refuses to advance until a person
+ * has answered both. A helper that skips the card is a helper asserting the old default is
+ * still there — and it fails not on the bonus screen but one screen later, looking for a button
+ * that has not been earned yet.
  */
 export async function completeWorkingCalcs(page: Page, opts: { attendance?: boolean; showcase?: boolean } = {}) {
   await page.getByLabel(PLAN_STEP.countOn).fill(String(N.savings + N.basePay));
   await page.locator(".calculation").getByRole("button", { name: "Check" }).click();
   await page.getByRole("button", { name: PLAN_STEP.toBonuses }).click();
-  if (opts.attendance) await page.locator(".bet").first().getByRole("button", { name: PLAN_STEP.countBonus }).click();
-  if (opts.showcase) await page.locator(".bet").nth(1).getByRole("button", { name: PLAN_STEP.countBonus }).click();
+  const answers = [Boolean(opts.attendance), Boolean(opts.showcase)];
+  for (const [index, counted] of answers.entries()) {
+    await page.locator(".bet").nth(index).getByRole("button", { name: counted ? PLAN_STEP.countBonus : PLAN_STEP.leaveBonus }).click();
+  }
   await page.getByRole("button", { name: PLAN_STEP.toCommitted }).click();
   await page.getByLabel(PLAN_STEP.committed).fill(String(N.essentialsTotal));
   await page.locator(".calculation").getByRole("button", { name: "Check" }).click();
@@ -391,9 +431,29 @@ export async function readWeek8Resolution(page: Page) {
   await page.getByRole("button", { name: "Explain my plan" }).click();
 }
 
+/**
+ * The written explanation, turned in the way the screen now asks for it.
+ *
+ * This tapped two figures and typed the caller's paragraph, which was the whole of it while the
+ * gate behind the button was `text.trim().length >= 40`. That gate is gone (`writingGate.ts`),
+ * and deliberately: it refused `idk. idk. idk. idk.` and accepted forty characters of `aaaa`,
+ * so the product was teaching padding to whoever noticed. What replaced it asks for three
+ * things a machine can honestly check — two or three of the student's own figures tapped, those
+ * same figures written into the paragraph, and two sentences with something in each — and none
+ * of them reads what the writing says.
+ *
+ * So the helper writes the figures it tapped, and it reads them off the tiles it tapped rather
+ * than restating an amount: `numbers.ts` owns those, the tile prints them, and a suite with its
+ * own copy of a price is the thing `pricing.test.ts` exists to stop.
+ */
 export async function submitDefense(page: Page, text: string, tileIndices: number[] = [0, 2]) {
-  for (const index of tileIndices) await page.locator(".interview__stats button").nth(index).click();
-  await page.getByLabel("Two to four sentences").fill(text);
+  const figures: string[] = [];
+  for (const index of tileIndices) {
+    const tile = page.locator(".interview__stats button").nth(index);
+    await tile.click();
+    figures.push((await tile.locator(".money").innerText()).trim());
+  }
+  await page.getByLabel("Two to four sentences").fill(`${text} The numbers I stood on are ${figures.join(" and ")}.`);
   await page.getByRole("button", { name: "Turn in my plan" }).click();
 }
 

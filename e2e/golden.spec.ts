@@ -10,29 +10,33 @@ import {
   passWeek5Calculation,
   playSeasonWeeks,
   readWeek8Resolution,
+  scoreWriting,
   seatOnRoster,
   seedRuns,
   signIn,
+  stepPastTheDeal,
   submitDefense,
   waitForDelivery,
   type JoinCard,
 } from "./flow";
 import { savePlan, week5TotalFor, type PlanContext } from "./plan";
+import { parseDollars } from "../src/domain/core/money";
 import { POP_UP_SCENARIO } from "../src/domain/scenario/worlds/food-truck";
 import { POP_UP_NUMBERS as MARKET } from "../src/domain/scenario/worlds/food-truck/numbers";
 import { cashToPlan, orderCost, owedUpFront, swapBill } from "../src/domain/scenario/worlds/food-truck/economy";
 import { buildSubmission } from "../src/test/runChallenge";
 import { buildPopUpSubmission } from "../src/test/runPopUp";
 import type { SubmissionRecord } from "../src/platform/classes/types";
-import { LEVEL_LABELS } from "../src/educator/labels";
+import { CLASS_STATE_LABELS, LEVEL_LABELS, SKILL_STATE_ORDER, skillStateInSentence } from "../src/educator/labels";
+import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
 
 /**
- * The eight golden journeys.
+ * The nine golden journeys.
  *
  * The rest of the suite is a regression net: many small assertions, each about one screen, and
  * a good one — it is how a heading that moved gets caught. What it cannot do is tell you the
  * product stopped working, because no single test in it walks a promise from one end to the
- * other. These eight do, one per promise, and each is written so that when it fails it fails
+ * other. These nine do, one per promise, and each is written so that when it fails it fails
  * for the right reason: a student's work did not reach their teacher, or two students turned
  * into one, or a note a teacher wrote never arrived.
  *
@@ -48,14 +52,39 @@ import { LEVEL_LABELS } from "../src/educator/labels";
 
 const API = "http://127.0.0.1:4180/api";
 
-/** Full marks on all four criteria, which is ten and is what the reading queue totals. */
-const RUBRIC_MARKS = [["Workability", 2], ["Protected priority", 2], ["Tradeoff / opportunity cost", 2], ["Numerical evidence", 4]] as const;
+/**
+ * Full marks on every criterion, read off the rubric rather than restated.
+ *
+ * This was four `["Workability", 2]` pairs typed out here, and it broke the day `C6.3` was
+ * renamed from *Tradeoff / opportunity cost* to **Trade-off** — a deliberate one-word edit in
+ * `reasoning.ts` that two journeys reported as "the product stopped working". The rubric is
+ * one table with one maximum per criterion, so the journeys read that table: the labels, the
+ * count of them and each one's own maximum all come from the product, and a rename or a fifth
+ * criterion arrives here with nothing to edit.
+ */
+const RUBRIC_MARKS = REASONING_CRITERIA.map((criterion) => [criterion.label, criterion.max] as const);
 const MARKET_COPY = POP_UP_SCENARIO.screens;
 const BOOTH = POP_UP_SCENARIO.spots.find((spot) => spot.id === "middle-row") ?? POP_UP_SCENARIO.spots[0];
 
 test.beforeEach(({ page }) => {
   page.on("pageerror", (error) => { throw new Error(`Uncaught page error: ${error.message}`); });
 });
+
+/**
+ * A promise takes longer to walk than a screen does.
+ *
+ * Every journey here plays at least one whole run — eight weeks or four Saturdays — and most of
+ * them then read it back on an educator surface, and two of them do it on a second machine.
+ * That is minutes of real product, not the seconds Playwright's default budget assumes, and a
+ * journey that runs out of time three assertions from the end reports a timeout where what it
+ * actually found was the product working. Reported as a timeout, that is a false red; the whole
+ * value of this set is that a red here means a promise broke.
+ *
+ * This is a budget, not a tolerance: nothing here waits on a specific thing for two minutes.
+ * Every individual `expect` keeps its own short timeout, so a screen that never arrives still
+ * fails in five seconds, with the locator that was waiting named.
+ */
+test.setTimeout(180_000);
 
 /* ---------------------------------------------------------------------------
    The two runs, played the way a student plays them. Everything below composes
@@ -67,21 +96,6 @@ test.beforeEach(({ page }) => {
 async function cardFor(page: Page, classCode: string, seat: string): Promise<JoinCard & { classCode: string }> {
   const card = await seatOnRoster(page, classCode, seat);
   return { ...card, classCode };
-}
-
-/**
- * The contract screen, where the build still has one.
- *
- * The Basketball beats are being rebuilt underneath these journeys, and a journey that pinned
- * one screen would report "the product stopped working" every time a screen moved. What this
- * set is about is the promise, so it steps past the deal if the deal is there and says nothing
- * if it is not.
- */
-async function stepPastTheDeal(page: Page) {
-  const deal = page.getByRole("button", { name: "Find Avery a place" });
-  const ranking = page.getByRole("heading", { name: /Which place costs the least/i });
-  await expect(deal.or(ranking).first()).toBeVisible();
-  if (await deal.count()) await deal.click();
 }
 
 /** From the student's own page into the run. */
@@ -114,6 +128,24 @@ async function playBasketball(page: Page, defence: string) {
   await readWeek8Resolution(page);
   await submitDefense(page, defence);
   await waitForDelivery(page);
+}
+
+/**
+ * What a money field currently holds, read the way the product writes it.
+ *
+ * These were `Number(await field.inputValue())`, which was right while the box held a bare
+ * `550` and silently became `NaN` the day it started holding `$550` — the field and the amount
+ * printed 40px to its left were two notations for one number, and the bare one was the one a
+ * child was asked to read a decision off, so the field now says what the row says. `NaN` is the
+ * worst possible failure here: it is arithmetic, so it propagates into the next `fill()`, the
+ * control rejects the unparseable value and keeps what it had, and the test fails three steps
+ * later on a button that never appeared. `parseDollars` is the product's own reader.
+ */
+async function heldInLine(page: Page, label: string): Promise<number> {
+  const shown = await page.getByRole("spinbutton", { name: label }).inputValue();
+  const parsed = parseDollars(shown);
+  expect(parsed, `could not read a money field: ${JSON.stringify(shown)}`).not.toBeNull();
+  return parsed!;
 }
 
 async function checkSum(page: Page, label: string, value: number) {
@@ -171,7 +203,7 @@ async function playMarket(page: Page, answer: string) {
 
   await checkSum(page, MARKET_COPY.generator.gap.label, swapBill(MARKET));
   await page.getByRole("button", { name: MARKET_COPY.generator.action }).click();
-  const held = Number(await page.getByRole("spinbutton", { name: POP_UP_SCENARIO.lines.cushion.label }).inputValue());
+  const held = await heldInLine(page, POP_UP_SCENARIO.lines.cushion.label);
   await setLine(page, POP_UP_SCENARIO.lines.cushion.label, held - swapBill(MARKET));
   await page.getByRole("button", { name: MARKET_COPY.repair.commit }).click();
 
@@ -247,7 +279,12 @@ test("golden 1: a student's work reaches their teacher", async ({ page }) => {
 
   // The teacher's own room, opened with the key the class gave them.
   await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}`);
-  await expect(page.locator(".class-header")).toContainText("1 turned in");
+  // The room's own count, read off the page's headline rather than off a class name. This was
+  // pinned to `.class-header`, a wrapper that has since gone; the count moved into the `h1` and
+  // the journey reported "the work never arrived" about a page that was showing it. What the
+  // promise needs is that the class says one run came in and whose it was — the exact sentence
+  // around the figure is `classLead`'s to word and to change.
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/1( of \d+)? turned in/);
   await expect(page.locator("body")).toContainText(card.displayName);
 
   // And the student's own words, on the student's own page.
@@ -469,7 +506,6 @@ test("golden 6: a student turns in, a teacher reads it, and the student hears ba
   // The student opens BOW on their own screen and finds both, in the order they were written.
   await gotoFreshChallenge(page);
   await signIn(page, card);
-  await page.goto("/home");
   for (const note of notes) await expect(page.locator("body")).toContainText(note);
 });
 
@@ -483,8 +519,16 @@ test("golden 7: a teacher's judgement travels to every surface that reports it",
   // number into the gradebook. So this walks every surface that reports a level.
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const created = await createClass(page.request, "Golden 7");
-  await seedRuns(page.request, created.code, [{ seat: "1" }]);
   const key = created.teacherKey;
+  // The objective page is one of the surfaces this journey walks, and it reports a class only
+  // if the class was set that objective — so the class is set it here, before anybody turns
+  // anything in, which is the order a teacher does it in.
+  const assigned = await page.request.post(`${API}/classes/${created.code}/assignments`, {
+    headers: { "X-BOW-Teacher-Key": key },
+    data: { objectiveRef: { frameworkId: "nysed-pf-2026", code: "1.3" } },
+  });
+  expect(assigned.status(), await assigned.text()).toBe(201);
+  await seedRuns(page.request, created.code, [{ seat: "1" }]);
 
   await page.goto(`/educator/class/${created.code}/students/1?key=${key}`);
   // Driven the way a teacher drives it, tab included: the trail opens selected today, and a
@@ -530,9 +574,28 @@ test("golden 7: a teacher's judgement travels to every surface that reports it",
   await page.goto(`/educator/class/${created.code}?key=${key}&t=${Date.now()}`);
   await expect(page.locator("body")).toContainText(requirement.slice(0, 12));
 
-  // The objective page a teacher reports against.
+  // The objective page a teacher reports against, which is the surface this step never reached.
+  //
+  // It asserted that the whole `body` did not contain the literal "Not yet assessed" — and it
+  // was untrue three times over. Those are the words Ladder 4 used before it was rewritten, so
+  // the product cannot produce that string anywhere; the class was never set an objective, so
+  // it was not on this page at all; and nobody had read the student's writing, so the only
+  // thing this page could honestly have said about the class *was* that nobody was assessed.
+  // Three reasons to pass and none of them the journey's. So the class is set the objective
+  // above, a person reads the writing here — which is what turns a count into an assessment —
+  // and the page then has to report a result and name the state in Ladder 4's own words.
+  await scoreWriting(page.request, created.code, key, "1");
   await page.goto(`/educator/objectives/nysed-pf-2026/1.3?t=${Date.now()}`);
-  await expect(page.locator("body")).not.toContainText("Not yet assessed");
+  const reported = page.locator(".objective-class").filter({ hasText: created.code });
+  await expect(reported.locator(".objective-result")).not.toContainText(CLASS_STATE_LABELS["not-assessed"]);
+  await expect(reported.locator(".objective-result strong")).toContainText(/\d+ of \d+ assessed/);
+  // And the requirement the teacher re-read is one of the ones this page counts, so the skill
+  // it belongs to is broken down rather than the objective reporting a class it cannot explain.
+  // The words are Ladder 3's, in the tail of a sentence, read from the table that owns them —
+  // writing them here would be a second place the product's vocabulary is defined.
+  const skillWords = SKILL_STATE_ORDER.map((state) => skillStateInSentence(state)).join("|");
+  // The skill breakdown, not the What-next gaps table beside it: both are `.micro-table`.
+  await expect(reported.locator(".micro-table:not(.next-lesson__gaps)")).toContainText(new RegExp(`\\d+ (${skillWords})`));
 
   // And the line that leaves for a gradebook.
   await page.goto(`/educator/class/${created.code}?key=${key}&t=${Date.now()}`);
@@ -578,7 +641,7 @@ test("golden 8: a mixed class counts as one class", async ({ page, context }) =>
 
   // The class page is one class: everyone still in the room, nobody who is not.
   await page.goto(`/educator/class/${classCode}?key=${key}&t=${Date.now()}`);
-  await expect(page.locator(".class-header")).toContainText("turned in");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("turned in");
   for (const student of [basketball.card, market.card, twice.card, away]) {
     await expect(page.locator("body")).toContainText(student.displayName);
   }
@@ -687,4 +750,71 @@ test("golden 9: a teacher's classes survive their laptop", async ({ page, browse
   } finally {
     await reimaged.close();
   }
+});
+
+/* ---------------------------------------------------------------------------
+   The 400% sweep. Measurement, not repair.
+   --------------------------------------------------------------------------- */
+
+/**
+ * How far one element's content reaches past the box it is drawn in, in CSS pixels.
+ *
+ * The whole-document measurement the rest of the suite uses (`scrollWidth - clientWidth` on
+ * the documentElement) says only that *something* on the screen spills. It cannot say what,
+ * and on a screen with a sticky bar it usually is the bar: a row of controls set to `nowrap`
+ * keeps its full width no matter how narrow the window gets, and at 400% zoom the window is a
+ * quarter as wide as the one it was designed on. So this asks the element itself, which turns
+ * "the world picker scrolls sideways" into a number against a selector somebody can fix.
+ *
+ * Returns -1 when the element is not on screen, so a sweep that walked to the wrong place
+ * reports that rather than quietly recording a clean zero.
+ */
+async function contentPastItsBox(page: Page, selector: string): Promise<number> {
+  return page.evaluate((css) => {
+    const element = document.querySelector(css);
+    if (!element) return -1;
+    return Math.round(element.scrollWidth - element.clientWidth);
+  }, selector);
+}
+
+/**
+ * 400% zoom over the two bars that carry a run's controls, measured and reported.
+ *
+ * WCAG 1.4.10 asks that content reflow at 320 CSS pixels of width without a second scrollbar,
+ * and a teacher or student who needs large text meets exactly that: a browser's own zoom at
+ * 400% on a 1280-wide window leaves 320 usable pixels. `.worldpick__bar` and `.popup-topbar`
+ * are the two sticky rows a student cannot get past — one to choose a world, one to move
+ * between Saturdays — so if either of them refuses to reflow, the run is unreachable rather
+ * than merely untidy.
+ *
+ * **This journey measures and does not repair.** Both selectors are styled in files owned by
+ * the accessibility work, and a fix landed from here would collide with it. A red result here
+ * is a number to hand over, not a defect in this file.
+ */
+test("@zoom golden sweep: the bars a run cannot be played without hold at 400%", async ({ page }) => {
+  const classCode = await classOfferingBothWorlds(page, "Golden zoom");
+  const card = await cardFor(page, classCode, "1");
+  await gotoFreshChallenge(page);
+  await signIn(page, card);
+  await openTheRun(page);
+
+  // The world picker, which is the first screen a student in a two-world class ever sees.
+  await expect(page.locator(".worldpick__bar")).toBeVisible();
+  const worldPickBar = await contentPastItsBox(page, ".worldpick__bar");
+  const worldPickPage = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+
+  await pickWorld(page, "food-truck");
+  await expect(page.getByRole("heading", { name: MARKET_COPY.spot.title })).toBeVisible();
+  await expect(page.locator(".popup-topbar")).toBeVisible();
+  const marketBar = await contentPastItsBox(page, ".popup-topbar");
+  const marketPage = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+
+  // Reported together, so one run names every bar that spills rather than the first one.
+  const spilling = [
+    { where: ".worldpick__bar", px: worldPickBar },
+    { where: "the world picker page", px: worldPickPage },
+    { where: ".popup-topbar", px: marketBar },
+    { where: "the booths page", px: marketPage },
+  ].filter((entry) => entry.px > 1);
+  expect(spilling.map((entry) => `${entry.where}: ${entry.px}px`), "what reaches past 320px at 400% zoom").toEqual([]);
 });

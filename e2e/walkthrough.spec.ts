@@ -18,6 +18,8 @@ import {
   MOVED_TILES,
   TO_DEPOSIT,
 } from "./flow";
+import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
+import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
 
 /**
  * The rendered product, at the sizes schools actually use.
@@ -185,10 +187,15 @@ for (const size of SIZES) {
       headers: { "X-BOW-Teacher-Key": created.teacherKey },
     });
     const roster = (await room.json()) as { submissions: { seatCode: string; sessionId: string }[] };
+    // Full marks, read off the rubric. This was `{ "C6.1": 2, ... "C6.4": 4 }` and a literal 10
+    // beside it — a fourth copy of a table that lives in `reasoning.ts` and whose total lives in
+    // `grade.ts`. A fifth criterion, or a maximum that moved, would have left this walkthrough
+    // posting marks that no longer add up and capturing a screen full of them.
+    const fullMarks = Object.fromEntries(REASONING_CRITERIA.map((criterion) => [criterion.id, criterion.max]));
     for (const entry of roster.submissions) {
       const scored = await request.patch(`http://127.0.0.1:4180/api/classes/${created.code}/submissions/${entry.seatCode}`, {
         headers: { "X-BOW-Teacher-Key": created.teacherKey },
-        data: { sessionId: entry.sessionId, reasoningPoints: 10, reasoningCriteria: { "C6.1": 2, "C6.2": 2, "C6.3": 2, "C6.4": 4 } },
+        data: { sessionId: entry.sessionId, reasoningPoints: REASONING_MAXIMUM, reasoningCriteria: fullMarks },
       });
       expect(scored.status(), await scored.text()).toBe(200);
     }
@@ -209,11 +216,16 @@ for (const size of SIZES) {
       ["15e-debrief", `/educator/class/${created.code}/debrief?key=${created.teacherKey}`],
       ["15j-reading-queue", `/educator/class/${created.code}/reading?key=${created.teacherKey}`],
       ["16-educator-guide", "/educator/guide"],
+      // The sample class has no screens of its own any more: every `/educator/demo/*` address
+      // redirects onto the real class surfaces, fed the fixture. Three captures used to be
+      // taken past those redirects — `18-concept-drilldown`, `20-reasoning` and `21-standards`
+      // — and each one landed on a page another capture in this same list already took, under a
+      // name saying it was something else. A walkthrough that files the objectives list as "the
+      // standards page" is worse than not shooting it: a reviewer counts twenty-two screens and
+      // signs off on nineteen. What is left is the two addresses that still reach a distinct
+      // screen.
       ["17-sample-class", "/educator/demo"],
-      ["18-concept-drilldown", "/educator/demo/concepts/contingency"],
-      ["19-seat-14", "/educator/demo/students/14"],
-      ["20-reasoning", "/educator/demo/students/14/reasoning"],
-      ["21-standards", "/educator/demo/standards"],
+      ["19-sample-seat", "/educator/demo/students/14"],
       ["22-companion", "/educator/teaching-companion"],
     ] as const) {
       await page.goto(path);
