@@ -1347,6 +1347,8 @@ p { color: var(--ink-2); }
 .field > label, .field-caps { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
 .field input, .field select, .field textarea,
 .class-form input, .class-form select, .class-form textarea,
+.builder-section input[type="text"], .builder-section input[type="search"], .builder-section input[type="datetime-local"],
+.builder-section select, .builder-section textarea,
 .map-filters select {
   min-height: var(--tap);
   padding: 0 var(--s-4);
@@ -1357,7 +1359,7 @@ p { color: var(--ink-2); }
   border-radius: var(--r-sm);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 60%);
 }
-.field select, .class-form select, .map-filters select {
+.field select, .class-form select, .builder-section select, .map-filters select {
   padding-right: var(--s-8);
   appearance: none;
   background-image: linear-gradient(45deg, transparent 50%, var(--ink-2) 50%), linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
@@ -1681,6 +1683,102 @@ p { color: var(--ink-2); }
 .sign-in__switch { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); }
 .recovery-code { margin: var(--s-2) 0; color: var(--ink-1); font: var(--m-lg); font-feature-settings: var(--num); letter-spacing: 0.18em; }
 
+/* ---------------------------------------------------------------------------
+   The assignment builder.
+
+   Six numbered sections down the left, generated evidence beside them on the right — the
+   reference's own strongest idea, held to the ruling: every "Yes" the preview table draws
+   traces to a row in `BUILT_WORLD_COVERAGE`, and this stylesheet has no way to make the table
+   claim more than the data underneath it does.
+
+   `<fieldset>` per section rather than `<section>`, for the same reason `.class-form__worlds`
+   already is one: each one groups a set of controls a screen reader has to be able to name as
+   a group, and `<legend>` is the heading level that does that natively.
+   --------------------------------------------------------------------------- */
+.builder-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); align-items: start; gap: var(--s-7); }
+.builder-main { display: grid; gap: var(--gap-block); min-width: 0; }
+.builder-section { margin: 0; padding: var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--r-lg); box-shadow: var(--shadow-card); }
+.builder-section legend { padding-inline: var(--s-2); color: var(--ink-1); font: var(--t-display3); letter-spacing: var(--display-tracking); text-transform: uppercase; }
+.builder-section > p { max-width: var(--measure); margin: 0 0 var(--s-4); color: var(--ink-2); font: var(--t-body); }
+
+/* 1. Learning goal */
+.builder-goal__selected { display: grid; gap: var(--s-2); margin-bottom: var(--s-5); padding-bottom: var(--s-5); border-bottom: 1px solid var(--border-subtle); }
+.builder-goal__text { max-width: var(--measure); margin: var(--s-2) 0 0; padding-left: var(--s-4); border-left: 3px solid var(--border-ink); font: var(--t-body-lg); }
+.builder-goal__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-4); margin: var(--s-2) 0 0; }
+.builder-goal__meta .framework-attribution { margin: 0; max-width: none; }
+.builder-goal__warn { margin: var(--s-2) 0 0; padding: var(--s-4); background: var(--fin-conditional-soft); color: var(--fin-conditional-ink); font: var(--t-sm); border-left: 3px solid var(--fin-conditional); }
+.builder-goal > label { display: block; margin: var(--s-2) 0 var(--s-1); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.builder-goal input[type="search"] { width: 100%; max-width: 420px; margin-bottom: var(--s-4); }
+.builder-goal__list { display: grid; gap: 1px; max-height: 320px; overflow-y: auto; background: var(--border-subtle); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); }
+.builder-goal__row { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: var(--s-3); padding: var(--s-3) var(--s-4); background: var(--surface); cursor: pointer; }
+.builder-goal__row:hover { background: var(--surface-raised); }
+.builder-goal__row input { margin-block-start: 0.3em; width: 16px; height: 16px; accent-color: var(--bow-brand); }
+.builder-goal__row span { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-3); font: var(--t-sm); color: var(--ink-2); }
+.builder-goal__row b { color: var(--ink-1); font-weight: 600; }
+.builder-goal__row[data-unavailable="true"] { color: var(--ink-4); cursor: default; }
+.builder-goal__row[data-unavailable="true"] b { color: var(--ink-4); }
+.builder-goal__row em { padding: 1px var(--s-3); background: var(--surface-sunken); color: var(--ink-4); font: var(--t-micro); font-style: normal; letter-spacing: 0.04em; text-transform: uppercase; border-radius: var(--r-pill); }
+.builder-goal__row:has(input:checked) { background: var(--fin-adjustable-soft); box-shadow: inset 3px 0 0 var(--bow-brand); }
+.builder-goal__row:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: -3px; }
+
+/* 2. Which story */
+.builder-mode { display: grid; gap: var(--s-3); }
+.builder-mode__card { display: grid; grid-template-columns: auto 1fr; gap: var(--s-3); align-items: start; padding: var(--s-4) var(--s-5); background: var(--surface-raised); border: 1.5px solid var(--border-strong); border-radius: var(--r-md); cursor: pointer; }
+.builder-mode__card input { margin-block-start: 0.3em; width: 18px; height: 18px; accent-color: var(--bow-brand); }
+.builder-mode__card span { display: block; color: var(--ink-2); font: var(--t-sm); }
+.builder-mode__card b { display: block; margin-bottom: var(--s-1); color: var(--ink-1); font: var(--t-title3); }
+.builder-mode__card[data-selected="true"] { border-color: var(--bow-brand); background: var(--fin-adjustable-soft); box-shadow: 0 0 0 1px var(--bow-brand); }
+.builder-mode__card:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+/* 3. Stories */
+.builder-stories__empty { max-width: var(--measure); margin: 0; padding: var(--s-5); background: var(--fin-over-soft); color: var(--fin-over-ink); font: var(--t-body); border-left: 3px solid var(--fin-over); }
+.builder-stories__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: var(--s-4); margin: 0; }
+.builder-story-card { position: relative; display: block; cursor: pointer; border-radius: var(--r-lg); }
+.builder-story-card input { position: absolute; top: var(--s-3); right: var(--s-3); z-index: 1; width: 22px; height: 22px; accent-color: var(--bow-brand); }
+.builder-story-card .world-card { height: 100%; }
+.builder-story-card .world-card__body small { display: block; color: var(--ink-3); font: var(--t-sm); }
+.builder-story-card__length { display: block; margin-top: var(--s-2); color: var(--ink-4); font: var(--t-micro); font-feature-settings: var(--num); }
+.builder-story-card[data-selected="true"] .world-card { outline: 2px solid var(--bow-brand); outline-offset: 2px; box-shadow: var(--shadow-lift); }
+.builder-story-card:has(input:focus-visible) .world-card { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.builder-stories__note { max-width: var(--measure); margin: var(--s-4) 0 0; color: var(--ink-3); font: var(--t-sm); }
+
+/* 4. Class & due date */
+.builder-class label { display: block; margin: var(--s-4) 0 var(--s-1); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.builder-class label:first-of-type { margin-top: 0; }
+.builder-class select, .builder-class input[type="datetime-local"] { width: 100%; max-width: 420px; }
+.builder-class__note { max-width: var(--measure); margin: var(--s-3) 0 0; color: var(--ink-3); font: var(--t-micro); }
+
+/* 5. Closing question */
+.builder-closing label { display: block; margin: 0 0 var(--s-1); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.builder-closing textarea { width: 100%; resize: vertical; }
+.builder-closing__count { margin: var(--s-1) 0 var(--s-4); color: var(--ink-4); font: var(--t-micro); font-feature-settings: var(--num); text-align: right; }
+.builder-closing__suggest { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin: 0 0 var(--s-4); }
+.builder-closing__suggest span { color: var(--ink-3); font: var(--t-sm); }
+.builder-closing__required { display: flex; align-items: center; gap: var(--s-3); color: var(--ink-2); font: var(--t-sm); letter-spacing: normal; text-transform: none; }
+.builder-closing__required input { width: 18px; height: 18px; accent-color: var(--bow-brand); }
+
+/* Publish */
+.builder-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); }
+.builder-actions__status { margin: 0; color: var(--ink-3); font: var(--t-sm); }
+.builder-actions__status--problem { color: var(--fin-over-ink); font-weight: 600; }
+.builder-confirm { display: flex; flex-wrap: wrap; gap: var(--s-4); }
+
+/* The evidence preview. Sticky so it stays beside the section a teacher is on, and never the
+   only thing on screen — `top` matches the topbar's own height plus a breath of air. */
+.builder-preview { position: sticky; top: var(--s-6); align-self: start; padding: var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--r-lg); box-shadow: var(--shadow-card); }
+.builder-preview h2 { margin: 0 0 var(--s-4); font: var(--t-title2); }
+.builder-preview > p { margin: 0; color: var(--ink-2); font: var(--t-sm); }
+.builder-preview__scroll { overflow-x: auto; margin-bottom: var(--s-4); }
+.builder-preview__scroll .micro-table { min-width: 100%; font: var(--t-sm); }
+.builder-preview__scroll th, .builder-preview__scroll td { padding: var(--s-3); }
+.builder-preview__skill th { padding-top: var(--s-5); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.04em; text-transform: uppercase; border-bottom: none; }
+.builder-preview__scroll thead th[data-included="false"] { color: var(--ink-4); font-weight: 400; }
+.builder-preview__note { margin-top: var(--s-4); color: var(--ink-3); font: var(--t-micro); }
+
+@media (max-width: 900px) {
+  .builder-layout { grid-template-columns: minmax(0, 1fr); }
+  .builder-preview { position: static; }
+}
 
 /* ---------------------------------------------------------------------------
    The narrow window, last — because a rule that overrides another has to come after it.
@@ -1732,3 +1830,55 @@ p { color: var(--ink-2); }
 .closing-answer { margin-top: var(--s-6); padding-top: var(--s-5); border-top: 1px solid var(--border-default); }
 .closing-answer__asked { margin: 0 0 var(--s-3); color: var(--ink-2); font: var(--t-body); font-style: italic; }
 .closing-answer__given { margin: 0 0 var(--s-3); }
+
+/* ---------------------------------------------------------------------------
+   Where a student's evidence leaves the objective it was set for.
+
+   It sits under the lead in the student page's header, because the two answer
+   one question in two vocabularies — what the skills show, and what that means
+   for the objective a teacher actually chose — and a teacher should never have
+   to hold one in their head while scrolling to the other.
+   --------------------------------------------------------------------------- */
+
+.student-lead-stack { display: grid; align-content: start; gap: var(--s-4); min-width: 0; }
+
+.objective-standing {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--bow-brand);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+}
+
+.objective-standing > * { margin: 0; }
+
+.objective-standing__code { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: baseline; color: var(--ink-2); font: var(--t-sm); }
+
+.objective-standing__chip {
+  flex: none;
+  padding: 2px var(--s-3);
+  color: var(--bow-brand-strong);
+  background: var(--violet-50);
+  border-radius: var(--r-xs);
+  font: var(--t-label);
+  font-feature-settings: var(--num);
+  letter-spacing: 0.04em;
+}
+
+.objective-standing__state { display: grid; gap: 2px; }
+.objective-standing__state strong { font: var(--t-title3); }
+.objective-standing__state span { color: var(--ink-3); font: var(--t-sm); }
+
+/* The three states carry a colour each, and the middle one is the one that matters:
+   it has to read as "not the whole claim yet" rather than as a middling score. */
+.objective-standing[data-state="demonstrated"] .objective-standing__state strong { color: var(--fin-balanced-ink); }
+.objective-standing[data-state="partially-assessed"] .objective-standing__state strong { color: var(--fin-conditional-ink); }
+.objective-standing[data-state="not-assessed"] .objective-standing__state strong { color: var(--ink-3); }
+
+.objective-standing__missing ul { margin: var(--s-2) 0 0; padding-left: var(--s-5); color: var(--ink-2); font: var(--t-sm); }
+.objective-standing__missing li + li { margin-top: var(--s-2); }
+.objective-standing__link { font: var(--t-sm); }
+.objective-standing__attribution { color: var(--ink-4); font: var(--t-micro); }

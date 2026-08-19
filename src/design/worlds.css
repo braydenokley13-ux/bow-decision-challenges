@@ -38,11 +38,13 @@
    who learned that in one world must not have to relearn it in the next.
    --------------------------------------------------------------------------- */
 [data-world="food-truck"] {
-  /* Burnt orange, checked at 5.6:1 on the cream canvas — the market's own ink for
-     eyebrows, rules and marks on light surfaces. */
-  --world-accent: #9a3d10;
-  --world-accent-soft: #f7e7d2;
-  --world-accent-ink: #6d2a09;
+  /* Paper-lantern amber. It used to be a burnt orange checked at 5.6:1 on cream, which is
+     the right decision for a printed handout and unreadable on the lane at night — the
+     world's own art direction always said "lit from a wire strung over a lane", and the
+     surfaces have finally caught up with it. Checked on `--surface` of the dark ground. */
+  --world-accent: #f0a94a;
+  --world-accent-soft: #38220f;
+  --world-accent-ink: #ffcf8a;
 
   /* The lane at night: warm dark, layered, never flat black. */
   --world-hero-bg: #241713;
@@ -63,17 +65,33 @@
   --world-flare: #f0b352;
 
   /* Plates on the counter, and plates nobody bought. */
-  --plate-sold: #9a3d10;
-  --plate-binned: #cbbca4;
+  --plate-sold: #f0a94a;
+  --plate-binned: #6b5a45;
+}
+
+/* The lane's own darks, over the violet-navy `.ground-dark` supplies. Warm rather than
+   cool, because the light source in this world is a bulb and not a floodlight. Every ink
+   below is the dark ground's, and each was checked against `--surface` here. */
+.popup-shell.ground-dark {
+  --canvas: #17100e;
+  --surface: #241a15;
+  --surface-raised: #2e211a;
+  --surface-sunken: #1a1210;
+  --surface-inset: #140d0b;
+  --border-subtle: #3a2a21;
+  --border-default: #4d372b;
+  --border-strong: #6d4e3c;
+  --ink-3: #c3ab95;
+  --ink-4: #b39c87;
 }
 
 /* The market's four chapters, each on its own air. The grounds move a few percent —
    enough that a student feels the lane change, not enough to put any text on a surface
    its contrast was not checked against. */
-.popup-shell[data-chapter="plan"] { --chapter-ground: #f2e9d8; --chapter-accent: var(--world-accent); }
-.popup-shell[data-chapter="market"] { --chapter-ground: #f0e6d1; --chapter-accent: var(--world-accent); }
-.popup-shell[data-chapter="breakdown"] { --chapter-ground: #ece0cb; --chapter-accent: var(--fin-over); }
-.popup-shell[data-chapter="settle"] { --chapter-ground: #f4ecdd; --chapter-accent: var(--world-accent-ink); }
+.popup-shell[data-chapter="plan"] { --chapter-ground: #17100e; --chapter-accent: var(--world-accent); }
+.popup-shell[data-chapter="market"] { --chapter-ground: #1d1310; --chapter-accent: var(--world-accent); }
+.popup-shell[data-chapter="breakdown"] { --chapter-ground: #140c0b; --chapter-accent: var(--fin-over); }
+.popup-shell[data-chapter="settle"] { --chapter-ground: #1a1411; --chapter-accent: var(--world-accent-ink); }
 
 .market-backdrop { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; color: var(--world-canopy); opacity: 0.5; pointer-events: none; }
 
@@ -169,18 +187,34 @@
    nominates a box with `data-reading-anchor` and the component fills it, so this file does not
    have to know how many controls end up here. */
 .popup-topbar__end { justify-self: end; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--s-3); min-width: 0; }
-.market-strip { display: flex; align-items: center; gap: var(--s-4); min-width: 0; }
-.market-strip__caption { flex: none; margin: 0; color: var(--ink-1); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
-.market-strip ol { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); flex: 1; min-width: 0; margin: 0; padding: 0; list-style: none; }
-.market-strip li { display: grid; justify-items: center; gap: 2px; padding-top: var(--s-2); color: var(--ink-4); font: var(--t-micro); font-feature-settings: var(--num); text-align: center; }
 
-/* The stall itself: a canopy over each Saturday, filled once the night is played. */
-.market-strip li i { width: 26px; height: 9px; display: block; background: var(--surface-inset); clip-path: polygon(0 100%, 15% 0, 85% 0, 100% 100%); }
-.market-strip li[data-state="played"] { color: var(--ink-2); }
-.market-strip li[data-state="played"] i { background: var(--world-accent); }
-.market-strip li[data-state="current"] { color: var(--ink-1); font-weight: 700; }
-.market-strip li[data-state="current"] i { height: 13px; background: var(--world-flare); box-shadow: 0 0 0 1px var(--world-accent); }
-.market-strip li b { font: var(--t-micro); font-weight: 700; }
+/* ---------------------------------------------------------------------------
+   The world's own name, and the motif HUD beside it (§7 of the mockup bar).
+   Both are shared with the hub screen's own header — `MotifHud.tsx` — so a student reads the
+   same four numbers in the bar and standing in the market itself.
+   --------------------------------------------------------------------------- */
+.popup-topbar__world { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); min-width: 0; }
+
+.world-identity { flex: none; min-width: 0; }
+.world-identity__title { margin: 0; color: var(--ink-4); font: var(--t-micro); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
+.world-identity__place { display: flex; align-items: center; gap: 5px; margin: 2px 0 0; color: var(--ink-1); font: var(--t-ui); font-weight: 700; white-space: nowrap; }
+.world-identity__pin { flex: none; width: 14px; height: 14px; color: var(--world-accent); }
+
+.motif-hud { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); min-width: 0; margin: 0; padding: 0; list-style: none; }
+.motif-hud > li { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.motif-hud svg { flex: none; width: 18px; height: 18px; color: var(--world-accent); }
+.motif-hud > li[data-motif="when"] svg { color: var(--ink-3); }
+.motif-hud__label { display: block; color: var(--ink-4); font: var(--t-micro); letter-spacing: 0.05em; text-transform: uppercase; }
+.motif-hud__value { display: block; color: var(--ink-1); font: var(--t-sm); font-weight: 700; font-feature-settings: var(--num); white-space: nowrap; }
+.motif-hud__value small { margin-left: 4px; color: var(--ink-3); font-weight: 500; }
+.motif-hud__value--text { white-space: normal; }
+
+/* Reachable from every screen — the hub is a shell around the ten stages, opened on request
+   and never on arrival, so `onscreen.spec.ts`'s "the market opening" assertion still meets the
+   spot screen's own heading first. See `PopUpHub.tsx`. */
+.hub-open { flex: none; padding: 8px 14px; color: var(--world-accent-ink); font: var(--t-sm); font-weight: 700; background: var(--world-accent-soft); border: 1px solid transparent; border-radius: var(--r-pill); cursor: pointer; }
+.hub-open:hover { background: var(--surface-inset); }
+.hub-open:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 
 /* A column, not stacked margins: half the blocks on these screens are lists and tables that
    zero their own margins, and a rhythm any child can silently opt out of is not one.
@@ -206,6 +240,55 @@
 .popup-heading--dark .eyebrow { color: var(--world-hero-second); }
 .popup-heading--dark h1 { max-width: 16ch; color: var(--world-hero-ink); font: var(--t-scene); letter-spacing: var(--display-tracking-tight); }
 .popup-shell .eyebrow { color: var(--world-accent); }
+
+/* ---------------------------------------------------------------------------
+   The hub: the market as a place, opened over whichever of the ten screens the
+   student is standing on (`PopUpHub.tsx`). It reuses `popup-heading--dark` for its
+   own banner, so this only styles what is new: the messages that arrive in it,
+   and the body below the scene.
+   --------------------------------------------------------------------------- */
+.hub-messages { display: grid; gap: var(--s-3); max-width: 46ch; margin: var(--s-4) 0 0; padding: 0; list-style: none; }
+.hub-messages li { padding: var(--s-3) var(--s-4); background: rgb(0 0 0 / 18%); border-left: 3px solid var(--world-flare); border-radius: var(--r-xs); }
+.hub-messages b { display: block; margin-bottom: 2px; color: var(--world-hero-second); font: var(--t-micro); letter-spacing: 0.04em; text-transform: uppercase; }
+.hub-messages p { margin: 0; color: var(--world-hero-body); font: var(--t-sm); }
+
+.hub-body { display: grid; gap: var(--s-6); }
+
+.hub-job { padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--r-md); }
+.hub-job p { margin: var(--s-2) 0 0; color: var(--ink-2); font: var(--t-body); }
+.hub-job p.hub-job__note { color: var(--ink-3); font: var(--t-sm); }
+
+.hub-season h2, .hub-locations h2 { margin: 0 0 var(--s-4); font: var(--t-title2); }
+
+/* The four Saturdays, moved here from the top bar so the bar has room for the motif HUD. Same
+   drawing as before: a canopy over each night, filled once it has been played. */
+.hub-season ol { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.hub-season li { display: grid; justify-items: center; gap: var(--s-2); padding: var(--s-3) var(--s-2); background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--r-sm); color: var(--ink-4); font: var(--t-micro); font-feature-settings: var(--num); text-align: center; }
+.hub-season li i { width: 30px; height: 11px; display: block; background: var(--surface-inset); clip-path: polygon(0 100%, 15% 0, 85% 0, 100% 100%); }
+.hub-season li[data-state="played"] { color: var(--ink-2); }
+.hub-season li[data-state="played"] i { background: var(--world-accent); }
+.hub-season li[data-state="current"] { color: var(--ink-1); font-weight: 700; border-color: var(--world-accent); }
+.hub-season li[data-state="current"] i { height: 15px; background: var(--world-flare); box-shadow: 0 0 0 1px var(--world-accent); }
+.hub-season li b { font: var(--t-sm); font-weight: 700; }
+
+/* The locations, and the bottom action row of the reference in one: real, in-flow buttons and
+   text rather than pins floated over a picture, so there is nothing here that needs a separate
+   keyboard-only twin — this list already is one. `minmax(min(240px, 100%), 1fr)` so it never
+   floors a track wider than a 320px viewport at 200% zoom (`gridFloors.test.ts`). */
+.hub-locations ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
+.hub-location { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--r-md); box-shadow: var(--shadow-card); }
+.hub-location[data-status="current"] { border-color: var(--world-accent); box-shadow: 0 0 0 1px var(--world-accent), var(--shadow-card); }
+.hub-location[data-status="ahead"] { opacity: 0.62; }
+.hub-location__glyph { width: 26px; height: 26px; color: var(--world-accent); }
+.hub-location[data-status="ahead"] .hub-location__glyph, .hub-location[data-status="done"] .hub-location__glyph { color: var(--ink-4); }
+.hub-location__say { flex: 1; }
+.hub-location__say b { display: block; color: var(--ink-1); font: var(--t-title3); }
+.hub-location__say p { margin: 4px 0 0; color: var(--ink-3); font: var(--t-sm); }
+.hub-location__status { align-self: flex-start; padding: 4px 10px; color: var(--ink-4); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; background: var(--surface-sunken); border-radius: var(--r-pill); }
+.hub-location[data-status="done"] .hub-location__status { color: var(--ink-2); background: var(--surface-inset); }
+.hub-location__go { align-self: flex-start; padding: 9px 16px; color: #ffffff; font: var(--t-sm); font-weight: 700; background: var(--world-accent); border: none; border-radius: var(--r-pill); cursor: pointer; }
+.hub-location__go:hover { filter: brightness(1.08); }
+.hub-location__go:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 
 /* ---------------------------------------------------------------------------
    Beat 1 — the pitch.
@@ -544,19 +627,20 @@
 
 @media (max-width: 760px) {
   /* The same two-column crush the challenge shell had, in the market's bar.
-     `minmax(0, 1fr) auto` gave the mark a track that can go to zero and the four-Saturday
-     strip a track that takes whatever it asks for — and the strip asks for a lot. Measured at
+     `minmax(0, 1fr) auto` gave the mark a track that can go to zero and the world identity's
+     track would take whatever it asks for — and glyphed numbers ask for a lot. Measured at
      320, 360 and 390 the computed tracks were `0px 280px`, `0px 304px`, `0px 334px`: the BOW
-     mark was drawn at zero width on every phone in this world. The strip goes to its own row,
-     as it does in the other world, and the mark and the run menu share row one. */
+     mark was drawn at zero width on every phone in this world. The identity and HUD go to
+     their own row, as the four-Saturday strip did before them, and the mark and the run menu
+     share row one. */
 
   /* And the gutter comes down with it, as it does on the challenge shell. With the full
      gutter the mark's track was 103px against a 129px wordmark at 320 — the letters were
      drawn and then cut. */
   .popup-topbar { grid-template-columns: minmax(0, 1fr) minmax(0, auto); gap: var(--s-2) var(--s-3); padding: var(--s-3); }
   .popup-topbar > .popup-topbar__end { grid-column: 2; grid-row: 1; justify-self: end; }
-  .market-strip { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; min-width: 0; }
-  .market-strip ol { min-width: 0; flex-basis: 100%; }
+  .popup-topbar__world { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; min-width: 0; }
+  .motif-hud { min-width: 0; flex-basis: 100%; justify-content: space-between; }
   .popup-main { width: calc(100% - 24px); }
   .popup-heading h1 { font-size: 2rem; }
   .popup-action, .popup-commit { flex-direction: column; align-items: stretch; }

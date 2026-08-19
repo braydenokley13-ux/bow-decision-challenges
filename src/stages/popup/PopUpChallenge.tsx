@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useChallenge } from "../../app/ChallengeContext";
 import { PopUpProvider, usePopUp } from "./PopUpContext";
+import { PopUpHubProvider } from "./PopUpHub";
 import { useSessionSeat } from "./seat";
 import {
   FirstSaturdayStage, GeneratorStage, MoneyStage, PlanStage, RepairStage,
@@ -28,7 +29,11 @@ export function PopUpChallenge() {
   if (!seed) return <div className="popup-shell" data-world="food-truck" />;
   return (
     <PopUpProvider seed={seed} transport={transport} sample={sample}>
-      <PopUpStages />
+      {/* A shell around the ten stages, not a replacement for them — see `PopUpHub.tsx`. It
+          renders `PopUpStages` unchanged until a screen's own "The market" button opens it. */}
+      <PopUpHubProvider>
+        <PopUpStages />
+      </PopUpHubProvider>
     </PopUpProvider>
   );
 }

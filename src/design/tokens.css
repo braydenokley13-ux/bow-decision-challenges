@@ -270,6 +270,21 @@
 .ground-dark {
   color-scheme: dark;
 
+  /*
+   * The ground re-states the inherited colour, and this line is not optional.
+   *
+   * `reset.css` sets `html { color: var(--ink-1) }`, which resolves *once, at the root*, to
+   * the light ground's near-black. Every element that does not set its own colour inherits
+   * that computed value — so re-pointing `--ink-1` inside this scope fixes every element
+   * that says `color: var(--ink-1)` explicitly and misses every element that simply
+   * inherits. The result is a screen where headings and body copy that happened to be
+   * styled are legible and the ones that were left alone are near-black on near-black.
+   *
+   * Found exactly that way: the world hub's own section heading rendered at about 1.3:1
+   * while every card title beside it was correct.
+   */
+  color: var(--ink-1);
+
   --canvas: #0c0b1f;
   --surface: #17163a;
   --surface-raised: #1e1d47;

@@ -90,6 +90,13 @@ function isProse(raw: string): boolean {
   if (/[a-z][A-Z]/.test(text)) return false;
   const tokens = text.split(/\s+/).filter(Boolean);
   if (tokens.length === 1) return /^[A-Z][A-Za-z'’]+$/.test(tokens[0] ?? "");
+  // A list of class names is machinery, and the one-word rule above already knew it: a lone
+  // `"popup-shell"` is thrown away for being lowercase and hyphenated. Two of them in one
+  // attribute — `className="popup-shell ground-dark"` — used to arrive here as "two words"
+  // and be read as a sentence, so the first component to carry a second class reported
+  // `ground-dark` as a word a Grade 5 reader might stop at. Every token hyphenated and
+  // lowercase is a shape no English sentence has.
+  if (tokens.every((token) => /^[a-z][a-z0-9]*(?:-[a-z0-9]+)+$/.test(token))) return false;
   return tokens.length > 1;
 }
 

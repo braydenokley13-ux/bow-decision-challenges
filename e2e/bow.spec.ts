@@ -476,10 +476,15 @@ studentTest("the opening screens work with a keyboard only", async ({ page, clas
   await page.getByRole("link", { name: /^(Start|Carry on)$/ }).focus();
   await page.keyboard.press("Enter");
   // Whichever screen the build actually opens on, driven from the keyboard. A signed-in
-  // student meets the world picker here, not the confirm button, and focusing a button that is
-  // not on the page waits forever: this test spent five minutes proving nothing before the
-  // per-test timeout ended it. The claim is that the next step is reachable without a pointer,
-  // and that is asserted on the step that is really there.
+  // student meets the entry screen here — the roster card and the offer, or, in a build that
+  // offers a choice of world, the neutral version of the same screen — and presses its own
+  // confirm button before the picker, not instead of it: `StudentChallenge.tsx` used to fire
+  // `SESSION_STARTED` from an effect the instant a real class resolved a seat, which is why an
+  // earlier version of this comment said the confirm button was never there for a signed-in
+  // student. Focusing a button that is not on the page waits forever either way: this test
+  // spent five minutes proving nothing before the per-test timeout ended it. The claim is that
+  // the next step is reachable without a pointer, and that is asserted on the step that is
+  // really there.
   const confirm = page.getByRole("button", { name: /^(Start the eight weeks|Go in)$/ });
   const picker = page.getByRole("heading", { name: STUDENT_COPY.choose.title });
   await expect(confirm.or(picker).first()).toBeVisible();

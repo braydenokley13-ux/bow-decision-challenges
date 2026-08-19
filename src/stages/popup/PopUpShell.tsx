@@ -3,18 +3,16 @@ import { usePinnedTopBar, useStageArrival } from "../../app/useStageArrival";
 import { AppMark } from "../../components/primitives/AppMark";
 import { RunMenu } from "../../components/primitives/RunMenu";
 import { usePopUp } from "./PopUpContext";
+import { usePopUpHubTrigger } from "./PopUpHub";
 import { MarketBackdrop } from "../../components/story/MarketBackdrop";
 import { formatDollars } from "../../domain/core/money";
 import type { StageId } from "../../domain/evidence/types";
 import { POP_UP_SCENARIO } from "../../domain/scenario/worlds/food-truck";
 import type { PopUpLedger } from "../../domain/scenario/worlds/food-truck/ledger";
-import { POP_UP_NUMBERS as N } from "../../domain/scenario/worlds/food-truck/numbers";
 import { marketPositionFor } from "../../domain/scenario/worlds/food-truck/stages";
 import type { PopUpLineId, PopUpPlan } from "../../domain/scenario/worlds/food-truck/types";
-import { marketStrip } from "./popupView";
+import { MotifHud, WorldIdentity } from "./MotifHud";
 import { ReadingTools } from "../../student/reading";
-
-const COPY = POP_UP_SCENARIO.screens;
 
 /** Which ground the screen sits on. The market's chapters, not the arena's. */
 function chapterFor(stage: StageId): string {
@@ -49,8 +47,8 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
   focusKey?: string | number;
 }>) {
   const { state, delivery, handOver } = usePopUp();
+  const hub = usePopUpHubTrigger();
   const position = marketPositionFor(stage);
-  const strip = marketStrip(ledger, position.current, N.saturdays);
   const heading = useRef<HTMLElement>(null);
   const topbar = useRef<HTMLElement>(null);
   // The same rule the other world's shell keeps: the bar's own height is what the page reserves
@@ -63,27 +61,40 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
   // 179px above the window. Same key, same rule, same reason as `app/StageShell.tsx`.
   useStageArrival(heading, focusKey === undefined ? stage : `${stage}:${focusKey}`);
 
+  // `ground-dark` is the student ground: the same semantic token names as the teacher's
+  // light one, cut for a near-black surface. A night market is lit from a wire strung over a
+  // lane, and the world was being drawn on the cream of a printed handout.
   return (
-    <div className="popup-shell" data-world="food-truck" data-chapter={chapterFor(stage)}>
+    <div className="popup-shell ground-dark" data-world="food-truck" data-chapter={chapterFor(stage)}>
       <header ref={topbar} className="popup-topbar">
-        <AppMark />
-        <div className="market-strip">
-          <p className="market-strip__caption">{position.caption}</p>
-          <ol aria-label={`The ${N.saturdays} Saturdays`}>
-            {strip.map((night) => (
-              <li key={night.saturday} data-state={night.state} {...(night.state === "current" ? { "aria-current": "step" as const } : {})}>
-                <i aria-hidden="true" />
-                <span>{COPY.settle.saturdayLabel} {night.saturday}</span>
-                <b>{night.sold === null ? "—" : `${night.sold} ${COPY.night.sold.toLowerCase()}`}</b>
-              </li>
-            ))}
-          </ol>
+        <AppMark subtitle={false} />
+        {/* The world's own name and the place it happens in, always on screen, and the four
+            quantities this run turns on beside it — cash, stock, plates sold, and which
+            Saturday this is. Every figure is read off the same ledger every screen already
+            prices its own questions from; see `MotifHud.tsx` for why none of it is stored. */}
+        <div className="popup-topbar__world">
+          <WorldIdentity title={POP_UP_SCENARIO.title} place={POP_UP_SCENARIO.pitch.kicker} />
+          <MotifHud
+            ledger={ledger}
+            hasSpot={state.spotId !== null}
+            openingCommitted={state.saved.opening !== undefined}
+            position={position}
+          />
         </div>
         {/* The same two controls the other world carries, for the same two reasons: a market
             restored on a shared laptop has to be able to say whose it is, and a student who meant
             to play the other one needs a door that is not "finish this first" — and the reading
             help belongs in the bar rather than over the night's own numbers. */}
         <div className="popup-topbar__end">
+          {/* Reachable from every screen, and it changes nothing about the run: the ten stages
+              keep their own order underneath it. Absent from tests that mount a bare stage
+              component with no `PopUpHubProvider` above them — `usePopUpHubTrigger` answers
+              `null` rather than throwing, so this button simply is not there. */}
+          {hub && (
+            <button type="button" className="hub-open" aria-label="See the market as a place, and where you are in it" onClick={hub.open}>
+              The market
+            </button>
+          )}
           {/* The same reading help the other world carries, on the same terms and in the same
               place: in the bar, where the layout has kept room for it, rather than over the
               night's own numbers. Keyed on the question as well as the stage so the repair

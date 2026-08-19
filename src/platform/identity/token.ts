@@ -59,12 +59,16 @@ const WHO_KEY = "bow.student.v1.id";
  *
  * **Why recognising it is safe on a shared cart.** Reading this back is not enough on its own
  * — `Join.tsx` also checks the stored `studentId` against `studentIdHeld()` (`WHO_KEY`, above)
- * before it will act on it. `WHO_KEY` already answers "whose work is on this device", updated
- * on every successful join; a different child sitting down and joining the same open class
- * fresh overwrites it with their own account the moment *they* sign in, which is the same
- * mechanism `sharedDevice.test.tsx` holds for clearing a stranger's draft. So a stored code is
- * only ever offered back to the account this browser already believes is sitting at it — never
- * displayed, and never usable, for anybody else's.
+ * before it will even offer it, and offering it is not showing it: a match routes to a plain
+ * yes/no ("Have you signed in here before?") rather than filling the code in, because `WHO_KEY`
+ * is a fact about the *browser* — whichever account last signed in on it — and not about who is
+ * at the keyboard right now, and a cart is handed to a different child every day with nobody
+ * signing out in between. `WHO_KEY` still does real work here: a different child who *has*
+ * already signed in on this browser, on this class, overwrites it with their own account, which
+ * is the same mechanism `sharedDevice.test.tsx` holds for clearing a stranger's draft, and it is
+ * what stops the code being offered at all once that has happened. What is left for a mismatch a
+ * timestamp cannot catch — the very next child on a machine WHO_KEY has not been updated for
+ * yet — is the honest question, which a child it is wrong about has no reason to answer yes to.
  *
  * Not a new exposure: a browser trusted with this is already trusted with `TOKEN_KEY`, the
  * bearer credential that authenticates outright, for up to forty-five days on a device a

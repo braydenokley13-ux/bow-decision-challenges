@@ -423,15 +423,19 @@ const SUBMITTED: ChallengeAction[] = [
 
 const BASKETBALL_SCREENS: readonly Screen<ChallengeAction>[] = [
   /*
-   * `entry` is gone from this list because it is gone from the run.
-   *
-   * A student who is already signed in used to land on a panel confirming that they were —
-   * "You are signed in as · Ada L. · Period 2", one button reading *Go in* — between their own
-   * home page and the game. The stage still exists and still draws that screen for a build
-   * with no class service, which is how the guide's sample run works; a rostered student
-   * never sees it, so it is not a screen on their critical path and its words are not theirs
-   * to read.
+   * `entry` is back on this list. It used to say the opposite — that a rostered student never
+   * meets this screen, so its words are not theirs to read — on the strength of a comment that
+   * turned out to describe a bug rather than a decision: `StudentChallenge.tsx` fired
+   * `SESSION_STARTED` from an effect the moment a real class resolved a seat, which moved
+   * `state.meta.stage` off `entry` before the first paint, so the screen this file measured
+   * for the no-service preview build was never the screen a real student saw. `pacing.ts`
+   * budgets 55 seconds here for "read the offer and the roster card, **then start the run**",
+   * `SHORTEST_PATH` and `LONGEST_PATH` both already start at `entry`, and `BASKETBALL_BUDGET_
+   * SECONDS` below already spent that 55 seconds on a screen this list was not charging
+   * anything to — so fixing the bug costs this test no new budget, only the true measurement
+   * of a screen its own budget line already paid for.
    */
+  { label: "entry (the offer and the roster card)", stage: "entry", actions: [] },
   { label: "choose-world (the picker)", stage: "choose-world", actions: CHOOSE },
   { label: "setup-comparison (rank)", stage: "setup-comparison", actions: RANK },
   { label: "setup-comparison (pick)", stage: "setup-comparison", actions: PICK },

@@ -41,3 +41,19 @@ test("shot 14-student-case", async ({ page }) => {
   await page.waitForTimeout(900);
   await page.screenshot({ path: "gauntlet/v5/shots/14-student-case.png", fullPage: true });
 });
+
+/** The assignment builder, and the demo class now that it carries a real objective. */
+for (const shot of [
+  { name: "15-assignment-builder", path: "/educator/assignments/new" },
+  { name: "16-demo-class-objective", path: "/educator/class/DEMO" },
+] as const) {
+  test(`shot ${shot.name}`, async ({ page }) => {
+    const errors: string[] = [];
+    page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+    page.on("pageerror", (e) => errors.push(String(e)));
+    await page.goto(shot.path, { waitUntil: "networkidle" }).catch(() => {});
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: `gauntlet/v5/shots/${shot.name}.png`, fullPage: true });
+    if (errors.length) console.log(`CONSOLE ${shot.name}: ${errors.join(" | ")}`);
+  });
+}

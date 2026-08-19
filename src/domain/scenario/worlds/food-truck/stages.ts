@@ -38,7 +38,10 @@ export interface PopUpStageBudget {
 }
 
 export const POP_UP_STAGE_BUDGET: Record<PopUpStageId, PopUpStageBudget> = {
-  "popup-spot": { seconds: 150, basis: "Read who you are and what is already owed, compare three booths on price and on four different crowds, pick one, and total what is owed before the first Saturday." },
+  // Five seconds more than it used to be, and they buy the top bar rather than the screen: the
+  // motif HUD and the world's own name now sit above every stage (§7 of the mockup bar), and
+  // this is the first screen a student meets them on. Nothing about the beat itself changed.
+  "popup-spot": { seconds: 155, basis: "Read who you are and what is already owed, compare three booths on price and on four different crowds, pick one, and total what is owed before the first Saturday — plus the world's own name and its four running numbers, now always on screen." },
   "popup-money": { seconds: 90, basis: "Read two pieces of money with a rule attached, decide about each, and work out what is left to plan with." },
   "popup-plan": { seconds: 160, basis: "Set three lines, name the line that takes the rest, and say what gives if conditional money does not come." },
   "popup-first-saturday": { seconds: 95, basis: "Order trays for opening night against one stated crowd, price the order, then read what sold and what went in the bin." },

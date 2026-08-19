@@ -12,8 +12,7 @@ import {
   seatOnRoster,
   signIn,
   SETUP_ORDER,
-  SETUP_TITLES,
-} from "./flow";
+  SETUP_TITLES, startIfConfirmAsked } from "./flow";
 import { NUMBERS as N, fillPlanToBalance, saveOpeningPlan, savePlan, week5TotalFor, type PlanContext } from "./plan";
 import { POP_UP_SCENARIO } from "../src/domain/scenario/worlds/food-truck";
 import { POP_UP_NUMBERS } from "../src/domain/scenario/worlds/food-truck/numbers";
@@ -320,6 +319,13 @@ test.describe("what is actually on the screen", () => {
     await gotoFreshChallenge(page);
     await signIn(page, { ...card, classCode: created.code });
     await page.getByRole("link", { name: /^(Start|Carry on)$/ }).click();
+    // The world's opening is a screen now, for every student in a real class. It used to be
+    // skipped: an effect fired `SESSION_STARTED` the moment the seat resolved for any
+    // class-connected transport, so a child who picked a world card was dropped straight into
+    // its first question and the cold open was reachable only from the teacher preview. This
+    // test asserted that behaviour by walking straight past it — which is the failure mode
+    // this suite has recorded before, a real improvement leaving its test behind.
+    await startIfConfirmAsked(page);
     await expect(page.getByRole("heading", { name: POP_UP_SCENARIO.screens.spot.title })).toBeVisible();
     await onScreen("the market opening");
 
