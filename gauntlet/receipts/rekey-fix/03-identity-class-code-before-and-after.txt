@@ -1,0 +1,70 @@
+# NEW-3 (LOW, vendor-review-5 §3) — identity-route class codes skipped the door's format
+# check, so a malformed one reached the store's segment() throw and came back as a 503.
+# Reproduced against a real service, then fixed. Live transcript.
+#
+# The service: `vite build --ssr server/index.ts`, file store, BOW_STORE_KEY set, on 127.0.0.1:4839.
+# Checked nothing was listening on 48xx first; killed afterwards and confirmed the port clear.
+# One class created through the API: CNCCM "Period 3".
+
+================================================================================
+BEFORE — commit 8685d0b
+================================================================================
+
+  GET /api/classes/CNCCM         /roster -> 200
+  GET /api/classes/ZZZZZ         /roster -> 404
+  GET /api/classes/._.           /roster -> 404
+  GET /api/classes/..%2f..%2fetc /roster -> 503   <-
+  GET /api/classes/AAAA%00       /roster -> 503   <-
+  GET /api/classes/%25           /roster -> 503   <-
+  GET /api/classes/AAAA%2e%2e    /roster -> 503   <-
+
+  # the same codes at handler.ts's own door, which has always checked:
+  GET /api/classes/..%2f..%2fetc         -> 404
+  GET /api/classes/AAAA%00               -> 404
+  GET /api/classes/%25                   -> 404
+
+  $ curl /api/classes/AAAA%00/roster
+  {"error":"unavailable","message":"The class service is not reachable right now.",
+   "detail":"Refusing to build a path from an unsafe class code."}
+
+Fail-closed — no path is built, no file is touched — but an unauthenticated caller could make
+an untouched service report itself unreachable by putting a `%` in a URL, and the two routers
+disagreed about the same string. A 503 is what an operator pages somebody about.
+
+(Noted while here, and not fixed by this change: that 503 body carries `detail` with the
+internal exception text. It is index.ts's generic catch, outside this change's territory, and
+the string it leaks here names an internal rule rather than any data. Flagged, not fixed.)
+
+================================================================================
+AFTER — commit 9a2ef94
+================================================================================
+
+  GET /api/classes/CNCCM         /roster -> 200
+  GET /api/classes/cnccm         /roster -> 200   (lower case, as before)
+  GET /api/classes/ZZZZZ         /roster -> 404
+  GET /api/classes/._.           /roster -> 404
+  GET /api/classes/..%2f..%2fetc /roster -> 404
+  GET /api/classes/AAAA%00       /roster -> 404
+  GET /api/classes/%25           /roster -> 404
+  GET /api/classes/AAAA%2e%2e    /roster -> 404
+
+  $ curl /api/classes/AAAA%00/roster
+  {"error":"class_not_found","message":"No class with that code."}
+  # byte-identical to what handler.ts answers for the same code
+
+  $ curl /api/classes/CNCCM/roster
+  {"label":"Period 3","joinMode":"open"}          # the class that exists still opens
+
+  $ curl /api/health
+  {"ok":true,"store":"file","durable":true,"classroomReady":true,"storeKey":"ok",…}
+
+404 rather than 400: a malformed code and a code nobody owns are the same event to the person
+who typed it, and telling an enumerator that their guess was the wrong *shape* is a hint the
+class service already declines to give. The code is normalised rather than upper-cased for the
+same reason — both doors should look up the same string, so a whiteboard `0` read as `Q`
+reaches the same class from either.
+
+Unit reproduction, in `src/platform/classes/storeHardening.test.ts`: at HEAD~ the test throws
+`Refusing to build a path from an unsafe class code.` (the 503's cause); after the fix all
+five codes are 404 at both doors, the live class is 200, and the data directory listing is
+identical before and after.
