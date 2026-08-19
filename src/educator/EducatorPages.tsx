@@ -82,10 +82,17 @@ function AlignmentBlock() {
 }
 
 /**
- * The eight questions a teacher who has never spoken to anyone at BOW needs answered
- * before they will run this, answered above the fold and in their own words. The last
- * three are questions about a real class, so they link into the evidence rather than
- * being described here.
+ * The questions a teacher who has never spoken to anyone at BOW needs answered before they
+ * will run this, answered above the fold and in their own words. The last three are questions
+ * about a real class, so they link into the evidence rather than being described here.
+ *
+ * The heading promises a minute, and a minute is a real budget: `readingHelp.test.tsx` counts
+ * the words this block renders and holds them at what ships today. A row added here is paid
+ * for out of a row already here, which is how the headphones row above was paid for — the
+ * summary sentence that used to close "What do students do?" said the two stories both break
+ * the plan and both end in writing, and every clause of it is still on this page: the breaks
+ * are named in each story's own line, and the writing in "What do I get back?" and in the
+ * third step of Running it.
  */
 function BriefAnswers() {
   return (
@@ -94,8 +101,23 @@ function BriefAnswers() {
       <dl>
         <div><dt>What does it assess?</dt><dd>Whether students can <b>apply</b> budgeting under uncertainty — build a workable eight-week plan, keep it working when income and costs change, and justify it.</dd></div>
         <div><dt>When do I use it?</dt><dd><b>After</b> you have taught the {TERMS.skills}. It is an application task, not a lesson.</dd></div>
-        <div><dt>How long?</dt><dd><b>{durationLabel(PLAN_UNDER_PRESSURE)}</b> for most students. One sitting, one device, no sound.</dd></div>
-        <div><dt>What do students do?</dt><dd>They handle the money in one of two {TERMS.stories}, and they pick which. <b>Eight Weeks to the Showcase</b>: a player’s season, where they choose housing, build a plan, absorb a Week 5 loss and a new required cost, and repair it. <b>Run the Pop-Up</b>: four Saturdays at a night market, where they take a booth, decide how much food to cook against the crowd it draws, and cover a generator that dies with the biggest night still ahead. Every crowd figure is printed before the student orders, so what is assessed is planning against known demand rather than predicting it. Both ask for a plan that fits the money, both break it, and both end with the student explaining in writing what they did.</dd></div>
+        <div><dt>How long?</dt><dd><b>{durationLabel(PLAN_UNDER_PRESSURE)}</b> for most students. One sitting, one device.</dd></div>
+        {/* This row is new, and the words it took back are the three that ended the row above
+            it: "no sound". The product reads the screen out loud — `ReadingTools` is on every
+            screen of both stories — so the guide was false, and false in the direction
+            that costs the most. A teacher plans a lab off this block; the students who need the
+            voice are the ones a room with no headphones fails. It was also the only sentence
+            about audio on any educator surface, and there was no other mention of reading help
+            anywhere a teacher reads, so the one thing the guide said about the accommodation was
+            that it did not exist.
+
+            Four clauses, each one a thing a teacher has to act on before the lesson: bring
+            headphones, you turn nothing on, it is not a mark against a child, and it is not a
+            translation. Every one is checked against the thing that makes it true in
+            `readingHelp.test.tsx` — including the last, which is the sentence this guide owed a
+            teacher with students new to English and had never said. */}
+        <div><dt>Do students need headphones?</dt><dd>Yes, or a quiet room. Any student can press <b>Reading help</b> to hear the screen read out loud, or to look up a word on it. You turn nothing on, it stays on the device, and who used it is never recorded — so it cannot count against a student. Nothing is translated: a student new to English gets the same two tools, in English.</dd></div>
+        <div><dt>What do students do?</dt><dd>They handle the money in one of two {TERMS.stories}, and they pick which. <b>Eight Weeks to the Showcase</b>: a player’s season, where they choose housing, build a plan, absorb a Week 5 loss and a new required cost, and repair it. <b>Run the Pop-Up</b>: four Saturdays at a night market, where they take a booth, decide how much food to cook against the crowd it draws, and cover a generator that dies with the biggest night still ahead. Every crowd figure is printed before the student orders, so what is assessed is planning against known demand rather than predicting it.</dd></div>
         <div><dt>Do the two give me the same thing back?</dt><dd>Yes, and that is the point of having two. Both {TERMS.stories} collect evidence against the same named parts of the work and are judged on the same rubric, so a class where students chose differently still produces one answer about the class. What differs is the {TERMS.story}, the decisions and the numbers — never what is being looked for.</dd></div>
         <div><dt>What do I get back?</dt><dd>For each student, what the evidence shows against each {TERMS.skill} — one line for each thing the work had to show, every judgement traceable to the moment in their own run. Plus what the class decided, and one written explanation you read and score yourself. Counts for your gradebook come with it.</dd></div>
         {/* Every clause after the first used to be false: there are accounts now, teachers do
