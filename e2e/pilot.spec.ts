@@ -13,6 +13,7 @@ import {
   seedRuns,
   submitDefense,
   waitForDelivery,
+  API_ORIGIN,
 } from "./flow";
 import { DEMO_CLASS_LABEL } from "../src/fixtures/demoClass";
 
@@ -216,7 +217,7 @@ test("the production build serves the same class path", async ({ browser, reques
   const context = await browser.newContext({ baseURL: base });
   const page = await context.newPage();
   try {
-    const health = await request.get(`${process.env.PILOT_API_URL ?? "http://127.0.0.1:4180"}/api/health`);
+    const health = await request.get(`${process.env.PILOT_API_URL ?? API_ORIGIN}/api/health`);
     expect(health.status()).toBe(200);
     expect((await health.json()).ok).toBe(true);
     // The one field to read before letting a room of students in. A deployment writing to

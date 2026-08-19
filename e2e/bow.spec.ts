@@ -33,6 +33,7 @@ import {
   reachWorkingBoard,
   setAmount,
   submitDefense,
+  API,
 } from "./flow";
 import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
 import { CLASS_STATE_LABELS, LEVEL_LABELS, skillStateInSentence } from "../src/educator/labels";
@@ -864,7 +865,7 @@ studentTest("a student's finished work reaches the class it joined", async ({ pa
 
   // Read it back through the API, exactly as the educator surface does.
   const key = createClassKeyFor(classCode);
-  const response = await request.get(`http://127.0.0.1:4180/api/classes/${classCode}/submissions`, {
+  const response = await request.get(`${API}/classes/${classCode}/submissions`, {
     headers: { "X-BOW-Teacher-Key": key },
   });
   expect(response.status()).toBe(200);
@@ -916,7 +917,7 @@ studentTest("a student who loses the network keeps their work and can send it ag
   await waitForDelivery(page);
 
   const key = createClassKeyFor(classCode);
-  const response = await request.get(`http://127.0.0.1:4180/api/classes/${classCode}/submissions`, {
+  const response = await request.get(`${API}/classes/${classCode}/submissions`, {
     headers: { "X-BOW-Teacher-Key": key },
   });
   const body = (await response.json()) as { submissions: { seatCode: string }[] };
@@ -1117,7 +1118,7 @@ studentTest("a teacher reads and scores a whole class from one keyboard-operable
   await expect(page.locator(".rubric-panel footer strong")).toContainText("8/10");
 
   // And it is on the record rather than in this tab.
-  const room = await request.get(`http://127.0.0.1:4180/api/classes/${classCode}/submissions`, {
+  const room = await request.get(`${API}/classes/${classCode}/submissions`, {
     headers: { "X-BOW-Teacher-Key": key },
   });
   const body = (await room.json()) as { submissions: { seatCode: string; reasoningPoints: number | null }[] };
@@ -1531,12 +1532,12 @@ studentTest("naming the row is operable from the keyboard and never names the sa
 async function enterChallengeWithKey(page: Page, options: { classCode: string; teacherKey: string; seatCode: string }) {
   const wanted = Number(options.seatCode);
   const headers = { "X-BOW-Teacher-Key": options.teacherKey };
-  const listed = await page.request.get(`http://127.0.0.1:4180/api/classes/${options.classCode}/roster`, { headers });
+  const listed = await page.request.get(`${API}/classes/${options.classCode}/roster`, { headers });
   const already = ((await listed.json()) as { roster?: readonly { seatCode: string }[] }).roster ?? [];
   let card = already.find((row) => row.seatCode === options.seatCode) as JoinCard | undefined;
   if (!card) {
     const names = Array.from({ length: wanted - already.length }, (_, index) => `Test Student ${already.length + index + 1}`);
-    const created = await page.request.post(`http://127.0.0.1:4180/api/classes/${options.classCode}/roster`, { headers, data: { names } });
+    const created = await page.request.post(`${API}/classes/${options.classCode}/roster`, { headers, data: { names } });
     expect(created.status(), await created.text()).toBe(201);
     card = ((await created.json()) as { cards: JoinCard[] }).cards.at(-1);
   }
@@ -1764,7 +1765,7 @@ test("a teacher creates a class with an objective and a student joins with the c
   const teacherKey = new URL(privateLink).searchParams.get("key") ?? "";
   expect(teacherKey.length).toBeGreaterThan(16);
 
-  const assignments = await request.get(`http://127.0.0.1:4180/api/classes/${code}/assignments`);
+  const assignments = await request.get(`${API}/classes/${code}/assignments`);
   expect(assignments.status()).toBe(200);
   const set = (await assignments.json()) as { assignments: { id: string; objectiveRef: { code: string } | null; competencyIds: string[] }[] };
   expect(set.assignments).toHaveLength(1);
@@ -1773,7 +1774,7 @@ test("a teacher creates a class with an objective and a student joins with the c
 
   // The class code alone still opens nothing: assignments are what a student needs, and
   // evidence is what only the key reads.
-  const withCodeOnly = await request.get(`http://127.0.0.1:4180/api/classes/${code}/submissions`, {
+  const withCodeOnly = await request.get(`${API}/classes/${code}/submissions`, {
     headers: { "X-BOW-Teacher-Key": code },
   });
   expect(withCodeOnly.status()).toBe(403);
@@ -1793,7 +1794,7 @@ test("a teacher creates a class with an objective and a student joins with the c
   await submitDefense(page, "I kept the course line where I set it and paid for the brace out of Avery’s week instead.");
   await waitForDelivery(page);
 
-  const room = await request.get(`http://127.0.0.1:4180/api/classes/${code}/submissions`, {
+  const room = await request.get(`${API}/classes/${code}/submissions`, {
     headers: { "X-BOW-Teacher-Key": teacherKey },
   });
   expect(room.status()).toBe(200);
@@ -1822,7 +1823,7 @@ test("an objective can be set for a class a teacher already has, from the classe
   await page.getByRole("button", { name: "Set it" }).click();
   await expect(page.getByText(`Set. Students use code ${created.code}.`)).toBeVisible();
 
-  const assignments = await request.get(`http://127.0.0.1:4180/api/classes/${created.code}/assignments`);
+  const assignments = await request.get(`${API}/classes/${created.code}/assignments`);
   const set = (await assignments.json()) as { assignments: { objectiveRef: { code: string } | null; competencyIds: string[] }[] };
   expect(set.assignments).toHaveLength(1);
   expect(set.assignments[0].objectiveRef?.code).toBe("1.3");
@@ -2050,7 +2051,7 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   await expect(page.locator(".page-header h1")).toContainText("Every explanation read");
   await expect(page.locator(".page-header")).toContainText("3 of the 3 with a usable result showed it");
 
-  const room = await request.get(`http://127.0.0.1:4180/api/classes/${code}/submissions`, {
+  const room = await request.get(`${API}/classes/${code}/submissions`, {
     headers: { "X-BOW-Teacher-Key": teacherKey },
   });
   const body = (await room.json()) as { assignments: { id: string; objectiveRef: { code: string } | null }[]; submissions: { assignmentId: string }[] };

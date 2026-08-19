@@ -47,7 +47,7 @@ export async function noHorizontalOverflow(page: Page) {
  * thing a pilot depends on.
  */
 export async function createClass(request: APIRequestContext, label = "Browser suite"): Promise<ClassCreation> {
-  const response = await request.post("http://127.0.0.1:4180/api/classes", {
+  const response = await request.post(`${API}/classes`, {
     data: { label, challengeId: PLAN_UNDER_PRESSURE.id },
   });
   expect(response.status(), await response.text()).toBe(201);
@@ -148,7 +148,7 @@ export async function scoreWriting(
   seat: string,
 ): Promise<void> {
   const scores = Object.fromEntries(REASONING_CRITERIA.map((criterion) => [criterion.id, criterion.max]));
-  const response = await request.patch(`http://127.0.0.1:4180/api/classes/${classCode}/submissions/${seat}`, {
+  const response = await request.patch(`${API}/classes/${classCode}/submissions/${seat}`, {
     headers: { "X-BOW-Teacher-Key": teacherKey },
     data: { reasoningPoints: REASONING_MAXIMUM, reasoningCriteria: scores },
   });
@@ -168,8 +168,23 @@ export async function gotoFreshChallenge(page: Page) {
   await page.evaluate(() => localStorage.clear());
 }
 
-/** Where the API lives for a test that is talking to it directly rather than through a page. */
-const API = "http://127.0.0.1:4180/api";
+/**
+ * Where the class service lives for a test talking to it directly rather than through a page.
+ *
+ * One constant, exported, because there were nineteen copies of the literal `4180` across
+ * five files and they are not decoration. A browser test reaches the service through the app
+ * — Vite proxies `/api` at whatever origin `baseURL` names — while `request.post` here goes
+ * straight to the service. When those two resolve to different processes the suite seeds a
+ * class into one service and then asks the other about it, and every student journey fails
+ * on a class that was created successfully a line earlier. That is not a hypothesis: with the
+ * app on a private port and the literal still here, the seeding helpers kept writing to a
+ * class service somebody else had started an hour before.
+ *
+ * `playwright.config.ts` reads `BOW_API_PORT` for the same purpose and defaults it the same
+ * way, so the page and the request agree by construction rather than by both being edited.
+ */
+export const API_ORIGIN = `http://127.0.0.1:${process.env.BOW_API_PORT ?? "4180"}`;
+export const API = `${API_ORIGIN}/api`;
 
 /**
  * Puts a named seat on a class's roster and hands back the card a student would be given.

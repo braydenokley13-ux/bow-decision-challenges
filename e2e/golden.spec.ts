@@ -18,6 +18,7 @@ import {
   submitDefense,
   waitForDelivery,
   type JoinCard,
+  API,
 } from "./flow";
 import { savePlan, week5TotalFor, type PlanContext } from "./plan";
 import { parseDollars } from "../src/domain/core/money";
@@ -50,7 +51,7 @@ import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
  * only to reach a class-sized denominator that would otherwise be twenty minutes of clicking.
  */
 
-const API = "http://127.0.0.1:4180/api";
+// The origin comes from `flow.ts` so the page and the direct request reach one service.
 
 /**
  * Full marks on every criterion, read off the rubric rather than restated.

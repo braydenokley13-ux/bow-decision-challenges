@@ -17,6 +17,7 @@ import {
   submitDefense,
   MOVED_TILES,
   TO_DEPOSIT,
+  API,
 } from "./flow";
 import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
 import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
@@ -175,7 +176,7 @@ for (const size of SIZES) {
 
     // The class the walkthrough created is set the objective, so the objective screens have
     // a real result behind them rather than an empty state pretending to be one.
-    const set = await request.post(`http://127.0.0.1:4180/api/classes/${created.code}/assignments`, {
+    const set = await request.post(`${API}/classes/${created.code}/assignments`, {
       headers: { "X-BOW-Teacher-Key": created.teacherKey },
       data: { objectiveRef: { frameworkId: "nysed-pf-2026", code: "1.3" } },
     });
@@ -183,7 +184,7 @@ for (const size of SIZES) {
     // A person reads the three written explanations. Without that nobody is assessed, and
     // the results page would be captured in its "nothing to read yet" state — which is a
     // real state, and not the one this artefact exists to show.
-    const room = await request.get(`http://127.0.0.1:4180/api/classes/${created.code}/submissions`, {
+    const room = await request.get(`${API}/classes/${created.code}/submissions`, {
       headers: { "X-BOW-Teacher-Key": created.teacherKey },
     });
     const roster = (await room.json()) as { submissions: { seatCode: string; sessionId: string }[] };
@@ -193,7 +194,7 @@ for (const size of SIZES) {
     // posting marks that no longer add up and capturing a screen full of them.
     const fullMarks = Object.fromEntries(REASONING_CRITERIA.map((criterion) => [criterion.id, criterion.max]));
     for (const entry of roster.submissions) {
-      const scored = await request.patch(`http://127.0.0.1:4180/api/classes/${created.code}/submissions/${entry.seatCode}`, {
+      const scored = await request.patch(`${API}/classes/${created.code}/submissions/${entry.seatCode}`, {
         headers: { "X-BOW-Teacher-Key": created.teacherKey },
         data: { sessionId: entry.sessionId, reasoningPoints: REASONING_MAXIMUM, reasoningCriteria: fullMarks },
       });

@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
-import { createClass, createClassKeyFor, gotoFreshChallenge, noHorizontalOverflow, noSeriousAxeViolations, seatOnRoster, signIn } from "./flow";
+import { API, createClass, createClassKeyFor, gotoFreshChallenge, noHorizontalOverflow, noSeriousAxeViolations, seatOnRoster, signIn } from "./flow";
 import { PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 import { POP_UP_NUMBERS as N } from "../src/domain/scenario/worlds/food-truck/numbers";
 import { parseDollars } from "../src/domain/core/money";
@@ -19,7 +19,7 @@ import { WORLD_REGISTRY } from "../src/domain/scenario/registry";
 const COPY = POP_UP_SCENARIO.screens;
 // Middle Row: the booth in the middle of every trade this world offers.
 const SPOT = POP_UP_SCENARIO.spots.find((spot) => spot.id === "middle-row") ?? POP_UP_SCENARIO.spots[0];
-const API = "http://127.0.0.1:4180/api";
+// The origin comes from `flow.ts` so the page and the direct request reach one service.
 const BASKETBALL_TITLE = WORLD_REGISTRY.basketball?.title ?? "";
 
 /** A class whose assignment offers both worlds and lets the student pick between them. */
