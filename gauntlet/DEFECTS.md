@@ -377,3 +377,38 @@ rewritten underneath them.**
   class-creation form now offers **one** objective — *1.3 · Create a budget* — where it offered
   two this morning. The count is derived from `isAssessable` rather than restated, so correcting
   the mapping corrected the form without anybody editing the form.
+
+
+## §O — found while ruling on the Module 2 contract
+
+**O1 · MEDIUM · educator surface.** **A competency that fully covers two objectives is never
+labelled as such on any screen, and there are two of them now.**
+
+`standardsFor(competencyId)` returns each objective a competency covers and how fully. It has
+**no caller outside tests.** `mappingIntegrity.test.ts` has carried a comment about this for as
+long as the function has existed — *"A teacher who assigns 5.5 gets evidence for 5.2 as well.
+That is a gift, and it has to be labelled on screen or it looks like a mistake"* — and the
+labelling was never built.
+
+It was a one-competency gap. Promoting NYSED 2.3 and 2.4 to `full` made `keep-credit-costs-down`
+the second, so a teacher who assigns 2.3 now also gets 2.4 and will not be told. The failure
+mode is not a wrong number; it is a teacher seeing an objective they did not assign move on the
+objectives page and reasonably concluding the product is confused.
+
+Filed rather than fixed at the point of discovery: it is a teacher-surface build and it was
+found inside a mapping-integrity suite. It belongs with the teacher assessment work, and the
+test now pins the list of two so a third arrives on purpose rather than by a mapping edit.
+
+**O2 · INFORMATIONAL · both shipped worlds.** Two observer files asserted a routing claim that
+shipped code does not support — Basketball's `AWAITING_EVIDENCE_REQUIREMENTS` note said building
+a lower-resource plan before knowing what goes wrong *"is exactly what C4.1 to C4.4 observe,"*
+and about half of Basketball's students never build one. Both notes and both tripwires are
+corrected; the full finding is in `MODULE_4_REAUDIT.md`.
+
+Recorded here because of what it was: **a false claim about the product, sitting in the product,
+written in good faith, and load-bearing.** The tripwire it sat above instructed the next person
+to route the competency on the strength of it. Nothing in the build could have caught this —
+prose is not typechecked — and the only reason it was caught is that the Module 4 re-audit was
+run against shipped code rather than against the note. That is the whole argument for the
+verification protocol in `COVERAGE_COURT_CONTRACT.md` §3, and it is worth one entry in this file
+as the case that made it.
