@@ -10,6 +10,16 @@ a two-paragraph summary.
 repository.** §87 asks for the losers to be kept with the reason they lost — and the reason is
 worth less without the design it is a reason about. Verdicts are added when the courts file.
 
+> **The evidence requirements in these designs are the designers' proposals and are not the
+> rubrics.** Every one of the sixteen wrote its own — commonly five rows per competency — and
+> the spine does not accept them: `src/domain/competency/competencies.ts` fixes the rows, all
+> `required`, and `availability.ts` makes partial production produce nothing at all. The first
+> court filed made this its opening move, scoring each design against the shipped rows rather
+> than against its own rubric, and that reframing is what surfaced a candidate with **no route
+> for a required row anywhere in its 105 days** — which would have made the competency
+> unavailable and lit no objective. Read the tables below as *what this designer thought their
+> mechanic could observe*. What a world is held to is in the code.
+
 **A fault in the brief, recorded because it shapes what these are worth.** Three of the four
 Module 2 designs came back as a paper credit tab at a small shop, and my brief supplied that
 vehicle in its own *known traps* section — *"a school or team purchase"*. The wildcard slot
