@@ -152,7 +152,7 @@ function BriefAnswers() {
             old sentence and is asked "so is the last night a guess?" has been given the wrong
             answer to a fairness question about their own assessment. `marketDemand.test.ts`
             holds the count of stated nights against the numbers themselves. */}
-        <div><dt>What do students do?</dt><dd>They handle the money in one of two {TERMS.stories} — theirs to pick, or yours to set. <b>Eight Weeks to the Showcase</b>: a player’s season: they choose housing, build a plan, absorb a Week 5 loss and a new required cost, and repair it. <b>Run the Pop-Up</b>: four Saturdays at a night market: they take a booth, decide how much food to cook against the crowd it draws, and cover a generator that dies with the biggest night still ahead. Three crowds are printed before they order; the last is a range.</dd></div>
+        <div><dt>What do students do?</dt><dd>They handle the money in one of two {TERMS.stories} — theirs to pick, or yours to set. <b>Eight Weeks to the Showcase</b>: a player’s season. They choose housing, build a plan, absorb a Week 5 loss and a new required cost, and repair it. <b>Run the Pop-Up</b>: four Saturdays at a night market. They take a booth, decide how much food to cook against the crowd it draws, and cover a generator that dies with the biggest night still ahead. Three crowds are printed before they order; the last is a range.</dd></div>
         {/* This row used to end "so a class where students chose differently still produces
             one answer about the class", and half of that is what the product does. The
             rubric half is true and structural: both worlds declare the same evidence
