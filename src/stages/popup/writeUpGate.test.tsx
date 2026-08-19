@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { popUpReducer, type PopUpAction, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
+import { popUpReducer, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
 import { runPopUp } from "../../test/runPopUp";
 import type { EvidenceTransport } from "../../platform/evidence/transport";
 

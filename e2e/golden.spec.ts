@@ -212,7 +212,12 @@ async function playMarket(page: Page, answer: string) {
   await page.getByRole("button", { name: MARKET_COPY.settle.action }).click();
   await page.locator(".writeup__tiles button").nth(0).click();
   await page.locator(".writeup__tiles button").nth(1).click();
-  await page.getByLabel(MARKET_COPY.writeUp.field).fill(answer);
+  // The market turns in against the same gate the season does, which asks for the figures the
+  // student tapped, in digits. The caller's sentence carries the reasoning; the two numbers
+  // are read off the tiles so a re-pricing of the world cannot make this answer untrue.
+  const figures = await page.locator('.writeup__tiles button[aria-pressed="true"]').allInnerTexts();
+  const [first, second] = figures.map((text) => (text.match(/[\d,]+/g) ?? []).at(-1) ?? "");
+  await page.getByLabel(MARKET_COPY.writeUp.field).fill(`${answer} We took ${first} in all. ${second} is the other figure I would talk about.`);
   await page.getByRole("button", { name: MARKET_COPY.writeUp.submit }).click();
   await expect(page.getByRole("heading", { name: MARKET_COPY.submitted.sent })).toBeVisible({ timeout: 15_000 });
 }

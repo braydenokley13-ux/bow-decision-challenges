@@ -314,7 +314,14 @@ test.describe("Run the Pop-Up", () => {
     await expect(page.locator(".writeup__ask")).toContainText(POP_UP_SCENARIO.writeUp.note);
     await page.locator(".writeup__tiles button").nth(0).click();
     await page.locator(".writeup__tiles button").nth(1).click();
-    const answer = "I kept the cushion at four hundred because the generator is rented and rented things break. That is where the swap money came from.";
+    // Written with the figures the student tapped, in digits, because that is now the rule in
+    // both stories rather than in one of them. This answer used to spell "four hundred" and
+    // went through on length alone: the market gated on `text.trim().length >= 40` while the
+    // season refused the same sentence for exactly this reason, and the class-creation screen
+    // told teachers the two piles of writing pool.
+    const figures = await page.locator('.writeup__tiles button[aria-pressed="true"]').allInnerTexts();
+    const [first, second] = figures.map((text) => (text.match(/[\d,]+/g) ?? []).at(-1) ?? "");
+    const answer = `We took ${first} across the four nights and I would rather have kept the cushion. ${second} is what that decision cost, and the generator is rented so rented things break.`;
     await page.getByLabel(COPY.writeUp.field).fill(answer);
 
     // The answer a person reads and marks is the last thing in the run and it used to be the
