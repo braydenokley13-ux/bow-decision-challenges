@@ -42,8 +42,32 @@ async function classroom() {
   const { token } = await signedInSeat(store, created, built.seatCode, NOW);
   const auth = { authorization: `Bearer ${token}` };
 
-  const checkpoint = (sessionId: string, stage: string) =>
-    call("PUT", "/me/attempt", { classCode: created.code, worldId: "basketball", stage, sessionId, payload: { stage } }, auth);
+  /**
+   * One checkpoint, carrying what a real one carries.
+   *
+   * The payload used to be `{ stage }` and nothing else, which was true of what this seam
+   * cared about when it was written and stopped being true the day the service began reading
+   * the two copies of a run against each other. `ChallengeContext` passes `payload: state` —
+   * the whole run, evidence log included — and the service compares those logs by ancestry to
+   * decide which copy of a run it keeps. A payload with no log makes every checkpoint look
+   * *identical* to the one before it, so the stored copy always wins and the attempt never
+   * advances: the fixture would have been testing a student whose run stands still.
+   *
+   * `steps` is how far into the run this checkpoint is, so a later checkpoint of the same
+   * attempt is a genuine descendant of the earlier one, the way an append-only log is.
+   */
+  const checkpoint = (sessionId: string, stage: string, steps = 1) =>
+    call("PUT", "/me/attempt", {
+      classCode: created.code, worldId: "basketball", stage, sessionId,
+      payload: {
+        meta: { sessionId },
+        stage,
+        log: Array.from({ length: steps }, (_, index) => ({
+          id: `event-${index + 1}`, sequence: index + 1, type: "INCOME_SOURCE_TOGGLED",
+          sessionId, timestamp: NOW + index * 1000, payload: { step: index + 1 },
+        })),
+      },
+    }, auth);
   const home = async () => {
     const body = (await call("GET", "/me/classes", undefined, auth)).body as {
       classes: { inProgress: { stage: string } | null; completed: { sessionId: string }[] }[];
@@ -62,7 +86,7 @@ async function classroom() {
 describe("the checkpoint that arrives after the work does", () => {
   it("does not put a finished run back on the student's home screen", async () => {
     const room = await classroom();
-    await room.checkpoint(room.built.sessionId, "working-plan");
+    await room.checkpoint(room.built.sessionId, "working-plan", 2);
     expect((await room.home()).inProgress?.stage).toBe("working-plan");
 
     await room.turnIn();
@@ -70,7 +94,7 @@ describe("the checkpoint that arrives after the work does", () => {
     expect((await room.home()).inProgress).toBeNull();
 
     // The hook's parting shot, exactly as a real browser sends it.
-    await room.checkpoint(room.built.sessionId, "submitted");
+    await room.checkpoint(room.built.sessionId, "submitted", 3);
     const after = await room.home();
     expect(after.completed).toHaveLength(1);
     // Was `{ stage: "submitted" }`, which the home screen rendered as
@@ -80,9 +104,9 @@ describe("the checkpoint that arrives after the work does", () => {
 
   it("keeps it off the teacher's list of who is still working", async () => {
     const room = await classroom();
-    await room.checkpoint(room.built.sessionId, "working-plan");
+    await room.checkpoint(room.built.sessionId, "working-plan", 2);
     await room.turnIn();
-    await room.checkpoint(room.built.sessionId, "submitted");
+    await room.checkpoint(room.built.sessionId, "submitted", 3);
 
     const key = { "x-bow-teacher-key": room.created.teacherKey };
     const board = (await room.call("GET", `/classes/${room.created.code}/submissions`, undefined, key)).body as { progress: { seatCode: string }[] };
@@ -91,13 +115,16 @@ describe("the checkpoint that arrives after the work does", () => {
 
   it("lets a second run be a run in progress again", async () => {
     const room = await classroom();
-    await room.checkpoint(room.built.sessionId, "working-plan");
+    await room.checkpoint(room.built.sessionId, "working-plan", 2);
     await room.turnIn();
-    await room.checkpoint(room.built.sessionId, "submitted");
+    await room.checkpoint(room.built.sessionId, "submitted", 3);
     expect((await room.home()).inProgress).toBeNull();
 
     // Going again. A different attempt, so "has this been turned in" is allowed to be no.
-    await room.checkpoint("a-second-run", "setup-comparison");
+    // A different attempt, so its log shares no prefix with the finished one: the two copies
+    // have forked, and the fork is decided by the later decision — which is this one, because
+    // the child is making it now.
+    await room.checkpoint("a-second-run", "setup-comparison", 1);
     const after = await room.home();
     expect(after.inProgress?.stage).toBe("setup-comparison");
     // And the first run is still turned in — starting again never takes one back.
@@ -106,8 +133,8 @@ describe("the checkpoint that arrives after the work does", () => {
 
   it("still resumes a run that was only ever paused", async () => {
     const room = await classroom();
-    await room.checkpoint(room.built.sessionId, "working-plan");
-    await room.checkpoint(room.built.sessionId, "season-weeks");
+    await room.checkpoint(room.built.sessionId, "working-plan", 2);
+    await room.checkpoint(room.built.sessionId, "season-weeks", 4);
     const attempt = (await room.call("GET", `/me/attempt?classCode=${room.created.code}`, undefined, room.auth)).body as {
       attempt: { stage: string; startedAt: number } | null;
     };

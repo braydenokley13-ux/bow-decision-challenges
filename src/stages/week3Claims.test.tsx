@@ -53,7 +53,11 @@ function draw(state: ChallengeState) {
   // Exactly what this screen reads. A fuller stub would be a second, quieter claim about
   // what the beat depends on, and the compiler would not check either of them — the mocked
   // hook hands back `unknown`.
-  shell.challenge = { state, dispatch, activeWorldId: "basketball" };
+  // `delivery` is here because the shell's run menu now reads it: it used to take a boolean
+  // derived from the stage, which flipped on the turn-in *button press* and so told a child
+  // their work was safe with their teacher while it was still in the air, next to a control
+  // that deletes it. Mid-run, nothing has been sent, which is what `idle` says.
+  shell.challenge = { state, dispatch, activeWorldId: "basketball", delivery: { status: "idle" } };
   // StageShell draws the run's own header, which links. A router is the shell's
   // requirement, not this beat's.
   render(<MemoryRouter><SeasonWeeks /></MemoryRouter>);
