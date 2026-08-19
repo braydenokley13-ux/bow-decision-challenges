@@ -36,7 +36,13 @@ import { withoutComments } from "./test/source";
  * 3. Every clause of README's *What BOW holds* is checked against the handler that ships.
  */
 
-const DOCUMENTS = ["README.md", "ARCHITECTURE.md"] as const;
+/**
+ * `MODULE_COVERAGE.md` is generated rather than written, which does not exempt it: it is at
+ * the root, it has an authoritative name, and the curriculum lead this rule exists for will
+ * open it first because it is the one that answers their question. Held to the same rules as
+ * the two that are typed by hand.
+ */
+const DOCUMENTS = ["README.md", "ARCHITECTURE.md", "MODULE_COVERAGE.md"] as const;
 
 /**
  * The sentence a document has to carry if it is not one of the two.

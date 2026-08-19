@@ -10,6 +10,7 @@ import type {
   Framework,
   FrameworkId,
   FrameworkLabels,
+  FrameworkTopic,
   Mapping,
   ObjectiveCoverageState,
   Standard,
@@ -97,6 +98,18 @@ export function labelsFor(id: FrameworkId): FrameworkLabels | undefined {
 /** In the framework's own order — `sortIndex` exists so 1.10 sorts after 1.9. */
 export function standardsIn(frameworkId: FrameworkId): readonly Standard[] {
   return [...standardsOf(frameworkId)].sort((left, right) => left.sortIndex - right.sortIndex);
+}
+
+/**
+ * The framework's groups, in the framework's own order, never re-sorted or renamed.
+ *
+ * NYSED presents its topics alphabetically, which puts Earning Income at 3, Risk Management at
+ * 4 and Saving and Investing at 5. Earlier mockups had 4 and 5 swapped, and a New York teacher
+ * spots that in ten seconds — so this returns the declared array rather than sorting it, and
+ * the order is the state's rather than anybody's idea of a better one.
+ */
+export function topicsIn(frameworkId: FrameworkId): readonly FrameworkTopic[] {
+  return frameworkById(frameworkId)?.topics ?? [];
 }
 
 /**

@@ -10,9 +10,15 @@
 # imported a file that had never been committed at all, and `EvidenceTrailPanel.tsx` imported
 # an export that only existed in an uncommitted edit.
 #
-# A deletion is the dangerous one. Adding a file and forgetting to stage it breaks loudly the
-# moment anybody else checks out; deleting a file and staging only the deletion breaks a tree
-# that still has the importer sitting in it, and nothing local ever notices.
+# Both directions are dangerous, and this header used to say only one of them was. Deleting a
+# file and staging only the deletion breaks a tree that still has the importer sitting in it,
+# and nothing local ever notices — that much was right. Writing a file and forgetting to stage
+# it was written off as breaking "loudly the moment anybody else checks out", and the second
+# example above is exactly that mistake: `analysis.ts` imported a file that had never been
+# committed at all. It happened again at `d6ec525`, and `main` then did not typecheck, build or
+# pass its tests for 68 commits, because nobody else checks out — the work happens in one
+# long-lived tree, so the loud failure has nobody to be loud to. Run this whenever the set of
+# files changes.
 #
 # So: export the commit to a clean directory, borrow node_modules, and run the real gates
 # against *it* rather than against whatever is lying around locally.

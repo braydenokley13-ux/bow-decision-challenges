@@ -1186,6 +1186,11 @@ p { color: var(--ink-2); }
 .objective-table tr[data-ready="false"] tbody th a, .objective-table tr[data-ready="false"] td { color: var(--ink-3); }
 .availability-pill { display: inline-block; padding: 2px var(--s-3); border-radius: var(--r-pill); color: var(--ink-3); background: var(--surface-sunken); font: var(--t-micro); }
 .availability-pill[data-ready="true"] { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); }
+
+/* The topics with nothing in them, under the count of what there is. Muted and rules-off:
+   it is the same fact as the column on every row below, said once for a reader planning a
+   term, and it must not compete with the search box that is the page's actual control. */
+.objective-topics-empty { max-width: var(--measure); margin: calc(var(--s-4) * -1) 0 var(--s-5); color: var(--ink-3); font: var(--t-body); }
 .objective-wording { max-width: var(--measure); margin: 0 0 var(--s-5); padding-left: var(--s-5); border-left: 3px solid var(--border-ink); font: var(--t-body-lg); }
 .framework-attribution { max-width: var(--measure); margin: 0 0 var(--s-5); color: var(--ink-3); font: var(--t-micro); }
 .objective-class { margin-bottom: var(--s-6); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); }

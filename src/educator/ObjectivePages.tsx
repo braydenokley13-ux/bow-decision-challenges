@@ -13,6 +13,7 @@ import {
   labelsFor,
   standardByRef,
   standardsIn,
+  topicsIn,
   type FrameworkId,
   type Standard,
   type StandardRef,
@@ -97,6 +98,19 @@ function Attribution({ frameworkId }: { frameworkId: FrameworkId }) {
  * with the search box stranded inside the second one, which is how a teacher looking for an
  * objective they can set ended up typing into the section headed with what BOW cannot do.
  */
+/**
+ * "A, B, and C" — the framework's own topic names, in the framework's own order.
+ *
+ * An Oxford comma because these are New York's names and two of them contain the word "and"
+ * already: *Credit and Debt Management, Earning Income, Risk Management and Saving and
+ * Investing* reads as five topics on the first pass.
+ */
+function listSentence(names: readonly string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+}
+
 export function ObjectiveList() {
   const [query, setQuery] = useState("");
   const labels = labelsFor(FRAMEWORK_ID);
@@ -104,6 +118,11 @@ export function ObjectiveList() {
   // here stops the React Compiler optimising the whole component for no measurable gain.
   const standards = standardsIn(FRAMEWORK_ID);
   const readyTotal = standards.filter((standard) => isAssessable(refOf(standard))).length;
+  // Derived from the same predicate as the column, so the sentence and the rows can never
+  // disagree — a topic is empty exactly when every row under it says BOW cannot assess it.
+  const emptyTopics = topicsIn(FRAMEWORK_ID).filter(
+    (topic) => !standards.some((standard) => standard.topicCode === topic.code && isAssessable(refOf(standard))),
+  );
   const unit = labels?.unitNounShort.toLowerCase() ?? "objective";
   // One list, and the ones a teacher can act on today at the top of it. Not two sections —
   // that was the shape that stranded the search box inside the half headed with what BOW
@@ -127,6 +146,24 @@ export function ObjectiveList() {
           matched to a {TERMS.skill} and waiting for a {TERMS.story} that can show it. They report as coming,
           never as nobody having shown them.
         </p>
+        {/* The question a teacher asks before any of the twenty-three, and the one this page
+            could not answer: *is there anything here for the unit I am teaching next month?*
+            A scheme of work is built out of topics, and a flat list of objectives makes that
+            answerable only by opening every row in a topic and counting.
+
+            Deliberately a sentence and not the topic filter that used to be on `/educator/map`.
+            That filter came with a status filter, a class filter and a teacher-maintained
+            "MARKED TAUGHT" flag, and the reason it is gone is that asking a teacher to keep a
+            record inside BOW about instruction BOW did not deliver is a planbook. This adds no
+            state, no control and no route: it is the same derived column, said once, grouped
+            the way the teacher's own year is grouped. */}
+        {emptyTopics.length > 0 && (
+          <p className="objective-topics-empty">
+            Nothing in {listSentence(emptyTopics.map((topic) => topic.name))} yet
+            — {emptyTopics.length === 1 ? "that topic has" : "those topics have"} no {unit} BOW can
+            assess, so there is nothing to set from {emptyTopics.length === 1 ? "it" : "them"} this term.
+          </p>
+        )}
       </header>
 
       <section className="dashboard-section">

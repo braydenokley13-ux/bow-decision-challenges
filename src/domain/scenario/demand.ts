@@ -1,4 +1,6 @@
 import type { WorldId } from "../core/ids";
+import type { CompetencyId } from "../competency/types";
+import { BUILT_WORLD_COVERAGE, worldsAssessing, type WorldEvidenceCoverage } from "../competency/availability";
 
 /**
  * §9.2 — what a world declares about how hard it is, and the bands two worlds have to sit
@@ -56,6 +58,61 @@ export interface ParityBreach {
   field: keyof DemandProfile;
   worlds: readonly WorldId[];
   said: string;
+  /**
+   * The competency the breached worlds both assess, where the breach came from a comparable
+   * set rather than from a pair handed in directly.
+   *
+   * A breach a teacher can act on names the choice they were about to offer. "These two
+   * worlds differ" is a fact about the catalogue; "these two worlds differ and a student
+   * picking between them for `adapt-a-plan` is picking between unequal work" is the finding.
+   */
+  sharedCompetency?: CompetencyId;
+}
+
+/**
+ * A set of worlds that could honestly be offered to a student as alternatives.
+ *
+ * **Parity is a property of a choice, not of a catalogue**, and reading it as a property of
+ * the catalogue is a mistake this file made until a third world was on the way. §9.1 is the
+ * claim that *which story a student picks does not change what is measured*; that claim only
+ * has a subject where two worlds measure the same thing. Basketball and Run the Pop-Up assess
+ * the same three competencies, so a teacher may offer either and the two must not differ much
+ * in load — that is real and it is checked.
+ *
+ * A world that assesses credit and a world that assesses take-home pay are never alternatives
+ * to each other. No teacher offers a choice between them for one objective, no student's mark
+ * depends on which they were given, and there is nothing about their comparability to be true
+ * or false. Requiring them to declare the same `adaptationEvents` and the same
+ * `arithmeticComplexity` would not have made anything fairer: it would have forced a number
+ * into a declared profile to satisfy a test, and a declaration that was written to pass is the
+ * one thing these profiles may not be — the whole point of §9.2 is that they are facts about
+ * the worlds rather than claims about them.
+ *
+ * So the sets are derived from what the worlds actually assess. Two worlds are comparable when
+ * some competency is fully produced by both. A world sharing nothing with any other is in no
+ * set and is constrained by nothing, which is the honest reading and not a gap.
+ */
+export interface ComparableWorlds {
+  competencyId: CompetencyId;
+  worlds: readonly WorldId[];
+}
+
+/**
+ * Every set of two or more worlds that fully produce the same competency.
+ *
+ * Derived from the same coverage rows `isCompetencyAvailable` reads, so a world cannot join a
+ * comparable set by declaring itself comparable — it joins by producing every requirement, and
+ * `coverage.test.ts` beside each world is what holds that claim to its observer.
+ */
+export function comparableWorldSets(
+  coverage: readonly WorldEvidenceCoverage[] = BUILT_WORLD_COVERAGE,
+): readonly ComparableWorlds[] {
+  const sets: ComparableWorlds[] = [];
+  for (const competency of new Set(coverage.map((claim) => claim.competencyId))) {
+    const worlds = worldsAssessing(competency, coverage);
+    if (worlds.length > 1) sets.push({ competencyId: competency, worlds });
+  }
+  return sets;
 }
 
 function median(values: readonly number[]): number {
@@ -102,4 +159,30 @@ export function parityBreaches(profiles: ReadonlyMap<WorldId, DemandProfile>): r
   }
 
   return breaches;
+}
+
+/**
+ * The parity question asked the way a teacher would ask it: once per choice they could offer.
+ *
+ * This is what the product checks. `parityBreaches` above still answers "are these worlds
+ * comparable to each other", which is the right question when a caller already knows the
+ * answer should be yes — every synthetic pair in the tests, and every set below.
+ *
+ * A world in no set is reported on by nothing here. That is not a hole: a world nobody can be
+ * offered instead of has no parity obligation, and inventing one for it would mean holding the
+ * credit world to the basketball world's arithmetic for no reason a student would ever feel.
+ */
+export function parityBreachesAcrossChoices(
+  profiles: ReadonlyMap<WorldId, DemandProfile>,
+  sets: readonly ComparableWorlds[] = comparableWorldSets(),
+): readonly ParityBreach[] {
+  return sets.flatMap((set) => {
+    const inSet = new Map(
+      set.worlds.flatMap((world) => {
+        const profile = profiles.get(world);
+        return profile ? ([[world, profile]] as [WorldId, DemandProfile][]) : [];
+      }),
+    );
+    return parityBreaches(inSet).map((breach) => ({ ...breach, sharedCompetency: set.competencyId }));
+  });
 }

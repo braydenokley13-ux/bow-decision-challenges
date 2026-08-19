@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { WorldId } from "../core/ids";
 import { CONTRACTED_WORLDS, demandProfiles } from "./contracts";
-import { PARITY_BANDS, parityBreaches } from "./demand";
+import { comparableWorldSets, PARITY_BANDS, parityBreaches, parityBreachesAcrossChoices } from "./demand";
 import { countWords, isProse, measureReading } from "./readability";
 import { BASKETBALL_SCENARIO } from "./worlds/basketball";
 import { popUpStudentCopy } from "./worlds/food-truck";
@@ -42,8 +43,51 @@ function basketballCopy(): string[] {
 }
 
 describe("§9.2 parity", () => {
-  it("keeps every contracted world inside the bands, with nothing to report", () => {
-    expect(parityBreaches(demandProfiles())).toEqual([]);
+  it("keeps every choice a teacher could offer inside the bands, with nothing to report", () => {
+    expect(parityBreachesAcrossChoices(demandProfiles())).toEqual([]);
+  });
+
+  /**
+   * The correction that let a third world exist.
+   *
+   * This read `parityBreaches(demandProfiles())` — every world against every other — and it
+   * was right only for as long as every world assessed the same three competencies. The two
+   * that ship do, so it passed, and it would have failed on the first world built for a
+   * different module: a credit world has its own number of adaptation events and its own
+   * hardest sum, and `arithmeticComplexity` is an equality band. The fix available at that
+   * point would have been to write a number into a declared profile because a test wanted it,
+   * which is the one thing §9.2 profiles may not be.
+   *
+   * So parity is asked once per choice a teacher could actually offer. The pair that ships is
+   * still held to every band, because they still share all three.
+   */
+  it("asks the question once per choice, not once per pair of worlds in the catalogue", () => {
+    const sets = comparableWorldSets();
+    expect(sets.length, "the two shipped worlds share three competencies").toBeGreaterThan(0);
+    for (const set of sets) expect([...set.worlds].sort()).toEqual(["basketball", "food-truck"]);
+  });
+
+  it("holds a world to nothing it could not be offered instead of", () => {
+    // A world assessing a competency no other world produces is in no set, so it is compared
+    // to nothing — and a profile wildly outside every band raises nothing, because there is no
+    // choice it could make unfair.
+    const alone = new Map([...demandProfiles(), ["credit" as WorldId, {
+      ...BASKETBALL_DEMAND, arithmeticOperations: 99, adaptationEvents: 9, arithmeticComplexity: "percent" as const,
+    }]]);
+    expect(parityBreachesAcrossChoices(alone)).toEqual([]);
+  });
+
+  it("still fails a world that joins a choice it is not equal to", () => {
+    // The other direction, and the one that matters: a third world that DOES produce a shared
+    // competency is offerable instead of the other two, so it is held to the bands and named
+    // with the competency that made it comparable.
+    const shared = comparableWorldSets()[0]!;
+    const breaches = parityBreachesAcrossChoices(
+      new Map([...demandProfiles(), ["credit" as WorldId, { ...BASKETBALL_DEMAND, adaptationEvents: 9 }]]),
+      [{ competencyId: shared.competencyId, worlds: [...shared.worlds, "credit" as WorldId] }],
+    );
+    expect(breaches.map((breach) => breach.field)).toContain("adaptationEvents");
+    expect(breaches[0]?.sharedCompetency).toBe(shared.competencyId);
   });
 
   it("has two worlds to compare, which is what makes the claim worth making", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CONTRACTED_WORLDS, contractFor, demandProfiles } from "./contracts";
-import { parityBreaches, type DemandProfile } from "./demand";
+import { parityBreaches, parityBreachesAcrossChoices, type DemandProfile } from "./demand";
 import type { WorldId } from "../core/ids";
 import { PLAYABLE_WORLDS, scenarioFor, usesSharedBoard, numbersFor } from "./registry";
 import { requiredEvidenceRequirementsFor } from "../competency/competencies";
@@ -122,8 +122,8 @@ describe("the world contract", () => {
 });
 
 describe("§9.2 parity", () => {
-  it("keeps every contracted world inside the bands", () => {
-    expect(parityBreaches(demandProfiles())).toEqual([]);
+  it("keeps every choice a teacher could offer inside the bands", () => {
+    expect(parityBreachesAcrossChoices(demandProfiles())).toEqual([]);
   });
 
   it("declares a complete profile for every world", () => {
