@@ -5,19 +5,29 @@ import type { StandardRef } from "../domain/standards";
 import { objectiveResultForClass, type ObjectiveClassResult } from "./objectiveResults";
 import { analyseClass, classRoll } from "./analysis";
 import { rememberedClasses } from "./classMemory";
+import { useRememberedClasses } from "./useRememberedClasses";
 
 /**
- * Every class this browser can open, read for one objective.
+ * Every class this teacher can open, read for one objective.
  *
- * There is no server-side index of "classes that were set 1.3", and there deliberately is
- * not going to be one in V1: a class is a code and a key, the key never leaves the
- * educator's browser, and a service that could list a teacher's classes would need an
- * account to list them for. So the set of classes is whatever this browser remembers, and
- * each one is opened with the key it already holds — the same request the class page makes.
+ * There is still no server-side index of "classes that were set 1.3" and there is deliberately
+ * not going to be one: a class is a code and a key, and each one is opened here with the key,
+ * exactly the way the class page opens it.
  *
- * That is a real limit and it is stated on the screen rather than hidden: a teacher on a new
- * laptop sees no results until they open their class link there once. The alternative is
- * student accounts, and that is a procurement process rather than a feature (§17.4).
+ * What changed is where the *list* comes from. It used to be `rememberedClasses()` and only
+ * that — this browser's `localStorage` — and the comment here said an index would need an
+ * account to list classes for. There are accounts now. A teacher-experience review signed in on
+ * a fresh browser with two classes on the account, went straight to
+ * `/educator/objectives/nysed-pf-2026/1.3`, and was shown one of them; visiting `/educator/classes`
+ * once populated `localStorage` and the missing class appeared on the next load. The sign-in
+ * page promises *"An account is how your classes come back on another computer"*, and this was
+ * the one educator surface where that was false.
+ *
+ * So it waits for the account to answer before it reads the list. `useRememberedClasses` is the
+ * one place that folds `GET /me/teaching` into what this browser holds, and it is what "My
+ * classes" already uses — reimplementing the fold here is how the two came to disagree in the
+ * first place. A teacher who never signs in loses nothing: with no token there is nothing to
+ * wait for and this is exactly the old behaviour.
  */
 export type ObjectiveEvidenceState =
   | { status: "loading" }
@@ -43,10 +53,16 @@ export function countedSubmissions(
 
 export function useObjectiveEvidence(ref: StandardRef | null): ObjectiveEvidenceState {
   const [state, setState] = useState<ObjectiveEvidenceState>({ status: "loading" });
+  // The account first where there is one. `syncing` is false immediately when there is no
+  // token, so a signed-out teacher's page does not wait for anything.
+  const { syncing } = useRememberedClasses();
   const key = ref ? `${ref.frameworkId}/${ref.code}` : "";
 
   useEffect(() => {
     if (!ref) return;
+    // Still asking the account which classes are this teacher's. Reading `localStorage` now
+    // would answer "no classes on this computer" to a teacher whose classes are arriving.
+    if (syncing) return;
     let cancelled = false;
     void (async () => {
       const known = rememberedClasses();
@@ -93,7 +109,7 @@ export function useObjectiveEvidence(ref: StandardRef | null): ObjectiveEvidence
     return () => { cancelled = true; };
     // `ref` is rebuilt from the URL on every render; the key is what actually changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [key, syncing]);
 
   return ref ? state : NOTHING_TO_READ;
 }

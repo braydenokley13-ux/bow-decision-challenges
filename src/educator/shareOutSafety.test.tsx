@@ -94,7 +94,7 @@ function seeded(): { submissions: AttributedSubmission[]; roster: { seatCode: st
     // writing is available to be earned — otherwise this test would pass because nothing was
     // marked rather than because of the rule it is about.
     reasoningPoints: 6,
-    reasoningCriteria: { claim: 2, evidence: 2, reasoning: 2, tradeoff: 0 },
+    reasoningCriteria: { "C6.1": 2, "C6.2": 2, "C6.3": 2, "C6.4": 4 },
   })) as unknown as AttributedSubmission[];
   const roster = submissions.map((submission, index) => ({
     seatCode: submission.seatCode, displayName: names[index]!, claimed: true, claimedAt: 1, removedAt: null,

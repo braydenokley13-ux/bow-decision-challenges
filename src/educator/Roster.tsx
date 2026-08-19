@@ -66,6 +66,8 @@ export function Roster() {
   const [cards, setCards] = useState<JoinCard[]>([]);
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
+  /** What the last thing a teacher pressed actually did. Announced, because she cannot see it. */
+  const [said, setSaid] = useState<string | null>(null);
   // A paste that is mostly names already on the list, held back with the question asked rather
   // than added. See `add` below.
   const [duplicates, setDuplicates] = useState<{ already: string[]; fresh: string[] } | null>(null);
@@ -244,12 +246,28 @@ export function Roster() {
     setBusy(false);
   };
 
+  /**
+   * The one control on this page that does something a teacher cannot see.
+   *
+   * It works — a teacher-experience review had a student signed in on another device and the
+   * press landed them on `/join` — and the teacher's screen was **byte-identical before and
+   * after**, checked every 400ms for 4.8 seconds. At five past three with the trolley waiting
+   * she would press it three times. The service has always answered with the number of sessions
+   * it ended; nothing read it.
+   */
   const signOutEveryone = async () => {
     if (busy) return;
     setBusy(true);
     setProblem(null);
+    setSaid(null);
     try {
-      await call(`/classes/${code}/signout`, { method: "POST" });
+      const body = (await call(`/classes/${code}/signout`, { method: "POST" })) as { signedOut?: number };
+      const ended = typeof body?.signedOut === "number" ? body.signedOut : null;
+      setSaid(ended === null
+        ? "Everybody in this class is signed out, on every device."
+        : ended === 0
+          ? "Nobody was signed in, so there was nothing to end."
+          : `${ended} ${ended === 1 ? "student is" : "students are"} signed out, on every device. Nothing they did is lost.`);
       await load();
     } catch (error) {
       setProblem(error instanceof Error ? error.message : "Nobody was signed out.");
@@ -437,6 +455,7 @@ export function Roster() {
           is lost. Use it when the Chromebooks go back on the trolley.
         </p>
         <Button variant="secondary" aria-disabled={busy} onClick={() => void signOutEveryone()}>Sign the whole class out</Button>
+        <p className="class-state" role="status">{said ?? ""}</p>
       </section>
 
       <p className="join-error" role="alert">{problem}</p>
@@ -452,6 +471,16 @@ export function Roster() {
  * worth being blunt about rather than decorating: the heading says it, the print button is the
  * primary action, and dismissing it is a deliberate press rather than a navigation away.
  */
+/**
+ * Where a student types their two codes, short enough to be read off a printed card.
+ *
+ * `host` rather than `origin`: a child copying `https://` off a card gets it wrong, and every
+ * browser they will use adds it. The default port is dropped by `host` already.
+ */
+function joinAddress(): string {
+  return `${window.location.host}/join`;
+}
+
 function Cards({ cards, classCode, onDone }: { cards: readonly JoinCard[]; classCode: string; onDone: () => void }) {
   return (
     <section className="cards-sheet" aria-live="polite">
@@ -477,7 +506,12 @@ function Cards({ cards, classCode, onDone }: { cards: readonly JoinCard[]; class
               <div><dt>Class code</dt><dd>{classCode}</dd></div>
               <div><dt>Your code</dt><dd>{card.joinCode}</dd></div>
             </dl>
-            <p className="join-card__where">Go to BOW · type the class code · type your code</p>
+            {/* The address, on the artefact that exists for the case where the teacher is not in
+                the room. "Go to BOW" was the whole of the instruction on a card a child takes
+                home: the URL was on the class page and on the board, and neither of those is in
+                the kitchen on a Tuesday night. Host rather than full origin because a child
+                types it. */}
+            <p className="join-card__where">Go to {joinAddress()} · type the class code · type your code</p>
           </li>
         ))}
       </ol>

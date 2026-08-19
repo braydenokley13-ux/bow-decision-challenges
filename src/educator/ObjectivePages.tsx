@@ -19,6 +19,7 @@ import {
 } from "../domain/standards";
 import { MINIMUM_ASSESSED_FOR_A_STATE, type ObjectiveResult } from "../domain/competency/objectiveState";
 import { keyForClass } from "./classMemory";
+import { teacherToken } from "./teacherSession";
 import { useObjectiveEvidence } from "./useObjectiveEvidence";
 import type { ObjectiveClassResult } from "./objectiveResults";
 import { classStateKey, skillStateKey, skillStateInSentence, CLASS_STATE_LABELS, COVERAGE_LABELS, TERMS } from "./labels";
@@ -489,9 +490,13 @@ export function ObjectiveDetail() {
         {evidence.status === "loading" && <p className="class-state">Opening your classes…</p>}
         {evidence.status === "ready" && evidence.results.length === 0 && (
           <p className="class-state">
-            No class opened on this computer has been set this {labels?.unitNounShort.toLowerCase()}.
+            {/* "opened on this computer" was true and is not any more: this page reads the
+                account where there is one. */}
+            None of your classes has been set this {labels?.unitNounShort.toLowerCase()}.
             {evidence.classesRead === 0
-              ? " There are no classes saved in this browser — create one, or open a class from its private link once."
+              ? teacherToken()
+                ? " There are no classes on your account yet — create one from My classes."
+                : " There are no classes saved in this browser. Create one, open a class from its private link once, or sign in and they follow you to any computer."
               : ""}
           </p>
         )}

@@ -204,6 +204,22 @@ function ReadingCard({ row, position, count, code, headingRef, onMove, onScore, 
               Open this student’s evidence →
             </Link>
           </p>
+          {/* The way to the writing this queue does not carry.
+              One student is one card here and always will be — a teacher who marks the same
+              child twice cannot tell which mark counts — so the card reads their latest. But a
+              teacher-experience review put it plainly: if the better writing was in the first
+              run, the queue is a dead end. The earlier attempts are one press away, and each of
+              them can be read and scored on its own page. */}
+          {attempts > 1 && (
+            <p className="response-note">
+              This student turned in {attempts} times.{" "}
+              {Array.from({ length: attempts - 1 }, (_, index) => index + 1).map((number) => (
+                <Link key={number} to={`/educator/class/${code}/students/${row.seatCode}?attempt=${number}`}>
+                  Read and score attempt {number}
+                </Link>
+              ))}
+            </p>
+          )}
         </div>
         <div className="rubric-panel">
           {/* Not "10-point reasoning rubric". That sentence introduced a second scale as a

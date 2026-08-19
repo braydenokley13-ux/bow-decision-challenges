@@ -81,7 +81,7 @@ function classOf(turnedIn: number, marking: Marking): { submissions: AttributedS
     assignmentId: ASSIGNMENT,
     displayName: NAMES[index] ?? `Student ${index + 1}`,
     ...(marking === "none" ? { reasoningPoints: null, reasoningCriteria: undefined } : {}),
-    ...(marking === "all" ? { reasoningPoints: 6, reasoningCriteria: { claim: 2, evidence: 2, reasoning: 2, tradeoff: 0 } } : {}),
+    ...(marking === "all" ? { reasoningPoints: 6, reasoningCriteria: { "C6.1": 2, "C6.2": 2, "C6.3": 2, "C6.4": 4 } } : {}),
   })) as unknown as AttributedSubmission[];
   const roster = NAMES.map((displayName, index) => ({
     seatCode: submissions[index]?.seatCode ?? String(index + 1),
@@ -205,6 +205,10 @@ describe("every student list on a class with a roster is in names", () => {
     openClass();
     await waitFor(() => expect(pageText()).toMatch(/turned in|have not started/i));
 
+    // The two blocks the review named have to actually be on screen, or this assertion passes
+    // by rendering neither of them — which is how it passed for a while with the fix removed.
+    expect(pageText(), "the misconception spotlight did not render").toMatch(/What appears misunderstood/i);
+    expect(pageText(), "the pull-out group did not render").toMatch(/Who needs it/i);
     // A roster is the whole point of the rule: BOW is holding these names, and the two blocks
     // that printed seat numbers sat directly above a list of them.
     expect(pageText()).not.toMatch(/Seat \d+/);
