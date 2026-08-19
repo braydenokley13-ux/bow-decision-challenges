@@ -1,4 +1,5 @@
 import type { CategoryId, SetupId, WorldId } from "../domain/core/ids";
+import { planMovements } from "../domain/finance/formulas";
 import { dollars, formatDollars, type Dollars } from "../domain/core/money";
 import { deriveFacts } from "../domain/evidence/facts";
 import { writtenAnswerFrom } from "../domain/evidence/writtenAnswer";
@@ -589,10 +590,16 @@ export function decisionsByWorld(rows: StudentRow[]): { worldId: WorldId; seats:
 }
 
 export interface AdaptationSummary {
-  /** Students whose plan actually moved between the opening version and the final one. */
+  /** Students who moved their own plan between the opening version and the final one. */
   changed: string[];
   unchanged: string[];
-  /** Which row students reduced first when Week 5 landed, by seat. */
+  /**
+   * Which row students reduced first when Week 5 landed, by seat.
+   *
+   * The student's own reductions only. A row the product emptied — the course row, once the
+   * seat is reserved — is not a row anybody chose to give up, and naming its owner here put
+   * five children on the board under the exact opposite of what they did.
+   */
   cutFirst: { category: CategoryId; label: string; seats: string[] }[];
   /** Students who ended with an uncovered shortfall. */
   leftUncovered: string[];
@@ -607,17 +614,23 @@ export function adaptationSummary(rows: StudentRow[]): AdaptationSummary {
 
   for (const row of rows) {
     if (!row.opening || !row.final) continue;
-    const deltas = (["goal", "reserve", "flexibleCash"] as const).map((category) => ({
-      category,
-      delta: row.final![category] - row.opening![category],
-    }));
-    const reductions = deltas.filter((entry) => entry.delta < 0).sort((a, b) => a.delta - b.delta);
-    if (reductions.length === 0) {
-      unchanged.push(row.seatCode);
-      continue;
-    }
-    changed.push(row.seatCode);
-    // The deepest cut is the one that says what they were willing to give up first.
+    // Against the plan the product left them able to reach, not against their opening
+    // figures. Reserving the seat at Week 4 empties the course row — the money commits to
+    // the locked costs and `courseRowCapFor` drops the row's ceiling to zero — so a plain
+    // `final − opening` read that forced zero as the deepest cut on the board and filed
+    // every student who paid to protect the course under *cut the course first*, on the
+    // page that named the same students, four inches higher, as the ones who reserved it.
+    // `planMovements` is where that distinction lives; nothing here re-derives it.
+    const movements = planMovements(row.opening, row.final, { depositTaken: row.reservedSeat }, SCENARIO_NUMBERS);
+    if (movements.some((entry) => entry.moved)) changed.push(row.seatCode);
+    else unchanged.push(row.seatCode);
+
+    const reductions = movements
+      .filter((entry) => entry.chosenReduction > 0)
+      .sort((a, b) => b.chosenReduction - a.chosenReduction);
+    if (reductions.length === 0) continue;
+    // The deepest cut is the one that says what they were willing to give up first. Ties
+    // keep `CATEGORY_ORDER`, which is why that order is written down once.
     const deepest = reductions[0]!.category;
     cuts.set(deepest, [...(cuts.get(deepest) ?? []), row.seatCode]);
   }

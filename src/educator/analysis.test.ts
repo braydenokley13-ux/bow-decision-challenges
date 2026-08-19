@@ -176,6 +176,48 @@ describe("adaptation is read from what students moved, not from what they said",
     }
   });
 
+  /**
+   * The defect this pins is the worst kind an assessment product can carry: a true-sounding
+   * sentence about something a child did not do.
+   *
+   * The class board and the printed debrief both read *"5 of 11 cut sports-media course
+   * first — Ana R., Devon P., Priya S., Ibrahim K. and Mei L."* four inches under *"Reserved
+   * the seat at Week 4 — Ana R., Devon P., Priya S., Ibrahim K. and Mei L."* The two lists
+   * were identical, name for name, because the deepest reduction on a reserver's board is
+   * the course row — and the product is what emptied it. Pressing *Reserve it now* commits
+   * the money to the locked costs, `courseRowCapFor` drops the row's ceiling to zero and the
+   * reducer zeroes it in every draft; the student never touched it. It then fed the debrief
+   * prompt *"What does that say about what you were protecting?"*, so a teacher would have
+   * asked five children to account for a choice the product made on their behalf.
+   *
+   * The seats here run the real machine, so the forced zero in the log is the one a browser
+   * writes. What is asserted is the partition the board prints: the students who reserved
+   * the seat and the students who cut the course first cannot be the same list.
+   */
+  it("never files the course row the product emptied as a cut the student chose", () => {
+    const reserved = ["1", "2", "5"];
+    const waited = ["3", "4"];
+    const run = (seatCode: string, reserveSeat: boolean) =>
+      buildSubmission({ seatCode, reserveSeat, setupId: "teammate-share", split: { goal: 0.5, reserve: 0.3 } });
+    const analysis = analyseClass([
+      ...reserved.map((seatCode) => run(seatCode, true)),
+      ...waited.map((seatCode) => run(seatCode, false)),
+    ]);
+
+    // The board's own two lists, built the way the two rows of the page build them.
+    const reservers = analysis.rows.filter((row) => row.reservedSeat).map((row) => row.seatCode);
+    const cutCourseFirst = analysis.adaptation.cutFirst.find((entry) => entry.category === "goal")?.seats ?? [];
+    expect(reservers).toEqual(reserved);
+    expect(cutCourseFirst).toEqual(waited);
+    for (const seatCode of reservers) expect(cutCourseFirst).not.toContain(seatCode);
+
+    // And they are still counted: a student whose course row the product emptied made real
+    // cuts elsewhere, and those are the ones that say what they were protecting.
+    const backupFirst = analysis.adaptation.cutFirst.find((entry) => entry.category === "reserve")?.seats ?? [];
+    expect(backupFirst).toEqual(reserved);
+    expect(analysis.adaptation.cutFirst.flatMap((entry) => entry.seats).sort()).toEqual([...reserved, ...waited].sort());
+  });
+
   it("separates a shortfall the buffer absorbed from one that was left open", () => {
     const thin = buildSubmission({ ...EXPOSED, seatCode: "4", split: { goal: 0.9, reserve: 0 } });
     const cushioned = buildSubmission({ ...EXPOSED, seatCode: "6", split: { goal: 0.1, reserve: 0.8 } });

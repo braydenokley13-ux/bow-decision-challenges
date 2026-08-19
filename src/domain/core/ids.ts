@@ -17,6 +17,15 @@ export function isKnownWorld(id: string): id is WorldId {
 export type SetupId = "gym-sublet" | "teammate-share" | "cousin-room";
 export type IncomeSourceId = "saved-500" | "base-4500" | "completion-800" | "outcome-1000" | "optional-work-500";
 export type CategoryId = "goal" | "reserve" | "flexibleCash";
+
+/**
+ * The three adjustable rows, in the order every surface reads them.
+ *
+ * Written out once because the order is load-bearing: a tie between two equal cuts is
+ * broken by it, so a list built ad hoc in one module and in a different order in another
+ * would report two different answers about the same student.
+ */
+export const CATEGORY_ORDER: readonly CategoryId[] = ["goal", "reserve", "flexibleCash"] as const;
 export type CalcId = "chosen-setup-total" | "essentials-total" | "reliable-floor" | "week5-change";
 
 /**
