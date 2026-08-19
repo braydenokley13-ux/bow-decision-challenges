@@ -31,6 +31,54 @@ export interface ReteachTopic {
 
 export const RETEACH_TOPICS: readonly ReteachTopic[] = [
   {
+    id: "the-payment-is-not-the-price",
+    misconception: "The monthly payment is the price",
+    title: "Add up the whole thing before you agree to it",
+    focus: "A student prices a credit offer at what it will cost in total — every payment, plus interest, plus any fee — rather than at the size of one instalment.",
+    moves: [
+      "Put two offers on the board with the same item and different terms, and set the one with the smaller monthly payment up to cost more. Everybody multiplies before anybody has an opinion.",
+      "Take one offer and ask what would have to change for the total to come down. Term, rate and fee are three different answers and only one of them is the payment.",
+      "Ask the class to write the sentence a shop would rather they did not: not \"can I afford the payment\", but \"what does this cost me in the end\".",
+    ],
+    minutes: 15,
+  },
+  {
+    id: "borrowing-has-a-price",
+    misconception: "Credit is free if I pay it back",
+    title: "What it costs to use somebody else's money",
+    focus: "A student can say what borrowing costs even when every payment is made on time, and can name what they gave up by committing future money.",
+    moves: [
+      "Run one balance forward with every payment made on time and no fees. The total is still larger than the price, and that difference is the whole lesson.",
+      "Then ask the second question: with those payments committed, what could this person no longer do in month three? Borrowing spends money that has not arrived yet.",
+      "Finish on the honest other side — a case where paying the extra is worth it — so the rule the class leaves with is a comparison and not a prohibition.",
+    ],
+    minutes: 12,
+  },
+  {
+    id: "the-minimum-is-a-floor",
+    misconception: "The minimum payment is the expected payment",
+    title: "The smallest payment they will take is not the payment to make",
+    focus: "A student treats the minimum as the least they are allowed to pay, and decides the actual payment from the money they have.",
+    moves: [
+      "Run the same balance twice, minimum-only against a payment the earner could actually afford, and read off both the total paid and the finish date.",
+      "Ask whose interest the minimum serves. It is printed by the lender, and it is the number that keeps the balance alive longest.",
+      "Give a month where the money genuinely is not there. Paying the minimum is the right move that month, which is what stops this becoming a rule about always paying more.",
+    ],
+    minutes: 12,
+  },
+  {
+    id: "a-late-payment-is-not-a-fee",
+    misconception: "One late payment is one late fee",
+    title: "Follow a missed payment past the fee",
+    focus: "A student prices a missed payment as everything it sets off — the fee, the rate from that point on, and the payoff date moving — rather than as a one-off charge.",
+    moves: [
+      "Price the fee first, and write it on the board. Then keep going: run the balance to the end at the new rate and put the second number beside the first.",
+      "Ask which of the two a person notices at the time. The fee arrives with a letter; the rate arrives quietly, and it is usually the larger of the two.",
+      "Work out what would have to change in the following months for the original payoff date to still be reachable, and whether that is money this person has.",
+    ],
+    minutes: 15,
+  },
+  {
     id: "take-home-is-the-real-number",
     misconception: "Plan from the number on the offer letter",
     title: "Plan from what lands, not from what was offered",

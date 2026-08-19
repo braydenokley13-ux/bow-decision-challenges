@@ -364,6 +364,114 @@ const WHAT_TAXES_FUND_EVIDENCE: readonly EvidenceRequirement[] = [
 ] as const;
 
 /**
+ * `decide-to-borrow` — mapped `full` to NYSED 2.2 and `partial` to 2.1.
+ *
+ * **ER4 is what makes the `full` claim on 2.2 true, and it nearly was not written.** 2.2 reads:
+ *
+ * > Explain the costs and benefits of using credit to finance **different types of purchases**,
+ * > and describe situations in which using credit may be **helpful or harmful**.
+ *
+ * Plural, and both directions. The mapping's own rationale says *"a specific purchase"*,
+ * singular — the same gap that demoted the needs-wants-values row from `full` to `partial`
+ * after somebody read the state's sentence before reading this repository.
+ *
+ * Four independent design briefs, each holding that sentence, each proposing their own
+ * requirements, produced a single purchase with a cash-versus-credit fork. Not one reached the
+ * plural clause. That is evidence about what a twenty-minute decision experience naturally
+ * produces, not four oversights, and the first instinct was to demote the mapping.
+ *
+ * What changes it is the objective's own verbs. **Explain** and **describe** are speech acts.
+ * 2.2 does not ask the student to *make* a decision about several kinds of purchase; it asks
+ * them to *say* when credit helps and when it hurts — so the clause belongs on the written row
+ * rather than on the board, and reaching for it mechanically would have meant demanding every
+ * world carry two financeable purchases for a clause the objective never asked to be acted out.
+ * ER4 therefore asks for the case that would flip, in the student's own words, alongside the
+ * one they actually decided.
+ *
+ * Every row is `required`, as a `full` mapping demands. `explanationRequired` is already `true`
+ * on this competency, which is the flag that has to agree with the array.
+ */
+const DECIDE_TO_BORROW_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("decide-to-borrow", 1, {
+    label: "Prices the credit route",
+    kind: "decision",
+    required: true,
+    observableRule: "States what borrowing will cost in total — every payment plus interest and any fee — rather than reading the instalment as the price",
+    misconceptionIfNot: "The monthly payment is the price",
+  }),
+  requirement("decide-to-borrow", 2, {
+    label: "Prices the alternative",
+    kind: "decision",
+    required: true,
+    observableRule: "Establishes what not borrowing costs — waiting, going without, or paying another way — as a figure or as a stated consequence, before committing",
+    misconceptionIfNot: null,
+  }),
+  requirement("decide-to-borrow", 3, {
+    label: "Commits on terms they can meet",
+    kind: "decision",
+    required: true,
+    observableRule: "The repayment committed to fits money the student will actually have on the dates it falls due, given what is already owed",
+    misconceptionIfNot: "Credit is free if I pay it back",
+  }),
+  requirement("decide-to-borrow", 4, {
+    label: "Says what the extra bought, and when the answer would flip",
+    kind: "explanation",
+    required: true,
+    observableRule: "Names what was paid above the cash price and what having it sooner was worth, and names a purchase they would answer the other way and why",
+    misconceptionIfNot: null,
+  }),
+] as const;
+
+/**
+ * `keep-credit-costs-down` — `partial` to 2.1, 2.3 and 2.4, and **no `full` mapping anywhere**.
+ *
+ * It matters anyway, and more than a `partial` row usually does: it is one of the three
+ * competencies NYSED 2.1's completion rule names, so 2.1 reads *partially assessed* until all
+ * of this is produced alongside `decide-to-borrow` and `sort-by-need-want-goal`.
+ *
+ * **2.3 and 2.4 stay `partial` and these rows do not change that.** Both objectives' verbs are
+ * *explain* and *describe*, and every row below is a decision. Running the strategies forward is
+ * evidence toward them and is not the explanation their own sentences ask for; the competency
+ * carries `explanationRequired: false` and it would be a different competency if it did not.
+ * Closing that gap is a mapping decision somebody makes with a world in front of them, not an
+ * implementation detail.
+ *
+ * ER3 is the one the misconception hangs on. A missed payment is not a late fee: it is the fee,
+ * plus what the rate change costs from there on, plus the payoff date moving. A student who
+ * prices only the fee has priced the smallest part of it.
+ */
+const KEEP_CREDIT_COSTS_DOWN_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("keep-credit-costs-down", 1, {
+    label: "Pays more than the minimum where the money was there",
+    kind: "decision",
+    required: true,
+    observableRule: "In periods where more than the minimum was available and unclaimed, directs it at the balance rather than defaulting to the smallest payment accepted",
+    misconceptionIfNot: "The minimum payment is the expected payment",
+  }),
+  requirement("keep-credit-costs-down", 2, {
+    label: "Shows what paying the minimum costs",
+    kind: "decision",
+    required: true,
+    observableRule: "Produces what the minimum-only route costs against the route taken — in total paid, or in how much longer it runs, on their own balance",
+    misconceptionIfNot: null,
+  }),
+  requirement("keep-credit-costs-down", 3, {
+    label: "Prices a missed payment as everything it does",
+    kind: "decision",
+    required: true,
+    observableRule: "After a missed payment, accounts for the fee, the changed rate from there on, and the later payoff — not the fee alone",
+    misconceptionIfNot: "One late payment is one late fee",
+  }),
+  requirement("keep-credit-costs-down", 4, {
+    label: "Ends where they said, or states the gap",
+    kind: "decision",
+    required: true,
+    observableRule: "Finishes on the payoff they committed to, or states how far short the balance is and why",
+    misconceptionIfNot: null,
+  }),
+] as const;
+
+/**
  * The 21 competencies, in group order.
  *
  * **On the empty `evidenceRequirements` arrays.** Three competencies carry their evidence
@@ -522,7 +630,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "Compute what the credit version actually costs.",
       "Make and justify the call.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: DECIDE_TO_BORROW_EVIDENCE,
     misconceptions: [
       "The monthly payment is the price",
       "Credit is free if I pay it back",
@@ -541,7 +649,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "Show what paying in full versus paying the minimum does to the total.",
       "Respond to a missed payment and its consequences — fee, rate change, longer payoff.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: KEEP_CREDIT_COSTS_DOWN_EVIDENCE,
     misconceptions: [
       "The minimum payment is the expected payment",
       "One late payment is one late fee",

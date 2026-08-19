@@ -51,11 +51,51 @@ Two honest exits, and the choice belongs to a person:
 - **(b) Demote the mapping to `partial`** and let 2.2 read *evidence only* until a world
   carries the comparison.
 
-Both M2 designs currently in the prototype war happen to satisfy (a) — Ruiz Hardware has a
-required part and a discounted want; Nothing Down has an existing plan and a new repair — so
-(a) is reachable rather than aspirational. **This draft assumes (a) and makes it a gate.** If
-the world that wins cannot carry two kinds of purchase, the mapping must move to `partial`
-rather than the requirement being quietly dropped.
+**Evidence arrived, and it points at (b).** All four Module 2 designs are now in. Each designer
+was given 2.2's verbatim text and each proposed their own evidence requirements, without sight
+of each other or of this file. They converge almost exactly:
+
+| | Ruiz Hardware | Nothing Down | Ridgeline | Ferro's |
+| --- | --- | --- | --- | --- |
+| price the credit route, fees in, not the instalment | ✓ | ✓ | ✓ | ✓ |
+| price the alternative, including what waiting costs | ✓ | ✓ | ✓ | ✓ |
+| commit on terms the money can actually meet | ✓ | ✓ | ✓ | ✓ |
+| justify in their own figures | ✓ | ✓ | ✓ | ✓ |
+| **more than one kind of purchase, not one blanket rule** | partly | — | — | — |
+
+**Four independent designers, all holding the objective's own sentence, and not one of them
+reached its plural clause.** Three built a single purchase with a cash-versus-credit fork; only
+Ruiz Hardware's rows read *"for every purchase"*, and that is a repeated instance of one kind
+rather than two kinds compared. That is not four oversights. It is evidence that *different
+types of purchases* is not what a single twenty-minute decision experience naturally produces,
+and a `full` mapping is a promise that the student did **everything** the standard asks.
+
+So the recommendation flips to **(b): demote `decide-to-borrow` → 2.2 to `partial`**, unless a
+person decides otherwise with the world in front of them. 2.2 would then read *evidence only*,
+which is true, and Module 2's coverage would rest on **2.1** — whose completion rule the same
+four designs all satisfy, because all four carry `decide-to-borrow`, `keep-credit-costs-down`
+**and** `sort-by-need-want-goal`. Module 2 still closes; it closes on the objective the evidence
+actually reaches.
+
+The cost of getting this wrong in the other direction is the point: `full` on 2.2 with one
+purchase in the world is exactly the shape of the 1.1 over-claim, which shipped and was caught
+only because somebody read NYSED's sentence before reading the repository.
+
+### Resolved a third way, and the objective's own verbs decided it
+
+Neither (a) nor (b). 2.2's verbs are **explain** and **describe** — both speech acts. The
+objective does not ask a student to *make* decisions about several kinds of purchase; it asks
+them to *say* when credit helps and when it hurts. So the plural clause belongs on the written
+row, and reaching for it mechanically would have meant demanding every credit world carry two
+financeable purchases to act out a clause the objective never asked to be acted out.
+
+`decide-to-borrow.er4` therefore asks for the case that would flip, in the student's own words,
+beside the one they actually decided — and it is `required`, as a `full` mapping demands. The
+mapping stands unchanged, and the row is what makes it true rather than merely convenient.
+
+**This was close to being a mapping change and it should still be read by somebody who did not
+write it.** The reasoning is in `competencies.ts` beside the row, where whoever has to defend
+the claim will find it.
 
 ---
 
