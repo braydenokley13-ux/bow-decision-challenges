@@ -1,0 +1,10 @@
+{
+  "screen": "01-booths",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=P3DM3",
+  "violations": []
+}
+{
+  "screen": "02-booth-taken",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=P3DM3",
+  "violations": []
+}

@@ -1,0 +1,210 @@
+
+===== 01-booths =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: P3DM3 · seat 1" desc="P3DM3 · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "FOUR SATURDAYS. ONE TRUCK." [level=1]
+      DescriptionList
+        term "IN THE ACCOUNT"
+        definition
+        term "THE MARKET"
+        definition
+        term "PAID BEFORE YOU OPEN"
+        definition
+    paragraph
+    paragraph
+    heading "Where do you set up?" [level=2]
+    paragraph
+    paragraph
+    paragraph
+    list
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Back Lane" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Middle Row" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Bridge Gate" [invalid="false" focusable=true]
+    paragraph
+    button "Take a booth to carry on" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 02-booth-taken =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: P3DM3 · seat 1" desc="P3DM3 · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "FOUR SATURDAYS. ONE TRUCK." [level=1]
+      DescriptionList
+        term "IN THE ACCOUNT"
+        definition
+        term "THE MARKET"
+        definition
+        term "PAID BEFORE YOU OPEN"
+        definition
+    paragraph
+    paragraph
+    heading "Where do you set up?" [level=2]
+    paragraph
+    paragraph
+    paragraph
+    list
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Back Lane" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Booked: Middle Row" [invalid="false" focusable=true focused=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Bridge Gate" [invalid="false" focusable=true]
+    paragraph
+    paragraph
+    textbox "What you owe before you open" desc="The permit and the booth are both paid before you sell a plate." [invalid="false" focusable=true required=false describedby=":r1:-prompt :r1:-feedback"]
+    button "Check" [invalid="false" focusable=true]
+    paragraph [live="polite"]
+    paragraph
+    button "Take a booth to carry on" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 03-owed-checked =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: P3DM3 · seat 1" desc="P3DM3 · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "FOUR SATURDAYS. ONE TRUCK." [level=1]
+      DescriptionList
+        term "IN THE ACCOUNT"
+        definition
+        term "THE MARKET"
+        definition
+        term "PAID BEFORE YOU OPEN"
+        definition
+    paragraph
+    paragraph
+    heading "Where do you set up?" [level=2]
+    paragraph
+    paragraph
+    paragraph
+    list
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Back Lane" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Booked: Middle Row" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Bridge Gate" [invalid="false" focusable=true]
+    strong
+    paragraph
+    button "See what is left" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
