@@ -1,10 +1,27 @@
 import type { GradeResult, MicroSkillObservation } from "./types";
 import { STRUCTURED_MICRO_SKILLS } from "../blueprint/microSkills";
 import { CONCEPTS } from "../blueprint/concepts";
+import { REASONING_CRITERIA, reasoningMaximumFrom } from "../blueprint/reasoning";
 
 /** Derived from the blueprint rather than written down, so adding a skill cannot make it lie. */
 export const STRUCTURED_MAXIMUM = STRUCTURED_MICRO_SKILLS.reduce((total, skill) => total + skill.maxPoints, 0);
-export const REASONING_MAXIMUM = CONCEPTS.find((concept) => concept.id === "financial-defense")?.weight ?? 10;
+
+/**
+ * The same, for the half a person marks — and the rubric's arithmetic, not the weight's.
+ *
+ * This read `CONCEPTS.find((c) => c.id === "financial-defense")?.weight ?? 10`, which made
+ * it the third place ten was typed and the wrong one of the three to read. Every surface
+ * that shows this number shows it under a total summed from `REASONING_CRITERIA`, so the
+ * denominator has to come from that same list; taking it from the weight meant the two
+ * halves of the fraction had independent sources and could disagree without anything
+ * saying so. `reasoningMaximumFrom` sums the criteria and asserts the weight matches, so
+ * the fraction moves in one piece and the third copy of ten is gone with the fallback.
+ *
+ * It also makes the criteria path safe wherever it is totalled without a clamp:
+ * `reasoningTotal` is a sum of per-criterion clamps over exactly this list, so it cannot
+ * reach a number this one does not cover.
+ */
+export const REASONING_MAXIMUM = reasoningMaximumFrom(REASONING_CRITERIA, CONCEPTS);
 
 /** The educator scores the written reasoning; nothing stops them typing 40 without this. */
 function clampReasoning(points: number | null): number | null {
