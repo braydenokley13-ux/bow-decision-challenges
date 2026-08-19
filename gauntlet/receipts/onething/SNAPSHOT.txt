@@ -1,0 +1,28 @@
+SHA: 074ec2f3b6350d30c170577a193a6b95cef18879
+BRANCH: claude/bow-decision-challenges-gauntlet-pg1522
+DATE: Wed Aug 19 03:08:43 UTC 2026
+--- git status ---
+ M e2e/bow.spec.ts
+ M src/domain/scenario/worlds/food-truck/balance.ts
+ M src/domain/scenario/worlds/food-truck/economy.ts
+ M src/domain/scenario/worlds/food-truck/numbers.ts
+ M src/domain/scenario/worlds/food-truck/scenario.ts
+ M src/domain/scenario/worlds/food-truck/types.ts
+ M src/educator/Roster.tsx
+ M src/educator/roster.test.tsx
+ M src/stages/popup/PopUpScreens.tsx
+?? gauntlet/receipts/craft/
+?? gauntlet/receipts/d26-2/SNAPSHOT.txt
+?? gauntlet/receipts/d26-2/worktree-at-pin.diff
+?? gauntlet/receipts/economics/SNAPSHOT.txt
+?? gauntlet/receipts/economics/worktree-at-review.diff
+?? gauntlet/receipts/hardware/
+?? gauntlet/receipts/onething/
+?? gauntlet/receipts/popup2/setup-01-classes.png
+?? gauntlet/receipts/reading/a11y-before-erase.png
+?? gauntlet/receipts/reading/a11y-before-myclasses.png
+?? gauntlet/receipts/reading/a11y-before.json
+?? gauntlet/receipts/resilience2/
+?? gauntlet/receipts/teacher2/
+?? src/educator/__focusprobe.test.tsx
+?? src/rangeprobe.test.ts

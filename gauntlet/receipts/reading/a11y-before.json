@@ -1,0 +1,77 @@
+{
+  "when": "before",
+  "at": "2026-08-19T03:05:58.896Z",
+  "findings": {
+    "myClassesAxe": {
+      "url": "http://127.0.0.1:4311/educator/classes",
+      "violations": [
+        {
+          "id": "heading-order",
+          "impact": "moderate",
+          "nodes": [
+            "<h3>Period 5 · Grade 7</h3>"
+          ]
+        }
+      ],
+      "headingWalk": [
+        "H1 Your 2 classes.",
+        "H3 Period 5 · Grade 7",
+        "H3 Period 3 · Grade 7",
+        "H2 Start another class"
+      ]
+    },
+    "routeFocus": {
+      "classesToGuide": "BODY · BBOWDecision ChallengesMy classesObjectivesG",
+      "guideToObjectives": "BODY · BBOWDecision ChallengesMy classesObjectivesG"
+    },
+    "eraseConfirm": {
+      "focused": "BUTTON · Keep it",
+      "focusedIsKeepIt": true,
+      "warn": {
+        "id": null,
+        "role": null,
+        "ariaLive": null
+      },
+      "describedBy": [
+        {
+          "label": "Erase everything",
+          "describedBy": null
+        },
+        {
+          "label": "Keep it",
+          "describedBy": null
+        },
+        {
+          "label": "Print a new card",
+          "describedBy": null
+        },
+        {
+          "label": "Take off the list",
+          "describedBy": null
+        },
+        {
+          "label": "Erase",
+          "describedBy": null
+        },
+        {
+          "label": "Print a new card",
+          "describedBy": null
+        },
+        {
+          "label": "Take off the list",
+          "describedBy": null
+        },
+        {
+          "label": "Erase",
+          "describedBy": null
+        }
+      ],
+      "announced": "Keep it, button"
+    },
+    "eraseOrder": [
+      "0: P Erase Nadia Haddad? Their name",
+      "1: BUTTON Erase everything",
+      "2: BUTTON Keep it"
+    ]
+  }
+}

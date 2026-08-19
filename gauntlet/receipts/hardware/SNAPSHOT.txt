@@ -1,0 +1,33 @@
+SNAPSHOT for gauntlet/critiques/school-hardware.md
+date: 2026-08-19T03:06:54Z
+branch: claude/bow-decision-challenges-gauntlet-pg1522
+HEAD: 074ec2f3b6350d30c170577a193a6b95cef18879
+HEAD subject: Write down what twenty agents cost, and the defect found between the crashes
+
+--- working tree at review (git status --porcelain) ---
+ M e2e/bow.spec.ts
+ M src/domain/scenario/worlds/food-truck/balance.ts
+ M src/domain/scenario/worlds/food-truck/economy.ts
+ M src/domain/scenario/worlds/food-truck/numbers.ts
+ M src/domain/scenario/worlds/food-truck/scenario.ts
+ M src/domain/scenario/worlds/food-truck/types.ts
+ M src/stages/popup/PopUpScreens.tsx
+?? gauntlet/receipts/economics/SNAPSHOT.txt
+?? gauntlet/receipts/economics/worktree-at-review.diff
+?? gauntlet/receipts/hardware/
+?? gauntlet/receipts/popup2/setup-01-classes.png
+?? gauntlet/receipts/reading/a11y-before-erase.png
+?? gauntlet/receipts/reading/a11y-before-myclasses.png
+?? gauntlet/receipts/reading/a11y-before.json
+?? gauntlet/receipts/teacher2/
+?? src/rangeprobe.test.ts
+
+--- dirty diff stat ---
+ e2e/bow.spec.ts                                   |  51 ++++-
+ src/domain/scenario/worlds/food-truck/balance.ts  | 253 +++++++++++++++++++++-
+ src/domain/scenario/worlds/food-truck/economy.ts  |  60 ++++-
+ src/domain/scenario/worlds/food-truck/numbers.ts  |  20 +-
+ src/domain/scenario/worlds/food-truck/scenario.ts |  22 +-
+ src/domain/scenario/worlds/food-truck/types.ts    |  26 +++
+ src/stages/popup/PopUpScreens.tsx                 |  61 +++++-
+ 7 files changed, 450 insertions(+), 43 deletions(-)

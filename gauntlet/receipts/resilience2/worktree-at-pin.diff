@@ -1,0 +1,829 @@
+diff --git a/e2e/bow.spec.ts b/e2e/bow.spec.ts
+index 5b5ed35..9ff1afc 100644
+--- a/e2e/bow.spec.ts
++++ b/e2e/bow.spec.ts
+@@ -38,7 +38,8 @@ import {
+ import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
+ import { CLASS_STATE_LABELS, LEVEL_LABELS, skillStateInSentence } from "../src/educator/labels";
+ import { PLAYABLE_WORLDS } from "../src/domain/scenario/registry";
+-import { isAssessable, standardsIn, type FrameworkId } from "../src/domain/standards";
++import { isAssessable, labelsFor, standardsIn, type FrameworkId } from "../src/domain/standards";
++import { DEMO_CLASS_LABEL } from "../src/fixtures/demoClass";
+ 
+ /** The one framework this deployment carries, named once so the tests below compose its refs. */
+ const FRAMEWORK_ID: FrameworkId = "nysed-pf-2026";
+@@ -883,7 +884,16 @@ test("a class code that does not exist is refused before the challenge starts",
+   await page.getByRole("button", { name: "Next" }).click();
+ 
+   await expect(page.getByRole("alert")).toContainText("No class with that code");
+-  await expect(page.getByRole("heading", { name: "What the eight weeks pay." })).not.toBeVisible();
++  // Refused *before the challenge starts* is the half of this test that matters, and it was
++  // being checked with `not.toBeVisible()` on a heading reading "What the eight weeks pay." —
++  // a string the product contains nowhere, in whole or in part. So the only live assertion was
++  // the alert, and a build that showed the alert and let the student through anyway passed.
++  //
++  // The door is two steps: a class code, then the code off the student's card. Refusal means
++  // the second step never opens, and `signIn` in `flow.ts` fills exactly this field on the way
++  // in — so a rename that moved the door moves this with it instead of quietly emptying it.
++  await expect(page.getByLabel("Your code")).toHaveCount(0);
++  await expect(page.getByRole("link", { name: /^(Start|Carry on)$/ })).toHaveCount(0);
+ });
+ 
+ studentTest("a student who loses the network keeps their work and can send it again", async ({ page, request, classCode }) => {
+@@ -996,10 +1006,20 @@ studentTest("a real class shows what its own students did, and never a fixture",
+   for (const run of runs) await expect(page.locator(".row-list")).toContainText(`Test Student ${run.seat}`);
+   await expect(rows.first()).not.toContainText("/100");
+ 
+-  // The fixture class is 28 students with a seat 14 golden case. None of it may appear.
++  // Nothing from the sample class may appear on a real one.
++  //
++  // This named two literals and neither was in the product. "28" was the fixture's old roll —
++  // it is eighteen runs now, ten basketball and eight market — so the assertion was a bare
++  // substring test against a page full of money, and it would have passed just as happily
++  // with the whole sample class on screen. The full badge sentence was written out a third
++  // time here, next to the two places that already compose it.
++  //
++  // Both are read off the fixture and the shell now: the label the sample class is given, and
++  // the badge every sample-class screen carries. `pilot.spec.ts` closed the same hole the same
++  // way, so the two files now fail together if a fixture ever reaches a real class.
+   const body = page.locator("body");
+-  await expect(body).not.toContainText("28");
+-  await expect(body).not.toContainText("Sample class — not a real class");
++  await expect(body).not.toContainText(DEMO_CLASS_LABEL);
++  await expect(page.locator(".demo-pill")).toHaveCount(0);
+   await noSeriousAxeViolations(page);
+ });
+ 
+@@ -1063,7 +1083,13 @@ studentTest("a class of five is described as a class, and the lesson is on the c
+   const review = page.locator(".debrief__section").filter({ hasText: "What to review" });
+   await expect(review).toContainText(`${struggled} of ${assessed}`);
+   await expect(review).toContainText(String(requirement));
+-  await expect(review).not.toContainText("Nothing here needs reteaching");
++  // And it has not *also* refused. This read `not.toContainText("Nothing here needs
++  // reteaching")`, a sentence no component in this product emits — it survives only in three
++  // comments recording that the page used to print it — so the assertion was an absence of
++  // nothing, true of this page, of the front door and of a blank screen. The refusal
++  // `WhatToReview` actually renders is the one asserted here, and the two-student test below
++  // requires that same sentence to be present, so neither can rot without the other failing.
++  await expect(review).not.toContainText("nothing to review from");
+ });
+ 
+ // ---------------------------------------------------------------------------
+@@ -1292,7 +1318,12 @@ studentTest("the debrief is built from the class, and says so when there is noth
+   const review = page.locator(".debrief__section").filter({ hasText: "What to review" });
+   await expect(review).toContainText("nothing to review from");
+   await expect(review).toContainText("still to read");
+-  await expect(review).not.toContainText("Nothing here needs reteaching");
++  // Refusing means not naming a gap. This read `not.toContainText("Nothing here needs
++  // reteaching")` — a sentence the product does not contain, so it was green against a page
++  // naming any lesson it liked, which is the exact defect the comment above describes. What
++  // `WhatToReview` prints when it *does* name one is "…assessed students did not show
++  // “…”", and the five-student test above requires that sentence to be there.
++  await expect(review).not.toContainText("did not show");
+   await noSeriousAxeViolations(page);
+ });
+ 
+@@ -1916,7 +1947,11 @@ test("an objective with no world is a short honest page, not a dashboard of empt
+   // block explaining that no class has been set something no class can be set.
+   await expect(page.locator(".micro-table")).toHaveCount(0);
+   await expect(page.getByRole("heading", { name: "Your classes" })).toHaveCount(0);
+-  await expect(page.locator("body")).not.toContainText("has been set this objective");
++  // The sentence is composed — `…has been set this {unitNounShort.toLowerCase()}` — so writing
++  // it out here spells "objective" for New York and is an absence of nothing for any framework
++  // whose unit is called anything else. Composed the same way, from the same table.
++  await expect(page.locator("body"))
++    .not.toContainText(`has been set this ${labelsFor("nysed-pf-2026")?.unitNounShort.toLowerCase()}`);
+ });
+ 
+ test("a teacher assigns 1.3, three students submit, and the objective reports what they did", async ({ page, browser, request }) => {
+diff --git a/src/domain/scenario/worlds/food-truck/balance.ts b/src/domain/scenario/worlds/food-truck/balance.ts
+index ca6c4c2..2249fe7 100644
+--- a/src/domain/scenario/worlds/food-truck/balance.ts
++++ b/src/domain/scenario/worlds/food-truck/balance.ts
+@@ -1,5 +1,5 @@
+ import { dollars } from "../../../core/money";
+-import { availableToPlan, orderCost, resolveSeason, sellCap, type PopUpChoices, type SeasonOutcome } from "./economy";
++import { availableToPlan, crowdOn, crowdTold, orderCost, resolveSeason, sellCap, serveCap, type PopUpChoices, type SeasonOutcome } from "./economy";
+ import { POP_UP_LINES, type PopUpLineId, type PopUpNumbers, type SaturdayNumber, type SpotId } from "./types";
+ 
+ /**
+@@ -44,17 +44,34 @@ import { POP_UP_LINES, type PopUpLineId, type PopUpNumbers, type SaturdayNumber,
+  * optimisation whose inputs are all printed before the first order — which is exactly what the
+  * red team solved. Nothing here contradicts them.
+  *
+- * **Whether the printed crowds are a mistake:** no, and `types.ts` and `economy.ts` say why at
+- * the point the numbers are declared. An evening that turns out colder than the last one is a
+- * surprise; an evening you were told would be colder is a decision. This is an assessment as
+- * well as a game, and the competencies it assesses are planning within money that is actually
+- * there and repairing a plan when a cost changes — neither of which is forecasting demand.
+- * Hiding the crowds would score a child's stocking partly on luck, break the replay a teacher
+- * needs, and make this sweep impossible. The cost of the choice is real and is the red team's
+- * finding: a student who wants to optimise *can*, with arithmetic, before the market opens.
+- * The answer to that is not to hide the numbers. It is to make sure the ending never tells a
+- * child there was one right answer measured in money — see `resolution.ts`, which now says
+- * what its own comparisons are counted in.
++ * **Whether the printed crowds are a mistake:** three of them are not, and the fourth was.
++ *
++ * The defence of printing them is still the right one for Saturdays 1 to 3, and `types.ts` and
++ * `economy.ts` state it where the numbers are declared: an evening that turns out colder than
++ * the last one is a surprise, an evening you were told would be colder is a decision, and the
++ * competencies assessed here are planning within money that is actually there and repairing a
++ * plan when a cost changes — neither of which is forecasting demand.
++ *
++ * What that defence did **not** license was printing all four, and the argument that broke it
++ * is the other world's own design. Basketball's Week 5 is scripted, not rolled: it replays
++ * identically, it is swept identically, and no child is scored on luck — and the student is not
++ * told about it while building the plan it breaks. Determinism comes from *scripted*, not from
++ * *disclosed*. So the fireworks night is now stated as a band and resolves at a scripted figure
++ * inside it (`numbers.ts`), and everything this harness sweeps is worked out from that figure,
++ * unchanged: **the numbers in this report are the same numbers they were before the range
++ * existed.** The range changed what the student was told, and nothing about what replays.
++ *
++ * That leaves a second question this harness now has to answer, because the old one no longer
++ * covers it: is the band a decision, or decoration? A range that has one best answer across
++ * its whole width is a number wearing a costume, and it would be worse than the number — it
++ * would look like a question and mark like an answer key. `analyseLastSaturdayRange` below is
++ * that gate, and `balance.test.ts` fails the build if the band ever collapses to one order.
++ *
++ * The red team's finding about the other three nights stands and is deliberate: a student who
++ * wants to optimise Saturdays 1 to 3 *can*, with arithmetic, before the market opens. The
++ * answer to that is not to hide those numbers. It is that the ending must never tell a child
++ * there was one right answer measured in money — see `resolution.ts`, which says what its own
++ * comparisons are counted in.
+  */
+ 
+ export interface Strategy {
+@@ -466,6 +483,218 @@ export function analyseBalance(n: PopUpNumbers): BalanceReport {
+   };
+ }
+ 
++/* ---------------------------------------------------------------------------
++   The second gate: is the stated range a decision, or decoration?
++   --------------------------------------------------------------------------- */
++
++/** One booth, one answer about Marisol, and what the fireworks band does to the order. */
++export interface RangeVerdict {
++  spotId: SpotId;
++  helper: boolean;
++  /** Plates the student is told the night could buy, after the window's own ceiling. */
++  told: { low: number; high: number };
++  /** Plates it actually buys. Scripted, and never shown before the order. */
++  realised: number;
++  /** The best tray order if the night comes in at the bottom of the band, and at the top. */
++  bestAtLow: number;
++  bestAtHigh: number;
++  /** The order that is best if you knew — which is the order this world used to print. */
++  bestAtRealised: number;
++  /** Orders that are the single best answer somewhere inside the band. */
++  liveOrders: number[];
++  /** What cooking for the top costs when the night comes in at the bottom. Money in the bin. */
++  costOfCookingHigh: number;
++  /** What cooking for the bottom forgoes when it comes in at the top. Plates never handed over. */
++  costOfCookingLow: number;
++}
++
++/** Three readings of a band a student could actually hold, and where each one is right. */
++export type BandReading = "cook for the bottom" | "cook for the middle" | "cook for the top";
++
++export interface RangeReport {
++  /** Saturdays the organiser states as a band rather than a figure. */
++  ranged: SaturdayNumber[];
++  verdicts: RangeVerdict[];
++  /**
++   * Runs where the band is wide enough to move the order by a whole tray. Only these are
++   * questions; the rest have had the band closed by the window, which is an answer.
++   */
++  facingARange: RangeVerdict[];
++  /** Bands the student's own window closed below a tray. Reported, not a fault — see below. */
++  handsClosed: RangeVerdict[];
++  /** Bands where one order is the best answer at every crowd inside them. A hidden number. */
++  collapsed: RangeVerdict[];
++  /** Bands where the realised night sits on an edge, so the band gives the figure away. */
++  edged: RangeVerdict[];
++  /** For each reading of the band, the runs where it happens to be the best order. */
++  readings: Record<BandReading, RangeVerdict[]>;
++  /** A reading that is the best order everywhere a band is faced — a rule to be taught, not a call. */
++  alwaysRightReadings: BandReading[];
++}
++
++/** One night's money for one order: what sells, less what the trays cost. */
++function nightNet(n: PopUpNumbers, trays: number, crowd: number, cap: number): number {
++  return Math.min(trays * n.platesPerTray, Math.min(crowd, cap)) * n.platePrice - trays * n.trayCost;
++}
++
++/**
++ * Whether the fireworks band asks a question, and what answering it wrong costs.
++ *
++ * This is not the simplex sweep above and does not replace it. That one asks whether any
++ * *option* is right whatever the student is trying to do, and it is unaffected by the range
++ * because it is worked out entirely from the realised night. This one asks the question the
++ * range itself creates: given only the band, is there still something to decide?
++ *
++ * The test is the one that matters to a child. Enumerate every order the truck could cook, and
++ * every crowd the organiser said was possible. If a single order is the best answer at every
++ * crowd in the band, the band is a number in a costume: a student who reasons carefully and a
++ * student who cooks the same thing every time land in the same place, and the beat measures
++ * nothing. If different crowds want different orders, the student has to weigh food in the bin
++ * against people turned away — which is what the other story asks at its own central beat, and
++ * what one shared rubric row was reading two different constructs of.
++ *
++ * The window's ceiling is folded in, because a range the student could not reach the top of is
++ * not a range they face. At the bridge gate alone, every crowd the fireworks could bring is
++ * more than one pair of hands can serve, so the band closes to a figure there and the decision
++ * moves to Marisol — which is a real answer, not a gap.
++ */
++export function analyseLastSaturdayRange(n: PopUpNumbers): RangeReport {
++  const saturday = n.saturdays;
++  const ranged = (Object.keys(n.nights) as unknown as SaturdayNumber[])
++    .map((key) => Number(key) as SaturdayNumber)
++    .filter((night) => n.nights[night].told !== undefined);
++  const verdicts: RangeVerdict[] = [];
++  for (const spotId of Object.keys(n.spots) as SpotId[]) {
++    for (const helper of [false, true]) {
++      const cap = serveCap(n, saturday, helper);
++      const band = crowdTold(n, spotId, saturday);
++      const told = { low: Math.min(band.low, cap), high: Math.min(band.high, cap) };
++      const realised = Math.min(crowdOn(n, spotId, saturday), cap);
++      // Every order worth cooking: up to a tray past the most that could ever sell.
++      const orders = Array.from({ length: Math.ceil(told.high / n.platesPerTray) + 2 }, (_, trays) => trays);
++      const bestAt = (crowd: number) => orders.reduce(
++        (top, trays) => (nightNet(n, trays, crowd, cap) > nightNet(n, top, crowd, cap) ? trays : top),
++        0,
++      );
++      const live = new Set<number>();
++      for (let crowd = told.low; crowd <= told.high; crowd += 1) live.add(bestAt(crowd));
++      const bestAtLow = bestAt(told.low);
++      const bestAtHigh = bestAt(told.high);
++      verdicts.push({
++        spotId,
++        helper,
++        told,
++        realised,
++        bestAtLow,
++        bestAtHigh,
++        bestAtRealised: bestAt(realised),
++        liveOrders: [...live].sort((a, b) => a - b),
++        costOfCookingHigh: nightNet(n, bestAtLow, told.low, cap) - nightNet(n, bestAtHigh, told.low, cap),
++        costOfCookingLow: nightNet(n, bestAtHigh, told.high, cap) - nightNet(n, bestAtLow, told.high, cap),
++      });
++    }
++  }
++  /**
++   * A band only asks something where it can move the order by a whole tray.
++   *
++   * The supplier sells by the tray, so a band three plates wide is a figure with a rounding
++   * error on it. Where the student's own window has closed the band to less than a tray — the
++   * bridge gate on your own, where every crowd the fireworks could bring is more than one pair
++   * of hands can serve — there is nothing to decide on the last night and the screen says so
++   * in as many words. That is a consequence of a decision they already made about Marisol, not
++   * a gap in this one, and folding it in with the real bands would let a genuinely collapsed
++   * band hide behind it.
++   */
++  const facesARange = (verdict: RangeVerdict) => verdict.told.high - verdict.told.low >= n.platesPerTray;
++  const facingARange = verdicts.filter(facesARange);
++  const bestAtCrowd = (verdict: RangeVerdict, crowd: number) => {
++    const cap = serveCap(n, saturday, verdict.helper);
++    const orders = Array.from({ length: Math.ceil(verdict.told.high / n.platesPerTray) + 2 }, (_, trays) => trays);
++    return orders.reduce((top, trays) => (nightNet(n, trays, crowd, cap) > nightNet(n, top, crowd, cap) ? trays : top), 0);
++  };
++  // What each reading of the band would have you cook, and whether it happens to be the order
++  // that was best. A student cannot check any of these against the night; the point is only
++  // that none of them is a rule the world quietly rewards everywhere.
++  const readingOrder: Record<BandReading, (verdict: RangeVerdict) => number> = {
++    "cook for the bottom": (verdict) => bestAtCrowd(verdict, verdict.told.low),
++    "cook for the middle": (verdict) => bestAtCrowd(verdict, Math.round((verdict.told.low + verdict.told.high) / 2)),
++    "cook for the top": (verdict) => bestAtCrowd(verdict, verdict.told.high),
++  };
++  const readings = Object.fromEntries(
++    (Object.keys(readingOrder) as BandReading[]).map((reading) => [
++      reading,
++      facingARange.filter((verdict) => readingOrder[reading](verdict) === verdict.bestAtRealised),
++    ]),
++  ) as Record<BandReading, RangeVerdict[]>;
++
++  return {
++    ranged,
++    verdicts,
++    facingARange,
++    handsClosed: verdicts.filter((verdict) => !facesARange(verdict)),
++    // A band with one live order is a number the student has to guess rather than a decision
++    // they have to make.
++    collapsed: facingARange.filter((verdict) => verdict.liveOrders.length < 2),
++    // A realised night sitting on an edge of the band tells a student where to aim without
++    // saying so, which is a printed number with extra steps.
++    edged: facingARange.filter((verdict) => verdict.realised <= verdict.told.low || verdict.realised >= verdict.told.high),
++    readings,
++    alwaysRightReadings: (Object.keys(readings) as BandReading[])
++      .filter((reading) => facingARange.length > 0 && readings[reading].length === facingARange.length),
++  };
++}
++
++export function formatRangeReport(report: RangeReport): string {
++  const lines: string[] = [];
++  lines.push(`Saturdays stated as a range: ${report.ranged.join(", ") || "none"}`);
++  lines.push("");
++  lines.push("What the band asks, booth by booth:");
++  lines.push(
++    "  " + "booth".padEnd(12) + "helper".padEnd(8) + "told".padEnd(10) + "lands".padEnd(7)
++    + "best low".padEnd(10) + "best high".padEnd(11) + "live orders".padEnd(14)
++    + "cook high, get low".padEnd(20) + "cook low, get high",
++  );
++  for (const verdict of report.verdicts) {
++    lines.push(
++      "  " + verdict.spotId.padEnd(12)
++      + String(verdict.helper).padEnd(8)
++      + `${verdict.told.low}-${verdict.told.high}`.padEnd(10)
++      + String(verdict.realised).padEnd(7)
++      + `${verdict.bestAtLow} trays`.padEnd(10)
++      + `${verdict.bestAtHigh} trays`.padEnd(11)
++      + verdict.liveOrders.join("/").padEnd(14)
++      + `-$${verdict.costOfCookingHigh}`.padEnd(20)
++      + `-$${verdict.costOfCookingLow}`,
++    );
++  }
++  lines.push("");
++  lines.push("Where each reading of the band happens to be the order that was best:");
++  for (const [reading, where] of Object.entries(report.readings)) {
++    lines.push(`  ${reading.padEnd(22)} ${where.length}/${report.facingARange.length}  ${
++      where.map((v) => `${v.spotId}${v.helper ? "+Marisol" : ""}`).join(", ") || "nowhere"}`);
++  }
++  if (report.handsClosed.length) {
++    lines.push("");
++    lines.push(`No band to decide inside — the window closed it, and the screen says so: ${
++      report.handsClosed.map((v) => `${v.spotId}/helper=${v.helper}`).join(", ")}`);
++  }
++  if (report.collapsed.length) {
++    lines.push("");
++    lines.push(`COLLAPSED BANDS (one order best at every crowd — a number in a costume): ${
++      report.collapsed.map((v) => `${v.spotId}/helper=${v.helper}`).join(", ")}`);
++  }
++  if (report.edged.length) {
++    lines.push("");
++    lines.push(`EDGED BANDS (the night lands on the edge, which gives the figure away): ${
++      report.edged.map((v) => `${v.spotId}/helper=${v.helper}`).join(", ")}`);
++  }
++  if (report.alwaysRightReadings.length) {
++    lines.push("");
++    lines.push(`ALWAYS-RIGHT READINGS (a rule to be taught, not a call to make): ${report.alwaysRightReadings.join(", ")}`);
++  }
++  return lines.join("\n");
++}
++
+ export function formatBalanceReport(report: BalanceReport): string {
+   const lines: string[] = [];
+   lines.push(`States swept: ${report.totalStates} (${report.viableStates} viable)`);
+diff --git a/src/domain/scenario/worlds/food-truck/economy.ts b/src/domain/scenario/worlds/food-truck/economy.ts
+index 02eb9ed..2a5004d 100644
+--- a/src/domain/scenario/worlds/food-truck/economy.ts
++++ b/src/domain/scenario/worlds/food-truck/economy.ts
+@@ -43,14 +43,52 @@ export function swapBill(n: PopUpNumbers): Dollars {
+  * so a world that printed weather over every night resolved three of them identically and the
+  * standing order that covered two of them was one question wearing two dates.
+  *
+- * The pull is stated on the booth card before a booth is taken and again on the order screen
+- * before the order is placed, so a student who cooks for the wrong night mis-planned rather
+- * than got unlucky. Nothing is rolled: same booth, same night, same number, every run.
++ * This is what the night *does*, and it is the only figure any outcome is worked out from.
++ * Nothing is rolled: same booth, same night, same number, every run, on any machine.
++ *
++ * What the student was *told* is `crowdTold`, and on three of the four Saturdays the two are
++ * the same figure, printed on the booth card before a booth is taken and again on the order
++ * screen before the order is placed — so a student who cooks for the wrong night mis-planned
++ * rather than got unlucky. On the fireworks night they are not: the organiser states a band
++ * and the night lands inside it, which is a decision made before you know rather than a
++ * lottery, because the band itself is stated and the same band every run.
+  */
+ export function crowdOn(n: PopUpNumbers, spotId: SpotId, saturday: SaturdayNumber): number {
+   return Math.round((n.spots[spotId].crowd * n.nights[saturday].pull) / 100);
+ }
+ 
++/**
++ * What the student is *told* this night's crowd will buy, which is not always a figure.
++ *
++ * Three of the four Saturdays are stated exactly and this returns the same number twice for
++ * them. The fireworks night is stated as a band, because the organiser does not know — and
++ * because a market that prints the answer to its own central question four times is asking a
++ * student to do arithmetic where the other story asks them to commit money before they know.
++ * `numbers.ts` and `types.ts` carry the whole argument.
++ *
++ * **Nothing downstream of a resolved night may call this.** The band is what the student knew;
++ * `crowdOn` is what happened, and every outcome, every verdict and the whole balance harness
++ * are worked out from `crowdOn` alone. That separation is the guarantee that a range changes
++ * what is asked and nothing about what replays.
++ */
++export interface CrowdTold {
++  low: number;
++  /** Equal to `low` on a night the organiser states as a figure. */
++  high: number;
++  /** Whether the student was given a range rather than a number. */
++  range: boolean;
++}
++
++export function crowdTold(n: PopUpNumbers, spotId: SpotId, saturday: SaturdayNumber): CrowdTold {
++  const told = n.nights[saturday].told;
++  const at = (pull: number) => Math.round((n.spots[spotId].crowd * pull) / 100);
++  if (!told) {
++    const exact = crowdOn(n, spotId, saturday);
++    return { low: exact, high: exact, range: false };
++  }
++  return { low: at(told.low), high: at(told.high), range: true };
++}
++
+ /**
+  * Plates that can actually go out of the window.
+  *
+@@ -67,6 +105,22 @@ export function sellCap(n: PopUpNumbers, spotId: SpotId, saturday: SaturdayNumbe
+   return Math.min(crowdOn(n, spotId, saturday), serveCap(n, saturday, helper));
+ }
+ 
++/**
++ * The same question the order screen asks, answered with what the student was told.
++ *
++ * The window is the window whichever way the night goes, so the serve cap closes the band from
++ * above: at the bridge gate on your own, every crowd in the fireworks band is more than one
++ * pair of hands can serve, and the honest thing to print there is a number rather than a range
++ * the student could not reach either end of.
++ */
++export function sellCapTold(n: PopUpNumbers, spotId: SpotId, saturday: SaturdayNumber, helper: boolean): CrowdTold {
++  const told = crowdTold(n, spotId, saturday);
++  const cap = serveCap(n, saturday, helper);
++  const low = Math.min(told.low, cap);
++  const high = Math.min(told.high, cap);
++  return { low, high, range: low !== high };
++}
++
+ export interface SaturdayOutcome {
+   saturday: SaturdayNumber;
+   trays: number;
+diff --git a/src/domain/scenario/worlds/food-truck/numbers.ts b/src/domain/scenario/worlds/food-truck/numbers.ts
+index 9d5acfe..9467c2b 100644
+--- a/src/domain/scenario/worlds/food-truck/numbers.ts
++++ b/src/domain/scenario/worlds/food-truck/numbers.ts
+@@ -25,16 +25,24 @@ export const POP_UP_NUMBERS: PopUpNumbers = {
+     "middle-row": { id: "middle-row", booth: dollars(240), crowd: 38 },
+     "bridge-gate": { id: "bridge-gate", booth: dollars(480), crowd: 54 },
+   },
+-  // Four nights, four crowds, and the student reads all four off the booth card before they
+-  // take a booth. The wet Saturday that clears fills the market late; the cold one empties it;
+-  // the fireworks bring half the city. One standing order covers the middle two, which is the
+-  // whole of the second Saturday decision: cook for the busy night and bin food on the cold
+-  // one, or cook for the cold night and turn people away on the busy one.
++  // Four nights. Three of them the organiser states as a figure and the student reads off the
++  // booth card before they take a booth: the wet Saturday that clears fills the market late,
++  // the cold one empties it. One standing order covers the middle two, which is the whole of
++  // the second Saturday decision — cook for the busy night and bin food on the cold one, or
++  // cook for the cold night and turn people away on the busy one.
++  //
++  // The fireworks are a range. Nobody knows how many come down for fireworks; the organiser
++  // says between a tenth up and seven-tenths up on an ordinary Saturday and will not be pinned
++  // further, and the night lands at 145. See `told` in `types.ts` for why one night and not
++  // four: the market was asking a student to do arithmetic against a printed figure at the one
++  // beat the other story asks them to commit money before they know, and the same rubric row
++  // reads both. The band is asymmetric on purpose — the middle of it is 140, so a student who
++  // splits the difference has not been quietly handed the answer.
+   nights: {
+     1: { pull: 100 },
+     2: { pull: 120 },
+     3: { pull: 65 },
+-    4: { pull: 145 },
++    4: { pull: 145, told: { low: 110, high: 170 } },
+   },
+   platesPerTray: 10,
+   trayCost: dollars(60),
+diff --git a/src/domain/scenario/worlds/food-truck/scenario.ts b/src/domain/scenario/worlds/food-truck/scenario.ts
+index 3bbe5da..9d5c203 100644
+--- a/src/domain/scenario/worlds/food-truck/scenario.ts
++++ b/src/domain/scenario/worlds/food-truck/scenario.ts
+@@ -176,6 +176,19 @@ export interface PopUpScreenCopy {
+      * belongs.
+      */
+     crowdWillBuy: string;
++    /** The same fact where the night is a band: what it *could* buy, not what it will. */
++    crowdMightBuy: string;
++    /**
++     * What a band means for the order, said on the screen that takes the order.
++     *
++     * A number replaced by a wider number is not the same as being asked to plan under
++     * uncertainty. Printing "42 to 65" and stopping tells a student the market has become
++     * vaguer; it does not tell them they are now buying food against a figure nobody has, or
++     * what it costs them either way. So this names both sides of the commitment in the two
++     * words the market has already used for them all run — food in the bin, and people turned
++     * away — and it appears only where the night is actually a band.
++     */
++    crowdUnknown: string;
+     /** "Saturday 2 will buy" — the standing order faces two different nights. */
+     nightBuys: string;
+     /** Said only where one pair of hands, not the crowd, is the ceiling. */
+@@ -228,6 +241,15 @@ export interface PopUpScreenCopy {
+     nothingBinned: string;
+     binnedTrays: string;
+     turnedAway: string;
++    /**
++     * What a night stated as a range actually came in at, said once it has been played.
++     *
++     * A beat that asks a student to commit before they know has to close its own loop, or the
++     * range is a trick rather than a question. It names the figure and the band together, so
++     * a student can see whether their order was a reasonable read of what they were given
++     * rather than only whether it happened to be right.
++     */
++    cameIn: string;
+   };
+   first: { kicker: string; title: string; deck: string };
+   /**
+@@ -519,7 +541,10 @@ export const POP_UP_SCENARIO: PopUpScenario = {
+     { title: "Saturday 1", note: "The market opens at five and the strings of lights go up over the lane. A first Saturday brings a booth the crowd it gets." },
+     { title: "Saturday 2", note: "It rains until four and then it clears up properly. The market fills late and stays busy to closing, with a fifth more people out than an ordinary Saturday." },
+     { title: "Saturday 3", note: "A cold evening, and everybody stands around with their hands in their pockets. The band plays anyway, but a third of the usual crowd stays home." },
+-    { title: "Saturday 4", note: "The last one, and the biggest. There are fireworks off the bridge at nine, and half as many people again as an ordinary Saturday come down to watch them." },
++    // The one night the organiser does not state as a figure. The prose says so plainly and
++    // the screens print the band; between them a student knows exactly what they do not know,
++    // which is the difference between planning under uncertainty and guessing.
++    { title: "Saturday 4", note: "The last one, and the biggest. There are fireworks off the bridge at nine. Nobody can say how many people come for the fireworks, so the organiser gives you a range instead of a number." },
+   ],
+   breakdown: {
+     source: "Ramos Rentals",
+@@ -564,7 +589,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
+       boothsTitle: "Where do you set up?",
+       permit: { label: "City permit", note: `${formatDollars(N.permit)} for the four Saturdays. Every stall pays it.` },
+       crowdLabel: "Plates the crowd here will buy",
+-      crowdNote: "The same four Saturdays at every booth: an opening night, a wet one that clears, a cold one, and the fireworks. What changes is how many walk past yours.",
++      crowdNote: "The same four Saturdays at every booth: an opening night, a wet one that clears, a cold one, and the fireworks. What changes is how many walk past yours. The last one is a range, because nobody can say how many people come for the fireworks.",
+       crowdUnit: "plates",
+       nightShort: "Sat",
+       take: "Take this booth",
+@@ -639,6 +664,8 @@ export const POP_UP_SCENARIO: PopUpScenario = {
+       trayHint: `One tray is ${N.platesPerTray} plates and costs ${formatDollars(N.trayCost)}.`,
+       cooked: "Plates you are cooking",
+       crowdWillBuy: "The crowd will buy",
++      crowdMightBuy: "The crowd could buy",
++      crowdUnknown: "Nobody can say the number before the night. Cook for the top of the range and food might go in the bin; cook for the bottom and you might turn people away.",
+       nightBuys: "will buy",
+       capped: "plates is all one pair of hands can hand over in an evening, however many people are waiting.",
+       order: {
+@@ -675,6 +702,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
+       nothingBinned: "Nothing went in the bin.",
+       binnedTrays: "of food went in the bin.",
+       turnedAway: "More people wanted a plate than two hands could hand over.",
++      cameIn: "The fireworks brought {crowd}. You were told {low} to {high}.",
+     },
+     first: {
+       kicker: "Saturday 1",
+@@ -749,7 +777,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
+       acknowledge: "Save it, and say what is missing",
+       lastKicker: "Saturday 4",
+       lastTitle: "The last one, and the biggest.",
+-      lastNote: "Fireworks off the bridge at nine, and half the city comes down to watch them.",
++      lastNote: "Fireworks off the bridge at nine. This is the one night the market cannot tell you the size of.",
+       noLast: "No generator means no cooking. There is no last Saturday.",
+       noLastAction: "See how it came out",
+     },
+diff --git a/src/domain/scenario/worlds/food-truck/types.ts b/src/domain/scenario/worlds/food-truck/types.ts
+index 989b907..ddb331e 100644
+--- a/src/domain/scenario/worlds/food-truck/types.ts
++++ b/src/domain/scenario/worlds/food-truck/types.ts
+@@ -70,7 +70,33 @@ export interface SpotNumbers {
+  * is placed and the arithmetic that resolves the night afterwards are the same number.
+  */
+ export interface NightNumbers {
++  /**
++   * What the night actually does. Scripted, never rolled, and the only figure any outcome is
++   * worked out from — so the market replays identically whatever the student was told.
++   */
+   pull: number;
++  /**
++   * What the organiser can promise, where they cannot promise a figure.
++   *
++   * A night with a `told` band is stated to the student as a range and resolves at `pull`,
++   * which sits inside it. That is not a hidden number: it is the difference between being
++   * told what will happen and being told what might, and it is the one thing this world was
++   * never asking. Every ordering screen in the market printed the exact plates the crowd
++   * would buy, four times, so the student's stocking decision was arithmetic against a
++   * printed figure — while the other story's central beat is committing money before you
++   * know. One rubric row reads both, and it was reading two different constructs.
++   *
++   * Determinism does not require disclosure, and the other world is the proof: its Week 5 is
++   * scripted, replays identically and is swept identically, and the student is not told about
++   * it while building the plan it breaks. So the range is a free choice about *disclosure*
++   * and changes nothing about the *world*. `pull` is what happens; `told` is what you knew.
++   *
++   * It is set on one night — the last one, after the generator, where the stakes are already
++   * highest — and not on all four. Three stated nights are what make the fourth readable as a
++   * range rather than as a market that has stopped explaining itself, and they keep the
++   * planning-inside-known-money competency this world exists to assess intact.
++   */
++  told?: { low: number; high: number };
+ }
+ 
+ /**
+diff --git a/src/educator/roster.test.tsx b/src/educator/roster.test.tsx
+index b2622be..399e5ad 100644
+--- a/src/educator/roster.test.tsx
++++ b/src/educator/roster.test.tsx
+@@ -173,6 +173,71 @@ describe("the class list is the way a teacher runs a rostered class", () => {
+     expect(screen.getByText("Devon P.")).toBeInTheDocument();
+   });
+ 
++  /**
++   * Where focus lands when the confirmation opens, asserted by identity.
++   *
++   * It already landed on **Keep it** before this test existed, and it landed there by luck.
++   * React reconciles a list of children by position: `Erase` is child index 2 of
++   * `.roster-list__acts`, and in the confirmation that replaces it `Keep it` happens to be
++   * index 2 too, so the DOM node that had focus was updated in place into the safe button.
++   * Put the safe choice first — which is what most designs would do — and the same luck lands
++   * focus on **Erase everything**, one Enter away from deleting a child's name, work and
++   * feedback with nothing to undo it from.
++   *
++   * So this asks the question by identity and never by position: whatever has focus, is it the
++   * element whose accessible name is *Keep it*. A reorder cannot pass this test by accident,
++   * and a reorder that breaks the focus move fails it by name. Measured against a deliberately
++   * reordered `Roster.tsx` before the fix landed: focus was on "Erase everything".
++   */
++  it("puts focus on the keep button itself, whatever order the two are written in", async () => {
++    vi.stubGlobal("fetch", service([
++      { seatCode: "1", displayName: "Ana R.", claimed: true, claimedAt: 1, removedAt: null },
++    ]).fetcher);
++    open();
++    await screen.findByText("Ana R.");
++
++    await userEvent.click(screen.getAllByRole("button", { name: "Erase" })[0]!);
++    const keep = await screen.findByRole("button", { name: /Keep it/ });
++    await waitFor(() => expect(keep).toHaveFocus());
++    // Said the other way round as well, because `toHaveFocus` on the element a query found is
++    // exactly the assertion that survives a reorder, and the one below is the one that reads
++    // like the sentence a person would say about it.
++    expect(document.activeElement).toBe(keep);
++    expect(screen.getByRole("button", { name: /Erase everything/ })).not.toHaveFocus();
++  });
++
++  /**
++   * What a screen reader says on landing there.
++   *
++   * Focus arriving on a button announces the button and nothing else, so before this the whole
++   * of what a teacher heard was "Keep it, button" — keep *what*. The sentence naming the child
++   * and saying the deletion cannot be undone was on the screen and was never spoken.
++   *
++   * `aria-describedby` from both buttons rather than `role="alert"` on the paragraph: an alert
++   * announces text inserted into a node that is already in the tree, and this paragraph is
++   * inserted with its text already in it, which is the case live regions are least reliable
++   * for. A description is read as part of the focused control every time, on every reading.
++   */
++  it("tells a screen-reader user what they are keeping, from both buttons", async () => {
++    vi.stubGlobal("fetch", service([
++      { seatCode: "1", displayName: "Ana R.", claimed: true, claimedAt: 1, removedAt: null },
++    ]).fetcher);
++    open();
++    await screen.findByText("Ana R.");
++    await userEvent.click(screen.getAllByRole("button", { name: "Erase" })[0]!);
++
++    const warning = screen.getByText(/Erase Ana R\.\?/);
++    expect(warning.id).toBeTruthy();
++    for (const name of [/Erase everything/, /Keep it/]) {
++      expect(screen.getByRole("button", { name })).toHaveAttribute("aria-describedby", warning.id);
++    }
++    // The description names the child, says it cannot be undone, and says the rest of the
++    // class is untouched — the three things a teacher needs before pressing either one.
++    expect(warning).toHaveAccessibleDescription;
++    expect(warning.textContent).toMatch(/Ana R\./);
++    expect(warning.textContent).toMatch(/cannot be undone/);
++  });
++
+   it("says what it holds a name for, where a teacher is about to type one", async () => {
+     vi.stubGlobal("fetch", service().fetcher);
+     open();
+diff --git a/src/stages/popup/PopUpScreens.tsx b/src/stages/popup/PopUpScreens.tsx
+index 6443e20..cf3ec6c 100644
+--- a/src/stages/popup/PopUpScreens.tsx
++++ b/src/stages/popup/PopUpScreens.tsx
+@@ -7,8 +7,8 @@ import { MarketBackdrop } from "../../components/story/MarketBackdrop";
+ import { dollars, formatDollars } from "../../domain/core/money";
+ import { POP_UP_SCENARIO } from "../../domain/scenario/worlds/food-truck";
+ import {
+-  cashToPlan, crowdOn, orderCost, owedUpFront, sellCap, serveCap, swapBill,
+-  type SaturdayOutcome,
++  cashToPlan, crowdOn, crowdTold, orderCost, owedUpFront, sellCapTold, serveCap, swapBill,
++  type CrowdTold, type SaturdayOutcome,
+ } from "../../domain/scenario/worlds/food-truck/economy";
+ import { ledgerInputFor, ledgerOf, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
+ import { costOfTipClaims, TIP_CLAIM_REASONS, tipClaims, type TipClaim } from "../../domain/scenario/worlds/food-truck/claims";
+@@ -91,6 +91,19 @@ function PopUpSum({ sumId, copy, expected, onCorrect }: { sumId: PopUpSumId; cop
+   );
+ }
+ 
++/**
++ * What a night's crowd will take, drawn as a figure or as a band.
++ *
++ * Three of the four Saturdays are stated exactly; the fireworks night is a range, because the
++ * organiser does not know. The en dash rather than a hyphen because this is a range of
++ * numbers, and the two figures are never composed from fragments elsewhere — a screen that
++ * built "59" and "92" into a sentence in two places would print two different bands the first
++ * time one of them was re-priced.
++ */
++function crowdRead(told: CrowdTold): string {
++  return told.range ? `${told.low}–${told.high}` : String(told.low);
++}
++
+ /** A figure the student has already worked out, read back where the next screen needs it. */
+ function Settled({ label, amount }: { label: string; amount: number }) {
+   return (
+@@ -142,8 +155,13 @@ function TrayOrder({ saturday, nights, max, trays, onTrays, pricing = "settled",
+   const covers: SaturdayNumber[] = nights === 2 ? [2, 3] : [saturday];
+   const willTake = covers.map((night) => ({
+     night,
+-    plates: spot ? sellCap(N, spot, night, helper) : 0,
+-    handsBound: spot ? serveCap(N, night, helper) < crowdOn(N, spot, night) : false,
++    // What the student was told, not what the night does. The two are the same figure on every
++    // Saturday but the last one, where the organiser states a band and this prints the band.
++    told: spot ? sellCapTold(N, spot, night, helper) : { low: 0, high: 0, range: false },
++    // A window that cannot hand over the top of what might turn up. Read off the told band
++    // rather than the realised night, because this note is a warning before the order and the
++    // student has not been shown the realised night.
++    handsBound: spot ? serveCap(N, night, helper) < crowdTold(N, spot, night).high : false,
+   }));
+   const cooked = trays * N.platesPerTray;
+   return (
+@@ -187,10 +205,14 @@ function TrayOrder({ saturday, nights, max, trays, onTrays, pricing = "settled",
+         </p>
+         <dl className="tray-order__facts">
+           <div><dt>{COPY.saturday.cooked}</dt><dd>{cooked}</dd></div>
+-          {willTake.map(({ night, plates }) => (
++          {willTake.map(({ night, told }) => (
+             <div key={night}>
+-              <dt>{nights === 2 ? `${COPY.settle.saturdayLabel} ${night} ${COPY.saturday.nightBuys}` : COPY.saturday.crowdWillBuy}</dt>
+-              <dd>{plates}</dd>
++              <dt>
++                {nights === 2
++                  ? `${COPY.settle.saturdayLabel} ${night} ${COPY.saturday.nightBuys}`
++                  : told.range ? COPY.saturday.crowdMightBuy : COPY.saturday.crowdWillBuy}
++              </dt>
++              <dd>{crowdRead(told)}</dd>
+             </div>
+           ))}
+           {pricing === "settled" && leaves && (
+@@ -205,6 +227,13 @@ function TrayOrder({ saturday, nights, max, trays, onTrays, pricing = "settled",
+         {willTake.some((night) => night.handsBound) && (
+           <p className="tray-order__crowd">{serveCap(N, willTake[0]!.night, helper)} {COPY.saturday.capped}</p>
+         )}
++        {/* What the band means for the order, and only where there is a band to mean it. A
++            wider number printed without this is a market that has gone vague; with it, it is
++            a market asking the student to commit before anybody can know. Same class as the
++            note above, because it is the same kind of fact in the same voice. */}
++        {willTake.some((night) => night.told.range) && (
++          <p className="tray-order__crowd" data-unknown="true">{COPY.saturday.crowdUnknown}</p>
++        )}
+       </div>
+     </div>
+   );
+@@ -219,6 +248,10 @@ function NightResult({ outcome, saturday, spot, helper, compact = false }: {
+   compact?: boolean;
+ }) {
+   const read = readNight(outcome, crowdOn(N, spot, saturday), serveCap(N, saturday, helper));
++  // A night the student was given as a range has to close its own loop, or the range is a
++  // trick rather than a question: what it came in at, beside what they were told, so they can
++  // judge their own order as a read of what they had rather than only as right or wrong.
++  const told = crowdTold(N, spot, saturday);
+   return (
+     <section className={`night${compact ? " night--compact" : ""}`} aria-label={`${COPY.settle.saturdayLabel} ${saturday}`}>
+       <p className="night__day">{COPY.settle.saturdayLabel} {saturday}</p>
+@@ -233,6 +266,14 @@ function NightResult({ outcome, saturday, spot, helper, compact = false }: {
+         <div data-alert={outcome.spoiled > 0}><dt>{COPY.night.binned}</dt><dd>{outcome.spoiled}</dd></div>
+         <div><dt>{COPY.night.takings}</dt><dd className="money">{formatDollars(outcome.takings)}</dd></div>
+       </dl>
++      {/* The same class as the sentence below it: this is a fact about the night in the same
++          voice, and a new class would need a stylesheet outside this world to say so. The data
++          attribute is there so the look can be split later without touching the markup. */}
++      {told.range && (
++        <p className="night__say" data-told="true">
++          {fillCopy(COPY.night.cameIn, { crowd: crowdOn(N, spot, saturday), low: told.low, high: told.high })}
++        </p>
++      )}
+       {/* A night that cooked nothing used to read "you cooked more than the crowd bought.
+           Nothing went in the bin." — two sentences that are both false about an empty truck and
+           together sound like a clean night. */}
+@@ -268,9 +309,14 @@ function NightResult({ outcome, saturday, spot, helper, compact = false }: {
+  *
+  * The world's own fiction says the four nights are different — lights and a first crowd, rain
+  * that clears, a cold evening, fireworks — and for three of them it used to be decoration
+- * over one number. It is four numbers now, and they are on the first screen that asks for a
+- * decision, because a night that turns out different is a lottery and a night you were told
+- * about and planned wrong for is a decision.
++ * over one number. It is four different reads now, and they are on the first screen that asks
++ * for a decision, because a night that turns out different is a lottery and a night you were
++ * told about and planned wrong for is a decision.
++ *
++ * Three of them are a figure. The fireworks are a band, and the band is on the booth card for
++ * the same reason the figures are: the student is choosing a booth partly on what its crowd
++ * will do, and the thing they have to weigh on the last night is a range. Comparing three
++ * booths on three numbers and a range is the comparison the market actually offers.
+  */
+ function CrowdByNight({ spotId }: { spotId: SpotId }) {
+   return (
+@@ -282,7 +328,7 @@ function CrowdByNight({ spotId }: { spotId: SpotId }) {
+           return (
+             <li key={saturday}>
+               <span>{COPY.spot.nightShort} {saturday}</span>
+-              <b>{crowdOn(N, spotId, saturday)}</b>
++              <b>{crowdRead(crowdTold(N, spotId, saturday))}</b>
+             </li>
+           );
+         })}
