@@ -1,0 +1,58 @@
+HEADER: ← Class evidence
+
+PERIOD 5 · GRADE 7 · READING QUEUE
+
+Read and score the explanations.
+
+11 of 14 turned in · 11 still to read. You score the writing; nothing here is machine-scored.
+
+[1 of 11 · Ana R. · still to read]
+  I left both bonuses out of the first plan because Avery cannot spend money that might not arrive, and the reserve is what a plan is for. That is why Week 5 did not break me: the extra rent came out of the backup money I had already set aside, and the course seat was paid at Week 4 so nobody could take it back. I kept the Saturdays free because the clinics would have cost Avery rest before the show
+  marked: 2/2/2/4 → 10/10
+
+[2 of 11 · Devon P. · still to read]
+  I counted both bonuses at the start because the plan would not reach the course without them, and I knew that was the risk I was taking. When Week 5 took the showcase money I had to give up nearly all of the flexible cash and take the clinics to cover the rehab bills. If I planned it again I would build on the money Avery can count on first and treat a bonus as extra rather than as income. The num
+  marked: 2/2/2/3 → 9/10
+
+[3 of 11 · Leila H. · still to read]
+  I put most of the money on the course because that is the thing Avery actually wants and the rest can wait. My backup plan was short but I saved it anyway because I did not want to take money off the course. Week 5 was hard and I had to move money out of rides. The numbers I stood on are $6,300 and $1,200.
+  marked: 1/1/1/2 → 5/10
+
+[4 of 11 · Marcus T. · still to read]
+  i put the money on the course. it worked out fine i think. the rent went up but whatever. idk what else to say here. The numbers I stood on are $5,800 and $1,200.
+  marked: 0/0/0/0 → 0/10
+
+[5 of 11 · Priya S. · still to read]
+  I only counted the pay Avery is definitely getting, so the first plan was smaller but none of it was a guess. I kept a real reserve instead of putting every dollar on the course, and when the rent went up in Week 5 the reserve absorbed it without touching the course seat. I took the clinics afterwards because by then the money was already safe and the hours were the cheaper thing to spend. The num
+  marked: 2/2/2/4 → 10/10
+
+[6 of 11 · Ibrahim K. · still to read]
+  The plan works. It works because it works. The numbers I stood on are $5,000 and $1,000 and $550.
+  marked: 0/0/0/2 → 2/10
+
+[7 of 11 · Nina D. · still to read]
+  a b c. d e f. The numbers I stood on are $5,000 and $1,200.
+  marked: 0/0/0/2 → 2/10
+
+[8 of 11 · Carlos V. · still to read]
+  I moved computers halfway through and the plan came back, which is the only reason I finished. I put the money on the course first and kept some back for anything that went wrong, and the rent rise came out of that. I did not take the clinics because Avery was already short of hours. The numbers I stood on are $5,000 and $1,200.
+  marked: 1/1/1/2 → 5/10
+
+[9 of 11 · Mei L. · still to read]
+  I counted the showcase bonus because the coach said it was likely, and that was the mistake — Week 5 cancelled the showcase and the money never came, so my whole first plan was built on money that did not exist. What saved me was reserving the course seat in Week 4 while the money was still there. The repair was cutting the rides money down to almost nothing, which costs Avery hours instead of dol
+  marked: 2/2/2/4 → 10/10
+
+[10 of 11 · Tyrell B. · still to read]
+  I chose the cousin's room because it was cheapest and that left more for everything else. I did not keep much backup money because I wanted the course paid first. When the rent went up I had to take the clinics to cover it, which cost Saturdays. The numbers I stood on are $5,500 and $1,200.
+  marked: 1/1/1/2 → 5/10
+
+[11 of 11 · Hannah G. · still to read]
+  I finished this at home the next night because we ran out of time in class, and everything I had done was still there when I signed in. I counted the attendance bonus in the first plan and I had to take it back out of the backup plan, which showed me how much of the plan was leaning on it. After Week 5 I took the money out of rides because that costs hours and not the course. The numbers I stood o
+  marked: 2/2/1/3 → 8/10
+
+[11 of 11 · Hannah G. · scored 8/10]
+  I finished this at home the next night because we ran out of time in class, and everything I had done was still there when I signed in. I counted the attendance bonus in the first plan and I had to take it back out of the backup plan, which showed me how much of the plan was leaning on it. After Week 5 I took the money out of rides because that costs hours and not the course. The numbers I stood o
+  marked: 2/2/1/3 → 8/10
+
+WHOLE PASS: 11.2s for 12 paragraphs
+END STATE: 11 of 11 · Hannah G. · scored 8/10

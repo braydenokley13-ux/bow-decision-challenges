@@ -647,3 +647,146 @@ encourages, correctly, because there is no score to beat — moves the number.
 Receipts: `100-class-two-attempts.png`, `101-debrief-two-attempts.png`,
 `103-debrief-two-attempts.pdf`.
 
+
+---
+
+## Smaller things, still real
+
+**S1 — "My classes" is a list of codes with no state on it.** `111-my-classes.png`: *"Your 3
+classes."* → `XEWFA · Period 5 · Grade 7`, `3WMGF · Period 4 · Grade 7`, `GXT4C · Period 3 ·
+Grade 7`. Nothing says which one has twelve unread explanations. I teach five periods; the
+landing page should be the triage and it is a directory.
+
+**S2 — "and 1 more" hides a name on a page that names everyone else.** The distributions cap
+at six: *"Cousin's Spare Room — Ana R., Devon P., Priya S., Ibrahim K., Nina D., Carlos V. and
+1 more"*. `LiveState` gets this right and says so in a comment — "'and 3 more' is three
+children she has been told about and cannot find" — and the distribution below it does the
+thing the comment condemns, at a cap of six over a class of eleven.
+
+**S3 — "What should I teach next?" resolves to "BOW has no reteach topic for this one."** The
+largest panel on the post-lesson page (`70-class-after-marking.png`) is headed *"What should I
+teach next?"* and its body reads *"No named misconception sits behind this one"* and *"BOW has
+no reteach topic for this one, because the model names no misconception behind it."* It then
+does something useful — it restates the rule and names the three students — so this is honest
+rather than empty. But the heading writes a cheque the panel does not cash, on the surface a
+teacher opens *for* that answer.
+
+**S4 — the repair competency says the same thing about everybody.** *"Repair a plan after
+income or costs change … — **11 showed it**"* — all eleven, including the student who scored
+0/10 on the writing and the one who wrote `a b c. d e f.` A column with no variance in it
+carries no information for a parent conversation, and it is the same competency F1 reads
+backwards. Whatever is being observed there is not discriminating between these children.
+
+---
+
+# The job, timed
+
+| Stage | What it took | Verdict |
+|---|---|---|
+| Account, class, roster, cards | ~10 s of machine time, four decisions | **Yes, between periods.** |
+| Watching the room | page loads in 0.8–2.0 s, names the two who stopped | **Yes, and it is the best surface here.** |
+| Reading and marking 11 explanations | 11.2 s of interface time for 11 students — unread first, no navigation, save-and-advance, focus follows | **Yes.** The only cost left is reading, which is mine. At 28 students this is the difference between doing it and not. |
+| Overruling a machine judgement | one press, one required reason, both readings kept | **Yes** — but see F6. |
+| Running the debrief | printed, sequenced, five sections | **No.** See F1, F7, F8, F13. |
+| Getting the marks out | one press, 15 rows, blanks are blanks, two attempts are two labelled rows, no fake composite | **Yes, and it is excellent.** |
+| Two days / homework | resume survives a different browser, a different machine and a night | **Yes, and it is the reason to buy it.** |
+
+The export, in full, for four of my students (`gradebook2.tsv`):
+
+```
+Seat  Student      Attempt  did it  part/none  never asked  asked  Reasoning(/10)  overruled  …
+5     Priya S.     1        13      0          0            13     10              0          Showed it …
+6     Jaylen W.                                                                                (blank row)
+9     Nina D.      1        10      2          1            12     2               1          Not yet …
+10    Carlos V.    1        13      0          0            13     5               0          Showed it …
+10    Carlos V.    2        11      0          2            11                     0          Evidence not all in …
+```
+
+This is the artefact that defends itself to a parent. There is no composite, so nothing has to
+be explained away; an absence is a blank rather than a zero; the reasoning marks are mine and
+labelled as mine; the number of things "never asked in this run" is its own column so nobody
+divides by the wrong denominator; and the second attempt is a second row that says which is
+which. I have never had an export from an assessment product I could hand to a parent without
+first deleting a column. This one I could.
+
+---
+
+# The questions that matter
+
+**Does this give me something I could not get by reading 28 paragraphs myself?**
+Yes, and it is specific: the *decisions behind* the paragraphs. "7 put Avery in the cousin's
+room, 5 reserved the seat at Week 4, 4 took the clinics" is not in the writing and I cannot
+reconstruct it from the writing. The reading queue then gives me the paragraphs anyway, in
+order, with the marking attached. That is a real gain over a pile of exit tickets.
+
+**Is every number on my screen traceable to a moment in a child's run?**
+Mostly yes, and impressively so. Every judgement on a student's page carries the rule it was
+judged against *and* the observation that triggered it — *"$120 of the $150 went on the team
+shoes, and the $30 left over could not have covered the away-game travel share and the
+present"*. That is better traceability than any rubric I have used. The exceptions are F1
+(traceable to a moment the product created, not one the child chose) and F13 (a rate whose
+denominator is not the class).
+
+**Where does it claim something the evidence does not support?**
+F1 (five children "cut the course first" when they paid for it), F2 ("10 showed it" from
+counts the caption says came from nobody), F13 (one child in two contradictory buckets),
+F8 ("the plans all worked" over a plan that did not).
+
+**Where does it waste my time?**
+F4 (fourteen print jobs to replace one lost sheet), F10 (translating seat numbers to names on
+a page that has the names), F11 (a count of children I am not allowed to identify), S1 (five
+classes, no state).
+
+**Where does it lie to me?**
+F3 is the one I would call a lie rather than a slip, because it is a claim about where
+children's data goes, made on the screen where I decide to trust it, and the product's own
+next screen contradicts it. F2 and F13 are false sentences too, but they read as arithmetic
+that got away from someone. F7 is not a lie — it is worse in a different way: it is true, it
+is what it says it is, and it should not exist.
+
+**Would I use it a second time?**
+Yes — after F1, F7 and F13 are fixed, and not before. That is not a soft yes. The parts of this
+product that are hard to build are done and done well: sign-in without accounts, resume across
+devices and days, a reading queue that makes 28 paragraphs survivable, an export I can defend,
+an override with a required reason, and a service that refuses to run in a configuration that
+would leak children's work. What is broken is the last mile — the three surfaces where the
+evidence gets turned into sentences a teacher says out loud — and those are the ones that would
+embarrass me in front of a room on the first run. I do not need them to be clever. I need them
+not to be wrong.
+
+The specific thing that would decide it: I would run this again the moment the debrief stops
+telling me to read a named child's *"idk what else to say here"* aloud, and stops telling me
+that Ana gave up the course she had already paid for.
+
+---
+
+# Findings at a glance
+
+| # | Severity | What it costs | Where |
+|---|---|---|---|
+| F1 | **Critical** | Tells the class — and me, out loud — that the five students who paid for the course gave it up first | `analysis.ts` `adaptationSummary`, `formulas.ts` `courseRowCapFor` |
+| F7 | **High** | Instructs me to read a named child's worst work aloud to the room | `Debrief.tsx:195-218`, `analysis.ts:226` |
+| F13 | **High** | Printed debrief double-counts a second attempt: 12 of 14, one child in two buckets, wrong assessed rate | `Debrief.tsx:72` vs `RealClassPages.tsx:641` |
+| F2 | **High** | A false denominator over competency claims about ten children nobody has read | `RealClassPages.tsx:742`, `objectiveResults.ts:217` |
+| F3 | **High** | Tells a teacher BOW never sees a student's name. It stores them. | `SignIn.tsx:164-166` |
+| F8 | Medium | Opens the debrief by asserting every plan worked when one did not | `analysis.ts:695` |
+| F9 | Medium | Offers the class's weakest writing for projection under wording that reads as praise | `shareOut.ts` reason strings |
+| F6 | Medium | The same student page prints a judgement I overruled, unmarked | `RealClassPages.tsx` chronological trail |
+| F10 | Medium | Seat numbers where the same page uses names | class page, debrief §2/§3 |
+| F5 | Medium | A superseded device keeps running a turned-in child's session | student challenge page |
+| F4 | Medium | 28 print jobs to replace a lost sheet of cards | `Roster.tsx` reissue |
+| F11 | Medium | Counts of children with no names, on the three lines that most need them | class page "After Week 5" |
+| F12 | Low-Med | "Working right now" counts children who left, for the whole of a 42-minute lesson | `analysis.ts:400` |
+| S1–S4 | Low | Class list has no state; a name hidden behind "and 1 more"; a "teach next" with nothing to teach; a competency with no variance | various |
+
+---
+
+# Verdict
+
+**GO WITH CONDITIONS** — the assessment machinery is trustworthy and the classroom mechanics
+are better than anything else I have used, but the three surfaces that turn evidence into
+sentences a teacher says out loud (class read, debrief, share-out) each contain at least one
+statement about a child that the child's own evidence contradicts; **the single largest gap is
+F1: the class board and the printed debrief name the five students who reserved and paid for
+the course as the five who cut the course first, because the product reads the row it locked
+itself as a choice the student made.**
