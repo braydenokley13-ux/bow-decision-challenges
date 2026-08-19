@@ -567,26 +567,6 @@
   .choice-row__action { grid-column: 2 / -1; grid-row: 3; }
 }
 
-/* ---------------------------------------------------------------------------
-   The commit bar, at the width where its own rules turn against it.
-
-   `.plan-commit` is a wrapping flex row, and below 760px `app.css` turns it into a column. A
-   *wrapping column* puts whatever will not fit into a new column to the right — and
-   `.plan-commit__refusal` asks for `flex-basis: 100%`, which in a column means 100% of the
-   height, so the refusal line took the whole bar and the read-out and every button wrapped
-   off the side of the screen. Measured at 320px on the Week 5 board: the footer at 12–308
-   with its read-out and its actions at 296–540, and the document scrolling 220px sideways
-   with "Save it, $1,000 still missing" past the right-hand edge — on the one screen of the
-   run where a student cannot skip the decision.
-
-   These two belong beside their siblings in `app.css`, and they are here only because that
-   file is being rewritten by somebody else tonight. Move them when it is free.
-   --------------------------------------------------------------------------- */
-@media (max-width: 760px) {
-  .plan-commit { flex-wrap: nowrap; }
-  .plan-commit__refusal { flex-basis: auto; }
-}
-
 /*
  * One column, and the question comes first.
  *
