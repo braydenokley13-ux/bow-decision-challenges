@@ -135,11 +135,10 @@ describe("mapping integrity", () => {
     // NYSED 1.6 asks for a comparison across four payment methods; `choose-how-to-pay`
     // reaches one, and no other competency covers the other three.
     "1.6",
-    // 2.3 and 2.4 ask the student to explain and describe; `keep-credit-costs-down` runs
-    // the underlying decisions forward and has `explanationRequired: false`. No other
-    // competency supplies the missing explanation for either.
-    "2.3",
-    "2.4",
+    // 2.3 and 2.4 were here, for exactly this reason, until `keep-credit-costs-down` gained
+    // the two required explanation rows the objectives' verbs were asking for. Leaving this
+    // list by the competency changing is the only honest way off it; the reverse check below
+    // is what stops a promoted objective quietly keeping its cap.
     // 4.4's second clause asks the student to recommend an action; `protect-your-information`
     // has `explanationRequired: false` and no other competency covers a recommendation.
     "4.4",
@@ -209,15 +208,31 @@ describe("mapping integrity", () => {
   });
 
   it("lets one competency fully cover two objectives, and says which", () => {
-    // A teacher who assigns 5.5 gets evidence for 5.2 as well. That is a gift, and it has
-    // to be labelled on screen or it looks like a mistake.
+    /**
+     * A teacher who assigns 5.5 gets evidence for 5.2 as well. Two competencies do this now,
+     * and the list is pinned so a third arrives on purpose rather than by a mapping edit.
+     *
+     * `keep-credit-costs-down` was `partial` on both 2.3 and 2.4 for the reason this test used
+     * to assert — it ran the strategies forward and asked the student to say nothing, and both
+     * objectives' verbs ask them to say something. That stopped being true when the competency
+     * gained er5 and er6. The assertion moved because the product did, which is the only reason
+     * an assertion in this repository is allowed to move.
+     *
+     * **The comment this test used to carry said the gift "has to be labelled on screen or it
+     * looks like a mistake," and nothing on screen labels it.** `standardsFor` has no caller
+     * outside tests. That was a one-competency gap and it is a two-competency gap now; it is
+     * filed rather than fixed here, because it is a teacher-surface build and this is a
+     * mapping-integrity suite.
+     */
     const fullyCovers = (id: CompetencyId) =>
       standardsFor(id).filter((covered) => covered.coverage === "full").map((covered) => covered.standard.code);
     expect(fullyCovers("how-savings-grow")).toEqual(["5.2", "5.5"]);
-    // `keep-credit-costs-down` covers both 2.3 and 2.4, but only `partial` on each — it runs
-    // the strategies forward without the explanation either objective's verb asks for, so
-    // it is evidence toward both rather than a full account of either.
-    expect(fullyCovers("keep-credit-costs-down")).toEqual([]);
+    expect(fullyCovers("keep-credit-costs-down")).toEqual(["2.3", "2.4"]);
+    const twoObjectiveCompetencies = COMPETENCIES.filter((competency) => fullyCovers(competency.id).length > 1);
+    expect(twoObjectiveCompetencies.map((competency) => competency.id)).toEqual([
+      "keep-credit-costs-down",
+      "how-savings-grow",
+    ]);
   });
 
   it("resolves an objective to the competencies BOW actually measures, full first", () => {

@@ -371,7 +371,8 @@ test("golden 1b: a teacher's own question is answered, read, and changes nothing
     headers: { "X-BOW-Teacher-Key": created.teacherKey },
   });
   const body = (await room.json()) as { submissions: { closingAnswer?: { answer: string }; log: unknown[] }[] };
-  const mine = body.submissions[0]!;
+  expect(body.submissions, "the room holds exactly this student's submission").toHaveLength(1);
+  const mine = body.submissions[0];
   expect(mine.closingAnswer?.answer, "the answer did not persist").toBe(ANSWER);
   expect(JSON.stringify(mine.log), "the answer is inside the evidence log").not.toContain("paying yourself first");
 });

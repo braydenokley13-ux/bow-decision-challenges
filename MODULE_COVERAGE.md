@@ -28,8 +28,8 @@ An objective is *demonstrable* when a competency mapped `full` to it is built in
 | --- | --- | --- |
 | 2.1 Factors in the decision to use credit | evidence only | all of `decide-to-borrow` *(no world)*, `keep-credit-costs-down` *(no world)*, `sort-by-need-want-goal` |
 | 2.2 Costs and benefits of using credit | not assessable | `decide-to-borrow` *(no world)* |
-| 2.3 Minimizing interest charges | not assessable | *no competency covers the whole of it* |
-| 2.4 Effects of missed or late payments | not assessable | *no competency covers the whole of it* |
+| 2.3 Minimizing interest charges | not assessable | `keep-credit-costs-down` *(no world)* |
+| 2.4 Effects of missed or late payments | not assessable | `keep-credit-costs-down` *(no world)* |
 
 ## Topic 3 — Earning Income
 
@@ -79,7 +79,7 @@ Of 21 competencies, **3 are built**. **9 have no evidence requirements written a
 | `notice-influence` BOW-B6 | no evidence requirements written |
 | `choose-how-to-pay` BOW-B7 | no evidence requirements written |
 | `decide-to-borrow` BOW-C1 | 4 requirements written · no world produces them |
-| `keep-credit-costs-down` BOW-C2 | 4 requirements written · no world produces them |
+| `keep-credit-costs-down` BOW-C2 | 6 requirements written · no world produces them |
 | `compare-earning-paths` BOW-E1 | no evidence requirements written |
 | `gross-to-net` BOW-E2 | 4 requirements written · no world produces them |
 | `what-taxes-fund` BOW-E3 | 3 requirements written · no world produces them |

@@ -139,6 +139,18 @@ export const RETEACH_TOPICS: readonly ReteachTopic[] = [
     minutes: 12,
   },
   {
+    id: "your-payment-is-the-price",
+    misconception: "How much you pay each month does not change what the credit costs in total",
+    title: "The total is not printed anywhere — you set it",
+    focus: "A student can say that the cost of credit is a consequence of their own payment choices, and can point at two numbers from the same balance to show it.",
+    moves: [
+      "Put one balance on the board and pay it two ways for four months — the smallest payment accepted, and everything they could spare. Total both. Same card, same rate, two prices.",
+      "Ask where the second price came from. Nobody set it; nobody sent a letter about it. It is the sum of decisions the student made, which is the point and the part that never appears on a statement.",
+      "Now ask what they would say to somebody choosing between the two, using a number from the board. Saying it is the move — a student who can run the arithmetic and not say why has a procedure, not a strategy.",
+    ],
+    minutes: 12,
+  },
+  {
     id: "the-minimum-is-a-floor",
     misconception: "The minimum payment is the expected payment",
     title: "The smallest payment they will take is not the payment to make",

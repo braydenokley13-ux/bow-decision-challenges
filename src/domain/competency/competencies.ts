@@ -469,6 +469,40 @@ const KEEP_CREDIT_COSTS_DOWN_EVIDENCE: readonly EvidenceRequirement[] = [
     observableRule: "Finishes on the payoff they committed to, or states how far short the balance is and why",
     misconceptionIfNot: null,
   }),
+  /**
+   * The two written rows, and why they are here rather than on a nearby objective's balance sheet.
+   *
+   * They were proposed as "+2 objectives for one written row" — the cheapest move on the board.
+   * That is not why they are in the file, and the cheapness is close to an argument against them.
+   * The reason is the gap between operating this competency and holding it. A student can pass
+   * er1–er4 by paying the larger number whenever the screen offers one and reading the new
+   * balance after a miss. That student has learned a procedure. `keep-credit-costs-down` claims
+   * they can *keep the cost of a balance down*, which is a thing you know, not a thing you tap.
+   *
+   * They cost something real, and the cost is the honest half of the decision: this competency is
+   * all-or-none, so any world claiming it now produces six rows rather than four, and NYSED 2.1's
+   * completion rule names this competency — so Module 2's world got heavier on its flagship
+   * objective too. That is the price of the contract being right before an observer is written
+   * against it, which is the only moment it is cheap to change.
+   *
+   * **What was deliberately not added:** a decision row for billing cycles. 2.3 names cycles in a
+   * "such as" list, and a grace-period mechanic in a 5–8 world would be a real mechanic built to
+   * satisfy an illustrative example. The student explains the strategies they actually used.
+   */
+  requirement("keep-credit-costs-down", 5, {
+    label: "Says what kept the total down, on their own numbers",
+    kind: "explanation",
+    required: true,
+    observableRule: "Names at least one thing they did that made the credit cost less — paying more than was asked, clearing it early, not letting it run — and points at a figure from their own months to show it worked",
+    misconceptionIfNot: "How much you pay each month does not change what the credit costs in total",
+  }),
+  requirement("keep-credit-costs-down", 6, {
+    label: "Separates the missed payment's cost from its fee",
+    kind: "explanation",
+    required: true,
+    observableRule: "Says what the missed payment did beyond the fee — the rate it left them on, or the payoff it pushed back — and says it as something that kept costing rather than a one-time charge",
+    misconceptionIfNot: "One late payment is one late fee",
+  }),
 ] as const;
 
 /**
@@ -866,14 +900,16 @@ export const COMPETENCIES: readonly Competency[] = [
       "Choose payment amounts across a repayment period.",
       "Show what paying in full versus paying the minimum does to the total.",
       "Respond to a missed payment and its consequences — fee, rate change, longer payoff.",
+      "Say what kept the cost down, and what the missed payment went on costing after the fee.",
     ],
     evidenceRequirements: KEEP_CREDIT_COSTS_DOWN_EVIDENCE,
     misconceptions: [
       "The minimum payment is the expected payment",
       "One late payment is one late fee",
+      "How much you pay each month does not change what the credit costs in total",
     ],
     gradeBand: "5-8",
-    explanationRequired: false,
+    explanationRequired: true,
     assessmentShape: "run-it-forward",
   },
 
