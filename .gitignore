@@ -8,6 +8,10 @@ test-results
 *.tsbuildinfo
 /screens
 dist-server
+# Any throwaway server build an agent or an operator makes beside the real one. These are
+# compiled output, and one of them sitting in the tree put a whole second copy of the server
+# into the lint path, where it produced errors nobody could act on.
+dist-*/
 .bow-classes
 /.scratch
 
