@@ -1,0 +1,33 @@
+# SHA de6207c.  Answering the specific question asked: is a forged submission actually cheap, or
+# does something expensive happen before the 403?
+#
+# ANSWER: unauthenticated forges ARE cheap (the reasoning holds). AUTHENTICATED forges are NOT —
+# store.listRoster() reads and AES-GCM-decrypts up to 60 sealed records BEFORE the seat check and
+# BEFORE the per-student limit. No scrypt is involved; the body parse is capped at 4MB. Nothing
+# sheds any of it, because the address-keyed limit was removed and the per-student limit is only
+# reached by work that is ACCEPTED.
+#
+# NOTE ON METHOD: this box is running ~12 agents (load avg 25 on 4 cores), so absolute ms are
+# inflated. Every number below is a RATIO measured against a control in the same burst, seconds
+# apart, on the same machine — which is what makes it meaningful despite the load.
+
+## 200 requests per row. Every request below was REFUSED (403). None was rate limited.
+  control: GET /health                             200 reqs = 1.9 ms/req   {"200":200}
+  forged, NO token -> 403 (unauthenticated)        200 reqs = 2.4 ms/req   {"403":200}
+  forged, VALID token, wrong seat, 60-seat class   200 reqs = 16.2 ms/req  {"403":200}
+  forged, VALID token, wrong class, 1-seat class   200 reqs = 3.9 ms/req   {"403":200}
+
+  roster-size amplification (60-seat vs 1-seat refused forge): 4.1x
+  refused-forge vs /health control:                            8.5x
+
+## Sustained, from ONE ordinary student card (the lowest-privilege credential in the product):
+  legit GET /classes/CODE, quiet        : median   2 ms
+  legit GET /classes/CODE, under load   : median 184 ms   (82.0x slower)
+  refused forges sent by one attacker   : 600 (all 403, none rate limited)
+  server still alive afterwards         : HTTP 200
+
+# So the removal of the address-keyed bucket was right about the room-vs-attacker problem, but it
+# also removed the only thing shedding load on this route, and the replacement does not cover
+# refused work. A single child with a printed join card degrades the whole service ~80x.
+# Direction: resolve the seat before listing the entire roster (or index the roster by seat), and
+# charge the per-student bucket on refused attempts too, so the cost lands on the forger.

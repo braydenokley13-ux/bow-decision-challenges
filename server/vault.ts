@@ -47,14 +47,6 @@ export interface Vault {
   open<T>(raw: string): T | null;
   /** A purpose-separated secret derived from the same key. Never written anywhere. */
   derive(purpose: string): string;
-  /**
-   * Whether the migration door is open on this vault.
-   *
-   * Read by the health endpoint so an operator who opened it for a boot and forgot cannot
-   * leave a deployment reading unsealed records for a term without the one screen they check
-   * saying so.
-   */
-  readonly migrating: boolean;
 }
 
 interface SealedRecord { v: number; iv: string; tag: string; ct: string }
@@ -91,15 +83,14 @@ export const STORE_KEY_HELP =
   + "Losing it means losing every class; changing it means every existing class becomes unreadable.";
 
 /**
- * `acceptLegacyPlaintext` is the one-boot migration door, and it is off unless an operator
- * opens it. While it is open the store will read records nobody's key wrote, which is exactly
- * the property that makes it useful for converting a pre-encryption directory and exactly the
- * property that makes it a forgery window. It belongs to a maintenance window, not to a
- * default.
+ * `acceptLegacyPlaintext` exists for tests and for an offline converter, and there is no way to
+ * set it from the shipped service — deliberately. It was wired to an environment variable for
+ * one commit and the reviewer who had asked for that argued it back out, correctly: while it is
+ * open the vault is not a seal at all but an authorization bypass, and its safety story was a
+ * health warning that cannot fire in the one state it would be used in.
  */
 export function vault(key: Buffer, options: { acceptLegacyPlaintext?: boolean } = {}): Vault {
   return {
-    migrating: options.acceptLegacyPlaintext === true,
     seal(value) {
       const iv = randomBytes(IV_BYTES);
       const cipher = createCipheriv("aes-256-gcm", key, iv);
@@ -143,7 +134,6 @@ export function vault(key: Buffer, options: { acceptLegacyPlaintext?: boolean } 
 /** A vault that seals nothing, for the memory store, where there is no disk to protect. */
 export function plainVault(secret: string): Vault {
   return {
-    migrating: false,
     seal: (value) => JSON.stringify(value),
     open: <T,>(raw: string): T | null => { try { return JSON.parse(raw) as T; } catch { return null; } },
     derive: (purpose) => createHmac("sha256", secret).update(`bow.derive.v1.${purpose}`).digest("base64url"),

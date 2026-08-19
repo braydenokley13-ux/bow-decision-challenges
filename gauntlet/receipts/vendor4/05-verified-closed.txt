@@ -1,0 +1,45 @@
+# SHA de6207c.  Round-3 findings re-run, and the class-arrival test nobody had done.
+# Machine note: load avg ~25 on 4 cores. Timing rows below carry their own noise control.
+
+## NEW-3 (login/recovery account-enumeration timing oracle) -> CLOSED
+   burnSecretCheck runs the same scrypt on the no-account branch of BOTH sign-in and recovery.
+   Measured inside the 10-failure window so the per-email 429 cannot contaminate the timing
+   (an earlier run showed statuses 401,429 and a misleading 0.01x — that was the lockout, not scrypt):
+     trial 1: EXISTING 173ms [401] | NONEXISTENT 250ms [401] | ratio 0.69x
+     trial 2: EXISTING 254ms [401] | NONEXISTENT 367ms [401] | ratio 0.69x
+     trial 3: EXISTING 242ms [401] | NONEXISTENT 273ms [401] | ratio 0.88x
+   median ratio 0.69x, against a measured noise floor of 1.28x (two nonexistent accounts
+   compared against each other on the same box). Round 3 was 83x. No usable signal remains.
+
+   Checked that the fix did not create a DoS: 24 concurrent no-account sign-ins (each now paying
+   a scrypt) did NOT starve legitimate traffic — legit GET median 4ms quiet vs 2ms under flood,
+   server alive. The per-address bucket (300 failures / 15 min) caps this well below trouble, and
+   scrypt runs on the libuv threadpool rather than the event loop. NOT a finding.
+
+   Student join checked for the same oracle: a wrong card costs no scrypt (the keyed lookupIndex
+   filters first), a correct card costs one — but a correct card also succeeds, so it reveals
+   nothing. No enumeration there.
+
+## NEW-2 (submission limiter locking a room out) -> CLOSED for real classroom traffic
+   A whole room on the file store, all 30 sharing ONE client address (a school NAT). Window-based
+   limits are unaffected by wall-clock compression: every request lands in the same 10/15-min
+   window either way.
+     join (mistyped card)               {"401":5}
+     join (correct card)                {"200":30}
+     submit (turn in / revise)          {"202":90}
+     submit (dropped-connection retry)  {"202":6}
+     teacher dashboard poll             {"200":40}
+     RESULT: no 429 anywhere - a real room is not rate limited.   server alive: HTTP 200
+   Boundary: the per-student cap (20 / 10 min) trips as documented — a pupil already holding 4
+   submissions from the run above got its first 429 on their 17th further attempt (4+16=20), with
+   "That has been sent several times already." Only that pupil is affected; the room is not.
+
+## NEW-1 (canary) -> CLOSED for the state Round 3 reported; NOT closed for accounts-only (receipt 01)
+   Classes present + canary deleted now correctly answers "mismatch".
+
+## LOW (managed teacher-email pointer) -> CLOSED
+   putTeacher now writes put(record.id); getTeacherByEmail unwraps with get(). Confirmed in source
+   and exercised through the mock-KV round trip in receipt 02.
+
+## STILL OPEN from Round 3, not addressed: GET /classes/:code is unauthenticated and unthrottled
+   (200/200 reads, no 429), disclosing the teacher-authored class label. LOW.

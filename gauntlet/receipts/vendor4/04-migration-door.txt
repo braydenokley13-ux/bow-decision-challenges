@@ -1,0 +1,29 @@
+# SHA de6207c.  The migration door (BOW_STORE_MIGRATE_PLAINTEXT=1): it works, its loudness does
+# not work when it matters, and while open it fully restores the Round-2 account takeover.
+#
+# Fixture note: my first attempt used class code "OLDCL", which is NOT a well-formed class code
+# ("O" and "L" are not in CODE_ALPHABET) and 404'd for that reason. Redone with "MFDNK".
+
+## Legacy pre-sealing directory (plaintext class.json + one roster row), correct key:
+  door CLOSED (default):  GET /classes/MFDNK -> HTTP 404      health=mismatch ok=false
+  door OPEN:              GET /classes/MFDNK -> HTTP 200      health=mismatch ok=false
+    roster through the door: {"roster":[{"seatCode":"1","displayName":"Legacy Child",...}]}
+    reason shown: "The file store holds records this key cannot open. BOW_STORE_KEY has changed
+                   ... put the original key back."
+
+# The door FUNCTIONS (legacy data is readable). But health reports "mismatch", NOT "migrating",
+# and tells the operator to put the original key back — the opposite of the right advice, in the
+# one state the door exists for. Cause: a genuine legacy directory has no canary, so keyCheck
+# takes the absent-canary fail-closed branch and returns "mismatch" before it ever consults
+# keeper.migrating. "migrating" is only reachable AFTER a write plants a canary:
+  before any write (the real migration window): storeKey=mismatch ok=false
+  after creating one class:                     storeKey=migrating ok=true classroomReady=true
+    reason: "BOW_STORE_MIGRATE_PLAINTEXT is set, so this store is reading records that were
+             never sealed..."
+
+## While the door is open, Round-2 HIGH-2 is fully restored (no store key needed):
+  victim teacher record on disk is sealed: {"v":1,"iv":"RUk5nQMX7...
+  attacker overwrites it with a PLAINTEXT record carrying a password hash they chose
+  login as victim with attacker-chosen password -> HTTP 200 + valid teacher token
+
+# i.e. the flag converts a filesystem write into full account takeover, exactly as before the fix.

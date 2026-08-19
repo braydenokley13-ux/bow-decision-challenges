@@ -49,6 +49,12 @@ function fakeKv() {
     }
     if (command === "GET") result = strings.get(key!) ?? null;
     if (command === "HSET") result = 1;
+    if (command === "SCAN") {
+      // `[cursor, keys]`, the shape Upstash answers with. Only `MATCH prefix:*` is supported,
+      // which is all the driver asks for.
+      const pattern = String(rest[1] ?? "*").replace(/\*$/, "");
+      result = ["0", [...strings.keys()].filter((key) => key.startsWith(pattern))];
+    }
     if (command === "HGETALL") result = [];
     if (command === "EXPIRE") result = 1;
     return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ result }) });
@@ -267,6 +273,61 @@ describe("a flood of forged submissions", () => {
   }, 60_000);
 });
 
+describe("the canary on a store nobody has made a class in", () => {
+  it("is planted by the first write of anything, not by the first class", async () => {
+    const root = await mkdtemp(join(tmpdir(), "bow-accounts-"));
+    const store = fileStore(root, vault(KEY));
+    // A teacher signs up and nothing else happens. Every directory this creates begins with an
+    // underscore, and the check used to skip those — so a store full of teacher accounts
+    // reported itself as new, and a boot with the wrong key said `classroomReady: true` while
+    // every teacher got a 401. An operator who trusts that lets a teacher re-register, which
+    // overwrites the email pointer, and restoring the correct key does **not** bring the
+    // original account back. A silent failure that becomes irreversible while somebody follows
+    // the health endpoint's own advice is the worst shape a check can have.
+    await store.putTeacher({
+      id: "t1", email: "her@school.example", passwordHash: "scrypt$x", recoveryHash: "scrypt$y",
+      createdAt: 1, sessionGeneration: 1,
+    });
+    expect(await store.keyCheck?.()).toBe("ok");
+    expect(await fileStore(root, vault(randomBytes(32))).keyCheck?.()).toBe("mismatch");
+  });
+
+  it("does not cry wolf on a correct managed deployment", async () => {
+    const kv = fakeKv();
+    const original = globalThis.fetch;
+    globalThis.fetch = kv.fetcher;
+    restore = () => { globalThis.fetch = original; };
+    const keeper = vault(KEY);
+    const store = redisRestStore("https://kv.test", "token", keeper);
+
+    expect(await store.keyCheck?.()).toBe("fresh");
+    // The one write every managed install makes before anything else. This answered
+    // `mismatch` — health 200 → 503, "BOW_STORE_KEY has changed… put the original key back",
+    // when it had not — on every managed install from first sign-up until somebody happened to
+    // create a class, because the check counted the whole database and only `putClass` planted
+    // the canary.
+    await store.putTeacher({
+      id: "t1", email: "her@school.example", passwordHash: "scrypt$x", recoveryHash: "scrypt$y",
+      createdAt: 1, sessionGeneration: 1,
+    });
+    expect(await store.keyCheck?.()).toBe("ok");
+    // And the key really is checked, rather than the answer being "ok" for everything.
+    expect(await redisRestStore("https://kv.test", "token", vault(randomBytes(32))).keyCheck?.()).toBe("mismatch");
+  });
+
+  it("does not answer for a store it does not own", async () => {
+    const kv = fakeKv();
+    const original = globalThis.fetch;
+    globalThis.fetch = kv.fetcher;
+    restore = () => { globalThis.fetch = original; };
+    // Somebody else's application, sharing the KV. It used to count these and report a
+    // mismatch over data that was never BOW's.
+    kv.strings.set("sessions:other-app:1", "not ours");
+    kv.strings.set("cache:page:home", "not ours either");
+    expect(await redisRestStore("https://kv.test", "token", vault(KEY)).keyCheck?.()).toBe("fresh");
+  });
+});
+
 describe("the canary, when somebody deletes it", () => {
   it("still says the key is wrong, rather than saying the store is new", async () => {
     const root = await mkdtemp(join(tmpdir(), "bow-canary-"));
@@ -284,33 +345,38 @@ describe("the canary, when somebody deletes it", () => {
 });
 
 describe("the migration door", () => {
-  it("can be opened, and says so on the one screen an operator looks at", async () => {
-    const root = await mkdtemp(join(tmpdir(), "bow-migrate-"));
-    const shut = fileStore(root, vault(KEY));
-    await shut.putClass(CLASS);
-    expect(await shut.keyCheck?.()).toBe("ok");
-
-    // The option existed and nothing in the shipped binary could set it, which is safe and
-    // dishonest: the vault documented a migration an operator could not perform.
-    const open = fileStore(root, vault(KEY, { acceptLegacyPlaintext: true }));
-    expect(await open.keyCheck?.()).toBe("migrating");
-
-    const response = await handleApiRequest({ method: "GET", path: "/health", headers: {} }, { store: open });
-    expect((response.body as { storeKey: string }).storeKey).toBe("migrating");
-    expect((response.body as { reason: string }).reason).toContain("BOW_STORE_MIGRATE_PLAINTEXT");
-    // Open is not broken: a deployment mid-migration still runs a class.
-    expect((response.body as { classroomReady: boolean }).classroomReady).toBe(true);
+  it("cannot be opened from the shipped service at all", () => {
+    // It could, for one commit. A reviewer had asked for it to be wired — the option existed
+    // and nothing could set it, which is safe and dishonest, because the vault documented a
+    // migration an operator could not perform — and then argued it back out, correctly.
+    //
+    // Open, it is not a read affordance but a full authorization bypass: they re-ran the
+    // plaintext account takeover with the flag set and got a 200 and a valid teacher token.
+    // And its safety story was a health warning that cannot fire in the one state it would be
+    // used in, because a genuinely legacy directory has no canary and so reports `mismatch`.
+    // It protects a population of zero: this product has never shipped.
+    for (const value of ["1", "true", "yes"]) {
+      const store = storeFromEnvironment({
+        BOW_STORE_KEY: KEY.toString("base64"),
+        BOW_CLASS_DIR: "/tmp/bow-never-written",
+        BOW_STORE_MIGRATE_PLAINTEXT: value,
+      });
+      expect(store.blockedReason).toBeUndefined();
+      expect(store.id).toBe("file");
+    }
+    // And the proof that it is off: a plaintext record does not open under a keyed vault, which
+    // is what `storeFromEnvironment` builds and the only thing it can build.
+    expect(vault(KEY).open(JSON.stringify({ who: "forged" }))).toBeNull();
   });
 
-  it("is what makes a record written before sealing readable at all", async () => {
-    const root = await mkdtemp(join(tmpdir(), "bow-legacy-"));
-    const { mkdir, writeFile } = await import("node:fs/promises");
-    await mkdir(join(root, "H4KVW"), { recursive: true });
-    await writeFile(join(root, "H4KVW", "class.json"), JSON.stringify(CLASS), "utf8");
-
-    expect(await fileStore(root, vault(KEY)).getClass("H4KVW")).toBeNull();
-    expect(await fileStore(root, vault(KEY, { acceptLegacyPlaintext: true })).getClass("H4KVW"))
-      .toMatchObject({ code: "H4KVW" });
+  it("survives only as a test affordance, for an offline converter to use one day", () => {
+    // Kept as a parameter with no way to set it from the service, because converting a
+    // pre-sealing directory is a real job — it is the same job key rotation needs — and it
+    // belongs to an offline command that reads with one key and writes with another, not to a
+    // running service willing to be asked.
+    const migrating = vault(KEY, { acceptLegacyPlaintext: true });
+    expect(migrating.open(JSON.stringify({ who: "written before sealing existed" })))
+      .toEqual({ who: "written before sealing existed" });
   });
 });
 

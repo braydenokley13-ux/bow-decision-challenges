@@ -13,7 +13,7 @@ import { contractFor } from "../src/domain/scenario/contracts";
 import { DEFAULT_WORLD_ID } from "../src/domain/scenario/registry";
 import type { ClassStore, StoredClass } from "./store";
 import { cryptoRandom } from "./crypto";
-import { callerOf, cleanDisplayName, handleIdentityRequest, opensClass, withinRate } from "./identity";
+import { callerOf, cleanDisplayName, handleIdentityRequest, opensClass, seatOf, withinRate } from "./identity";
 
 /**
  * The class service, as one function of (method, path, body) → (status, body).
@@ -197,16 +197,10 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
     // standing in front of a class whose work has apparently never existed.
     const key = (await store.keyCheck?.()) ?? "ok";
     const lost = key === "mismatch";
-    // Open on purpose, and loud for exactly as long as it is open. A deployment left in
-    // migration mode reads records nobody's key wrote, which is a forgery window an operator
-    // meant to close after one boot.
-    const migrating = key === "migrating";
     const classroomReady = store.durable && !store.blockedReason && !lost;
     const reason = store.blockedReason
       ?? (lost
         ? `The ${store.id} store holds records this key cannot open. BOW_STORE_KEY has changed, or is not the one these classes were written with. Nothing has been deleted — put the original key back.`
-        : migrating
-        ? `BOW_STORE_MIGRATE_PLAINTEXT is set, so this store is reading records that were never sealed. That is a migration mode, not a setting: unset it as soon as the old data has been read and written back.`
         : store.durable
           ? `Classes are kept in the ${store.id} store for ${CLASS_RETENTION_DAYS} days.`
           : `The ${store.id} store keeps nothing past this process. Fine for tests and demos, not for a class.`);
@@ -387,16 +381,19 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
     if (!student || student.kind !== "student") {
       return fail(403, "not_authorised", "Sign in as yourself before turning this in.");
     }
-    const roster = await store.listRoster(record.code);
-    const seat = roster.find((entry) => entry.seatCode === submission.seatCode && !entry.removedAt);
-    if (!seat || seat.studentId !== student.id) {
-      return fail(403, "not_authorised", "Sign in as yourself before turning this in.");
-    }
-    // Now that we know whose work this is, count it against them rather than against the room.
-    // Twenty in ten minutes is far above a student who turns in, is disconnected, and retries;
-    // far below anything a script would want.
+    // Counted before the seat is resolved, and charged whether the work is accepted or refused.
+    // Both halves are the fix. Charging only accepted work meant a signed-in caller could send
+    // refused requests without limit; and resolving the seat by scanning the roster made every
+    // one of those a **whole-class decrypt** — up to sixty sealed records opened before the
+    // check that would refuse it. A reviewer sustained that from one ordinary join card and took
+    // legitimate requests from 2ms to 184ms with no 429 anywhere.
     if (!withinRate(`submit:${student.id}`, 20, 10 * 60 * 1000, now)) {
       return fail(429, "unavailable", "That has been sent several times already. Wait a minute and try again.");
+    }
+    // The student's own seat index first; the roster only if that index says they belong here.
+    const seat = await seatOf(store, student.id, record.code);
+    if (!seat || seat.seatCode !== submission.seatCode) {
+      return fail(403, "not_authorised", "Sign in as yourself before turning this in.");
     }
     if (submission.challengeId !== record.challengeId) {
       return fail(409, "challenge_mismatch", "That class is running a different challenge.");

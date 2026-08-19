@@ -919,7 +919,16 @@ export async function handleIdentityRequest(
 }
 
 /** Which seat this account holds in this class, or nothing. The check behind every /me route. */
-async function seatOf(store: ClassStore, studentId: string, classCode: string): Promise<{ seatCode: string } | null> {
+/**
+ * This student's seat in this class, or nothing.
+ *
+ * Exported because the submission route needs it. It reads the student's own small seat index
+ * first and only touches the roster if that index says they belong here — which matters more
+ * than it looks: a security reviewer showed that resolving a seat by scanning the roster made
+ * every refused submission a whole-class decrypt, so one ordinary join card sustained against
+ * a sixty-seat class took legitimate requests from 2ms to 184ms.
+ */
+export async function seatOf(store: ClassStore, studentId: string, classCode: string): Promise<{ seatCode: string } | null> {
   const seats = await store.listSeatsForStudent(studentId);
   const seat = seats.find((entry) => entry.classCode === classCode);
   if (!seat) return null;

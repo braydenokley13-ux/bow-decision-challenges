@@ -192,7 +192,7 @@ export interface ClassStore {
   keyCheck?(): Promise<KeyCheck>;
 }
 
-export type KeyCheck = "ok" | "fresh" | "mismatch" | "migrating";
+export type KeyCheck = "ok" | "fresh" | "mismatch";
 
 /** What the canary holds. Its value is not a secret; its readability is the whole signal. */
 const VAULT_CANARY = "bow.vault.canary.v1";
@@ -370,11 +370,24 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
   // Sealed with the same key as everything else, and the only record here whose contents
   // nobody cares about: what it proves is that the key still opens this directory.
   const canaryPath = join(root, "_vault-check.json");
+  // Planted by the **first write of any record**, not by the first class.
+  //
+  // It used to be planted by `putClass`, and a reviewer found what that costs: a store holding
+  // only accounts and indexes — every directory of which begins with `_` — looked empty to the
+  // check, so a boot with the wrong key reported itself healthy while every teacher got a 401.
+  // An operator who trusts that lets a teacher re-register, which overwrites the email pointer,
+  // and restoring the correct key then does **not** restore their account. A silent failure that
+  // becomes irreversible while somebody follows the health endpoint's advice is the worst shape
+  // a check can have.
+  let planted = false;
   async function plantCanary(): Promise<void> {
+    if (planted) return;
+    planted = true;
     try {
       await readFile(canaryPath, "utf8");
     } catch {
-      await writeAtomic(canaryPath, VAULT_CANARY);
+      await mkdir(dirname(canaryPath), { recursive: true });
+      await writeFile(canaryPath, keeper.seal(VAULT_CANARY), "utf8");
     }
   }
   const assignmentPath = (code: string, id: string) => join(root, code, "assignments", `${id}.json`);
@@ -389,6 +402,7 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
     await writeFile(temporary, keeper.seal(value), "utf8");
     const { rename } = await import("node:fs/promises");
     await rename(temporary, path);
+    await plantCanary();
   }
 
   async function readJson<T>(path: string): Promise<T | null> {
@@ -438,7 +452,7 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
       try {
         raw = await readFile(canaryPath, "utf8");
       } catch { /* absent — see below */ }
-      if (raw !== null) return keeper.open<string>(raw) === VAULT_CANARY ? (keeper.migrating ? "migrating" : "ok") : "mismatch";
+      if (raw !== null) return keeper.open<string>(raw) === VAULT_CANARY ? "ok" : "mismatch";
       // Absent is only good news on an empty store. A reviewer deleted this one file and
       // watched `mismatch` become `fresh` — health back to 200, `classroomReady: true` — over
       // a directory of classes nobody could open. A restore that skips dotfiles, or a tidy-up
@@ -446,16 +460,16 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
       // classes here and nothing that opens, this key is not the key that wrote them.
       try {
         const names = await readdir(root);
-        return names.some((name) => !name.startsWith("_") && !name.endsWith(".json")) ? "mismatch" : "fresh";
+        // Anything at all other than the canary itself. `_accounts` and `_index` are content:
+        // skipping them because their names begin with an underscore is what let a store full
+        // of teacher accounts report itself as new.
+        return names.some((name) => name !== "_vault-check.json") ? "mismatch" : "fresh";
       } catch {
         return "fresh";
       }
     },
     getClass: (code) => readJson<StoredClass>(classPath(code)),
-    putClass: async (record) => {
-      await writeAtomic(classPath(record.code), record);
-      await plantCanary();
-    },
+    putClass: (record) => writeAtomic(classPath(record.code), record),
     listAssignments: async (code) =>
       (await readFolder<Assignment>(code, "assignments")).sort((a, b) => a.createdAt - b.createdAt),
     putAssignment: (record) => writeAtomic(assignmentPath(record.classId, record.id), record),
@@ -569,7 +583,18 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
  * to a product that otherwise has four.
  */
 export function redisRestStore(url: string, token: string, keeper: Vault): ClassStore {
+  // Planted by the first write of any record, for the same reason the disk's is: a store
+  // holding only a teacher account looked empty to a check that only classes planted.
+  let planted = false;
+  async function plantCanary(): Promise<void> {
+    if (planted) return;
+    planted = true;
+    await command("SET", "bow:vault-check", put(VAULT_CANARY), "NX");
+  }
+
   async function command<T>(...args: (string | number)[]): Promise<T | null> {
+    const verb = String(args[0]).toUpperCase();
+    if ((verb === "SET" || verb === "HSET") && args[1] !== "bow:vault-check") await plantCanary();
     const response = await fetch(url, {
       method: "POST",
       // The command itself, in the clear, because it is a wire protocol and not a record.
@@ -620,13 +645,26 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
     durable: true,
     keyCheck: async () => {
       const raw = await command<string>("GET", "bow:vault-check");
-      if (raw) return get<string>(raw) === VAULT_CANARY ? (keeper.migrating ? "migrating" : "ok") : "mismatch";
-      // Fails closed, for the same reason the disk does: a canary that can be deleted to
-      // restore a green health check is a canary an operator can lose without being told.
-      // An empty store has nothing to lose and says so; a store with anything in it and no
-      // readable canary is a store this key did not write.
-      const size = await command<number>("DBSIZE");
-      return (size ?? 0) > 0 ? "mismatch" : "fresh";
+      if (raw) return get<string>(raw) === VAULT_CANARY ? "ok" : "mismatch";
+      // No canary. Ask whether BOW has written anything here — **BOW's own keys**, not the
+      // whole database.
+      //
+      // This read `DBSIZE` for one release and a reviewer showed two ways that is wrong. On a
+      // correct deployment it fired the moment a teacher signed up, because only `putClass`
+      // planted the canary: health went 200 → 503 → "BOW_STORE_KEY has changed… put the
+      // original key back", when it had not, on every managed install from first signup until
+      // somebody happened to create a class. And a KV shared with any other application
+      // reported a mismatch over data that was never BOW's.
+      //
+      // With the canary now planted by the first write of anything, an absent canary beside
+      // BOW's own keys means one thing: a store written before this check existed, under a key
+      // that no longer opens it. `SCAN` unavailable is answered "fresh" and that is a known
+      // fail-open — narrower than what it replaces, and stated rather than hidden.
+      for (const pattern of ["class:*", "teacher:*", "student:*"]) {
+        const page = await command<[string, string[]]>("SCAN", 0, "MATCH", pattern, "COUNT", 100);
+        if (Array.isArray(page) && Array.isArray(page[1]) && page[1].length > 0) return "mismatch";
+      }
+      return "fresh";
     },
     getClass: async (code) => {
       const raw = await command<string>("GET", `class:${code}`);
@@ -634,10 +672,6 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
     },
     putClass: async (record) => {
       await command("SET", `class:${record.code}`, put(record), "EX", ttl(record));
-      // NX so the first class written under a key plants the canary and later ones leave it
-      // alone — the point is to hold the key this store's records were written with, not the
-      // key the most recent boot happened to have.
-      await command("SET", "bow:vault-check", put(VAULT_CANARY), "NX");
     },
     listAssignments: async (code) =>
       (await readHash<Assignment>(`assignments:${code}`)).sort((a, b) => a.createdAt - b.createdAt),
@@ -840,16 +874,19 @@ export function storeFromEnvironment(env: Record<string, string | undefined> = p
   if (env.BOW_CLASS_STORE === "memory") return memoryStore();
   // The key that seals what a durable store writes and derives the session-signing secret.
   const key = readStoreKey(env.BOW_STORE_KEY);
-  // The migration door, off unless an operator opens it for a boot. It exists for a directory
-  // written before sealing did; while it is open the store will read records nobody's key
-  // wrote, which is the property that converts old data and the property that lets an attacker
-  // with a write forge one. A security reviewer pointed out that the door had no handle at all
-  // — the option existed and nothing in the shipped binary could set it — which is safe and
-  // dishonest, because the vault's own documentation described a migration an operator could
-  // not actually perform. Now it can be opened, deliberately, and health says so out loud for
-  // as long as it is open.
-  const migrating = env.BOW_STORE_MIGRATE_PLAINTEXT === "1";
-  const keeper = key ? vault(key, { acceptLegacyPlaintext: migrating }) : undefined;
+  // There is no migration door, and that is deliberate. One existed briefly: a flag that let
+  // the store read records written before sealing did. The reviewer who asked for it to be
+  // wired then argued for deleting it, and was right on both counts. It protects a population
+  // of zero — this product has never shipped, so no such directory exists — and its safety
+  // story was that health would say `migrating` while it was open, which fails in exactly the
+  // state it would be used in: a genuinely legacy directory has no canary, so health says
+  // "mismatch, put the original key back" and never says "migrating" at all. Open, it is not a
+  // read affordance but a full authorization bypass — they re-ran the plaintext account
+  // takeover with the flag set and got a 200 and a valid teacher token. A store that will trust
+  // unsealed bytes on request is a store with no seal. Converting a pre-sealing directory is a
+  // job for an offline command that reads with one key and writes with another, which is the
+  // same command key rotation needs and does not leave a running service willing to be asked.
+  const keeper = key ? vault(key) : undefined;
   const url = env.KV_REST_API_URL ?? env.UPSTASH_REDIS_REST_URL;
   const token = env.KV_REST_API_TOKEN ?? env.UPSTASH_REDIS_REST_TOKEN;
   // The managed path runs without one. At-rest encryption there is the subprocessor's control
