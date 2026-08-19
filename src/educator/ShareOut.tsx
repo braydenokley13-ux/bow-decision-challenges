@@ -7,10 +7,8 @@ import type { ShareOutItem, ShareOutSelection } from "../platform/identity/types
 import { useClassEvidence } from "./useClassEvidence";
 import { classRoll } from "./analysis";
 import { seatLabel, seatNames } from "./names";
-import { shareOutReading, shareOutSlides, type ShareOutCandidate, type ShareOutSlide } from "./shareOut";
-import type { AttributedSubmission } from "../platform/classes/types";
+import { loadShareOutSelection, shareOutReading, shareOutSlides, summaryOf, type ShareOutCandidate, type ShareOutSlide } from "./shareOut";
 import { WORLD_REGISTRY } from "../domain/scenario/registry";
-import { worldOfSubmission } from "./objectiveResults";
 
 /**
  * Five minutes of conversation, prepared in about ninety seconds.
@@ -64,14 +62,10 @@ export function ShareOut() {
 
   const load = useCallback(async () => {
     if (!code || !teacherKey) return;
-    try {
-      const response = await fetch(`${CLASS_API_BASE}/classes/${code}/shareout`, {
-        headers: { "X-BOW-Teacher-Key": teacherKey },
-      });
-      if (!response.ok) return;
-      const body = (await response.json()) as { selection: ShareOutSelection | null };
-      setSelection(body.selection);
-    } catch { /* an unreachable service leaves the last-loaded selection on screen */ }
+    // `undefined` is the service not answering, and it leaves the last-loaded selection on
+    // screen; `null` is a class where nothing has been chosen, and that is a selection.
+    const loaded = await loadShareOutSelection(code, teacherKey);
+    if (loaded !== undefined) setSelection(loaded);
   }, [code, teacherKey]);
 
   // Read once when the class opens, and again after every write, because a share-out is a
@@ -273,11 +267,6 @@ export function ShareOut() {
 /** A world id off a student's own events, named. Unknown ids print themselves rather than throw. */
 function worldTitle(worldId: string): string {
   return (WORLD_REGISTRY as Record<string, { title: string } | undefined>)[worldId]?.title ?? worldId;
-}
-
-/** What this student actually did, so a slide is not a quote floating on its own. */
-function summaryOf(submission: AttributedSubmission): string {
-  return WORLD_REGISTRY[worldOfSubmission(submission)]?.title ?? "";
 }
 
 /**

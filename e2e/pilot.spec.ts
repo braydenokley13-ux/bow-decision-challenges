@@ -191,10 +191,15 @@ test("a whole class runs end to end across separate devices and the educator rea
     await expect(page.getByRole("heading", { name: "Debrief" })).toBeVisible();
     await expect(page.getByText("5 students finished")).toBeVisible();
     await expect(page.locator(".debrief__plan")).toHaveCount(2);
-    const quotes = page.locator(".debrief__quotes blockquote");
-    await expect(quotes).toHaveCount(4);
+    // And it shares none of their writing, because this teacher has not chosen any.
+    //
+    // This required four blockquotes here and each student's own words inside them — the
+    // first four write-ups in seat order, named, under a heading reading "Read these
+    // explanations aloud". `shareOut.ts` states the rule the product broke by printing them:
+    // nothing is shared unless a teacher chose it. Nobody has chosen anything on this class.
+    await expect(page.locator(".debrief__quotes blockquote")).toHaveCount(0);
     for (const student of STUDENTS) {
-      await expect(page.locator(".debrief__quotes")).toContainText(`Seat ${student.seat}:`);
+      await expect(page.locator(".debrief")).not.toContainText(`Seat ${student.seat}:`);
     }
     await expect(page.locator("body")).not.toContainText(DEMO_CLASS_LABEL);
     await expect(page.locator(".demo-pill")).toHaveCount(0);

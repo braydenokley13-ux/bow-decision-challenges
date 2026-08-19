@@ -1316,9 +1316,16 @@ studentTest("the debrief is built from the class, and says so when there is noth
   await page.goto(`/educator/class/${classCode}/debrief?key=${key}`);
   await expect(page.getByRole("heading", { name: "Debrief" })).toBeVisible();
   await expect(page.getByText("2 students finished")).toBeVisible();
-  // Two real plans, side by side, and the students' own words.
+  // Two real plans, side by side, headed by where they sit on the page rather than by whose
+  // they are: a seat number is the class's own identifier for a person, and this is the sheet
+  // a teacher reads a comparison off at the front of a room.
   await expect(page.locator(".debrief__plan")).toHaveCount(2);
-  await expect(page.locator(".debrief__quotes blockquote").first()).toContainText("my plan still works");
+  await expect(page.locator(".debrief__plan .eyebrow").first()).toHaveText(/^Plan \d+$/);
+  // Neither student's writing is on it. This required "my plan still works" to be in the first
+  // blockquote — §5 printed the first four explanations in seat order with the children's
+  // names under them, which is the one thing `shareOut.ts` says the product does not do.
+  await expect(page.locator(".debrief__quotes blockquote")).toHaveCount(0);
+  await expect(page.locator(".debrief")).not.toContainText("my plan still works");
 
   // Two students is not a class. The debrief opens on their two plans rather than on a
   // sentence about the room, and §4 refuses a lesson instead of inventing one — this page

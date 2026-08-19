@@ -1,8 +1,11 @@
 import { isShortfall, levelFor } from "../domain/competency/teachNext";
 import { writtenAnswerFrom } from "../domain/evidence/writtenAnswer";
+import { WORLD_REGISTRY } from "../domain/scenario/registry";
 import type { AttributedSubmission } from "../platform/classes/types";
-import type { ShareOutItem } from "../platform/identity/types";
+import { CLASS_API_BASE } from "../platform/evidence/transports";
+import type { ShareOutItem, ShareOutSelection } from "../platform/identity/types";
 import { runOutcome, worldSections, type StudentRow, type WorldSection } from "./analysis";
+import { worldOfSubmission } from "./objectiveResults";
 import { studentSpineFor } from "./studentSpine";
 
 /**
@@ -322,6 +325,41 @@ export interface ShareOutSlide {
 }
 
 const ALPHABET = "ABCDEFGH";
+
+/** What this student actually did, so a slide is not a quote floating on its own. */
+export function summaryOf(submission: AttributedSubmission): string {
+  return WORLD_REGISTRY[worldOfSubmission(submission)]?.title ?? "";
+}
+
+/**
+ * What this teacher chose, read back from the service.
+ *
+ * It lives here rather than in the component that first needed it because **two** surfaces
+ * now render one selection: the projector, and the printed debrief a teacher is holding
+ * while they use the projector. The rule at the top of this file is only as strong as the
+ * last surface to remember it, and the debrief did not — it built its own list of the first
+ * four explanations in seat order, named, under an instruction to read them out. A page that
+ * picks its own "top answers" beside this one is sharing work nobody chose.
+ *
+ * The three answers are three: a selection, `null` for a class where nothing has been
+ * chosen, and `undefined` where the service could not be asked at all. A caller that
+ * collapsed the last two would either wipe a teacher's selection off their own screen on one
+ * bad response, or print work as chosen that nobody has confirmed is.
+ */
+export async function loadShareOutSelection(
+  code: string,
+  teacherKey: string,
+): Promise<ShareOutSelection | null | undefined> {
+  try {
+    const response = await fetch(`${CLASS_API_BASE}/classes/${code}/shareout`, {
+      headers: { "X-BOW-Teacher-Key": teacherKey },
+    });
+    if (!response.ok) return undefined;
+    return ((await response.json()) as { selection: ShareOutSelection | null }).selection;
+  } catch {
+    return undefined;
+  }
+}
 
 export function shareOutSlides(input: {
   items: readonly ShareOutItem[];
