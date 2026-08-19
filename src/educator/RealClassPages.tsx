@@ -13,7 +13,9 @@ import type { ProgressRow } from "../platform/identity/types";
 import { stageLabel } from "../domain/scenario/registry";
 import type { WorldId } from "../domain/core/ids";
 import { dollars, formatDollars } from "../domain/core/money";
-import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
+import { planMovements, type RowMovement } from "../domain/finance/formulas";
+import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
+import { CHOICE_LABELS } from "../components/financial/choices";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { WORLD_REGISTRY } from "../domain/scenario/registry";
 import { POP_UP_SCENARIO } from "../domain/scenario/worlds/food-truck";
@@ -1217,26 +1219,7 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride, on
         </section>
       )}
 
-      {row.opening && row.final && (
-        <section className="dashboard-section">
-          <div className="section-heading">
-            <p className="eyebrow">Before and after Week 5</p>
-            <h2>What this student moved</h2>
-          </div>
-          <table className="resolve-changes-table">
-            <thead><tr><th scope="col">Where the money went</th><th scope="col">Opening</th><th scope="col">Final</th></tr></thead>
-            <tbody>
-              {CHOICE_ORDER.map((category) => (
-                <tr key={category}>
-                  <th scope="row">{CHOICE_LABELS[category]}</th>
-                  <td className="money">{formatDollars(row.opening![category])}</td>
-                  <td className="money">{formatDollars(row.final![category])}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
+      {row.opening && row.final && <WhatMoved row={row} />}
       </div>
 
       {/* The other model, once, at the bottom, saying what it is.
@@ -1254,6 +1237,79 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride, on
       />
     </>
   );
+}
+
+/**
+ * One student's board, opening to final, with the product's own edits kept out of the
+ * column headed as theirs.
+ *
+ * This printed the two sets of figures side by side and nothing else, under a heading that
+ * calls the difference between them the student's. The product edits these rows too:
+ * pressing *Reserve it now* at the Week 4 deadline commits the course money, and
+ * `courseRowCapFor` then holds that row's ceiling at zero — so a student who paid to protect
+ * the seat read **$1,200 → $0** under *What this student moved*, on the page a teacher opens
+ * to check what they did. It is the same defect that printed "5 of 11 cut sports-media course
+ * first" four inches beneath the same five names listed as the ones who reserved it.
+ *
+ * `planMovements` is where that distinction lives and nothing here re-derives it: a movement
+ * is measured against `reachable`, the opening amount clamped to the ceiling the final board
+ * actually left the row, and every dollar off a row is either the student's `chosenReduction`
+ * or the product's `forcedReduction`. The figures either side of it are unchanged — a teacher
+ * reading a plan wants the real numbers — and what is new is the column that says which of
+ * the two moved each one.
+ */
+function WhatMoved({ row }: { row: StudentRow }) {
+  const movements = planMovements(row.opening!, row.final!, { depositTaken: row.reservedSeat }, SCENARIO_NUMBERS);
+  const forced = movements.filter((movement) => movement.forcedReduction > 0);
+  return (
+    <section className="dashboard-section">
+      <div className="section-heading">
+        <p className="eyebrow">Before and after Week 5</p>
+        <h2>What this student moved</h2>
+      </div>
+      <table className="resolve-changes-table">
+        <thead>
+          <tr>
+            <th scope="col">Where the money went</th>
+            <th scope="col">Opening</th>
+            <th scope="col">Final</th>
+            <th scope="col">Moved by the student</th>
+          </tr>
+        </thead>
+        <tbody>
+          {movements.map((movement) => (
+            <tr key={movement.category}>
+              <th scope="row">{CHOICE_LABELS[movement.category]}</th>
+              <td className="money">{formatDollars(row.opening![movement.category])}</td>
+              <td className="money">{formatDollars(row.final![movement.category])}</td>
+              <td>{movedByStudent(movement, row.final![movement.category])}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {forced.length > 0 && (
+        <p>
+          {forced.map((movement) => CHOICE_LABELS[movement.category]).join(" and ")}
+          {forced.length === 1 ? " reads" : " read"} lower because this student reserved the course seat
+          at Week 4: the money committed, and BOW held the row there. It is not money they gave up.
+        </p>
+      )}
+    </section>
+  );
+}
+
+/**
+ * One row's change, said as what the student did rather than as a subtraction.
+ *
+ * Reads `planMovements`' split rather than doing arithmetic of its own: `chosenReduction` and
+ * `forcedReduction` account for every dollar off a row exactly once, and `formulas.test.ts`
+ * is what keeps that true.
+ */
+function movedByStudent(movement: RowMovement, final: number): string {
+  if (movement.chosenReduction > 0) return `Cut ${formatDollars(movement.chosenReduction)}`;
+  if (final > movement.reachable) return `Added ${formatDollars(dollars(final - movement.reachable))}`;
+  if (movement.forcedReduction > 0) return "Not theirs to move";
+  return "Nothing";
 }
 
 /** What a market student planned, and what the generator did to it. */
