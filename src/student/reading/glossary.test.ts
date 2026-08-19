@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import { CHOICE_LABELS } from "../../components/financial/choices";
 import { BASKETBALL_SCENARIO } from "../../domain/scenario/worlds/basketball";
 import { POP_UP_SCENARIO } from "../../domain/scenario/worlds/food-truck";
-import { GLOSSARY, formAppearsIn, termsOnScreen } from "./glossary";
+import { WORLD_IDS, isKnownWorld } from "../../domain/core/ids";
+import { GLOSSARY, formAppearsIn, glossaryFor, termsOnScreen, type GlossaryEntry } from "./glossary";
 
 /**
  * The glossary against the product's own words.
@@ -139,6 +140,73 @@ describe("every word the glossary defines is a word the run says", () => {
   it("says what a word means without saying it is a hard word", () => {
     const talkingDown = GLOSSARY.filter((entry) => /\b(?:just|simply|don't worry|remember|easy|tricky|difficult|of course)\b/i.test(entry.meaning));
     expect(talkingDown.map((entry) => entry.term)).toEqual([]);
+  });
+});
+
+/* ---------------------------------------------------------------------------
+   Which story a word belongs to, and what a third story would be handed.
+   --------------------------------------------------------------------------- */
+
+/**
+ * `where` is the only list of worlds this directory keeps, and this is what ties it to the
+ * one the product keeps.
+ *
+ * It used to read `"both" | "basketball" | "food-truck"`, and `"both"` was matched before
+ * the world was looked at at all — `entry.where === "both" || entry.where === world`. A
+ * third story is a live plan, and the day it shipped every word marked shared would have
+ * been shown in it: definitions written off the season's and the market's screens, offered
+ * to a child playing neither, with `tsc` clean and this file green. The guard above the
+ * filter had the same shape from the other side, so a world it had not been told about fell
+ * through the branch meant for *no world at all* and was handed all sixty-nine.
+ *
+ * The tie lives here rather than in `glossary.ts` because `nothingRecorded.test.ts` allows
+ * that directory exactly one domain import and it is the reading ruler. That boundary is
+ * worth more than the type would be, and this file is already allowed to know both sides.
+ */
+describe("a word belongs to the stories that say it, and to no others", () => {
+  /** A world this build does not have. Standing in for whichever one ships third. */
+  const THIRD_STORY = "fashion";
+
+  it("names stories this build actually has, and at least one of them", () => {
+    const wrong = GLOSSARY
+      .filter((entry) => entry.where.length === 0 || entry.where.some((world) => !isKnownWorld(world)))
+      .map((entry) => `${entry.term} → [${entry.where.join(", ")}]`);
+    expect(wrong, "entries naming no story, or a story WORLD_IDS does not have").toEqual([]);
+  });
+
+  it("hands a story it has never heard of nothing, rather than every other story's words", () => {
+    const sharedByBoth = GLOSSARY.filter((entry) => entry.where.length === WORLD_IDS.length);
+    expect(sharedByBoth.length, "words the two worlds share, which are the ones `both` used to cover").toBeGreaterThan(0);
+    expect(glossaryFor(THIRD_STORY).map((entry) => entry.term)).toEqual([]);
+  });
+
+  it("hands a third story exactly what somebody wrote for it", () => {
+    const shared: GlossaryEntry = {
+      term: "in hand", forms: ["in hand"], meaning: "Money that has arrived.", where: [...WORLD_IDS],
+    };
+    const written: GlossaryEntry = {
+      term: "bolt", forms: ["bolt"], meaning: "A length of cloth sold as one piece.", where: [THIRD_STORY],
+    };
+    expect(glossaryFor(THIRD_STORY, [shared, written]).map((entry) => entry.term)).toEqual(["bolt"]);
+    // And the two worlds that do exist are unmoved by a word written for one that does not.
+    for (const world of WORLD_IDS) {
+      expect(glossaryFor(world, [shared, written]).map((entry) => entry.term)).toEqual(["in hand"]);
+    }
+  });
+
+  it("has words of its own for every story this build has", () => {
+    // The half of the third-world problem the filter cannot solve: a world added to
+    // `WORLD_IDS` with nothing written for it opens an empty panel. It fails here first.
+    for (const world of WORLD_IDS) {
+      const entries = glossaryFor(world);
+      expect(entries.length, `${world} has no glossary of its own`).toBeGreaterThan(0);
+      expect(entries.length, `${world} is being shown the whole glossary`).toBeLessThan(GLOSSARY.length);
+    }
+  });
+
+  it("gives the whole list only where no story has been named", () => {
+    expect(glossaryFor(null)).toEqual(GLOSSARY);
+    expect(glossaryFor(undefined)).toEqual(GLOSSARY);
   });
 });
 

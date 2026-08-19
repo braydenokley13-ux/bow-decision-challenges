@@ -42,8 +42,23 @@ export interface GlossaryEntry {
   forms: readonly string[];
   /** What it means. Two sentences at most, and no figures. */
   meaning: string;
-  /** Which story says it. `both` where the two worlds share the word. */
-  where: "both" | "basketball" | "food-truck";
+  /**
+   * The stories that say it, written as the world ids `WORLD_IDS` holds.
+   *
+   * A list, rather than a word meaning *the ones there are*. This was
+   * `"both" | "basketball" | "food-truck"` — a second world vocabulary kept beside the
+   * domain's own — and `"both"` was the half that could not survive a third story: it
+   * matched whatever world it was asked about, so a third world would have opened this
+   * panel on fifteen words nobody had checked it says, with nothing failing anywhere. Named
+   * stories mean the worst a new world can do is arrive with a short panel, which somebody
+   * notices, instead of a borrowed one, which nobody does.
+   *
+   * It is `string[]` and not `WorldId[]` because `nothingRecorded.test.ts` holds this
+   * directory to one domain import, deliberately, and a glossary is not the thing to widen
+   * that for. `glossary.test.ts` ties the two together instead: it fails on an id no world
+   * has, and on a world no entry names.
+   */
+  where: readonly string[];
 }
 
 /**
@@ -58,61 +73,61 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
     term: "count on",
     forms: ["count on", "counts on", "counted on", "counting on", "count on it"],
     meaning: "To plan on money before it has arrived. If it never arrives, the plan is short by that much.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
   {
     term: "a rule on it",
     forms: ["a rule on it", "a bonus rule is met", "money with a rule on it", "tied to"],
     meaning: "Money that arrives only if something else happens first. Until it happens you do not have it.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
   {
     term: "bonus",
     forms: ["bonus", "bonuses"],
     meaning: "Extra money paid only if a rule is met. Miss the rule and none of it is paid, not part of it.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "savings",
     forms: ["savings", "already saved"],
     meaning: "Money kept from before this season. It is already there and nothing has to happen for it to arrive.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "base pay",
     forms: ["base pay"],
     meaning: "The pay that arrives every week for work already agreed. It does not depend on how the season goes.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "after taxes",
     forms: ["after taxes", "taxes"],
     meaning: "Money the government takes out of pay before it reaches you. Pay after taxes is what actually arrives.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "owe",
     forms: ["owe", "owes", "owed"],
     meaning: "To have to pay money to somebody else. What you owe comes out whether you planned for it or not.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
   {
     term: "left to plan with",
     forms: ["left to plan with", "left for avery to decide"],
     meaning: "The money you can still choose about, once everything already promised has come out of it.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
   {
     term: "in hand",
     forms: ["in hand"],
     meaning: "Money you have right now, rather than money you are expecting.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
   {
     term: "takings",
     forms: ["takings"],
     meaning: "Everything customers handed over. What it cost to earn has not come out of it yet.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     // The one word in this world a student cannot get past without losing the assessment.
@@ -123,7 +138,7 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
     term: "range",
     forms: ["range", "a range", "the range", "top of the range"],
     meaning: "Two numbers with the real one somewhere between them. Nobody knows which yet, so a plan has to work at the low end and the high end.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
 
   // --- Money that is already promised --------------------------------------
@@ -131,73 +146,73 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
     term: "spoken for",
     forms: ["spoken for"],
     meaning: "Already promised to something. Money that is spoken for is not yours to move.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "rent",
     forms: ["rent"],
     meaning: "Money paid over and over for the use of a place or a thing somebody else owns.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
   {
     term: "fee",
     forms: ["fee"],
     meaning: "Money charged for doing a job or providing a service.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "shift",
     forms: ["shift"],
     meaning: "A block of hours somebody is paid to work.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
   {
     term: "the same pot",
     forms: ["the same pot"],
     meaning: "One amount of money that several different things all have to come out of.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "stretch to",
     forms: ["stretch to"],
     meaning: "To be enough for. Money that does not stretch to three things pays for two of them.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "the basics",
     forms: ["the basics", "weekly basics"],
     meaning: "Food, phone and laundry. They leave the account every week whatever else is happening.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "required",
     forms: ["required"],
     meaning: "Something you have to pay for whether you planned for it or not.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "already spent",
     forms: ["already spent", "locked in", "lock it in", "now locked in"],
     meaning: "Paid, and not coming back. It cannot be moved to anything else however much you need it.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
   {
     term: "cover",
     forms: ["cover", "covers", "covered"],
     meaning: "To pay for something in full.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
   {
     term: "share",
     forms: ["share", "your share", "travel share"],
     meaning: "The part of a cost that is yours when several people pay for one thing together.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
   {
     term: "chip in",
     forms: ["chips in"],
     meaning: "Each person pays part of the same cost.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
 
   // --- The plan itself -----------------------------------------------------
@@ -205,67 +220,67 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
     term: "a job",
     forms: ["a job", "no job", "every dollar a job"],
     meaning: "A dollar has a job when you have said what it is for. The plan does not close while any dollar has none.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
   {
     term: "freed",
     forms: ["freed"],
     meaning: "Taken back off a line so it can pay for something else instead.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "still to find",
     forms: ["still to find"],
     meaning: "The plan is short by this much. It has to come out of something already in the plan.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
   {
     term: "backup money",
     forms: ["backup money"],
     meaning: "Money kept aside in case something goes wrong. Until something does, it is doing nothing else.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "sports-media course",
     forms: ["sports-media course", "sports-media"],
     meaning: "A course in how sport is filmed, written about and talked about. It is the thing this plan is saving for.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "rides and rest",
     forms: ["rides and rest"],
     meaning: "Money for getting places, and for a body that needs to recover. Every part of it buys hours back in Avery's week.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "cushion",
     forms: ["cushion"],
     meaning: "Cash kept in the box instead of spent. It is what pays for something breaking.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "stock",
     forms: ["stock", "the stock line", "stock line"],
     meaning: "The money that buys food to sell. What it does not pay for, the truck cannot cook.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "your cut",
     forms: ["your cut"],
     meaning: "The money you keep for yourself at the end of the run. Nobody sets it for you.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "banked",
     forms: ["banked"],
     meaning: "Put away and kept. Money banked at the end is money the run did not eat.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "spare",
     forms: ["spare", "spare room"],
     meaning: "Not being used by anybody. A spare room is a room nobody sleeps in.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
 
   // --- Prices, deals and deadlines -----------------------------------------
@@ -273,49 +288,49 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
     term: "terms",
     forms: ["terms", "the terms"],
     meaning: "What you have to pay, and when. Two places can cost the same over a season and ask for it differently.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "sublet",
     forms: ["sublet"],
     meaning: "A place rented from somebody who is renting it themselves.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "reserve",
     forms: ["reserve", "reserve it", "reserved", "reserving"],
     meaning: "To pay now so a place is held for you. The money stops being yours to move.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "the seat",
     forms: ["the seat"],
     meaning: "A place on the course, held for one person.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "full price",
     forms: ["full price", "full-cost"],
     meaning: "The whole price, with nothing taken off for deciding early.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "deposit",
     forms: ["deposit"],
     meaning: "Money paid early and held by the other side. It comes off what you still owe.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "permit",
     forms: ["permit", "city permit"],
     meaning: "What the city charges for the right to trade. Every stall pays it and none of it comes back.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "dearest",
     forms: ["dearest"],
     meaning: "The most expensive.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
 
   // --- The market ----------------------------------------------------------
@@ -323,85 +338,85 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
     term: "booth",
     forms: ["booth"],
     meaning: "The space you rent at the market. It costs more where more people walk past it.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "stall",
     forms: ["stall", "stalls"],
     meaning: "A trader's stand at a market. Every stall on the row pays the same permit.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "organiser",
     forms: ["organiser"],
     meaning: "The person who runs the market, prices the booths and pays out at the end.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "crowd",
     forms: ["crowd"],
     meaning: "How many people come past your booth and might buy. It is different every Saturday.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "tray",
     forms: ["tray", "trays"],
     meaning: "How the supplier sells food. A tray is a fixed number of plates, and trays do not come in halves.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "the order",
     forms: ["the order"],
     meaning: "The food you ask the supplier for before the doors open. What you order is what you have that night.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "sold out",
     forms: ["sold out", "sell out", "clears everything"],
     meaning: "Every plate you cooked was sold. Nothing was left to throw away.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "in the bin",
     forms: ["in the bin", "went in the bin"],
     meaning: "Food you cooked and nobody bought. You paid for it either way.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "rebate",
     forms: ["rebate"],
     meaning: "Money handed back off a price once you have done the thing it was promised for.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "generator",
     forms: ["generator"],
     meaning: "The machine that makes electricity where there is no socket. No generator, no cooking.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "the swap",
     forms: ["the swap"],
     meaning: "Trading the dead generator for a working one, and the bill for doing it.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "seal",
     forms: ["seal"],
     meaning: "The rubber strip that makes a lid close tight. A box with no seal does not stay cold.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "perished",
     forms: ["perished"],
     meaning: "Gone hard and cracked with age. Rubber that has perished no longer seals.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
   {
     term: "settle up",
     forms: ["settles up"],
     meaning: "To pay what is owed at the end and work out who is left with what.",
-    where: "food-truck",
+    where: ["food-truck"],
   },
 
   // --- The season ----------------------------------------------------------
@@ -409,79 +424,79 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
     term: "showcase",
     forms: ["showcase"],
     meaning: "The event at the end of the season that scouts come to watch. The whole season is aimed at it.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "qualify",
     forms: ["qualifies"],
     meaning: "To do well enough to be let in. The team qualifies for the showcase or it does not.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "making the cut",
     forms: ["making the cut"],
     meaning: "Being picked for something. Nothing about it is decided by Avery.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "attendance",
     forms: ["attendance", "perfect attendance"],
     meaning: "Being at every session. The attendance bonus is paid only if none is missed.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "clinic",
     forms: ["clinic", "clinics"],
     meaning: "A short coaching session for younger players. Coaching them pays, and it takes the Saturday.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "brace",
     forms: ["brace"],
     meaning: "A support strapped on to hold an injured joint still while it heals.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "rehab",
     forms: ["rehab"],
     meaning: "Treatment after an injury, at set times every week until the injury heals.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "physio",
     forms: ["physio"],
     meaning: "Treatment for a body that is hurt or worn out. It costs money and it takes hours out of the week.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "off-site",
     forms: ["off-site"],
     meaning: "Somewhere other than the usual place, so getting there costs time as well as money.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "paid off",
     forms: ["paid off"],
     meaning: "Was worth doing. What the decision cost came back.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
   {
     term: "fell short",
     forms: ["fell short"],
     meaning: "Did not reach far enough to do what it was meant to do.",
-    where: "both",
+    where: ["basketball", "food-truck"],
   },
   {
     term: "absorbed",
     forms: ["absorbed"],
     meaning: "Taken by something else. Backup money that absorbed a loss is money that went on covering it.",
-    where: "basketball",
+    where: ["basketball"],
   },
   {
     term: "uncovered",
     forms: ["uncovered"],
     meaning: "Left with no money to pay for it.",
-    where: "basketball",
+    where: ["basketball"],
   },
 ];
 
@@ -536,10 +551,17 @@ export function firstMentionOf(entry: GlossaryEntry, text: string): number {
  * The world is read off the page rather than passed in: both shells already put `data-world`
  * on the element the stage sits inside, which is what makes the wiring a single element with
  * no props about worlds in it.
+ *
+ * A story shows the words written for that story, by name. Nothing else was ever a safe
+ * default: this used to name the two worlds in the guard as well as in every entry, so a
+ * story it had not been told about — the third one, the day it ships — took the branch meant
+ * for *no story at all* and got the whole list, the market's words and the season's together.
+ * Only the panel opened outside any story gets everything, which is the one place everything
+ * is true.
  */
 export function glossaryFor(world: string | null | undefined, glossary: readonly GlossaryEntry[] = GLOSSARY): readonly GlossaryEntry[] {
-  if (world !== "basketball" && world !== "food-truck") return glossary;
-  return glossary.filter((entry) => entry.where === "both" || entry.where === world);
+  if (!world) return glossary;
+  return glossary.filter((entry) => entry.where.includes(world));
 }
 
 /**
