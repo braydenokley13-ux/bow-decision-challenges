@@ -1,0 +1,14 @@
+# teacher-6-gradebook-export
+# recorded 2026-08-19T05:40:03.976Z against http://127.0.0.1:5011
+
+--- gradebook export, verbatim:
+Seat	Student	Attempt	Story	Turned in	What the work had to show — did it	What the work had to show — part of it, or none of it	What the work had to show — never came up (this run never asked)	What the work had to show — asked of this run (did it + part of it, or none of it, and what a mark is out of)	Workability (/2)	Protected priority (/2)	Trade-off (/2)	Numerical evidence (/4)	Reasoning (/10) — your own marks	BOW judgements you overruled	Skill: Separate what a person needs, wants, values and is saving toward, and use that separation to make a spending decision when there is not enough money for everything.	Skill: Build a plan that fits the money actually available, covers required costs, and gives savings a planned amount rather than whatever is left over.	Skill: Repair a plan after income or costs change, using only the money that can still move, and protect what was already committed.	Session
+1	Test Student 1	1	Eight Weeks to the Showcase	2026-08-19	12	1	0	13	2	2	2	0	6	0	Showed it	Part way	Showed it	339fdefa-06a3-425b-8cbe-cf8d399f8346
+2	Student 2																	
+3	Student 3																	
+4	Bea — compliant clicker																	
+5	Cy — reasons well, adds badly	1	Eight Weeks to the Showcase	2026-08-19	12	1	0	13	2	2	2	2	8	0	Part way	Showed it	Showed it after a hint	70fa7e5c-1508-4b09-b649-879b947e9109
+6	Bea — compliant clicker	1	Eight Weeks to the Showcase	2026-08-19	10	3	0	13	1	1	1	1	4	1	Not yet	Not yet	Showed it	d2d1e29a-c2ca-4e22-bafb-8e6a1afdf585
+7	Dee — plans the cut first	1	Run the Pop-Up	2026-08-19	13	0	0	13	2	2	2	2	8	0	Showed it	Showed it	Showed it	960f0163-8af2-4768-a829-5a9ad0561468
+8	Eli — types until it balances																	
+9	Eli — fills the other two first	1	Run the Pop-Up	2026-08-19	10	3	0	13	1	1	1	1	4	0	Not yet	Not yet	Showed it	876da7bb-2e70-4917-9e38-3916d1cb71b6
