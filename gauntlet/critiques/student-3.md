@@ -195,8 +195,9 @@ shipping in the other half of the product. Half a class gets a gate where answer
 than padding; the other half gets one that rewards padding. Those two piles of writing are not
 comparable, and the class-creation screen says they are.
 
-(The basketball gate has a smaller flaw of its own: with three numbers tapped and all three
-written, the confirmation line still reads *"Both of your numbers are in what you wrote."*)
+(The basketball gate has a smaller flaw of its own. Tap three numbers and write all three, and
+the rules read `"✓ 3 of Avery's numbers, tapped."` followed by `"✓ Both of your numbers are in
+what you wrote."` — `writingGate.ts:122` hard-codes "Both" (`F4-three-numbers-both.png`).)
 
 ### D6 · Week 3 asks one reason for two decisions, and then misstates the money — MEDIUM
 
@@ -325,8 +326,9 @@ teacher's class page opens with *"Nothing is assessed yet — a student whose wr
 read has no usable result"* and *"BOW does not describe a class from fewer than 5 runs."* No email,
 no password, no birthday; the join screen asks *"Whose computer is this?"* and offers *"A school
 one lots of people use — sign me out at the end of the day."* Across every student screen I
-visited, the only sentences I found that are not true of what the product does are D4's hint and
-D6's `$45`.
+visited, only three sentences were untrue of what the product does — D1's *"Cut from your earlier
+plan $1,800"*, D4's *"A bonus has gone into this total"*, and D6's `$45` — and two of those are
+the same bug speaking twice. For a product this wordy, that is a good result.
 
 ---
 
