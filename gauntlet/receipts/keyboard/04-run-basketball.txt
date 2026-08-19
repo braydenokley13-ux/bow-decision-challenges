@@ -1,0 +1,70 @@
+# A COMPLETE RUN, KEYBOARD ONLY, HEARD NOT SEEN.
+# Snapshot d336f9d74b7a36bdad0509565885be2910057997. App :6373, class service :6380 (file store).
+# Student: Gil Ayers, class HGMPA, card RVQ7P. World wanted: basketball.
+# Keys used: Tab, Shift+Tab, Enter, Space, Arrow keys, Escape. Typing goes into whatever has focus.
+# "ANNOUNCED" lines are ARIA live-region changes observed in the page.
+# "FOCUS" lines are Chromium's own accessibility node for document.activeElement.
+
+==================== STAGE 1: the door ====================
+
+######## SCREEN — /join step one
+  url            http://127.0.0.1:6373/join
+  document.title Plan Under Pressure — BOW Decision Challenges
+  landmarks      main
+  headings       h1 "What is your class code?"
+  FOCUS ON ARRIVAL → [main] "What is your class code?", heading, level 1
+  ANNOUNCED(title/-): "Plan Under Pressure — BOW Decision Challenges"
+  ANNOUNCED(live-born-with-content/polite): "5 letters and numbers." @div#root > main.join-shell > section.join-step > p.join-step__hint
+  --- door: every Tab stop, in order ---
+  Tab  1 → "CLASS CODE", textbox
+  Tab  2 → "Next", button, unavailable
+  Tab  3 → *** FOCUS IS ON THE DOCUMENT BODY — nothing is spoken ***
+         LIVE(focus-lost-to-body/-): "div#root > main.join-shell > section.join-step > button.button.button--primary"
+  Tab  4 → "BOW Decision Challenges home", link
+  Tab  5 → "CLASS CODE", textbox   (ring closed: 4 stops)
+  focus: "CLASS CODE", textbox
+  WHILE TYPING THE CLASS CODE, ANNOUNCED: "That is 1 — a class code is 5."
+  WHILE TYPING THE CLASS CODE, ANNOUNCED: "That is 2 — a class code is 5."
+  WHILE TYPING THE CLASS CODE, ANNOUNCED: "That is 3 — a class code is 5."
+  WHILE TYPING THE CLASS CODE, ANNOUNCED: "That is 4 — a class code is 5."
+  WHILE TYPING THE CLASS CODE, ANNOUNCED: ""
+  PRESS Enter — submit the class code → FOCUS: "Type the code on your card.", heading, level 1
+     ANNOUNCED: (nothing)
+
+######## SCREEN — /join step two
+  url            http://127.0.0.1:6373/join
+  document.title Plan Under Pressure — BOW Decision Challenges
+  landmarks      main
+  headings       h1 "Type the code on your card."
+  FOCUS ON ARRIVAL → "Type the code on your card.", heading, level 1
+  ANNOUNCED ON ARRIVAL: (nothing)
+  --- what a blind student hears reading the screen top to bottom ---
+   ·· (no accessible name), main
+   ··· (no accessible name), sectionheader
+   ···· "BOW Decision Challenges home", link
+   ······ "BOW", StaticText
+   ······ "DECISION CHALLENGES", StaticText
+   ···· "KEYBOARD AND SCREEN READER", StaticText
+   ···· "Type the code on your card.", heading, level 1
+   ····· "Type the code on your card.", StaticText
+   ···· (no accessible name), paragraph
+   ····· "Keyboard and Screen Reader", StaticText
+   ···· (no accessible name), LabelText
+   ····· "YOUR CODE", StaticText
+   ····· "YOUR CODE", textbox
+   ···· "WHOSE COMPUTER IS THIS?", group
+   ····· (no accessible name), Legend
+   ······ "WHOSE COMPUTER IS THIS?", StaticText
+   ····· (no accessible name), LabelText
+   ······ "A school one lots of people use — sign me out at the end of the day", radio, checked
+   ······ "A school one lots of people use — sign me out at the end of the day", StaticText
+   ····· (no accessible name), LabelText
+   ······ "Mine — keep me signed in", radio, not checked
+   ······ "Mine — keep me signed in", StaticText
+   ···· "Go in", button, unavailable
+   ····· "Go in", StaticText
+   ···· "Different class", button
+   ····· "Different class", StaticText
+   ···· (no accessible name), paragraph
+   ····· "Lost your card? Ask your teacher — they can print you a new one.", StaticText
+   ··· (no accessible name), alert

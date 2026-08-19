@@ -1,0 +1,150 @@
+# A blind student signs in. Keyboard only. Snapshot d336f9d.
+# Card in hand: class code QAAA3, personal code 43WNH.
+
+######## SCREEN — the door (/join)
+  url            http://127.0.0.1:6173/join
+  document.title Plan Under Pressure — BOW Decision Challenges
+  landmarks      main
+  headings       h1 "What is your class code?"
+  FOCUS ON ARRIVAL → [main] "What is your class code?", heading, level 1
+  ANNOUNCED(title/-): "Plan Under Pressure — BOW Decision Challenges"
+  ANNOUNCED(live-born-with-content/polite): "5 letters and numbers." @div#root > main.join-shell > section.join-step > p.join-step__hint
+  --- what a blind student hears reading the screen top to bottom ---
+   ·· (no accessible name), main
+   ··· (no accessible name), sectionheader
+   ···· "BOW Decision Challenges home", link
+   ······ "BOW", StaticText
+   ······ "DECISION CHALLENGES", StaticText
+   ···· "What is your class code?", heading, level 1
+   ····· "What is your class code?", StaticText
+   ···· (no accessible name), paragraph
+   ····· "Your teacher has it on the board.", StaticText
+   ···· (no accessible name), LabelText
+   ····· "CLASS CODE", StaticText
+   ····· "CLASS CODE", textbox
+   ···· (no accessible name), paragraph
+   ····· "5 letters and numbers.", StaticText
+   ···· "Next", button, unavailable
+   ····· "Next", StaticText
+   ···· (no accessible name), paragraph
+   ····· "No code? Your teacher gives it out at the start of the lesson.", StaticText
+   ···· (no accessible name), paragraph
+   ····· "BOW never asks for your email, your birthday, or anything about your real money.", StaticText
+   ··· (no accessible name), alert
+
+######## KEYBOARD: the whole tab ring of the door
+  --- door: every Tab stop, in order ---
+  Tab  1 → "CLASS CODE", textbox
+  Tab  2 → "Next", button, unavailable
+  Tab  3 → *** FOCUS IS ON THE DOCUMENT BODY — nothing is spoken ***
+         LIVE(focus-lost-to-body/-): "div#root > main.join-shell > section.join-step > button.button.button--primary"
+  Tab  4 → "BOW Decision Challenges home", link
+  Tab  5 → "CLASS CODE", textbox   (ring closed: 4 stops)
+
+######## KEYBOARD: type the class code and press Enter
+  Tab 1 → "Next", button, unavailable
+  Tab 2 → *** FOCUS IS ON THE DOCUMENT BODY — nothing is spoken ***
+  Tab 3 → "BOW Decision Challenges home", link
+  Tab 4 → "CLASS CODE", textbox
+  TYPE "QAAA3"
+     ANNOUNCED(live): "That is 1 — a class code is 5."
+     ANNOUNCED(live): "That is 2 — a class code is 5."
+     ANNOUNCED(live): "That is 3 — a class code is 5."
+     ANNOUNCED(live): "That is 4 — a class code is 5."
+     ANNOUNCED(live): ""
+  PRESS Enter — submit the class code from inside the field → FOCUS: "CLASS CODE", textbox, QAAA3
+     ANNOUNCED(live/assertive): "Something went wrong. Try again." @div#root > main.join-shell > p.join-error
+
+######## SCREEN — after the class code
+  url            http://127.0.0.1:6173/join
+  document.title Plan Under Pressure — BOW Decision Challenges
+  landmarks      main
+  headings       h1 "What is your class code?"
+  FOCUS ON ARRIVAL → "CLASS CODE", textbox, QAAA3
+  ANNOUNCED ON ARRIVAL: (nothing)
+  --- what a blind student hears reading the screen top to bottom ---
+   ·· (no accessible name), main
+   ··· (no accessible name), sectionheader
+   ···· "BOW Decision Challenges home", link
+   ······ "BOW", StaticText
+   ······ "DECISION CHALLENGES", StaticText
+   ···· "What is your class code?", heading, level 1
+   ····· "What is your class code?", StaticText
+   ···· (no accessible name), paragraph
+   ····· "Your teacher has it on the board.", StaticText
+   ···· (no accessible name), LabelText
+   ····· "CLASS CODE", StaticText
+   ····· "CLASS CODE", textbox, QAAA3
+   ······· "QAAA3", StaticText
+   ···· (no accessible name), paragraph
+   ····· " ", StaticText
+   ···· "Next", button
+   ····· "Next", StaticText
+   ···· (no accessible name), paragraph
+   ····· "No code? Your teacher gives it out at the start of the lesson.", StaticText
+   ···· (no accessible name), paragraph
+   ····· "BOW never asks for your email, your birthday, or anything about your real money.", StaticText
+   ··· (no accessible name), alert
+   ···· "Something went wrong. Try again.", StaticText
+
+######## KEYBOARD: the tab ring of step two
+  --- step two: every Tab stop, in order ---
+  Tab  1 → "Next", button
+  Tab  2 → *** FOCUS IS ON THE DOCUMENT BODY — nothing is spoken ***
+         LIVE(focus-lost-to-body/-): "div#root > main.join-shell > section.join-step > button.button.button--primary"
+  Tab  3 → "BOW Decision Challenges home", link
+  Tab  4 → "CLASS CODE", textbox, QAAA3
+  Tab  5 → "Next", button   (ring closed: 4 stops)
+
+######## KEYBOARD: type the card code and press Enter
+  Tab 1 → "BOW Decision Challenges home", link
+  Tab 2 → "CLASS CODE", textbox, QAAA3
+  PRESS Enter — go in → FOCUS: "CLASS CODE", textbox, 43WNH
+     ANNOUNCED(live/polite): "That is 1 — a class code is 5." @div#root > main.join-shell > section.join-step > p.join-step__hint
+     ANNOUNCED(live/polite): "That is 2 — a class code is 5." @div#root > main.join-shell > section.join-step > p.join-step__hint
+     ANNOUNCED(live/polite): "That is 3 — a class code is 5." @div#root > main.join-shell > section.join-step > p.join-step__hint
+     ANNOUNCED(live/polite): "That is 4 — a class code is 5." @div#root > main.join-shell > section.join-step > p.join-step__hint
+     ANNOUNCED(live/polite): "" @div#root > main.join-shell > section.join-step > p.join-step__hint
+     ANNOUNCED(live/assertive): "" @div#root > main.join-shell > p.join-error
+     ANNOUNCED(live/assertive): "Something went wrong. Try again." @div#root > main.join-shell > p.join-error
+
+######## SCREEN — the student home
+  url            http://127.0.0.1:6173/join
+  document.title Plan Under Pressure — BOW Decision Challenges
+  landmarks      main
+  headings       h1 "What is your class code?"
+  FOCUS ON ARRIVAL → "CLASS CODE", textbox, 43WNH
+  ANNOUNCED ON ARRIVAL: (nothing)
+  --- what a blind student hears reading the screen top to bottom ---
+   ·· (no accessible name), main
+   ··· (no accessible name), sectionheader
+   ···· "BOW Decision Challenges home", link
+   ······ "BOW", StaticText
+   ······ "DECISION CHALLENGES", StaticText
+   ···· "What is your class code?", heading, level 1
+   ····· "What is your class code?", StaticText
+   ···· (no accessible name), paragraph
+   ····· "Your teacher has it on the board.", StaticText
+   ···· (no accessible name), LabelText
+   ····· "CLASS CODE", StaticText
+   ····· "CLASS CODE", textbox, 43WNH
+   ······· "43WNH", StaticText
+   ···· (no accessible name), paragraph
+   ····· " ", StaticText
+   ···· "Next", button
+   ····· "Next", StaticText
+   ···· (no accessible name), paragraph
+   ····· "No code? Your teacher gives it out at the start of the lesson.", StaticText
+   ···· (no accessible name), paragraph
+   ····· "BOW never asks for your email, your birthday, or anything about your real money.", StaticText
+   ··· (no accessible name), alert
+   ···· "Something went wrong. Try again.", StaticText
+
+######## KEYBOARD: the tab ring of the student home
+  --- student home: every Tab stop, in order ---
+  Tab  1 → "Next", button
+  Tab  2 → *** FOCUS IS ON THE DOCUMENT BODY — nothing is spoken ***
+         LIVE(focus-lost-to-body/-): "div#root > main.join-shell > section.join-step > button.button.button--primary"
+  Tab  3 → "BOW Decision Challenges home", link
+  Tab  4 → "CLASS CODE", textbox, 43WNH
+  Tab  5 → "Next", button   (ring closed: 4 stops)

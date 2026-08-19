@@ -3,7 +3,7 @@
 # No mouse. Only Tab / Shift+Tab / Enter / Space / arrows / Escape, plus typing into a focused field.
 
 ######## ARRIVAL — Educator: My classes (empty)
-  url            http://127.0.0.1:6173/educator/classes
+  url            http://127.0.0.1:6373/educator/classes
   document.title Plan Under Pressure — BOW Decision Challenges
   landmarks      banner, main, navigation "Educator navigation"
   headings       h1 "Create your first class."
@@ -90,7 +90,7 @@
          LIVE(focus-lost-to-body/-): "button.button.button--primary"
 
 ######## ARRIVAL — after Create the class
-  url            http://127.0.0.1:6173/educator/classes
+  url            http://127.0.0.1:6373/educator/classes
   document.title Plan Under Pressure — BOW Decision Challenges
   landmarks      banner, main, navigation "Educator navigation"
   headings       h1 "Here is the code." | h2 "Keyboard and Screen Reader"
@@ -119,7 +119,7 @@
   ···· (no accessible name), paragraph
   ····· "CLASS CODE", StaticText
   ···· (no accessible name), strong
-  ····· "QAAA3", StaticText
+  ····· "HGMPA", StaticText
   ···· (no accessible name), paragraph
   ····· "Not case sensitive.", StaticText
   ···· "Keyboard and Screen Reader", heading, level 2
@@ -134,7 +134,7 @@
   ······ "2. ", ListMarker
   ······ "Put the code above on the board and send students to ", StaticText
   ······ (no accessible name), code
-  ······· "http://127.0.0.1:6173", StaticText
+  ······· "http://127.0.0.1:6373", StaticText
   ······· "/join", StaticText
   ······ ". They type the class code, then the code on their card. Nothing asks them for an email address or a password.", StaticText
   ····· (no accessible name), listitem, level 1
@@ -150,10 +150,10 @@
   ···· (no accessible name), paragraph
   ····· "YOUR PRIVATE LINK", StaticText
   ···· (no accessible name), code
-  ····· "http://127.0.0.1:6173", StaticText
-  ····· "/educator/class/QAAA3?key=UMMEE4UNAAJQYXMJXFFGNQNQ", StaticText
+  ····· "http://127.0.0.1:6373", StaticText
+  ····· "/educator/class/HGMPA?key=T446JMMFP43VN7YWHJGQXD4A", StaticText
   ···· (no accessible name), paragraph
   ····· "Bookmark this. It is saved in this browser, it is the only thing that opens this class’s evidence, and it is not shown again — the class code alone will not open it, which is what stops students reading each other’s work.", StaticText
   ···· "Open this class", link
   ····· "Open this class", StaticText
-  url now http://127.0.0.1:6173/educator/classes
+  url now http://127.0.0.1:6373/educator/classes

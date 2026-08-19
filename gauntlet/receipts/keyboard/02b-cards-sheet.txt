@@ -17,11 +17,11 @@ Ivo Cortez"
 ######## KEYBOARD: Tab once, Enter — the whole act of making cards
   Tab → FOCUS: "Add them and make the cards", button
   Enter (Add them and make the cards) → FOCUS: "Making cards…", button, unavailable
-   +600ms LIVE(live-born-with-content/polite): "3 cardsPrint these now. They are not shown again.Cut them up and hand one to each student. If one goes missing you can print a replacement from the list below — the lost one stops working when you do.PrintI have themGil AyersClass codeQAAA3Your code43WNHGo to BOW · type the class code · type your codeHana BrightClass codeQAAA3Your codeAH33HGo to BOW · type the class code · type your codeIvo CortezClass codeQAAA3Your codeQCE4UGo to BOW · type the class code · type your code" @div#root > div.educator-shell > main.educator-main > section.cards-sheet
+   +1500ms LIVE(live-born-with-content/polite): "3 cardsPrint these now. They are not shown again.Cut them up and hand one to each student. If one goes missing you can print a replacement from the list below — the lost one stops working when you do.PrintI have themGil AyersClass codeHGMPAYour codeRVQ7PGo to BOW · type the class code · type your codeHana BrightClass codeHGMPAYour codeQRGURGo to BOW · type the class code · type your codeIvo CortezClass codeHGMPAYour codeGMWG7Go to BOW · type the class code · type your code" @div#root > div.educator-shell > main.educator-main > section.cards-sheet
   FOCUS after the cards exist: "Add them and make the cards", button, unavailable
 
 ######## ARRIVAL — cards made
-  url            http://127.0.0.1:6173/educator/class/QAAA3/roster?key=UMMEE4UNAAJQYXMJXFFGNQNQ
+  url            http://127.0.0.1:6373/educator/class/HGMPA/roster?key=T446JMMFP43VN7YWHJGQXD4A
   document.title Plan Under Pressure — BOW Decision Challenges
   landmarks      banner, main, navigation "Educator navigation"
   headings       h1 "Who is in this class." | h2 "Print these now. They are not shown again." | h2 "ADD STUDENTS" | h2 "THE LIST" | h2 "SIGN EVERYBODY OUT"
@@ -47,11 +47,11 @@ Ivo Cortez"
   ······· "CLASS CODE", term
   ········ "CLASS CODE", StaticText
   ······· (no accessible name), definition
-  ········ "QAAA3", StaticText
+  ········ "HGMPA", StaticText
   ······· "YOUR CODE", term
   ········ "YOUR CODE", StaticText
   ······· (no accessible name), definition
-  ········ "43WNH", StaticText
+  ········ "RVQ7P", StaticText
   ······ (no accessible name), paragraph
   ······· "Go to BOW · type the class code · type your code", StaticText
   ····· (no accessible name), listitem, level 1
@@ -61,11 +61,11 @@ Ivo Cortez"
   ······· "CLASS CODE", term
   ········ "CLASS CODE", StaticText
   ······· (no accessible name), definition
-  ········ "QAAA3", StaticText
+  ········ "HGMPA", StaticText
   ······· "YOUR CODE", term
   ········ "YOUR CODE", StaticText
   ······· (no accessible name), definition
-  ········ "AH33H", StaticText
+  ········ "QRGUR", StaticText
   ······ (no accessible name), paragraph
   ······· "Go to BOW · type the class code · type your code", StaticText
   ····· (no accessible name), listitem, level 1
@@ -82,9 +82,9 @@ Ivo Cortez"
   Tab  8 → "Print a new card", button
   Tab  9 → "Take off the list", button
   Tab 10 → "Erase", button
-  Tab 11 → "Print a new card", button
-  Tab 12 → "Take off the list", button
-  Tab 13 → "Erase", button
-  Tab 14 → "Print a new card", button
+  Tab 11 → "Sign the whole class out", button
+  Tab 12 → *** FOCUS IS ON THE DOCUMENT BODY — nothing is spoken ***
+  Tab 13 → [banner] "BOW Decision Challenges home", link
+  Tab 14 → [navigation "Educator navigation"] "My classes", link
 
 # innerText of the cards sheet is saved to cards-body.txt (the join codes).
