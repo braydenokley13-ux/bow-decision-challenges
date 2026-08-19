@@ -4,10 +4,13 @@
 (`npm run build`) served by `vite preview` on **127.0.0.1:5234**, with the real class service on
 **127.0.0.1:5281** (file store, real `BOW_STORE_KEY`, `classroomReady: true`). A class was created
 through the educator UI and joined as a student the way a child would. *Eight Weeks to the
-Showcase* was played from the front door to "turned in"; *Run the Pop-Up* through its opening,
-booth choice and fixed-cost calculation; the educator side from class creation through the class
-page, reading queue, debrief, share-out and a student's evidence page. Receipts in
-`gauntlet/receipts/worldclass-2/`.
+Showcase* was played from the front door to "turned in" — every stage, including Week 5, the
+repair, the resolution and the written defence. *Run the Pop-Up* was played through its opening,
+the booth choice, the fixed-cost calculation and the conditional-income screen; I did not reach
+its generator repair or its ending, and I say so rather than pretending otherwise — what I know
+about the market's later stages comes from the sample class's evidence, not from playing them.
+The educator side was used from class creation through the class page, reading queue, debrief,
+share-out and a student's evidence page. Receipts in `gauntlet/receipts/worldclass-2/`.
 
 **One caveat, declared up front.** This box ran at load average 180–260 with 59 live Chromium
 processes belonging to other agents, and OOM-killed a renderer twice mid-review. **No claim in
@@ -70,6 +73,10 @@ letters.
 "Turn in my plan", the payoff screen arrives at `scrollY: 130` and the headline "Your plan is with
 your teacher." is cut to a strip reading **"TEACHER."** That is the final impression of a
 twenty-minute run.
+
+**And on the market's own conditional-income screen.** `75-popup-headline-clipped.png`. "Two
+amounts might turn up." arrives with its first line above the bar, so the student reads "TURN UP."
+This is the same bug in the other world, which is what makes it architectural.
 
 **It reveals the next task below the fold and does not scroll to it.**
 `31-bb-calc-belowfold.png`. Choose a place and the calculation appears at `top: 779` in a 768px
