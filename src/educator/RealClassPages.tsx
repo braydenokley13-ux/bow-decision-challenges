@@ -1259,7 +1259,7 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride, on
  * the two moved each one.
  */
 function WhatMoved({ row }: { row: StudentRow }) {
-  const movements = planMovements(row.opening!, row.final!, { depositTaken: row.reservedSeat }, SCENARIO_NUMBERS);
+  const movements = planMovements(row.opening!, row.final!, { depositTaken: row.reservedSeat === true }, SCENARIO_NUMBERS);
   const forced = movements.filter((movement) => movement.forcedReduction > 0);
   return (
     <section className="dashboard-section">

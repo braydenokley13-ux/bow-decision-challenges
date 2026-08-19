@@ -89,7 +89,7 @@ function tableRow(container: HTMLElement, heading: string): string[] {
 /** What the domain says this student chose to take off each row. The page may not exceed it. */
 function movementsOf(seatCode: string) {
   const row = analyseClass(theClass()).rows.find((entry) => entry.seatCode === seatCode)!;
-  return planMovements(row.opening!, row.final!, { depositTaken: row.reservedSeat }, SCENARIO_NUMBERS);
+  return planMovements(row.opening!, row.final!, { depositTaken: row.reservedSeat === true }, SCENARIO_NUMBERS);
 }
 
 describe("the student's plan table separates what they moved from what BOW moved", () => {

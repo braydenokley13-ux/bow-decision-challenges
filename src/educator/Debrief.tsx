@@ -364,7 +364,10 @@ function ContrastCard({ row, label, submissions }: { row: StudentRow; label: str
       <p className="eyebrow">{label}</p>
       <h3>{place?.title ?? "No place chosen"}</h3>
       <dl>
-        <div><dt>Course seat</dt><dd>{row.reservedSeat ? "Reserved early" : "Waited"}</dd></div>
+        {/* Three answers, because `reservedSeat` has three. It was a ternary on truthiness, so a
+            student who never reached the decision printed "Waited" — the product filling in a
+            choice on a child's behalf, on the sheet a teacher carries to the front of the room. */}
+        <div><dt>Course seat</dt><dd>{row.reservedSeat === null ? "Did not decide" : row.reservedSeat ? "Reserved early" : "Waited"}</dd></div>
         <div><dt>Saturdays</dt><dd>{row.tookClinics ? "Coached the clinics" : "Kept them"}</dd></div>
         <div><dt>Counted the bonus</dt><dd>{row.countedBonusInPlan ? "Yes" : "No"}</dd></div>
         {CHOICE_ORDER.map((category) => (

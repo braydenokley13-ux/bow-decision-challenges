@@ -53,10 +53,20 @@ export interface StudentRow {
   opening: PlanAmounts | null;
   final: PlanAmounts | null;
   setupId: SetupId | null;
-  countedBonusInPlan: boolean;
-  countedShowcase: boolean;
-  tookClinics: boolean;
-  reservedSeat: boolean;
+  /**
+   * The four Basketball calls, and **null when the student never made them.**
+   *
+   * These were `boolean`, built with `?? false`, which is the same defect
+   * `choiceDistributions` already argues against one function below: a student who was never
+   * asked was reported as having answered. `!row.reservedSeat` put them under "Waited and paid
+   * the full price", and `!row.tookClinics` under "Kept the Saturdays" — by seat number, on the
+   * surface whose whole job is to be checkable. The machine distinguishes "chose not to" from
+   * "never decided"; this row is where that distinction was being thrown away.
+   */
+  countedBonusInPlan: boolean | null;
+  countedShowcase: boolean | null;
+  tookClinics: boolean | null;
+  reservedSeat: boolean | null;
   /** The written explanation, and which of their own numbers they chose to stand on. */
   defense: { text: string; tileIds: string[] } | null;
 }
@@ -94,10 +104,12 @@ export function readSubmission(record: SubmissionRecord): StudentRow {
     opening: facts.opening?.snapshot.inputs.amounts ?? null,
     final: finalInputs?.amounts ?? null,
     setupId: facts.selectedSetupId ?? null,
-    countedBonusInPlan: finalInputs?.includeCompletion ?? false,
-    countedShowcase: facts.opening?.snapshot.inputs.includeOutcome ?? false,
-    tookClinics: finalInputs?.includeOptionalWork ?? false,
-    reservedSeat: finalInputs?.depositTaken ?? false,
+    // `?? null`, never `?? false`. A run with no final board has not answered these, and a
+    // machine value of `null` means the student reached the question and left it open.
+    countedBonusInPlan: finalInputs?.includeCompletion ?? null,
+    countedShowcase: facts.opening?.snapshot.inputs.includeOutcome ?? null,
+    tookClinics: finalInputs?.includeOptionalWork ?? null,
+    reservedSeat: finalInputs?.depositTaken ?? null,
     defense: defenseFrom(record.log),
   };
 }
@@ -141,20 +153,20 @@ export function choiceDistributions(everyRow: StudentRow[]): ChoiceDistribution[
   const housing = BASKETBALL_SCENARIO.setups.map((setup) =>
     share(rows, setup.id, setup.title, (row) => row.setupId === setup.id));
   const deposit = [
-    share(rows, "reserved", `Reserved the seat at Week ${SCENARIO_NUMBERS.course.depositDeadlineWeek}`, (row) => row.reservedSeat),
-    share(rows, "waited", "Waited and paid the full price", (row) => !row.reservedSeat),
+    share(rows, "reserved", `Reserved the seat at Week ${SCENARIO_NUMBERS.course.depositDeadlineWeek}`, (row) => row.reservedSeat === true),
+    share(rows, "waited", "Waited and paid the full price", (row) => row.reservedSeat === false),
   ];
   const clinics = [
-    share(rows, "took", "Took the Saturday clinics", (row) => row.tookClinics),
-    share(rows, "kept", "Kept the Saturdays", (row) => !row.tookClinics),
+    share(rows, "took", "Took the Saturday clinics", (row) => row.tookClinics === true),
+    share(rows, "kept", "Kept the Saturdays", (row) => row.tookClinics === false),
   ];
   const bonus = [
-    share(rows, "counted", `Built the final plan around the ${BASKETBALL_SCENARIO.incomeCopy.completion.label}`, (row) => row.countedBonusInPlan),
-    share(rows, "excluded", "Planned without it", (row) => !row.countedBonusInPlan),
+    share(rows, "counted", `Built the final plan around the ${BASKETBALL_SCENARIO.incomeCopy.completion.label}`, (row) => row.countedBonusInPlan === true),
+    share(rows, "excluded", "Planned without it", (row) => row.countedBonusInPlan === false),
   ];
   const showcase = [
-    share(rows, "counted", `Counted the ${BASKETBALL_SCENARIO.incomeCopy.outcome.label} in the opening plan`, (row) => row.countedShowcase),
-    share(rows, "excluded", "Left it out from the start", (row) => !row.countedShowcase),
+    share(rows, "counted", `Counted the ${BASKETBALL_SCENARIO.incomeCopy.outcome.label} in the opening plan`, (row) => row.countedShowcase === true),
+    share(rows, "excluded", "Left it out from the start", (row) => row.countedShowcase === false),
   ];
 
   return [
@@ -621,7 +633,14 @@ export function adaptationSummary(rows: StudentRow[]): AdaptationSummary {
     // every student who paid to protect the course under *cut the course first*, on the
     // page that named the same students, four inches higher, as the ones who reserved it.
     // `planMovements` is where that distinction lives; nothing here re-derives it.
-    const movements = planMovements(row.opening, row.final, { depositTaken: row.reservedSeat }, SCENARIO_NUMBERS);
+    // `=== true` rather than truthiness, now that `reservedSeat` can be null. The question
+    // `planMovements` is asking is factual — did `courseRowCapFor` drop this row's ceiling —
+    // and it drops only on an actual `taken: true`. A student who never reached the decision
+    // did not take the deposit, so their course row kept its ceiling and any fall in it is
+    // theirs. That is the opposite of how the same null is read one screen away, where it
+    // must not be reported as "waited": there the null means *we do not know*, here it means
+    // *the product did nothing to this row*, and both readings are true of the same absence.
+    const movements = planMovements(row.opening, row.final, { depositTaken: row.reservedSeat === true }, SCENARIO_NUMBERS);
     if (movements.some((entry) => entry.moved)) changed.push(row.seatCode);
     else unchanged.push(row.seatCode);
 
