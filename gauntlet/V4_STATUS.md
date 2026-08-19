@@ -348,6 +348,15 @@ taste. Every figure below is what `MODULE_COVERAGE.md` would say the day that wo
 | **Credit** | 2.1, 2.2 — two | none | it must also produce `sort-by-need-want-goal`, which puts it in a comparable set with both shipped worlds and holds it to their equality bands |
 | **Paycheck** | 3.2, 3.3 — two | none | none |
 
+**And Saving is the exact case the old parity rule would have blocked.** Neither shipped world
+produces `save-toward-a-goal`, `how-savings-grow` or `compare-rates` — both refuse the first by
+name, in writing, for a stated reason — so a Saving world shares no competency with either and
+belongs to no comparable set. Under the rule as it was implemented it would still have been
+held to Basketball's `arithmeticOperations`, `arithmeticComplexity`, `simultaneousConstraints`
+and `adaptationEvents`, exactly, and the only way to ship it would have been to write numbers
+into its declared profile because a test wanted them. Under the rule as the specification
+states it, it is constrained by nothing, because there is no choice it could make unfair.
+
 **Saving is first on every axis.** It lights the most objectives, needs no rubric that has not
 been written, has no parity entanglement, and a third of its evidence — `save-toward-a-goal`'s
 five requirements — was authored by a person before this run started, so that third carries
