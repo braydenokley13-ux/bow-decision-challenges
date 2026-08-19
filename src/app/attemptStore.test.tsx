@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { challengeReducer } from "../domain/machine/reducer";
 import { createInitialState, type ChallengeState } from "../domain/machine/state";
 import { attemptKeyForWorld, loadAttemptFor } from "../domain/io/persistence";
-import { useAttemptAutosave, useDraft, useRunLock, useSingleFireDispatch } from "./attemptStore";
+import { compareRuns, useAttemptAutosave, useDraft, useRunLock, useSingleFireDispatch } from "./attemptStore";
 
 /**
  * The three promises the attempt store makes, each of them a defect somebody reproduced.
@@ -13,6 +13,9 @@ import { useAttemptAutosave, useDraft, useRunLock, useSingleFireDispatch } from 
  * A press that arrives twice is one press. Work that reached the evidence log is on disk
  * before the next line of code runs. And a screen holding something that is not a decision
  * yet — a paragraph, a tray order — still has it after a reload.
+ *
+ * And, one level up from the tab lock: two copies of one run know how they stand to each
+ * other, so a child on two devices cannot end up with two plans nobody mentions.
  */
 
 afterEach(() => {
@@ -253,5 +256,49 @@ describe("one browser, one writer — and only what it can actually check", () =
     act(() => fromAnotherTab(LOCK_KEY, claimBy("other-tab", Date.now())));
     expect(result.current.state).toBe("elsewhere");
     expect(result.current.shadowed).toBe(true);
+  });
+});
+
+/**
+ * How two copies of one run stand to each other, before anything decides what to do about it.
+ *
+ * These are here rather than in the gate because the gate is one caller of two: Run the Pop-Up
+ * has its own resume and the same question to answer, and a rule proved at the seam is a rule
+ * both worlds can hold. Every case is built from real logs, because the whole point is that
+ * "how long is it" and "is it the same run further on" are different questions.
+ */
+describe("two copies of one run", () => {
+  const at = 1_770_000_000_000;
+  const run = (sessionId: string) =>
+    challengeReducer(createInitialState(at), { type: "SESSION_STARTED", sessionId, classCode: "H4KVW", seatCode: "7", at });
+  const ranked = (state: ChallengeState, when: number, correct: boolean) =>
+    challengeReducer(state, { type: "SETUP_RANKED", order: ["gym-sublet", "teammate-share", "cousin-room"], correct, at: when });
+
+  it("reads the same events as the same run", () => {
+    expect(compareRuns(run("one"), run("one"))).toBe("identical");
+  });
+
+  it("reads a copy with the service's log on the front of it as ahead", () => {
+    const there = run("one");
+    expect(compareRuns(ranked(there, at + 1, true), there)).toBe("ahead");
+    expect(compareRuns(there, ranked(there, at + 1, true))).toBe("behind");
+  });
+
+  it("reads two copies that answered the same question differently as forked", () => {
+    const shared = run("one");
+    const one = ranked(shared, at + 1, true);
+    const other = ranked(shared, at + 2, false);
+    // Same length, same session, same prefix — and not the same run any more. This is the case
+    // the old `log.length` rule could not express, and the case that cost a child a plan.
+    expect(one.log.length).toBe(other.log.length);
+    expect(compareRuns(one, other)).toBe("forked");
+  });
+
+  it("does not mistake a second attempt for a copy of the first", () => {
+    expect(compareRuns(run("first-go"), run("second-go"))).toBe("different-run");
+  });
+
+  it("treats a run nobody has started as nobody's copy", () => {
+    expect(compareRuns(createInitialState(at), run("one"))).toBe("different-run");
   });
 });
