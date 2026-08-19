@@ -90,6 +90,18 @@ export function amountsFor(state: ChallengeState, mode: PlanMode): PlanAmounts {
   return snapshotForMode(state, mode)?.amounts ?? EMPTY_AMOUNTS;
 }
 
+/**
+ * How many times the student has put the three places in an order and been told it was not
+ * the one the numbers make.
+ *
+ * Read off the log rather than kept in `setupRanking`, which holds only the last try, for the
+ * same reason `meaningfulAttempts` is: a student who closes a Chromebook lid and comes back
+ * has to meet the same rung of the ladder they left, and the log is the part that survives.
+ */
+export function rankingAttempts(state: ChallengeState): number {
+  return state.log.filter((event) => event.type === "SETUP_RANKED" && (event.payload as { correct?: boolean }).correct !== true).length;
+}
+
 export function meaningfulAttempts(state: ChallengeState, mode: PlanMode): number {
   return state.log.filter((event) => event.type === "PLAN_SAVE_REQUESTED" && (event.payload as { mode?: PlanMode }).mode === mode).length;
 }
