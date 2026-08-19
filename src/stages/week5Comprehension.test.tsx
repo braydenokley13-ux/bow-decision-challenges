@@ -82,6 +82,8 @@ function draw(state: ChallengeState) {
   return { dispatch, view };
 }
 
+const run3 = (state: ChallengeState, ...actions: ChallengeAction[]) =>
+  actions.reduce<ChallengeState>((current, action) => challengeReducer(current, { ...action, at: 1 }), state);
 const cards = (container: HTMLElement) => [...container.querySelectorAll<HTMLElement>(".gap-tiles button")];
 const idOf = (card: HTMLElement) => card.querySelector("b")?.textContent ?? "";
 
@@ -142,6 +144,28 @@ describe("the answer supply on Week 5 shows the answer", () => {
     expect(named).toHaveLength(MOVED.length);
     const held = cards(view.container).filter((card) => !card.textContent?.includes("Week 5 changed this"));
     expect(held).toHaveLength(HELD.length);
+  });
+
+  it("stops taking taps once it has named the answer", () => {
+    // Otherwise the rung hands over the half of the question the total does not carry and
+    // then lets the student enter it as their own reading. C5.3 scores the selection without
+    // knowing where it came from, so the screen has to.
+    const { dispatch, view } = draw(atWeek5(3));
+    fireEvent.click(supply());
+    const named = cards(view.container).find((card) => card.textContent?.includes("Week 5 changed this"))!;
+    expect(named).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(named);
+    expect(dispatch.mock.calls.flat()).not.toContainEqual(expect.objectContaining({ type: "GAP_TILE_TOGGLED" }));
+  });
+
+  it("keeps what the student tapped before they asked", () => {
+    // Their own reading of the plan is evidence whether or not they finished it, and it is
+    // what C5.3 is about. The hand-over does not tap for them and does not untap for them.
+    const tapped = run3(atWeek5(3), { type: "GAP_TILE_TOGGLED", tileId: "required-cost", selected: true });
+    const { view } = draw(tapped);
+    fireEvent.click(supply());
+    const pressed = cards(view.container).filter((card) => card.getAttribute("aria-pressed") === "true").map(idOf);
+    expect(pressed).toHaveLength(1);
   });
 
   it("moves on when the student says they have seen it", () => {

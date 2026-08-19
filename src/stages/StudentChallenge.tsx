@@ -1285,7 +1285,13 @@ function Week5EventStage() {
               /* `data-line`, not `data-kind`: the stylesheet drew one border colour per kind,
                  and the kinds are the answer. See this component's note. */
               <button key={change.id} type="button" data-line={change.kind} aria-pressed={selected}
-                onClick={() => dispatch({ type: "GAP_TILE_TOGGLED", tileId: change.id, selected: !selected })}>
+                // Shown the answer, the strip stops taking taps. It stays on screen and stays
+                // readable — it is what the student is being shown — but a card tapped after
+                // the product has named it is not a reading of anybody's plan, and `C5.3`
+                // scores the selection without knowing how it was arrived at. What they had
+                // tapped before they asked stands, which is what the observation is for.
+                aria-disabled={revealed}
+                onClick={() => { if (!revealed) dispatch({ type: "GAP_TILE_TOGGLED", tileId: change.id, selected: !selected }); }}>
                 {/* A card with no mark on it is a card nobody knows they can press. */}
                 <span className="gap-tiles__mark" aria-hidden="true" />
                 <span className="gap-tiles__kind">{change.tag}</span>
