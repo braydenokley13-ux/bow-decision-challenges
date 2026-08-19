@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { DEMO_CLASS_CODE, demoClassBundle } from "../src/fixtures/demoClass";
 import { FRAMEWORKS, standardsIn } from "../src/domain/standards";
+import { CONCEPTS } from "../src/domain/blueprint/concepts";
 
 /**
  * The two things that make this one product rather than several sharing a palette.
@@ -105,6 +106,12 @@ const SURFACES_WITH_THE_MARK: readonly { name: string; path: string }[] = [
 
 test.describe("one mark", () => {
   test("renders one way on every surface that carries it, and the letter is there", async ({ page }) => {
+    // Nine full page loads in one test, against Playwright's thirty-second default. These
+    // sweeps are the one shape in the suite that pays a navigation per assertion rather than
+    // asserting several times on one screen, and they run beside another browser on four
+    // cores — which is measuring the machine, exactly what the raised `expect` timeout in
+    // `playwright.config.ts` exists to stop doing.
+    test.setTimeout(120_000);
     const seen: { name: string; ground: string; mark: Awaited<ReturnType<typeof markOn>> }[] = [];
 
     for (const surface of SURFACES_WITH_THE_MARK) {
@@ -126,7 +133,16 @@ test.describe("one mark", () => {
     // the same cream ground, one an outlined cream plate with a navy letter and the other a
     // solid navy plate with a white one, is the finding this test exists to keep closed, and
     // no contrast threshold catches it: both of them cleared 4.5:1.
-    const renderings = new Set(seen.map((entry) => JSON.stringify(entry.mark)));
+    // The four colours the mark paints for itself, and deliberately not `ground`. `ground` is
+    // the page showing through behind the mark; it is *meant* to differ from surface to
+    // surface, and the assertion at the foot of this test requires that it does. Comparing it
+    // here made the two mutually exclusive, so the test could not pass on any product: it read
+    // three renderings across nine surfaces whose glyph, plate, wordmark and note were byte
+    // for byte identical, and reported a mark that computes three ways because the front door,
+    // the educator pages and the student screens have three different backgrounds.
+    const renderings = new Set(seen.map(({ mark }) => JSON.stringify({
+      glyph: mark.glyph, plate: mark.plate, wordmark: mark.wordmark, note: mark.note,
+    })));
     expect(
       [...renderings],
       `the mark computes ${renderings.size} ways across ${seen.length} surfaces: ` +
@@ -139,16 +155,41 @@ test.describe("one mark", () => {
 });
 
 /**
+ * Routes under `/educator` that are not educator pages, and so are not on the educator spine.
+ *
+ * One entry, and it has to be written down rather than detected: `/educator/try` is not a page
+ * about a class, it is `StudentChallenge` itself with the transport swapped for the local-only
+ * one — "a real run of the real screens, with nothing behind it", so a teacher can answer *what
+ * do the children see* without making a class and printing a card. It has a student's chrome
+ * and a student's typography because it is the student's run, and it carries no `EducatorShell`,
+ * no `.educator-main` and no `.page-header` at all. Holding it to the educator page spine would
+ * be asking the sample run to stop looking like the thing it is a sample of.
+ *
+ * It stays in the mark sweep above, which is the right scope for it: the mark is shared chrome
+ * and must be identical there too, and it is.
+ */
+const NOT_AN_EDUCATOR_PAGE: readonly string[] = ["/educator/try"];
+
+/**
  * Every educator page, addressed, out of the route table in `App.tsx`.
  *
  * The parameters are filled from the fixtures the routes are really about, and an unknown
  * parameter throws rather than being skipped — a route this test cannot address is a page it
  * is not covering, and that should be a failure rather than a silence.
+ *
+ * The exclusion above is held to the same standard, which is why it is checked against the
+ * route table rather than merely subtracted from it: a named route that stops existing fails
+ * here instead of quietly narrowing the sweep to nothing. That is the difference between a
+ * test that covers twenty-three pages and a test that has been switched off one route at a
+ * time.
  */
 function educatorPages(): readonly string[] {
   const routes = [...readFileSync("src/App.tsx", "utf8").matchAll(/<Route\s+path="(\/educator[^"]*)"/g)]
     .map((match) => match[1]);
   expect(routes.length, "no educator routes found in src/App.tsx").toBeGreaterThan(5);
+  for (const path of NOT_AN_EDUCATOR_PAGE) {
+    expect(routes, `${path} is held out of the educator-page sweep but is not in App.tsx's route table`).toContain(path);
+  }
 
   const seat = demoClassBundle().submissions[0].seatCode;
   const framework = Object.values(FRAMEWORKS)[0];
@@ -157,8 +198,12 @@ function educatorPages(): readonly string[] {
     ":code": DEMO_CLASS_CODE,
     ":seatCode": seat,
     ":frameworkId": framework.id,
+    // `/educator/demo/concepts/:conceptId` is a redirect kept for old bookmarks and never
+    // reads the parameter, but a real concept id is what a bookmark would carry — and taking
+    // it from the blueprint rather than typing one keeps this addressable through a rename.
+    ":conceptId": CONCEPTS[0].id,
   };
-  return [...new Set(routes.map((route) => route.split("/").map((segment) => {
+  return [...new Set(routes.filter((route) => !NOT_AN_EDUCATOR_PAGE.includes(route)).map((route) => route.split("/").map((segment) => {
     if (!segment.startsWith(":")) return segment;
     // `/educator/objectives/:frameworkId/:code` reuses `:code` for an objective, not a class.
     if (segment === ":code" && route.includes(":frameworkId")) return objective;
@@ -170,6 +215,8 @@ function educatorPages(): readonly string[] {
 
 test.describe("one educator page", () => {
   test("every page puts its title in the same place, in the same type", async ({ page }) => {
+    // Twenty-three page loads. See the note on the mark sweep above.
+    test.setTimeout(120_000);
     const headings: { path: string; size: string; weight: string; left: number }[] = [];
 
     for (const path of educatorPages()) {
@@ -194,6 +241,8 @@ test.describe("one educator page", () => {
   });
 
   test("every block on every page starts on the same spine as the title above it", async ({ page }) => {
+    // The same twenty-three page loads again. See the note on the mark sweep above.
+    test.setTimeout(120_000);
     for (const path of educatorPages()) {
       await page.goto(path);
       await expect(page.locator(".educator-main")).toBeVisible();
