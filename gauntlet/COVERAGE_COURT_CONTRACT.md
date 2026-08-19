@@ -156,6 +156,32 @@ Two rules follow, and they bind courts as much as builders:
   contract. Bumping a stamp to make a test pass is the failure this whole section is about,
   performed deliberately.
 
+## 5a. What must be true before a world's rows are stamped
+
+Seven rules, earned by five designs converging on the same mistakes in one blind war. They bind
+every world and they are checked **before** any row lands in `competencies.ts`, because a row is
+a claim about a student the moment it ships.
+
+1. **No keyword-whitelist scoring of an explanation row.** Three of five designers independently
+   reached "the explanation passes if it contains token X." It is the path of least resistance
+   under `explanationRequired: true` and it turns a judgement row into a vocabulary row.
+2. **A world may not print, in student-facing text, the analysis a row scores.** If the screen
+   says who benefits, the who-benefits row measures transcription.
+3. **A "decide whether" competency needs at least one verdict-correctness row** — the student's
+   conclusion against authored ground truth, with an explicit escape for justified dissent. A
+   rubric can be eight rows of impeccable process and never score the decision.
+4. **No conditional in a required row's rule.** Availability is all-or-none, so every `if` is a
+   legal student path on which the world produces nothing.
+5. **Timing is a data-quality annotation, never a row.** A row whose pass state means "was not
+   fast" asserts nothing about a competency, and it scores reading speed and assistive tech.
+6. **A world about influence authors at least one true urgency or true crowd signal.** Where every
+   pressure signal is fake, the world teaches the mirror-image misconception cleanly.
+7. **Seed-swappable truth.** Which claim is false rotates per class, or the answer crosses the
+   lunchroom by 12:15 and the second period measures who has friends.
+
+The full reasoning, with the specific designs each rule came from, is in
+`READ_AND_JUDGE_WAR_VERDICT.md`.
+
 ## 6. Verdict format
 
 A coverage verdict states, for each objective claimed:
