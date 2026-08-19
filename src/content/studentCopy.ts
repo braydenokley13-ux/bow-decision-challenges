@@ -37,7 +37,7 @@ export const STUDENT_COPY = {
     chooseKicker: "Before you start",
     chooseHeadline: "Two ways in. You pick one.",
     chooseLede: "Either way, the money is yours to handle.",
-    /* What BOW holds about this student, said on the screen that shows them a name.
+    /* What BOW holds about this student, for the screen that shows them a name.
 
        This read *"the only name here is the one your teacher wrote on their class list"*,
        which is true of a class that has a list and false of every class that has not. An
