@@ -404,3 +404,36 @@ describe("an address with no account", () => {
     expect(absent.ms).toBeGreaterThan(real.ms / 4);
   }, 30_000);
 });
+
+describe("guessing at class codes", () => {
+  it("is limited, and a whole room arriving is not", async () => {
+    const store = memoryStore();
+    const options = { store, now: () => NOW };
+    const call = (path: string, clientId: string) =>
+      handleApiRequest({ method: "GET", path, headers: {}, clientId }, options);
+    const created = (await handleApiRequest(
+      { method: "POST", path: "/classes", headers: {}, body: { label: "Period 3", challengeId: PLAN_UNDER_PRESSURE.id } },
+      options,
+    )).body as ClassCreation;
+
+    // A class code is five characters from a restricted alphabet, written on a whiteboard, so
+    // the space is walkable and every route under it was answering an unlimited number of
+    // guesses about which codes exist.
+    const school = "203.0.113.7";
+    let refused = 0;
+    for (let attempt = 0; attempt < 260; attempt += 1) {
+      const guess = await call(`/classes/ZZZ${String(attempt).padStart(2, "0").slice(0, 2)}`, school);
+      if (guess.status === 429) refused += 1;
+    }
+    expect(refused).toBeGreaterThan(0);
+
+    // And the room this attacker shares an address with is still let in. Charging a *hit*
+    // would have made this the submission-route mistake again: a school is one address, thirty
+    // students arrive inside two minutes, and a bucket they share is one somebody else can
+    // empty on their behalf.
+    for (let student = 0; student < 30; student += 1) {
+      const real = await call(`/classes/${created.code}`, school);
+      expect(real.status).toBe(200);
+    }
+  }, 30_000);
+});

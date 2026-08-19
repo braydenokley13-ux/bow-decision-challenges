@@ -13,7 +13,7 @@ import { contractFor } from "../src/domain/scenario/contracts";
 import { DEFAULT_WORLD_ID } from "../src/domain/scenario/registry";
 import type { ClassStore, StoredClass } from "./store";
 import { cryptoRandom } from "./crypto";
-import { callerOf, cleanDisplayName, handleIdentityRequest, opensClass, seatOf, withinRate } from "./identity";
+import { callerOf, cleanDisplayName, handleIdentityRequest, opensClass, seatOf, spendRate, underRate, withinRate } from "./identity";
 
 /**
  * The class service, as one function of (method, path, body) → (status, body).
@@ -132,10 +132,35 @@ function readReasoningCriteria(value: unknown): ReasoningScores | null | undefin
   return Object.keys(scores).length > 0 ? scores : null;
 }
 
-async function liveClass(store: ClassStore, code: string, now: number): Promise<StoredClass | ApiResponse> {
-  if (!isWellFormedClassCode(code)) return fail(404, "class_not_found", "No class with that code.");
+/**
+ * The class behind a code, or the answer to give instead.
+ *
+ * The miss is rate limited and the hit is not, and that asymmetry is the whole design. A class
+ * code is five characters from a restricted alphabet on a whiteboard, so the space is walkable,
+ * and every route under `/classes/:code` was answering an unlimited number of guesses about
+ * which codes exist. But a limit keyed on an address cannot be charged for a *hit*: a school is
+ * one address, thirty students arrive within two minutes, and a bucket they share is a bucket
+ * an attacker on the same network can empty on their behalf. That mistake has been made once
+ * here already, on the submission route, and it locked a class out of turning work in.
+ *
+ * A room hits codes that exist. An enumerator, by definition, does not.
+ */
+async function liveClass(store: ClassStore, code: string, now: number, clientId = "anonymous"): Promise<StoredClass | ApiResponse> {
+  // A miss is answered only after the limit is checked, and a hit is never checked at all —
+  // which means the order matters and is deliberate. Guarding the whole function was the first
+  // attempt and its own test caught it: once an attacker had filled the bucket, the room they
+  // share an address with stopped being let into their own class. A limit that can be spent on
+  // somebody else's behalf is the submission-route mistake wearing a different hat.
+  const miss = () => {
+    if (!underRate(`lookup:${clientId}`, 200, 15 * 60 * 1000, now)) {
+      return fail(429, "unavailable", "Too many class codes tried from here just now. Wait a minute and try again.");
+    }
+    spendRate(`lookup:${clientId}`, 15 * 60 * 1000, now);
+    return fail(404, "class_not_found", "No class with that code.");
+  };
+  if (!isWellFormedClassCode(code)) return miss();
   const record = await store.getClass(normaliseClassCode(code));
-  if (!record) return fail(404, "class_not_found", "No class with that code.");
+  if (!record) return miss();
   if (record.expiresAt <= now) return fail(410, "class_expired", "That class has closed.");
   return record;
 }
@@ -311,7 +336,7 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
   }
 
   if (segments[0] !== "classes" || segments.length < 2) return fail(404, "bad_request", "No such endpoint.");
-  const found = await liveClass(store, segments[1] ?? "", now);
+  const found = await liveClass(store, segments[1] ?? "", now, clientId);
   if (isResponse(found)) return found;
   const record = found;
 
