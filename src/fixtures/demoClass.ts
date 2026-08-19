@@ -1,9 +1,10 @@
-import { BUILT_WORLD_COVERAGE } from "../domain/competency/availability";
 import type { CompetencyId } from "../domain/competency/types";
 import { reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 import { PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
 import { PLAN_UNDER_PRESSURE_LAUNCH } from "../domain/scenario/registry";
 import { CLASS_RETENTION_DAYS, type Assignment, type AttributedSubmission, type ClassRecord } from "../platform/classes/types";
+import { competenciesAssessedBy } from "../platform/classes/assignments";
+import type { StandardRef } from "../domain/standards/types";
 import { buildSubmission, type RunOptions } from "../test/runChallenge";
 import { buildPopUpSubmission, type PopUpRunOptions } from "../test/runPopUp";
 
@@ -222,16 +223,36 @@ function demoClassRecord(): ClassRecord {
 }
 
 /**
- * Both worlds produce the same two competencies (`plan-within-income`, `adapt-a-plan` —
- * see `BUILT_WORLD_COVERAGE`), so the assignment can state that set once rather than union
- * two identical lists and pretend the union was interesting.
+ * The objective the sample class was set, and the reason it is not `null`.
+ *
+ * It was `null`, with nothing defending it — the fixture predates an objective being
+ * something a teacher could choose. That is the wrong thing for the one class a district
+ * ever sees: the product's whole claim is *a teacher picks a learning goal, students pick
+ * different worlds, and the evidence comes back comparable*, and a sample class with no
+ * learning goal demonstrates two thirds of that sentence.
+ *
+ * 1.3 is not decoration and not a guess. It is the one NYSED objective BOW can demonstrably
+ * assess (`assessableStandards`), it is `full`-mapped to `plan-within-income`, and
+ * `compatibleWorldsFor` proves both shipped worlds produce every required row of it. Every
+ * seat below is a real run through the real reducer, so the evidence for it is evidence
+ * these students actually produced. Naming the objective states what is true of this data
+ * rather than adding anything to it.
+ */
+const DEMO_OBJECTIVE: StandardRef = { frameworkId: "nysed-pf-2026", code: "1.3" };
+
+/**
+ * What the sample assignment measures, resolved from the objective the same way the service
+ * resolves it for a real one (`readAssignmentRequest`) — never asserted here. A fixture that
+ * authored its own competency list could drift from what an assignment for this objective
+ * would actually record, and the sample class exists precisely to show a teacher what a real
+ * one looks like.
  */
 function demoAssignment(): Assignment {
-  const competencyIds: CompetencyId[] = [...new Set(BUILT_WORLD_COVERAGE.map((claim) => claim.competencyId))];
+  const competencyIds: readonly CompetencyId[] = competenciesAssessedBy(DEMO_OBJECTIVE);
   return {
     id: DEMO_ASSIGNMENT_ID,
     classId: DEMO_CLASS_CODE,
-    objectiveRef: null,
+    objectiveRef: DEMO_OBJECTIVE,
     competencyIds,
     allowedWorldIds: PLAN_UNDER_PRESSURE_LAUNCH.allowedWorlds,
     studentChoosesWorld: PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld,
