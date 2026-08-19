@@ -5,7 +5,11 @@ import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
 import { handleApiRequest } from "../../../server/handler";
 import { callerOf } from "../../../server/index";
-import { fileStore, redisRestStore, storeFromEnvironment } from "../../../server/store";
+import { fileStore, memoryStore, redisRestStore, storeFromEnvironment } from "../../../server/store";
+import { PLAN_UNDER_PRESSURE } from "../challenges/registry";
+import { buildSubmission } from "../../test/runChallenge";
+import { signedInSeat } from "../../test/asStudent";
+import type { ClassCreation } from "./types";
 import { vault } from "../../../server/vault";
 import type { StoredTeacher } from "../../../server/store";
 
@@ -20,6 +24,7 @@ import type { StoredTeacher } from "../../../server/store";
  */
 
 const KEY = randomBytes(32);
+const NOW = 1_790_000_000_000;
 
 /** A KV that speaks the Upstash REST protocol, and is strict about it the way Upstash is. */
 function fakeKv() {
@@ -223,4 +228,113 @@ it("still writes nothing readable to disk", async () => {
   const body = await readFile(join(root, "H4KVW", "class.json"), "utf8");
   expect(body).not.toContain("Aaliyah");
   expect(body).not.toContain("abcdefghijklmnop");
+});
+
+/**
+ * Round three: what the same reviewer found by attacking the fixes above.
+ *
+ * Their verdict moved from REFUSE to DEPLOY WITH CONDITIONS, and every one of these was one of
+ * the conditions. Two of them are the same shape — a guard that protects the thing it is aimed
+ * at and hands somebody else a new way in.
+ */
+
+describe("a flood of forged submissions", () => {
+  it("does not stop the class turning work in", async () => {
+    const store = memoryStore();
+    const options = { store, now: () => NOW };
+    const call = (method: string, path: string, body?: unknown, headers: Record<string, string | undefined> = {}) =>
+      handleApiRequest({ method, path, headers, ...(body !== undefined ? { body } : {}) }, options);
+    const created = (await call("POST", "/classes", { label: "Period 3", challengeId: PLAN_UNDER_PRESSURE.id })).body as ClassCreation;
+    const built = buildSubmission({ seatCode: "4" });
+    const { token } = await signedInSeat(store, created, built.seatCode, NOW);
+
+    // Everything an attacker needs: the class code, off a whiteboard. Nothing else.
+    for (let attempt = 0; attempt < 150; attempt += 1) {
+      const junk = await call("POST", `/classes/${created.code}/submissions`, {
+        classCode: created.code, seatCode: "4", sessionId: `forged-${attempt}`,
+        challengeId: built.challengeId, challengeVersion: built.challengeVersion, log: built.log,
+      });
+      expect(junk.status).toBe(403);
+    }
+
+    // The child whose lesson it is. This answered 429 while the limiter was keyed on an
+    // address, because a school is one address and the attacker had spent the room's budget.
+    const real = await call("POST", `/classes/${created.code}/submissions`, {
+      classCode: created.code, seatCode: built.seatCode, sessionId: built.sessionId,
+      challengeId: built.challengeId, challengeVersion: built.challengeVersion, log: built.log,
+    }, { authorization: `Bearer ${token}` });
+    expect(real.status).toBe(202);
+  }, 60_000);
+});
+
+describe("the canary, when somebody deletes it", () => {
+  it("still says the key is wrong, rather than saying the store is new", async () => {
+    const root = await mkdtemp(join(tmpdir(), "bow-canary-"));
+    await fileStore(root, vault(KEY)).putClass(CLASS);
+    const { rm } = await import("node:fs/promises");
+    await rm(join(root, "_vault-check.json"), { force: true });
+
+    // A restore that skips dotfiles, or a tidy-up that removes what looks like a stray, used
+    // to turn `mismatch` back into `fresh` — health 200, classroomReady true — over a
+    // directory of classes nobody could open.
+    expect(await fileStore(root, vault(randomBytes(32))).keyCheck?.()).toBe("mismatch");
+    // And a store with nothing in it is still allowed to be new, because it has nothing to lose.
+    expect(await fileStore(await mkdtemp(join(tmpdir(), "bow-empty-")), vault(KEY)).keyCheck?.()).toBe("fresh");
+  });
+});
+
+describe("the migration door", () => {
+  it("can be opened, and says so on the one screen an operator looks at", async () => {
+    const root = await mkdtemp(join(tmpdir(), "bow-migrate-"));
+    const shut = fileStore(root, vault(KEY));
+    await shut.putClass(CLASS);
+    expect(await shut.keyCheck?.()).toBe("ok");
+
+    // The option existed and nothing in the shipped binary could set it, which is safe and
+    // dishonest: the vault documented a migration an operator could not perform.
+    const open = fileStore(root, vault(KEY, { acceptLegacyPlaintext: true }));
+    expect(await open.keyCheck?.()).toBe("migrating");
+
+    const response = await handleApiRequest({ method: "GET", path: "/health", headers: {} }, { store: open });
+    expect((response.body as { storeKey: string }).storeKey).toBe("migrating");
+    expect((response.body as { reason: string }).reason).toContain("BOW_STORE_MIGRATE_PLAINTEXT");
+    // Open is not broken: a deployment mid-migration still runs a class.
+    expect((response.body as { classroomReady: boolean }).classroomReady).toBe(true);
+  });
+
+  it("is what makes a record written before sealing readable at all", async () => {
+    const root = await mkdtemp(join(tmpdir(), "bow-legacy-"));
+    const { mkdir, writeFile } = await import("node:fs/promises");
+    await mkdir(join(root, "H4KVW"), { recursive: true });
+    await writeFile(join(root, "H4KVW", "class.json"), JSON.stringify(CLASS), "utf8");
+
+    expect(await fileStore(root, vault(KEY)).getClass("H4KVW")).toBeNull();
+    expect(await fileStore(root, vault(KEY, { acceptLegacyPlaintext: true })).getClass("H4KVW"))
+      .toMatchObject({ code: "H4KVW" });
+  });
+});
+
+describe("an address with no account", () => {
+  it("costs what an address with one costs", async () => {
+    const store = memoryStore();
+    const options = { store, now: () => NOW };
+    const call = (path: string, body: unknown) => handleApiRequest({ method: "POST", path, headers: {}, body }, options);
+    await call("/auth/teacher", { email: "her@school.example", password: "a long enough teacher password" });
+
+    const timed = async (email: string) => {
+      const started = process.hrtime.bigint();
+      const response = await call("/auth/teacher/session", { email, password: "not the right password at all" });
+      return { ms: Number(process.hrtime.bigint() - started) / 1e6, status: response.status };
+    };
+    const real = await timed("her@school.example");
+    const absent = await timed("nobody@school.example");
+
+    expect(real.status).toBe(401);
+    expect(absent.status).toBe(401);
+    // A reviewer read 385ms against 5ms — eighty-three times, both answering 401 with the same
+    // words, which turns this endpoint into a directory of every teacher in the district. The
+    // bound is deliberately loose: what must never come back is a no-account branch that
+    // returns before doing any work.
+    expect(absent.ms).toBeGreaterThan(real.ms / 4);
+  }, 30_000);
 });

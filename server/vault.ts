@@ -47,6 +47,14 @@ export interface Vault {
   open<T>(raw: string): T | null;
   /** A purpose-separated secret derived from the same key. Never written anywhere. */
   derive(purpose: string): string;
+  /**
+   * Whether the migration door is open on this vault.
+   *
+   * Read by the health endpoint so an operator who opened it for a boot and forgot cannot
+   * leave a deployment reading unsealed records for a term without the one screen they check
+   * saying so.
+   */
+  readonly migrating: boolean;
 }
 
 interface SealedRecord { v: number; iv: string; tag: string; ct: string }
@@ -91,6 +99,7 @@ export const STORE_KEY_HELP =
  */
 export function vault(key: Buffer, options: { acceptLegacyPlaintext?: boolean } = {}): Vault {
   return {
+    migrating: options.acceptLegacyPlaintext === true,
     seal(value) {
       const iv = randomBytes(IV_BYTES);
       const cipher = createCipheriv("aes-256-gcm", key, iv);
@@ -134,6 +143,7 @@ export function vault(key: Buffer, options: { acceptLegacyPlaintext?: boolean } 
 /** A vault that seals nothing, for the memory store, where there is no disk to protect. */
 export function plainVault(secret: string): Vault {
   return {
+    migrating: false,
     seal: (value) => JSON.stringify(value),
     open: <T,>(raw: string): T | null => { try { return JSON.parse(raw) as T; } catch { return null; } },
     derive: (purpose) => createHmac("sha256", secret).update(`bow.derive.v1.${purpose}`).digest("base64url"),

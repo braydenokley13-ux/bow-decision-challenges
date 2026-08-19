@@ -1,0 +1,35 @@
+# SHA 52a03b98d3b5ce03ce37d290057da8308d0e71ed. Re-run of the six Round-2 reproductions.
+# (Every server used was confirmed responding with real JSON before conclusions were drawn.)
+
+1) BLOCKER (plaintext PII/keys/secret at rest)  -> CLOSED (stays closed)
+   grep of the round-3 file-store data dir for planted names / teacher key / "session-secret": 0 hits.
+   Every product-written file is a {"v":1,"iv",...} sealed envelope. The only unsealed file present is
+   the plaintext teacher record THIS review injected for test (2), which the product refuses (see 2).
+
+2) HIGH-2 (plaintext downgrade -> teacher account takeover)  -> CLOSED
+   Overwrote a sealed _accounts/teachers/<id>.json with a plaintext record carrying an attacker-chosen
+   scrypt passwordHash (no key). Login with the attacker's password -> HTTP 401 "That did not match."
+   server/vault.ts open(): a keyed vault returns null for any non-sealed record. The migration door
+   (acceptLegacyPlaintext) is OFF and — see receipt 05 — has no production wiring to turn it on.
+
+3) HIGH-1 (managed path: outage-with-key / BLOCKER-without-key)  -> CLOSED
+   Against a spec-correct mock Upstash (rejects a non-array body):
+     - storeFromEnvironment: KV + BOW_STORE_KEY -> redis;  KV, no key -> unconfigured (refuses to start).
+     - keyed redis putClass+getClass -> WORKS; class stored as a sealed {"v":1,"iv"...} envelope.
+     - bow:session-secret is NOT persisted in the KV (derived from the key).
+   The command envelope is now JSON.stringify(args); only the value argument is sealed.
+
+4) MEDIUM-3 (leftmost X-Forwarded-For rate-limit bypass)  -> CLOSED for the default/correct config
+   Default (BOW_TRUST_PROXY unset): 200 wrong joins each with a fresh spoofed XFF -> 80 x 429. The
+   spoof is ignored; the socket bucket is used. callerOf() table (attacker sends "9.9.9.9, 8.8.8.8"):
+     unset/0/-1/abc/1.5/99 -> socket (safe);  1 -> 8.8.8.8;  2 -> 9.9.9.9  (attacker-controlled).
+   RESIDUAL CAVEAT: if an operator sets BOW_TRUST_PROXY to a hop count that its proxy chain does not
+   actually append to (or overcounts), the selected entry is again attacker-chosen. Silly/invalid
+   values fail safe to the socket. Correct count + an appending proxy -> the proxy-written client IP.
+
+5) MEDIUM-4 (key rotation = silent green over unreadable data)  -> PARTIALLY CLOSED
+   Rotation still destroys access to every class (no re-encryption path; open() returns null under a
+   new key), BUT it now surfaces: GET /health reports storeKey:"mismatch" and 503 (receipt 01 A).
+   NEW GAP: deleting the one canary file re-masks it as storeKey:"fresh" / 200 (receipt 01 B).
+
+6) "Could not break" list  -> re-confirmed + extended (receipt 05).

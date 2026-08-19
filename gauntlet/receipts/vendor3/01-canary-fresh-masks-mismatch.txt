@@ -1,0 +1,24 @@
+# SHA 52a03b9. Canary / storeKey health check (MEDIUM-4 remediation) and its single-file bypass.
+
+## Set up: create a class under GOOD key; canary planted.
+  created class MDDHN; server ALIVE:
+    health HTTP 200
+    storeKey=ok classroomReady=true
+  canary file: /home/user/bow-decision-challenges/.scratch/vendor3/canary-data/_vault-check.json
+
+## (A) Restart with a WRONG key, canary intact -> the fix working:
+    health HTTP 503 (503 expected)
+    storeKey=mismatch classroomReady=false ok=false
+    GET /classes/MDDHN -> HTTP 404 (404: unreadable under wrong key)
+
+## (B) FINDING: delete the ONE canary file, restart with the SAME WRONG key:
+    removed _vault-check.json; class dir still present: MDDHN 
+    health HTTP 200 (200 -> mismatch masked)
+    storeKey=fresh classroomReady=true ok=true
+    GET /classes/MDDHN -> HTTP 404 (still 404: data still unreadable)
+
+# storeKey=fresh is reported over a directory of unreadable classes: the key-mismatch
+# guard (server/store.ts keyCheck) treats 'canary absent' as 'nothing to lose' without
+# checking whether class data exists. Deleting/omitting one predictably-named file
+# (_vault-check.json) — a restore that skips dotfiles, an rsync --exclude, a cleanup —
+# re-creates the exact Round-2 MEDIUM-4 silent-green-over-lost-data state. It fails OPEN.

@@ -1,0 +1,17 @@
+# SHA 52a03b9. Rate limiter as a DoS surface. clientId defaults to the socket IP, so a
+# class behind one NAT (or a reverse proxy with BOW_TRUST_PROXY unset) shares ONE clientId.
+# submit limiter = withinRate(submit:<clientId>:<code>, 120/10min), charged on EVERY attempt
+# and BEFORE auth/body parsing (server/handler.ts). Server alive throughout (pre+post health 200).
+
+PRECHECK health: 200 storeKey=ok
+A) 28 simultaneous JOINs: ok=28 429=0
+A) 28 simultaneous SUBMITs: 202=28 429=0
+B) attacker sends 120 UNauthenticated junk submits (knows only class code YCJ9F): non-429=120 429=0
+B) REAL student genuine turn-in AFTER the flood -> HTTP 429 (unavailable)
+POSTCHECK health: 200 (200 = server was alive throughout, so the 429 is the limiter, not a dead process)
+
+# Reading: normal single-turn-in load (28) is fine. But 120 attempts from the shared
+# clientId exhaust the class's submit bucket, and because the count is charged before auth,
+# an attacker who knows only the public class code and shares the class's NAT (a student in
+# the room) blocks every genuine turn-in for the rest of the 10-minute window. A revise-heavy
+# class of 28 can also reach 120 on its own (168 legit submits -> 48 blocked, seen earlier).

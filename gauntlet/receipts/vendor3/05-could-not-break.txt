@@ -1,0 +1,33 @@
+# SHA 52a03b9. What resisted attack this round.
+
+- Class annexation via POST /classes/:code/claim  -> NOT exploitable.
+  A signed-in teacher (self-signup) with NO teacher key and no prior relationship tried to claim an
+  account-less class by code alone -> HTTP 403 "This link does not open that class." A blanket
+  opensClass() gate (server/handler.ts:417) sits in front of claim and every mutating route, so
+  claiming still requires the class's teacher key (or already owning it). Matches the stated model.
+
+- acceptLegacyPlaintext (the forgery window)  -> NOT reachable in the shipped binary.
+  Only caller is vault(key, options). storeFromEnvironment constructs vault(key) with no options, and
+  no env var / config feeds acceptLegacyPlaintext. It is reachable only from tests. So the migration
+  door cannot be opened by an operator or an attacker in production. (Positive for security; the
+  documented one-boot migration story is, as written, not actually invocable — an aspirational door.)
+
+- File-store concurrency (a class of thirty inside one minute)  -> integrity holds.
+  30 DISTINCT concurrent submissions -> 30 x 202, 30 files on disk. 10 RACING writes to the SAME
+  seat+session -> collapse to one record (idempotent). 31 readable back, none corrupt/truncated,
+  zero leftover *.tmp files. writeAtomic (temp + rename) is sound under load.
+
+- Stored-name / label XSS  -> NOT reproducible.
+  No dangerouslySetInnerHTML / innerHTML / insertAdjacentHTML / document.write anywhere in src.
+  Names go through React text interpolation (auto-escaped) and server-side cleanDisplayName (strips
+  control chars). No user data reaches an href/src/style/attribute sink.
+
+- Session token tamper family  -> unchanged, still clean (re-tested Round 2): payload swap, empty
+  signature, self-minted unsigned token all -> 401. HMAC verify-before-parse holds.
+
+- No third-party / model egress: every front-end fetch is same-origin CLASS_API_BASE; only server
+  outbound is the configured KV. No student writing leaves to any model.
+
+- Recovery flow correctness: a used recovery code is consumed (recoveryHash overwritten with a new
+  one) and recovery rotates sessionGeneration (+1), invalidating every prior session. Both correct.
+  (The enumeration TIMING side channel is a separate finding — receipt 03.)

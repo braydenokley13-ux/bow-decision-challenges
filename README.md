@@ -190,12 +190,23 @@ work students have already turned in.
 { "ok": true, "store": "redis", "durable": true, "classroomReady": true, "storeKey": "ok", "reason": "…" }
 ```
 
-`storeKey` answers a question a deployment cannot otherwise be asked: does this key still open
-what this store already wrote? A rotated or mistyped `BOW_STORE_KEY` is indistinguishable from
+`storeKey` is `ok`, `fresh` (nothing written yet), `mismatch`, or `migrating`. It answers a
+question a deployment cannot otherwise be asked: does this key still open what this store
+already wrote? A rotated or mistyped `BOW_STORE_KEY` is indistinguishable from
 an empty store — every record fails to authenticate and every read answers "no such class" —
 so the store keeps one sealed record of its own and reports `mismatch` with a `503` rather than
 letting a health check go green over a term of classes nobody can open. Nothing is deleted when
-that happens. Put the original key back.
+that happens. Put the original key back. It fails **closed**: deleting the store's own sealed
+record does not turn a mismatch back into a clean bill of health, because a restore that skips
+dotfiles would otherwise disarm the check.
+
+**`BOW_STORE_MIGRATE_PLAINTEXT=1` — a migration mode, not a setting.** A keyed store refuses a
+record that is not sealed, because an attacker who can write one file in the data directory
+would otherwise replace a teacher's sealed record with a plaintext one of their choosing and
+sign in. Set this for the boot that converts a directory written before sealing existed, and
+unset it as soon as the old records have been read and written back: while it is on, the store
+will read records nobody's key wrote. Health reports `storeKey: "migrating"` and says so in
+`reason` for exactly as long as it is open.
 
 `classroomReady` is false unless a class written now would still be there on Friday. A
 deployment with nowhere durable to write answers `503` with the environment variables to set.

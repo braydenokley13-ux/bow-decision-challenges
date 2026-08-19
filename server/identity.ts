@@ -17,7 +17,7 @@ import {
   type ShareOutItem,
   type ShareOutSelection,
 } from "../src/platform/identity/types";
-import { hashSecret, lookupIndex, newId, newRecoveryCode, readToken, signToken, verifySecret } from "./crypto";
+import { burnSecretCheck, hashSecret, lookupIndex, newId, newRecoveryCode, readToken, signToken, verifySecret } from "./crypto";
 import { emailKey, type ClassStore, type StoredClass, type StoredRosterEntry, type StoredTeacher } from "./store";
 
 /**
@@ -313,9 +313,12 @@ export async function handleIdentityRequest(
     const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
     const password = typeof request.body.password === "string" ? request.body.password : "";
     const teacher = await store.getTeacherByEmail(email);
-    // One message and one shape for "no such account" and "wrong password", so this endpoint
-    // cannot be used to find out which teachers exist.
-    if (!teacher || !(await verifySecret(password, teacher.passwordHash))) {
+    // One message, one shape **and one duration** for "no such account" and "wrong password",
+    // so this endpoint cannot be used to find out which teachers exist. The first two were
+    // here already; the third was not, and a reviewer read the difference straight off the
+    // clock — 385ms against 5ms — which made the careful wording decorative.
+    const passwordMatches = teacher ? await verifySecret(password, teacher.passwordHash) : await burnSecretCheck(password);
+    if (!teacher || !passwordMatches) {
       spendRate(emailWindow, 15 * 60 * 1000, now);
       spendRate(addressWindow, 15 * 60 * 1000, now);
       return identityFail(401, "bad_credentials");
@@ -342,7 +345,10 @@ export async function handleIdentityRequest(
     const password = typeof request.body.password === "string" ? request.body.password : "";
     if (password.length < 10 || password.length > 200) return identityFail(400, "bad_credentials");
     const teacher = await store.getTeacherByEmail(email);
-    if (!teacher || !(await verifySecret(code, teacher.recoveryHash))) {
+    // Same reason as signing in: an address with no account has to cost what an address with
+    // one costs, or the timing answers the question the wording refuses to.
+    const codeMatches = teacher ? await verifySecret(code, teacher.recoveryHash) : await burnSecretCheck(code);
+    if (!teacher || !codeMatches) {
       spendRate(recoverEmail, 60 * 60 * 1000, now);
       spendRate(`recover:${clientId}`, 60 * 60 * 1000, now);
       return identityFail(401, "bad_credentials");

@@ -192,7 +192,7 @@ export interface ClassStore {
   keyCheck?(): Promise<KeyCheck>;
 }
 
-export type KeyCheck = "ok" | "fresh" | "mismatch";
+export type KeyCheck = "ok" | "fresh" | "mismatch" | "migrating";
 
 /** What the canary holds. Its value is not a secret; its readability is the whole signal. */
 const VAULT_CANARY = "bow.vault.canary.v1";
@@ -434,13 +434,22 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
     id: "file",
     durable: true,
     keyCheck: async () => {
-      let raw: string;
+      let raw: string | null = null;
       try {
         raw = await readFile(canaryPath, "utf8");
+      } catch { /* absent — see below */ }
+      if (raw !== null) return keeper.open<string>(raw) === VAULT_CANARY ? (keeper.migrating ? "migrating" : "ok") : "mismatch";
+      // Absent is only good news on an empty store. A reviewer deleted this one file and
+      // watched `mismatch` become `fresh` — health back to 200, `classroomReady: true` — over
+      // a directory of classes nobody could open. A restore that skips dotfiles, or a tidy-up
+      // that removes what looks like a stray, would disarm the whole check. So: if there are
+      // classes here and nothing that opens, this key is not the key that wrote them.
+      try {
+        const names = await readdir(root);
+        return names.some((name) => !name.startsWith("_") && !name.endsWith(".json")) ? "mismatch" : "fresh";
       } catch {
         return "fresh";
       }
-      return keeper.open<string>(raw) === VAULT_CANARY ? "ok" : "mismatch";
     },
     getClass: (code) => readJson<StoredClass>(classPath(code)),
     putClass: async (record) => {
@@ -611,8 +620,13 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
     durable: true,
     keyCheck: async () => {
       const raw = await command<string>("GET", "bow:vault-check");
-      if (!raw) return "fresh";
-      return get<string>(raw) === VAULT_CANARY ? "ok" : "mismatch";
+      if (raw) return get<string>(raw) === VAULT_CANARY ? (keeper.migrating ? "migrating" : "ok") : "mismatch";
+      // Fails closed, for the same reason the disk does: a canary that can be deleted to
+      // restore a green health check is a canary an operator can lose without being told.
+      // An empty store has nothing to lose and says so; a store with anything in it and no
+      // readable canary is a store this key did not write.
+      const size = await command<number>("DBSIZE");
+      return (size ?? 0) > 0 ? "mismatch" : "fresh";
     },
     getClass: async (code) => {
       const raw = await command<string>("GET", `class:${code}`);
@@ -687,14 +701,18 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
       return raw ? get<StoredTeacher>(raw) : null;
     },
     getTeacherByEmail: async (email) => {
-      const id = await command<string>("GET", `teacher-email:${emailKey(email)}`);
+      const pointer = await command<string>("GET", `teacher-email:${emailKey(email)}`);
+      const id = pointer ? get<string>(pointer) : null;
       if (!id) return null;
       const raw = await command<string>("GET", `teacher:${id}`);
       return raw ? get<StoredTeacher>(raw) : null;
     },
     putTeacher: async (record) => {
       await command("SET", `teacher:${record.id}`, put(record));
-      await command("SET", `teacher-email:${emailKey(record.email)}`, record.id);
+      // Sealed. The key is already a hash of the address, but the value is the id it points
+      // at, and an index a reader can follow is an index that maps accounts to their records
+      // in a store where everything else is ciphertext.
+      await command("SET", `teacher-email:${emailKey(record.email)}`, put(record.id));
     },
     listClassesForTeacher: async (teacherId) =>
       (await readHash<{ code: string }>(`teacher-classes:${teacherId}`)).map((entry) => entry.code),
@@ -822,7 +840,16 @@ export function storeFromEnvironment(env: Record<string, string | undefined> = p
   if (env.BOW_CLASS_STORE === "memory") return memoryStore();
   // The key that seals what a durable store writes and derives the session-signing secret.
   const key = readStoreKey(env.BOW_STORE_KEY);
-  const keeper = key ? vault(key) : undefined;
+  // The migration door, off unless an operator opens it for a boot. It exists for a directory
+  // written before sealing did; while it is open the store will read records nobody's key
+  // wrote, which is the property that converts old data and the property that lets an attacker
+  // with a write forge one. A security reviewer pointed out that the door had no handle at all
+  // — the option existed and nothing in the shipped binary could set it — which is safe and
+  // dishonest, because the vault's own documentation described a migration an operator could
+  // not actually perform. Now it can be opened, deliberately, and health says so out loud for
+  // as long as it is open.
+  const migrating = env.BOW_STORE_MIGRATE_PLAINTEXT === "1";
+  const keeper = key ? vault(key, { acceptLegacyPlaintext: migrating }) : undefined;
   const url = env.KV_REST_API_URL ?? env.UPSTASH_REDIS_REST_URL;
   const token = env.KV_REST_API_TOKEN ?? env.UPSTASH_REDIS_REST_TOKEN;
   // The managed path runs without one. At-rest encryption there is the subprocessor's control

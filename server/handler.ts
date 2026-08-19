@@ -197,10 +197,16 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
     // standing in front of a class whose work has apparently never existed.
     const key = (await store.keyCheck?.()) ?? "ok";
     const lost = key === "mismatch";
+    // Open on purpose, and loud for exactly as long as it is open. A deployment left in
+    // migration mode reads records nobody's key wrote, which is a forgery window an operator
+    // meant to close after one boot.
+    const migrating = key === "migrating";
     const classroomReady = store.durable && !store.blockedReason && !lost;
     const reason = store.blockedReason
       ?? (lost
         ? `The ${store.id} store holds records this key cannot open. BOW_STORE_KEY has changed, or is not the one these classes were written with. Nothing has been deleted — put the original key back.`
+        : migrating
+        ? `BOW_STORE_MIGRATE_PLAINTEXT is set, so this store is reading records that were never sealed. That is a migration mode, not a setting: unset it as soon as the old data has been read and written back.`
         : store.durable
           ? `Classes are kept in the ${store.id} store for ${CLASS_RETENTION_DAYS} days.`
           : `The ${store.id} store keeps nothing past this process. Fine for tests and demos, not for a class.`);
@@ -342,13 +348,24 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
 
   // POST /classes/:code/submissions — a student turns their evidence in.
   if (request.method === "POST" && segments.length === 3 && segments[2] === "submissions") {
-    // A class code goes on a whiteboard, so it is a public write token unless something else
-    // is asked for. Two hundred forged submissions were accepted in eight and a half seconds
-    // before this existed; the ceiling is a room of thirty turning in inside one lesson, with
-    // retries, and nothing legitimate comes near it.
-    if (!withinRate(`submit:${clientId}:${record.code}`, 120, 10 * 60 * 1000, now)) {
-      return fail(429, "unavailable", "Too many submissions from here just now. Wait a minute and try again.");
-    }
+    // There is no address-keyed limit on this route, and that is the fix rather than an
+    // omission.
+    //
+    // There used to be one, charged before anything was checked and keyed on the caller's
+    // address plus the class code. A school is behind one address, so the bucket was shared by
+    // the whole room — and a security reviewer emptied it with a hundred and twenty junk posts
+    // that were never going to be accepted, knowing nothing but the class code off a
+    // whiteboard. A real student's genuine turn-in then got a 429. One device on the school
+    // network could stop a class handing work in for ten minutes. Any limit keyed on an address
+    // has that shape, including a limit that charges only failures: the room and the attacker
+    // are the same address, so the attacker spends the room's budget.
+    //
+    // What that limit was protecting is already protected. It was added when this endpoint
+    // took work from anybody holding a class code — a review posted two hundred forged runs in
+    // eight and a half seconds — and the answer to that was authentication, which landed
+    // separately. A forged submission now costs a signature check and is refused; there is
+    // nothing expensive behind it to shield. The limit that remains is per student, on work
+    // that was actually accepted.
     const submission = readSubmission(request.body);
     if (!submission) return fail(400, "bad_request", "That submission could not be read.");
 
@@ -374,6 +391,12 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
     const seat = roster.find((entry) => entry.seatCode === submission.seatCode && !entry.removedAt);
     if (!seat || seat.studentId !== student.id) {
       return fail(403, "not_authorised", "Sign in as yourself before turning this in.");
+    }
+    // Now that we know whose work this is, count it against them rather than against the room.
+    // Twenty in ten minutes is far above a student who turns in, is disconnected, and retries;
+    // far below anything a script would want.
+    if (!withinRate(`submit:${student.id}`, 20, 10 * 60 * 1000, now)) {
+      return fail(429, "unavailable", "That has been sent several times already. Wait a minute and try again.");
     }
     if (submission.challengeId !== record.challengeId) {
       return fail(409, "challenge_mismatch", "That class is running a different challenge.");

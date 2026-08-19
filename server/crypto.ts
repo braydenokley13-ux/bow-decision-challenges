@@ -72,6 +72,26 @@ export async function verifySecret(secret: string, stored: string): Promise<bool
   return key !== null && constantTimeEquals(key, expected);
 }
 
+/**
+ * The work a sign-in does when there is no account to check against.
+ *
+ * A vendor review timed the teacher sign-in and found a wrong password on a real account took
+ * **385ms** and a password for an address with no account took **5ms** — both answering 401
+ * with the same words. Eighty-three times is not a subtle side channel; it is a directory of
+ * every teacher in the district, readable by anybody who can post a form. The one message and
+ * one shape this endpoint was careful to give were undone by how long it took to give them.
+ *
+ * So the no-account branch does the same scrypt the real branch would have done. The decoy
+ * hash is computed once, lazily, from a constant nobody can sign in with — its value is
+ * irrelevant, because the answer is always false and only the elapsed time matters.
+ */
+let decoy: Promise<string> | null = null;
+export async function burnSecretCheck(secret: string): Promise<false> {
+  decoy ??= hashSecret("bow.no-such-account.decoy");
+  await verifySecret(secret, await decoy);
+  return false;
+}
+
 /** Length-safe: `timingSafeEqual` throws on a length mismatch, which is itself a signal. */
 export function constantTimeEquals(a: Buffer | string, b: Buffer | string): boolean {
   const left = Buffer.isBuffer(a) ? a : Buffer.from(a, "utf8");
