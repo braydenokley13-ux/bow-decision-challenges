@@ -38,7 +38,8 @@ import {
 import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
 import { CLASS_STATE_LABELS, LEVEL_LABELS, skillStateInSentence } from "../src/educator/labels";
 import { PLAYABLE_WORLDS } from "../src/domain/scenario/registry";
-import { isAssessable, standardsIn, type FrameworkId } from "../src/domain/standards";
+import { isAssessable, labelsFor, standardsIn, type FrameworkId } from "../src/domain/standards";
+import { DEMO_CLASS_LABEL } from "../src/fixtures/demoClass";
 
 /** The one framework this deployment carries, named once so the tests below compose its refs. */
 const FRAMEWORK_ID: FrameworkId = "nysed-pf-2026";
@@ -883,7 +884,16 @@ test("a class code that does not exist is refused before the challenge starts", 
   await page.getByRole("button", { name: "Next" }).click();
 
   await expect(page.getByRole("alert")).toContainText("No class with that code");
-  await expect(page.getByRole("heading", { name: "What the eight weeks pay." })).not.toBeVisible();
+  // Refused *before the challenge starts* is the half of this test that matters, and it was
+  // being checked with `not.toBeVisible()` on a heading reading "What the eight weeks pay." —
+  // a string the product contains nowhere, in whole or in part. So the only live assertion was
+  // the alert, and a build that showed the alert and let the student through anyway passed.
+  //
+  // The door is two steps: a class code, then the code off the student's card. Refusal means
+  // the second step never opens, and `signIn` in `flow.ts` fills exactly this field on the way
+  // in — so a rename that moved the door moves this with it instead of quietly emptying it.
+  await expect(page.getByLabel("Your code")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /^(Start|Carry on)$/ })).toHaveCount(0);
 });
 
 studentTest("a student who loses the network keeps their work and can send it again", async ({ page, request, classCode }) => {
@@ -996,10 +1006,20 @@ studentTest("a real class shows what its own students did, and never a fixture",
   for (const run of runs) await expect(page.locator(".row-list")).toContainText(`Test Student ${run.seat}`);
   await expect(rows.first()).not.toContainText("/100");
 
-  // The fixture class is 28 students with a seat 14 golden case. None of it may appear.
+  // Nothing from the sample class may appear on a real one.
+  //
+  // This named two literals and neither was in the product. "28" was the fixture's old roll —
+  // it is eighteen runs now, ten basketball and eight market — so the assertion was a bare
+  // substring test against a page full of money, and it would have passed just as happily
+  // with the whole sample class on screen. The full badge sentence was written out a third
+  // time here, next to the two places that already compose it.
+  //
+  // Both are read off the fixture and the shell now: the label the sample class is given, and
+  // the badge every sample-class screen carries. `pilot.spec.ts` closed the same hole the same
+  // way, so the two files now fail together if a fixture ever reaches a real class.
   const body = page.locator("body");
-  await expect(body).not.toContainText("28");
-  await expect(body).not.toContainText("Sample class — not a real class");
+  await expect(body).not.toContainText(DEMO_CLASS_LABEL);
+  await expect(page.locator(".demo-pill")).toHaveCount(0);
   await noSeriousAxeViolations(page);
 });
 
@@ -1063,7 +1083,13 @@ studentTest("a class of five is described as a class, and the lesson is on the c
   const review = page.locator(".debrief__section").filter({ hasText: "What to review" });
   await expect(review).toContainText(`${struggled} of ${assessed}`);
   await expect(review).toContainText(String(requirement));
-  await expect(review).not.toContainText("Nothing here needs reteaching");
+  // And it has not *also* refused. This read `not.toContainText("Nothing here needs
+  // reteaching")`, a sentence no component in this product emits — it survives only in three
+  // comments recording that the page used to print it — so the assertion was an absence of
+  // nothing, true of this page, of the front door and of a blank screen. The refusal
+  // `WhatToReview` actually renders is the one asserted here, and the two-student test below
+  // requires that same sentence to be present, so neither can rot without the other failing.
+  await expect(review).not.toContainText("nothing to review from");
 });
 
 // ---------------------------------------------------------------------------
@@ -1292,7 +1318,12 @@ studentTest("the debrief is built from the class, and says so when there is noth
   const review = page.locator(".debrief__section").filter({ hasText: "What to review" });
   await expect(review).toContainText("nothing to review from");
   await expect(review).toContainText("still to read");
-  await expect(review).not.toContainText("Nothing here needs reteaching");
+  // Refusing means not naming a gap. This read `not.toContainText("Nothing here needs
+  // reteaching")` — a sentence the product does not contain, so it was green against a page
+  // naming any lesson it liked, which is the exact defect the comment above describes. What
+  // `WhatToReview` prints when it *does* name one is "…assessed students did not show
+  // “…”", and the five-student test above requires that sentence to be there.
+  await expect(review).not.toContainText("did not show");
   await noSeriousAxeViolations(page);
 });
 
@@ -1916,7 +1947,11 @@ test("an objective with no world is a short honest page, not a dashboard of empt
   // block explaining that no class has been set something no class can be set.
   await expect(page.locator(".micro-table")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Your classes" })).toHaveCount(0);
-  await expect(page.locator("body")).not.toContainText("has been set this objective");
+  // The sentence is composed — `…has been set this {unitNounShort.toLowerCase()}` — so writing
+  // it out here spells "objective" for New York and is an absence of nothing for any framework
+  // whose unit is called anything else. Composed the same way, from the same table.
+  await expect(page.locator("body"))
+    .not.toContainText(`has been set this ${labelsFor("nysed-pf-2026")?.unitNounShort.toLowerCase()}`);
 });
 
 test("a teacher assigns 1.3, three students submit, and the objective reports what they did", async ({ page, browser, request }) => {
