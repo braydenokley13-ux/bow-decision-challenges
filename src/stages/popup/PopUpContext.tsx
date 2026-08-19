@@ -81,7 +81,7 @@ function belongsToSeat(state: PopUpState, seed: PopUpSeed): boolean {
  * has never seen, and pulling an older server copy over it would be sync losing the thing sync
  * is for.
  */
-export function PopUpProvider({ children, seed, transport }: PropsWithChildren<{ seed: PopUpSeed; transport: EvidenceTransport }>) {
+export function PopUpProvider({ children, seed, transport, sample = false }: PropsWithChildren<{ seed: PopUpSeed; transport: EvidenceTransport; sample?: boolean }>) {
   const here = loadAttemptFor<PopUpState>("food-truck");
   const nothingToAsk = !seed.classCode || !studentToken();
   const [resolved, setResolved] = useState<{ state?: PopUpState } | null>(() => (nothingToAsk ? {} : null));
@@ -106,10 +106,10 @@ export function PopUpProvider({ children, seed, transport }: PropsWithChildren<{
   }, [seed, nothingToAsk]);
 
   if (!resolved) return <div className="popup-shell" data-world="food-truck" />;
-  return <PopUpRun seed={seed} transport={transport} {...(resolved.state ? { initial: resolved.state } : {})}>{children}</PopUpRun>;
+  return <PopUpRun seed={seed} transport={transport} sample={sample} {...(resolved.state ? { initial: resolved.state } : {})}>{children}</PopUpRun>;
 }
 
-function PopUpRun({ children, seed, transport, initial }: PropsWithChildren<{ seed: PopUpSeed; transport: EvidenceTransport; initial?: PopUpState }>) {
+function PopUpRun({ children, seed, transport, sample = false, initial }: PropsWithChildren<{ seed: PopUpSeed; transport: EvidenceTransport; sample?: boolean; initial?: PopUpState }>) {
   const [state, rawDispatch] = useReducer(
     popUpReducer,
     undefined,
@@ -156,7 +156,9 @@ function PopUpRun({ children, seed, transport, initial }: PropsWithChildren<{ se
 
   // The same rule Basketball's provider keeps, from the same module: anything that reached
   // the log is written at once, a draft waits a moment, and the page going away ends the wait.
-  useAttemptAutosave(state);
+  // A sample run is a look, not a piece of work: it must not write over the attempt a child
+  // left in this browser. Same rule as the other story's provider, same reason.
+  useAttemptAutosave(state, !sample);
 
   // …and the half of "where is this student up to" that lives on the server. Local storage
   // keeps the work safe on the machine it was made on; it cannot tell a teacher walking the
@@ -164,11 +166,12 @@ function PopUpRun({ children, seed, transport, initial }: PropsWithChildren<{ se
   // hook debounces itself — on a change of stage, otherwise at most every fifteen seconds,
   // and once when the page goes away — so there is no second debounce around it.
   useAttemptCheckpoint(
-    state.meta.classCode
+    state.meta.classCode && !sample
       ? {
           classCode: state.meta.classCode,
           worldId: "food-truck" as const,
           stage: state.stage,
+          sessionId: state.meta.sessionId,
           payload: state,
           ...(state.meta.assignmentId ? { assignmentId: state.meta.assignmentId } : {}),
         }

@@ -35,6 +35,8 @@ export interface Checkpoint {
   classCode: string;
   worldId: WorldId;
   stage: string;
+  /** Which attempt this is, so the server can tell a resumed run from a second one. */
+  sessionId: string;
   assignmentId?: string;
   payload: unknown;
 }
@@ -57,8 +59,8 @@ export function useAttemptCheckpoint(checkpoint: Checkpoint | null, active = tru
     lastSentAt.current = Date.now();
     inFlight.current = true;
     void (async () => {
-      const { classCode, worldId, stage, assignmentId, payload } = checkpoint;
-      await checkpointAttempt({ classCode, worldId, stage, payload, ...(assignmentId ? { assignmentId } : {}) });
+      const { classCode, worldId, stage, sessionId, assignmentId, payload } = checkpoint;
+      await checkpointAttempt({ classCode, worldId, stage, sessionId, payload, ...(assignmentId ? { assignmentId } : {}) });
       inFlight.current = false;
     })();
   }, [active, checkpoint]);
@@ -71,11 +73,20 @@ export function useAttemptCheckpoint(checkpoint: Checkpoint | null, active = tru
     const send = () => {
       const now = latest.current;
       if (!now?.classCode || !studentToken()) return;
-      const { classCode, worldId, stage, assignmentId, payload } = now;
-      void checkpointAttempt({ classCode, worldId, stage, payload, ...(assignmentId ? { assignmentId } : {}) });
+      const { classCode, worldId, stage, sessionId, assignmentId, payload } = now;
+      void checkpointAttempt({ classCode, worldId, stage, sessionId, payload, ...(assignmentId ? { assignmentId } : {}) });
     };
+    // Both listeners come off again. The visibility one was added with an inline arrow and
+    // never removed, so a provider that had gone inactive — the basketball one, after a
+    // student picked the market — went on reporting its own stale position every time the tab
+    // was hidden. The teacher's board then showed a child on `choose-world` forever, and the
+    // student's own home offered to carry on a run they had left.
+    const onHidden = () => { if (document.visibilityState === "hidden") send(); };
     window.addEventListener("pagehide", send);
-    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") send(); });
-    return () => { window.removeEventListener("pagehide", send); };
+    document.addEventListener("visibilitychange", onHidden);
+    return () => {
+      window.removeEventListener("pagehide", send);
+      document.removeEventListener("visibilitychange", onHidden);
+    };
   }, [active]);
 }

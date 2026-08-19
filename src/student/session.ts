@@ -110,6 +110,7 @@ export function checkpointAttempt(input: {
   classCode: string;
   worldId: WorldId;
   stage: string;
+  sessionId: string;
   assignmentId?: string;
   payload: unknown;
 }) {

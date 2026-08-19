@@ -28,6 +28,8 @@ interface ChallengeContextValue {
    * its own, so this is the one fact that decides which of them the student is looking at.
    */
   activeWorldId: WorldId;
+  /** A disposable run with nothing behind it. Nothing about it is saved or sent. */
+  sample: boolean;
   /** What this seat was offered, once the class has answered. Null until it has. */
   offer: WorldOffer | null;
   setOffer: (offer: WorldOffer) => void;
@@ -63,8 +65,18 @@ function restoredWorld(): WorldId {
   return loadAttemptFor(last) ? last : DEFAULT_WORLD_ID;
 }
 
-export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT, initial, initialWorldId }: PropsWithChildren<{
+export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT, initial, initialWorldId, sample = false }: PropsWithChildren<{
   transport?: EvidenceTransport;
+  /**
+   * A disposable run nobody is going to read: the educator guide's "Try it as a student".
+   *
+   * It turns off the two things that outlive the tab — the local autosave and the class
+   * checkpoint — because a teacher trying the product on a classroom laptop must not write over
+   * the attempt a child left in that browser, and a run with no class behind it has nothing to
+   * checkpoint to. Everything else is the run a student gets, including this world's reducer,
+   * so what a teacher sees here is what their students see.
+   */
+  sample?: boolean;
   /**
    * An attempt this browser did not write.
    *
@@ -110,7 +122,7 @@ export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT, ini
   // moves the "last world played" pointer, and a background provider that kept saving would
   // drag a student back into this world on the next reload while they were three screens into
   // the other one.
-  useAttemptAutosave(state, activeWorldId === state.meta.worldId && !run.shadowed);
+  useAttemptAutosave(state, !sample && activeWorldId === state.meta.worldId && !run.shadowed);
 
   // And the same attempt to the class it belongs to, so a teacher walking the room can see who
   // is mid-run and a student can finish on a different machine. Local storage answers neither
@@ -121,11 +133,12 @@ export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT, ini
         classCode: state.meta.classCode,
         worldId: state.meta.worldId,
         stage: state.stage,
+        sessionId: state.meta.sessionId,
         payload: state,
         ...(state.meta.assignmentId ? { assignmentId: state.meta.assignmentId } : {}),
       }
       : null,
-    activeWorldId === state.meta.worldId && !run.shadowed,
+    !sample && activeWorldId === state.meta.worldId && !run.shadowed,
   );
 
   const reset = useCallback(() => {
@@ -182,37 +195,64 @@ export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT, ini
   }, [transport, state.meta, state.log]);
 
   const value = useMemo(
-    () => ({ state, dispatch, reset, transport, delivery, deliver, activeWorldId, offer, setOffer, enterWorld, handOver }),
-    [state, dispatch, reset, transport, delivery, deliver, activeWorldId, offer, enterWorld, handOver],
+    () => ({ state, dispatch, reset, transport, delivery, deliver, activeWorldId, sample, offer, setOffer, enterWorld, handOver }),
+    [state, dispatch, reset, transport, delivery, deliver, activeWorldId, sample, offer, enterWorld, handOver],
   );
   return (
     <ChallengeContext.Provider value={value}>
-      {run.shadowed ? <RunElsewhere onTakeOver={run.takeOver} /> : children}
+      {run.state === "elsewhere"
+        ? <RunElsewhere onTakeOver={run.takeOver} />
+        : run.state === "checking" ? <PickingUp /> : children}
     </ChallengeContext.Provider>
   );
 }
 
 /**
- * What the second tab gets instead of the run.
+ * The blink while this tab finds out whether anybody else has the run.
+ *
+ * It is under a second and it says nothing about the student, because at this moment nothing
+ * about the student is known. What used to be here instead was a red screen asserting that
+ * their challenge was open in another tab — asserted, not checked — and the common way to see
+ * it was to close the browser at the end of a lesson and come back to it the next morning.
+ */
+function PickingUp() {
+  return (
+    <div className="run-elsewhere">
+      <main>
+        <p className="eyebrow">One moment</p>
+        <h1>Picking your run back up…</h1>
+        <p>Making sure it is not open in another window first, so two copies cannot save over each other.</p>
+      </main>
+    </div>
+  );
+}
+
+/**
+ * What the second tab gets instead of the run — once there really is a second tab.
  *
  * It replaces the whole challenge rather than sitting on top of it, and that is deliberate: a
  * banner over a live board is a board a student will use, and every press on it would be a
  * press this tab cannot save. The run is not lost and this does not throw anything away — the
- * work is in the tab that holds it, and taking it over here re-reads that work rather than
+ * work is in the window that holds it, and carrying on here re-reads that work rather than
  * overwriting it.
+ *
+ * It leads with the way out. A twelve-year-old sitting down to finish their work does not need
+ * a paragraph about why two copies cannot both save before they are allowed to carry on; they
+ * need the button, and the explanation underneath it. This screen is only ever shown now to a
+ * tab that has heard the other one answer, so every sentence on it is true of what happened.
  */
 function RunElsewhere({ onTakeOver }: { onTakeOver: () => void }) {
   return (
     <div className="run-elsewhere">
       <main>
-        <p className="eyebrow">This tab is not the one running it</p>
-        <h1>Your challenge is open in another tab.</h1>
+        <p className="eyebrow">This run is open in another window</p>
+        <h1>Carry on here?</h1>
+        <Button type="button" variant="primary" onClick={onTakeOver}>Carry on here</Button>
         <p>
-          Two copies of the same run cannot both save, so this one is not saving anything. Go
-          back to the other tab and carry on there — everything you have done is in it.
+          The same run is open in another window on this computer, and it is still saving there.
+          Only one of them can save at a time, so this one is not saving anything yet.
         </p>
-        <p>If you cannot find it, or you closed it, you can move the run into this tab instead.</p>
-        <Button type="button" variant="secondary" onClick={onTakeOver}>Move the run to this tab</Button>
+        <p>Carrying on here brings the run over with everything you have done. Nothing is lost either way.</p>
       </main>
     </div>
   );

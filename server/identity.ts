@@ -513,6 +513,15 @@ export async function handleIdentityRequest(
     const stage = typeof request.body.stage === "string" ? request.body.stage.slice(0, 60) : "";
     if (!worldId || !stage) return { status: 400, body: { error: "bad_request", message: "A checkpoint needs a world and a stage." } };
     const existing = (await store.listCheckpoints(classCode)).find((entry) => entry.seatCode === seat.seatCode);
+    const sessionId = typeof request.body.sessionId === "string" ? request.body.sessionId.slice(0, 64) : "";
+    // A checkpoint never outranks a submission — the type has said so since it was written,
+    // and this rebuild dropped `submittedAt` on the floor, so the last checkpoint a student's
+    // browser sent on its way out of the turn-in screen brought a finished run back to life.
+    // Their own home then offered to carry on a run they had turned in, and their teacher's
+    // live board counted them as still working. The one case where it should genuinely clear
+    // is a *different* attempt: a student going again is not still in the one they finished.
+    const sameAttempt = !sessionId || !existing?.sessionId || existing.sessionId === sessionId;
+    const stillSubmitted = sameAttempt ? existing?.submittedAt : undefined;
     const checkpoint: AttemptCheckpoint = {
       classCode,
       seatCode: seat.seatCode,
@@ -520,8 +529,10 @@ export async function handleIdentityRequest(
       assignmentId: typeof request.body.assignmentId === "string" ? request.body.assignmentId.slice(0, 64) : "",
       worldId: worldId as AttemptCheckpoint["worldId"],
       stage,
-      startedAt: existing?.startedAt ?? now,
+      startedAt: sameAttempt ? existing?.startedAt ?? now : now,
       updatedAt: now,
+      ...(sessionId ? { sessionId } : {}),
+      ...(stillSubmitted ? { submittedAt: stillSubmitted } : {}),
       payload: request.body.payload ?? null,
     };
     await store.putCheckpoint(checkpoint);

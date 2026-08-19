@@ -168,6 +168,12 @@ export interface AttemptCheckpoint {
   updatedAt: number;
   /** Set when the attempt has been turned in, so a checkpoint never outranks a submission. */
   submittedAt?: number;
+  /**
+   * Which attempt this is. Not read into — the service still never looks inside `payload` —
+   * but held beside it, because "has this been turned in" is a fact about one attempt and a
+   * student who starts a second run needs the answer to become no again.
+   */
+  sessionId?: string;
   /** The opaque attempt, as the world's own machine wrote it. The service never reads inside. */
   payload: unknown;
 }
