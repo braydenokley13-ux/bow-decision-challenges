@@ -50,16 +50,20 @@ export function Week8Resolution() {
    * pricing of their pre-Week-5 amounts against the Week 5 board, and the movable money is
    * what those amounts held. A reserved seat has already emptied the course line, so the same
    * sum is the right one either way.
+   *
+   * Whether the student took the course line down is *not* passed from here. It used to be,
+   * as `final.amounts.goal < opening.goal`, which is true of every student who reserved the
+   * seat after saving for it — the product empties that row, not the student. `resolveSeason`
+   * derives it from the row's own ceiling.
    */
   const pressure = useMemo<Week5Pressure | undefined>(
     () => (response
       ? {
           shortfall: residualOf(balanceOf({ ...response, amounts: opening }, SCENARIO_NUMBERS)),
           movable: assigned(opening),
-          courseLineCut: final ? final.amounts.goal < opening.goal : false,
         }
       : undefined),
-    [response, opening, final],
+    [response, opening],
   );
   /**
    * Week 3, coming back.

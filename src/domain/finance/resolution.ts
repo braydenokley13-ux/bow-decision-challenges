@@ -2,7 +2,7 @@ import { dollars, formatDollars, type Dollars } from "../core/money";
 import { hours } from "../core/units";
 import type { ScenarioNumbers } from "../scenario/types";
 import { bonusWeeks } from "../scenario/season";
-import { assigned, courseCostFor } from "./formulas";
+import { assigned, courseCostFor, planMovements } from "./formulas";
 import { loadFor, type LoadReadout } from "./load";
 import type { PlanAmounts, SnapshotInputs } from "./types";
 
@@ -96,10 +96,16 @@ export interface Week5Pressure {
   shortfall: Dollars;
   /** Money sitting in lines the student could still move when it landed. */
   movable: Dollars;
-  /** The course line finished lower than the plan Avery carried into Week 5. */
-  courseLineCut: boolean;
 }
 
+/**
+ * One row's before and after, as a record of the plan rather than of the student.
+ *
+ * `delta` is not a decision and must never be reported as one: the product edits these rows
+ * too, and reserving the seat empties the course row without the student touching it.
+ * `planMovements` is what separates the two, and anything turning a plan into a sentence
+ * about a child reads that instead of this.
+ */
 export interface PlanChange {
   category: keyof PlanAmounts;
   before: Dollars;
@@ -165,8 +171,17 @@ function heldWith(final: SnapshotInputs, n: ScenarioNumbers, changed: { clinics?
  * off" when the money it kept reachable is what covered Week 5, "fell short" when even that
  * was not enough, and "no effect" on a season that never asked the movable money for anything
  * — a real third state, not a default, and the premium is still on the page.
+ *
+ * `courseLineCut` has to mean *the student took the course line down*, and only the caller
+ * with the row's ceiling in hand can say that. Read off a plain `final.goal < opening.goal`
+ * it was true of every student who had been saving for the course and then reserved the seat,
+ * because reserving is what empties that row — so "or that had to take the course line down"
+ * fired on every reserved season Week 5 tested, and the "paid off" branch above was
+ * unreachable for them. A plan whose movable money covered the bill three times over was
+ * still headed **Cost you**, over a sentence saying reserving stopped being money Avery could
+ * move. `resolveSeason` derives it from `planMovements`; nothing here re-derives it.
  */
-function depositVerdict(final: SnapshotInputs, n: ScenarioNumbers, pressure: Week5Pressure): RiskVerdict {
+function depositVerdict(final: SnapshotInputs, n: ScenarioNumbers, pressure: Week5Pressure, courseLineCut: boolean): RiskVerdict {
   const premium = formatDollars(n.course.fullPrice - n.course.depositPrice);
   const early = formatDollars(n.course.depositPrice);
   const full = formatDollars(n.course.fullPrice);
@@ -180,7 +195,7 @@ function depositVerdict(final: SnapshotInputs, n: ScenarioNumbers, pressure: Wee
   const held = pressure.shortfall <= pressure.movable;
 
   if (final.depositTaken) {
-    const strained = tested && (!held || pressure.courseLineCut);
+    const strained = tested && (!held || courseLineCut);
     // The badge and the first sentence have to agree. A verdict headed "Cost you" that opens
     // "the course cost less" reads as a mistake, and one headed "Paid off" that opens with
     // what the decision cost teaches a student that the badge is decoration. The price is in
@@ -271,20 +286,44 @@ function listOf(items: readonly string[]): string {
   return `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
 }
 
-function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, bonusLabel: string, pressure: Week5Pressure, claims?: CompetingClaimsOutcome): RiskVerdict[] {
+function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, load: LoadReadout, bonusLabel: string, pressure: Week5Pressure, courseLineCut: boolean, claims?: CompetingClaimsOutcome): RiskVerdict[] {
+  const held = load.attendanceHolds;
   const withoutTimeMoney = heldWith(final, n, { timeMoney: dollars(0) });
   const withoutClinics = heldWith(final, n, { clinics: false });
   const bonus = formatDollars(n.completionIncome);
   const clinicHours = n.load.clinicBlocks;
-  // What it would have taken to stay under the line, from the same load model. Adding this
-  // much to Avery's week buys back exactly the hours the plan was over by, so the sentence
-  // it goes into is a fact about this student's plan and not a figure of speech.
-  const clearing = formatDollars(
-    loadFor(
-      { setupId: final.setupId, rehabActive: true, clinicsAccepted: final.includeOptionalWork, timeMoney: final.amounts.flexibleCash },
-      n,
-    ).costToClear,
-  );
+  /**
+   * What the rides row had to hold, and whether this plan could ever have put it there.
+   *
+   * It used to print `costToClear`, which `load.ts` defines as what the week would cost
+   * **from here, given what has already been spent** — a delta — inside a sentence reading
+   * "Putting $X into rides", which is a total. The two coincide only when the row is empty,
+   * which is what a fixture plans, so the figure shipped short by exactly what the student
+   * had already spent in every case where they had spent anything: a run that put $1,150
+   * into rides was told $1,500 would have held a bonus whose row had to hold $2,550. The
+   * plan board says the same number correctly, as "**Another** $X on rides would cover it",
+   * and gates it on the money actually being there to move.
+   *
+   * So this says the total, and checks the move it names is one this plan could have made.
+   * The rows are a split of one fixed sum, so "could the other two have covered it" and
+   * "could the whole plan have reached it" are the same question. Where the answer is no,
+   * the sentence says that instead of naming money that was never there — which is the true
+   * and more useful lesson: the bonus was already gone when the week was chosen, and the
+   * verdicts either side of this one name the choices that made it so.
+   */
+  const pool = assigned(final.amounts);
+  const protect = load.costToProtect;
+  const spentOnRides = final.amounts.flexibleCash;
+  // Null only on a week that never went over the line, which is not a week the bonus can be
+  // lost in — read as an absence rather than assumed away, so a missing figure prints no
+  // counterfactual instead of a wrong one.
+  const counterfactual = protect === null
+    ? ""
+    : protect > pool
+      ? ` Holding it needed ${formatDollars(protect)} in the rides row, and this plan had ${formatDollars(pool)} to spread across all three amounts — no way of splitting it would have kept the bonus.`
+      : spentOnRides > 0
+        ? ` Putting ${formatDollars(protect)} into rides — ${formatDollars(dollars(protect - spentOnRides))} more than you put there, out of your other two amounts — would have kept it.`
+        : ` Putting ${formatDollars(protect)} into rides, out of your other two amounts, would have kept it.`;
 
   const verdicts: RiskVerdict[] = [
     {
@@ -305,7 +344,7 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
           : "Avery missed a session, so the bonus never arrived. Your plan was already built without it."
         : held
           ? "Avery made every session. The money you planned around actually landed."
-          : `Avery missed a session, and the money your plan was counting on never came. Putting ${clearing} into rides — taken out of your other two amounts — would have kept it.`,
+          : `Avery missed a session, and the money your plan was counting on never came.${counterfactual}`,
     },
     {
       id: "clinics",
@@ -347,9 +386,9 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
           ? "This is what saved the bonus. Without the hours you bought back, Avery would have run out of week."
           : held
             ? "Avery would have made every session either way, so this money bought rest rather than the bonus."
-            : `It bought ${hours(loadFor({ setupId: final.setupId, rehabActive: true, clinicsAccepted: final.includeOptionalWork, timeMoney: final.amounts.flexibleCash }, n).bought)} back, and Avery still did not have enough week left.`,
+            : `It bought ${hours(load.bought)} back, and Avery still did not have enough week left.`,
     },
-    depositVerdict(final, n, pressure),
+    depositVerdict(final, n, pressure, courseLineCut),
     // Appended before the sort rather than merged into it, so that within one outcome the
     // season's own calls still read first: `sort` is stable, and one week's cash is small
     // beside a plan of thousands. It is the last thing in the list that costs, not the
@@ -388,11 +427,19 @@ export function resolveSeason(
    * final plan still holds counted as movable. A caller that knows what the week asked passes
    * it, and every real run does.
    */
-  const pressure: Week5Pressure = week5 ?? {
-    shortfall: dollars(0),
-    movable: assigned(final.amounts),
-    courseLineCut: opening ? final.amounts.goal < opening.goal : false,
-  };
+  const pressure: Week5Pressure = week5 ?? { shortfall: dollars(0), movable: assigned(final.amounts) };
+  /**
+   * Did the student take the course line down themselves to cover Week 5?
+   *
+   * Derived here rather than handed in, because the only honest answer needs the ceiling the
+   * board left that row and a caller holding two sets of amounts cannot see it. `final.goal <
+   * opening.goal` is true of every student who was saving for the course and then reserved
+   * the seat — reserving is what empties the row — so read that way it turned the deposit
+   * trade into a fixed verdict for exactly the students who had committed to the course.
+   */
+  const courseLineCut = opening
+    ? planMovements(opening, final.amounts, final, n).some((row) => row.category === "goal" && row.chosenReduction > 0)
+    : false;
   const load = loadFor(
     {
       setupId: final.setupId,
@@ -439,7 +486,7 @@ export function resolveSeason(
     courseShort,
     endCash: dollars(bufferHeld - absorbed + unplannedGain),
     spentOnTime: final.amounts.flexibleCash,
-    risks: riskVerdicts(final, n, attendanceHeld, bonusLabel, pressure, claims),
+    risks: riskVerdicts(final, n, load, bonusLabel, pressure, courseLineCut, claims),
     changes: opening
       ? (["goal", "reserve", "flexibleCash"] as const).map((category) => ({
           category,
