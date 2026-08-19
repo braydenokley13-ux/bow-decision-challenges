@@ -34,3 +34,10 @@ for (const shot of SHOTS) {
     if (errors.length) console.log(`CONSOLE ${shot.name}: ${errors.join(" | ")}`);
   });
 }
+
+/** The per-student surface — the case file's ancestor. Seat 1 is a completed run. */
+test("shot 14-student-case", async ({ page }) => {
+  await page.goto("/educator/class/DEMO/students/1", { waitUntil: "networkidle" }).catch(() => {});
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: "gauntlet/v5/shots/14-student-case.png", fullPage: true });
+});
