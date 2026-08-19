@@ -1,5 +1,5 @@
 import { sourceWithoutComments } from "../test/source";
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { FRAMEWORKS } from "../domain/standards";
 
