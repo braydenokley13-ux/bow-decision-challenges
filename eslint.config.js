@@ -4,6 +4,24 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
+/**
+ * The view boundary, written once because ESLint **replaces** a rule's options rather than
+ * merging them across config blocks.
+ *
+ * That is the whole of a hole an engineering review found. `src/domain/**` declared this
+ * group, and the two narrower blocks below redeclared `no-restricted-imports` to add a rule of
+ * their own — which silently dropped it. `src/domain/finance/**` (eight files) could import
+ * `../../educator/labels` and lint clean, under a boundary ARCHITECTURE.md says is enforced.
+ * Nothing had crossed it yet, which is exactly why nobody noticed.
+ *
+ * Every block that narrows this boundary now spreads `VIEW_FREE` rather than restating it, so
+ * adding a rule to a subdirectory cannot cost it the rule that covers the whole tree.
+ */
+const VIEW_FREE = {
+  group: ["react", "react-dom", "**/components/**", "**/stages/**", "**/educator/**", "**/app/**", "**/student/**"],
+  message: "Domain modules must remain pure and view-independent.",
+};
+
 export default tseslint.config(
   // `scripts` holds standalone dev tooling that runs outside the app tsconfig.
   { ignores: ["dist", "dist-server", ".bow-classes", "coverage", "playwright-report", "test-results", "screens", "scripts", ".scratch", "gauntlet", "eslint.config.js", "stylelint.config.js"] },
@@ -29,11 +47,7 @@ export default tseslint.config(
     rules: {
       // Depth-independent on purpose: the patterns used to be written as `../../educator/**`,
       // which a module three directories under `src/domain` escapes simply by being deeper.
-      "no-restricted-imports": ["error", {
-        "patterns": [
-          { "group": ["react", "react-dom", "**/components/**", "**/stages/**", "**/educator/**", "**/app/**"], "message": "Domain modules must remain pure and view-independent." }
-        ]
-      }]
+      "no-restricted-imports": ["error", { "patterns": [VIEW_FREE] }]
     }
   },
   {
@@ -45,7 +59,7 @@ export default tseslint.config(
       // rewrite instead of a mapping file.
       "no-restricted-imports": ["error", {
         "patterns": [
-          { "group": ["react", "react-dom", "**/components/**", "**/stages/**", "**/educator/**", "**/app/**"], "message": "Domain modules must remain pure and view-independent." },
+          VIEW_FREE,
           { "group": ["**/standards", "**/standards/**"], "message": "Competencies never reference a state framework. The mapping table joins them, from the standards side." }
         ]
       }]
@@ -56,7 +70,11 @@ export default tseslint.config(
     rules: {
       "no-restricted-imports": ["error", {
         "patterns": [
-          { "group": ["react", "react-dom", "../scenario/worlds/**", "../../scenario/worlds/**"], "message": "Finance receives ScenarioNumbers and never imports a world." }
+          VIEW_FREE,
+          // Depth-independent, for the same reason the view group is: written as `../` and
+          // `../../` these matched two directory depths and a module one level deeper walked
+          // straight through them.
+          { "group": ["**/scenario/worlds/**", "**/scenario/registry"], "message": "Finance receives ScenarioNumbers and never imports a world." }
         ]
       }]
     }
