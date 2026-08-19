@@ -20,6 +20,7 @@ were allowed to reject. Every finding was reproduced by the person who filed it.
 | `research/` | Eight reports establishing the external bar — what NGPF, iCivics, Khan Academy, state assessment instruments and good consumer software actually do — written before anything was built against them. |
 | `receipts/` | 857 screenshots and transcripts. Named by the finding they belong to, so a claim in a critique can be checked against the thing that was on the screen. |
 | `decisions/` | Things that were deliberately **not** built, and why. A gauntlet that only records what was done is a sales document. |
+| `COVERAGE_COURT_CONTRACT.md` | **Canonical.** The one test every coverage verdict runs. It exists because four courts ran the same-sounding question four ways and one of them was wrong by two objectives. A verdict that did not run it is not a verdict. |
 | `judges/BRIEFS.md` | The six final verdicts and the rules they run under, written down **before** they were run so nobody could tune the question to the answer. |
 | `ACCOUNTS.md` · `ASSESSMENT.md` · `D26_ANSWERS.md` | The three things a district asks about, answered from the running product with the gaps stated as gaps. |
 
