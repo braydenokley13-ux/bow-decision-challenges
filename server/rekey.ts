@@ -239,7 +239,7 @@ const USAGE =
   + "  BOW_OLD_STORE_KEY=… BOW_NEW_STORE_KEY=… node dist-server/rekey.js --from <dir> --to <dir>\n"
   + "  node dist-server/rekey.js --from <dir> --to <dir> --old-key-file <path> --new-key-file <path>\n"
   + "  node dist-server/rekey.js --from <dir> --to <dir> --from-plaintext --new-key-file -\n\n"
-  + "The two keys, either way round:\n"
+  + "Each key, whichever of these two suits the host:\n"
   + "  BOW_OLD_STORE_KEY, BOW_NEW_STORE_KEY   32 bytes each, base64 or hex\n"
   + "  --old-key-file, --new-key-file <path>  a file holding one key; \"-\" reads standard input\n\n"
   + "There is no --old-key or --new-key, deliberately. A key on the command line is readable by every\n"
