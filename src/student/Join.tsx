@@ -24,9 +24,15 @@ import { clearEveryAttempt } from "../domain/io/persistence";
  * name *and* type their card code, and the card code identifies the seat on its own. One less
  * step, one less thing published.
  *
- * Nothing here asks for a name, an email address, a birthday or a password. The name that comes
- * back is one a teacher typed about their own class; BOW does not know whether it is real and
- * has no way to find out.
+ * Nothing here asks for an email address, a birthday or a password, and nothing on any later
+ * screen does either. That is the whole of what this door takes: five characters off the board,
+ * four off a card, and one answer about whose computer this is.
+ *
+ * It does take a name in one of the two modes, and the sentence a student reads has to survive
+ * that. A class with a list hands out cards, and the name beside the work is the one their
+ * teacher typed. A class without one asks the student for a first name here — BOW stores it,
+ * files their work under it, and hands it back to their teacher, which is the point of asking.
+ * What BOW does not do in either mode is know whether the name is real, or find out.
  *
  * The device question is asked once, in one sentence, and defaults to **shared**. A cart
  * Chromebook is the normal case in the rooms this runs in, and a session measured in weeks on

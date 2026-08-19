@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { EducatorShell } from "./EducatorShell";
+import { CLASS_RETENTION_DAYS } from "../platform/classes/types";
 import { rememberedClasses } from "./classMemory";
 import { claimRememberedClasses, createAccount, myTeaching, recoverTeacher, rememberTeacher, signInTeacher } from "./teacherSession";
 
@@ -159,11 +160,31 @@ export function TeacherSignIn() {
           {busy ? "One moment…" : MODES[mode].action}
         </Button>
 
-        {/* Said where a teacher is deciding whether to type an address, not in a policy. */}
+        {/* Said where a teacher is deciding whether to type an address, not in a policy.
+
+            It used to say BOW *"never sees a student's email address, name or birthday"*, which
+            was false about the middle one on the screen where a teacher decides to trust it. BOW
+            receives student names, stores them, indexes them by seat and hands them back:
+            `GET /classes/:code/roster` answers a teacher with every `displayName` on the list,
+            and the class with no list asks the student to type one. A district's data protection
+            officer reads this sentence and then reads the API, and a sentence that does not
+            survive that reading takes every other sentence in the product with it.
+
+            So it says what is held rather than what is not. The reassurance the false version was
+            reaching for is real and is still here — no child types an address, a password or a
+            date of birth into this product, and a class is deleted rather than kept — and none of
+            it needs the part that was untrue. */}
         <p className="sign-in__note">
-          BOW stores your email address and nothing else about you. It never sees a student&rsquo;s
-          email address, name or birthday — the names on your class list are yours, typed by you,
-          and BOW has no way to know whether any of them is real.
+          Your account is an email address and a password. There is no name field, and BOW asks
+          you for nothing else.
+        </p>
+        <p className="sign-in__note">
+          It does hold student names — the ones you paste on your class list, and the first name a
+          student types for themselves in a class that has no list. They are stored with the
+          class, encrypted; nothing opens them but your account or that class&rsquo;s private link,
+          and a student who signs in sees only their own. A class and everything in it is deleted
+          {" "}{CLASS_RETENTION_DAYS} days after you make it. No student is ever asked for an email
+          address, a password or a birthday.
         </p>
         {mode !== "in" && remembered > 0 && (
           <p className="sign-in__note">
