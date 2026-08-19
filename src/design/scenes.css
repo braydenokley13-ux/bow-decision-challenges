@@ -567,8 +567,12 @@
      is 94px against a 68px reserve, so the last row of the board had nowhere left to scroll to,
      and opened it took half the screen and left the commit button stranded behind the top bar.
      `--rail-height` is the strip's own height, set by the component that draws it, and
-     `--rail-idle` stays as what to reserve before the first measurement lands. */
-  .plan-scene__work { grid-column: 1; grid-row: 1; padding-bottom: calc(var(--rail-height, var(--rail-idle)) + var(--s-6)); }
+     `--rail-idle` stays as what to reserve before the first measurement lands.
+     `--bow-reading-tools` is in the same sum because `reading.css` lifts this rail by that
+     much when the reading help is open, and a reserve that ignored the lift left the rail
+     standing on the last control in the column — measured at 320, the *Check this plan*
+     button, entirely hidden. It is `0px` whenever the tools are closed. */
+  .plan-scene__work { grid-column: 1; grid-row: 1; padding-bottom: calc(var(--rail-height, var(--rail-idle)) + var(--bow-reading-tools, 0px) + var(--s-6)); }
 
   /* `top: auto` is the whole of the rail's reflow bug, and it is a one-word omission.
      The two-column rule above sets `top: calc(72px + var(--s-5))` so the rail can ride the

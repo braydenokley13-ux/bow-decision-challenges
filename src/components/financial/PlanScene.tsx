@@ -58,7 +58,17 @@ function usePinnedRailHeight(rail: { current: HTMLElement | null }): number {
   useEffect(() => {
     // Set on the document because the scroll container is the page, not the layout: this is
     // what stops `scrollIntoView` and a focus move parking a control under the pinned rail.
-    document.documentElement.style.scrollPaddingBottom = height > 0 ? `${height + 16}px` : "";
+    //
+    // `--bow-reading-tools` is in the sum because opening the reading help moves the rail:
+    // `reading.css` lifts the pinned rail by exactly that much so it does not sit on the
+    // panel, and the rail then lands on whatever was underneath it. Measured at 320 x 640
+    // with the tools open, walking the tab ring and sampling twenty-five points inside each
+    // focused element: `button "Check this plan"` was under `aside.plan-rail` at 0 of 25 —
+    // entirely hidden, which is a WCAG 2.2 · 2.4.11 failure on the control that commits the
+    // run's biggest decision, caused by turning the accommodation on. Left as a `calc` with
+    // the custom property still in it rather than resolved here, so opening and closing the
+    // tools moves this number without this effect having to run again.
+    document.documentElement.style.scrollPaddingBottom = height > 0 ? `calc(${height + 16}px + var(--bow-reading-tools, 0px))` : "";
     return () => {
       document.documentElement.style.scrollPaddingBottom = "";
     };

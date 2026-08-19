@@ -1,0 +1,84 @@
+
+
+######## PROBE G — w320, viewport {"width":320,"height":640} ########
+
+--- the opening plan board — reading tools CLOSED ---
+   1. [covered 73%] button.ledger__toggle "See where the money goes" at 64,592 232x44 — under aside.reading-tools — visible samples 5/25
+   2. [clear] button "1Money coming in" at 12,185 153x34 — visible samples 25/25
+   3. [clear] button "2The two bonuses" at 12,223 152x34 — visible samples 25/25
+   4. [clear] button "3Money already owed" at 12,261 174x34 — visible samples 25/25
+   5. [clear] button "Decrease Sports-media course by $100" at 115,335 44x44 — visible samples 25/25
+   6. [clear] input "" at 159,335 92x44 — visible samples 25/25
+   7. [clear] button "Increase Sports-media course by $100" at 251,335 44x44 — visible samples 25/25
+   8. [clear] button "Decrease Backup money by $100" at 115,335 44x44 — visible samples 25/25
+   9. [clear] input "" at 159,335 92x44 — visible samples 25/25
+  10. [clear] button "Increase Backup money by $100" at 251,335 44x44 — visible samples 25/25
+  11. [clear] button "Decrease Rides and rest by $100" at 115,335 44x44 — visible samples 25/25
+  12. [clear] input "" at 159,335 92x44 — visible samples 25/25
+  13. [clear] button "Increase Rides and rest by $100" at 251,335 44x44 — visible samples 25/25
+  14. [clear] button "Backup money — put $3,100 in" at 28,335 141x44 — visible samples 25/25
+  15. [clear] button "Rides and rest — put $3,100 in" at 28,383 138x44 — visible samples 25/25
+  16. [clear] button.button.button--primary "Check this plan" at 79,485 166x44 — visible samples 25/25
+  17. [clear] button.button.button--quiet "Back" at 12,335 71x44 — visible samples 25/25
+  18. [covered 10%] button.reading-tools__pill "Reading help" at 16,580 146x44 — under aside.plan-rail — visible samples 25/25
+  20. [clear] a.app-mark "BOW Decision Challenges home" at 8,25 175x54 — visible samples 25/25
+  21. [clear] summary "The four payments▾" at 187,8 125x40 — visible samples 25/25
+  22. [clear] summary "This run: GN6XC · seat 1" at 187,56 125x40 — visible samples 25/25
+  23. [covered 73%] button.ledger__toggle "See where the money goes" at 64,592 232x44 — under aside.reading-tools — visible samples 5/25
+  24. [clear] button "1Money coming in" at 12,340 153x34 — visible samples 25/25
+  25. [clear] button "2The two bonuses" at 12,378 152x34 — visible samples 25/25
+  26. [clear] button "3Money already owed" at 12,416 174x34 — visible samples 25/25
+  27. [clear] button "Decrease Sports-media course by $100" at 115,335 44x44 — visible samples 25/25
+  28. [clear] input "" at 159,335 92x44 — visible samples 25/25
+  29. [clear] button "Increase Sports-media course by $100" at 251,335 44x44 — visible samples 25/25
+  30. [clear] button "Decrease Backup money by $100" at 115,335 44x44 — visible samples 25/25
+  31. [clear] input "" at 159,335 92x44 — visible samples 25/25
+  32. [clear] button "Increase Backup money by $100" at 251,335 44x44 — visible samples 25/25
+  33. [clear] button "Decrease Rides and rest by $100" at 115,335 44x44 — visible samples 25/25
+  34. [clear] input "" at 159,335 92x44 — visible samples 25/25
+  35. [clear] button "Increase Rides and rest by $100" at 251,335 44x44 — visible samples 25/25
+  36. [clear] button "Backup money — put $3,100 in" at 28,335 141x44 — visible samples 25/25
+  37. [clear] button "Rides and rest — put $3,100 in" at 28,383 138x44 — visible samples 25/25
+  38. [clear] button.button.button--primary "Check this plan" at 79,485 166x44 — visible samples 25/25
+  39. [clear] button.button.button--quiet "Back" at 12,335 71x44 — visible samples 25/25
+  40. [covered 10%] button.reading-tools__pill "Reading help" at 16,580 146x44 — under aside.plan-rail — visible samples 25/25
+
+--- the opening plan board — reading tools OPEN ---
+   1. [clear] button.reading-tools__button "Read this screen" at 12,544 164x44 — visible samples 25/25
+   2. [clear] button.reading-tools__button "Words" at 180,544 86x44 — visible samples 25/25
+   3. [clear] input "" at 16,603 18x18 — visible samples 25/25
+   4. [clear] button.reading-tools__hide "Hide" at 258,596 50x32 — visible samples 25/25
+   6. [clear] a.app-mark "BOW Decision Challenges home" at 8,25 175x54 — visible samples 25/25
+   7. [clear] summary "The four payments▾" at 187,8 125x40 — visible samples 25/25
+   8. [clear] summary "This run: GN6XC · seat 1" at 187,56 125x40 — visible samples 25/25
+   9. [clear] button.ledger__toggle "See where the money goes" at 64,483 232x44 — visible samples 25/25
+  10. [clear] button "1Money coming in" at 12,340 153x34 — visible samples 25/25
+  11. [clear] button "2The two bonuses" at 12,378 152x34 — visible samples 25/25
+  12. [covered 39%] button "3Money already owed" at 12,416 174x34 — under aside.plan-rail — visible samples 15/25
+  13. [clear] button "Decrease Sports-media course by $100" at 115,335 44x44 — visible samples 25/25
+  14. [clear] input "" at 159,335 92x44 — visible samples 25/25
+  15. [clear] button "Increase Sports-media course by $100" at 251,335 44x44 — visible samples 25/25
+  16. [clear] button "Decrease Backup money by $100" at 115,335 44x44 — visible samples 25/25
+  17. [clear] input "" at 159,335 92x44 — visible samples 25/25
+  18. [clear] button "Increase Backup money by $100" at 251,335 44x44 — visible samples 25/25
+  19. [clear] button "Decrease Rides and rest by $100" at 115,335 44x44 — visible samples 25/25
+  20. [clear] input "" at 159,335 92x44 — visible samples 25/25
+  21. [clear] button "Increase Rides and rest by $100" at 251,335 44x44 — visible samples 25/25
+  22. [clear] button "Backup money — put $3,100 in" at 28,335 141x44 — visible samples 25/25
+  23. [clear] button "Rides and rest — put $3,100 in" at 28,383 138x44 — visible samples 25/25
+  24. [ENTIRELY HIDDEN] button.button.button--primary "Check this plan" at 79,485 166x44 — under aside.plan-rail — visible samples 0/25
+  25. [clear] button.button.button--quiet "Back" at 12,335 71x44 — visible samples 25/25
+  26. [clear] button.reading-tools__button "Read this screen" at 12,544 164x44 — visible samples 25/25
+  27. [clear] button.reading-tools__button "Words" at 180,544 86x44 — visible samples 25/25
+  28. [clear] input "" at 16,603 18x18 — visible samples 25/25
+  29. [clear] button.reading-tools__hide "Hide" at 258,596 50x32 — visible samples 25/25
+  31. [clear] a.app-mark "BOW Decision Challenges home" at 8,25 175x54 — visible samples 25/25
+  32. [clear] summary "The four payments▾" at 187,8 125x40 — visible samples 25/25
+  33. [clear] summary "This run: GN6XC · seat 1" at 187,56 125x40 — visible samples 25/25
+  34. [clear] button.ledger__toggle "See where the money goes" at 64,483 232x44 — visible samples 25/25
+  35. [clear] button "1Money coming in" at 12,340 153x34 — visible samples 25/25
+  36. [clear] button "2The two bonuses" at 12,378 152x34 — visible samples 25/25
+  37. [covered 39%] button "3Money already owed" at 12,416 174x34 — under aside.plan-rail — visible samples 15/25
+  38. [clear] button "Decrease Sports-media course by $100" at 115,335 44x44 — visible samples 25/25
+  39. [clear] input "" at 159,335 92x44 — visible samples 25/25
+  40. [clear] button "Increase Sports-media course by $100" at 251,335 44x44 — visible samples 25/25
