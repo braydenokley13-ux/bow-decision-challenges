@@ -1,0 +1,20 @@
+The repo's own gates, run against commit 8b4f1d4 in an isolated worktree.
+
+A worktree rather than the working tree, because seven agents share this box and this one
+directory: running the gates in a tree carrying four other people's in-flight edits measures
+them, not this commit. `git worktree add --detach <tmp> 8b4f1d4`, node_modules symlinked, and
+nothing else in it.
+
+  npx tsc -b                     exit 0
+  npx eslint .                   exit 0
+  npx stylelint "src/**/*.css"   exit 0
+  npm run build                  clean
+                                 dist/assets/index-ClE7Rtxf.js   720.15 kB (gzip 210.39 kB)
+                                 dist/assets/index-C5Zhx0Cv.css  183.70 kB (gzip  29.78 kB)
+                                 dist-server/index.js            356.20 kB (gzip 105.75 kB)
+                                 the "chunks larger than 500 kB" warning is unchanged and
+                                 pre-existing — judge 5 recorded it at 714.70 kB
+  npx vitest run                 157 passed | 1 skipped (158 files)
+                                 1767 passed | 1 skipped (1768 tests)
+
+The one skip is `describe.skipIf(!RUN)` on the parameter search, which is correct.
