@@ -4,6 +4,8 @@ import { AppMark } from "../components/primitives/AppMark";
 import { forgetTeacher, teacherToken } from "./teacherSession";
 import { DEMO_CLASS_CODE } from "../fixtures/demoClass";
 import { NAV_LABELS, type KeyEntry } from "./labels";
+// Sets the flag `design/app.css` reads to keep the arrival ring off a page nobody has touched.
+import "../app/arrivalRing";
 
 /**
  * The measure a page is set to. It is how wide the page's blocks are, and nothing else — every

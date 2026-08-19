@@ -175,10 +175,16 @@
 .market-strip li[data-state="current"] { color: var(--ink-1); font-weight: 700; }
 .market-strip li[data-state="current"] i { height: 13px; background: var(--world-flare); box-shadow: 0 0 0 1px var(--world-accent); }
 .market-strip li b { font: var(--t-micro); font-weight: 700; }
-.popup-main { width: min(var(--w-board), calc(100% - 2 * var(--gutter))); margin: 0 auto; padding: var(--s-7) 0 var(--s-10); display: grid; align-content: start; gap: var(--s-6); }
 
-/* Grid, not stacked margins: half the blocks on these screens are lists and tables that
-   zero their own margins, and a rhythm any child can silently opt out of is not one. */
+/* A column, not stacked margins: half the blocks on these screens are lists and tables that
+   zero their own margins, and a rhythm any child can silently opt out of is not one.
+
+   It was a grid until the action bar had to hold the bottom edge of the window. A sticky box
+   can only travel inside its containing block, and a grid item's containing block is its own
+   grid area — exactly its own height, so there was nowhere to travel to and the bar sat where
+   it had always sat. A flex column lays these blocks out identically and gives the last one
+   the whole column. */
+.popup-main { width: min(var(--w-board), calc(100% - 2 * var(--gutter))); margin: 0 auto; padding: var(--s-7) 0 var(--s-10); display: flex; flex-direction: column; gap: var(--s-6); }
 .popup-main > * { min-width: 0; }
 .popup-heading { position: relative; padding-bottom: var(--s-4); border-bottom: 2px solid var(--ink-1); }
 .popup-heading h1 { max-width: 22ch; margin: 0; font: var(--t-display1); letter-spacing: var(--display-tracking); text-transform: uppercase; }
@@ -211,6 +217,18 @@
 
 /* Every screen's one forward action, with the sentence that earns it beside it. */
 .popup-action { display: flex; align-items: center; justify-content: space-between; gap: var(--s-6); padding: var(--s-5) var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-left: 4px solid var(--chapter-accent, var(--world-accent)); }
+
+/* And it stays in the window while there is page underneath it, on the same terms as the
+   arena's `.stage-action` in `app.css`. Measured at 1366x768, every screen of this world put
+   its own way on below the fold: *Take a booth to carry on* at `top: 1370` on a 1,503px page,
+   *Answer Marisol to carry on* at 1356, *Find the money* at 1422, *Open the doors* at 1167.
+   The offset is the reading panel's published height so the bar sits above it rather than
+   behind it.
+
+   Direct children of the board only. The screen's own forward action is a child of the board;
+   a `.popup-action` inside a card — the tips jar's — belongs to that card, has nowhere to
+   travel inside it, and pinning both would stack one bar on the other. */
+.popup-main > .popup-action, .popup-board > .popup-commit { position: sticky; bottom: var(--bow-reading-tools, 0); z-index: 5; }
 .popup-action p { max-width: 62ch; margin: 0; font: var(--t-body); }
 .popup-action .button { flex: none; }
 
@@ -278,8 +296,12 @@
 .cover-ask__choice button[aria-pressed="true"] { color: var(--ink-invert); background: var(--ink-1); }
 .cover-ask__choice button[aria-pressed="true"]::before { content: "\2713"; margin-right: var(--s-2); font-weight: 700; }
 
-/* The board. Three lines, the money that has to land on them, and the bar that commits. */
-.popup-board { display: grid; gap: var(--s-5); }
+/* The board. Three lines, the money that has to land on them, and the bar that commits.
+
+   A flex column rather than a grid for the same reason `.plan-board` is one in `app.css`: the
+   bar that commits is the last block in it and it has to be able to hold the bottom edge of
+   the window, which a grid item cannot do inside its own grid area. */
+.popup-board { display: flex; flex-direction: column; gap: var(--s-5); }
 .popup-board__lines { display: grid; gap: var(--s-3); }
 .popup-board .choice-row[data-category="stock"] .choice-row__swatch { background: var(--choice-1); }
 .popup-board .choice-row[data-category="cushion"] .choice-row__swatch { background: var(--choice-2); }

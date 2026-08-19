@@ -44,8 +44,9 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
   banner?: ReactNode;
   /**
    * A stage that asks several questions under one stage id changes its own headline. When
-   * this value changes the heading takes focus, so a keyboard or screen-reader user is
-   * moved to the new question rather than left at the bottom of the answered one.
+   * this value changes the screen opens at the top and the heading takes focus, so a keyboard
+   * or screen-reader user is moved to the new question rather than left at the bottom of the
+   * answered one — and a sighted student can read the question they are being asked.
    */
   focusKey?: string | number;
   /**
@@ -66,17 +67,25 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
   const heading = useRef<HTMLElement>(null);
   const topbar = useRef<HTMLElement>(null);
   usePinnedTopBar(topbar);
-  const first = useRef(true);
-  useEffect(() => {
-    if (focusKey === undefined) return;
-    if (first.current) { first.current = false; return; }
-    heading.current?.focus();
-  }, [focusKey]);
   useEffect(() => {
     if (focusOnArrival) heading.current?.focus();
   }, [focusOnArrival]);
-  // Every new stage opens at the top, with its own heading announced.
-  useStageArrival(heading, stage);
+  /*
+   * Every new stage — and every new question inside one — opens at the top, with its own
+   * heading announced.
+   *
+   * The question used to only take focus, and taking focus does not move a page that is
+   * already scrolled: answering *Which place costs the least?* revealed the housing cards,
+   * the stage scrolled them into view, and the new headline *Now pick where Avery lives.*
+   * arrived at `top: -11px` behind a 72px pinned bar with eighteen pixels of itself showing.
+   * Measured at 1366×768, in both worlds, on the screen where the question is asked.
+   *
+   * The stage id and the question are one key here because they are one event to the student:
+   * the words in the `<h1>` changed, so the screen changed, so the screen starts at its top.
+   * A reveal below the fold still happens — it is simply no longer allowed to be the last
+   * scroll of the transition, which is what left the question above the window.
+   */
+  useStageArrival(heading, focusKey === undefined ? stage : `${stage}:${focusKey}`);
   return (
     <div className="challenge-shell" data-world={world} data-chapter={chapterFor(stage)}>
       <header ref={topbar} className="challenge-topbar">

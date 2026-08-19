@@ -1,4 +1,4 @@
-import { useEffect, useRef, type PropsWithChildren, type ReactNode } from "react";
+import { useRef, type PropsWithChildren, type ReactNode } from "react";
 import { usePinnedTopBar, useStageArrival } from "../../app/useStageArrival";
 import { AppMark } from "../../components/primitives/AppMark";
 import { RunMenu } from "../../components/primitives/RunMenu";
@@ -44,7 +44,8 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
   tone?: "standard" | "dark";
   banner?: ReactNode;
   ledger: PopUpLedger;
-  /** When this changes the heading takes focus, so a keyboard user is moved to the new question. */
+  /** When this changes the screen opens at the top and the heading takes focus, so nobody —
+   *  keyboard, screen reader or eyes — meets the new question from below it. */
   focusKey?: string | number;
 }>) {
   const { state, delivery, handOver } = usePopUp();
@@ -55,14 +56,12 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
   // The same rule the other world's shell keeps: the bar's own height is what the page reserves
   // when it scrolls something into view, so a control never arrives underneath it.
   usePinnedTopBar(topbar);
-  const first = useRef(true);
-  useEffect(() => {
-    if (focusKey === undefined) return;
-    if (first.current) { first.current = false; return; }
-    heading.current?.focus();
-  }, [focusKey]);
-  // Every new Saturday opens at the top of itself, the generator screen included.
-  useStageArrival(heading, stage);
+  // Every new Saturday opens at the top of itself, the generator screen included — and so
+  // does every new question inside one. The market asks two and three questions under a single
+  // stage id, and a question the student cannot see is the same defect in this world as in the
+  // other: measured at 1366×768, the repair board's second half arrived with the headline
+  // 179px above the window. Same key, same rule, same reason as `app/StageShell.tsx`.
+  useStageArrival(heading, focusKey === undefined ? stage : `${stage}:${focusKey}`);
 
   return (
     <div className="popup-shell" data-world="food-truck" data-chapter={chapterFor(stage)}>

@@ -1,4 +1,6 @@
 import { useEffect, useRef, type RefObject } from "react";
+// Sets the flag `design/app.css` reads to keep the arrival ring off a page nobody has touched.
+import "./arrivalRing";
 
 /**
  * Arriving at a new screen puts you at the top of it, looking at its heading.
@@ -13,6 +15,20 @@ import { useEffect, useRef, type RefObject } from "react";
  * which is what announces the change to a screen reader. The first render is exempt — the
  * page is already at the top, and taking focus on arrival at the very first screen would
  * move it away from wherever the reader actually was.
+ *
+ * **It has to be the last scroll of the transition, and once it was not.** React runs a
+ * child's effects before its parent's, and the stage renders the shell — so this hook is the
+ * child, and a stage that scrolls its own newly revealed content into view on the same commit
+ * had the final word. Measured at 1366×768: answering *Which place costs the least?* landed
+ * the new headline *Now pick where Avery lives.* at `top: -11px` behind a 72px pinned bar,
+ * with eighteen pixels of the question showing. `StudentChallenge.tsx` says of that reveal
+ * that "where a screen starts is `useStageArrival`'s to say"; it is, now, because the same
+ * scroll is asked for again on the next frame, after every effect in the commit has run.
+ *
+ * `preventScroll` on the focus is the other half. `focus()` scrolls the element into view
+ * itself, instantly, which cancelled the smooth scroll this hook had just started and left the
+ * page wherever the browser's own alignment put it. The heading still takes focus — that is
+ * the announcement — it simply no longer argues with the scroll about where the top is.
  */
 export function useStageArrival(heading: RefObject<HTMLElement | null>, stage: string) {
   const first = useRef(true);
@@ -22,8 +38,13 @@ export function useStageArrival(heading: RefObject<HTMLElement | null>, stage: s
       return;
     }
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
-    heading.current?.focus();
+    const toTheTop = () => {
+      window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
+      heading.current?.focus({ preventScroll: true });
+    };
+    toTheTop();
+    const frame = requestAnimationFrame(toTheTop);
+    return () => cancelAnimationFrame(frame);
   }, [heading, stage]);
 }
 

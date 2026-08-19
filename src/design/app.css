@@ -1,4 +1,25 @@
 /* Shared editorial system */
+
+/* The arrival ring, on the one arrival nobody asked for.
+ *
+ * Every route in this product moves focus to its own `<h1>` when it opens, so that a screen
+ * reader says which page it landed on. Chromium then answers `:focus-visible` with yes for
+ * that focus — its rule is that a scripted focus is indicated while the document has seen no
+ * input event, which is the state every page is in the moment it loads — so a plain page load
+ * with no keyboard involved drew a 3px navy box around the headline. The student's first
+ * screen, the teacher's class page, all sixty-seven of them.
+ *
+ * `data-untouched` is set on `<html>` by `app/arrivalRing.ts` before React renders and removed
+ * by the first pointer or key event. So the ring is suppressed for exactly as long as nothing
+ * on the page has been touched, and every arrival after that — including a route change
+ * reached by pressing Enter on a link, which is the one this matters for — is left to
+ * Chromium's heuristic, which gets those right.
+ *
+ * It reaches the focused element and an `<h1>` inside it, because two of these headings are
+ * the block and wear the ring on their own headline: `.stage-heading`, `.popup-heading`. */
+html[data-untouched] :focus-visible,
+html[data-untouched] :focus-visible h1 { outline: none; box-shadow: none; }
+
 h1, h2, h3 { letter-spacing: var(--display-tracking); }
 p { color: var(--ink-2); }
 .eyebrow { margin-bottom: var(--s-3); color: var(--bow-brand); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
@@ -77,8 +98,12 @@ p { color: var(--ink-2); }
 
 /* Both shells pin a bar to the top of the window, so every scroll the browser performs —
    moving focus to a heading, revealing a section, jumping to an anchor — has to stop short of
-   it. Without this a keyboard user is sent to a control drawn underneath the top bar. */
-:root { scroll-padding-top: 88px; }
+   it. Without this a keyboard user is sent to a control drawn underneath the top bar.
+
+   The bottom is the same promise about the other end: the action bar holds the bottom edge of
+   the window on a page taller than one, so a field tabbed into at the foot of a long board has
+   to stop short of that too. */
+:root { scroll-padding-top: 88px; scroll-padding-bottom: calc(var(--actionbar-h) + var(--s-5)); }
 
 /* The chapter's colour is carried on the topbar's own border rather than a pseudo-element,
    so releasing `position` for a full-page screenshot cannot detach it from the bar. */
@@ -150,9 +175,37 @@ p { color: var(--ink-2); }
 .stage-heading--dark .eyebrow { color: var(--world-hero-second); }
 .stage-heading--dark h1 { max-width: 16ch; color: var(--world-hero-ink); font: var(--t-scene); letter-spacing: var(--display-tracking-tight); }
 
-.stage-action { display: flex; align-items: center; justify-content: space-between; gap: var(--s-6); margin-top: var(--s-7); padding: var(--s-5) var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-left: 4px solid var(--chapter-accent, var(--bow-brand)); }
+/* The way on stays in the window.
+ *
+ * Measured at 1366×768, on the screen where the student picks where Avery lives: choosing a
+ * place put the calculation at `top: 779`, and getting it right put **Build the plan** at
+ * `top: 838` — a primary control fully below a 768px window, with nothing on screen saying
+ * there was anything under it. The pages this product asks the most of are 1,155 to 1,606px
+ * tall, so this is not one unlucky screen; it is every screen that asks for more than a
+ * window's worth of work.
+ *
+ * Sticky rather than fixed: the bar is in the flow, it takes its own space at the end of the
+ * page like any other block, and it only ever holds the bottom edge while there is still page
+ * underneath it. The offset is the reading panel's own published height, so a student who has
+ * the reading tools open gets the action bar above them rather than behind them — `0px` on
+ * `:root` in `reading.css` when the panel is closed, which is most of the time.
+ *
+ * It needs no shadow to separate it from what slides under it: it is opaque and it already
+ * carries a border on all four sides.
+ *
+ * One thing it inherits and does not fix: `Reading help` is a fixed pill at (24, 700), 146px
+ * wide, and this bar now holds the bottom of the window on a long screen — so the pill covers
+ * about sixty pixels of the bar's opening words there, where before it covered whatever stage
+ * prose happened to be scrolling past. Lifting the pill by a bar's height was tried and is
+ * worse: the bar is only pinned while the page is taller than the window, and on the short
+ * screens it lands over the bar's natural position instead. The fix the review asked for is
+ * the one that ends both — put the control in the top bar beside the seat menu — and it
+ * belongs to `student/reading`, which owns the pill and its sheet. */
+.stage-action { position: sticky; bottom: var(--bow-reading-tools, 0); z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: var(--s-6); margin-top: var(--s-7); padding: var(--s-5) var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-left: 4px solid var(--chapter-accent, var(--bow-brand)); }
 .stage-action p { max-width: 650px; margin: 0; font: var(--t-body-lg); }
 .stage-action__pair { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+
+
 
 /* Calculations — a slip Avery has to total, not a form field */
 .calculation { display: grid; gap: var(--s-2); padding: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); box-shadow: var(--shadow-card); }
@@ -186,7 +239,7 @@ p { color: var(--ink-2); }
    says whether it holds. It carries no frame of its own — it is the answer to
    the question in the headline above it, not a document inside a document.
    --------------------------------------------------------------------------- */
-.plan-board { display: grid; align-content: start; gap: var(--s-5); }
+.plan-board { display: flex; flex-direction: column; gap: var(--s-5); }
 .plan-board__lead { max-width: var(--measure); margin: 0; color: var(--ink-2); font: var(--t-body-lg); }
 .exposure-summary { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-4); margin: var(--s-4) 0 0; padding: var(--s-3) var(--s-4); background: var(--surface-sunken); }
 .exposure-summary span { color: var(--ink-2); font: var(--t-ui); }
@@ -197,8 +250,19 @@ p { color: var(--ink-2); }
 .plan-help li + li { margin-top: var(--s-2); }
 
 /* Where the plan is committed. The rail carries the live figure; this bar says what
-   it means, in the same words, beside the button that acts on it. */
-.plan-commit { min-height: var(--actionbar-h); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-5) var(--s-6); border-left: 4px solid; }
+   it means, in the same words, beside the button that acts on it.
+
+   It keeps the bottom of the window on the same terms as `.stage-action`, and it earns it
+   twice over: at 1366x768 the allocation board is 1,238px tall and puts **Check this plan**
+   at `top: 1037`, the safety check 1,592px and puts it at `top: 1459`. Pinned, the bar also
+   keeps the live verdict — *Every dollar has a job* / *$900 still to place* — beside the rows
+   while the student is typing into them, which is the sentence those rows are working towards.
+
+   A sticky box can only travel inside its containing block, and a grid item's containing block
+   is its own grid area, which is exactly its own height: as a row of `.plan-board`'s grid this
+   bar had nowhere to go and sat where it always had. A column of flex items is laid out the
+   same way and gives the last one the whole column to travel in. */
+.plan-commit { min-height: var(--actionbar-h); position: sticky; bottom: var(--bow-reading-tools, 0); z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-5) var(--s-6); border-left: 4px solid; }
 .plan-commit--balanced { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); border-color: var(--fin-balanced); }
 .plan-commit--over { color: var(--fin-over-ink); background: var(--fin-over-soft); border-color: var(--fin-over); }
 .plan-commit--unassigned { color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); }
@@ -684,10 +748,21 @@ p { color: var(--ink-2); }
 .class-form__status { margin: 0; color: var(--ink-3); font: var(--t-sm); font-weight: 400; }
 .class-form__status--problem { color: var(--fin-over-ink); font-weight: 600; }
 
-.class-created { display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: var(--s-7); align-items: start; }
-.class-created__code { display: grid; gap: var(--s-2); padding: var(--s-6); background: var(--bow-brand); color: var(--ink-invert); border-radius: var(--r-md); }
+/* The plate is as wide as the code inside it, and the body takes the rest.
+   `minmax(0, 300px)` was a width chosen without measuring what it had to hold: at 1366 the
+   code renders 405–442px inside a 300px plate with 252px of room in it, so 153–190px of the
+   string hung outside the navy in white on cream and `U3C6N` read as `U3C`. A track sized by
+   its content cannot do that in any font — and the alphabet in `platform/classes/codes.ts`
+   contains M and W, so the widest code is half again as wide as the narrowest and no fixed
+   number fits both. */
+.class-created { display: grid; grid-template-columns: minmax(0, max-content) minmax(0, 1fr); gap: var(--s-7); align-items: start; }
+.class-created__code { min-width: min(300px, 100%); display: grid; gap: var(--s-2); padding: var(--s-6); background: var(--bow-brand); color: var(--ink-invert); border-radius: var(--r-md); }
 .class-created__code .field-label { margin: 0; color: var(--bow-brand-ink-muted); }
-.class-created__code strong { font: 700 clamp(2.6rem, 6vw, 3.6rem)/1 var(--font-display); letter-spacing: 0.12em; font-feature-settings: var(--num); }
+
+/* `letter-spacing` is added after the last character as well as between them, so the plate
+   ends 0.12em further right than the ink does and the code sits visibly off-centre in its own
+   padding. The negative end margin takes that trailing space back off the box. */
+.class-created__code strong { margin-inline-end: -0.12em; font: 700 clamp(2.6rem, 6vw, 3.6rem)/1 var(--font-display); letter-spacing: 0.12em; font-feature-settings: var(--num); }
 .class-created__code p { margin: 0; color: var(--bow-brand-ink-muted); font: var(--t-sm); font-weight: 400; }
 .class-created__body { display: grid; gap: var(--s-5); }
 .class-created__body h2 { margin: 0; font: var(--t-title1); }
