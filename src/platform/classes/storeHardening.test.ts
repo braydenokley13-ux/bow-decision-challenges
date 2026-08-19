@@ -182,9 +182,71 @@ describe("a key that no longer opens what this store wrote", () => {
     const body = response.body as { classroomReady: boolean; storeKey: string; reason: string };
     expect(body.classroomReady).toBe(false);
     expect(body.storeKey).toBe("mismatch");
-    // And it says what to do, because the operator's next move is to put the old key back
-    // rather than to restore a backup over data that is still perfectly intact.
+    // And it says what to do, because the operator's next move is to put the old key back.
+    //
+    // That sentence used to end *"rather than to restore a backup over data that is still
+    // perfectly intact"*, and a security judge followed the advice and found the data was not
+    // intact: the service had gone on writing the whole time. It is intact now because the
+    // service stops — the test below this one is what makes the claim true, and this comment
+    // is kept in the shape it was wrong in so the next person can see what it cost.
     expect(body.reason).toContain("BOW_STORE_KEY");
+  });
+
+  it("refuses to write into a store it cannot read, so nothing lands under the wrong key", async () => {
+    // The half this file did not have. Its three siblings all assert on *reporting* — that
+    // `keyCheck()` says mismatch, that health is 503, that `classroomReady` is false — and a
+    // security judge showed that the service reported the fault accurately and then carried on
+    // writing: a 401 at sign-in pushed the teacher to re-register, re-registering worked, the
+    // class was re-created over the top of the old one under the same code, and putting the
+    // original key back produced a 404 over an overwritten file. The children's roster rows
+    // survived, sealed under a key nothing uses, attached to a class record nothing can open —
+    // so `expiredClassCodes` cannot see them and the retention promise never reaches them.
+    const root = await mkdtemp(join(tmpdir(), "bow-rotate3-"));
+    await fileStore(root, vault(KEY)).putClass(CLASS);
+    const before = (await readdir(root, { recursive: true, encoding: "utf8" })).sort();
+    const rotated = fileStore(root, vault(randomBytes(32)));
+
+    for (const attempt of [
+      { method: "POST", path: "/classes", body: { label: "Period 3", challengeId: PLAN_UNDER_PRESSURE.id } },
+      { method: "POST", path: "/auth/teacher", body: { email: "ms.reyes@school.example", password: "a-long-enough-passphrase" } },
+      { method: "POST", path: `/classes/${CLASS.code}/submissions`, body: { seatCode: "1", log: [] } },
+    ] as const) {
+      const response = await handleApiRequest({ method: attempt.method, path: attempt.path, headers: {}, body: attempt.body }, { store: rotated });
+      expect(response.status, `${attempt.method} ${attempt.path}`).toBe(503);
+      expect((response.body as { error: string }).error).toBe("unavailable");
+    }
+
+    // Nothing on disk moved. This is the assertion that would have caught it: the three above
+    // could all have been refused for some other reason and still have written a file.
+    expect((await readdir(root, { recursive: true, encoding: "utf8" })).sort()).toEqual(before);
+    // And the class the operator is trying to save is still readable by the key that wrote it.
+    expect((await fileStore(root, vault(KEY)).getClass(CLASS.code))?.code).toBe(CLASS.code);
+  });
+
+  it("keeps answering the one route whose job is to say what is wrong", async () => {
+    // The gate is deliberately after `/health`. An operator whose service has stopped needs
+    // the route that explains why to keep working, and health writes nothing.
+    const root = await mkdtemp(join(tmpdir(), "bow-rotate4-"));
+    await fileStore(root, vault(KEY)).putClass(CLASS);
+    const rotated = fileStore(root, vault(randomBytes(32)));
+    const response = await handleApiRequest({ method: "GET", path: "/health", headers: {} }, { store: rotated });
+    expect(response.status).toBe(503);
+    expect((response.body as { storeKey: string }).storeKey).toBe("mismatch");
+  });
+
+  it("stops telling the operator that nothing has been deleted", async () => {
+    // It used to end *"Nothing has been deleted — put the original key back."* That sentence
+    // was true at the instant it printed and false after the next write, and the judge followed
+    // it exactly and lost the class. It may only be said by a service that has actually stopped.
+    const root = await mkdtemp(join(tmpdir(), "bow-rotate5-"));
+    await fileStore(root, vault(KEY)).putClass(CLASS);
+    const rotated = fileStore(root, vault(randomBytes(32)));
+    const reason = (
+      (await handleApiRequest({ method: "GET", path: "/health", headers: {} }, { store: rotated })).body as { reason: string }
+    ).reason;
+    expect(reason).not.toContain("Nothing has been deleted");
+    expect(reason).toContain("stopped writing");
+    expect(reason).toContain("put it back and restart");
   });
 
   it("still reports a good key as ready", async () => {

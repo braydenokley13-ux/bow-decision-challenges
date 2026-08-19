@@ -401,6 +401,14 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
   // and restoring the correct key then does **not** restore their account. A silent failure that
   // becomes irreversible while somebody follows the health endpoint's advice is the worst shape
   // a check can have.
+  //
+  // **Detecting it was only half.** This comment described the irreversible outcome exactly and
+  // the service went on permitting it for another release: `keyCheck()` was asked by `/health`
+  // and by nothing else, so every write route stayed open against a store the service could not
+  // read. A security judge boot-tested it and lost a class with two children on it. The other
+  // half is `storeKeyState` in `server/handler.ts`, which refuses every request that touches
+  // this store once the answer is `mismatch` — so what this comment predicts can no longer
+  // happen, rather than being written down and permitted.
   let planted = false;
   async function plantCanary(): Promise<void> {
     if (planted) return;

@@ -11,7 +11,7 @@ import { clampCriterion, REASONING_CRITERIA, reasoningTotal, type ReasoningScore
 import { challengeById, PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 import { contractFor } from "../src/domain/scenario/contracts";
 import { DEFAULT_WORLD_ID } from "../src/domain/scenario/registry";
-import type { ClassStore, StoredClass } from "./store";
+import type { ClassStore, KeyCheck, StoredClass } from "./store";
 import { cryptoRandom } from "./crypto";
 import { callerOf, cleanDisplayName, handleIdentityRequest, opensClass, seatOf, spendRate, underRate, withinRate } from "./identity";
 
@@ -23,6 +23,71 @@ import { callerOf, cleanDisplayName, handleIdentityRequest, opensClass, seatOf, 
  * suite with a memory store — so what the browser tests exercise is the code that ships,
  * not a mock of it.
  */
+
+/**
+ * Whether this store's key still opens what this store already wrote — asked once, and acted on.
+ *
+ * **The defect this closes, reproduced by a security judge against the shipped server.** A
+ * mistyped or half-rotated `BOW_STORE_KEY` makes every sealed record unreadable. `keyCheck()`
+ * noticed, `/health` said so, and then **every write route stayed open**. Their transcript, on
+ * one directory across three boots:
+ *
+ * - right key: a teacher, a class `R6JPF`, two children on the roster.
+ * - wrong key: health `{"ok":false,"storeKey":"mismatch"}` — correct — then the teacher's
+ *   sign-in 401s, which pushes them to **re-register**, which succeeds, and the class is
+ *   re-created reusing the same code, which is a shipped feature.
+ * - original key back, exactly as health instructed: `GET /classes/R6JPF` → **404**, teacher
+ *   sign-in → **401**, `class.json` overwritten. Health: `{"ok":true,"classroomReady":true}`.
+ *
+ * Green over the wreckage, because the canary was written under the first key and still opens
+ * under it: one file cannot see that the store has become a mixture. And it is worse than a
+ * lost class — the children's roster rows are still on the disk, sealed under a key nothing
+ * uses, attached to a `class.json` nothing can open, so `expiredClassCodes` cannot see them
+ * and the retention sweep will never reach them. The judge ran it five years into the future
+ * and got `[]`. Two real first names, permanent, under a sign-in screen that says *"A class
+ * and everything in it is deleted 120 days after you make it."*
+ *
+ * `server/store.ts` predicted this in a comment above the canary and only the detection half
+ * was built. This is the other half: **a store whose key does not open it does not get
+ * written to.** The same `blockedReason` gate the `unconfigured` store uses already exists
+ * four lines below; a mismatch simply never reached it.
+ *
+ * **Why it latches.** Only a restart can change the answer — the key comes from the
+ * environment — so `ok` and `mismatch` are settled and are remembered rather than re-read on
+ * every request. `fresh` is not settled: it means the canary is absent and the store is empty,
+ * which the first class written turns into `ok`. So `fresh` is re-asked and nothing else is.
+ *
+ * **And why it is keyed by the store rather than by the process.** A deployment has one store
+ * for its life, so a module-level flag would be correct in production and wrong in the suite —
+ * one test that pointed a mismatched store at the handler would latch the answer for every
+ * test after it, in a file order nobody controls. A `WeakMap` gives the production reading and
+ * the test reading the same code with no seam to remember to call.
+ */
+const SETTLED = new WeakMap<ClassStore, KeyCheck>();
+
+export async function storeKeyState(store: ClassStore): Promise<KeyCheck> {
+  const settled = SETTLED.get(store);
+  if (settled !== undefined) return settled;
+  const state = (await store.keyCheck?.()) ?? "ok";
+  if (state !== "fresh") SETTLED.set(store, state);
+  return state;
+}
+
+/**
+ * What a service that cannot read its own store says, to an operator, once.
+ *
+ * It no longer says *"Nothing has been deleted"*, which was true at the instant it printed and
+ * false after the next write. What it says now is what the service has actually done — stopped
+ * — and what that buys: the records are still there, sealed, and the original key still opens
+ * them.
+ */
+export function mismatchReason(storeId: string): string {
+  return `The ${storeId} store holds records this key cannot open. BOW_STORE_KEY has changed, `
+    + "or is not the one these classes were written with. BOW has stopped writing to this store "
+    + "so that nothing is added under the wrong key: sign-in, class creation and turning work in "
+    + "all refuse until it is fixed. The records are still there and the original key still "
+    + "opens them — put it back and restart.";
+}
 
 /** The five levels the shared rubric allows, and nothing else. There is no level 1. */
 const RUBRIC_LEVELS: readonly RubricLevel[] = [0, 2, 3, 4, 5];
@@ -277,12 +342,12 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
     // key reads as an empty store rather than as an error, so without asking, a deployment
     // holding a term of unreadable classes reports itself ready and a teacher finds out by
     // standing in front of a class whose work has apparently never existed.
-    const key = (await store.keyCheck?.()) ?? "ok";
+    const key = await storeKeyState(store);
     const lost = key === "mismatch";
     const classroomReady = store.durable && !store.blockedReason && !lost;
     const reason = store.blockedReason
       ?? (lost
-        ? `The ${store.id} store holds records this key cannot open. BOW_STORE_KEY has changed, or is not the one these classes were written with. Nothing has been deleted — put the original key back.`
+        ? mismatchReason(store.id)
         : store.durable
           ? `Classes are kept in the ${store.id} store for ${CLASS_RETENTION_DAYS} days.`
           : `The ${store.id} store keeps nothing past this process. Fine for tests and demos, not for a class.`);
@@ -306,6 +371,21 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       },
     };
   }
+
+  /**
+   * A store this key cannot read is refused here, before anything is written into it.
+   *
+   * `blockedReason` below is the same gate the `unconfigured` store uses, and a mismatch never
+   * reached it: `keyCheck()` was asked by `/health` alone, so the service reported the fault
+   * accurately and then carried on writing. What that costs is in `storeKeyState`'s note above
+   * — a re-registered teacher, a re-created class over the top of the old one, and two
+   * children's names left sealed on a disk that the retention sweep can no longer see.
+   *
+   * Ordered after `/health` deliberately: the one route whose job is to say what is wrong has
+   * to keep answering. Ordered before the sweep, because a sweep is a write too, and deleting
+   * on evidence this process cannot read is the worst version of this.
+   */
+  if (await storeKeyState(store) === "mismatch") return fail(503, "unavailable", mismatchReason(store.id));
 
   // A host with no timer of its own — a serverless function is a process per request — still
   // has to execute the retention promise. This claims the hour before it awaits anything and
