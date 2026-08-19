@@ -1992,7 +1992,7 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
 
   // Nobody has played it yet: not assessed, and never 0%.
   await page.goto("/educator/objectives/nysed-pf-2026/1.3");
-  await expect(page.getByText("Not yet assessed")).toBeVisible();
+  await expect(page.getByText(CLASS_STATE_LABELS["not-assessed"])).toBeVisible();
   await expect(page.getByText("%")).toHaveCount(0);
 
   // The students are on their own devices, which is also the only way this test can be
@@ -2029,7 +2029,7 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   await page.goto(`/educator/objectives/nysed-pf-2026/1.3?t=${Date.now()}`);
   await expect(page.getByText("Period 3 · Grade 7")).toBeVisible();
   await expect(page.getByText("3 turned in · 3 written explanations still to read.", { exact: false })).toBeVisible();
-  await expect(page.getByText("Not yet assessed")).toBeVisible();
+  await expect(page.getByText(CLASS_STATE_LABELS["not-assessed"])).toBeVisible();
   // Nobody is assessed, so there is nothing to teach next and the block is absent rather
   // than present and empty.
   await expect(page.locator(".next-lesson")).toHaveCount(0);
