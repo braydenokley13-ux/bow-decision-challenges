@@ -94,6 +94,18 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
     where: ["basketball"],
   },
   {
+    // The word this whole product is about, and until the Week 8 ending said it out loud it
+    // appeared nowhere a student could read. `sort-by-need-want-goal` is one of the twenty-one
+    // competencies and *goal* is one of its three categories, so a run that never says the
+    // word was measuring a sorting a student had never been given the third name for.
+    term: "goal",
+    forms: ["goal"],
+    meaning: "Something you are putting money toward that you do not have yet. Money only reaches it if a plan sends it there.",
+    // Basketball alone: the market has a cushion and a cut and never uses the word, and
+    // `glossary.test.ts` now fails an entry that claims a story which does not say it.
+    where: ["basketball"],
+  },
+  {
     term: "base pay",
     forms: ["base pay"],
     meaning: "The pay that arrives every week for work already agreed. It does not depend on how the season goes.",
@@ -280,7 +292,9 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
     term: "spare",
     forms: ["spare", "spare room"],
     meaning: "Not being used by anybody. A spare room is a room nobody sleeps in.",
-    where: ["basketball", "food-truck"],
+    // Basketball alone. It claimed both worlds and the market says neither form anywhere a
+    // student reads — `spare` exists there only as a variable and a class name.
+    where: ["basketball"],
   },
 
   // --- Prices, deals and deadlines -----------------------------------------

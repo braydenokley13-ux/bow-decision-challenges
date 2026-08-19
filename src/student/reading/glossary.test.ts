@@ -104,7 +104,14 @@ function isProse(raw: string): boolean {
 function readableText(source: string, jsx: boolean): string[] {
   const stripped = withoutComments(source)
     .replace(/^\s*(?:import|export)\s+(?:type\s+)?(?:\{[^{}]*\}|[\w*\s,]+)\s+from\s*["'][^"'\n]*["'];?/gm, " ")
-    .replace(/\$\{[^{}]*\}/g, " ");
+    .replace(/\$\{[^{}]*\}/g, " ")
+    // Single-brace holes are the market's verdict placeholders — `"{rent} of rent, {sold}
+    // plates, {takings}."` — filled at render time with figures and names. Left in place they
+    // trip `isProse`'s brace rule and the whole sentence drops out of the scan, so a third of
+    // the market's ending copy was never read for a hard word and could not answer whether the
+    // market says `rent`. Removed, the sentence is what a student sees minus its numbers,
+    // which is exactly what this scan wants.
+    .replace(/\{[a-z_]+\}/g, " ");
   const quoted = [...stripped.matchAll(/"([^"\n]*)"|'([^'\n]*)'|`([^`]*)`/g)].map((match) => match[1] ?? match[2] ?? match[3] ?? "");
   const between = jsx
     ? [...stripped.matchAll(/(?<![=!<>])[>}]([^<>{}]*[A-Za-z][^<>{}]*)[<{]/g)]
@@ -114,7 +121,44 @@ function readableText(source: string, jsx: boolean): string[] {
   return [...quoted, ...between].filter(isProse);
 }
 
+/**
+ * Which world each file's words are read in, so `where` can be checked rather than trusted.
+ *
+ * `glossaryFor(world)` filters the whole panel by `where`, so an entry that names a world is
+ * a promise that a student playing that world meets the word. Nothing checked the promise
+ * until a *goal* entry was written with both worlds on it — the season's Week 8 ending says
+ * *"A goal is reached by the money a plan puts toward it"* and the market says the word
+ * nowhere at all, so a child running the pop-up would have been handed a definition for a word
+ * not on any screen they will ever see. That is precisely the failure the `where` field's own
+ * comment warns a third story about, arriving in the second one.
+ *
+ * A file neither list names is read in both runs — the world picker, the door, the calculation
+ * box, the writing gate. The partition is coarse in the safe direction: a basketball-only file
+ * wrongly left shared weakens the check and cannot fail a true entry.
+ */
+const BASKETBALL_ONLY = [
+  "src/stages/StudentChallenge.tsx", "src/stages/SeasonWeeks.tsx", "src/stages/Week8Resolution.tsx",
+  "src/app/StageShell.tsx", "src/components/financial/AdjustPanel.tsx", "src/components/financial/PlanBoard.tsx",
+  "src/components/financial/PlanLedger.tsx", "src/components/financial/PlanScene.tsx",
+  "src/components/financial/WeekMeter.tsx", "src/components/financial/choices.ts",
+  "src/components/story/RosterCard.tsx", "src/components/story/SeasonStrip.tsx",
+  "src/domain/scenario/expectations.ts", "src/domain/finance/consequences.ts", "src/domain/finance/resolution.ts",
+];
+const MARKET_ONLY = ["src/stages/popup/", "src/domain/scenario/worlds/food-truck/"];
+
+function worldOf(path: string): "basketball" | "food-truck" | "both" {
+  if (BASKETBALL_ONLY.includes(path) || path.startsWith("src/domain/scenario/worlds/basketball/")) return "basketball";
+  return MARKET_ONLY.some((prefix) => path.startsWith(prefix)) ? "food-truck" : "both";
+}
+
 const RUN_CHUNKS: readonly string[] = RUN_COPY.flatMap((path) => readableText(readFileSync(path, "utf8"), path.endsWith(".tsx")));
+const TEXT_OF: Record<string, string> = Object.fromEntries(WORLD_IDS.map((world) => [
+  world,
+  RUN_COPY
+    .filter((path) => worldOf(path) === world || worldOf(path) === "both")
+    .flatMap((path) => readableText(readFileSync(path, "utf8"), path.endsWith(".tsx")))
+    .join("\n"),
+]));
 const RUN_TEXT = RUN_CHUNKS.join("\n");
 const RUN_WORDS: readonly string[] = [...new Set((RUN_TEXT.toLowerCase().match(/[a-z][a-z'’-]*/g) ?? []))].sort();
 
@@ -164,6 +208,24 @@ describe("every word the glossary defines is a word the run says", () => {
 describe("a word belongs to the stories that say it, and to no others", () => {
   /** A world this build does not have. Standing in for whichever one ships third. */
   const THIRD_STORY = "fashion";
+
+  it("claims no story that does not say the word", () => {
+    const unsaid = GLOSSARY.flatMap((entry) =>
+      entry.where
+        .filter((world) => TEXT_OF[world] !== undefined)
+        .filter((world) => !entry.forms.some((form) => formAppearsIn(form, TEXT_OF[world] ?? "")))
+        .map((world) => `${entry.term} → claims ${world}, which says none of [${entry.forms.join(", ")}]`));
+    expect(unsaid, "a panel offering a word the story never says").toEqual([]);
+  });
+
+  it("would catch a word claimed for a story that does not say it", () => {
+    // The test has to be able to fail, and this is the exact entry that made it necessary.
+    const invented: GlossaryEntry = {
+      term: "goal", forms: ["goal"], meaning: "Something you are putting money toward.", where: [...WORLD_IDS],
+    };
+    const said = invented.where.filter((world) => invented.forms.some((form) => formAppearsIn(form, TEXT_OF[world] ?? "")));
+    expect(said).toEqual(["basketball"]);
+  });
 
   it("names stories this build actually has, and at least one of them", () => {
     const wrong = GLOSSARY
@@ -320,6 +382,13 @@ describe("the panel shows the words on the screen a student is on", () => {
  * it, defeats the only thing this list is for.
  */
 const PLAIN_ENOUGH = new Set<string>([
+  // Read for the first time when the scan learned to see through the market's `{rent}`
+  // placeholders: eleven words in the pop-up's ending verdicts that no reviewer had ever
+  // been shown, because the brace tripped `isProse` and dropped the whole sentence. Two of
+  // the eleven did not survive the reading and were rewritten in the copy instead — *the
+  // thin night* and *a crowd wanting* are figures of speech a Grade 5 reader in their
+  // second language stops at, and they are now *the quiet night* and *a crowd that wanted*.
+  "better", "elsewhere", "found", "happened", "orders", "quiet", "thrown", "times", "wanted", "worst", "yoga's",
   "spread", "stands", "when",
   "about", "above", "account", "across", "actually", "add", "added", "adds", "again", "against",
   "age", "all", "almost", "alone", "along", "amount", "amounts", "an", "another", "answer",
@@ -337,20 +406,20 @@ const PLAIN_ENOUGH = new Set<string>([
   "coaching", "code", "cold", "come", "comes", "coming", "commas", "committed", "committing", "community",
   "comparison", "computer", "confirm", "confirmed", "connection", "continue", "cook", "cooked", "cooking", "cooks",
   "cool", "corner", "cost", "costs", "could", "counter", "court", "cousin", "cousin’s", "damage",
-  "dark", "day", "dead", "deadline", "decision", "decrease", "definitely", "delivers", "depends", "detail",
+  "dark", "day", "dead", "deadline", "decides", "decision", "decrease", "definitely", "delivers", "depends", "detail",
   "did", "didn’t", "died", "difference", "different", "differently", "district", "do", "does", "dollars", "done",
   "doors", "down", "drives", "drop", "each", "earlier", "early", "earned", "eats", "effect",
   "eight", "eight-week", "either", "eleven", "else", "email", "emptied", "end", "ending", "ends",
-  "enough", "enter", "even", "evening", "evenly", "everybody", "everyone", "everywhere", "exactly", "expected",
+  "enough", "enter", "even", "evening", "ever", "evenly", "everybody", "everyone", "everywhere", "exactly", "expected",
   "explain", "extra", "far", "feedback", "fewer", "fictional", "fifth", "figure", "fill", "filling",
-  "fills", "final", "finding", "fine", "fireworks", "first", "five", "fixing", "flight", "food",
+  "fills", "final", "finding", "fine", "fireworks", "first", "fit", "fits", "five", "fixing", "flight", "food",
   "foods", "four", "free", "from", "gains", "game", "games", "gas", "gate", "gave",
   "get", "gets", "getting", "give", "gives", "glad", "go", "goes", "going", "gone",
   "got", "groceries", "guard", "gym", "had", "haddad", "half", "halfway", "halves", "handed",
   "handed-in", "handle", "hands", "happen", "happens", "harbor", "hard", "has", "have", "held",
   "help", "her", "here", "hide", "high", "hint", "his", "hold", "holding", "holds",
   "hole", "home", "hour", "hours", "how", "however", "hurts", "i", "if", "increase",
-  "instead", "into", "its", "jar", "just", "keep", "keeping", "kept", "knew", "land",
+  "instead", "into", "its", "jar", "just", "keep", "keeping", "keeps", "kept", "knew", "land",
   "knows", "landed", "lands", "lane", "last", "late", "later", "laundry", "league", "leaning",
   "least",
   "leave", "leaves", "leaving", "length", "less", "lesson", "letters", "lid", "lights", "like",
@@ -364,12 +433,12 @@ const PLAIN_ENOUGH = new Set<string>([
   "offering", "office", "okafor", "once", "one", "ones", "only", "open", "opened", "opening",
   "opens", "option", "or", "ordered", "ordinary", "other", "outside", "over", "own", "packed",
   "page", "painted", "pair", "part", "pass", "past", "paying", "payment", "payments", "pays",
-  "people", "per", "performs", "person", "phone", "pick", "place", "places", "plain", "planned",
+  "people", "per", "performs", "person", "phone", "pick", "place", "places", "plain", "plan's", "plan’s", "planned",
   "planning", "plate", "plates", "play", "played", "player", "players", "playing", "plays", "plus",
   "pm", "pockets", "pop-up", "pos", "practice", "prefers-reduced-motion", "present", "press", "pressure", "priced",
   "prices", "progress", "promised", "prompt", "proper", "properly", "protect", "protected", "protects", "put",
   "puts", "putting", "px", "question", "questions", "quiet", "rains", "ramos", "ran", "rather",
-  "reach", "reachable", "reaches", "reaching", "read", "reads", "ready", "real", "reason", "reduce",
+  "reach", "reachable", "reached", "reaches", "reaching", "read", "reads", "ready", "real", "reason", "reduce",
   "regional", "rentals", "rented", "repeat", "replaced", "replacement", "response", "review", "reyes", "right",
   "riverside", "road", "roster", "round", "row", "rows", "rubber", "run", "running", "runs",
   "s", "safe", "safety", "said", "salt", "sat", "saturday", "saturdays", "save", "say",
@@ -384,7 +453,7 @@ const PLAIN_ENOUGH = new Set<string>([
   "than", "that", "that's", "that’s", "their", "them", "then", "there", "these", "they",
   "thing", "things", "thinking", "third", "this", "those", "three", "threw", "thu", "time",
   "tips", "tired", "tiredness", "today", "together", "told", "too", "took", "top", "total",
-  "toward", "town", "transfer", "trip", "truck", "truck's", "trucks", "try", "turn", "turned",
+  "toward", "town", "transfer", "tried", "trip", "truck", "truck's", "trucks", "try", "turn", "turned",
   "turning", "turns", "twice", "two", "type", "under", "unpaid", "untap", "until", "update",
   "us", "use", "usual", "usually", "version", "wait", "waiting", "walk", "walked", "walks",
   "want", "wanted", "wants", "was", "watch", "way", "ways", "week", "weeks", "were",

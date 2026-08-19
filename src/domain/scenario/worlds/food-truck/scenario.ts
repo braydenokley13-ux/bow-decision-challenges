@@ -821,7 +821,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
         stock: {
           label: "What you cooked",
           paidOff: "{cooked} plates cooked, {sold} sold, {takings}. Nothing was thrown away, and with the money you had, no other order for Saturdays 2 and 3 would have left you better off.",
-          paidOffSpoiled: "{cooked} plates cooked, {sold} sold, {takings}. {binned} went in the bin on the thin night, and cooking less takes less.",
+          paidOffSpoiled: "{cooked} plates cooked, {sold} sold, {takings}. {binned} went in the bin on the quiet night, and cooking less takes less.",
           costYou: "{binned} went in the bin. {alt} trays a night on Saturdays 2 and 3, not {actual}, leaves you {gap} better off.",
           fellShort: "{unfed} people wanted a plate you did not have. {alt} trays a night on Saturdays 2 and 3, not {actual}, would have left you {gap} better off.",
           nothing: "You never cooked a plate, so the truck opened four times with nothing on it and took {zero}.",
@@ -850,7 +850,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
         repair: {
           label: "Where the swap money came from",
           paidOff: "{bill} off {lines}. The last Saturday ran and took {last}.",
-          costYou: "{bill}, and {stock} of it off the stock line — Saturday 4 cooked {cooked} plates into a crowd wanting {crowd}.",
+          costYou: "{bill}, and {stock} of it off the stock line — Saturday 4 cooked {cooked} plates into a crowd that wanted {crowd}.",
           emptyLast: "{bill} off {lines}, and the generator went in the truck. The stock line had {left} on it by then, so Saturday 4 cooked nothing and took {zero} on the biggest crowd of the run.",
           fellShort: "{bill} wanted, {freed} freed, {residual} missing. The truck sat dark on the biggest night.",
         },
