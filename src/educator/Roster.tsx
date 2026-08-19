@@ -23,11 +23,15 @@ import { MAX_ROSTER_SIZE, type ClassJoinMode, type JoinCard } from "../platform/
  * page says plainly that this is the only time they appear, and reissuing is one press from
  * every row for the rest of the term.
  *
- * **A name here is not a claim about a child.** BOW stores no personal information about a
- * student at all: the account behind a seat is an id and a credential. Every human-readable
- * label on this page belongs to the teacher's own class, was typed by them, and BOW has no way
- * to know whether any of it is a real name. The page says so where a teacher is about to type,
- * rather than in a policy nobody opens.
+ * **A name here is not a claim about a child.** BOW holds these names — it would be no use if
+ * it did not — and what it holds is a label on a seat in one class: the account behind that
+ * seat is `{ id, createdAt }` and nothing else, the label was typed by the teacher or by the
+ * student at `/join`, and BOW has no way to know whether either is a real name. It is sealed
+ * with the class and deleted with it. The page says that where a teacher is about to type,
+ * rather than in a policy nobody opens — and it does not say the thing this comment used to
+ * say, that BOW stores no personal information about a student at all. That is true of the
+ * account and false of the class, and `dataClaims.test.ts` is where the difference is written
+ * down.
  */
 
 interface RosterRow {
@@ -298,10 +302,14 @@ export function Roster() {
             placeholder={"Ana R.\nDevon P.\nLeila H."}
           />
         </label>
-        {/* Said where a teacher is about to type it, not in a policy. */}
+        {/* Said where a teacher is about to type it. The second half used to read "and never
+            asks a student for a name of their own", which is what this screen makes true and
+            not what the product does: a class with no list asks for exactly that at /join, and
+            files the work under it. What is true either way is what a name here is for. */}
         <p className="roster-add__note">
           Write what you want to see on your own screens. First names, initials, table numbers —
-          BOW never checks it against anything and never asks a student for a name of their own.
+          BOW never checks it against anything. Once this list exists, a student gets in with the
+          class code and the code on their card, and types no name at all.
         </p>
         <Button variant="primary" aria-disabled={typed.trim().length === 0 || busy} onClick={() => void add()}>
           {busy ? "Making cards…" : "Add them and make the cards"}

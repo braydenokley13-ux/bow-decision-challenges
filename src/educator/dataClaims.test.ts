@@ -127,13 +127,6 @@ function offencesIn(sentence: string): string[] {
  * Delete the entry when the sentence goes.
  */
 const ROUTED_ELSEWHERE: { path: string; sentence: string; why: string }[] = [
-  {
-    path: "src/educator/Roster.tsx",
-    sentence: "never asks a student for a name of their own",
-    // Printed on the screen that creates the class list — while every class without one is
-    // asking exactly that at /join.
-    why: "a class with no list asks the student for their own first name",
-  },
 ];
 
 const NOW = 1_770_000_000_000;
