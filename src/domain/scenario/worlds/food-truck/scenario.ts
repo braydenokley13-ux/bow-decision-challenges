@@ -117,7 +117,6 @@ export interface PopUpScreenCopy {
     crowdLabel: string;
     /** The one thing about the four Saturdays that is true at every booth. */
     crowdNote: string;
-    crowdUnit: string;
     /** How a night is named in the four-cell strip. Short, because there are four of them. */
     nightShort: string;
     take: string;
@@ -367,11 +366,6 @@ export interface PopUpScreenCopy {
     tileLabels: { takings: string; binned: string; banked: string; plates: string; swap: string; cushion: string };
     field: string;
     starters: readonly string[];
-    pickMoreOne: string;
-    pickMore: string;
-    ready: string;
-    write: string;
-    longEnough: string;
     submit: string;
   };
   submitted: {
@@ -596,7 +590,6 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       permit: { label: "City permit", note: `${formatDollars(N.permit)} for the four Saturdays. Every stall pays it.` },
       crowdLabel: "Plates the crowd here will buy",
       crowdNote: "The same four Saturdays at every booth. What changes is how many walk past yours. The last one is a range: nobody can say how many will come for the fireworks.",
-      crowdUnit: "plates",
       nightShort: "Sat",
       take: "Take this booth",
       taken: "Booked",
@@ -882,11 +875,6 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       },
       field: "Two to four sentences",
       starters: ["I protected…", "I gave up…", "The money went…"],
-      pickMoreOne: "more number to pick.",
-      pickMore: "more numbers to pick.",
-      ready: "Numbers ready.",
-      write: "Now write two to four sentences.",
-      longEnough: "Long enough to turn in.",
       submit: "Turn in my answer",
     },
     submitted: {
@@ -919,7 +907,7 @@ function screenCopy(s: PopUpScreenCopy): readonly string[] {
   const sums = [s.spot.owed, s.money.toPlan, s.saturday.order, s.generator.gap];
   return [
     s.spot.kicker, s.spot.title, s.spot.deck, s.spot.boothsTitle, s.spot.permit.label, s.spot.permit.note,
-    s.spot.crowdLabel, s.spot.crowdNote, s.spot.crowdUnit, s.spot.nightShort,
+    s.spot.crowdLabel, s.spot.crowdNote, s.spot.nightShort,
     s.spot.take, s.spot.taken, s.spot.after, s.spot.action, s.spot.gate,
     s.money.kicker, s.money.title, s.money.deck, s.money.ask, s.money.yes, s.money.no,
     s.money.counted, s.money.left, s.money.action, s.money.gate,
@@ -959,7 +947,7 @@ function screenCopy(s: PopUpScreenCopy): readonly string[] {
     ...Object.values(s.settle.verdicts.helper), ...Object.values(s.settle.verdicts.conditional),
     ...Object.values(s.settle.verdicts.repair), ...Object.values(s.settle.verdicts.cut),
     s.writeUp.title, s.writeUp.tiles, ...Object.values(s.writeUp.tileLabels), s.writeUp.field, ...s.writeUp.starters,
-    s.writeUp.pickMoreOne, s.writeUp.pickMore, s.writeUp.ready, s.writeUp.write, s.writeUp.longEnough, s.writeUp.submit,
+    s.writeUp.submit,
     s.submitted.sent, s.submitted.saving, s.submitted.failed, s.submitted.person, s.submitted.retry,
     s.submitted.again, s.submitted.againNote,
     s.submitted.boothFact, s.submitted.classFact, s.submitted.saturdaysFact, s.submitted.platesFact,
