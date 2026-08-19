@@ -1,0 +1,8 @@
+ RUN  v4.1.10 /tmp/claude-0/-home-user-bow-decision-challenges/154df4db-b27f-5b40-abad-57bf3769b363/scratchpad/head-074ec2f
+ Test Files  107 passed | 1 skipped (108)
+      Tests  1334 passed | 1 skipped (1335)
+   Duration  205.42s (transform 18.37s, setup 0ms, import 50.76s, tests 265.88s, environment 41.39s)
+real	3m27.068s
+user	2m3.827s
+sys	0m21.807s
+vitest exit=0

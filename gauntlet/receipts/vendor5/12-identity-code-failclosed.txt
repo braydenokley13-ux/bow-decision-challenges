@@ -1,0 +1,9 @@
+# 12 — OBSERVATION (low): identity-route class codes skip isWellFormedClassCode;
+# an unsafe code reaches store.segment() which THROWS -> surfaces as HTTP 503 (fail-closed),
+# whereas handler.ts validates at the door and returns a clean 404. No path escape, no data touched.
+GET /classes/..              /roster -> HTTP 404
+GET /classes/._.             /roster -> HTTP 404
+GET /classes/a/../b          /roster -> HTTP 404
+GET /classes/..%2f..%2fetc   /roster -> HTTP 503
+GET /classes/AAAA%00         /roster -> HTTP 503
+confirmed: no files created outside the data root (checked parent dirs).

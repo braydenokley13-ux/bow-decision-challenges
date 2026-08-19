@@ -1,0 +1,17 @@
+{
+  "before": {
+    "speechSynthesis": true,
+    "utterance": true,
+    "voices": 0
+  },
+  "offered": true,
+  "after": {
+    "buttonNowSays": "Words",
+    "notes": [
+      "This computer has no voice, so it cannot read out loud. Words still works."
+    ],
+    "voicesAfter": 0,
+    "readButtonStillThere": 0,
+    "wordsStillThere": 1
+  }
+}

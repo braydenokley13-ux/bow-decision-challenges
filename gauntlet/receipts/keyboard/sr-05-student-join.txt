@@ -1,0 +1,187 @@
+# A STUDENT SIGNS IN WITH A CARD, KEYBOARD ONLY. Snapshot 074ec2f.
+# Class N7M3U. Card: Gil Ayers, code FDFA4. Nothing clicked.
+
+######## SCREEN — GET /join — step one
+  url             http://127.0.0.1:6473/join
+  document.title  Plan Under Pressure — BOW Decision Challenges
+  landmarks       main (unnamed)
+  headings        h1"What is your class code?"
+  --- what a blind student hears reading this screen top to bottom ---
+   "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+  ···· main
+  ····· sectionheader
+  ······ "BOW Decision Challenges home", link
+  ········· "BOW", StaticText
+  ········· "DECISION CHALLENGES", StaticText
+  ······ "What is your class code?", heading, level 1
+  ······· "What is your class code?", StaticText
+  ······ paragraph
+  ······· "Your teacher has it on the board.", StaticText
+  ······ LabelText
+  ········ "CLASS CODE", StaticText
+  ······· "CLASS CODE", textbox
+  ······ paragraph, live=polite
+  ······· "5 letters and numbers.", StaticText
+  ······ "Next", button, disabled=true
+  ······· "Next", StaticText
+  ······ paragraph
+  ······· "No code? Your teacher gives it out at the start of the lesson.", StaticText
+  ······ paragraph
+  ······· "BOW never asks for your email, your birthday, or anything about your real money.", StaticText
+  ····· alert, live=assertive, atomic=true
+  FOCUS ON ARRIVAL → "What is your class code?", heading, level 1
+  --- every Tab stop ---
+  Tab  1 → "CLASS CODE", textbox
+  Tab  2 → "Next", button, disabled=true
+  Tab  3 → *** DOCUMENT BODY — nothing is spoken ***
+  Tab  4 → "BOW Decision Challenges home", link
+  Tab  5 → "CLASS CODE", textbox   (ring closed here)
+
+  Tab ×4 → "CLASS CODE", textbox
+  Typing N7M3U one character at a time — what is spoken as it goes in:
+     ANNOUNCED [polite]: "That is 1 — a class code is 5."
+     ANNOUNCED [polite]: "That is 2 — a class code is 5."
+     ANNOUNCED [polite]: "That is 3 — a class code is 5."
+     ANNOUNCED [polite]: "That is 4 — a class code is 5."
+     ANNOUNCED [polite]: ""
+  PRESS Enter — submit the class code
+     FOCUS LOST TO BODY from div#root > main.join-shell > section.join-step > label.field > input#class-code
+     FOCUS NOW → "Type the code on your card.", heading, level 1
+
+######## SCREEN — /join — step two
+  url             http://127.0.0.1:6473/join
+  document.title  Plan Under Pressure — BOW Decision Challenges
+  landmarks       main (unnamed)
+  headings        h1"Type the code on your card."
+  --- what a blind student hears reading this screen top to bottom ---
+   "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+  ···· main
+  ····· sectionheader
+  ······ "BOW Decision Challenges home", link
+  ········· "BOW", StaticText
+  ········· "DECISION CHALLENGES", StaticText
+  ······· "PERIOD 3 FINANCIAL LITERACY", StaticText
+  ······ "Type the code on your card.", heading, level 1
+  ······· "Type the code on your card.", StaticText
+  ······ paragraph
+  ······· "Period 3 Financial Literacy", StaticText
+  ······ LabelText
+  ········ "YOUR CODE", StaticText
+  ······· "YOUR CODE", textbox
+  ······ "WHOSE COMPUTER IS THIS?", group
+  ······· Legend
+  ········ "WHOSE COMPUTER IS THIS?", StaticText
+  ······· LabelText
+  ········ "A school one lots of people use — sign me out at the end of the day", radio, checked=true
+  ········· "A school one lots of people use — sign me out at the end of the day", StaticText
+  ······· LabelText
+  ········ "Mine — keep me signed in", radio
+  ········· "Mine — keep me signed in", StaticText
+  ······ "Go in", button, disabled=true
+  ······· "Go in", StaticText
+  ······ "Different class", button
+  ······· "Different class", StaticText
+  ······ paragraph
+  ······· "Lost your card? Ask your teacher — they can print you a new one.", StaticText
+  ····· alert, live=assertive, atomic=true
+  --- every Tab stop ---
+  Tab  1 → "YOUR CODE", textbox
+  Tab  2 → "A school one lots of people use — sign me out at the end of the day", radio, checked=true
+  Tab  3 → "Go in", button, disabled=true
+  Tab  4 → "Different class", button
+  Tab  5 → *** DOCUMENT BODY — nothing is spoken ***
+  Tab  6 → "BOW Decision Challenges home", link
+  Tab  7 → "YOUR CODE", textbox   (ring closed here)
+
+  Tab ×5 → "YOUR CODE", textbox
+  --- FIRST: a wrong card code, to hear what an error sounds like ---
+     ANNOUNCED while typing: (nothing)
+  PRESS Enter — submit a card code that is not on the list
+     ANNOUNCED [assertive]: "That did not match. Check it and try again."
+     FOCUS NOW → "YOUR CODE", textbox, value=ZZZZZ
+
+######## SCREEN — after the wrong card code
+  url             http://127.0.0.1:6473/join
+  document.title  Plan Under Pressure — BOW Decision Challenges
+  landmarks       main (unnamed)
+  headings        h1"Type the code on your card."
+  --- what a blind student hears reading this screen top to bottom ---
+   "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+  ···· main
+  ····· sectionheader
+  ······ "BOW Decision Challenges home", link
+  ········· "BOW", StaticText
+  ········· "DECISION CHALLENGES", StaticText
+  ······· "PERIOD 3 FINANCIAL LITERACY", StaticText
+  ······ "Type the code on your card.", heading, level 1
+  ······· "Type the code on your card.", StaticText
+  ······ paragraph
+  ······· "Period 3 Financial Literacy", StaticText
+  ······ LabelText
+  ········ "YOUR CODE", StaticText
+  ······· "YOUR CODE", textbox, value="ZZZZZ"
+  ········· "ZZZZZ", StaticText
+  ······ "WHOSE COMPUTER IS THIS?", group
+  ······· Legend
+  ········ "WHOSE COMPUTER IS THIS?", StaticText
+  ······· LabelText
+  ········ "A school one lots of people use — sign me out at the end of the day", radio, checked=true
+  ········· "A school one lots of people use — sign me out at the end of the day", StaticText
+  ······· LabelText
+  ········ "Mine — keep me signed in", radio
+  ········· "Mine — keep me signed in", StaticText
+  ······ "Go in", button
+  ······· "Go in", StaticText
+  ······ "Different class", button
+  ······· "Different class", StaticText
+  ······ paragraph
+  ······· "Lost your card? Ask your teacher — they can print you a new one.", StaticText
+  ····· alert, live=assertive, atomic=true
+  ······ "That did not match. Check it and try again.", StaticText
+  --- now the real card ---
+  Tab ×6 → "YOUR CODE", textbox
+  PRESS Enter — submit the real card code
+     live region emptied [assertive]: ""
+     FOCUS LOST TO BODY from div#root > main.join-shell > section.join-step > label.field > input#join-code
+     NOT ANNOUNCED BY MOST SRs (live region created with its text already in it) [polite]: "Getting your classes…"
+     FOCUS NOW → "YOUR WORK IS HERE.", heading, level 1
+
+######## SCREEN — where the student lands after signing in
+  url             http://127.0.0.1:6473/home
+  document.title  Plan Under Pressure — BOW Decision Challenges
+  landmarks       main (unnamed)
+  headings        h1"YOUR WORK IS HERE." h2"Plan Under Pressure"
+  --- what a blind student hears reading this screen top to bottom ---
+   "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+  ···· main
+  ····· sectionheader
+  ······ "BOW Decision Challenges home", link
+  ········· "BOW", StaticText
+  ········· "DECISION CHALLENGES", StaticText
+  ········ "Gil Ayers", StaticText
+  ······· "Not you?", button
+  ········ "Not you?", StaticText
+  ····· "YOUR WORK IS HERE.", heading, level 1
+  ······ "YOUR WORK IS HERE.", StaticText
+  ······ paragraph
+  ······· "PERIOD 3 FINANCIAL LITERACY", StaticText
+  ······· "Plan Under Pressure", heading, level 2
+  ········ "Plan Under Pressure", StaticText
+  ······· paragraph
+  ········ "You handle the money.", StaticText
+  ········ "20", StaticText
+  ········ "–", StaticText
+  ········ "28", StaticText
+  ········ "minutes.", StaticText
+  ······· "Start", link
+  ········ "Start", StaticText
+  ····· sectionfooter
+  ······ "Join another class", link
+  ······· "Join another class", StaticText
+  --- every Tab stop here ---
+  Tab  1 → "Start", link
+  Tab  2 → "Join another class", link
+  Tab  3 → *** DOCUMENT BODY — nothing is spoken ***
+  Tab  4 → "BOW Decision Challenges home", link
+  Tab  5 → "Not you?", button
+  Tab  6 → "Start", link   (ring closed here)

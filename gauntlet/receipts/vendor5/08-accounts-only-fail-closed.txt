@@ -1,0 +1,4 @@
+# 08 - Accounts-only store fails CLOSED under a wrong key (round-4 MEDIUM, now closed)
+register a teacher (NO class): 201
+files present (accounts only): _accounts _vault-check.json 
+boot same dir with WRONG key -> storeKey mismatch classroomReady False ok False (fail-closed)

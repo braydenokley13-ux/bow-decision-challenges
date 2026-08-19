@@ -1,0 +1,9 @@
+# 10 — Class-lookup limiter: misses charged, hits never checked (SHA d523c94)
+# clientId = socket address (127.0.0.1); one address = a whole school behind one NAT.
+first 429 on a never-existent well-formed code at miss #: 201  (limit 200)
+GET the LIVE class 6RRQY after the miss-bucket is full: HTTP 200  (hit is never charged/checked -> still 200)
+
+# Where the 'a room hits codes that exist' premise strains: a class DELETED or MISTYPED
+# mid-lesson turns a roomful of legit clients into charged misses on the shared address bucket.
+# It does NOT block valid classes (hits bypass the check), but the room then sees the
+# alarming 'Too many class codes tried from here' message for the missing code. Self-heals in 15m.

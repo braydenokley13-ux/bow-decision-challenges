@@ -7,7 +7,7 @@
 import type { Page } from "@playwright/test";
 import {
   completeSetupStage, completeWorkingCalcs, decideOpportunity, passWeek5Calculation,
-  playSeasonWeeks, readWeek8Resolution, submitDefense,
+  playSeasonWeeks, readWeek8Resolution, submitDefense, chooseSeasonIfOffered, stepPastTheDeal,
 } from "../../../e2e/flow";
 import { savePlan, week5TotalFor, type PlanContext } from "../../../e2e/plan";
 
@@ -20,10 +20,8 @@ export { savePlan, week5TotalFor } from "../../../e2e/plan";
 
 /** The whole run, from the world picker to the button that turns it in. */
 export async function playThrough(page: Page, opts: { stopBefore?: "turnIn" } = {}): Promise<void> {
-  await page.getByRole("button", { name: /Start this one/ }).first().click();
-  const deal = page.getByRole("button", { name: "Find Avery a place" });
-  await deal.waitFor({ timeout: 15000 });
-  await deal.click();
+  await chooseSeasonIfOffered(page);
+  await stepPastTheDeal(page);
   await completeSetupStage(page, 2);
   await completeWorkingCalcs(page);
   const context: PlanContext = { setupId: "cousin-room" };
@@ -50,3 +48,6 @@ export async function fillDefence(page: Page, text: string): Promise<void> {
   }
   await page.getByLabel("Two to four sentences").fill(`${text} The numbers I stood on are ${figures.join(" and ")}.`);
 }
+
+export { contractFor } from "../../../src/domain/scenario/contracts";
+export { DEFAULT_WORLD_ID } from "../../../src/domain/scenario/registry";

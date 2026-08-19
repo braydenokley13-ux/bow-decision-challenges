@@ -1,0 +1,25 @@
+=== TSC ===
+
+real	0m23.957s
+user	0m27.108s
+sys	0m1.685s
+tsc exit=0
+=== LINT ===
+
+/tmp/claude-0/-home-user-bow-decision-challenges/154df4db-b27f-5b40-abad-57bf3769b363/scratchpad/head-074ec2f/src/student/ResumeGate.tsx
+  97:19  error  This assertion is unnecessary since the receiver accepts the original type of the expression  @typescript-eslint/no-unnecessary-type-assertion
+
+✖ 1 problem (1 error, 0 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+
+
+real	0m58.716s
+user	1m0.777s
+sys	0m3.287s
+eslint exit=1
+=== STYLELINT ===
+
+real	0m3.396s
+user	0m2.235s
+sys	0m0.238s
+stylelint exit=0

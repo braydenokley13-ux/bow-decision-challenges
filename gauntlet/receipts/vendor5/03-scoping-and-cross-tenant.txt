@@ -1,0 +1,11 @@
+# 03 — /me/runs scoping and cross-tenant authorization (SHA d523c94)
+Bob (seat 3) submitted run aaaaaaaa-1111-2222-3333-bobbobbobbob2
+Mallory reads Bobs run by sessionId  -> 404 (want 404)
+Bob reads his own run                 -> 200 (want 200)
+anonymous reads the run               -> 401 (want 401)
+teacher token reads /me/runs          -> 401 (want 401)
+--- cross-tenant on /classes ---
+Mallory submits into victim class (no seat) -> 403 (want 403)
+attacker teacher reads victim submissions   -> 403 (want 403)
+attacker teacher DELETEs victim class        -> 403 (want 403)
+anon (no token) submits to open class        -> 403 (want 403)

@@ -1,0 +1,15 @@
+# 02 — Traversal fix verification (SHA d523c94)
+# Attacker: authenticated student in an OPEN class they self-joined.
+# Target: another teacher's class.json (the original round-5 catastrophe).
+
+victim class opens BEFORE (real teacher key): 200
+sessionId="aaaaaaaa/../../../9G7H3/class"                -> HTTP 400
+sessionId="aaaaaaaa%2f..%2f..%2f..%2f9G7H3%2fclass"      -> HTTP 400
+sessionId="aaaaaaaa\\\\..\\\\..\\\\..\\\\9G7H3\\\\class" -> HTTP 400
+sessionId="aaaaaaaa/../../../9G7H3/roster/1"             -> HTTP 400
+sessionId="../9G7H3"                                     -> HTTP 400
+sessionId=".."                                           -> HTTP 400
+sessionId="."                                            -> HTTP 400
+sessionId="short"                                        -> HTTP 400
+legit crypto.randomUUID sessionId (must be admitted) -> HTTP 202
+victim class opens AFTER (real teacher key): 200  label: Victims Period 3

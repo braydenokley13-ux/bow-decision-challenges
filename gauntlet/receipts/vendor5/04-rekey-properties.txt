@@ -1,0 +1,20 @@
+# 04 — rekey properties (SHA d523c94), server/rekey.ts built via npm run build:rekey
+
+## Happy path: source untouched, dest complete, opens under new key only
+20 records under /home/user/bow-decision-challenges/.scratch/vendor5/r6/data
+20 converted, 0 already done. /home/user/bow-decision-challenges/.scratch/vendor5/r6/data is untouched.
+SOURCE bytes identical before/after: PASS
+
+## Unreadable source record -> abort, source untouched, dest has NO canary (announces unfinished)
+20 records under /home/user/bow-decision-challenges/.scratch/vendor5/r6/U_src
+1 record(s) could not be opened with the key given, starting with 9G7H3/class.json. Nothing in /home/user/bow-decision-challenges/.scratch/vendor5/r6/U_src was changed and /home/user/bow-decision-challenges/.scratch/vendor5/r6/U_dst is incomplete — delete it and try the right key.
+exit=1
+SOURCE untouched on failure path: PASS
+dest canary present? NO-as-designed
+
+## Resume idempotency + planted-resume cannot drop/corrupt a source record
+20 converted, 0 already done. /home/user/bow-decision-challenges/.scratch/vendor5/r6/data is untouched.
+0 converted, 20 already done. /home/user/bow-decision-challenges/.scratch/vendor5/r6/data is untouched.
+planted new-key-sealed WRONG content at 9G7H3/class.json
+1 converted, 19 already done. /home/user/bow-decision-challenges/.scratch/vendor5/r6/data is untouched.
+(1 converted = the tampered file was re-written from source, not skipped)

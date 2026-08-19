@@ -1,0 +1,99 @@
+[
+  {
+    "screen": "01-booth",
+    "size": "phone",
+    "wordsOnScreen": 317,
+    "termsOffered": 6,
+    "terms": [
+      "permit",
+      "booth",
+      "organiser",
+      "crowd",
+      "stall",
+      "dearest"
+    ],
+    "otherTermsBehindDisclosure": 34,
+    "tokensTheGlossaryReaches": 25,
+    "shareOfScreenTheGlossaryReaches": "7.9%",
+    "panelCoversViewport": "70%",
+    "canSeeScreenBehind": true
+  },
+  {
+    "screen": "02-money",
+    "size": "phone",
+    "wordsOnScreen": 172,
+    "termsOffered": 8,
+    "terms": [
+      "a rule on it",
+      "count on",
+      "owe",
+      "rebate",
+      "organiser",
+      "booth",
+      "stall",
+      "sold out"
+    ],
+    "otherTermsBehindDisclosure": 32,
+    "tokensTheGlossaryReaches": 9,
+    "shareOfScreenTheGlossaryReaches": "5.2%",
+    "panelCoversViewport": "70%",
+    "canSeeScreenBehind": true
+  },
+  {
+    "screen": "03-plan",
+    "size": "phone",
+    "wordsOnScreen": 247,
+    "termsOffered": 7,
+    "terms": [
+      "a job",
+      "stock",
+      "tray",
+      "crowd",
+      "cushion",
+      "generator",
+      "your cut"
+    ],
+    "otherTermsBehindDisclosure": 33,
+    "tokensTheGlossaryReaches": 22,
+    "shareOfScreenTheGlossaryReaches": "8.9%",
+    "panelCoversViewport": "70%",
+    "canSeeScreenBehind": true
+  },
+  {
+    "screen": "10-setup",
+    "size": "phone",
+    "wordsOnScreen": 68,
+    "termsOffered": 4,
+    "terms": [
+      "sublet",
+      "share",
+      "spare",
+      "rent"
+    ],
+    "otherTermsBehindDisclosure": 39,
+    "tokensTheGlossaryReaches": 4,
+    "shareOfScreenTheGlossaryReaches": "5.9%",
+    "panelCoversViewport": "70%",
+    "canSeeScreenBehind": true
+  },
+  {
+    "screen": "11-question",
+    "size": "phone",
+    "wordsOnScreen": 72,
+    "termsOffered": 7,
+    "terms": [
+      "count on",
+      "bonus",
+      "sublet",
+      "left to plan with",
+      "owe",
+      "savings",
+      "base pay"
+    ],
+    "otherTermsBehindDisclosure": 36,
+    "tokensTheGlossaryReaches": 8,
+    "shareOfScreenTheGlossaryReaches": "11.1%",
+    "panelCoversViewport": "70%",
+    "canSeeScreenBehind": true
+  }
+]
