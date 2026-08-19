@@ -203,15 +203,22 @@ dotfiles would otherwise disarm the check.
 **Changing the key: `npm run rekey`.** With the service stopped:
 
 ```
-node dist-server/rekey.js --from .bow-classes --to .bow-classes.new --old-key "$OLD" --new-key "$NEW"
+BOW_OLD_STORE_KEY="$OLD" BOW_NEW_STORE_KEY="$NEW" \
+  node dist-server/rekey.js --from .bow-classes --to .bow-classes.new
 ```
 
-It takes both keys explicitly, never mutates the source, reads back and verifies **every**
-record under the new key rather than a sample, refuses to finish if one fails, plants the
+It takes both keys explicitly and never on the command line — the two environment variables
+above, or `--old-key-file` / `--new-key-file <path>`, where `-` reads standard input. A key on
+argv is readable by every process on the host (`ps`, `/proc/<pid>/cmdline`) while the
+environment is not, and either of these keys decrypts the whole store and derives the
+session-signing secret. It never mutates the source, reads back and verifies **every** record
+under the new key rather than a sample, refuses to finish if one fails, refuses a destination
+already holding records the source cannot account for (`--force` if you mean it), plants the
 canary last so a half-finished directory cannot look complete, and is resumable — a crash
 mid-run leaves a directory that is behind, never one that neither key opens. Point the service
 at the new directory and the new key when it finishes; if anything looks wrong, point it back
-at the old one. `--from-plaintext` converts a directory written before sealing existed.
+at the old one. `--from-plaintext` converts a directory written before sealing existed, and
+`--help` prints all of it.
 
 This exists because "what do you do if that key is compromised?" had one honest answer before
 it, and the answer was that a term of children's work would be deleted.
