@@ -8,3 +8,18 @@
   "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=P3DM3",
   "violations": []
 }
+{
+  "screen": "03-owed-checked",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=P3DM3",
+  "violations": []
+}
+{
+  "screen": "04-money",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=P3DM3",
+  "violations": []
+}
+{
+  "screen": "05-board",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=P3DM3",
+  "violations": []
+}

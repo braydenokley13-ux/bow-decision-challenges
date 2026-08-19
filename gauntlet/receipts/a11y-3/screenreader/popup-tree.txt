@@ -208,3 +208,100 @@ RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true fo
     button "See what is left" [invalid="false" focusable=true]
   complementary "Reading help"
     button "Reading help" [invalid="false" focusable=true]
+
+===== 04-money =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: P3DM3 · seat 1" desc="P3DM3 · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "TWO AMOUNTS MIGHT TURN UP." [level=1]
+    paragraph
+    strong
+    strong
+    list
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          paragraph
+          button "Yes — count it in: Sunrise Yoga" [invalid="false" focusable=true pressed="false"]
+          button "No — leave it out: Sunrise Yoga" [invalid="false" focusable=true pressed="false"]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          paragraph
+          button "Yes — count it in: Sell-out rebate" [invalid="false" focusable=true pressed="false"]
+          button "No — leave it out: Sell-out rebate" [invalid="false" focusable=true pressed="false"]
+    paragraph
+    button "Answer both before you carry on" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 05-board =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: P3DM3 · seat 1" desc="P3DM3 · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "GIVE EVERY DOLLAR A JOB." [level=1]
+    paragraph
+    strong
+    strong
+    strong
+    list
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    region "To plan with"
+      LabelText
+      strong
+      group "Stock allocation"
+        button "Decrease Stock by $50" [invalid="false" focusable=true]
+        spinbutton "Stock" [invalid="false" focusable=true required=false valuetext="$0"]
+        button "Increase Stock by $50" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Cushion allocation"
+        button "Decrease Cushion by $50" [invalid="false" focusable=true]
+        spinbutton "Cushion" [invalid="false" focusable=true required=false valuetext="$0"]
+        button "Increase Cushion by $50" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Your cut allocation"
+        button "Decrease Your cut by $50" [invalid="false" focusable=true]
+        spinbutton "Your cut" [invalid="false" focusable=true required=false valuetext="$0"]
+        button "Increase Your cut by $50" [invalid="false" focusable=true]
+      region "Send the rest to one line"
+        heading "Send the rest to one line" [level=3]
+        paragraph
+        button "Stock $1,510 Leaves 25 trays to cook. — takes what is left over" [invalid="false" focusable=true]
+          strong
+        button "Cushion $1,510 Leaves nothing to cook. — takes what is left over" [invalid="false" focusable=true]
+          strong
+        button "Your cut $1,510 Leaves nothing to cook. — takes what is left over" [invalid="false" focusable=true]
+          strong
+      sectionfooter
+        paragraph [live="polite"]
+        button "Check this plan" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
