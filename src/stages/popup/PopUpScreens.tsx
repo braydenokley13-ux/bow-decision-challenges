@@ -16,6 +16,7 @@ import { costOfTipClaims, TIP_CLAIM_REASONS, tipClaims, type TipClaim } from "..
 import { resolveMarket, type MarketVerdict } from "../../domain/scenario/worlds/food-truck/resolution";
 import { POP_UP_NUMBERS as N } from "../../domain/scenario/worlds/food-truck/numbers";
 import { POP_UP_LINES, type PopUpLineId, type PopUpSourceId, type PopUpSumId, type SaturdayNumber, type SpotId, type TipClaimId } from "../../domain/scenario/worlds/food-truck/types";
+import { checkWriting, NUMBERS_WANTED } from "../../domain/evidence/writingGate";
 import type { ClaimReasonId } from "../../domain/core/ids";
 import type { PopUpSumCopy } from "../../domain/scenario/worlds/food-truck/scenario";
 import { usePopUp } from "./PopUpContext";
@@ -1171,10 +1172,25 @@ export function WriteUpStage() {
     { id: "swap", label: COPY.writeUp.tileLabels.swap, value: ledger.freed, money: true },
     { id: "plates", label: COPY.writeUp.tileLabels.plates, value: ledger.plates.sold, money: false },
   ].filter((tile) => tile.value > 0);
-  const enough = selected.length >= 2 && selected.length <= 3 && text.trim().length >= 40;
+  /**
+   * The same gate the season turns in against, and for the reason `writingGate.ts` was
+   * written: this screen held its own, `text.trim().length >= 40`, and printed *"Long enough
+   * to turn in."* beside it. Forty characters of one repeated letter went in as a student's
+   * ten points of written reasoning while the season, one class list away, refused
+   * `idk. idk. idk. idk.` — and the class-creation screen tells teachers the two stories
+   * collect the same evidence and pool. Two rules, one of which rewards padding, do not pool.
+   */
+  const gate = checkWriting({
+    chosen: selected.flatMap((id) => {
+      const tile = tiles.find((entry) => entry.id === id);
+      return tile ? [{ label: tile.label, value: tile.value }] : [];
+    }),
+    text,
+    // The night was the student's to run, so the figures on it are theirs rather than Mo's.
+    whose: "your",
+  });
   const toggle = (id: string) => setSelected((current) =>
-    current.includes(id) ? current.filter((entry) => entry !== id) : current.length < 3 ? [...current, id] : current);
-  const stillToPick = Math.max(0, 2 - selected.length);
+    current.includes(id) ? current.filter((entry) => entry !== id) : current.length < NUMBERS_WANTED.max ? [...current, id] : current);
   return (
     <PopUpShell stage="popup-writeup" kicker={S.writeUp.kicker} title={COPY.writeUp.title} ledger={ledger}>
       <div className="writeup">
@@ -1203,11 +1219,17 @@ export function WriteUpStage() {
           <label htmlFor="popup-writeup-text">{COPY.writeUp.field}</label>
           <textarea id="popup-writeup-text" rows={6} value={text} onChange={(event) => setText(event.target.value)} />
           <footer>
-            <p aria-live="polite">
-              {stillToPick > 0 ? `${stillToPick} ${stillToPick === 1 ? COPY.writeUp.pickMoreOne : COPY.writeUp.pickMore} ` : `${COPY.writeUp.ready} `}
-              {text.trim().length < 40 ? COPY.writeUp.write : COPY.writeUp.longEnough}
-            </p>
-            <Button type="button" aria-disabled={!enough} onClick={() => enough && dispatch({ type: "POPUP_WRITEUP_SUBMITTED", tileIds: selected, text })}>
+            {/* Every rule, whether or not it is met, in the words the student is shown — the
+                same block the season's screen draws, so the two stories say the same thing
+                about what a written answer needs. */}
+            <div className="writing-rules" aria-live="polite">
+              {gate.rules.map((rule) => (
+                <p key={rule.id} data-met={rule.met}>
+                  <span aria-hidden="true">{rule.met ? "✓" : "◦"}</span> {rule.said}
+                </p>
+              ))}
+            </div>
+            <Button type="button" aria-disabled={!gate.ready} onClick={() => gate.ready && dispatch({ type: "POPUP_WRITEUP_SUBMITTED", tileIds: selected, text })}>
               {COPY.writeUp.submit}
             </Button>
           </footer>

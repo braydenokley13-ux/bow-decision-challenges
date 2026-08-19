@@ -16,7 +16,7 @@ import { checkWriting, numbersIn, sentencesIn } from "./writingGate";
 
 const TWO_NUMBERS = [{ label: "Saved for the course", value: 1128 }, { label: "Backup money kept", value: 216 }];
 
-const ready = (text: string, chosen = TWO_NUMBERS) => checkWriting({ chosen, text }).ready;
+const ready = (text: string, chosen = TWO_NUMBERS) => checkWriting({ chosen, text, whose: "Avery’s" }).ready;
 
 describe("the gate the red team measured", () => {
   it("still refuses the three things a child who was trying typed", () => {
@@ -53,14 +53,14 @@ describe("the gate the red team measured", () => {
 
 describe("what the student is told, and when", () => {
   it("states every rule from the first keystroke, met or not", () => {
-    const gate = checkWriting({ chosen: [], text: "" });
+    const gate = checkWriting({ chosen: [], text: "", whose: "Avery’s" });
     expect(gate.rules.map((rule) => rule.id)).toEqual(["numbers-chosen", "numbers-written", "sentences"]);
     expect(gate.rules.every((rule) => rule.said.length > 0)).toBe(true);
     expect(gate.rules.every((rule) => !rule.met)).toBe(true);
   });
 
   it("names the number that is missing rather than saying a number is missing", () => {
-    const gate = checkWriting({ chosen: TWO_NUMBERS, text: "I kept $1,128 for the course. It was the whole point of the season." });
+    const gate = checkWriting({ chosen: TWO_NUMBERS, text: "I kept $1,128 for the course. It was the whole point of the season.", whose: "Avery’s" });
     const written = gate.rules.find((rule) => rule.id === "numbers-written")!;
     expect(written.met).toBe(false);
     expect(written.said).toContain("$216");
@@ -70,13 +70,40 @@ describe("what the student is told, and when", () => {
   it("does not tick a rule the student has not reached", () => {
     // Nothing tapped means nothing written, and a tick beside "write each number you tapped"
     // on an empty box would be the gate lying twice on one screen.
-    const gate = checkWriting({ chosen: [], text: "This plan works because the money was already there. I did not have to cut anything." });
+    const gate = checkWriting({ chosen: [], text: "This plan works because the money was already there. I did not have to cut anything.", whose: "Avery’s" });
     expect(gate.rules.find((rule) => rule.id === "numbers-written")?.met).toBe(false);
     expect(gate.rules.find((rule) => rule.id === "sentences")?.met).toBe(true);
   });
 
+  it("counts the numbers it says are in there, rather than saying Both of three", () => {
+    // Tap three, write three, and the gate used to answer "3 of Avery's numbers, tapped."
+    // followed by "Both of your numbers are in what you wrote." — two lines apart, on the
+    // screen whose whole job is saying plainly what is still outstanding.
+    const three = [...TWO_NUMBERS, { label: "Spent on rides and rest", value: 400 }];
+    const gate = checkWriting({
+      chosen: three,
+      text: "I kept $1,128 for the course seat. I left $216 as backup and put $400 into rides.",
+      whose: "Avery’s",
+    });
+    const written = gate.rules.find((rule) => rule.id === "numbers-written")!;
+    expect(written.met).toBe(true);
+    expect(written.said).toBe("All 3 of your numbers are in what you wrote.");
+    expect(checkWriting({ chosen: TWO_NUMBERS, text: "I kept $1,128 for the seat. I left $216 as backup.", whose: "Avery’s" })
+      .rules.find((rule) => rule.id === "numbers-written")!.said).toBe("Both of your numbers are in what you wrote.");
+  });
+
+  it("calls the numbers what the screen calls them, in either world", () => {
+    // One gate, two stories: the season's figures are Avery's and the market night was the
+    // student's own. A shared rule that hard-codes one world's name is a rule only one world
+    // can use, which is how the market came to have a rule of its own.
+    const season = checkWriting({ chosen: [], text: "", whose: "Avery’s" }).rules[0]!.said;
+    const market = checkWriting({ chosen: [], text: "", whose: "your" }).rules[0]!.said;
+    expect(season).toContain("Avery’s numbers");
+    expect(market).toContain("your numbers");
+  });
+
   it("says when too many numbers have been tapped, and how to fix it", () => {
-    const gate = checkWriting({ chosen: [...TWO_NUMBERS, { label: "a", value: 1 }, { label: "b", value: 2 }], text: "" });
+    const gate = checkWriting({ chosen: [...TWO_NUMBERS, { label: "a", value: 1 }, { label: "b", value: 2 }], text: "", whose: "Avery’s" });
     const chosen = gate.rules.find((rule) => rule.id === "numbers-chosen")!;
     expect(chosen.met).toBe(false);
     expect(chosen.said).toMatch(/untap one/i);

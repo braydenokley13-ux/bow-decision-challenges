@@ -1559,6 +1559,7 @@ function DefenseStage() {
       return tile ? [{ label: tile.label, value: tile.value }] : [];
     }),
     text,
+    whose: "Avery’s",
   });
   const toggle = (id: string) => setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length < NUMBERS_WANTED.max ? [...current, id] : current);
   return (

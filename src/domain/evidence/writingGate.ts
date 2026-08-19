@@ -99,11 +99,24 @@ function money(value: number): string {
 /**
  * The gate, and the sentence beside each half of it.
  *
- * `chosen` is the figures the student tapped, in the order they tapped them. Everything is
- * derived: nothing is stored, nothing is scored, and calling this twice with the same
- * arguments says the same thing.
+ * `chosen` is the figures the student tapped, in the order they tapped them. `whose` is the
+ * possessive the screen calls them by — *"Avery’s numbers"* in the season, *"your numbers"* in
+ * the market — and it is an argument rather than a constant because this gate now holds both
+ * worlds and a shared rule that says one world's name is a rule only one world can use.
+ *
+ * That second world is why this is worth saying twice. The market kept its own gate,
+ * `text.trim().length >= 40`, for the whole of the time this file has existed and said
+ * *"Long enough to turn in."* underneath it — the product telling a twelve-year-old, in
+ * writing, that length is the rule. Forty characters of `aaaa…` were turned in and reached a
+ * teacher's reading queue as ten points of written reasoning, on the same afternoon that the
+ * season refused `idk. idk. idk. idk.`. The written answer is the only part of this a person
+ * marks, and two piles of it collected under different rules do not pool, whatever the
+ * class-creation screen says.
+ *
+ * Everything is derived: nothing is stored, nothing is scored, and calling this twice with the
+ * same arguments says the same thing.
  */
-export function checkWriting(input: { chosen: readonly ChosenNumber[]; text: string }): WritingGate {
+export function checkWriting(input: { chosen: readonly ChosenNumber[]; text: string; whose: string }): WritingGate {
   const text = input.text.trim();
   const enoughChosen = input.chosen.length >= NUMBERS_WANTED.min && input.chosen.length <= NUMBERS_WANTED.max;
   const written = numbersIn(text);
@@ -112,14 +125,18 @@ export function checkWriting(input: { chosen: readonly ChosenNumber[]; text: str
 
   const stillToPick = Math.max(0, NUMBERS_WANTED.min - input.chosen.length);
   const chosenSaid = enoughChosen
-    ? `${input.chosen.length} of Avery’s numbers, tapped.`
+    ? `${input.chosen.length} of ${input.whose} numbers, tapped.`
     : stillToPick > 0
-      ? `Tap ${NUMBERS_WANTED.min} or ${NUMBERS_WANTED.max} of Avery’s numbers. ${stillToPick} more to go.`
-      : `Tap ${NUMBERS_WANTED.min} or ${NUMBERS_WANTED.max} of Avery’s numbers. That is one too many — untap one.`;
+      ? `Tap ${NUMBERS_WANTED.min} or ${NUMBERS_WANTED.max} of ${input.whose} numbers. ${stillToPick} more to go.`
+      : `Tap ${NUMBERS_WANTED.min} or ${NUMBERS_WANTED.max} of ${input.whose} numbers. That is one too many — untap one.`;
   const writtenSaid = !enoughChosen
     ? "Then write each number you tapped into your answer."
     : absent.length === 0
-      ? "Both of your numbers are in what you wrote."
+      // Counted, not "Both". A student who tapped three numbers and wrote all three read
+      // "3 of Avery's numbers, tapped." and then "Both of your numbers are in what you
+      // wrote." — the gate contradicting itself two lines apart, on the screen whose whole
+      // job is to say plainly what is still outstanding.
+      ? `${input.chosen.length === 2 ? "Both" : `All ${input.chosen.length}`} of your numbers are in what you wrote.`
       : `Write each number you tapped into your answer. ${listOf(absent.map((number) => money(number.value)))} ${absent.length === 1 ? "is" : "are"} not in it yet.`;
   const sentencesSaid = sentences.length >= SENTENCES_WANTED
     ? `${sentences.length} sentences so far.`
