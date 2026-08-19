@@ -1,0 +1,59 @@
+
+
+######## B1 — the setup total, then plan Q1, both answered correctly ########
+[setup-total, correct] focus = button.button.button--primary "Check"
+[setup-total, correct] announced so far: ["[polite] Each place asks for something different. Pick the one you want to build the plan around.","[polite] Cousin’s Spare Room. 14 hours of every week belong to the trip. Now work out what eight weeks of it costs.","[polite] That's the full amount.","[polite] Cousin’s Spare Room. $300 of Avery’s money is spoken for, and 14 hours of every week belong to the trip."]
+[setup-total, correct] live regions:
+[polite] That's the full amount.
+[polite] Cousin’s Spare Room. $300 of Avery’s money is spoken for, and 14 hours of every week belong to the trip.
+
+[plan Q1, correct] focus = p.question__settled "You worked this out. Avery can count on $5,000 whatever happens on the"
+[plan Q1, correct] announced by the press: []
+[plan Q1, correct] live regions:
+
+
+
+######## B1b — two different wrong answers in a row ########
+attempt 1 ($100, wrong): focus = button.button.button--primary "Check"
+  announced (deduped, the critic's recorder): ["[polite] Too low. Both payments count — the money already saved and the base pay."]
+  live-region mutations from the press:
+    + 6375ms [polite] childList → "Too low. Both payments count — the money already saved and the base pay."
+    + 6375ms [polite] childList added="Too low. Both payments count — the money already saved and the base pay." → "Too low. Both payments count — the money already saved and the base pay."
+attempt 2 ($200, wrong): focus = button.button.button--primary "Check"
+  announced (deduped, the critic's recorder): []
+  live-region mutations from the press:
+    + 7320ms [polite] childList → ""
+    + 7403ms [polite] childList → "Too low. Both payments count — the money already saved and the base pay."
+    + 7403ms [polite] childList added="Too low. Both payments count — the money already saved and the base pay." → "Too low. Both payments count — the money already saved and the base pay."
+attempt 3 ($200, wrong): focus = button.button.button--primary "Check"
+  announced (deduped, the critic's recorder): ["[polite] Stuck? Open the step-by-step hint below.","[polite] Too low. Both payments count — the money already saved and the base pay."]
+  live-region mutations from the press:
+    + 8419ms [polite] childList → "Stuck? Open the step-by-step hint below."
+    + 8419ms [polite] childList added="Stuck? Open the step-by-step hint below." → "Stuck? Open the step-by-step hint below."
+    + 8638ms [polite] childList → "Too low. Both payments count — the money already saved and the base pay."
+    + 8638ms [polite] childList added="Too low. Both payments count — the money already saved and the base pay." → "Too low. Both payments count — the money already saved and the base pay."
+
+
+######## B2 — the hint ladder ########
+after "Show me one step": focus = div[role=note] "Try it this way:Open “The four payments” at the top of the screen. Add"
+  announced: []
+  A11Y TREE around the hint:
+    note [focusable=true focused=true]
+    button "Show the answer and keep going" [invalid="false" focusable=true]
+after "Show the answer and keep going": focus = p.question__settled "Here is the answer. Avery can count on $5,000 whatever happens on the "
+  announced: []
+  what the screen now says (MAJOR 4 check):
+Here is the answer. Avery can count on $5,000 whatever happens on the court. It is the first line of Avery’s money.
+
+
+######## B3 — the run menu ########
+after opening the run menu: focus = summary "This run: CFXGJ · seat 1"
+after "Leave this run": focus = button.button.button--quiet "No — keep working"
+  announced: []
+  buttons now: ["Yes — clear it and start again","No — keep working"]
+  the next four Tab stops:
+    1: button.button.button--secondary "Choose this setup: Gym District Sublet"
+    2: button.button.button--secondary "Choose this setup: Teammate Share"
+    3: button.button.button--primary "Selected: Cousin’s Spare Room"
+    4: input[type=text]#:r3: "What the Cousin’s Spare Room costs Avery"
+  after Escape: run-menu[open] count = 1, focus = input[type=text]#:r3: "What the Cousin’s Spare Room costs Avery"

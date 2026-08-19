@@ -17,6 +17,10 @@ another agent's edit could not move under a measurement), class service on
 | `before-repeat.log` / `after-repeat.log` | pressing **Check** three times on the same wrong answer, with the live region's mutations timestamped |
 | `after-popup.log` | the same fix in the second world, plus axe |
 | `after-runmenu.log` | *Leave this run*: where focus lands, what the buttons are described by, `Escape` |
+| `{before,after}-obscured-w320.log` | the tab ring at 320×640 with the reading tools open, each focused control sampled at 25 points — WCAG 2.2 · 2.4.11 |
+| `{before,after}-pill-w320.log` | what `document.elementFromPoint` finds at each control's own centre, tools closed |
+| `after-readinghelp.log` | where the reading help exists outside a run, and where focus goes when it opens |
+| `final*.log` | the whole sweep re-run against the tree as pushed, after several other agents had edited the same screens |
 | `revert-check.log` | the pinning tests run against the pre-fix source |
 | `drivers/` | every driver that produced the above |
 
@@ -43,6 +47,14 @@ cd $SNAP
 PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers BOW_API_PORT=5680 BOW_PROBE_LABEL=after \
   npx playwright test --config probe/pw.config.ts --project=desktop probe/
 ```
+
+**What could not be measured here.** This container has `window.speechSynthesis` and
+`getVoices().length === 0` — recorded at the foot of `after-readinghelp.log`. Nothing in these
+receipts is evidence that read-aloud is audible or intelligible, on a Chromebook or anywhere
+else. What is shown is that the control exists on the screens it should, that a keyboard
+reaches it, that focus goes somewhere sensible when it opens and closes, and that the voice is
+pointed at the `<main>` landmark. Whether a student can follow it needs a device with a voice
+and a person listening.
 
 `revert-check.sh` is the other half: it puts the pre-fix source back in an exported copy and
 requires the pinning tests to fail against it. It asserts its own precondition — each file

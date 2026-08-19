@@ -1,0 +1,17 @@
+
+
+######## the run menu ########
+menu open: focus = summary "This run: MVKGF · seat 1"
+after "Leave this run": focus = button.button.button--quiet "No — keep working"
+  what the accessibility tree says about the two buttons:
+      button "Yes — clear it and start again" desc="Nothing here has been turned in yet. Leaving clears this run off this computer, and it cannot be got back." [invalid="false" focusable=true describedby=":r1:"]
+      button "No — keep working" desc="Nothing here has been turned in yet. Leaving clears this run off this computer, and it cannot be got back." [invalid="false" focusable=true focused=true describedby=":r1:"]
+  Tab forward from where focus landed:
+    1: button "Move Gym District Sublet earlier"
+    2: button "Move Gym District Sublet later"
+    3: button "Move Teammate Share earlier"
+after "No — keep working": focus = button.button.button--secondary "Leave this run"
+  buttons in the menu now: ["Leave this run"]
+after Escape: run-menu[open] count = 0, focus = summary "This run: MVKGF · seat 1"
+Escape from the confirm: run-menu[open] = 0, focus = summary "This run: MVKGF · seat 1"
+re-opened: buttons = ["Leave this run"] (the confirm must not be standing open)
