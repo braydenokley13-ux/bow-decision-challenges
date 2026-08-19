@@ -75,9 +75,21 @@ underneath — one claim was half-refused, with the reason.
 ### Closed since, second batch
 
 - **The whole of the client-persistence workstream (D1–D14)**, including D26's stated largest
-  gap: a plan that balances exactly is now closed by naming the row that takes the rest, so the
-  one NYSED objective BOW claimed to assess can no longer silently fail to be assessed for a
-  student who did everything right. Also: nothing that reached the evidence log waits for a
+  gap: the opening board will not close over a row nobody has answered for, so a student who
+  never opened the savings line is no longer reported as having set a figure on it.
+
+  **This paragraph used to end "…so the one NYSED objective BOW claimed to assess can no longer
+  silently fail to be assessed for a student who did everything right", and that is not true.**
+  A student who types all three rows until the board balances answers for every row and closes
+  the plan without naming which row took the last of the money — and one of three rows is always
+  the arithmetic residual of the other two, so nothing in that run can say whether the savings
+  figure was chosen or worked out. `plan-within-income.er3` reads `null` for those students and
+  the competency reads *incomplete*, which is the honest answer and is what
+  `evidence/plannedSavings.ts` argues at length. The golden run, Seat 14, is one of them.
+  Forcing a closing statement was considered and is worse: it turns "put the rest in savings",
+  used as a shortcut to enter a figure the student had already decided, into a scored zero —
+  the exact inversion the rule was rewritten to remove. The gap is real, it is on the board
+  rather than on the rule, and it is stated here rather than closed. Also: nothing that reached the evidence log waits for a
   debounce; one press writes one event; a second tab is told rather than allowed to overwrite;
   and a student sitting down at somebody else's unfinished run gets their own.
 - **The educator surfaces.** The teacher's private note no longer reaches the projector. The
