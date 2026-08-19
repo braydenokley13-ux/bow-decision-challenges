@@ -91,6 +91,39 @@ describe("finding it", () => {
     // jsdom has no speech synthesis, which is the case this stands in for.
     expect(screen.getByRole("button", { name: /reading help/i })).toBeVisible();
   });
+
+  /**
+   * The machine that has `speechSynthesis` and no voice behind it.
+   *
+   * This is not a hypothetical: it is what this repository's own Chromium does, and what a
+   * Chromebook whose text to speech has never been switched on does. The control was on every
+   * screen, a student pressed it, and nothing happened and nothing said why — so the screen
+   * says why, once, at the moment it finds out, and the words stay reachable.
+   */
+  it("says so when this machine turns out to have no voice, and keeps the words", async () => {
+    class FakeUtterance {
+      text: string;
+      lang = "";
+      onend: (() => void) | null = null;
+      onerror: ((event: { error: string }) => void) | null = null;
+      constructor(text: string) { this.text = text; }
+    }
+    vi.stubGlobal("SpeechSynthesisUtterance", FakeUtterance);
+    vi.stubGlobal("speechSynthesis", {
+      speak: (utterance: FakeUtterance) => utterance.onerror?.({ error: "synthesis-failed" }),
+      cancel: () => {},
+      resume: () => {},
+    });
+
+    render(<Screen><ReadingTools screenKey="a" /></Screen>);
+    await userEvent.click(screen.getByRole("button", { name: /reading help/i }));
+    await userEvent.click(screen.getByRole("button", { name: /read this screen/i }));
+
+    expect(screen.getByText(/no voice/i)).toBeVisible();
+    expect(screen.queryByRole("button", { name: /read this screen/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^words$/i })).toBeVisible();
+    vi.unstubAllGlobals();
+  });
 });
 
 describe("reading the screen", () => {

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { isReadableToken, screenTextOf } from "../../domain/scenario/readability";
-import { collectUnits, createReader, textOf, type Voice } from "./readAloud";
+import { browserVoice, collectUnits, createReader, textOf, type Voice } from "./readAloud";
 
 /**
  * What the voice says, and when it stops.
@@ -165,6 +165,90 @@ describe("the voice and the ruler read the same screen", () => {
       "Your 2 numbers, and what you said about them:",
       "I protected the course money first.",
     ]);
+  });
+});
+
+/**
+ * A browser that has `speechSynthesis` and nothing behind it.
+ *
+ * Utterances are objects the browser constructs, so the fake is the constructor and the queue
+ * together. `error` decides what the machine does with a sentence it is handed: nothing said
+ * and a failure reported, or the ordinary finish.
+ */
+function stubSpeech(error: string | null) {
+  const said: string[] = [];
+  class FakeUtterance {
+    text: string;
+    lang = "";
+    onend: (() => void) | null = null;
+    onerror: ((event: { error: string }) => void) | null = null;
+    constructor(text: string) {
+      this.text = text;
+    }
+  }
+  const synthesis = {
+    speak(utterance: FakeUtterance) {
+      said.push(utterance.text);
+      if (error) utterance.onerror?.({ error });
+      else utterance.onend?.();
+    },
+    cancel() {},
+    resume() {},
+  };
+  vi.stubGlobal("SpeechSynthesisUtterance", FakeUtterance);
+  vi.stubGlobal("speechSynthesis", synthesis);
+  return said;
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe("a machine with no voice", () => {
+  /**
+   * `speechSynthesis` is on every browser this product supports. **A voice is not.**
+   *
+   * A Chromebook whose text to speech has never been switched on, and desktop Linux with no
+   * speech service running, both answer `speak` with `synthesis-failed` and say nothing.
+   * Measured on this repository's own Chromium: `speechSynthesis` present, `getVoices()` empty,
+   * `error: synthesis-failed` on the first utterance. Before the voice could report that, the
+   * control sat on every screen, a student pressed it, and the screen did nothing at all and
+   * gave no reason — which is the worst version of an accommodation, because the child is left
+   * to conclude the fault is theirs.
+   */
+  it("reports that it cannot speak, and still lets go of the sentence", () => {
+    stubSpeech("synthesis-failed");
+    let missing = 0;
+    let finished = 0;
+    browserVoice(() => { missing += 1; }).say("One.", () => { finished += 1; });
+    expect(missing).toBe(1);
+    // The reader is waiting on this callback. A voice that reported the failure and then held
+    // the callback would leave the control stuck saying "Stop reading" over silence.
+    expect(finished).toBe(1);
+  });
+
+  /**
+   * The distinction that has to hold: the reader cancels an utterance every time a student
+   * presses stop or leaves a screen, and Chrome reports every one of those through the same
+   * callback as a real failure.
+   */
+  it("does not call a sentence the student stopped a missing voice", () => {
+    for (const stopped of ["canceled", "cancelled", "interrupted"]) {
+      stubSpeech(stopped);
+      let missing = 0;
+      browserVoice(() => { missing += 1; }).say("One.", () => {});
+      expect(missing, stopped).toBe(0);
+    }
+  });
+
+  it("says the sentence it was given when the machine does have a voice", () => {
+    const said = stubSpeech(null);
+    let missing = 0;
+    let finished = 0;
+    browserVoice(() => { missing += 1; }).say("Something has to give.", () => { finished += 1; });
+    expect(said).toEqual(["Something has to give."]);
+    expect(missing).toBe(0);
+    expect(finished).toBe(1);
   });
 });
 

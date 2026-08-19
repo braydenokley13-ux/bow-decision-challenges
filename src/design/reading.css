@@ -24,19 +24,75 @@
 }
 
 /*
- * What the tools stand on, and who gives it up.
+ * Closed, it is a pill in a corner and it costs nothing. Opened, it docks.
  *
- * Opened, the panel covers the bottom-left of the run: at 1366 it sat over the sentence telling
- * a student what order to put three places in, and at 390 it sat over the money rail that says
- * how much is still to give a job. So the stage gives up exactly the strip the panel is
- * standing on — `--bow-reading-tools` is the panel's own measured height, published by the
- * component — and nothing the run draws is underneath it. Closed, the pill takes nothing:
- * the property is `0px` and every rule below it resolves to no reserve at all.
+ * Measured as a floating card: at 1366 it sat over *Cheapest over eight weeks goes first.* —
+ * the sentence that says what the ranking screen is asking for — and at 390 it sat over the
+ * third place to rank, its two move buttons, and, one screen later, the money rail that says
+ * how much is still to give a job. A card that floats over a decision is a card that will
+ * sometimes float over the decision that matters, and a twelve-year-old who cannot read the
+ * screen is the last student who will work out that the missing sentence is behind it.
+ *
+ * So the opened tools take the bottom edge, and the stage gives up exactly that much of
+ * itself. `--bow-reading-tools` is the panel's own measured height, published by the component
+ * on every render, so a panel one row taller — a screen that changed under the voice, a machine
+ * with no voice at all — reserves one row more. Nothing the run draws ends up underneath it,
+ * and closed the property is `0px` and every rule here resolves to no reserve at all.
+ *
+ * A strip of every screen was rejected for *every student*, and it still is: this one is only
+ * ever on a screen a student asked for it on.
  */
 :root { --bow-reading-tools: 0px; }
 
 main:has(~ .reading-tools[data-open="true"]) {
-  padding-block-end: calc(var(--bow-reading-tools) + (var(--gutter) * 2));
+  padding-block-end: var(--bow-reading-tools);
+}
+
+.reading-tools[data-open="true"] {
+  inset: auto 0 0;
+  max-width: none;
+}
+
+.reading-tools[data-open="true"] .reading-tools__panel {
+  border-inline: 0;
+  border-block-end: 0;
+  border-block-start: 1px solid var(--border-strong);
+  border-radius: 0;
+  box-shadow: var(--shadow-overlay);
+}
+
+/* One line where there is a line to spare. Two rows of toolbar is 110px of a 600px Chromebook. */
+@media (min-width: 521px) {
+  .reading-tools[data-open="true"] .reading-tools__panel {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    align-items: center;
+    justify-content: start;
+    gap: var(--s-6);
+    padding-inline: var(--gutter);
+  }
+
+  .reading-tools[data-open="true"] .reading-tools__hide {
+    margin-inline-start: 0;
+  }
+
+  .reading-tools[data-open="true"] .reading-tools__note {
+    max-width: 46ch;
+  }
+}
+
+/*
+ * The run's own bottom-stuck rail stands on the tools rather than under them.
+ *
+ * Below 980px `scenes.css` unpins the money rail from the top of the window and sticks it to
+ * the bottom, which is the edge the opened tools now hold. The class is named here, in the
+ * sheet that displaced it, rather than left as a rule in `scenes.css` that nobody reading this
+ * file would know existed.
+ */
+@media (max-width: 980px) {
+  :root:has(.reading-tools[data-open="true"]) .plan-rail {
+    bottom: var(--bow-reading-tools);
+  }
 }
 
 .reading-tools__pill,
@@ -163,6 +219,10 @@ main:has(~ .reading-tools[data-open="true"]) {
   display: grid;
   place-items: end start;
   padding: var(--gutter);
+
+  /* Above the tools, not over them: the control that opened this panel stays in sight, which
+     is where the student is going back to when they close it. */
+  padding-block-end: calc(var(--gutter) + var(--bow-reading-tools));
 }
 
 .glossary__scrim {
@@ -272,37 +332,14 @@ main:has(~ .reading-tools[data-open="true"]) {
 }
 
 /*
- * A phone. The corner control gives up its corner and spans the width, because 340px of card
- * beside a 360px screen is a card covering the decision.
- *
- * Opened, it stops floating and docks: a phone has no corner to spare, and the one thing stuck
- * to the same edge is the money rail. Docked, the panel is a strip the page reserves rather
- * than a card over the top of the plan — and the rail stands on it instead of under it. The
- * rail's class is named here, in the sheet that displaced it, rather than left as a rule in
- * `scenes.css` that nobody reading this file would know existed.
+ * A phone. The closed pill gives up its corner and spans the width, because 340px of card
+ * beside a 360px screen is a card covering the decision, and the two controls stack rather
+ * than crowd one line.
  */
 @media (max-width: 520px) {
   .reading-tools {
     right: var(--gutter);
     max-width: none;
-  }
-
-  .reading-tools[data-open="true"] {
-    inset: auto 0 0;
-  }
-
-  .reading-tools[data-open="true"] .reading-tools__panel {
-    border-inline: 0;
-    border-block-end: 0;
-    border-radius: 0;
-  }
-
-  main:has(~ .reading-tools[data-open="true"]) {
-    padding-block-end: var(--bow-reading-tools);
-  }
-
-  :root:has(.reading-tools[data-open="true"]) .plan-rail {
-    bottom: var(--bow-reading-tools);
   }
 
   .reading-tools__row > .reading-tools__button {
