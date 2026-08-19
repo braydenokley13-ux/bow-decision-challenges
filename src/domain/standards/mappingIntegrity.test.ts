@@ -124,6 +124,14 @@ describe("mapping integrity", () => {
    * claim a "yes" the model cannot back with a "no" dressed as machinery.
    */
   const CAPPED_WITHOUT_A_COMPLETION_RULE = new Set([
+    // 1.1 names four categories — needs, wants, values **and goals** — and two kinds of
+    // decision, "spending **and savings** decisions". `sort-by-need-want-goal` reaches the
+    // first three inside a spending decision; nothing in the model reaches a savings goal
+    // under competition, and `save-toward-a-goal` is declared but produced by no world. A
+    // completion rule here would declare that some set of partials is jointly sufficient,
+    // which is exactly the claim that is false: this objective was mapped `full` until a
+    // verifier read NYSED's own sentence.
+    "1.1",
     // NYSED 1.6 asks for a comparison across four payment methods; `choose-how-to-pay`
     // reaches one, and no other competency covers the other three.
     "1.6",

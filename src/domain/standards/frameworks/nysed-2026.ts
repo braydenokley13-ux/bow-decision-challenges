@@ -199,7 +199,11 @@ export const NYSED_2026: Framework = {
   version: "March 2026",
   sourceUrl: NYSED_2026_SOURCE_URL,
   sourcePdfUrl: NYSED_2026_SOURCE_PDF_URL,
-  verifiedOn: "2026-08-16",
+  // Re-verified on 2026-08-19 by a second reader who established NYSED's text from
+  // nysed.gov before opening anything in this repository: 23 of 23 codes and sentences
+  // verbatim, topic names, topic order, per-topic counts and grade band all correct, and the
+  // PDF re-downloaded to exactly the three numbers below.
+  verifiedOn: "2026-08-19",
   // The PDF at `sourcePdfUrl` was re-issued under this same "March 2026" label on
   // 2026-07-16 — before this verification, but proof that the label alone does not pin the
   // file. These three numbers are what was actually downloaded and checked on `verifiedOn`,
@@ -215,5 +219,7 @@ export const NYSED_2026: Framework = {
     groupNoun: "Topic",
     frameworkShort: "NYSED",
     attribution: "NYSED has not reviewed or endorsed BOW.",
+    scope: "NYSED's requirement covers all five personal finance topics, taught by an appropriately certified teacher. BOW covers part of one of them.",
+    stateAssessment: "NYSED does not assess personal finance education, and requires no assessment of it. Districts attest that instruction was provided; nothing BOW produces is needed for that attestation.",
   },
 };

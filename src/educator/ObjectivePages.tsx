@@ -75,14 +75,34 @@ function Attribution({ frameworkId }: { frameworkId: FrameworkId }) {
 // /educator/objectives — the searchable list
 // ---------------------------------------------------------------------------
 
+/**
+ * One list, one honest column, one page.
+ *
+ * There used to be four surfaces showing this same set of twenty-three objectives:
+ * `/educator/objectives`, the objective detail page, `/educator/map`, and the guide's own
+ * alignment block. The map was the largest of them — a nine-value status filter, a class
+ * filter, a topic filter and a Map/Table toggle, built to report on two assessable objectives
+ * and twenty-one that read *coming*, over a teacher-maintained "MARKED TAUGHT" flag. Asking a
+ * teacher to keep a record inside BOW about instruction BOW did not deliver is a planbook, and
+ * a planbook is the LMS this product has a rule against becoming. It is gone.
+ *
+ * What was worth keeping is the answer it existed to give, which is also the first question a
+ * district asks: **which of these can BOW actually assess, and which can it not.** That did
+ * not need a route of its own. It is a column.
+ *
+ * So this is every objective in the framework, in the framework's own order, with one column
+ * that says yes or not yet — and the search filters the one list rather than one of two. The
+ * split into "Ready to assign" and "BOW cannot see these yet" was two lists of the same thing
+ * with the search box stranded inside the second one, which is how a teacher looking for an
+ * objective they can set ended up typing into the section headed with what BOW cannot do.
+ */
 export function ObjectiveList() {
   const [query, setQuery] = useState("");
   const labels = labelsFor(FRAMEWORK_ID);
   const standards = useMemo(() => standardsIn(FRAMEWORK_ID), []);
   const shown = standards.filter((standard) => matches(standard, query));
-  const ready = shown.filter((standard) => isAssessable(refOf(standard)));
-  const coming = shown.filter((standard) => !isAssessable(refOf(standard)));
   const readyTotal = standards.filter((standard) => isAssessable(refOf(standard))).length;
+  const unit = labels?.unitNounShort.toLowerCase() ?? "objective";
 
   return (
     <EducatorShell>
@@ -90,74 +110,54 @@ export function ObjectiveList() {
         <p className="eyebrow">{labels?.frameworkShort} · {gradeBandLabel(FRAMEWORK_ID)} · {labels?.unitNoun}s</p>
         <h1>What do you want to assess?</h1>
         <p>
-          BOW can assess {readyTotal} of the {standards.length} {gradeBandLabel(FRAMEWORK_ID)} {labels?.unitNounShort.toLowerCase()}s in
-          this framework today. The rest are matched to a {TERMS.skill} and waiting for a {TERMS.story} that can show it.
+          BOW can assess {readyTotal} of the {standards.length} {gradeBandLabel(FRAMEWORK_ID)} {unit}s in
+          this framework today. The rest are matched to a {TERMS.skill} and waiting for a {TERMS.story} that
+          can show it. They report as coming, never as nobody having shown them.
         </p>
       </header>
 
-      {/* What a teacher can actually do, first and in full. A search box over twenty-three
-          entries of which one is usable puts the product's coverage above the teacher's job. */}
       <section className="dashboard-section">
-        <div className="section-head">
-          <h2>Ready to assign</h2>
+        <div className="class-form">
+          <label htmlFor="objective-search">Search {unit}s</label>
+          <input
+            id="objective-search"
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="budget, credit, insurance…"
+            aria-describedby="objective-search-count"
+          />
+          <p id="objective-search-count" className="class-state" aria-live="polite">
+            {shown.length} of {standards.length} shown · {shown.filter((standard) => isAssessable(refOf(standard))).length} BOW can assess
+          </p>
         </div>
+
+        {/* The whole framework, in its own order, with the one thing a teacher and a district
+            both need to know beside each row. An objective BOW cannot see yet is still a link:
+            its page says which skill sits behind it and what is missing, which is the question
+            a teacher asks next. */}
         <div className="row-list">
-          {ready.map((standard) => (
-            <Link key={standard.code} to={objectivePath(refOf(standard))}>
-              <div>
-                <small>{standard.code} · {standard.topicName}</small>
-                <h3>{standard.shortLabel}</h3>
-                <small>{standard.text}</small>
-              </div>
-            </Link>
-          ))}
+          {shown.map((standard) => {
+            const assessable = isAssessable(refOf(standard));
+            return (
+              <Link key={standard.code} to={objectivePath(refOf(standard))}>
+                <div>
+                  <small>{standard.code} · {standard.topicName}</small>
+                  <h3>{standard.shortLabel}</h3>
+                  {/* The honest column, on the row it is about. It uses the same chip the
+                      objective detail page already uses for the same fact, so a teacher who
+                      opens the row does not meet a second vocabulary for it. */}
+                  <div><span className="coverage-chip" data-coverage={assessable ? "full" : "none"}>
+                    {assessable ? "BOW can assess this" : "Coming"}
+                  </span></div>
+                  <small>{standard.text}</small>
+                </div>
+              </Link>
+            );
+          })}
         </div>
-        {ready.length === 0 && <p className="class-state">Nothing you can assign matches “{query}”.</p>}
+        {shown.length === 0 && <p className="class-state">No {unit} matches “{query}”.</p>}
       </section>
-
-      {/* The rest are matched to a skill and waiting for a story that can produce it. They
-          are listed, because a teacher planning a year needs to know what is not here —
-          quietly, because a list of what a product cannot do is not the first thing it should
-          say about itself.
-
-          The heading used to read "Mapped, not yet assessable", which assumes a teacher knows
-          BOW has a mapping layer between its skills and a state's objectives. A teacher who
-          cannot parse it reads it as a criticism of their class. */}
-      {(coming.length > 0 || query.trim().length > 0) && (
-        <section className="dashboard-section">
-          <div className="section-head">
-            <h2>BOW cannot see {coming.length === 1 ? "this one" : "these"} yet</h2>
-            <p>
-              BOW knows which skill sits behind each of these and cannot observe {coming.length === 1 ? "it" : "them"} yet.
-              {" "}{coming.length === 1 ? "It reports" : "They report"} as coming, never as nobody having
-              shown {coming.length === 1 ? "it" : "them"}.
-            </p>
-          </div>
-          <div className="class-form">
-            <label htmlFor="objective-search">Search {labels?.unitNounShort.toLowerCase()}s</label>
-            <input
-              id="objective-search"
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="budget, credit, insurance…"
-              aria-describedby="objective-search-count"
-            />
-            <p id="objective-search-count" className="class-state" aria-live="polite">
-              {shown.length} of {standards.length} shown · {ready.length} ready to assign
-            </p>
-          </div>
-          <ul className="coming-list">
-            {coming.map((standard) => (
-              <li key={standard.code}>
-                <Link to={objectivePath(refOf(standard))}>
-                  <span className="coming-list__code">{standard.code}</span>{standard.shortLabel}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
       <section className="dashboard-section"><Attribution frameworkId={FRAMEWORK_ID} /></section>
     </EducatorShell>
   );
@@ -323,8 +323,10 @@ export function ObjectiveDetail() {
     .flatMap((competencyId) => competencyById(competencyId) ?? []);
 
   /**
-   * Twenty-two of the twenty-three are here, and there is nothing to report about any of
-   * them. They used to render the whole detail page — a coverage table, a results section
+   * Every objective BOW cannot assess is here, and there is nothing to report about any of
+   * them. The count is deliberately not written down: it was "twenty-two of the twenty-three"
+   * and then briefly twenty-one, and a number in a comment that has to be edited whenever the
+   * mapping moves is a number that will one day be wrong on screen. They used to render the whole detail page — a coverage table, a results section
    * and a line explaining that no class had been set an objective that cannot be set. This
    * is what is actually true about them: what it is, its own framework's sentence, and the
    * fact that BOW cannot assess it yet.

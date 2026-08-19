@@ -57,6 +57,26 @@ export interface FrameworkLabels {
    * BOW may never say a state has reviewed, approved or endorsed it.
    */
   attribution: string;
+  /**
+   * What the state's own requirement covers, against what this product reaches.
+   *
+   * A standards verifier reading NYSED's regulation before reading anything here made the
+   * point that `attribution` is necessary and not sufficient: "NYSED has not reviewed or
+   * endorsed BOW" is true and says nothing about scope. A district administrator reading
+   * "Matched to NYSED objectives · Ready to assign" beside a requirement they are being
+   * attested against can reasonably infer more than is true, and the product should close
+   * that inference itself rather than wait to be asked.
+   */
+  scope: string;
+  /**
+   * Whether the state assesses this subject at all.
+   *
+   * The likeliest place for a district to form a wrong belief about an assessment product,
+   * precisely because the product is good at what it does: there is no state assessment of
+   * personal finance, none is required, and nothing BOW produces is needed for the
+   * attestation a district actually makes.
+   */
+  stateAssessment: string;
 }
 
 /** One framework's grouping level — NYSED calls these topics; another state may not. */

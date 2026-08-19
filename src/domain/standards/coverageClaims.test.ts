@@ -99,7 +99,15 @@ describe("what BOW may claim about an objective", () => {
   describe("coverage levels do what they say", () => {
     it("reports an objective demonstrated from a single full mapping", () => {
       expect(resolveObjectiveCoverage(ref("1.3"), demonstrated("plan-within-income"))).toBe("demonstrated");
-      expect(resolveObjectiveCoverage(ref("1.1"), demonstrated("sort-by-need-want-goal"))).toBe("demonstrated");
+    });
+
+    it("stops short of demonstrated on 1.1, which BOW covers in part", () => {
+      // This line read `demonstrated` while 1.1 was mapped `full`. It is not: the objective
+      // names goals alongside needs, wants and values, and savings decisions alongside
+      // spending ones, and BOW's competing claims are a need, an obligation and a want in
+      // both stories with no way to bank the money. Partial is the whole of what the run
+      // shows, and partial is what a teacher should be told.
+      expect(resolveObjectiveCoverage(ref("1.1"), demonstrated("sort-by-need-want-goal"))).toBe("partially-assessed");
     });
 
     it("never reports an objective demonstrated from a partial mapping alone", () => {
@@ -140,17 +148,23 @@ describe("what BOW may claim about an objective", () => {
       expect(worldsAssessing("save-toward-a-goal")).toEqual([]);
     });
 
-    it("reports exactly two objectives assessable today, and both have a whole world behind them", () => {
-      // Both are `full`-mapped to one competency and carry no completion rule, so a world
-      // that produces every one of that competency's requirements is the entire bar. 1.3
-      // rests on `plan-within-income`; 1.1 rests on `sort-by-need-want-goal`, which was
-      // declared and unassessable by anything until Week 3 had a decision in it.
+    it("reports exactly one objective assessable today, with a whole world behind it", () => {
+      // 1.3 is `full`-mapped to one competency and carries no completion rule, so a world
+      // that produces every one of `plan-within-income`'s requirements is the entire bar.
       //
-      // Nothing else moves with them. `adapt-a-plan` is `partial` on 1.2 and `supporting` on
+      // This test said **two** for a day, and the second was 1.1. Building a real decision
+      // into Week 3 genuinely made `sort-by-need-want-goal` observable, and that part was
+      // true — but the mapping underneath it claimed `full` coverage of an objective that
+      // also names savings goals and savings decisions, which no world in this product
+      // collects and one observer deliberately refuses to. A verifier who read NYSED's
+      // sentence before reading anything here found it. Correcting the mapping takes the
+      // number back to one, and one true number is worth more than two of anything else.
+      //
+      // Nothing else moves with it. `adapt-a-plan` is `partial` on 1.2 and `supporting` on
       // 4.1; `save-toward-a-goal` is `partial` on 1.3 and no world produces it; 2.1 needs
       // all three of its competencies and has one. A partial, a supporting and an unfinished
       // completion rule still make nothing assessable on their own.
-      const assessable = ["1.1", "1.3"];
+      const assessable = ["1.3"];
       expect(assessableStandards(NYSED).map((standard) => standard.code)).toEqual(assessable);
       for (const standard of NYSED_2026_STANDARDS) {
         expect(isAssessable(ref(standard.code)), `NYSED ${standard.code}`).toBe(assessable.includes(standard.code));

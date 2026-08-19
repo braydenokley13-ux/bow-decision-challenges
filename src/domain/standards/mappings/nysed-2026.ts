@@ -42,7 +42,20 @@ function row(
 
 export const NYSED_2026_MAPPINGS: readonly Mapping[] = [
   // ── Topic 1 — Budgeting and Money Management ───────────────────────────────────────
-  row("sort-by-need-want-goal", "1.1", "full", "Separating needs, wants, values and goals and using that separation to make a spending decision is the whole of the objective."),
+  // Was `full`, and a fresh verifier who read NYSED's own text before reading anything in this
+  // repository showed it was not. 1.1 names four categories — needs, wants, values **and
+  // goals** — and two kinds of decision, "spending **and savings** decisions". BOW's competing
+  // claims are a need, an obligation and a want in both stories; no claim is money the student
+  // was saving toward something, neither world offers "I was saving for something else" as a
+  // reason, and the money in that moment cannot be banked by explicit design. The observer
+  // separately refuses `save-toward-a-goal.er3` on purpose — which is exactly the evidence a
+  // `full` claim here would have to rest on. The competency's own statement only ever claimed a
+  // spending decision, so the over-claim was in this row and nowhere else.
+  //
+  // Correcting it returns the honestly assessable count to one. That is a smaller number than
+  // the product printed yesterday and it is the true one, which is the trade this whole
+  // framework exists to make.
+  row("sort-by-need-want-goal", "1.1", "partial", "Covers needs, wants and values — as an obligation to another person — inside a spending decision under competition. It does not reach the goals category or the savings decisions the objective also names: no claim in either story is money set aside toward a goal, and the money in that moment cannot be banked."),
 
   row("explain-different-outcomes", "1.2", "full", "Naming the specific factors that made two same-income outcomes differ is exactly what this competency asks for."),
   row("adapt-a-plan", "1.2", "partial", "Covers the 'unexpected expenses' factor by making the student repair a plan after one, but not the comparison the objective is built on."),

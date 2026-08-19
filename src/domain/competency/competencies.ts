@@ -3,8 +3,10 @@ import type { Competency, CompetencyGroupId, CompetencyId, EvidenceRequirement, 
 /**
  * The 21 BOW financial-literacy competencies for Grades 5–8.
  *
- * These 21 cover all 23 NYSED Grades 5–8 Personal Finance objectives, and the cover is
- * deliberately not one-to-one in either direction: NYSED 2.1 is three skills wearing one
+ * These 21 are *mapped* to all 23 NYSED Grades 5–8 Personal Finance objectives, which is a
+ * weaker and more accurate claim than covering them: most of those mappings are `partial` or
+ * `supporting`, and only one objective can be assessed today. The mapping is deliberately not
+ * one-to-one in either direction: NYSED 2.1 is three skills wearing one
  * number, while 5.2 and 5.5 are one skill described from two angles. A model that assumed
  * one objective = one skill would misreport in both directions. The mapping that records
  * which is which lives in `src/domain/standards/mappings/`, not here.

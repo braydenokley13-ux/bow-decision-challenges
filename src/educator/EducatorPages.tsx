@@ -44,7 +44,12 @@ function AlignmentBlock() {
   const framework = FRAMEWORKS[GUIDE_FRAMEWORK_ID];
   return (
     <section className="alignment-block">
-      <div className="section-heading"><p className="eyebrow">Standards alignment</p><h2>Matched to {labels?.frameworkShort} objectives, not scored against them.</h2></div>
+      {/* Not "Standards alignment". NYSED's own FAQ says in terms that "The Department is not
+          creating new standards for personal finance education" — these are learning
+          objectives supporting an instructional requirement, which is what the framework's
+          `unitNoun` has always said and what the heading below already said. The eyebrow was
+          the one word on this page contradicting both. */}
+      <div className="section-heading"><p className="eyebrow">{labels?.unitNoun} alignment</p><h2>Matched to {labels?.frameworkShort} objectives, not scored against them.</h2></div>
       <div className="alignment-grid">
         {GUIDE_OBJECTIVE_CODES.map((code) => {
           const ref: StandardRef = { frameworkId: GUIDE_FRAMEWORK_ID, code };
@@ -61,10 +66,17 @@ function AlignmentBlock() {
           );
         })}
       </div>
+      {/* Three sentences, because one was not enough. "NYSED has not reviewed or endorsed
+          BOW" is true and says nothing about how much of the requirement this covers or
+          whether the state assesses any of it — and a teacher reading "Ready to assign"
+          beside a requirement their district is attested against can reasonably infer both.
+          The product closes that inference itself rather than waiting to be asked. */}
       <p className="disclaimer">
         {framework?.labels.attribution} {gradeBandLabel(GUIDE_FRAMEWORK_ID)} ·{" "}
         <a href={framework?.sourceUrl} target="_blank" rel="noreferrer">Official {labels?.frameworkShort} source ↗</a>
       </p>
+      <p className="disclaimer">{framework?.labels.scope}</p>
+      <p className="disclaimer">{framework?.labels.stateAssessment}</p>
     </section>
   );
 }
@@ -120,7 +132,7 @@ export function EducatorGuide() {
         </p>
         <p className="guide-actions">
           <Link className="button button--primary" to="/educator/classes">Create a class</Link>
-          <Link className="button button--secondary" to={PLAN_UNDER_PRESSURE.route}>Try it as a student</Link>
+          <Link className="button button--secondary" to="/educator/try">Try it as a student</Link>
           {/* The one way in to the sample class, framed as what it is: real submissions
               built the same way any real class's are, so this button leads to the same
               screens and the same vocabulary a real class uses. */}
