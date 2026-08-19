@@ -452,8 +452,8 @@ export async function setAmount(page: Page, label: string, value: string) {
  * alone — rent, the weekly basics, a seat already reserved, a bonus the student left out —
  * so selecting every card on screen is now a wrong answer rather than the whole task.
  */
-export const MOVED_TILES = ".gap-tiles button[data-kind='lost'], .gap-tiles button[data-kind='bill']";
-export const HELD_TILES = ".gap-tiles button[data-kind='committed'], .gap-tiles button[data-kind='uncounted']";
+export const MOVED_TILES = ".gap-tiles button[data-line='lost'], .gap-tiles button[data-line='bill']";
+export const HELD_TILES = ".gap-tiles button[data-line='committed'], .gap-tiles button[data-line='uncounted']";
 
 /** Selects the gap tiles that belong to this student's plan and checks the sum. */
 export async function passWeek5Calculation(page: Page, total: string) {

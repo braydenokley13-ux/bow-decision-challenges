@@ -1155,9 +1155,38 @@ function PlanEcho({ mode, label, note }: { mode: PlanMode; label: string; note?:
  * written before the decoys existed scores exactly as it did — and a decoy tapped now is a
  * component selection this world already scores as incomplete, with no new event and no new
  * rule.
+ *
+ * Two things a critic measured on this screen are why it looks the way it does now.
+ *
+ * **The answer was in the colour.** The cards carried `data-kind`, and the stylesheet drew a
+ * different left border for each of its four values — so the two cards that had to be tapped
+ * were the only two in red, and the colours partitioned the set exactly the way the question
+ * does. Read off the live DOM: two cards at `rgb(168, 50, 31)`, and they were the answer. A
+ * student who read nothing could tap the red ones and be half right, and a colour-blind
+ * student had none of that to go on. The attribute is `data-line` now, which nothing colours,
+ * so every card on the strip is drawn the same and the only thing separating them is what
+ * they say. Whatever colour comes back here later must be one that both kinds of card carry.
+ *
+ * **The answer could be taken without seeing it.** Three wrong totals with nothing tapped
+ * unlocked "show the answer and keep going", and the press moved the student two screens on
+ * with the comprehension it is asking about never attempted. The rung stays — a gate with no
+ * way out is the defect one screen earlier — but it now does what it says: the cards Week 5
+ * moved are named on the strip, and the student says when they have seen them. The taps are
+ * still theirs to make, so `C5.3` still reads what they selected and still scores a student
+ * who selected nothing as partial.
  */
 function Week5EventStage() {
   const { state, dispatch } = useChallenge();
+  /**
+   * Whether the last rung has handed the answer over, and this screen is showing it.
+   *
+   * The ref is not a duplicate of the state: `onShowAndContinue` and `onCorrect` both run
+   * inside the one press, and the dispatch that records the hand-over has not come back
+   * through `state.support` by the time `onCorrect` asks whether to leave the screen. The ref
+   * is the answer to that question; the state is what redraws the strip.
+   */
+  const handedOver = useRef(false);
+  const [answerShown, setAnswerShown] = useState(false);
   if (!state.setupId) return null;
   const expected = week5Change({ includeOutcome: state.income.includeOutcome, setupId: state.setupId }, SCENARIO_NUMBERS);
   const setup = BASKETBALL_SCENARIO.setups.find((item) => item.id === state.setupId)!;
@@ -1210,6 +1239,10 @@ function Week5EventStage() {
   // log, and a set where every card that counts sits at the top is a set nobody has to read.
   const ORDER = ["decoy-rent", "lost-outcome", "decoy-outcome", "required-cost", "decoy-deposit", "setup-cost", "decoy-essentials"];
   const changes = [...moved, ...held].sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id));
+  const movedIds = new Set(moved.map((change) => change.id));
+  // A reload during the reveal lands back on the reveal rather than on an unanswered box:
+  // the record of the hand-over is the durable half of it, and it is already in `support`.
+  const revealed = answerShown || state.support["week5-change"] === "answer_supplied";
   return (
     <StageShell
       stage="week5-event"
@@ -1249,12 +1282,20 @@ function Week5EventStage() {
           {changes.map((change) => {
             const selected = state.selectedGapTiles.includes(change.id);
             return (
-              <button key={change.id} type="button" data-kind={change.kind} aria-pressed={selected}
+              /* `data-line`, not `data-kind`: the stylesheet drew one border colour per kind,
+                 and the kinds are the answer. See this component's note. */
+              <button key={change.id} type="button" data-line={change.kind} aria-pressed={selected}
                 onClick={() => dispatch({ type: "GAP_TILE_TOGGLED", tileId: change.id, selected: !selected })}>
                 {/* A card with no mark on it is a card nobody knows they can press. */}
                 <span className="gap-tiles__mark" aria-hidden="true" />
                 <span className="gap-tiles__kind">{change.tag}</span>
-                <span className="gap-tiles__label"><b>{change.label}</b><small>{change.detail}</small></span>
+                <span className="gap-tiles__label">
+                  <b>{change.label}</b>
+                  <small>{change.detail}</small>
+                  {/* Said in words on the card, not drawn in a colour beside it, so it reads
+                      the same to every student — and only once the answer has been asked for. */}
+                  {revealed && movedIds.has(change.id) && <small>Week 5 changed this</small>}
+                </span>
                 <strong className="money">{formatDollars(change.amount)}</strong>
               </button>
             );
@@ -1273,12 +1314,28 @@ function Week5EventStage() {
             expected={expected}
             priorAttempts={state.calculations["week5-change"]?.attempts}
             onSubmit={(raw, value, correct) => submitCalculation(dispatch, "week5-change", raw, value, correct)}
-            onCorrect={() => dispatch({ type: "GO_TO_STAGE", stage: "first-response" })}
+            // A student who worked the total out is done with this screen. A student who was
+            // handed it has not seen the cards it came from yet, and that is the whole of what
+            // the screen is asking, so the hand-over shows them and they say when to go on.
+            onCorrect={() => { if (!handedOver.current) dispatch({ type: "GO_TO_STAGE", stage: "first-response" }); }}
             low="Too low. One of the cards that changed this week is missing from your total."
             high="Too high. Something in your total was already promised before Week 5, so it did not change."
-            scaffold={`Take one card at a time and ask whether Week 5 changed that number. ${moved.length} of the ${changes.length} cards changed; money lost and a new bill make the same size hole, so add them together.`}
-            {...calculationSupport(dispatch, "week5-change")}
+            // How to read the cards, and not how many of them count. The count was the answer
+            // to the half of this question the total does not carry, printed one rung early.
+            scaffold="Take one card at a time and ask whether Week 5 changed that number. Money lost and a new bill make the same size hole, so add them together."
+            onScaffold={() => dispatch({ type: "SCAFFOLD_OPENED", interactionId: "week5-change" })}
+            onShowAndContinue={() => {
+              handedOver.current = true;
+              setAnswerShown(true);
+              dispatch({ type: "SHOW_AND_CONTINUE_USED", interactionId: "week5-change" });
+            }}
           />
+          {revealed && (
+            <div className="stage-action" data-state="neutral">
+              <p aria-live="polite">These are the ones Week 5 changed. Nothing else on this screen changed.</p>
+              <Button type="button" onClick={() => dispatch({ type: "GO_TO_STAGE", stage: "first-response" })}>Keep going</Button>
+            </div>
+          )}
         </div>
       </section>
     </StageShell>
