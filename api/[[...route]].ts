@@ -1,5 +1,5 @@
 import { handleApiRequest } from "../server/handler";
-import { allowedOrigin } from "../server/index";
+import { apiHeaders, rateLimitAddress } from "../server/index";
 import { storeFromEnvironment } from "../server/store";
 
 /**
@@ -17,36 +17,15 @@ import { storeFromEnvironment } from "../server/store";
  */
 const store = storeFromEnvironment();
 
-/**
- * Who the rate limiter is counting, on a platform that always sits behind its own proxy.
- *
- * Never stored, never logged, read in one place. The platform's own header wins; failing
- * that, the last entry of the forwarded chain — the one written by the hop nearest this
- * function, rather than the first, which is written by the caller.
- */
-function callerOf(realIp: string | null, forwarded: string | null): string {
-  if (realIp?.trim()) return realIp.trim();
-  const chain = (forwarded ?? "").split(",").map((entry) => entry.trim()).filter(Boolean);
-  return chain[chain.length - 1] ?? "anonymous";
-}
-
 export default async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url);
-  const cors: Record<string, string> = {
-    "Access-Control-Allow-Origin": allowedOrigin(request.headers.get("origin") ?? undefined),
-    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-BOW-Teacher-Key",
-    "Vary": "Origin",
-    // The same four the self-hosted server has sent for a while, and this path had none of
-    // them. `no-store` is the one that matters here: without it a shared classroom machine,
-    // or any cache between it and the platform, is free to keep a response containing a
-    // class's names and a child's written explanation. `nosniff` because a JSON body holding
-    // markup must never be rendered as one, `DENY` because nothing here belongs in a frame.
-    "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
-    "Referrer-Policy": "same-origin",
-    "Cache-Control": "no-store",
-  };
+  // The same headers the self-hosted server sends, from the same function rather than from a
+  // second copy of the list. This path once had none of them, the fix was to paste the block
+  // here, and this file's own comment recorded that as a divergence they had been bitten by —
+  // which left two copies free to diverge again. `no-store` is the one that matters most here:
+  // without it a shared classroom machine, or any cache between it and the platform, is free to
+  // keep a response containing a class's names and a child's written explanation.
+  const cors = apiHeaders(request.headers.get("origin") ?? undefined);
   if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
 
   let body: unknown;
@@ -72,9 +51,20 @@ export default async function handler(request: Request): Promise<Response> {
         // The rightmost entry, not the leftmost. `X-Forwarded-For` is a list a caller can
         // start and a proxy appends to, so the left-hand end is whatever the client typed —
         // reading it turned every per-address rate limit in the product off, which a vendor
-        // review demonstrated with three hundred unblocked join-code guesses. `x-real-ip` is
-        // set by the platform rather than forwarded, so it is preferred where it exists.
-        clientId: callerOf(request.headers.get("x-real-ip"), request.headers.get("x-forwarded-for")),
+        // review demonstrated with three hundred unblocked join-code guesses.
+        //
+        // The rule is `rateLimitAddress`, shared with the self-hosted server; what this file
+        // adds is the two things only this transport can say. `x-real-ip` is written by the
+        // platform rather than forwarded, so it is offered as `platformAddress` — a header the
+        // shared function would be wrong to read for itself, because a self-hosted deployment
+        // has no platform and would be trusting the caller. And a function is always behind the
+        // platform's own proxy, so the hop count defaults to one here rather than to none;
+        // `BOW_TRUST_PROXY` still overrides it, which on this path it previously could not.
+        clientId: rateLimitAddress({
+          platformAddress: request.headers.get("x-real-ip") ?? undefined,
+          forwarded: request.headers.get("x-forwarded-for") ?? undefined,
+          hops: Number(process.env.BOW_TRUST_PROXY ?? 1),
+        }),
         ...(body !== undefined ? { body } : {}),
       },
       { store },

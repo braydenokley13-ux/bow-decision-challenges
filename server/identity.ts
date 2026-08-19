@@ -1,4 +1,4 @@
-import { CODE_ALPHABET, isWellFormedClassCode, isWellFormedSeatCode, normaliseClassCode, normaliseSeatCode } from "../src/platform/classes/codes";
+import { CODE_ALPHABET, generateTeacherKey, isWellFormedClassCode, isWellFormedSeatCode, normaliseClassCode, normaliseSeatCode } from "../src/platform/classes/codes";
 import { asRunCopy, copyToKeep } from "../src/platform/identity/runCopies";
 import {
   IDENTITY_ERROR_MESSAGES,
@@ -272,229 +272,534 @@ export interface IdentityRequest {
 }
 
 /**
- * The identity routes, or `null` when the path is somebody else's.
+ * The one 403 this file gives, written once.
  *
- * Returning `null` rather than a 404 is what lets the class service keep owning `/classes`
- * while this file owns the parts of it that need a person behind them: one router, two
- * modules, and no path that both of them answer.
+ * It used to be written out by hand at the end of every four-line preamble that gated a
+ * class — eight identical copies of the same object literal, in eight places a reviewer had
+ * to read to know they were identical. The number of copies is not the defect; the defect is
+ * that a refusal written by hand can be forgotten by hand, which is exactly what happened
+ * when a security review added a tenth route the way a second engineer would and got a 200
+ * carrying every child's name, their join-code hashes and the class's key to nobody at all.
+ * Now nothing writes this but the dispatcher below, and no route can decline to.
  */
-export async function handleIdentityRequest(
-  request: IdentityRequest,
-  context: IdentityContext,
-): Promise<ApiResponse | null> {
-  const { store, now, random, clientId } = context;
-  const [head, second, third, fourth] = request.segments;
+function notThisClass(): ApiResponse {
+  return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
+}
 
+/**
+ * What a route requires of whoever is asking, declared rather than remembered.
+ *
+ * This is the whole of the authorisation model, and the point of writing it as a field on a
+ * route instead of as four lines inside one is that **a route cannot be added without
+ * answering this question**. There is no default: a table entry with no `auth` does not
+ * compile, and a route that is not in the table is not reachable.
+ *
+ * - `open` — no credential at all. Signing up, signing in, redeeming a recovery code.
+ * - `account` — any signed-in caller, of either kind.
+ * - `student` / `teacher` — a signed-in caller of that kind, and no other.
+ * - `classDoor` — the class in `:code` must exist and be live; the caller proves nothing.
+ *   Two routes need this and both are doors a student stands at before they have anything to
+ *   prove with: reading the label off a class code, and presenting a card.
+ * - `classOwner` — the class's own key, or the account that owns it (`opensClass`).
+ * - `classOwnerAccount` — the account that owns it, and not the key. One route uses this and
+ *   the reason is written above it: it is the route that replaces the key.
+ */
+export type IdentityAuth =
+  | "open"
+  | "account"
+  | "student"
+  | "teacher"
+  | "classDoor"
+  | "classOwner"
+  | "classOwnerAccount";
+
+/**
+ * The two modes that answer somebody who has proved nothing.
+ *
+ * `authorisationBoundary.test.ts` enumerates the table and fails if a route carrying either of
+ * these is not on an allow-list written out by hand in that file. That is the half of this
+ * design that catches the enthusiastic Tuesday: adding an ungated route is allowed, and it
+ * costs a line in a test file that a reviewer reads as a list of everything a stranger can ask.
+ */
+export const UNGATED_AUTH: readonly IdentityAuth[] = ["open", "classDoor"];
+
+const CLASS_AUTH: readonly IdentityAuth[] = ["classDoor", "classOwner", "classOwnerAccount"];
+
+/** Everything a route body is allowed to know, and nothing it has to look up for itself. */
+export interface RouteContext {
+  request: IdentityRequest;
+  context: IdentityContext;
+  /** Whoever the bearer token said, already checked against the route's `auth`. */
+  caller: Caller | null;
+  /** The `:name` segments of the route's own path. */
+  params: Readonly<Record<string, string>>;
+}
+
+/**
+ * What a route that requires an account is handed.
+ *
+ * `caller` is not nullable here, and that is the point of splitting the type: the dispatcher
+ * has already refused the request if there is nobody behind it, so a route body cannot be
+ * written in a way that reads as if it might have to check again. The old shape of this file
+ * had that check written out fifteen times.
+ */
+export interface SignedInRouteContext extends RouteContext {
+  caller: Caller;
+}
+
+export interface ClassRouteContext extends RouteContext {
+  /** The class `:code` named: found, live, and already authorised for this caller. */
+  record: StoredClass;
+  /** The same code, normalised — the string the class service would have looked up. */
+  code: string;
+  /** The one "no class with that code" answer, charged once and shaped once. */
+  classMiss: () => ApiResponse;
+  /**
+   * Whether this caller holds the class's key or owns the account it belongs to.
+   *
+   * Always true on a `classOwner` route — the dispatcher refused the request otherwise — and
+   * the reason it is carried rather than recomputed is the one route where it is *not* always
+   * true. `GET /classes/:code/roster` is a door a student stands at and a list a teacher reads,
+   * and it used to answer that question by calling `opensClass` a second time. One call site,
+   * one answer: the check that decides whether a request is refused is the same check that
+   * decides what it is shown, and `authorisationBoundary.test.ts` asserts there is only one.
+   */
+  opensThisClass: boolean;
+}
+
+interface RouteShape {
+  method: string;
+  /** Segments, with `:name` capturing one. Matched whole: a trailing segment is not a match. */
+  path: string;
+  /** The extra condition where two routes share a path, e.g. `?erase=1`. */
+  when?: (request: IdentityRequest) => boolean;
+}
+
+interface OpenRoute extends RouteShape {
+  auth: "open";
+  run: (context: RouteContext) => Promise<ApiResponse> | ApiResponse;
+}
+
+interface SignedInRoute extends RouteShape {
+  auth: "account" | "student" | "teacher";
+  run: (context: SignedInRouteContext) => Promise<ApiResponse> | ApiResponse;
+}
+
+interface ClassRoute extends RouteShape {
+  auth: "classDoor" | "classOwner" | "classOwnerAccount";
+  run: (context: ClassRouteContext) => Promise<ApiResponse> | ApiResponse;
+}
+
+export type IdentityRoute = OpenRoute | SignedInRoute | ClassRoute;
+
+function isClassRoute(route: IdentityRoute): route is ClassRoute {
+  return CLASS_AUTH.includes(route.auth);
+}
+
+function isSignedInRoute(route: IdentityRoute): route is SignedInRoute {
+  return route.auth === "account" || route.auth === "student" || route.auth === "teacher";
+}
+
+/**
+ * How big a checkpoint this service is willing to keep, and where the number came from.
+ *
+ * It was measured, not guessed. `runChallenge` and `runPopUp` drive the two worlds' own
+ * reducers through a whole run, and the state a browser sends at the end of one — every
+ * event, every snapshot, and a twelve-hundred-character written defence — serialises to
+ * **31,296 bytes** in Basketball and **18,378** in Run the Pop-Up. This ceiling is eight times
+ * the larger, which leaves a student room to write far more than any of them will and still be
+ * saved. `checkpointLimits.test.ts` re-measures both worlds on every run and fails if a real one
+ * comes within a quarter of this, so the product growing past it is something a test says
+ * rather than something a child finds out.
+ *
+ * Before it existed this route stored `request.body.payload` verbatim under the transport's
+ * 4MB cap, and a security review self-served fifteen student sessions from a class code off a
+ * whiteboard and wrote 15 × 3.4MB of checkpoint into one class directory in four seconds. A
+ * checkpoint is one record per seat, so what this ceiling actually bounds is the whole class:
+ * sixty seats × 256KB is fifteen megabytes, against the sixty-nine that were measured.
+ */
+export const MAX_CHECKPOINT_BYTES = 256 * 1024;
+
+/**
+ * How often one student may write their position to their class.
+ *
+ * Keyed on the **student**, not the address, for the reason written over the submission cap: a
+ * school is one address, so an address-keyed ceiling is a ceiling the room shares with whoever
+ * is attacking it. A student account is self-served from an open class code, which is what
+ * makes this worth having at all — but each self-served session then spends only its own
+ * budget and only its own seat's 256KB.
+ *
+ * The number comes from the client. `useAttemptCheckpoint` writes on a change of stage and
+ * otherwise at most every fifteen seconds, so one device's ceiling is four a minute plus its
+ * stage changes — call it thirty in five minutes for a student moving quickly. Sixty is twice
+ * that, which leaves room for the case this product explicitly supports: one seat, two
+ * machines, both checkpointing.
+ *
+ * A refused checkpoint is not lost work and the message says so. The attempt is already in the
+ * browser's own storage; what is briefly stale is the teacher's live panel.
+ */
+export const CHECKPOINT_LIMIT = 60;
+export const CHECKPOINT_WINDOW_MS = 5 * 60 * 1000;
+
+/** What a checkpoint weighs on the wire, as the store would have to keep it. */
+export function checkpointBytes(payload: unknown): number {
+  if (payload === undefined) return 0;
+  // `JSON.stringify` returns undefined for a value that is not representable; nothing that
+  // arrived as parsed JSON is, so the fallback is only there to keep the type honest.
+  return Buffer.byteLength(JSON.stringify(payload) ?? "null", "utf8");
+}
+
+/**
+ * Every route this file answers, and what each one requires of whoever is asking.
+ *
+ * The table is the router. `handleIdentityRequest` below matches a request against it, applies
+ * the `auth` the entry declares, and only then calls `run` — so the four-line preamble that
+ * used to be copied into every route body exists once, in one place, and a route body cannot
+ * run without it having run first.
+ *
+ * The order matters in exactly one place, and it is marked: two routes share
+ * `classes/:code/roster/:seat` and the erasing one has to be offered the request first.
+ */
+export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
   // -- POST /auth/teacher — a teacher makes an account. --
-  if (request.method === "POST" && head === "auth" && second === "teacher" && !third) {
-    // Ten an hour per address was the same mistake as the class-creation cap, one route along:
-    // a school district is one egress address, and fifteen teachers making accounts in a
-    // September PD session is the normal case rather than the attack. What this window is for
-    // is a script farming accounts, and sixty an hour still bounds that while leaving a whole
-    // staffroom room to sign up in one sitting.
-    if (!withinRate(`signup:${clientId}`, 60, 60 * 60 * 1000, now)) return identityFail(429, "too_many_attempts");
-    const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
-    const password = typeof request.body.password === "string" ? request.body.password : "";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 160) return identityFail(400, "bad_credentials");
-    // Length is the only rule. Composition rules push people towards `Password1!` and are
-    // worth less than four more characters, which is the entire modern guidance.
-    if (password.length < 10 || password.length > 200) return identityFail(400, "bad_credentials");
-    if (await store.getTeacherByEmail(email)) return identityFail(409, "email_taken");
-    const recoveryCode = newRecoveryCode();
-    const teacher: StoredTeacher = {
-      id: newId("t"),
-      email,
-      createdAt: now,
-      passwordHash: await hashSecret(password),
-      recoveryHash: await hashSecret(recoveryCode),
-    };
-    await store.putTeacher(teacher);
-    return {
-      status: 201,
-      body: {
-        teacher: { id: teacher.id, email: teacher.email, createdAt: teacher.createdAt },
-        token: await issue("teacher", teacher.id, 0, context),
-        // Shown once, never stored in a form a request can read back. There is no email
-        // service behind this product, so this code is the whole of account recovery and
-        // the sign-up screen has to say so plainly.
-        recoveryCode,
-      },
-    };
-  }
+  {
+    method: "POST",
+    path: "auth/teacher",
+    auth: "open",
+    run: async ({ request, context }) => {
+      const { store, now, clientId } = context;
+      // Ten an hour per address was the same mistake as the class-creation cap, one route along:
+      // a school district is one egress address, and fifteen teachers making accounts in a
+      // September PD session is the normal case rather than the attack. What this window is for
+      // is a script farming accounts, and sixty an hour still bounds that while leaving a whole
+      // staffroom room to sign up in one sitting.
+      if (!withinRate(`signup:${clientId}`, 60, 60 * 60 * 1000, now)) return identityFail(429, "too_many_attempts");
+      const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
+      const password = typeof request.body.password === "string" ? request.body.password : "";
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 160) return identityFail(400, "bad_credentials");
+      // Length is the only rule. Composition rules push people towards `Password1!` and are
+      // worth less than four more characters, which is the entire modern guidance.
+      if (password.length < 10 || password.length > 200) return identityFail(400, "bad_credentials");
+      if (await store.getTeacherByEmail(email)) return identityFail(409, "email_taken");
+      const recoveryCode = newRecoveryCode();
+      const teacher: StoredTeacher = {
+        id: newId("t"),
+        email,
+        createdAt: now,
+        passwordHash: await hashSecret(password),
+        recoveryHash: await hashSecret(recoveryCode),
+      };
+      await store.putTeacher(teacher);
+      return {
+        status: 201,
+        body: {
+          teacher: { id: teacher.id, email: teacher.email, createdAt: teacher.createdAt },
+          token: await issue("teacher", teacher.id, 0, context),
+          // Shown once, never stored in a form a request can read back. There is no email
+          // service behind this product, so this code is the whole of account recovery and
+          // the sign-up screen has to say so plainly.
+          recoveryCode,
+        },
+      };
+    },
+  },
 
   // -- POST /auth/teacher/session — signing in. --
-  if (request.method === "POST" && head === "auth" && second === "teacher" && third === "session") {
-    // Two windows, because a password is guessed one account at a time and a staffroom arrives
-    // all at once. The tight one is per account: ten wrong tries in fifteen minutes is far
-    // below anything worth attacking and far above anybody's own typing. The loose one is the
-    // address, and it is deliberately generous — thirty teachers signing in at half past eight,
-    // several of them twice, used to exhaust a twenty-per-address window between them and lock
-    // the rest of the school out of their own classes.
-    //
-    // Only failures are charged, for the same reason the student join is: a correct password is
-    // not evidence of an attack, and charging it made a room's own sign-in the thing that
-    // stopped the room signing in.
-    const emailWindow = `login:email:${emailKey(typeof request.body.email === "string" ? request.body.email : "")}`;
-    const addressWindow = `login:${clientId}`;
-    if (!underRate(emailWindow, 10, 15 * 60 * 1000, now) || !underRate(addressWindow, 300, 15 * 60 * 1000, now)) {
-      return identityFail(429, "too_many_attempts");
-    }
-    const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
-    const password = typeof request.body.password === "string" ? request.body.password : "";
-    const teacher = await store.getTeacherByEmail(email);
-    // One message, one shape **and one duration** for "no such account" and "wrong password",
-    // so this endpoint cannot be used to find out which teachers exist. The first two were
-    // here already; the third was not, and a reviewer read the difference straight off the
-    // clock — 385ms against 5ms — which made the careful wording decorative.
-    const passwordMatches = teacher ? await verifySecret(password, teacher.passwordHash) : await burnSecretCheck(password);
-    if (!teacher || !passwordMatches) {
-      spendRate(emailWindow, 15 * 60 * 1000, now);
-      spendRate(addressWindow, 15 * 60 * 1000, now);
-      return identityFail(401, "bad_credentials");
-    }
-    return {
-      status: 200,
-      body: {
-        teacher: { id: teacher.id, email: teacher.email, createdAt: teacher.createdAt },
-        token: await issue("teacher", teacher.id, teacher.sessionGeneration ?? 0, context),
-      },
-    };
-  }
+  {
+    method: "POST",
+    path: "auth/teacher/session",
+    auth: "open",
+    run: async ({ request, context }) => {
+      const { store, now, clientId } = context;
+      // Two windows, because a password is guessed one account at a time and a staffroom arrives
+      // all at once. The tight one is per account: ten wrong tries in fifteen minutes is far
+      // below anything worth attacking and far above anybody's own typing. The loose one is the
+      // address, and it is deliberately generous — thirty teachers signing in at half past eight,
+      // several of them twice, used to exhaust a twenty-per-address window between them and lock
+      // the rest of the school out of their own classes.
+      //
+      // Only failures are charged, for the same reason the student join is: a correct password is
+      // not evidence of an attack, and charging it made a room's own sign-in the thing that
+      // stopped the room signing in.
+      const emailWindow = `login:email:${emailKey(typeof request.body.email === "string" ? request.body.email : "")}`;
+      const addressWindow = `login:${clientId}`;
+      if (!underRate(emailWindow, 10, 15 * 60 * 1000, now) || !underRate(addressWindow, 300, 15 * 60 * 1000, now)) {
+        return identityFail(429, "too_many_attempts");
+      }
+      const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
+      const password = typeof request.body.password === "string" ? request.body.password : "";
+      const teacher = await store.getTeacherByEmail(email);
+      // One message, one shape **and one duration** for "no such account" and "wrong password",
+      // so this endpoint cannot be used to find out which teachers exist. The first two were
+      // here already; the third was not, and a reviewer read the difference straight off the
+      // clock — 385ms against 5ms — which made the careful wording decorative.
+      const passwordMatches = teacher ? await verifySecret(password, teacher.passwordHash) : await burnSecretCheck(password);
+      if (!teacher || !passwordMatches) {
+        spendRate(emailWindow, 15 * 60 * 1000, now);
+        spendRate(addressWindow, 15 * 60 * 1000, now);
+        return identityFail(401, "bad_credentials");
+      }
+      return {
+        status: 200,
+        body: {
+          teacher: { id: teacher.id, email: teacher.email, createdAt: teacher.createdAt },
+          token: await issue("teacher", teacher.id, teacher.sessionGeneration ?? 0, context),
+        },
+      };
+    },
+  },
 
   // -- POST /auth/teacher/recovery — the code from sign-up, exchanged for a new password. --
-  if (request.method === "POST" && head === "auth" && second === "teacher" && third === "recovery") {
-    // Same shape as signing in: the recovery code is the thing worth guessing, so the tight
-    // window is per account and the address only stops a flood.
-    const recoverEmail = `recover:email:${emailKey(typeof request.body.email === "string" ? request.body.email : "")}`;
-    if (!underRate(recoverEmail, 10, 60 * 60 * 1000, now) || !underRate(`recover:${clientId}`, 200, 60 * 60 * 1000, now)) {
-      return identityFail(429, "too_many_attempts");
-    }
-    const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
-    const code = typeof request.body.recoveryCode === "string" ? request.body.recoveryCode.trim().toUpperCase() : "";
-    const password = typeof request.body.password === "string" ? request.body.password : "";
-    if (password.length < 10 || password.length > 200) return identityFail(400, "bad_credentials");
-    const teacher = await store.getTeacherByEmail(email);
-    // Same reason as signing in: an address with no account has to cost what an address with
-    // one costs, or the timing answers the question the wording refuses to.
-    const codeMatches = teacher ? await verifySecret(code, teacher.recoveryHash) : await burnSecretCheck(code);
-    if (!teacher || !codeMatches) {
-      spendRate(recoverEmail, 60 * 60 * 1000, now);
-      spendRate(`recover:${clientId}`, 60 * 60 * 1000, now);
-      return identityFail(401, "bad_credentials");
-    }
-    // A used recovery code is spent. Reissuing here rather than leaving the old one live is
-    // what stops a code read off a screenshot from being a permanent second key.
-    const recoveryCode = newRecoveryCode();
-    // Recovery ends every session the account had. If the reason for recovering is that
-    // somebody else has the password, leaving their laptop signed in defeats the exercise.
-    const generation = (teacher.sessionGeneration ?? 0) + 1;
-    await store.putTeacher({
-      ...teacher,
-      sessionGeneration: generation,
-      passwordHash: await hashSecret(password),
-      recoveryHash: await hashSecret(recoveryCode),
-    });
-    return {
-      status: 200,
-      body: {
-        teacher: { id: teacher.id, email: teacher.email, createdAt: teacher.createdAt },
-        token: await issue("teacher", teacher.id, generation, context),
-        recoveryCode,
-      },
-    };
-  }
+  {
+    method: "POST",
+    path: "auth/teacher/recovery",
+    auth: "open",
+    run: async ({ request, context }) => {
+      const { store, now, clientId } = context;
+      // Same shape as signing in: the recovery code is the thing worth guessing, so the tight
+      // window is per account and the address only stops a flood.
+      const recoverEmail = `recover:email:${emailKey(typeof request.body.email === "string" ? request.body.email : "")}`;
+      if (!underRate(recoverEmail, 10, 60 * 60 * 1000, now) || !underRate(`recover:${clientId}`, 200, 60 * 60 * 1000, now)) {
+        return identityFail(429, "too_many_attempts");
+      }
+      const email = typeof request.body.email === "string" ? request.body.email.trim().toLowerCase() : "";
+      const code = typeof request.body.recoveryCode === "string" ? request.body.recoveryCode.trim().toUpperCase() : "";
+      const password = typeof request.body.password === "string" ? request.body.password : "";
+      if (password.length < 10 || password.length > 200) return identityFail(400, "bad_credentials");
+      const teacher = await store.getTeacherByEmail(email);
+      // Same reason as signing in: an address with no account has to cost what an address with
+      // one costs, or the timing answers the question the wording refuses to.
+      const codeMatches = teacher ? await verifySecret(code, teacher.recoveryHash) : await burnSecretCheck(code);
+      if (!teacher || !codeMatches) {
+        spendRate(recoverEmail, 60 * 60 * 1000, now);
+        spendRate(`recover:${clientId}`, 60 * 60 * 1000, now);
+        return identityFail(401, "bad_credentials");
+      }
+      // A used recovery code is spent. Reissuing here rather than leaving the old one live is
+      // what stops a code read off a screenshot from being a permanent second key.
+      const recoveryCode = newRecoveryCode();
+      // Recovery ends every session the account had. If the reason for recovering is that
+      // somebody else has the password, leaving their laptop signed in defeats the exercise.
+      const generation = (teacher.sessionGeneration ?? 0) + 1;
+      await store.putTeacher({
+        ...teacher,
+        sessionGeneration: generation,
+        passwordHash: await hashSecret(password),
+        recoveryHash: await hashSecret(recoveryCode),
+      });
+      return {
+        status: 200,
+        body: {
+          teacher: { id: teacher.id, email: teacher.email, createdAt: teacher.createdAt },
+          token: await issue("teacher", teacher.id, generation, context),
+          recoveryCode,
+        },
+      };
+    },
+  },
 
-  // -- GET /me — whoever the token says, and nothing the token did not say. --
-  if (request.method === "GET" && head === "me" && !second) {
-    const caller = await callerOf(request.headers, context);
-    if (!caller) return identityFail(401, "no_session");
-    if (caller.kind === "teacher") {
+  // -- POST /auth/teacher/signout — the button that actually ends a teacher's session. --
+  //
+  // "Sign out" was `removeItem` on one browser's storage and nothing else. The token it threw
+  // away stayed valid for the rest of its thirty days, and there was no route anywhere that
+  // would turn it off: a security review probed eight plausible ones and got 404 or 401 on all
+  // eight, then pointed out that a single captured teacher token also answers `GET /me/teaching`
+  // with the long-lived key of every class the account owns. So one token copied off a shared
+  // staffroom machine was thirty days of unrevocable access to every class that teacher teaches.
+  //
+  // Students have had real revocation for as long as `POST /classes/:code/signout` has existed,
+  // by the same counter on the same kind of account. This is that control, for the person who
+  // has more to lose by not having it.
+  //
+  // It ends **every** session, including the one that asked, and hands back no new token. That
+  // is the operation somebody reaches for when they think a session of theirs is somewhere it
+  // should not be, and a version of it that quietly kept the caller signed in would be a version
+  // that cannot answer "am I sure it is off everywhere". Signing in again is a password away;
+  // the recovery code is not involved, which is the whole point — recovery already did this and
+  // needed the one thing a teacher who has simply lost a laptop does not have to hand.
+  {
+    method: "POST",
+    path: "auth/teacher/signout",
+    auth: "teacher",
+    run: async ({ caller, context }) => {
+      const { store, now } = context;
       const teacher = await store.getTeacher(caller.id);
       if (!teacher) return identityFail(401, "no_session");
-      return { status: 200, body: { kind: "teacher", id: teacher.id, email: teacher.email } };
-    }
-    const student = await store.getStudent(caller.id);
-    if (!student) return identityFail(401, "no_session");
-    return { status: 200, body: { kind: "student", id: student.id } };
-  }
+      const generation = (teacher.sessionGeneration ?? 0) + 1;
+      await store.putTeacher({ ...teacher, sessionGeneration: generation });
+      return {
+        status: 200,
+        body: {
+          signedOut: true,
+          at: now,
+          message: "Every device signed in to this account has been signed out. Sign in again to carry on.",
+        },
+      };
+    },
+  },
+
+  // -- POST /auth/teacher/password — changing it, without the recovery code. --
+  //
+  // A teacher could not change their password. The only route that would set one was
+  // `/auth/teacher/recovery`, which needs the code shown once at sign-up — so a teacher who
+  // thought somebody had seen their password, and who had not kept a code they were shown
+  // months ago, had no move at all.
+  //
+  // Changing it ends every other session, for the same reason recovery does: if the reason for
+  // changing it is that somebody else has it, leaving their browser signed in defeats the
+  // exercise. The caller keeps working, because they are the one making the change and being
+  // signed out of the tab you are typing in is how a control gets described as broken — so a
+  // fresh token comes back at the new generation and every older one stops.
+  //
+  // The recovery code is deliberately **not** reissued. It was not used, nothing has learned it,
+  // and printing a new one here would mean the code a teacher wrote down at sign-up silently
+  // stopped working every time they changed a password.
+  {
+    method: "POST",
+    path: "auth/teacher/password",
+    auth: "teacher",
+    run: async ({ request, caller, context }) => {
+      const { store, now } = context;
+      const teacher = await store.getTeacher(caller.id);
+      if (!teacher) return identityFail(401, "no_session");
+      // Per account, and only failures are charged. A token is already required to be here, so
+      // this is not a guessing surface from outside — what it bounds is somebody sitting at a
+      // signed-in browser working out the password to use elsewhere.
+      const window = `password:${teacher.id}`;
+      if (!underRate(window, 10, 15 * 60 * 1000, now)) return identityFail(429, "too_many_attempts");
+      const current = typeof request.body.currentPassword === "string" ? request.body.currentPassword : "";
+      const next = typeof request.body.newPassword === "string" ? request.body.newPassword : "";
+      // The same single rule sign-up applies, stated in the message rather than left to be
+      // discovered, because this is the one place a person is choosing a password against a
+      // rule they cannot see.
+      if (next.length < 10 || next.length > 200) {
+        return {
+          status: 400,
+          body: { error: "bad_credentials", message: "A new password needs to be at least 10 characters. Length is the only rule." },
+        };
+      }
+      if (!await verifySecret(current, teacher.passwordHash)) {
+        spendRate(window, 15 * 60 * 1000, now);
+        return identityFail(401, "bad_credentials");
+      }
+      const generation = (teacher.sessionGeneration ?? 0) + 1;
+      await store.putTeacher({ ...teacher, passwordHash: await hashSecret(next), sessionGeneration: generation });
+      return {
+        status: 200,
+        body: {
+          teacher: { id: teacher.id, email: teacher.email, createdAt: teacher.createdAt },
+          token: await issue("teacher", teacher.id, generation, context),
+          message: "Password changed. Every other device signed in to this account has been signed out.",
+        },
+      };
+    },
+  },
+
+  // -- GET /me — whoever the token says, and nothing the token did not say. --
+  {
+    method: "GET",
+    path: "me",
+    auth: "account",
+    run: async ({ caller, context }) => {
+      const { store } = context;
+      if (caller.kind === "teacher") {
+        const teacher = await store.getTeacher(caller.id);
+        if (!teacher) return identityFail(401, "no_session");
+        return { status: 200, body: { kind: "teacher", id: teacher.id, email: teacher.email } };
+      }
+      const student = await store.getStudent(caller.id);
+      if (!student) return identityFail(401, "no_session");
+      return { status: 200, body: { kind: "student", id: student.id } };
+    },
+  },
 
   // -- GET /me/teaching — the classes this account owns, so a lost browser is not a lost class. --
-  if (request.method === "GET" && head === "me" && second === "teaching") {
-    const caller = await callerOf(request.headers, context);
-    if (caller?.kind !== "teacher") return identityFail(401, "no_session");
-    const codes = await store.listClassesForTeacher(caller.id);
-    const records = await Promise.all(codes.map((code) => store.getClass(code)));
-    return {
-      status: 200,
-      body: {
-        classes: records
-          .filter((record): record is StoredClass => record !== null && record.expiresAt > now)
-          .map((record) => ({
-            code: record.code,
-            label: record.label,
-            createdAt: record.createdAt,
-            expiresAt: record.expiresAt,
-            // The key travels here because this response is already proof of ownership, and
-            // without it a teacher signing in on a new laptop could list their classes and
-            // not open one.
-            teacherKey: record.teacherKey,
-          }))
-          .sort((a, b) => b.createdAt - a.createdAt),
-      },
-    };
-  }
+  {
+    method: "GET",
+    path: "me/teaching",
+    auth: "teacher",
+    run: async ({ caller, context }) => {
+      const { store, now } = context;
+      const codes = await store.listClassesForTeacher(caller.id);
+      const records = await Promise.all(codes.map((code) => store.getClass(code)));
+      return {
+        status: 200,
+        body: {
+          classes: records
+            .filter((record): record is StoredClass => record !== null && record.expiresAt > now)
+            .map((record) => ({
+              code: record.code,
+              label: record.label,
+              createdAt: record.createdAt,
+              expiresAt: record.expiresAt,
+              // The key travels here because this response is already proof of ownership, and
+              // without it a teacher signing in on a new laptop could list their classes and
+              // not open one. It is also how a teacher gets the **new** key after replacing it:
+              // `POST /classes/:code/key` hands one back once, and this is where it lives after.
+              teacherKey: record.teacherKey,
+            }))
+            .sort((a, b) => b.createdAt - a.createdAt),
+        },
+      };
+    },
+  },
 
   // -- GET /me/classes — a student's own home: every seat they hold, and what is in it. --
-  if (request.method === "GET" && head === "me" && second === "classes") {
-    const caller = await callerOf(request.headers, context);
-    if (caller?.kind !== "student") return identityFail(401, "no_session");
-    const seats = await store.listSeatsForStudent(caller.id);
-    const rows = await Promise.all(seats.map(async (seat) => {
-      const record = await store.getClass(seat.classCode);
-      if (!record || record.expiresAt <= now) return null;
-      const roster = await store.listRoster(seat.classCode);
-      const mine = roster.find((entry) => entry.seatCode === seat.seatCode);
-      // A student removed from a class does not see it. Their work stays for the teacher.
-      if (mine?.removedAt || mine?.studentId !== caller.id) return null;
-      const checkpoints = await store.listCheckpoints(seat.classCode);
-      const submissions = await store.listSubmissions(seat.classCode);
-      const mySubmissions = submissions.filter((entry) => entry.seatCode === seat.seatCode);
-      // Every note this seat's work has drawn, oldest first, minus the ones the teacher took
-      // back. Oldest first because notes about one attempt are written as a sequence — "and
-      // check Week 5" is unreadable printed above the note it was written after — and because
-      // a student who has already read the first two should find the new one where new things
-      // go. It used to be one note: the newest, because the store only ever kept one.
-      const feedback = (await store.listFeedback(seat.classCode))
-        .filter((entry) => entry.seatCode === seat.seatCode && !entry.deletedAt)
-        .sort((a, b) => a.at - b.at);
-      const checkpoint = checkpoints.find((entry) => entry.seatCode === seat.seatCode);
-      return {
-        classCode: record.code,
-        label: record.label,
-        seatCode: seat.seatCode,
-        displayName: mine.displayName,
-        assignments: await store.listAssignments(seat.classCode),
-        // Only the position, never the payload: a home screen does not need an attempt, it
-        // needs to know there is one.
-        inProgress: checkpoint && !checkpoint.submittedAt
-          ? { worldId: checkpoint.worldId, stage: checkpoint.stage, updatedAt: checkpoint.updatedAt }
-          : null,
-        completed: mySubmissions.map((entry) => ({
-          sessionId: entry.sessionId,
-          submittedAt: entry.submittedAt,
-          worldId: entry.log[0]?.worldId ?? null,
-        })),
-        feedback: feedback.map((entry) => ({
-          id: entry.id,
-          body: entry.body,
-          at: entry.at,
-          sessionId: entry.sessionId,
-          ...(entry.editedAt ? { editedAt: entry.editedAt } : {}),
-        })),
-      };
-    }));
-    return { status: 200, body: { classes: rows.filter((row) => row !== null) } };
-  }
+  {
+    method: "GET",
+    path: "me/classes",
+    auth: "student",
+    run: async ({ caller, context }) => {
+      const { store, now } = context;
+      const id = caller.id;
+      const seats = await store.listSeatsForStudent(id);
+      const rows = await Promise.all(seats.map(async (seat) => {
+        const record = await store.getClass(seat.classCode);
+        if (!record || record.expiresAt <= now) return null;
+        const roster = await store.listRoster(seat.classCode);
+        const mine = roster.find((entry) => entry.seatCode === seat.seatCode);
+        // A student removed from a class does not see it. Their work stays for the teacher.
+        if (mine?.removedAt || mine?.studentId !== id) return null;
+        const checkpoints = await store.listCheckpoints(seat.classCode);
+        const submissions = await store.listSubmissions(seat.classCode);
+        const mySubmissions = submissions.filter((entry) => entry.seatCode === seat.seatCode);
+        // Every note this seat's work has drawn, oldest first, minus the ones the teacher took
+        // back. Oldest first because notes about one attempt are written as a sequence — "and
+        // check Week 5" is unreadable printed above the note it was written after — and because
+        // a student who has already read the first two should find the new one where new things
+        // go. It used to be one note: the newest, because the store only ever kept one.
+        const feedback = (await store.listFeedback(seat.classCode))
+          .filter((entry) => entry.seatCode === seat.seatCode && !entry.deletedAt)
+          .sort((a, b) => a.at - b.at);
+        const checkpoint = checkpoints.find((entry) => entry.seatCode === seat.seatCode);
+        return {
+          classCode: record.code,
+          label: record.label,
+          seatCode: seat.seatCode,
+          displayName: mine.displayName,
+          assignments: await store.listAssignments(seat.classCode),
+          // Only the position, never the payload: a home screen does not need an attempt, it
+          // needs to know there is one.
+          inProgress: checkpoint && !checkpoint.submittedAt
+            ? { worldId: checkpoint.worldId, stage: checkpoint.stage, updatedAt: checkpoint.updatedAt }
+            : null,
+          completed: mySubmissions.map((entry) => ({
+            sessionId: entry.sessionId,
+            submittedAt: entry.submittedAt,
+            worldId: entry.log[0]?.worldId ?? null,
+          })),
+          feedback: feedback.map((entry) => ({
+            id: entry.id,
+            body: entry.body,
+            at: entry.at,
+            sessionId: entry.sessionId,
+            ...(entry.editedAt ? { editedAt: entry.editedAt } : {}),
+          })),
+        };
+      }));
+      return { status: 200, body: { classes: rows.filter((row) => row !== null) } };
+    },
+  },
 
   // -- GET /me/runs/:sessionId — a student reading back their own finished run. --
   //
@@ -511,235 +816,255 @@ export async function handleIdentityRequest(
   //
   // It is theirs and only theirs: the seat is resolved from the session, so a caller who does
   // not hold the seat a run was filed under gets a 404 rather than somebody else's work.
-  if (request.method === "GET" && head === "me" && second === "runs" && third) {
-    const caller = await callerOf(request.headers, context);
-    if (caller?.kind !== "student") return identityFail(401, "no_session");
-    for (const held of await store.listSeatsForStudent(caller.id)) {
-      const seat = await seatOf(store, caller.id, held.classCode);
-      if (!seat) continue;
-      const record = await store.getClass(held.classCode);
-      if (!record || record.expiresAt <= now) continue;
-      const mine = (await store.listSubmissions(held.classCode))
-        .find((entry) => entry.sessionId === third && entry.seatCode === seat.seatCode);
-      if (!mine) continue;
-      return {
-        status: 200,
-        body: {
-          sessionId: mine.sessionId,
-          classCode: held.classCode,
-          label: record.label,
-          seatCode: seat.seatCode,
-          submittedAt: mine.submittedAt,
-          log: mine.log,
-        },
-      };
-    }
-    return identityFail(404, "seat_not_found");
-  }
+  {
+    method: "GET",
+    path: "me/runs/:sessionId",
+    auth: "student",
+    run: async ({ caller, context, params }) => {
+      const { store, now } = context;
+      const id = caller.id;
+      for (const held of await store.listSeatsForStudent(id)) {
+        const seat = await seatOf(store, id, held.classCode);
+        if (!seat) continue;
+        const record = await store.getClass(held.classCode);
+        if (!record || record.expiresAt <= now) continue;
+        const mine = (await store.listSubmissions(held.classCode))
+          .find((entry) => entry.sessionId === params.sessionId && entry.seatCode === seat.seatCode);
+        if (!mine) continue;
+        return {
+          status: 200,
+          body: {
+            sessionId: mine.sessionId,
+            classCode: held.classCode,
+            label: record.label,
+            seatCode: seat.seatCode,
+            submittedAt: mine.submittedAt,
+            log: mine.log,
+          },
+        };
+      }
+      return identityFail(404, "seat_not_found");
+    },
+  },
 
   // -- PUT /me/attempt — the checkpoint that makes an unfinished run a real thing. --
-  if (request.method === "PUT" && head === "me" && second === "attempt") {
-    const caller = await callerOf(request.headers, context);
-    if (caller?.kind !== "student") return identityFail(401, "no_session");
-    const classCode = typeof request.body.classCode === "string" ? request.body.classCode.toUpperCase() : "";
-    const seat = await seatOf(store, caller.id, classCode);
-    if (!seat) return identityFail(403, "no_session");
-    const worldId = typeof request.body.worldId === "string" ? request.body.worldId : "";
-    const stage = typeof request.body.stage === "string" ? request.body.stage.slice(0, 60) : "";
-    if (!worldId || !stage) return { status: 400, body: { error: "bad_request", message: "A checkpoint needs a world and a stage." } };
-    const existing = (await store.listCheckpoints(classCode)).find((entry) => entry.seatCode === seat.seatCode);
-    const sessionId = typeof request.body.sessionId === "string" ? request.body.sessionId.slice(0, 64) : "";
-    // A checkpoint never outranks a submission — the type has said so since it was written,
-    // and this rebuild dropped `submittedAt` on the floor, so the last checkpoint a student's
-    // browser sent on its way out of the turn-in screen brought a finished run back to life.
-    // Their own home then offered to carry on a run they had turned in, and their teacher's
-    // live board counted them as still working. The one case where it should genuinely clear
-    // is a *different* attempt: a student going again is not still in the one they finished.
-    const sameAttempt = !sessionId || !existing?.sessionId || existing.sessionId === sessionId;
-    const stillSubmitted = sameAttempt ? existing?.submittedAt : undefined;
+  {
+    method: "PUT",
+    path: "me/attempt",
+    auth: "student",
+    run: async ({ request, caller, context }) => {
+      const { store, now } = context;
+      const studentId = caller.id;
+      const classCode = typeof request.body.classCode === "string" ? request.body.classCode.toUpperCase() : "";
+      const seat = await seatOf(store, studentId, classCode);
+      if (!seat) return identityFail(403, "no_session");
+      // Counted per student and charged on every write, accepted or refused — see
+      // `CHECKPOINT_LIMIT`. It is charged before the payload is weighed and long before the two
+      // copies are read against each other, so a caller sending refusable requests spends their
+      // own budget rather than this service's time.
+      if (!withinRate(`attempt:${studentId}`, CHECKPOINT_LIMIT, CHECKPOINT_WINDOW_MS, now)) {
+        return {
+          status: 429,
+          body: {
+            error: "too_many_attempts",
+            message: "This is saving to your class more often than it needs to. Your work is safe on this device and it will save again in a minute.",
+          },
+        };
+      }
+      const bytes = checkpointBytes(request.body.payload);
+      if (bytes > MAX_CHECKPOINT_BYTES) {
+        return {
+          status: 413,
+          body: {
+            error: "bad_request",
+            message: "This attempt is too big to save to your class. Everything you have done is still on this device — shorten what you have written and it will save again.",
+          },
+        };
+      }
+      const worldId = typeof request.body.worldId === "string" ? request.body.worldId : "";
+      const stage = typeof request.body.stage === "string" ? request.body.stage.slice(0, 60) : "";
+      if (!worldId || !stage) return { status: 400, body: { error: "bad_request", message: "A checkpoint needs a world and a stage." } };
+      const existing = (await store.listCheckpoints(classCode)).find((entry) => entry.seatCode === seat.seatCode);
+      const sessionId = typeof request.body.sessionId === "string" ? request.body.sessionId.slice(0, 64) : "";
+      // A checkpoint never outranks a submission — the type has said so since it was written,
+      // and this rebuild dropped `submittedAt` on the floor, so the last checkpoint a student's
+      // browser sent on its way out of the turn-in screen brought a finished run back to life.
+      // Their own home then offered to carry on a run they had turned in, and their teacher's
+      // live board counted them as still working. The one case where it should genuinely clear
+      // is a *different* attempt: a student going again is not still in the one they finished.
+      const sameAttempt = !sessionId || !existing?.sessionId || existing.sessionId === sessionId;
+      const stillSubmitted = sameAttempt ? existing?.submittedAt : undefined;
 
-    // Two devices, one seat, and the only place both copies of the run are ever in hand.
-    //
-    // This used to store whatever arrived, which is last-writer-wins, and last-writer-wins
-    // between two devices that have parted is not a rule at all — it is a coin the child
-    // flips every time they reload. A verifier ran it: one seat on two machines, the bonuses
-    // counted in on one and left out on the other, both reloaded twice, and the two screens
-    // still disagreed at the end. Neither device could see it, either, because a page that is
-    // going away checkpoints on `pagehide` — so by the time the next load asked what the
-    // service held, the service was holding the copy that device had just sent it. Each
-    // machine compared itself against itself, found no disagreement, and went on showing its
-    // own plan. Whichever one the child finished on was the plan the teacher graded.
-    //
-    // `copyToKeep` reads the two evidence logs against each other — see `runCopies` for the
-    // whole argument — and keeps the copy that descends from the other, or, where they have
-    // genuinely forked, the one carrying the decision the child made most recently. What
-    // matters as much as which copy wins is that the answer does not depend on **which order
-    // the two arrived in**: once both devices have checkpointed, the service holds the same
-    // copy whoever wrote last, so a reload cannot flip it and the two machines converge. The
-    // device that lost is told, by `ResumeGate`, on the machine it can be acted on.
-    //
-    // A checkpoint that loses is not an error and is not reported as one. Nothing was lost:
-    // the losing copy is still on its own device, and the moment that device is used again it
-    // produces a later decision and takes the run back — which is the property this has to
-    // have, because the child is sitting at one of these machines and it must be that one.
-    const keep = copyToKeep(asRunCopy(request.body.payload), asRunCopy(existing?.payload));
-    if (keep === "stored" && existing) return { status: 200, body: { savedAt: existing.updatedAt } };
+      // Two devices, one seat, and the only place both copies of the run are ever in hand.
+      //
+      // This used to store whatever arrived, which is last-writer-wins, and last-writer-wins
+      // between two devices that have parted is not a rule at all — it is a coin the child
+      // flips every time they reload. A verifier ran it: one seat on two machines, the bonuses
+      // counted in on one and left out on the other, both reloaded twice, and the two screens
+      // still disagreed at the end. Neither device could see it, either, because a page that is
+      // going away checkpoints on `pagehide` — so by the time the next load asked what the
+      // service held, the service was holding the copy that device had just sent it. Each
+      // machine compared itself against itself, found no disagreement, and went on showing its
+      // own plan. Whichever one the child finished on was the plan the teacher graded.
+      //
+      // `copyToKeep` reads the two evidence logs against each other — see `runCopies` for the
+      // whole argument — and keeps the copy that descends from the other, or, where they have
+      // genuinely forked, the one carrying the decision the child made most recently. What
+      // matters as much as which copy wins is that the answer does not depend on **which order
+      // the two arrived in**: once both devices have checkpointed, the service holds the same
+      // copy whoever wrote last, so a reload cannot flip it and the two machines converge. The
+      // device that lost is told, by `ResumeGate`, on the machine it can be acted on.
+      //
+      // A checkpoint that loses is not an error and is not reported as one. Nothing was lost:
+      // the losing copy is still on its own device, and the moment that device is used again it
+      // produces a later decision and takes the run back — which is the property this has to
+      // have, because the child is sitting at one of these machines and it must be that one.
+      const keep = copyToKeep(asRunCopy(request.body.payload), asRunCopy(existing?.payload));
+      if (keep === "stored" && existing) return { status: 200, body: { savedAt: existing.updatedAt } };
 
-    const checkpoint: AttemptCheckpoint = {
-      classCode,
-      seatCode: seat.seatCode,
-      studentId: caller.id,
-      assignmentId: typeof request.body.assignmentId === "string" ? request.body.assignmentId.slice(0, 64) : "",
-      worldId: worldId as AttemptCheckpoint["worldId"],
-      stage,
-      startedAt: sameAttempt ? existing?.startedAt ?? now : now,
-      updatedAt: now,
-      ...(sessionId ? { sessionId } : {}),
-      ...(stillSubmitted ? { submittedAt: stillSubmitted } : {}),
-      payload: request.body.payload ?? null,
-    };
-    await store.putCheckpoint(checkpoint);
-    return { status: 200, body: { savedAt: now } };
-  }
+      const checkpoint: AttemptCheckpoint = {
+        classCode,
+        seatCode: seat.seatCode,
+        studentId,
+        assignmentId: typeof request.body.assignmentId === "string" ? request.body.assignmentId.slice(0, 64) : "",
+        worldId: worldId as AttemptCheckpoint["worldId"],
+        stage,
+        startedAt: sameAttempt ? existing?.startedAt ?? now : now,
+        updatedAt: now,
+        ...(sessionId ? { sessionId } : {}),
+        ...(stillSubmitted ? { submittedAt: stillSubmitted } : {}),
+        payload: request.body.payload ?? null,
+      };
+      await store.putCheckpoint(checkpoint);
+      return { status: 200, body: { savedAt: now } };
+    },
+  },
 
   // -- GET /me/attempt?classCode= — picking a run back up, on any device. --
-  if (request.method === "GET" && head === "me" && second === "attempt") {
-    const caller = await callerOf(request.headers, context);
-    if (caller?.kind !== "student") return identityFail(401, "no_session");
-    const classCode = (request.query.get("classCode") ?? "").toUpperCase();
-    if (!classCode) return { status: 400, body: { error: "bad_request", message: "Say which class." } };
-    const seat = await seatOf(store, caller.id, classCode);
-    if (!seat) return identityFail(403, "no_session");
-    const checkpoint = (await store.listCheckpoints(classCode)).find((entry) => entry.seatCode === seat.seatCode);
-    return { status: 200, body: { attempt: checkpoint && !checkpoint.submittedAt ? checkpoint : null, seatCode: seat.seatCode } };
-  }
-
-  if (head !== "classes" || !second) return null;
-  // Every "no class with that code" answer this file gives, charged once and shaped once.
-  const classMiss = (): ApiResponse => (chargeCodeMiss(clientId, now)
-    ? { status: 404, body: { error: "class_not_found", message: "No class with that code." } }
-    : { status: 429, body: { error: "unavailable", message: "Too many class codes tried from here just now. Wait a minute and try again." } });
-  // The same check the class service makes at its own door, with the same answer.
-  //
-  // This was `second.toUpperCase()` and nothing else, and relied on the store's `segment()`
-  // throwing on anything that cannot be part of a filename. That is fail-closed — no path is
-  // built and nothing is touched — but the throw surfaces as the transport's 503, so an
-  // unauthenticated caller sending `%00` in a class code got "the class service is not
-  // reachable right now" over a request that was simply malformed. An operator reading that
-  // goes looking for a broken deployment, and the two routers disagreed about the same string.
-  //
-  // A 404 rather than a 400 because a malformed code and a code nobody owns are the same
-  // event to the person who typed it, and telling an enumerator that their guess was the
-  // wrong *shape* is a hint the class service already declines to give.
-  if (!isWellFormedClassCode(second)) {
-    return classMiss();
-  }
-  // Normalised, not upper-cased, so this file looks up the string the class service would have
-  // looked up: a code read off a whiteboard as `0` for `Q` reaches the same class from both.
-  const code = normaliseClassCode(second);
+  {
+    method: "GET",
+    path: "me/attempt",
+    auth: "student",
+    run: async ({ request, caller, context }) => {
+      const { store } = context;
+      const classCode = (request.query.get("classCode") ?? "").toUpperCase();
+      if (!classCode) return { status: 400, body: { error: "bad_request", message: "Say which class." } };
+      const seat = await seatOf(store, caller.id, classCode);
+      if (!seat) return identityFail(403, "no_session");
+      const checkpoint = (await store.listCheckpoints(classCode)).find((entry) => entry.seatCode === seat.seatCode);
+      return { status: 200, body: { attempt: checkpoint && !checkpoint.submittedAt ? checkpoint : null, seatCode: seat.seatCode } };
+    },
+  },
 
   // -- GET /classes/:code/roster — the list a student picks their own name off. --
-  if (request.method === "GET" && third === "roster" && !fourth) {
-    const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return classMiss();
-    const caller = await callerOf(request.headers, context);
-    const roster = await store.listRoster(code);
-    // A teacher sees the whole row, including who has signed in and who has not. Everybody
-    // else sees the two fields a student needs to find themselves.
-    if (opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
-      return {
-        status: 200,
-        body: {
-          roster: roster.map((entry) => ({
-            seatCode: entry.seatCode,
-            displayName: entry.displayName,
-            claimed: entry.studentId !== null,
-            claimedAt: entry.claimedAt ?? null,
-            removedAt: entry.removedAt ?? null,
-          })),
-          joinMode: joinModeOf(record, roster),
-        },
-      };
-    }
-    // Everybody else gets the two facts a student needs to get in, and no names.
-    //
-    // This used to answer any five-character code with the whole class list. A class code is
-    // written on a whiteboard, read aloud across a room, photographed and typed into group
-    // chats — so that published a roster of children's first names, and the class label, to
-    // anyone who had ever been in the room or seen a picture of one. The product did not need
-    // it: a card is the proof of who somebody is, and one card resolves to exactly one name.
-    return { status: 200, body: { label: record.label, joinMode: joinModeOf(record, roster) } satisfies ClassDoor };
-  }
+  //
+  // The only route in this file that shows one thing to a teacher and another to everybody
+  // else, so it is declared at the door a student stands at and asks `opensClass` itself for
+  // the half that is not.
+  {
+    method: "GET",
+    path: "classes/:code/roster",
+    auth: "classDoor",
+    run: async ({ context, record, code, opensThisClass }) => {
+      const { store } = context;
+      const roster = await store.listRoster(code);
+      // A teacher sees the whole row, including who has signed in and who has not. Everybody
+      // else sees the two fields a student needs to find themselves.
+      if (opensThisClass) {
+        return {
+          status: 200,
+          body: {
+            roster: roster.map((entry) => ({
+              seatCode: entry.seatCode,
+              displayName: entry.displayName,
+              claimed: entry.studentId !== null,
+              claimedAt: entry.claimedAt ?? null,
+              removedAt: entry.removedAt ?? null,
+            })),
+            joinMode: joinModeOf(record, roster),
+          },
+        };
+      }
+      // Everybody else gets the two facts a student needs to get in, and no names.
+      //
+      // This used to answer any five-character code with the whole class list. A class code is
+      // written on a whiteboard, read aloud across a room, photographed and typed into group
+      // chats — so that published a roster of children's first names, and the class label, to
+      // anyone who had ever been in the room or seen a picture of one. The product did not need
+      // it: a card is the proof of who somebody is, and one card resolves to exactly one name.
+      return { status: 200, body: { label: record.label, joinMode: joinModeOf(record, roster) } satisfies ClassDoor };
+    },
+  },
 
   // -- POST /classes/:code/roster — a teacher pastes their class list and gets cards back. --
-  if (request.method === "POST" && third === "roster" && !fourth) {
-    const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return classMiss();
-    const caller = await callerOf(request.headers, context);
-    if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
-      return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
-    }
-    const names = Array.isArray(request.body.names) ? request.body.names : [];
-    const cleaned = names.map(cleanDisplayName).filter((name): name is string => name !== null);
-    if (cleaned.length === 0) return { status: 400, body: { error: "bad_request", message: "Give at least one name." } };
-    const existing = await store.listRoster(code);
-    if (existing.filter((entry) => !entry.removedAt).length + cleaned.length > MAX_ROSTER_SIZE) {
-      return identityFail(400, "roster_full");
-    }
-    // Pasting a class list is what makes this a roster class, and it is recorded on the class
-    // rather than inferred from the rows — so removing every name later does not reopen the
-    // door to whoever was just taken off the list.
-    if (record.joinMode !== "roster") await store.putClass({ ...record, joinMode: "roster" });
-    const cards: JoinCard[] = [];
-    let roster = existing;
-    for (const displayName of cleaned) {
-      const seatCode = nextSeat(roster);
-      if (!seatCode) return identityFail(400, "roster_full");
-      const joinCode = generateJoinCode(random);
-      const entry: StoredRosterEntry = {
-        id: newId("r"),
-        classCode: code,
-        seatCode,
-        displayName,
-        studentId: null,
-        addedAt: now,
-        joinCodeHash: await hashSecret(joinCode),
-        joinCodeIndex: lookupIndex(await store.sessionSecret(), joinCode),
-      };
-      await store.putRosterEntry(entry);
-      roster = [...roster, entry];
-      cards.push({ seatCode, displayName, joinCode });
-    }
-    return { status: 201, body: { cards } };
-  }
+  {
+    method: "POST",
+    path: "classes/:code/roster",
+    auth: "classOwner",
+    run: async ({ request, context, record, code }) => {
+      const { store, now, random } = context;
+      const names = Array.isArray(request.body.names) ? request.body.names : [];
+      const cleaned = names.map(cleanDisplayName).filter((name): name is string => name !== null);
+      if (cleaned.length === 0) return { status: 400, body: { error: "bad_request", message: "Give at least one name." } };
+      const existing = await store.listRoster(code);
+      if (existing.filter((entry) => !entry.removedAt).length + cleaned.length > MAX_ROSTER_SIZE) {
+        return identityFail(400, "roster_full");
+      }
+      // Pasting a class list is what makes this a roster class, and it is recorded on the class
+      // rather than inferred from the rows — so removing every name later does not reopen the
+      // door to whoever was just taken off the list.
+      if (record.joinMode !== "roster") await store.putClass({ ...record, joinMode: "roster" });
+      const cards: JoinCard[] = [];
+      let roster = existing;
+      for (const displayName of cleaned) {
+        const seatCode = nextSeat(roster);
+        if (!seatCode) return identityFail(400, "roster_full");
+        const joinCode = generateJoinCode(random);
+        const entry: StoredRosterEntry = {
+          id: newId("r"),
+          classCode: code,
+          seatCode,
+          displayName,
+          studentId: null,
+          addedAt: now,
+          joinCodeHash: await hashSecret(joinCode),
+          joinCodeIndex: lookupIndex(await store.sessionSecret(), joinCode),
+        };
+        await store.putRosterEntry(entry);
+        roster = [...roster, entry];
+        cards.push({ seatCode, displayName, joinCode });
+      }
+      return { status: 201, body: { cards } };
+    },
+  },
 
   // -- POST /classes/:code/roster/:seat/code — reissuing a card a student has lost. --
-  if (request.method === "POST" && third === "roster" && fourth && request.segments[4] === "code") {
-    const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return classMiss();
-    const caller = await callerOf(request.headers, context);
-    if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
-      return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
-    }
-    const seatCode = normaliseSeatCode(fourth);
-    const entry = (await store.listRoster(code)).find((row) => row.seatCode === seatCode && !row.removedAt);
-    if (!entry) return identityFail(404, "seat_not_found");
-    const joinCode = generateJoinCode(random);
-    // The seat is released as well as re-coded. A reissue is what a teacher does when a
-    // student cannot get in, and half of those are a seat somebody else claimed by mistake.
-    if (entry.studentId) await store.unlinkSeatFromStudent(entry.studentId, { classCode: code, seatCode });
-    // The claim timestamp goes with the code it belonged to: a reissued card is a fresh
-    // seat, and a claimedAt from the student who lost it would read as this one signing in.
-    const rest = { ...entry };
-    delete rest.claimedAt;
-    await store.putRosterEntry({
-      ...rest,
-      studentId: null,
-      joinCodeHash: await hashSecret(joinCode),
-      joinCodeIndex: lookupIndex(await store.sessionSecret(), joinCode),
-    });
-    return { status: 200, body: { card: { seatCode, displayName: entry.displayName, joinCode } satisfies JoinCard } };
-  }
+  {
+    method: "POST",
+    path: "classes/:code/roster/:seat/code",
+    auth: "classOwner",
+    run: async ({ context, params, code }) => {
+      const { store, random } = context;
+      const seatCode = normaliseSeatCode(params.seat ?? "");
+      const entry = (await store.listRoster(code)).find((row) => row.seatCode === seatCode && !row.removedAt);
+      if (!entry) return identityFail(404, "seat_not_found");
+      const joinCode = generateJoinCode(random);
+      // The seat is released as well as re-coded. A reissue is what a teacher does when a
+      // student cannot get in, and half of those are a seat somebody else claimed by mistake.
+      if (entry.studentId) await store.unlinkSeatFromStudent(entry.studentId, { classCode: code, seatCode });
+      // The claim timestamp goes with the code it belonged to: a reissued card is a fresh
+      // seat, and a claimedAt from the student who lost it would read as this one signing in.
+      const rest = { ...entry };
+      delete rest.claimedAt;
+      await store.putRosterEntry({
+        ...rest,
+        studentId: null,
+        joinCodeHash: await hashSecret(joinCode),
+        joinCodeIndex: lookupIndex(await store.sessionSecret(), joinCode),
+      });
+      return { status: 200, body: { card: { seatCode, displayName: entry.displayName, joinCode } satisfies JoinCard } };
+    },
+  },
 
   // -- DELETE /classes/:code/roster/:seat?erase=1 — one child, gone, class intact. --
   //
@@ -753,149 +1078,217 @@ export async function handleIdentityRequest(
   // further, and it is asked for explicitly because it cannot be undone: the name, every
   // submission, every checkpoint, every note a teacher wrote to that child, and their place in
   // any share-out. The account behind the seat goes too when it holds no other seat.
-  if (request.method === "DELETE" && third === "roster" && fourth && request.query.get("erase") === "1") {
-    const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return classMiss();
-    const caller = await callerOf(request.headers, context);
-    if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
-      return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
-    }
-    const seatCode = normaliseSeatCode(fourth);
-    const entry = (await store.listRoster(code)).find((row) => row.seatCode === seatCode);
-    if (!entry) return identityFail(404, "seat_not_found");
-    await store.eraseSeat(code, seatCode);
-    return { status: 200, body: { seatCode, erasedAt: now } };
-  }
+  //
+  // **It has to be declared before the row below it**, because the two share a path and the
+  // first match wins. That is the one ordering dependency in this table and it is why `when`
+  // exists at all.
+  {
+    method: "DELETE",
+    path: "classes/:code/roster/:seat",
+    when: (request) => request.query.get("erase") === "1",
+    auth: "classOwner",
+    run: async ({ context, params, code }) => {
+      const { store, now } = context;
+      const seatCode = normaliseSeatCode(params.seat ?? "");
+      const entry = (await store.listRoster(code)).find((row) => row.seatCode === seatCode);
+      if (!entry) return identityFail(404, "seat_not_found");
+      await store.eraseSeat(code, seatCode);
+      return { status: 200, body: { seatCode, erasedAt: now } };
+    },
+  },
 
   // -- DELETE /classes/:code/roster/:seat — off the list, without deleting what they did. --
-  if (request.method === "DELETE" && third === "roster" && fourth) {
-    const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return classMiss();
-    const caller = await callerOf(request.headers, context);
-    if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
-      return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
-    }
-    const seatCode = normaliseSeatCode(fourth);
-    const entry = (await store.listRoster(code)).find((row) => row.seatCode === seatCode);
-    if (!entry) return identityFail(404, "seat_not_found");
-    if (entry.studentId) await store.unlinkSeatFromStudent(entry.studentId, { classCode: code, seatCode });
-    await store.putRosterEntry({ ...entry, studentId: null, removedAt: now });
-    return { status: 200, body: { seatCode, removedAt: now } };
-  }
+  {
+    method: "DELETE",
+    path: "classes/:code/roster/:seat",
+    auth: "classOwner",
+    run: async ({ context, params, code }) => {
+      const { store, now } = context;
+      const seatCode = normaliseSeatCode(params.seat ?? "");
+      const entry = (await store.listRoster(code)).find((row) => row.seatCode === seatCode);
+      if (!entry) return identityFail(404, "seat_not_found");
+      if (entry.studentId) await store.unlinkSeatFromStudent(entry.studentId, { classCode: code, seatCode });
+      await store.putRosterEntry({ ...entry, studentId: null, removedAt: now });
+      return { status: 200, body: { seatCode, removedAt: now } };
+    },
+  },
 
   // -- POST /classes/:code/join — the fifteen seconds a student spends getting in. --
-  if (request.method === "POST" && third === "join") {
-    // Only wrong answers are counted.
-    //
-    // This window exists for one thing: a script grinding through five-character card codes.
-    // It used to charge every attempt, including the successful ones, at forty per ten minutes
-    // per class — and a class is a room that arrives at once, so thirty students signing in
-    // plus ten typos locked the rest of the room out of the lesson. A correct card is not
-    // evidence of an attack and no longer spends anything; a hundred and twenty wrong ones in
-    // ten minutes against one class is still nowhere near the code space.
-    const attempts = `join:${clientId}:${code}`;
-    if (!underRate(attempts, 120, JOIN_WINDOW_MS, now)) return identityFail(429, "too_many_attempts");
-    const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return classMiss();
-    const roster = await store.listRoster(code);
-    const live = roster.filter((entry) => !entry.removedAt);
-    // Asked once, in one plain question, and answered "shared" when nobody says otherwise.
-    // A cart Chromebook is the normal case in the rooms this runs in, and a session measured
-    // in weeks on one is how the next student ends up inside the last one's attempt.
-    const device: DeviceClass = request.body.device === "own" ? "own" : "shared";
-    const joinCode = typeof request.body.joinCode === "string" ? request.body.joinCode.trim().toUpperCase() : "";
-    const openClass = joinModeOf(record, roster) === "open";
+  {
+    method: "POST",
+    path: "classes/:code/join",
+    auth: "classDoor",
+    run: async ({ request, context, record, code }) => {
+      const { store, now, random, clientId } = context;
+      // Only wrong answers are counted.
+      //
+      // This window exists for one thing: a script grinding through five-character card codes.
+      // It used to charge every attempt, including the successful ones, at forty per ten minutes
+      // per class — and a class is a room that arrives at once, so thirty students signing in
+      // plus ten typos locked the rest of the room out of the lesson. A correct card is not
+      // evidence of an attack and no longer spends anything; a hundred and twenty wrong ones in
+      // ten minutes against one class is still nowhere near the code space.
+      const attempts = `join:${clientId}:${code}`;
+      if (!underRate(attempts, 120, JOIN_WINDOW_MS, now)) return identityFail(429, "too_many_attempts");
+      const roster = await store.listRoster(code);
+      const live = roster.filter((entry) => !entry.removedAt);
+      // Asked once, in one plain question, and answered "shared" when nobody says otherwise.
+      // A cart Chromebook is the normal case in the rooms this runs in, and a session measured
+      // in weeks on one is how the next student ends up inside the last one's attempt.
+      const device: DeviceClass = request.body.device === "own" ? "own" : "shared";
+      const joinCode = typeof request.body.joinCode === "string" ? request.body.joinCode.trim().toUpperCase() : "";
+      const openClass = joinModeOf(record, roster) === "open";
 
-    // A card, presented. This is the only way into a roster class, and it is also how a student
-    // in an open class comes back after signing out — so it is tried first either way.
-    if (joinCode) {
-      const entry = await seatForCard(store, live, joinCode);
-      if (!entry) {
-        // A card that is genuinely theirs, for a seat their teacher took off the list. Telling
-        // them "that did not match" sends a child off to re-check a code that is perfectly
-        // correct; it is also no disclosure, because anyone reading it has already presented a
-        // valid card and a removed seat cannot be signed into. Everything else is one answer.
-        const removed = await seatForCard(store, roster.filter((row) => row.removedAt), joinCode);
-        spendRate(attempts, JOIN_WINDOW_MS, now);
-        return removed ? identityFail(403, "seat_removed") : identityFail(401, "bad_credentials");
+      // A card, presented. This is the only way into a roster class, and it is also how a student
+      // in an open class comes back after signing out — so it is tried first either way.
+      if (joinCode) {
+        const entry = await seatForCard(store, live, joinCode);
+        if (!entry) {
+          // A card that is genuinely theirs, for a seat their teacher took off the list. Telling
+          // them "that did not match" sends a child off to re-check a code that is perfectly
+          // correct; it is also no disclosure, because anyone reading it has already presented a
+          // valid card and a removed seat cannot be signed into. Everything else is one answer.
+          const removed = await seatForCard(store, roster.filter((row) => row.removedAt), joinCode);
+          spendRate(attempts, JOIN_WINDOW_MS, now);
+          return removed ? identityFail(403, "seat_removed") : identityFail(401, "bad_credentials");
+        }
+        const claimed = await claim(store, entry, now);
+        return {
+          status: 200,
+          body: {
+            ...claimed,
+            token: await issue("student", claimed.studentId, claimed.generation, context, device),
+            classCode: code,
+            label: record.label,
+          },
+        };
       }
+
+      // No card. A roster class has nothing else to offer: every seat in it belongs to a name
+      // the teacher wrote, and a student without their card needs their teacher, not a form.
+      if (!openClass) {
+        spendRate(attempts, JOIN_WINDOW_MS, now);
+        return identityFail(401, "bad_credentials");
+      }
+
+      // Open join: no list, so the student writes the label themselves and is given a seat.
+      const displayName = cleanDisplayName(request.body.displayName);
+      if (!displayName) return { status: 400, body: { error: "bad_request", message: "Type what your teacher should see." } };
+      if (live.length >= MAX_ROSTER_SIZE) return identityFail(400, "roster_full");
+      const seatCode = nextSeat(roster);
+      if (!seatCode) return identityFail(400, "roster_full");
+      const issued = generateJoinCode(random);
+      const entry: StoredRosterEntry = {
+        id: newId("r"),
+        classCode: code,
+        seatCode,
+        displayName,
+        studentId: null,
+        addedAt: now,
+        joinCodeHash: await hashSecret(issued),
+        joinCodeIndex: lookupIndex(await store.sessionSecret(), issued),
+        // Written by the student, not by their teacher. It is what keeps this class open for the
+        // next student to type their own name into, rather than turning it into a roster class
+        // holding one name that is not theirs.
+        selfNamed: true,
+      };
+      await store.putRosterEntry(entry);
       const claimed = await claim(store, entry, now);
       return {
-        status: 200,
+        status: 201,
         body: {
           ...claimed,
           token: await issue("student", claimed.studentId, claimed.generation, context, device),
           classCode: code,
           label: record.label,
+          // Handed back once so a student who loses their session can get in again without
+          // finding their teacher. It is the same code a roster class prints on a card.
+          joinCode: issued,
         },
       };
-    }
-
-    // No card. A roster class has nothing else to offer: every seat in it belongs to a name
-    // the teacher wrote, and a student without their card needs their teacher, not a form.
-    if (!openClass) {
-      spendRate(attempts, JOIN_WINDOW_MS, now);
-      return identityFail(401, "bad_credentials");
-    }
-
-    // Open join: no list, so the student writes the label themselves and is given a seat.
-    const displayName = cleanDisplayName(request.body.displayName);
-    if (!displayName) return { status: 400, body: { error: "bad_request", message: "Type what your teacher should see." } };
-    if (live.length >= MAX_ROSTER_SIZE) return identityFail(400, "roster_full");
-    const seatCode = nextSeat(roster);
-    if (!seatCode) return identityFail(400, "roster_full");
-    const issued = generateJoinCode(random);
-    const entry: StoredRosterEntry = {
-      id: newId("r"),
-      classCode: code,
-      seatCode,
-      displayName,
-      studentId: null,
-      addedAt: now,
-      joinCodeHash: await hashSecret(issued),
-      joinCodeIndex: lookupIndex(await store.sessionSecret(), issued),
-      // Written by the student, not by their teacher. It is what keeps this class open for the
-      // next student to type their own name into, rather than turning it into a roster class
-      // holding one name that is not theirs.
-      selfNamed: true,
-    };
-    await store.putRosterEntry(entry);
-    const claimed = await claim(store, entry, now);
-    return {
-      status: 201,
-      body: {
-        ...claimed,
-        token: await issue("student", claimed.studentId, claimed.generation, context, device),
-        classCode: code,
-        label: record.label,
-        // Handed back once so a student who loses their session can get in again without
-        // finding their teacher. It is the same code a roster class prints on a card.
-        joinCode: issued,
-      },
-    };
-  }
+    },
+  },
 
   // -- POST /classes/:code/signout — the trolley control. --
-  if (request.method === "POST" && third === "signout") {
-    const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return classMiss();
-    const caller = await callerOf(request.headers, context);
-    if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
-      return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
-    }
-    // One button for the moment the Chromebooks go back on the cart with thirty sessions
-    // still open on them. It ends sessions; it touches no work and no roster row.
-    const roster = await store.listRoster(code);
-    let ended = 0;
-    for (const entry of roster) {
-      if (!entry.studentId) continue;
-      const student = await store.getStudent(entry.studentId);
-      if (!student) continue;
-      await store.putStudent({ ...student, sessionGeneration: (student.sessionGeneration ?? 0) + 1 });
-      ended += 1;
-    }
-    return { status: 200, body: { signedOut: ended } };
-  }
+  {
+    method: "POST",
+    path: "classes/:code/signout",
+    auth: "classOwner",
+    run: async ({ context, code }) => {
+      const { store } = context;
+      // One button for the moment the Chromebooks go back on the cart with thirty sessions
+      // still open on them. It ends sessions; it touches no work and no roster row.
+      const roster = await store.listRoster(code);
+      let ended = 0;
+      for (const entry of roster) {
+        if (!entry.studentId) continue;
+        const student = await store.getStudent(entry.studentId);
+        if (!student) continue;
+        await store.putStudent({ ...student, sessionGeneration: (student.sessionGeneration ?? 0) + 1 });
+        ended += 1;
+      }
+      return { status: 200, body: { signedOut: ended } };
+    },
+  },
+
+  // -- POST /classes/:code/key — a leaked teacher key replaced, with the class left standing. --
+  //
+  // The teacher key is a capability: twenty-four characters that open every child's name and
+  // every child's written explanation in one class for its whole hundred-and-twenty-day life.
+  // It travels in a query string, which means it is in the address bar of a machine that gets
+  // projected, in the history of a shared staffroom laptop, and in whatever a platform writes
+  // to an access log. `Referrer-Policy: same-origin` closes the leak path this product thought
+  // about and none of those.
+  //
+  // Until this route existed there was nothing to do about any of it. `PATCH /classes/:code`
+  // takes a label and nothing else, by explicit design, and a security review looked for a
+  // rotation route and found none — so **the only remedy for a leaked key was
+  // `DELETE /classes/:code`**, which destroys the children's work. A control whose price is the
+  // evidence it protects is a control nobody uses.
+  //
+  // Three things follow from replacing the key, and the response says all three because nothing
+  // else is going to:
+  //
+  //  - Every link carrying the old key stops opening this class. That is the point, and it
+  //    includes the teacher's own bookmarks and their own other browsers.
+  //  - Nothing a student did changes. The key is a credential compared in `opensClass` and
+  //    nothing else; no record is sealed with it, no seat, submission, checkpoint, note or
+  //    share-out mentions it. The class's own code, its roster and its evidence are untouched.
+  //  - The new key is handed back once here and lives at `GET /me/teaching` afterwards, which
+  //    is the same place a teacher signing in on a new laptop already gets it.
+  //
+  // **The account, not the key.** This is the one route in the file that will not accept the
+  // class's own key as proof, and the reason is that the key is the thing being replaced: a
+  // stranger reading it off a projector could otherwise use it to lock the teacher out of a
+  // term of their class's work, permanently, with no way back. So it needs the account that
+  // owns the class — and a class nobody has claimed is told to claim it, which is a sign-in
+  // and one button, rather than being refused with nothing to do next.
+  {
+    method: "POST",
+    path: "classes/:code/key",
+    auth: "classOwnerAccount",
+    run: async ({ context, record, code }) => {
+      const { store, now, random } = context;
+      // Generous, and per account rather than per address: replacing a key is a thing a person
+      // does once when something has gone wrong, and there is no reason for a signed-in teacher
+      // ever to reach this. It is here so that a stuck client cannot spin the key of a class
+      // its teacher is standing in front of.
+      if (!withinRate(`rekey:${record.teacherId ?? code}`, 20, 60 * 60 * 1000, now)) {
+        return identityFail(429, "too_many_attempts");
+      }
+      const teacherKey = generateTeacherKey(random);
+      await store.putClass({ ...record, teacherKey });
+      return {
+        status: 200,
+        body: {
+          code: record.code,
+          teacherKey,
+          replacedAt: now,
+          message: "This class has a new key. Any link or bookmark carrying the old one has stopped working, on every device including yours — open the class from My Classes to get the new link. Nothing your students have done has changed.",
+        },
+      };
+    },
+  },
 
   // -- POST /classes/:code/feedback — the half of the loop that was missing. --
   //
@@ -903,39 +1296,39 @@ export async function handleIdentityRequest(
   // a teacher wrote about a piece of work silently destroyed the first: two `201`s, one stored
   // record, and a student who read only the later one. What the teacher said first was never
   // read by anybody and did not exist anywhere afterwards.
-  if (request.method === "POST" && third === "feedback" && !fourth) {
-    const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return classMiss();
-    const caller = await callerOf(request.headers, context);
-    if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
-      return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
-    }
-    const seatCode = normaliseSeatCode(typeof request.body.seatCode === "string" ? request.body.seatCode : "");
-    const sessionId = typeof request.body.sessionId === "string" ? request.body.sessionId.slice(0, 64) : "";
-    if (!isWellFormedSeatCode(seatCode) || !sessionId) return { status: 400, body: { error: "bad_request", message: "Feedback needs a seat and an attempt." } };
-    const body = readFeedbackBody(request.body.body);
-    if (typeof body !== "string") return body;
-    // Feedback has to be attached to work that exists. A note on an attempt nobody made is a
-    // message, and this is not a messaging system.
-    const submissions = await store.listSubmissions(code);
-    if (!submissions.some((entry) => entry.seatCode === seatCode && entry.sessionId === sessionId)) {
-      return { status: 404, body: { error: "class_not_found", message: "No attempt from that seat." } };
-    }
-    const already = (await store.listFeedback(code))
-      .filter((entry) => entry.seatCode === seatCode && entry.sessionId === sessionId && !entry.deletedAt);
-    if (already.length >= MAX_FEEDBACK_NOTES) {
-      return {
-        status: 409,
-        body: {
-          error: "bad_request",
-          message: `There are already ${MAX_FEEDBACK_NOTES} notes on this attempt. Edit one instead of adding another.`,
-        },
-      };
-    }
-    const note = { id: newId("f"), classCode: code, seatCode, sessionId, body, at: now, flagged: request.body.flagged === true };
-    await store.putFeedback(note);
-    return { status: 201, body: { id: note.id, seatCode, sessionId, at: now } };
-  }
+  {
+    method: "POST",
+    path: "classes/:code/feedback",
+    auth: "classOwner",
+    run: async ({ request, context, code }) => {
+      const { store, now } = context;
+      const seatCode = normaliseSeatCode(typeof request.body.seatCode === "string" ? request.body.seatCode : "");
+      const sessionId = typeof request.body.sessionId === "string" ? request.body.sessionId.slice(0, 64) : "";
+      if (!isWellFormedSeatCode(seatCode) || !sessionId) return { status: 400, body: { error: "bad_request", message: "Feedback needs a seat and an attempt." } };
+      const body = readFeedbackBody(request.body.body);
+      if (typeof body !== "string") return body;
+      // Feedback has to be attached to work that exists. A note on an attempt nobody made is a
+      // message, and this is not a messaging system.
+      const submissions = await store.listSubmissions(code);
+      if (!submissions.some((entry) => entry.seatCode === seatCode && entry.sessionId === sessionId)) {
+        return { status: 404, body: { error: "class_not_found", message: "No attempt from that seat." } };
+      }
+      const already = (await store.listFeedback(code))
+        .filter((entry) => entry.seatCode === seatCode && entry.sessionId === sessionId && !entry.deletedAt);
+      if (already.length >= MAX_FEEDBACK_NOTES) {
+        return {
+          status: 409,
+          body: {
+            error: "bad_request",
+            message: `There are already ${MAX_FEEDBACK_NOTES} notes on this attempt. Edit one instead of adding another.`,
+          },
+        };
+      }
+      const note = { id: newId("f"), classCode: code, seatCode, sessionId, body, at: now, flagged: request.body.flagged === true };
+      await store.putFeedback(note);
+      return { status: 201, body: { id: note.id, seatCode, sessionId, at: now } };
+    },
+  },
 
   // -- PATCH/DELETE /classes/:code/feedback/:id — the teacher who mistyped. --
   //
@@ -947,53 +1340,189 @@ export async function handleIdentityRequest(
   // moment — which is the whole point of being able to take one back — and the teacher keeps
   // the row, exactly as removing a student from a roster keeps what that student did. A
   // teacher who takes back the wrong sentence has to be able to see what they took back.
-  if ((request.method === "PATCH" || request.method === "DELETE") && third === "feedback" && fourth) {
-    const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return classMiss();
-    const caller = await callerOf(request.headers, context);
-    if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
-      return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
-    }
-    const existing = (await store.listFeedback(code)).find((entry) => entry.id === fourth);
-    if (!existing) return { status: 404, body: { error: "class_not_found", message: "No note with that id." } };
-    if (request.method === "DELETE") {
+  {
+    method: "PATCH",
+    path: "classes/:code/feedback/:id",
+    auth: "classOwner",
+    run: async ({ request, context, params, code }) => {
+      const { store, now } = context;
+      const existing = (await store.listFeedback(code)).find((entry) => entry.id === params.id);
+      if (!existing) return { status: 404, body: { error: "class_not_found", message: "No note with that id." } };
+      if (existing.deletedAt) {
+        return { status: 409, body: { error: "bad_request", message: "That note was taken back. Write a new one." } };
+      }
+      const body = readFeedbackBody(request.body.body);
+      if (typeof body !== "string") return body;
+      const flagged = typeof request.body.flagged === "boolean" ? request.body.flagged : existing.flagged;
+      await store.putFeedback({ ...existing, body, flagged, editedAt: now });
+      return { status: 200, body: { id: existing.id, at: existing.at, editedAt: now } };
+    },
+  },
+
+  {
+    method: "DELETE",
+    path: "classes/:code/feedback/:id",
+    auth: "classOwner",
+    run: async ({ context, params, code }) => {
+      const { store, now } = context;
+      const existing = (await store.listFeedback(code)).find((entry) => entry.id === params.id);
+      if (!existing) return { status: 404, body: { error: "class_not_found", message: "No note with that id." } };
       if (existing.deletedAt) return { status: 200, body: { id: existing.id, deletedAt: existing.deletedAt } };
       await store.putFeedback({ ...existing, deletedAt: now });
       return { status: 200, body: { id: existing.id, deletedAt: now } };
-    }
-    if (existing.deletedAt) {
-      return { status: 409, body: { error: "bad_request", message: "That note was taken back. Write a new one." } };
-    }
-    const body = readFeedbackBody(request.body.body);
-    if (typeof body !== "string") return body;
-    const flagged = typeof request.body.flagged === "boolean" ? request.body.flagged : existing.flagged;
-    await store.putFeedback({ ...existing, body, flagged, editedAt: now });
-    return { status: 200, body: { id: existing.id, at: existing.at, editedAt: now } };
-  }
+    },
+  },
 
   // -- GET/PUT /classes/:code/shareout — what a teacher chose to put in front of the room. --
-  if (third === "shareout" && (request.method === "GET" || request.method === "PUT")) {
-    const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return classMiss();
-    const caller = await callerOf(request.headers, context);
-    if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
-      return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
+  {
+    method: "GET",
+    path: "classes/:code/shareout",
+    auth: "classOwner",
+    run: async ({ context, code }) => ({ status: 200, body: { selection: await context.store.getShareOut(code) } }),
+  },
+
+  {
+    method: "PUT",
+    path: "classes/:code/shareout",
+    auth: "classOwner",
+    run: async ({ request, context, code }) => {
+      const { store, now } = context;
+      const raw = Array.isArray(request.body.items) ? request.body.items : [];
+      const items: ShareOutItem[] = raw.slice(0, 8).flatMap((value, index) => {
+        const entry = value as Record<string, unknown>;
+        const sessionId = typeof entry.sessionId === "string" ? entry.sessionId.slice(0, 64) : "";
+        const seatCode = normaliseSeatCode(typeof entry.seatCode === "string" ? entry.seatCode : "");
+        if (!sessionId || !isWellFormedSeatCode(seatCode)) return [];
+        return [{ sessionId, seatCode, note: typeof entry.note === "string" ? entry.note.trim().slice(0, 200) : "", order: index }];
+      });
+      const selection: ShareOutSelection = { classCode: code, items, named: request.body.named === true, updatedAt: now };
+      await store.putShareOut(selection);
+      return { status: 200, body: { selection } };
+    },
+  },
+];
+
+/**
+ * The route this request names, with its `:name` segments read off, or nothing.
+ *
+ * Whole-path matching: a template of four segments matches a request of four segments and no
+ * other. The hand-written chain this replaced compared two or three of them and let a trailing
+ * segment through — `DELETE /classes/X/roster/5/anything` reached the route for
+ * `/classes/X/roster/5` — which is harmless here only because every one of those routes was
+ * gated. It is the kind of harmless that stops being harmless one route later.
+ */
+function matchPath(template: string, segments: readonly string[]): Record<string, string> | null {
+  const parts = template.split("/");
+  if (parts.length !== segments.length) return null;
+  const params: Record<string, string> = {};
+  for (let index = 0; index < parts.length; index += 1) {
+    const part = parts[index] ?? "";
+    const segment = segments[index] ?? "";
+    if (part.startsWith(":")) {
+      if (!segment) return null;
+      params[part.slice(1)] = segment;
+      continue;
     }
-    if (request.method === "GET") return { status: 200, body: { selection: await store.getShareOut(code) } };
-    const raw = Array.isArray(request.body.items) ? request.body.items : [];
-    const items: ShareOutItem[] = raw.slice(0, 8).flatMap((value, index) => {
-      const entry = value as Record<string, unknown>;
-      const sessionId = typeof entry.sessionId === "string" ? entry.sessionId.slice(0, 64) : "";
-      const seatCode = normaliseSeatCode(typeof entry.seatCode === "string" ? entry.seatCode : "");
-      if (!sessionId || !isWellFormedSeatCode(seatCode)) return [];
-      return [{ sessionId, seatCode, note: typeof entry.note === "string" ? entry.note.trim().slice(0, 200) : "", order: index }];
-    });
-    const selection: ShareOutSelection = { classCode: code, items, named: request.body.named === true, updatedAt: now };
-    await store.putShareOut(selection);
-    return { status: 200, body: { selection } };
+    if (part !== segment) return null;
+  }
+  return params;
+}
+
+/**
+ * The identity routes, or `null` when the path is somebody else's.
+ *
+ * Returning `null` rather than a 404 is what lets the class service keep owning `/classes`
+ * while this file owns the parts of it that need a person behind them: one router, two
+ * modules, and no path that both of them answer.
+ *
+ * **This function is the whole of the authorisation boundary for everything in the table
+ * above.** It was seven hundred and seventeen lines of `if` before, and inside it the same
+ * four-line preamble — find the class, refuse if it is gone, read the bearer token, refuse if
+ * it does not open this class — was written out by hand nine times. A security review added a
+ * tenth route the way a second engineer would, left the preamble out, and got a 200 carrying
+ * every child's name, their join-code hashes and the class's key to an unauthenticated caller,
+ * with `tsc`, `eslint` and a hundred and eighty tests all green. Nothing in the code said the
+ * preamble was compulsory; it was a habit, and habits are not a boundary.
+ *
+ * Now a route is a row in a table with an `auth` field that does not have a default, the
+ * preamble lives here and only here, and `authorisationBoundary.test.ts` reads the table back
+ * and fails on any ungated route that is not on an allow-list written out in the test.
+ */
+export async function handleIdentityRequest(
+  request: IdentityRequest,
+  context: IdentityContext,
+): Promise<ApiResponse | null> {
+  const { store, now, clientId } = context;
+  // Every "no class with that code" answer this file gives, charged once and shaped once.
+  const classMiss = (): ApiResponse => (chargeCodeMiss(clientId, now)
+    ? { status: 404, body: { error: "class_not_found", message: "No class with that code." } }
+    : { status: 429, body: { error: "unavailable", message: "Too many class codes tried from here just now. Wait a minute and try again." } });
+
+  let found: { route: IdentityRoute; params: Record<string, string> } | null = null;
+  for (const route of IDENTITY_ROUTES) {
+    if (route.method !== request.method) continue;
+    const params = matchPath(route.path, request.segments);
+    if (!params) continue;
+    if (route.when && !route.when(request)) continue;
+    found = { route, params };
+    break;
   }
 
-  return null;
+  if (!found) {
+    // A path under `/classes/:code` that this file does not own still gets the door check the
+    // class service makes at its own door, with the same answer, before it is handed on.
+    //
+    // This was `second.toUpperCase()` and nothing else, and relied on the store's `segment()`
+    // throwing on anything that cannot be part of a filename. That is fail-closed — no path is
+    // built and nothing is touched — but the throw surfaces as the transport's 503, so an
+    // unauthenticated caller sending `%00` in a class code got "the class service is not
+    // reachable right now" over a request that was simply malformed. An operator reading that
+    // goes looking for a broken deployment, and the two routers disagreed about the same string.
+    //
+    // A 404 rather than a 400 because a malformed code and a code nobody owns are the same
+    // event to the person who typed it, and telling an enumerator that their guess was the
+    // wrong *shape* is a hint the class service already declines to give.
+    const named = request.segments[0] === "classes" ? request.segments[1] : undefined;
+    if (named && !isWellFormedClassCode(named)) return classMiss();
+    return null;
+  }
+
+  const { route, params } = found;
+  const caller = await callerOf(request.headers, context);
+  const base: RouteContext = { request, context, caller, params };
+
+  if (isClassRoute(route)) {
+    if (!isWellFormedClassCode(params.code ?? "")) return classMiss();
+    // Normalised, not upper-cased, so this file looks up the string the class service would have
+    // looked up: a code read off a whiteboard as `0` for `Q` reaches the same class from both.
+    const code = normaliseClassCode(params.code ?? "");
+    const record = await store.getClass(code);
+    if (!record || record.expiresAt <= now) return classMiss();
+    const opensThisClass = opensClass(record, request.headers["x-bow-teacher-key"], caller);
+    if (route.auth === "classOwner" && !opensThisClass) return notThisClass();
+    if (route.auth === "classOwnerAccount") {
+      if (caller?.kind !== "teacher") return identityFail(401, "no_session");
+      if (!record.teacherId) {
+        return {
+          status: 409,
+          body: {
+            error: "not_authorised",
+            message: "No account holds this class yet. Claim it from My Classes first — then you can replace its key.",
+          },
+        };
+      }
+      if (record.teacherId !== caller.id) return notThisClass();
+    }
+    return route.run({ ...base, record, code, classMiss, opensThisClass });
+  }
+
+  if (isSignedInRoute(route)) {
+    if (!caller) return identityFail(401, "no_session");
+    if (route.auth !== "account" && caller.kind !== route.auth) return identityFail(401, "no_session");
+    return route.run({ ...base, caller });
+  }
+
+  return route.run(base);
 }
 
 /** Which seat this account holds in this class, or nothing. The check behind every /me route. */

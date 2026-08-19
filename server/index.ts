@@ -30,6 +30,41 @@ export function allowedOrigin(origin: string | undefined): string {
   return origin && allowed.includes(origin) ? origin : (allowed[0] ?? "null");
 }
 
+/**
+ * Every header this API answers with, written once for both doors.
+ *
+ * The student app and the API are served from the same origin in production; the dev server
+ * proxies. CORS stays permissive for the methods and headers this API actually uses and
+ * nothing else.
+ *
+ * The rest is defence in depth on an API that only ever answers JSON. React's escaping is what
+ * actually stops the stored names a reviewer planted from executing; these are what stop the
+ * next mistake. `nosniff` because a JSON body containing markup must never be rendered as one,
+ * `DENY` because nothing here belongs in a frame, `no-store` because a shared classroom
+ * machine's disk cache is not a place for a child's evidence, and `same-origin` so a teacher
+ * key in a query string does not travel in a Referer.
+ *
+ * **It is one function because it has already diverged once.** These four were on the
+ * self-hosted server for a while and the serverless path had none of them — the Vercel file's
+ * own comment records it — and the fix at the time was to copy the block rather than to share
+ * it, which leaves the same two copies to drift again. An engineering review counted this as
+ * one of three duplications in the security layer, beside the two copies of the rate limiter's
+ * address rule. The class-code limiter's comment says why: two copies of a security ceiling is
+ * how that one came to have a hole in it.
+ */
+export function apiHeaders(origin: string | undefined): Record<string, string> {
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin(origin),
+    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-BOW-Teacher-Key",
+    "Vary": "Origin",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "same-origin",
+    "Cache-Control": "no-store",
+  };
+}
+
 /** Bodies are one evidence log. Anything larger than this is not a student. */
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
 
@@ -55,24 +90,7 @@ export function createApiServer(store: ClassStore = storeFromEnvironment()) {
         return;
       }
 
-      // The student app and the API are served from the same origin in production; the
-      // dev server proxies. CORS stays permissive for methods and headers this API
-      // actually uses and nothing else.
-      const cors = {
-        "Access-Control-Allow-Origin": allowedOrigin(request.headers.origin),
-        "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization, X-BOW-Teacher-Key",
-        "Vary": "Origin",
-        // Defence in depth on an API that only ever answers JSON. React's escaping is what
-        // actually stops the stored names a reviewer planted from executing; these are what
-        // stop the next mistake. `nosniff` because a JSON body containing markup must never be
-        // rendered as one, `DENY` because nothing here belongs in a frame, and no-store because
-        // a shared classroom machine's disk cache is not a place for a child's evidence.
-        "X-Content-Type-Options": "nosniff",
-        "X-Frame-Options": "DENY",
-        "Referrer-Policy": "same-origin",
-        "Cache-Control": "no-store",
-      };
+      const cors = apiHeaders(request.headers.origin);
       if (request.method === "OPTIONS") {
         response.writeHead(204, cors);
         response.end();
@@ -95,7 +113,12 @@ export function createApiServer(store: ClassStore = storeFromEnvironment()) {
         headers: Object.fromEntries(
           Object.entries(request.headers).map(([name, value]) => [name.toLowerCase(), Array.isArray(value) ? value[0] : value]),
         ),
-        clientId: callerOf(request.headers["x-forwarded-for"], request.socket.remoteAddress),
+        // No `platformAddress`: a self-hosted deployment has no platform, so a header naming an
+        // address is a header a caller can write. The socket is what this process can see.
+        clientId: rateLimitAddress({
+          forwarded: request.headers["x-forwarded-for"],
+          ...(request.socket.remoteAddress ? { socketAddress: request.socket.remoteAddress } : {}),
+        }),
         ...(body !== undefined ? { body } : {}),
       };
 
@@ -140,7 +163,7 @@ export function createApiServer(store: ClassStore = storeFromEnvironment()) {
  * statement that something else is terminating TLS.
  */
 /**
- * Who the rate limiter is counting. Never stored, never logged, read in one place.
+ * Who the rate limiter is counting. Never stored, never logged, and now written once.
  *
  * `X-Forwarded-For` is a list a client can start. A proxy appends the address it saw to the
  * right-hand end, so the rightmost entry is the one written by the hop nearest this process
@@ -149,16 +172,48 @@ export function createApiServer(store: ClassStore = storeFromEnvironment()) {
  * a vendor review made three hundred wrong join-code guesses with a rotating first entry and
  * had none of them blocked, which turns every per-address limit in the product off.
  *
- * So `BOW_TRUST_PROXY` is now a count of the proxies actually in front of this process, and
- * the address is taken that many places in from the right. `1` — the value the old flag
- * used — still means the single proxy case and now means it correctly. Unset means there is
- * no proxy and the socket is the truth.
+ * So `BOW_TRUST_PROXY` is a count of the proxies actually in front of this process, and the
+ * address is taken that many places in from the right. `1` — the value the old flag used —
+ * still means the single proxy case and now means it correctly. Unset means there is no proxy
+ * and the socket is the truth.
+ *
+ * **Both doors call this.** There used to be a second copy in `api/[[...route]].ts`, under the
+ * same name, answering the same question by a different rule: it trusted `x-real-ip`
+ * unconditionally and then took the rightmost forwarded entry, and it never read
+ * `BOW_TRUST_PROXY` at all — so the one control that decides whether a per-address limit can
+ * be turned off by a header did nothing on the serverless path, and neither file imported the
+ * other. An engineering review counted three functions named `callerOf` in this codebase and
+ * observed that the class-code limiter's own comment already says why that is a mistake: two
+ * copies of a security ceiling is how that one came to have a hole in it.
+ *
+ * The transports differ in what they can honestly claim, and that is an argument rather than a
+ * second rule. The plain server has a socket and no idea what is in front of it, so it says
+ * nothing and defaults to no proxy. A serverless function is always behind the platform's own
+ * proxy and has no socket at all, so it says `hops: 1` and offers the header the platform
+ * writes rather than forwards — which is why `platformAddress` is a parameter and not a lookup:
+ * a header this function read for itself would be a header a self-hosted deployment trusted
+ * from a caller.
+ *
+ * The name is `rateLimitAddress` and not `callerOf` because `callerOf` in `server/identity.ts`
+ * answers a completely different question — which *account* is behind this bearer token — and
+ * is called twenty times. Two names for two questions.
  */
-export function callerOf(header: string | string[] | undefined, socketAddress?: string): string {
-  const hops = Number(process.env.BOW_TRUST_PROXY ?? 0);
-  const socket = socketAddress || "anonymous";
+export function rateLimitAddress(input: {
+  /** The `X-Forwarded-For` chain, exactly as it arrived. */
+  forwarded?: string | string[] | undefined;
+  /** A header the platform itself writes. Only passed by a transport that is behind one. */
+  platformAddress?: string | undefined;
+  /** The socket, where the transport has one. */
+  socketAddress?: string | undefined;
+  /** How many proxies are in front. Omitted means "read `BOW_TRUST_PROXY`, and none if unset". */
+  hops?: number;
+}): string {
+  const hops = input.hops ?? Number(process.env.BOW_TRUST_PROXY ?? 0);
+  const socket = input.socketAddress || "anonymous";
   if (!Number.isInteger(hops) || hops < 1) return socket;
-  const chain = String(Array.isArray(header) ? header[0] : header ?? "")
+  const platform = input.platformAddress?.trim();
+  if (platform) return platform;
+  const chain = String(Array.isArray(input.forwarded) ? input.forwarded[0] : input.forwarded ?? "")
     .split(",").map((entry) => entry.trim()).filter(Boolean);
   return chain[chain.length - hops] ?? socket;
 }

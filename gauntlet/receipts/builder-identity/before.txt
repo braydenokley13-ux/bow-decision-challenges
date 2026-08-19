@@ -1,0 +1,68 @@
+What the service did before any of this landed.
+
+Run against the tree at f1be2e3 ("Judge 6: postscript after reading the build history"), with the
+`file` store on a fresh BOW_CLASS_DIR, API on 127.0.0.1:4481. These are the four things judge 5
+found, reproduced by me before I changed a line — the transcripts are pasted exactly as they came
+out. The scripts that produced them are `repro-before.sh` (conditions 5 and 3) and
+`flood-before.sh` (condition 6); the condition 8 reproduction is the judge's own route, re-added.
+
+=== C5: teacher signs up, captures a token ===
+token captured: eyJzdWIiOiJ0XzYxOWVmNWEw...
+GET /me with it: 200
+
+=== C5: probing every plausible revocation route ===
+DELETE  /auth/teacher/session         -> 404
+DELETE  /auth/teacher/signout         -> 404
+DELETE  /me/signout                   -> 404
+DELETE  /auth/teacher/password        -> 404
+DELETE  /me/password                  -> 404
+DELETE  /auth/teacher/sessions        -> 404
+POST    /auth/teacher/session         -> 401
+POST    /auth/teacher/signout         -> 404
+POST    /me/signout                   -> 404
+POST    /auth/teacher/password        -> 404
+POST    /me/password                  -> 404
+POST    /auth/teacher/sessions        -> 404
+
+=== C5: one token hands back every class teacherKey ===
+class RRWMF key 3CATG6YJX4X7D3J6XQKFYWQQ
+{"classes":[{"code":"RRWMF","label":"Period 3","createdAt":...,"expiresAt":...,
+             "teacherKey":"3CATG6YJX4X7D3J6XQKFYWQQ"}]}
+
+=== C3: probing every plausible key-rotation route on class RRWMF ===
+POST   /classes/RRWMF/key          -> 404
+POST   /classes/RRWMF/rotate       -> 404
+POST   /classes/RRWMF/teacherKey   -> 404
+PUT    /classes/RRWMF/key          -> 404
+PUT    /classes/RRWMF/rotate       -> 404
+PUT    /classes/RRWMF/teacherKey   -> 404
+PATCH  /classes/RRWMF/key          -> 404
+PATCH  /classes/RRWMF/rotate       -> 404
+PATCH  /classes/RRWMF/teacherKey   -> 404
+PATCH /classes/RRWMF {teacherKey:...} -> {"code":"RRWMF","label":"Period 3"}   <-- accepted, ignored
+old key still opens the class: 200
+
+=== C6: the flood, from a class code alone ===
+open class: UM7XN (no roster, no teacher account)
+self-served 15 student sessions in 2134ms from the class code alone
+one request body: 3.5M
+200 200 200 200 200 200 200 200 200 200 200 200 200 200 200
+15 x 3.4MB checkpoints in 5996ms
+disk in the class directory: 69M
+--- and the rate limit, 30 requests from one student ---
+200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200 200
+
+=== C8: the judge's tenth route, re-added to handleIdentityRequest with no preamble ===
+npx tsc -b                  exit 0
+npx eslint server/          exit 0
+npx vitest run src/platform 14 files, 183 tests, all passed
+
+=== What one real checkpoint actually weighs, measured ===
+Driven through both worlds' own reducers to the end of a whole run
+(`runChallenge` with clinics, completion, outcome, reserved seat and a 1200-character defence;
+`runPopUp` with catering, rebate, a booked helper and six trays each Saturday):
+
+  basketball  stage=submitted        log=42  snapshots=5  payload=31,296 bytes  request=31,532
+  food-truck  stage=popup-submitted  log=35  snapshots=2  payload=18,378 bytes  request=18,620
+
+MAX_CHECKPOINT_BYTES is 262,144 — eight times the larger of those.

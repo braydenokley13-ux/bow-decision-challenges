@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
 import { handleApiRequest } from "../../../server/handler";
-import { callerOf } from "../../../server/index";
+import { rateLimitAddress } from "../../../server/index";
 import { fileStore, memoryStore, redisRestStore, storeFromEnvironment } from "../../../server/store";
 import { PLAN_UNDER_PRESSURE } from "../challenges/registry";
 import { buildSubmission } from "../../test/runChallenge";
@@ -264,7 +264,7 @@ describe("who the rate limiter counts", () => {
 
   it("ignores a forwarded chain when no proxy is configured", () => {
     delete process.env.BOW_TRUST_PROXY;
-    expect(callerOf(chain, "10.0.0.9")).toBe("10.0.0.9");
+    expect(rateLimitAddress({ forwarded: chain, socketAddress: "10.0.0.9" })).toBe("10.0.0.9");
   });
 
   it("takes the address the nearest trusted proxy wrote, not the one the caller typed", () => {
@@ -272,9 +272,9 @@ describe("who the rate limiter counts", () => {
     try {
       // `1.1.1.1` is whatever the caller put at the front. A vendor review rotated that value
       // through three hundred wrong join-code guesses and had none of them blocked.
-      expect(callerOf(chain, "10.0.0.9")).toBe("3.3.3.3");
+      expect(rateLimitAddress({ forwarded: chain, socketAddress: "10.0.0.9" })).toBe("3.3.3.3");
       process.env.BOW_TRUST_PROXY = "2";
-      expect(callerOf(chain, "10.0.0.9")).toBe("2.2.2.2");
+      expect(rateLimitAddress({ forwarded: chain, socketAddress: "10.0.0.9" })).toBe("2.2.2.2");
     } finally {
       delete process.env.BOW_TRUST_PROXY;
     }
@@ -283,7 +283,7 @@ describe("who the rate limiter counts", () => {
   it("falls back to the socket when the chain is shorter than the hops claimed", () => {
     process.env.BOW_TRUST_PROXY = "4";
     try {
-      expect(callerOf(chain, "10.0.0.9")).toBe("10.0.0.9");
+      expect(rateLimitAddress({ forwarded: chain, socketAddress: "10.0.0.9" })).toBe("10.0.0.9");
     } finally {
       delete process.env.BOW_TRUST_PROXY;
     }
