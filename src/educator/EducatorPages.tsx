@@ -156,7 +156,7 @@ function BriefAnswers() {
             `POP_UP_NUMBERS.nights[4]` gained a `told` band, so the fireworks Saturday is
             stated to the student as a range and lands inside it. The teacher who reads the
             old sentence and is asked "so is the last night a guess?" has been given the wrong
-            answer to a fairness question about their own assessment. `marketDemand.test.ts`
+            answer to a fairness question about their own assessment. `marketDemand.test.tsx`
             holds the count of stated nights against the numbers themselves. */}
         <div><dt>What do students do?</dt><dd>They handle the money in one of two {TERMS.stories}. Students pick, or everyone gets the season. <b>Eight Weeks to the Showcase</b>: a player’s season. They choose housing, build a plan, absorb a Week 5 loss and a new required cost, and repair it. <b>Run the Pop-Up</b>: four Saturdays at a night market. They take a booth, decide how much food to cook against the crowd it draws, and cover a generator that dies with the biggest night still ahead. Three crowds are printed before they order; the last is a range.</dd></div>
         {/* This row used to end "so a class where students chose differently still produces
@@ -170,7 +170,7 @@ function BriefAnswers() {
             one {TERMS.story} never asked cannot be divided by the whole class.
 
             A teacher who read the old sentence planned one discussion and found two
-            half-classes at 9:15. Both halves are pinned in `whatPools.test.ts`, from the
+            half-classes at 9:15. Both halves are pinned in `whatPools.test.tsx`, from the
             analysis layer rather than from this file. */}
         <div><dt>Do the two give me the same thing back?</dt><dd>Yes, on the {TERMS.skills}. Both {TERMS.stories} are judged against the same named parts of the work, so a class that chose differently still gets one set of {TERMS.skill} results. What the room decided comes back one {TERMS.story} at a time, each with its own count — plan the debrief as two groups.</dd></div>
         <div><dt>What do I get back?</dt><dd>For each student, what the evidence shows against each {TERMS.skill} — one line for each thing the work had to show, each traceable to the moment in their own run. Plus what the class decided, and one written explanation you read and score yourself. Counts for your gradebook come with it.</dd></div>
