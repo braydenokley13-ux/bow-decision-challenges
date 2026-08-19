@@ -24,7 +24,12 @@ const VIEW_FREE = {
 
 export default tseslint.config(
   // `scripts` holds standalone dev tooling that runs outside the app tsconfig.
-  { ignores: ["dist", "dist-server", ".bow-classes", "coverage", "playwright-report", "test-results", "screens", "scripts", ".scratch", "gauntlet", "eslint.config.js", "stylelint.config.js"] },
+  // `dist-*` rather than the two names that were listed: `.gitignore` has said `dist-*/` since
+  // the rekey build landed, and this list did not, so any build output under a new name — a
+  // reviewer's `dist-validity2`, an SSR bundle — became a parse error in a lint run that had
+  // nothing to do with them. The two lists are answering the same question and should not
+  // disagree about it.
+  { ignores: ["dist", "dist-*", ".bow-classes", "coverage", "playwright-report", "test-results", "screens", "scripts", ".scratch", "gauntlet", "eslint.config.js", "stylelint.config.js"] },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {

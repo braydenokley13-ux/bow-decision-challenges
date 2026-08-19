@@ -1,5 +1,5 @@
 import { dollars } from "../../../core/money";
-import { availableToPlan, orderCost, resolveSeason, sellCap, type PopUpChoices, type SeasonOutcome } from "./economy";
+import { availableToPlan, crowdOn, crowdTold, orderCost, resolveSeason, sellCap, serveCap, type PopUpChoices, type SeasonOutcome } from "./economy";
 import { POP_UP_LINES, type PopUpLineId, type PopUpNumbers, type SaturdayNumber, type SpotId } from "./types";
 
 /**
@@ -44,17 +44,34 @@ import { POP_UP_LINES, type PopUpLineId, type PopUpNumbers, type SaturdayNumber,
  * optimisation whose inputs are all printed before the first order — which is exactly what the
  * red team solved. Nothing here contradicts them.
  *
- * **Whether the printed crowds are a mistake:** no, and `types.ts` and `economy.ts` say why at
- * the point the numbers are declared. An evening that turns out colder than the last one is a
- * surprise; an evening you were told would be colder is a decision. This is an assessment as
- * well as a game, and the competencies it assesses are planning within money that is actually
- * there and repairing a plan when a cost changes — neither of which is forecasting demand.
- * Hiding the crowds would score a child's stocking partly on luck, break the replay a teacher
- * needs, and make this sweep impossible. The cost of the choice is real and is the red team's
- * finding: a student who wants to optimise *can*, with arithmetic, before the market opens.
- * The answer to that is not to hide the numbers. It is to make sure the ending never tells a
- * child there was one right answer measured in money — see `resolution.ts`, which now says
- * what its own comparisons are counted in.
+ * **Whether the printed crowds are a mistake:** three of them are not, and the fourth was.
+ *
+ * The defence of printing them is still the right one for Saturdays 1 to 3, and `types.ts` and
+ * `economy.ts` state it where the numbers are declared: an evening that turns out colder than
+ * the last one is a surprise, an evening you were told would be colder is a decision, and the
+ * competencies assessed here are planning within money that is actually there and repairing a
+ * plan when a cost changes — neither of which is forecasting demand.
+ *
+ * What that defence did **not** license was printing all four, and the argument that broke it
+ * is the other world's own design. Basketball's Week 5 is scripted, not rolled: it replays
+ * identically, it is swept identically, and no child is scored on luck — and the student is not
+ * told about it while building the plan it breaks. Determinism comes from *scripted*, not from
+ * *disclosed*. So the fireworks night is now stated as a band and resolves at a scripted figure
+ * inside it (`numbers.ts`), and everything this harness sweeps is worked out from that figure,
+ * unchanged: **the numbers in this report are the same numbers they were before the range
+ * existed.** The range changed what the student was told, and nothing about what replays.
+ *
+ * That leaves a second question this harness now has to answer, because the old one no longer
+ * covers it: is the band a decision, or decoration? A range that has one best answer across
+ * its whole width is a number wearing a costume, and it would be worse than the number — it
+ * would look like a question and mark like an answer key. `analyseLastSaturdayRange` below is
+ * that gate, and `balance.test.ts` fails the build if the band ever collapses to one order.
+ *
+ * The red team's finding about the other three nights stands and is deliberate: a student who
+ * wants to optimise Saturdays 1 to 3 *can*, with arithmetic, before the market opens. The
+ * answer to that is not to hide those numbers. It is that the ending must never tell a child
+ * there was one right answer measured in money — see `resolution.ts`, which says what its own
+ * comparisons are counted in.
  */
 
 export interface Strategy {
@@ -464,6 +481,218 @@ export function analyseBalance(n: PopUpNumbers): BalanceReport {
     dominatedSpots,
     bestPlansThatSpoil,
   };
+}
+
+/* ---------------------------------------------------------------------------
+   The second gate: is the stated range a decision, or decoration?
+   --------------------------------------------------------------------------- */
+
+/** One booth, one answer about Marisol, and what the fireworks band does to the order. */
+export interface RangeVerdict {
+  spotId: SpotId;
+  helper: boolean;
+  /** Plates the student is told the night could buy, after the window's own ceiling. */
+  told: { low: number; high: number };
+  /** Plates it actually buys. Scripted, and never shown before the order. */
+  realised: number;
+  /** The best tray order if the night comes in at the bottom of the band, and at the top. */
+  bestAtLow: number;
+  bestAtHigh: number;
+  /** The order that is best if you knew — which is the order this world used to print. */
+  bestAtRealised: number;
+  /** Orders that are the single best answer somewhere inside the band. */
+  liveOrders: number[];
+  /** What cooking for the top costs when the night comes in at the bottom. Money in the bin. */
+  costOfCookingHigh: number;
+  /** What cooking for the bottom forgoes when it comes in at the top. Plates never handed over. */
+  costOfCookingLow: number;
+}
+
+/** Three readings of a band a student could actually hold, and where each one is right. */
+export type BandReading = "cook for the bottom" | "cook for the middle" | "cook for the top";
+
+export interface RangeReport {
+  /** Saturdays the organiser states as a band rather than a figure. */
+  ranged: SaturdayNumber[];
+  verdicts: RangeVerdict[];
+  /**
+   * Runs where the band is wide enough to move the order by a whole tray. Only these are
+   * questions; the rest have had the band closed by the window, which is an answer.
+   */
+  facingARange: RangeVerdict[];
+  /** Bands the student's own window closed below a tray. Reported, not a fault — see below. */
+  handsClosed: RangeVerdict[];
+  /** Bands where one order is the best answer at every crowd inside them. A hidden number. */
+  collapsed: RangeVerdict[];
+  /** Bands where the realised night sits on an edge, so the band gives the figure away. */
+  edged: RangeVerdict[];
+  /** For each reading of the band, the runs where it happens to be the best order. */
+  readings: Record<BandReading, RangeVerdict[]>;
+  /** A reading that is the best order everywhere a band is faced — a rule to be taught, not a call. */
+  alwaysRightReadings: BandReading[];
+}
+
+/** One night's money for one order: what sells, less what the trays cost. */
+function nightNet(n: PopUpNumbers, trays: number, crowd: number, cap: number): number {
+  return Math.min(trays * n.platesPerTray, Math.min(crowd, cap)) * n.platePrice - trays * n.trayCost;
+}
+
+/**
+ * Whether the fireworks band asks a question, and what answering it wrong costs.
+ *
+ * This is not the simplex sweep above and does not replace it. That one asks whether any
+ * *option* is right whatever the student is trying to do, and it is unaffected by the range
+ * because it is worked out entirely from the realised night. This one asks the question the
+ * range itself creates: given only the band, is there still something to decide?
+ *
+ * The test is the one that matters to a child. Enumerate every order the truck could cook, and
+ * every crowd the organiser said was possible. If a single order is the best answer at every
+ * crowd in the band, the band is a number in a costume: a student who reasons carefully and a
+ * student who cooks the same thing every time land in the same place, and the beat measures
+ * nothing. If different crowds want different orders, the student has to weigh food in the bin
+ * against people turned away — which is what the other story asks at its own central beat, and
+ * what one shared rubric row was reading two different constructs of.
+ *
+ * The window's ceiling is folded in, because a range the student could not reach the top of is
+ * not a range they face. At the bridge gate alone, every crowd the fireworks could bring is
+ * more than one pair of hands can serve, so the band closes to a figure there and the decision
+ * moves to Marisol — which is a real answer, not a gap.
+ */
+export function analyseLastSaturdayRange(n: PopUpNumbers): RangeReport {
+  const saturday = n.saturdays;
+  const ranged = (Object.keys(n.nights) as unknown as SaturdayNumber[])
+    .map((key) => Number(key) as SaturdayNumber)
+    .filter((night) => n.nights[night].told !== undefined);
+  const verdicts: RangeVerdict[] = [];
+  for (const spotId of Object.keys(n.spots) as SpotId[]) {
+    for (const helper of [false, true]) {
+      const cap = serveCap(n, saturday, helper);
+      const band = crowdTold(n, spotId, saturday);
+      const told = { low: Math.min(band.low, cap), high: Math.min(band.high, cap) };
+      const realised = Math.min(crowdOn(n, spotId, saturday), cap);
+      // Every order worth cooking: up to a tray past the most that could ever sell.
+      const orders = Array.from({ length: Math.ceil(told.high / n.platesPerTray) + 2 }, (_, trays) => trays);
+      const bestAt = (crowd: number) => orders.reduce(
+        (top, trays) => (nightNet(n, trays, crowd, cap) > nightNet(n, top, crowd, cap) ? trays : top),
+        0,
+      );
+      const live = new Set<number>();
+      for (let crowd = told.low; crowd <= told.high; crowd += 1) live.add(bestAt(crowd));
+      const bestAtLow = bestAt(told.low);
+      const bestAtHigh = bestAt(told.high);
+      verdicts.push({
+        spotId,
+        helper,
+        told,
+        realised,
+        bestAtLow,
+        bestAtHigh,
+        bestAtRealised: bestAt(realised),
+        liveOrders: [...live].sort((a, b) => a - b),
+        costOfCookingHigh: nightNet(n, bestAtLow, told.low, cap) - nightNet(n, bestAtHigh, told.low, cap),
+        costOfCookingLow: nightNet(n, bestAtHigh, told.high, cap) - nightNet(n, bestAtLow, told.high, cap),
+      });
+    }
+  }
+  /**
+   * A band only asks something where it can move the order by a whole tray.
+   *
+   * The supplier sells by the tray, so a band three plates wide is a figure with a rounding
+   * error on it. Where the student's own window has closed the band to less than a tray — the
+   * bridge gate on your own, where every crowd the fireworks could bring is more than one pair
+   * of hands can serve — there is nothing to decide on the last night and the screen says so
+   * in as many words. That is a consequence of a decision they already made about Marisol, not
+   * a gap in this one, and folding it in with the real bands would let a genuinely collapsed
+   * band hide behind it.
+   */
+  const facesARange = (verdict: RangeVerdict) => verdict.told.high - verdict.told.low >= n.platesPerTray;
+  const facingARange = verdicts.filter(facesARange);
+  const bestAtCrowd = (verdict: RangeVerdict, crowd: number) => {
+    const cap = serveCap(n, saturday, verdict.helper);
+    const orders = Array.from({ length: Math.ceil(verdict.told.high / n.platesPerTray) + 2 }, (_, trays) => trays);
+    return orders.reduce((top, trays) => (nightNet(n, trays, crowd, cap) > nightNet(n, top, crowd, cap) ? trays : top), 0);
+  };
+  // What each reading of the band would have you cook, and whether it happens to be the order
+  // that was best. A student cannot check any of these against the night; the point is only
+  // that none of them is a rule the world quietly rewards everywhere.
+  const readingOrder: Record<BandReading, (verdict: RangeVerdict) => number> = {
+    "cook for the bottom": (verdict) => bestAtCrowd(verdict, verdict.told.low),
+    "cook for the middle": (verdict) => bestAtCrowd(verdict, Math.round((verdict.told.low + verdict.told.high) / 2)),
+    "cook for the top": (verdict) => bestAtCrowd(verdict, verdict.told.high),
+  };
+  const readings = Object.fromEntries(
+    (Object.keys(readingOrder) as BandReading[]).map((reading) => [
+      reading,
+      facingARange.filter((verdict) => readingOrder[reading](verdict) === verdict.bestAtRealised),
+    ]),
+  ) as Record<BandReading, RangeVerdict[]>;
+
+  return {
+    ranged,
+    verdicts,
+    facingARange,
+    handsClosed: verdicts.filter((verdict) => !facesARange(verdict)),
+    // A band with one live order is a number the student has to guess rather than a decision
+    // they have to make.
+    collapsed: facingARange.filter((verdict) => verdict.liveOrders.length < 2),
+    // A realised night sitting on an edge of the band tells a student where to aim without
+    // saying so, which is a printed number with extra steps.
+    edged: facingARange.filter((verdict) => verdict.realised <= verdict.told.low || verdict.realised >= verdict.told.high),
+    readings,
+    alwaysRightReadings: (Object.keys(readings) as BandReading[])
+      .filter((reading) => facingARange.length > 0 && readings[reading].length === facingARange.length),
+  };
+}
+
+export function formatRangeReport(report: RangeReport): string {
+  const lines: string[] = [];
+  lines.push(`Saturdays stated as a range: ${report.ranged.join(", ") || "none"}`);
+  lines.push("");
+  lines.push("What the band asks, booth by booth:");
+  lines.push(
+    "  " + "booth".padEnd(12) + "helper".padEnd(8) + "told".padEnd(10) + "lands".padEnd(7)
+    + "best low".padEnd(10) + "best high".padEnd(11) + "live orders".padEnd(14)
+    + "cook high, get low".padEnd(20) + "cook low, get high",
+  );
+  for (const verdict of report.verdicts) {
+    lines.push(
+      "  " + verdict.spotId.padEnd(12)
+      + String(verdict.helper).padEnd(8)
+      + `${verdict.told.low}-${verdict.told.high}`.padEnd(10)
+      + String(verdict.realised).padEnd(7)
+      + `${verdict.bestAtLow} trays`.padEnd(10)
+      + `${verdict.bestAtHigh} trays`.padEnd(11)
+      + verdict.liveOrders.join("/").padEnd(14)
+      + `-$${verdict.costOfCookingHigh}`.padEnd(20)
+      + `-$${verdict.costOfCookingLow}`,
+    );
+  }
+  lines.push("");
+  lines.push("Where each reading of the band happens to be the order that was best:");
+  for (const [reading, where] of Object.entries(report.readings)) {
+    lines.push(`  ${reading.padEnd(22)} ${where.length}/${report.facingARange.length}  ${
+      where.map((v) => `${v.spotId}${v.helper ? "+Marisol" : ""}`).join(", ") || "nowhere"}`);
+  }
+  if (report.handsClosed.length) {
+    lines.push("");
+    lines.push(`No band to decide inside — the window closed it, and the screen says so: ${
+      report.handsClosed.map((v) => `${v.spotId}/helper=${v.helper}`).join(", ")}`);
+  }
+  if (report.collapsed.length) {
+    lines.push("");
+    lines.push(`COLLAPSED BANDS (one order best at every crowd — a number in a costume): ${
+      report.collapsed.map((v) => `${v.spotId}/helper=${v.helper}`).join(", ")}`);
+  }
+  if (report.edged.length) {
+    lines.push("");
+    lines.push(`EDGED BANDS (the night lands on the edge, which gives the figure away): ${
+      report.edged.map((v) => `${v.spotId}/helper=${v.helper}`).join(", ")}`);
+  }
+  if (report.alwaysRightReadings.length) {
+    lines.push("");
+    lines.push(`ALWAYS-RIGHT READINGS (a rule to be taught, not a call to make): ${report.alwaysRightReadings.join(", ")}`);
+  }
+  return lines.join("\n");
 }
 
 export function formatBalanceReport(report: BalanceReport): string {

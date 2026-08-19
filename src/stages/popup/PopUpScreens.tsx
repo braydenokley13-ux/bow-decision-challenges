@@ -7,8 +7,8 @@ import { MarketBackdrop } from "../../components/story/MarketBackdrop";
 import { dollars, formatDollars } from "../../domain/core/money";
 import { POP_UP_SCENARIO } from "../../domain/scenario/worlds/food-truck";
 import {
-  cashToPlan, crowdOn, orderCost, owedUpFront, sellCap, serveCap, swapBill,
-  type SaturdayOutcome,
+  cashToPlan, crowdOn, crowdTold, orderCost, owedUpFront, sellCapTold, serveCap, swapBill,
+  type CrowdTold, type SaturdayOutcome,
 } from "../../domain/scenario/worlds/food-truck/economy";
 import { ledgerInputFor, ledgerOf, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
 import { costOfTipClaims, TIP_CLAIM_REASONS, tipClaims, type TipClaim } from "../../domain/scenario/worlds/food-truck/claims";
@@ -91,6 +91,19 @@ function PopUpSum({ sumId, copy, expected, onCorrect }: { sumId: PopUpSumId; cop
   );
 }
 
+/**
+ * What a night's crowd will take, drawn as a figure or as a band.
+ *
+ * Three of the four Saturdays are stated exactly; the fireworks night is a range, because the
+ * organiser does not know. The en dash rather than a hyphen because this is a range of
+ * numbers, and the two figures are never composed from fragments elsewhere — a screen that
+ * built "59" and "92" into a sentence in two places would print two different bands the first
+ * time one of them was re-priced.
+ */
+function crowdRead(told: CrowdTold): string {
+  return told.range ? `${told.low}–${told.high}` : String(told.low);
+}
+
 /** A figure the student has already worked out, read back where the next screen needs it. */
 function Settled({ label, amount }: { label: string; amount: number }) {
   return (
@@ -142,8 +155,13 @@ function TrayOrder({ saturday, nights, max, trays, onTrays, pricing = "settled",
   const covers: SaturdayNumber[] = nights === 2 ? [2, 3] : [saturday];
   const willTake = covers.map((night) => ({
     night,
-    plates: spot ? sellCap(N, spot, night, helper) : 0,
-    handsBound: spot ? serveCap(N, night, helper) < crowdOn(N, spot, night) : false,
+    // What the student was told, not what the night does. The two are the same figure on every
+    // Saturday but the last one, where the organiser states a band and this prints the band.
+    told: spot ? sellCapTold(N, spot, night, helper) : { low: 0, high: 0, range: false },
+    // A window that cannot hand over the top of what might turn up. Read off the told band
+    // rather than the realised night, because this note is a warning before the order and the
+    // student has not been shown the realised night.
+    handsBound: spot ? serveCap(N, night, helper) < crowdTold(N, spot, night).high : false,
   }));
   const cooked = trays * N.platesPerTray;
   return (
@@ -187,10 +205,14 @@ function TrayOrder({ saturday, nights, max, trays, onTrays, pricing = "settled",
         </p>
         <dl className="tray-order__facts">
           <div><dt>{COPY.saturday.cooked}</dt><dd>{cooked}</dd></div>
-          {willTake.map(({ night, plates }) => (
+          {willTake.map(({ night, told }) => (
             <div key={night}>
-              <dt>{nights === 2 ? `${COPY.settle.saturdayLabel} ${night} ${COPY.saturday.nightBuys}` : COPY.saturday.crowdWillBuy}</dt>
-              <dd>{plates}</dd>
+              <dt>
+                {nights === 2
+                  ? `${COPY.settle.saturdayLabel} ${night} ${COPY.saturday.nightBuys}`
+                  : told.range ? COPY.saturday.crowdMightBuy : COPY.saturday.crowdWillBuy}
+              </dt>
+              <dd>{crowdRead(told)}</dd>
             </div>
           ))}
           {pricing === "settled" && leaves && (
@@ -204,6 +226,21 @@ function TrayOrder({ saturday, nights, max, trays, onTrays, pricing = "settled",
         </dl>
         {willTake.some((night) => night.handsBound) && (
           <p className="tray-order__crowd">{serveCap(N, willTake[0]!.night, helper)} {COPY.saturday.capped}</p>
+        )}
+        {/* What the band means for the order, and only where there is a band to mean it. A
+            wider number printed without this is a market that has gone vague; with it, it is
+            a market asking the student to commit before anybody can know. Same class as the
+            note above, because it is the same kind of fact in the same voice.
+
+            A tray wide, not a plate wide, and the threshold is the supplier's own tray. The
+            band can be closed from above by the student's own window — one pair of hands at
+            the middle row meets every fireworks crowd the same way — and there the sentence
+            would promise a weighing the stepper cannot express, because both ends of the band
+            want the same order. `analyseLastSaturdayRange` in `balance.ts` draws the line in
+            exactly the same place and certifies that where it *is* a band, both answers are
+            live; this is that harness's own predicate, said to the student. */}
+        {willTake.some((night) => night.told.high - night.told.low >= N.platesPerTray) && (
+          <p className="tray-order__crowd" data-unknown="true">{COPY.saturday.crowdUnknown}</p>
         )}
       </div>
     </div>
@@ -219,6 +256,10 @@ function NightResult({ outcome, saturday, spot, helper, compact = false }: {
   compact?: boolean;
 }) {
   const read = readNight(outcome, crowdOn(N, spot, saturday), serveCap(N, saturday, helper));
+  // A night the student was given as a range has to close its own loop, or the range is a
+  // trick rather than a question: what it came in at, beside what they were told, so they can
+  // judge their own order as a read of what they had rather than only as right or wrong.
+  const told = crowdTold(N, spot, saturday);
   return (
     <section className={`night${compact ? " night--compact" : ""}`} aria-label={`${COPY.settle.saturdayLabel} ${saturday}`}>
       <p className="night__day">{COPY.settle.saturdayLabel} {saturday}</p>
@@ -232,6 +273,12 @@ function NightResult({ outcome, saturday, spot, helper, compact = false }: {
         <div><dt>{COPY.night.sold}</dt><dd>{outcome.sold}</dd></div>
         <div data-alert={outcome.spoiled > 0}><dt>{COPY.night.binned}</dt><dd>{outcome.spoiled}</dd></div>
         <div><dt>{COPY.night.takings}</dt><dd className="money">{formatDollars(outcome.takings)}</dd></div>
+        {/* A night the student was given as a band closes its own loop here, or the band was
+            a trick rather than a question: what turned up, beside what they were told might.
+            Two figures in the readout rather than a sentence beside it — it is what they are,
+            and `readingLoad.test.tsx` prices this screen at 230 words. */}
+        {told.range && <div><dt>{COPY.night.crowd}</dt><dd>{crowdOn(N, spot, saturday)}</dd></div>}
+        {told.range && <div data-told="true"><dt>{COPY.night.told}</dt><dd>{crowdRead(told)}</dd></div>}
       </dl>
       {/* A night that cooked nothing used to read "you cooked more than the crowd bought.
           Nothing went in the bin." — two sentences that are both false about an empty truck and
@@ -268,9 +315,14 @@ function NightResult({ outcome, saturday, spot, helper, compact = false }: {
  *
  * The world's own fiction says the four nights are different — lights and a first crowd, rain
  * that clears, a cold evening, fireworks — and for three of them it used to be decoration
- * over one number. It is four numbers now, and they are on the first screen that asks for a
- * decision, because a night that turns out different is a lottery and a night you were told
- * about and planned wrong for is a decision.
+ * over one number. It is four different reads now, and they are on the first screen that asks
+ * for a decision, because a night that turns out different is a lottery and a night you were
+ * told about and planned wrong for is a decision.
+ *
+ * Three of them are a figure. The fireworks are a band, and the band is on the booth card for
+ * the same reason the figures are: the student is choosing a booth partly on what its crowd
+ * will do, and the thing they have to weigh on the last night is a range. Comparing three
+ * booths on three numbers and a range is the comparison the market actually offers.
  */
 function CrowdByNight({ spotId }: { spotId: SpotId }) {
   return (
@@ -282,7 +334,7 @@ function CrowdByNight({ spotId }: { spotId: SpotId }) {
           return (
             <li key={saturday}>
               <span>{COPY.spot.nightShort} {saturday}</span>
-              <b>{crowdOn(N, spotId, saturday)}</b>
+              <b>{crowdRead(crowdTold(N, spotId, saturday))}</b>
             </li>
           );
         })}

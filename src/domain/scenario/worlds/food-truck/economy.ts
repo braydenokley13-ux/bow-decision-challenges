@@ -43,12 +43,50 @@ export function swapBill(n: PopUpNumbers): Dollars {
  * so a world that printed weather over every night resolved three of them identically and the
  * standing order that covered two of them was one question wearing two dates.
  *
- * The pull is stated on the booth card before a booth is taken and again on the order screen
- * before the order is placed, so a student who cooks for the wrong night mis-planned rather
- * than got unlucky. Nothing is rolled: same booth, same night, same number, every run.
+ * This is what the night *does*, and it is the only figure any outcome is worked out from.
+ * Nothing is rolled: same booth, same night, same number, every run, on any machine.
+ *
+ * What the student was *told* is `crowdTold`, and on three of the four Saturdays the two are
+ * the same figure, printed on the booth card before a booth is taken and again on the order
+ * screen before the order is placed — so a student who cooks for the wrong night mis-planned
+ * rather than got unlucky. On the fireworks night they are not: the organiser states a band
+ * and the night lands inside it, which is a decision made before you know rather than a
+ * lottery, because the band itself is stated and the same band every run.
  */
 export function crowdOn(n: PopUpNumbers, spotId: SpotId, saturday: SaturdayNumber): number {
   return Math.round((n.spots[spotId].crowd * n.nights[saturday].pull) / 100);
+}
+
+/**
+ * What the student is *told* this night's crowd will buy, which is not always a figure.
+ *
+ * Three of the four Saturdays are stated exactly and this returns the same number twice for
+ * them. The fireworks night is stated as a band, because the organiser does not know — and
+ * because a market that prints the answer to its own central question four times is asking a
+ * student to do arithmetic where the other story asks them to commit money before they know.
+ * `numbers.ts` and `types.ts` carry the whole argument.
+ *
+ * **Nothing downstream of a resolved night may call this.** The band is what the student knew;
+ * `crowdOn` is what happened, and every outcome, every verdict and the whole balance harness
+ * are worked out from `crowdOn` alone. That separation is the guarantee that a range changes
+ * what is asked and nothing about what replays.
+ */
+export interface CrowdTold {
+  low: number;
+  /** Equal to `low` on a night the organiser states as a figure. */
+  high: number;
+  /** Whether the student was given a range rather than a number. */
+  range: boolean;
+}
+
+export function crowdTold(n: PopUpNumbers, spotId: SpotId, saturday: SaturdayNumber): CrowdTold {
+  const told = n.nights[saturday].told;
+  const at = (pull: number) => Math.round((n.spots[spotId].crowd * pull) / 100);
+  if (!told) {
+    const exact = crowdOn(n, spotId, saturday);
+    return { low: exact, high: exact, range: false };
+  }
+  return { low: at(told.low), high: at(told.high), range: true };
 }
 
 /**
@@ -65,6 +103,22 @@ export function serveCap(n: PopUpNumbers, saturday: SaturdayNumber, helper: bool
 /** The most plates that can be sold here on this night, whatever is cooked. */
 export function sellCap(n: PopUpNumbers, spotId: SpotId, saturday: SaturdayNumber, helper: boolean): number {
   return Math.min(crowdOn(n, spotId, saturday), serveCap(n, saturday, helper));
+}
+
+/**
+ * The same question the order screen asks, answered with what the student was told.
+ *
+ * The window is the window whichever way the night goes, so the serve cap closes the band from
+ * above: at the bridge gate on your own, every crowd in the fireworks band is more than one
+ * pair of hands can serve, and the honest thing to print there is a number rather than a range
+ * the student could not reach either end of.
+ */
+export function sellCapTold(n: PopUpNumbers, spotId: SpotId, saturday: SaturdayNumber, helper: boolean): CrowdTold {
+  const told = crowdTold(n, spotId, saturday);
+  const cap = serveCap(n, saturday, helper);
+  const low = Math.min(told.low, cap);
+  const high = Math.min(told.high, cap);
+  return { low, high, range: low !== high };
 }
 
 export interface SaturdayOutcome {

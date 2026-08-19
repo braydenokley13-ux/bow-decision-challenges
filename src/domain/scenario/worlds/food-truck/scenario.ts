@@ -176,6 +176,19 @@ export interface PopUpScreenCopy {
      * belongs.
      */
     crowdWillBuy: string;
+    /** The same fact where the night is a band: what it *could* buy, not what it will. */
+    crowdMightBuy: string;
+    /**
+     * What a band means for the order, said on the screen that takes the order.
+     *
+     * A number replaced by a wider number is not the same as being asked to plan under
+     * uncertainty. Printing "42 to 65" and stopping tells a student the market has become
+     * vaguer; it does not tell them they are now buying food against a figure nobody has, or
+     * what it costs them either way. So this names both sides of the commitment in the two
+     * words the market has already used for them all run — food in the bin, and people turned
+     * away — and it appears only where the night is actually a band.
+     */
+    crowdUnknown: string;
     /** "Saturday 2 will buy" — the standing order faces two different nights. */
     nightBuys: string;
     /** Said only where one pair of hands, not the crowd, is the ceiling. */
@@ -228,6 +241,17 @@ export interface PopUpScreenCopy {
     nothingBinned: string;
     binnedTrays: string;
     turnedAway: string;
+    /**
+     * What a night stated as a range came in at, and what the student was told it might be.
+     *
+     * A beat that asks a student to commit before they know has to close its own loop, or the
+     * range is a trick rather than a question. Both are figures in the night's own readout
+     * rather than a sentence beside it — partly because that is what they are, and partly
+     * because `readingLoad.test.tsx` prices this screen and a sentence saying the same thing
+     * cost ten words where these cost four. They appear only on a night that had a band.
+     */
+    crowd: string;
+    told: string;
   };
   first: { kicker: string; title: string; deck: string };
   /**
@@ -519,7 +543,10 @@ export const POP_UP_SCENARIO: PopUpScenario = {
     { title: "Saturday 1", note: "The market opens at five and the strings of lights go up over the lane. A first Saturday brings a booth the crowd it gets." },
     { title: "Saturday 2", note: "It rains until four and then it clears up properly. The market fills late and stays busy to closing, with a fifth more people out than an ordinary Saturday." },
     { title: "Saturday 3", note: "A cold evening, and everybody stands around with their hands in their pockets. The band plays anyway, but a third of the usual crowd stays home." },
-    { title: "Saturday 4", note: "The last one, and the biggest. There are fireworks off the bridge at nine, and half as many people again as an ordinary Saturday come down to watch them." },
+    // The one night the organiser does not state as a figure. The prose says so plainly and
+    // the screens print the band; between them a student knows exactly what they do not know,
+    // which is the difference between planning under uncertainty and guessing.
+    { title: "Saturday 4", note: "The last one, and the biggest. There are fireworks off the bridge at nine. Nobody can say how many people come for the fireworks, so the organiser gives you a range instead of a number." },
   ],
   breakdown: {
     source: "Ramos Rentals",
@@ -564,7 +591,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       boothsTitle: "Where do you set up?",
       permit: { label: "City permit", note: `${formatDollars(N.permit)} for the four Saturdays. Every stall pays it.` },
       crowdLabel: "Plates the crowd here will buy",
-      crowdNote: "The same four Saturdays at every booth: an opening night, a wet one that clears, a cold one, and the fireworks. What changes is how many walk past yours.",
+      crowdNote: "The same four Saturdays at every booth. What changes is how many walk past yours. The last one is a range: nobody can say how many will come for the fireworks.",
       crowdUnit: "plates",
       nightShort: "Sat",
       take: "Take this booth",
@@ -639,6 +666,8 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       trayHint: `One tray is ${N.platesPerTray} plates and costs ${formatDollars(N.trayCost)}.`,
       cooked: "Plates you are cooking",
       crowdWillBuy: "The crowd will buy",
+      crowdMightBuy: "The crowd could buy",
+      crowdUnknown: "Nobody can say the number before the night. Cook for the top of the range and food might go in the bin; cook for the bottom and you might turn people away.",
       nightBuys: "will buy",
       capped: "plates is all one pair of hands can hand over in an evening, however many people are waiting.",
       order: {
@@ -675,6 +704,8 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       nothingBinned: "Nothing went in the bin.",
       binnedTrays: "of food went in the bin.",
       turnedAway: "More people wanted a plate than two hands could hand over.",
+      crowd: "Crowd",
+      told: "You were told",
     },
     first: {
       kicker: "Saturday 1",
@@ -749,7 +780,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       acknowledge: "Save it, and say what is missing",
       lastKicker: "Saturday 4",
       lastTitle: "The last one, and the biggest.",
-      lastNote: "Fireworks off the bridge at nine, and half the city comes down to watch them.",
+      lastNote: "Fireworks off the bridge at nine. This is the one night the market cannot tell you the size of.",
       noLast: "No generator means no cooking. There is no last Saturday.",
       noLastAction: "See how it came out",
     },
@@ -764,11 +795,11 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       startedWith: "The account started at",
       missedLast: "The truck sat dark on the biggest night of the run.",
       neverCooked: "You never cooked a plate all run, so the truck had nothing to sell. The money stayed on the lines you put it on.",
-      handOff: "Nadia Okafor ran the market. One question, for every stall that took a booth.",
+      handOff: "Nadia Okafor ran the market. One question, for every stall.",
       action: "Answer the organiser",
       verdicts: {
         title: "What each call actually did.",
-        counted: "Counted in money at the end of the run, which is what this ending can check.",
+        counted: "Counted in money at the end of the run — what this ending can check.",
         outcomes: { paidOff: "Paid off", costYou: "Cost you", fellShort: "Fell short", noEffect: "No effect" },
         booth: {
           label: "The {booth} booth",

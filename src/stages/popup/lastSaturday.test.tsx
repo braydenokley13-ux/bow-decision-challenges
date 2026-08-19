@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router-dom";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { dollars, formatDollars } from "../../domain/core/money";
-import { sellCap } from "../../domain/scenario/worlds/food-truck/economy";
+import { sellCap, sellCapTold } from "../../domain/scenario/worlds/food-truck/economy";
 import { createPopUpState, popUpReducer, type PopUpAction, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
 import { POP_UP_NUMBERS as N } from "../../domain/scenario/worlds/food-truck/numbers";
 import { POP_UP_SCENARIO } from "../../domain/scenario/worlds/food-truck/scenario";
@@ -110,8 +110,15 @@ describe("the last Saturday offers a way out of a stock line that will not stret
     expect(lines).toContain(formatDollars(dollars(50)));
     expect(lines).toContain(formatDollars(dollars(110)));
     expect(lines).toContain(formatDollars(dollars(200)));
-    // The crowd is printed, and the stock line will not buy a single tray for it.
-    expect(view.container.textContent).toContain(String(sellCap(N, "bridge-gate", 4, true)));
+    // The crowd is stated as a band — this is the one night the organiser will not price —
+    // and the stock line will not buy a single tray at either end of it. The realised figure
+    // is deliberately absent: an order screen that printed it would be printing the answer to
+    // the question this beat exists to ask, which is what the rest of this file is about.
+    const band = sellCapTold(N, "bridge-gate", 4, true);
+    expect(band.range).toBe(true);
+    expect(view.container.textContent).toContain(`${band.low}\u2013${band.high}`);
+    expect(view.container.textContent).toContain(COPY.saturday.crowdUnknown);
+    expect(view.container.textContent).not.toContain(String(sellCap(N, "bridge-gate", 4, true)));
     expect(view.container.querySelector(".tray-order output")!.textContent).toBe("0");
   });
 

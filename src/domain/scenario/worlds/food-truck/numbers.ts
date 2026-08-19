@@ -25,16 +25,24 @@ export const POP_UP_NUMBERS: PopUpNumbers = {
     "middle-row": { id: "middle-row", booth: dollars(240), crowd: 38 },
     "bridge-gate": { id: "bridge-gate", booth: dollars(480), crowd: 54 },
   },
-  // Four nights, four crowds, and the student reads all four off the booth card before they
-  // take a booth. The wet Saturday that clears fills the market late; the cold one empties it;
-  // the fireworks bring half the city. One standing order covers the middle two, which is the
-  // whole of the second Saturday decision: cook for the busy night and bin food on the cold
-  // one, or cook for the cold night and turn people away on the busy one.
+  // Four nights. Three of them the organiser states as a figure and the student reads off the
+  // booth card before they take a booth: the wet Saturday that clears fills the market late,
+  // the cold one empties it. One standing order covers the middle two, which is the whole of
+  // the second Saturday decision — cook for the busy night and bin food on the cold one, or
+  // cook for the cold night and turn people away on the busy one.
+  //
+  // The fireworks are a range. Nobody knows how many come down for fireworks; the organiser
+  // says between a tenth up and seven-tenths up on an ordinary Saturday and will not be pinned
+  // further, and the night lands at 145. See `told` in `types.ts` for why one night and not
+  // four: the market was asking a student to do arithmetic against a printed figure at the one
+  // beat the other story asks them to commit money before they know, and the same rubric row
+  // reads both. The band is asymmetric on purpose — the middle of it is 140, so a student who
+  // splits the difference has not been quietly handed the answer.
   nights: {
     1: { pull: 100 },
     2: { pull: 120 },
     3: { pull: 65 },
-    4: { pull: 145 },
+    4: { pull: 145, told: { low: 110, high: 170 } },
   },
   platesPerTray: 10,
   trayCost: dollars(60),

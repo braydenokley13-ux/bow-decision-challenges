@@ -70,7 +70,33 @@ export interface SpotNumbers {
  * is placed and the arithmetic that resolves the night afterwards are the same number.
  */
 export interface NightNumbers {
+  /**
+   * What the night actually does. Scripted, never rolled, and the only figure any outcome is
+   * worked out from — so the market replays identically whatever the student was told.
+   */
   pull: number;
+  /**
+   * What the organiser can promise, where they cannot promise a figure.
+   *
+   * A night with a `told` band is stated to the student as a range and resolves at `pull`,
+   * which sits inside it. That is not a hidden number: it is the difference between being
+   * told what will happen and being told what might, and it is the one thing this world was
+   * never asking. Every ordering screen in the market printed the exact plates the crowd
+   * would buy, four times, so the student's stocking decision was arithmetic against a
+   * printed figure — while the other story's central beat is committing money before you
+   * know. One rubric row reads both, and it was reading two different constructs.
+   *
+   * Determinism does not require disclosure, and the other world is the proof: its Week 5 is
+   * scripted, replays identically and is swept identically, and the student is not told about
+   * it while building the plan it breaks. So the range is a free choice about *disclosure*
+   * and changes nothing about the *world*. `pull` is what happens; `told` is what you knew.
+   *
+   * It is set on one night — the last one, after the generator, where the stakes are already
+   * highest — and not on all four. Three stated nights are what make the fourth readable as a
+   * range rather than as a market that has stopped explaining itself, and they keep the
+   * planning-inside-known-money competency this world exists to assess intact.
+   */
+  told?: { low: number; high: number };
 }
 
 /**

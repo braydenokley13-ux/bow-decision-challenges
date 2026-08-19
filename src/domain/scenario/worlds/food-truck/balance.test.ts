@@ -1,7 +1,12 @@
 import { writeFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { POP_UP_NUMBERS } from "./numbers";
-import { analyseBalance, formatBalanceReport, PRIORITY_IDS, weightSimplex } from "./balance";
+import {
+  analyseBalance, analyseLastSaturdayRange, formatBalanceReport, formatRangeReport,
+  PRIORITY_IDS, weightSimplex,
+} from "./balance";
+import { crowdOn, crowdTold } from "./economy";
+import type { PopUpNumbers, SaturdayNumber, SpotId } from "./types";
 
 /**
  * The publication gate on Run the Pop-Up's numbers.
@@ -113,8 +118,102 @@ describe("the market contains real decisions", () => {
   });
 
   it("writes the sweep out when asked", () => {
-    const text = formatBalanceReport(report);
+    const text = `${formatBalanceReport(report)}\n\n${formatRangeReport(analyseLastSaturdayRange(POP_UP_NUMBERS))}`;
     expect(text).toContain("Best run under each set of priorities");
+    expect(text).toContain("What the band asks, booth by booth");
     if (process.env.BALANCE_REPORT) writeFileSync(process.env.BALANCE_REPORT, `${text}\n`);
+  });
+});
+
+/**
+ * The second gate, and the one the stated range made necessary.
+ *
+ * The sweep above asks whether any *option* is right whatever a student is trying to do. It
+ * cannot see the range at all, and that is the point: it is worked out entirely from the night
+ * the market actually plays, so a night the student was told about as a band is swept exactly
+ * as it was when it was printed as a figure. The first test below is that claim, checked
+ * rather than asserted.
+ *
+ * What the sweep cannot answer is whether the band is a question. A range with one best answer
+ * across its whole width is a number wearing a costume — worse than the number it replaced,
+ * because it looks like a judgement and marks like an answer key, and a rubric row reading
+ * "did you give something up before you knew?" would be reading a child's arithmetic again.
+ * These are the assertions that fail the build if that ever happens.
+ */
+describe("the night the market will not price still asks something", () => {
+  const range = analyseLastSaturdayRange(POP_UP_NUMBERS);
+  const swept = analyseBalance(POP_UP_NUMBERS);
+
+  it("changes what the student is told and nothing about what replays", () => {
+    // The same numbers with every band struck out. If a single figure in the whole sweep moves,
+    // the range has leaked into the world instead of staying in what the student was told.
+    const withoutBands: PopUpNumbers = {
+      ...POP_UP_NUMBERS,
+      nights: Object.fromEntries(
+        Object.entries(POP_UP_NUMBERS.nights).map(([night, numbers]) => [night, { pull: numbers.pull }]),
+      ) as PopUpNumbers["nights"],
+    };
+    expect(analyseBalance(withoutBands)).toEqual(swept);
+    // And the realised crowd is untouched at every booth on every night, which is the same
+    // claim one layer down and the one `determinism.test.ts` builds its replay on.
+    for (const spotId of Object.keys(POP_UP_NUMBERS.spots) as SpotId[]) {
+      for (const night of [1, 2, 3, 4] as SaturdayNumber[]) {
+        expect(crowdOn(POP_UP_NUMBERS, spotId, night)).toBe(crowdOn(withoutBands, spotId, night));
+      }
+    }
+  });
+
+  it("states exactly one night as a band, and it is the last one", () => {
+    // Three stated nights are what make the fourth readable as a range rather than as a market
+    // that has stopped explaining itself, and they are what keep the planning-inside-known-money
+    // competency this world exists to assess intact. If a later pass wants a second band it can
+    // have one, but not by accident.
+    expect(range.ranged).toEqual([POP_UP_NUMBERS.saturdays]);
+  });
+
+  it("lands inside the band it stated, away from both edges", () => {
+    // A night that resolves outside what the student was told is a lie; a night that resolves
+    // on an edge tells them where to aim without saying so, which is the printed number back
+    // again with extra steps.
+    for (const spotId of Object.keys(POP_UP_NUMBERS.spots) as SpotId[]) {
+      const told = crowdTold(POP_UP_NUMBERS, spotId, POP_UP_NUMBERS.saturdays);
+      const lands = crowdOn(POP_UP_NUMBERS, spotId, POP_UP_NUMBERS.saturdays);
+      expect(told.range, spotId).toBe(true);
+      expect(lands, `${spotId}: ${told.low}-${told.high} lands ${lands}`).toBeGreaterThan(told.low);
+      expect(lands, `${spotId}: ${told.low}-${told.high} lands ${lands}`).toBeLessThan(told.high);
+    }
+    expect(range.edged.map((verdict) => `${verdict.spotId}/helper=${verdict.helper}`)).toEqual([]);
+  });
+
+  it("gives some student a band wide enough to have to decide inside", () => {
+    // A world where every band is closed by somebody's window has stated a range and asked
+    // nothing, which is the whole finding wearing a different hat.
+    expect(range.facingARange.length).toBeGreaterThan(0);
+  });
+
+  it("has no band with one right answer across its whole width", () => {
+    // The gate. Enumerate every order the truck could cook against every crowd the organiser
+    // said was possible: if one order wins at all of them, a student who reasoned and a student
+    // who always cooks the same thing land in the same place.
+    expect(range.collapsed.map((verdict) => `${verdict.spotId}/helper=${verdict.helper}`)).toEqual([]);
+    for (const verdict of range.facingARange) {
+      expect(verdict.liveOrders.length, `${verdict.spotId}/helper=${verdict.helper}`).toBeGreaterThan(1);
+    }
+  });
+
+  it("rewards no single reading of the band everywhere", () => {
+    // "Always cook for the middle" being right every time would be a rule to be taught rather
+    // than a call to make, and it would be worth more marks than the reasoning.
+    expect(range.alwaysRightReadings).toEqual([]);
+  });
+
+  it("makes both mistakes cost something real", () => {
+    // A band whose two ends differ by pennies is a decision nobody needs to think about. Both
+    // ways of being wrong have to be worth at least a tray of food.
+    for (const verdict of range.facingARange) {
+      const where = `${verdict.spotId}/helper=${verdict.helper}`;
+      expect(verdict.costOfCookingHigh, `${where}: cooking for the top costs nothing`).toBeGreaterThanOrEqual(POP_UP_NUMBERS.trayCost);
+      expect(verdict.costOfCookingLow, `${where}: cooking for the bottom costs nothing`).toBeGreaterThanOrEqual(POP_UP_NUMBERS.trayCost);
+    }
   });
 });

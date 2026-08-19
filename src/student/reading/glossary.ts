@@ -114,6 +114,17 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
     meaning: "Everything customers handed over. What it cost to earn has not come out of it yet.",
     where: "food-truck",
   },
+  {
+    // The one word in this world a student cannot get past without losing the assessment.
+    // Saturday 4 is deliberately not a number: the organiser gives a low and a high, and the
+    // whole judgement of that night is what you cook when nobody can tell you the answer.
+    // A student who reads "range" as "about that many" plans for one number and is measured
+    // on planning for two.
+    term: "range",
+    forms: ["range", "a range", "the range", "top of the range"],
+    meaning: "Two numbers with the real one somewhere between them. Nobody knows which yet, so a plan has to work at the low end and the high end.",
+    where: "food-truck",
+  },
 
   // --- Money that is already promised --------------------------------------
   {
