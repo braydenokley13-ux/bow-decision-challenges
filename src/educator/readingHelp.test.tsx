@@ -256,11 +256,11 @@ describe("the educator guide answers the questions a lesson is planned on", () =
  * take the words out of a row that is already here, which is what the headphones row did.
  * When the count comes down, bring this constant down with it.
  *
- * It has come down twice since: 437 → 429, paying for the carry-on clause in "How long?" and
+ * It has come down twice since: 437 → 428, paying for the carry-on clause in "How long?" and
  * for the clause in "What do students do?" that says who chooses the story, out of two
  * sentences that had stopped being true and one that is said again verbatim two screens down.
  */
-const BRIEF_ANSWERS_WORDS = 429;
+const BRIEF_ANSWERS_WORDS = 428;
 
 describe("the block that promises a minute", () => {
   it("costs no more than the words it costs today", () => {
