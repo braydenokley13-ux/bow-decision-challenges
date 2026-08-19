@@ -1,0 +1,1735 @@
+→ fix at: c5f4ef8   source restored from: 79e808f
+  reverted src/components/primitives/CalculationInput.tsx (marker 'useInPlaceArrival' gone)
+  reverted src/components/primitives/RunMenu.tsx (marker 'keepWorking' gone)
+  reverted src/stages/StudentChallenge.tsx (marker 'floorSettled' gone)
+  reverted src/stages/popup/PopUpScreens.tsx (marker 'focusRef' gone)
+→ running the pinning tests against the reverted source
+
+ RUN  v4.1.10 /tmp/tmp.2gDJhuslXq
+
+ ❯ src/components/primitives/runMenuFocus.test.tsx (6 tests | 4 failed) 1415ms
+     × stands the student on the safe half of the confirm, not on the body 577ms
+     × carries what leaving costs on both buttons, so it is read wherever the student lands 142ms
+     × puts the student back on the button they pressed when they decline 226ms
+     × closes on Escape and puts the student back on the control that opened it 124ms
+ ❯ src/components/primitives/inPlaceArrival.test.tsx (6 tests | 2 failed) 1545ms
+     × puts the student on the step-by-step hint, not on the body of the document 116ms
+     × puts the student back on the box holding the answer when the last rung supplies it 65ms
+stderr | src/stages/answerSpeaks.test.tsx > Basketball — the first question of the plan > moves the student onto the sentence that takes the box's place
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ❯ src/stages/answerSpeaks.test.tsx (5 tests | 4 failed) 1791ms
+     × moves the student onto the sentence that takes the box's place 1046ms
+     × tells a student who was handed the answer that they were handed the answer 120ms
+     × gives each of the three places its own name on its own button 115ms
+     × moves the student onto the figure that takes the box's place 275ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 10 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/stages/answerSpeaks.test.tsx > Basketball — the first question of the plan > moves the student onto the sentence that takes the box's place
+AssertionError: focus fell to the body when the box was removed: expected <body><div>…(1)</div></body> to be <p class="question__settled">…(1)</p> // Object.is equality
+
+- Expected
++ Received
+
+@@ -1,6 +1,468 @@
++ <body>
++   <div>
++     <div
++       class="challenge-shell"
++       data-chapter="plan"
++       data-world="basketball"
++     >
++       <header
++         class="challenge-topbar"
++       >
++         <a
++           aria-label="BOW Decision Challenges home"
++           class="app-mark"
++           href="/"
++         >
++           <span
++             aria-hidden="true"
++             class="app-mark__monogram"
++           >
++             B
++           </span>
++           <span>
++             <b>
++               BOW
++             </b>
++             <small>
++               Decision Challenges
++             </small>
++           </span>
++         </a>
++         <nav
++           aria-label="Season progress"
++           class="season-strip"
++         >
++           <span
++             class="season-strip__caption"
++           >
++             Before the season
++           </span>
++           <ol
++             aria-hidden="true"
++           >
++             <li
++               data-state="ahead"
++             >
++               <i />
++               1
++             </li>
++             <li
++               data-state="ahead"
++             >
++               <i />
++               2
++             </li>
++             <li
++               data-state="ahead"
++             >
++               <i />
++               3
++             </li>
++             <li
++               data-state="ahead"
++             >
++               <i />
++               4
++             </li>
++             <li
++               data-state="ahead"
++             >
++               <i />
++               5
++             </li>
++             <li
++               data-state="ahead"
++             >
++               <i />
++               6
++             </li>
++             <li
++               data-state="ahead"
++             >
++               <i />
++               7
++             </li>
++             <li
++               data-state="ahead"
++             >
++               <i />
++               8
++             </li>
++           </ol>
+            <p
++             class="visually-hidden"
++           >
++             Before the season. Part 2 of 5: The plan.
++           </p>
++         </nav>
++         <div
++           class="challenge-topbar__end"
++         >
++           <details
++             class="contract-drawer"
++           >
++             <summary>
++               The four payments
++               <span
++                 aria-hidden="true"
++               >
++                 ▾
++               </span>
++             </summary>
++             <div>
++               <h2>
++                 Where Avery’s money comes from
++               </h2>
++               <p>
++                 The first two arrive no matter what. The last two only arrive if their rule is met.
++               </p>
++               <dl>
++                 <div>
++                   <dt>
++                     Already saved
++                     <small>
++                       Money Avery already has.
++                     </small>
++                   </dt>
++                   <dd
++                     class="money"
++                   >
++                     $500
++                   </dd>
++                 </div>
++                 <div>
++                   <dt>
++                     Base pay after taxes
++                     <small>
++                       Pay that arrives no matter how the team performs.
++                     </small>
++                   </dt>
++                   <dd
++                     class="money"
++                   >
++                     $4,500
++                   </dd>
++                 </div>
++                 <div>
++                   <dt>
++                     Perfect attendance bonus
++                     <small>
++                       Payment tied to making every practice and game.
++                     </small>
++                   </dt>
++                   <dd
++                     class="money"
++                   >
++                     $800
++                   </dd>
++                 </div>
++                 <div>
++                   <dt>
++                     Making the cut bonus
++                     <small>
++                       Payment tied to reaching the showcase.
++                     </small>
++                   </dt>
++                   <dd
++                     class="money"
++                   >
++                     $1,000
++                   </dd>
++                 </div>
++               </dl>
++               <p
++                 class="contract-drawer__goal"
++               >
++                 Sports-media course
++                  · up to 
++                 $1,200
++               </p>
++             </div>
++           </details>
++           <details
++             class="run-menu"
++           >
++             <summary
++               aria-label="This run: H4KVW · seat 7"
++             >
++               H4KVW · seat 7
++             </summary>
++             <div>
++               <h2>
++                 This is seat 7’s run.
++               </h2>
++               <p>
++                 If that is not you, or you want to start again and pick a different one, you can leave this run here.
++               </p>
++               <p
++                 class="run-menu__cost"
++               >
++                 Nothing here has been turned in yet. Leaving clears this run off this computer, and it cannot be got back.
++               </p>
++               <button
++                 class="button button--secondary"
++                 type="button"
++               >
++                 Leave this run
++               </button>
++             </div>
++           </details>
++         </div>
++       </header>
++       <main
++         class="stage-main"
++         data-tone="standard"
++       >
++         <header
++           class="stage-heading"
++           tabindex="-1"
++         >
++           <div
++             class="stage-heading__say"
++           >
++             <p
++               class="eyebrow"
++             >
++               Build Avery’s plan · Question 1 of 4
++             </p>
++             <h1>
++               What can Avery count on?
++             </h1>
++           </div>
++         </header>
++         <div
++           class="plan-scene"
++           style="--rail-height: 0px;"
++         >
++           <aside
++             class="plan-rail"
++           >
++             <section
++               aria-labelledby="ledger-title"
++               class="ledger"
++               data-open="false"
++               data-state="unplaced"
++             >
++               <div
++                 class="ledger__head"
++               >
++                 <p
++                   class="stamp"
++                   id="ledger-title"
++                 >
++                   Avery’s money
++                 </p>
++                 <p
++                   class="ledger__glance"
++                 >
++                   <span>
++                     Not worked out yet.
++                   </span>
++                 </p>
++                 <button
++                   aria-controls=":r0:"
++                   aria-expanded="false"
++                   class="ledger__toggle"
++                   type="button"
++                 >
++                   See where the money goes
++                 </button>
++               </div>
++               <div
++                 class="ledger__body"
++                 id=":r0:"
++               >
++                 <ul
++                   class="ledger__lines"
++                 >
++                   <li
++                     data-known="true"
++                     data-tone="certain"
++                   >
++                     <span
++                       aria-hidden="true"
++                       class="ledger__sign"
++                     >
++                       +
++                     </span>
++                     <span
++                       class="ledger__label"
++                     >
++                       Arrives no matter what
++                     </span>
++                     <strong
++                       class="money"
++                     >
++                       $5,000
++                     </strong>
++                   </li>
++                   <li
++                     data-known="false"
++                     data-tone="conditional"
++                   >
++                     <span
++                       aria-hidden="true"
++                       class="ledger__sign"
++                     >
++                       +
++                     </span>
++                     <span
++                       class="ledger__label"
++                     >
++                       Bonuses that might happen
++                     </span>
++                     <em
++                       class="ledger__waiting"
++                     >
++                       not worked out yet
++                     </em>
++                   </li>
++                   <li
++                     data-known="true"
++                     data-tone="locked"
++                   >
++                     <span
++                       aria-hidden="true"
++                       class="ledger__sign"
++                     >
++                       −
++                     </span>
++                     <button
++                       aria-label="Where Avery lives, Cousin’s Spare Room · 8 weeks. $300. Already promised — this cannot move."
++                       class="ledger__label ledger__label--locked"
++                       type="button"
++                     >
++                       Where Avery lives
++                     </button>
++                     <strong
++                       class="money"
++                     >
++                       −
++                       $300
++                     </strong>
++                     <small
++                       class="ledger__note"
++                     >
++                       Cousin’s Spare Room · 8 weeks
++                     </small>
++                   </li>
++                   <li
++                     data-known="false"
++                     data-tone="locked"
++                   >
++                     <span
++                       aria-hidden="true"
++                       class="ledger__sign"
++                     >
++                       −
++                     </span>
++                     <span
++                       class="ledger__label"
++                     >
++                       Food, phone and laundry
++                     </span>
++                     <em
++                       class="ledger__waiting"
++                     >
++                       not worked out yet
++                     </em>
++                     <small
++                       class="ledger__note"
++                     >
++                       $200 a week · 8 weeks
++                     </small>
++                   </li>
++                 </ul>
++                 <p
++                   class="ledger__left"
++                   data-known="false"
++                 >
++                   <span>
++                     Left for Avery to decide
++                   </span>
++                   <em
++                     class="ledger__waiting"
++                   >
++                     not worked out yet
++                   </em>
++                 </p>
++               </div>
++             </section>
++           </aside>
++           <div
++             class="plan-scene__work"
++           >
++             <ol
++               aria-label="The four questions in this plan"
++               class="plan-progress"
++             >
++               <li
++                 aria-current="step"
++                 data-state="current"
++               >
++                 <span>
++                   <span
++                     aria-hidden="true"
++                     class="plan-progress__number"
++                   >
++                     1
++                   </span>
++                   Money coming in
++                 </span>
++               </li>
++               <li
++                 data-state="todo"
++               >
++                 <button
++                   type="button"
++                 >
++                   <span
++                     aria-hidden="true"
++                     class="plan-progress__number"
++                   >
++                     2
++                   </span>
++                   The two bonuses
++                 </button>
++               </li>
++               <li
++                 data-state="todo"
++               >
++                 <span>
++                   <span
++                     aria-hidden="true"
++                     class="plan-progress__number"
++                   >
++                     3
++                   </span>
++                   Money already owed
++                 </span>
++               </li>
++               <li
++                 data-state="todo"
++               >
++                 <span>
++                   <span
++                     aria-hidden="true"
++                     class="plan-progress__number"
++                   >
++                     4
++                   </span>
++                   What Avery does with the rest
++                 </span>
++               </li>
++             </ol>
++             <p
++               class="question__ask"
++             >
++               How much money will Avery definitely have?
++             </p>
++             <div
++               class="question"
++             >
++               <p
+                  class="question__settled"
+                >
+                  You worked this out.
+                   Avery can count on 
+                  <b
+@@ -8,5 +470,54 @@
+                  >
+                    $5,000
+                  </b>
+                   whatever happens on the court. It is the first line of Avery’s money.
+                </p>
++             </div>
++             <div
++               class="question-nav"
++             >
++               <span />
++               <button
++                 class="button button--primary"
++                 type="button"
++               >
++                 Next — the two bonuses
++               </button>
++             </div>
++           </div>
++         </div>
++       </main>
++       <aside
++         aria-label="Reading help"
++         class="reading-tools"
++         data-open="false"
++         data-read-aloud="skip"
++       >
++         <button
++           class="reading-tools__pill"
++           type="button"
++         >
++           <svg
++             aria-hidden="true"
++             class="reading-tools__icon"
++             focusable="false"
++             viewBox="0 0 20 20"
++           >
++             <path
++               d="M4 8h3l4-3.5v11L7 12H4z"
++               fill="currentColor"
++             />
++             <path
++               d="M13.5 7.2a4 4 0 0 1 0 5.6M15.8 5a7 7 0 0 1 0 10"
++               fill="none"
++               stroke="currentColor"
++               stroke-linecap="round"
++               stroke-width="1.6"
++             />
++           </svg>
++           Reading help
++         </button>
++       </aside>
++     </div>
++   </div>
++ </body>
+
+ ❯ src/stages/answerSpeaks.test.tsx:139:87
+    137|     const settled = document.querySelector(".question__settled");
+    138|     expect(settled, "the box was replaced by nothing a student could b…
+    139|     expect(document.activeElement, "focus fell to the body when the bo…
+       |                                                                                       ^
+    140|   });
+    141|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/10]⎯
+
+ FAIL  src/stages/answerSpeaks.test.tsx > Basketball — the first question of the plan > tells a student who was handed the answer that they were handed the answer
+Error: the honest line is unreachable — every student is told they worked it out: [2mexpect([22m[31melement[39m[2m).toHaveTextContent()[22m
+
+Expected element to have text content:
+[32m  Here is the answer.[39m
+Received:
+[31m  You worked this out. Avery can count on $5,000 whatever happens on the court. It is the first line of Avery’s money.[39m
+ ❯ src/stages/answerSpeaks.test.tsx:163:98
+    161|
+    162|     const settled = document.querySelector(".question__settled");
+    163|     expect(settled, "the honest line is unreachable — every student is…
+       |                                                                                                  ^
+    164|     expect(settled).not.toHaveTextContent(COUNT_ON.settled);
+    165|     expect(document.activeElement).toBe(settled);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/10]⎯
+
+ FAIL  src/stages/answerSpeaks.test.tsx > Basketball — the first question of the plan > gives each of the three places its own name on its own button
+AssertionError: the setup buttons share a name: ["Choose this setup","Choose this setup","Choose this setup"]: expected 1 to be 3 // Object.is equality
+
+- Expected
++ Received
+
+- 3
++ 1
+
+ ❯ src/stages/answerSpeaks.test.tsx:174:93
+    172|     const names = screen.getAllByRole("button", { name: /choose this s…
+    173|     expect(names.length).toBeGreaterThan(1);
+    174|     expect(new Set(names).size, `the setup buttons share a name: ${JSO…
+       |                                                                                             ^
+    175|     for (const name of names) expect(name).toMatch(/choose this setup:…
+    176|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/10]⎯
+
+ FAIL  src/stages/answerSpeaks.test.tsx > Run the Pop-Up — what you owe before you open > moves the student onto the figure that takes the box's place
+AssertionError: focus fell to the body when the box was removed: expected <body><div>…(1)</div></body> to be <p class="popup-settled">…(2)</p> // Object.is equality
+
+- Expected
++ Received
+
++ <body>
++   <div>
++     <div
++       class="popup-shell"
++       data-chapter="plan"
++       data-world="food-truck"
++     >
++       <header
++         class="popup-topbar"
++       >
++         <a
++           aria-label="BOW Decision Challenges home"
++           class="app-mark"
++           href="/"
++         >
++           <span
++             aria-hidden="true"
++             class="app-mark__monogram"
++           >
++             B
++           </span>
++           <span>
++             <b>
++               BOW
++             </b>
++             <small>
++               Decision Challenges
++             </small>
++           </span>
++         </a>
++         <div
++           class="market-strip"
++         >
++           <p
++             class="market-strip__caption"
++           >
++             Before the market
++           </p>
++           <ol
++             aria-label="The 4 Saturdays"
++           >
++             <li
++               data-state="ahead"
++             >
++               <i
++                 aria-hidden="true"
++               />
++               <span>
++                 Saturday
++                  
++                 1
++               </span>
++               <b>
++                 —
++               </b>
++             </li>
++             <li
++               data-state="ahead"
++             >
++               <i
++                 aria-hidden="true"
++               />
++               <span>
++                 Saturday
++                  
++                 2
++               </span>
++               <b>
++                 —
++               </b>
++             </li>
++             <li
++               data-state="ahead"
++             >
++               <i
++                 aria-hidden="true"
++               />
++               <span>
++                 Saturday
++                  
++                 3
++               </span>
++               <b>
++                 —
++               </b>
++             </li>
++             <li
++               data-state="ahead"
++             >
++               <i
++                 aria-hidden="true"
++               />
++               <span>
++                 Saturday
++                  
++                 4
++               </span>
++               <b>
++                 —
++               </b>
++             </li>
++           </ol>
++         </div>
++         <details
++           class="run-menu"
++         >
++           <summary
++             aria-label="This run has no seat yet"
++           >
++             No seat yet
++           </summary>
++           <div>
++             <h2>
++               Nobody has joined yet.
++             </h2>
++             <p>
++               If that is not you, or you want to start again and pick a different one, you can leave this run here.
++             </p>
++             <p
++               class="run-menu__cost"
++             >
++               Nothing here has been turned in yet. Leaving clears this run off this computer, and it cannot be got back.
++             </p>
++             <button
++               class="button button--secondary"
++               type="button"
++             >
++               Leave this run
++             </button>
++           </div>
++         </details>
++       </header>
++       <main
++         class="popup-main"
++         data-tone="dark"
++       >
++         <header
++           class="popup-heading popup-heading--dark scene"
++           tabindex="-1"
++         >
++           <svg
++             aria-hidden="true"
++             class="market-backdrop"
++             focusable="false"
++             preserveAspectRatio="xMidYMin slice"
++             viewBox="0 0 640 520"
++           >
++             <g
++               fill="none"
++               stroke="currentColor"
++               stroke-width="2"
++             >
++               <path
++                 d="M-20 150 L120 96 L260 150"
++               />
++               <path
++                 d="M-20 150 V330 M120 96 V330 M260 150 V300"
++               />
++               <path
++                 d="M380 150 L520 96 L660 150"
++               />
++               <path
++                 d="M380 150 V300 M520 96 V330 M660 150 V330"
++               />
++               <path
++                 d="M-20 210 H260 M380 210 H660"
++                 stroke-dasharray="14 10"
++               />
++               <path
++                 d="M260 300 L380 300"
++                 stroke-dasharray="6 12"
++               />
++               <path
++                 d="M120 330 L200 520 M520 330 L440 520"
++               />
++               <path
++                 d="M-20 60 Q320 170 660 60"
++               />
++               <g
++                 stroke-width="2"
++               >
++                 <path
++                   d="M46 84 v16 M118 105 v16 M192 122 v16 M266 133 v16 M340 137 v16 M414 133 v16 M488 122 v16 M562 105 v16"
++                 />
++               </g>
++               <g
++                 fill="currentColor"
++                 stroke="none"
++               >
++                 <circle
++                   cx="46"
++                   cy="106"
++                   r="6"
++                 />
++                 <circle
++                   cx="118"
++                   cy="127"
++                   r="6"
++                 />
++                 <circle
++                   cx="192"
++                   cy="144"
++                   r="6"
++                 />
++                 <circle
++                   cx="266"
++                   cy="155"
++                   r="6"
++                 />
++                 <circle
++                   cx="340"
++                   cy="159"
++                   r="6"
++                 />
++                 <circle
++                   cx="414"
++                   cy="155"
++                   r="6"
++                 />
++                 <circle
++                   cx="488"
++                   cy="144"
++                   r="6"
++                 />
++                 <circle
++                   cx="562"
++                   cy="127"
++                   r="6"
++                 />
++               </g>
++             </g>
++           </svg>
++           <div
++             class="popup-heading__say"
++           >
++             <p
++               class="eyebrow"
++             >
++               Riverside Night Market
++             </p>
++             <h1>
++               Four Saturdays. One truck.
++             </h1>
++           </div>
++           <dl
++             class="pitch-facts"
++           >
++             <div>
++               <dt>
++                 In the account
++               </dt>
++               <dd>
++                 $1,900
++               </dd>
++             </div>
++             <div>
++               <dt>
++                 The market
++               </dt>
++               <dd>
++                 4 Saturdays
++               </dd>
++             </div>
++             <div>
++               <dt>
++                 Paid before you open
++               </dt>
++               <dd>
++                 City permit and booth
++               </dd>
++             </div>
++           </dl>
++         </header>
++         <p
++           class="stage-deck"
++         >
++           Mo has cooked at Salt and Smoke for two summers and never had a booth of his own. The market runs for four Saturdays. There is $1,900 in the truck's account, and the permit and the booth are paid before anybody sells a plate.
++         </p>
++         <p
++           class="pitch__role"
++         >
++           Mo does the cooking. You handle the money, and you have four Saturdays to get it right.
++         </p>
++         <h2
++           class="popup-subhead"
++         >
++           Where do you set up?
++         </h2>
++         <p
++           class="stage-deck"
++         >
++           The organiser prices a booth by the crowd that walks past it. Take one.
++            
++           The same four Saturdays at every booth. What changes is how many walk past yours. The last one is a range: nobody can say how many will come for the fireworks.
++         </p>
++         <div
++           class="permit-slip"
++         >
++           <div>
++             <p
++               class="field-label"
++             >
++               City permit
++             </p>
++             <p>
++               $150 for the four Saturdays. Every stall pays it.
++             </p>
++           </div>
++           <span
++             class="money"
++           >
++             $150
++           </span>
++         </div>
++         <ul
++           class="spot-grid"
++         >
++           <li>
++             <article
++               class="spot-card"
++               data-chosen="false"
++               data-spot="back-lane"
++             >
++               <div
++                 class="spot-card__scene scene"
++               >
++                 <svg
++                   aria-hidden="true"
++                   class="market-backdrop"
++                   focusable="false"
++                   preserveAspectRatio="xMidYMin slice"
++                   viewBox="0 0 640 520"
++                 >
++                   <g
++                     fill="none"
++                     stroke="currentColor"
++                     stroke-width="2"
++                   >
++                     <path
++                       d="M60 180 L320 70 L580 180"
++                     />
++                     <path
++                       d="M60 180 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0"
++                     />
++                     <path
++                       d="M92 214 V470 M548 214 V470"
++                     />
++                     <path
++                       d="M92 380 H548"
++                       stroke-width="5"
++                     />
++                     <path
++                       d="M170 250 H320 M170 300 H470"
++                       stroke-dasharray="12 10"
++                     />
++                     <path
++                       d="M-20 40 Q320 130 660 40"
++                     />
++                     <g
++                       fill="currentColor"
++                       stroke="none"
++                     >
++                       <circle
++                         cx="120"
++                         cy="76"
++                         r="6"
++                       />
++                       <circle
++                         cx="320"
++                         cy="119"
++                         r="6"
++                       />
++                       <circle
++                         cx="520"
++                         cy="76"
++                         r="6"
++                       />
++                     </g>
++                   </g>
++                 </svg>
++                 <b>
++                   Back Lane
++                 </b>
++               </div>
++               <p
++                 class="spot-card__terms"
++               >
++                 $90 for the four Saturdays
++               </p>
++               <div
++                 class="spot-card__nights"
++               >
+                  <p
++                   class="field-label"
++                 >
++                   Plates the crowd here will buy
++                 </p>
++                 <ol>
++                   <li>
++                     <span>
++                       Sat
++                        
++                       1
++                     </span>
++                     <b>
++                       22
++                     </b>
++                   </li>
++                   <li>
++                     <span>
++                       Sat
++                        
++                       2
++                     </span>
++                     <b>
++                       26
++                     </b>
++                   </li>
++                   <li>
++                     <span>
++                       Sat
++                        
++                       3
++                     </span>
++                     <b>
++                       14
++                     </b>
++                   </li>
++                   <li>
++                     <span>
++                       Sat
++                        
++                       4
++                     </span>
++                     <b>
++                       24–37
++                     </b>
++                   </li>
++                 </ol>
++               </div>
++               <p
++                 class="spot-card__tradeoff"
++               >
++                 The cheapest booth going, and quiet for a reason. Most of the crowd turns at the top of the lane.
++               </p>
++               <button
++                 aria-label="Take this booth: Back Lane"
++                 class="button button--secondary"
++                 type="button"
++               >
++                 Take this booth
++               </button>
++             </article>
++           </li>
++           <li>
++             <article
++               class="spot-card"
++               data-chosen="true"
++               data-spot="middle-row"
++             >
++               <div
++                 class="spot-card__scene scene"
++               >
++                 <svg
++                   aria-hidden="true"
++                   class="market-backdrop"
++                   focusable="false"
++                   preserveAspectRatio="xMidYMin slice"
++                   viewBox="0 0 640 520"
++                 >
++                   <g
++                     fill="none"
++                     stroke="currentColor"
++                     stroke-width="2"
++                   >
++                     <path
++                       d="M60 180 L320 70 L580 180"
++                     />
++                     <path
++                       d="M60 180 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0"
++                     />
++                     <path
++                       d="M92 214 V470 M548 214 V470"
++                     />
++                     <path
++                       d="M92 380 H548"
++                       stroke-width="5"
++                     />
++                     <path
++                       d="M170 250 H320 M170 300 H470"
++                       stroke-dasharray="12 10"
++                     />
++                     <path
++                       d="M-20 40 Q320 130 660 40"
++                     />
++                     <g
++                       fill="currentColor"
++                       stroke="none"
++                     >
++                       <circle
++                         cx="120"
++                         cy="76"
++                         r="6"
++                       />
++                       <circle
++                         cx="320"
++                         cy="119"
++                         r="6"
++                       />
++                       <circle
++                         cx="520"
++                         cy="76"
++                         r="6"
++                       />
++                     </g>
++                   </g>
++                 </svg>
++                 <b>
++                   Middle Row
++                 </b>
++               </div>
++               <p
++                 class="spot-card__terms"
++               >
++                 $240 for the four Saturdays
++               </p>
++               <div
++                 class="spot-card__nights"
++               >
++                 <p
++                   class="field-label"
++                 >
++                   Plates the crowd here will buy
++                 </p>
++                 <ol>
++                   <li>
++                     <span>
++                       Sat
++                        
++                       1
++                     </span>
++                     <b>
++                       38
++                     </b>
++                   </li>
++                   <li>
++                     <span>
++                       Sat
++                        
++                       2
++                     </span>
++                     <b>
++                       46
++                     </b>
++                   </li>
++                   <li>
++                     <span>
++                       Sat
++                        
++                       3
++                     </span>
++                     <b>
++                       25
++                     </b>
++                   </li>
++                   <li>
++                     <span>
++                       Sat
++                        
++                       4
++                     </span>
++                     <b>
++                       42–65
++                     </b>
++                   </li>
++                 </ol>
++               </div>
++               <p
++                 class="spot-card__tradeoff"
++               >
++                 Halfway down the main run, across from the band. People come past all evening and you are charged for every one.
++               </p>
++               <button
++                 aria-label="Booked: Middle Row"
++                 class="button button--primary"
++                 type="button"
++               >
++                 Booked
++               </button>
++             </article>
++           </li>
++           <li>
++             <article
++               class="spot-card"
++               data-chosen="false"
++               data-spot="bridge-gate"
++             >
++               <div
++                 class="spot-card__scene scene"
++               >
++                 <svg
++                   aria-hidden="true"
++                   class="market-backdrop"
++                   focusable="false"
++                   preserveAspectRatio="xMidYMin slice"
++                   viewBox="0 0 640 520"
++                 >
++                   <g
++                     fill="none"
++                     stroke="currentColor"
++                     stroke-width="2"
++                   >
++                     <path
++                       d="M60 180 L320 70 L580 180"
++                     />
++                     <path
++                       d="M60 180 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0 q30 34 60 0"
++                     />
++                     <path
++                       d="M92 214 V470 M548 214 V470"
++                     />
++                     <path
++                       d="M92 380 H548"
++                       stroke-width="5"
++                     />
++                     <path
++                       d="M170 250 H320 M170 300 H470"
++                       stroke-dasharray="12 10"
++                     />
++                     <path
++                       d="M-20 40 Q320 130 660 40"
++                     />
++                     <g
++                       fill="currentColor"
++                       stroke="none"
++                     >
++                       <circle
++                         cx="120"
++                         cy="76"
++                         r="6"
++                       />
++                       <circle
++                         cx="320"
++                         cy="119"
++                         r="6"
++                       />
++                       <circle
++                         cx="520"
++                         cy="76"
++                         r="6"
++                       />
++                     </g>
++                   </g>
++                 </svg>
++                 <b>
++                   Bridge Gate
++                 </b>
++               </div>
++               <p
++                 class="spot-card__terms"
++               >
++                 $480 for the four Saturdays
++               </p>
++               <div
++                 class="spot-card__nights"
++               >
++                 <p
++                   class="field-label"
++                 >
++                   Plates the crowd here will buy
++                 </p>
++                 <ol>
++                   <li>
++                     <span>
++                       Sat
++                        
++                       1
++                     </span>
++                     <b>
++                       54
++                     </b>
++                   </li>
++                   <li>
++                     <span>
++                       Sat
++                        
++                       2
++                     </span>
++                     <b>
++                       65
++                     </b>
++                   </li>
++                   <li>
++                     <span>
++                       Sat
++                        
++                       3
++                     </span>
++                     <b>
++                       35
++                     </b>
++                   </li>
++                   <li>
++                     <span>
++                       Sat
++                        
++                       4
++                     </span>
++                     <b>
++                       59–92
++                     </b>
++                   </li>
++                 </ol>
++               </div>
++               <p
++                 class="spot-card__tradeoff"
++               >
++                 Everybody walks in past this booth. It is the dearest going, and on your own you cannot hand over more than 45 plates in an evening.
++               </p>
++               <button
++                 aria-label="Take this booth: Bridge Gate"
++                 class="button button--secondary"
++                 type="button"
++               >
++                 Take this booth
++               </button>
++             </article>
++           </li>
++         </ul>
++         <div
++           class="popup-sum"
++         >
++           <p
+              class="popup-settled"
+            >
+              <span>
+                What you owe before you open
+              </span>
+              <strong
+                class="money"
+              >
+                $390
+              </strong>
++           </p>
++         </div>
++         <div
++           class="popup-action"
++         >
++           <p>
++             That money is gone before you sell a single plate.
+            </p>
++           <button
++             aria-disabled="false"
++             class="button button--primary"
++             type="button"
++           >
++             See what is left
++           </button>
++         </div>
++       </main>
++       <aside
++         aria-label="Reading help"
++         class="reading-tools"
++         data-open="false"
++         data-read-aloud="skip"
++       >
++         <button
++           class="reading-tools__pill"
++           type="button"
++         >
++           <svg
++             aria-hidden="true"
++             class="reading-tools__icon"
++             focusable="false"
++             viewBox="0 0 20 20"
++           >
++             <path
++               d="M4 8h3l4-3.5v11L7 12H4z"
++               fill="currentColor"
++             />
++             <path
++               d="M13.5 7.2a4 4 0 0 1 0 5.6M15.8 5a7 7 0 0 1 0 10"
++               fill="none"
++               stroke="currentColor"
++               stroke-linecap="round"
++               stroke-width="1.6"
++             />
++           </svg>
++           Reading help
++         </button>
++       </aside>
++     </div>
++   </div>
++ </body>
+
+ ❯ src/stages/answerSpeaks.test.tsx:192:87
+    190|     const settled = document.querySelector(".popup-settled");
+    191|     expect(settled, "the box was replaced by nothing a student could b…
+    192|     expect(document.activeElement, "focus fell to the body when the bo…
+       |                                                                                       ^
+    193|   });
+    194| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/10]⎯
+
+ FAIL  src/components/primitives/inPlaceArrival.test.tsx > the hint ladder speaks to the student who asked for it > puts the student on the step-by-step hint, not on the body of the document
+AssertionError: focus went to the body instead of to the hint: expected <body><div>…(1)</div></body> to be <div role="note">…(2)</div> // Object.is equality
+
+- Expected
++ Received
+
++ <body>
++   <div>
++     <div
++       class="calculation "
++     >
++       <span
++         class="field-label"
++       >
++         What Avery can count on
++       </span>
++       <p
++         class="calculation__given"
++         id=":r2:-prompt"
++       >
++         Avery’s savings, plus base pay for every week of the season.
++       </p>
++       <div
++         class="calculation__total"
++       >
++         <span
++           aria-hidden="true"
++         >
++           Total
++         </span>
++         <div
++           class="calculation__entry"
++         >
++           <span
++             aria-hidden="true"
++           >
++             $
++           </span>
++           <input
++             aria-describedby=":r2:-prompt :r2:-feedback"
++             aria-label="What Avery can count on"
++             autocomplete="off"
++             id=":r2:"
++             inputmode="numeric"
++             value=""
++           />
++           <button
++             class="button button--primary"
++             type="button"
++           >
++             Check
++           </button>
++         </div>
++       </div>
++       <p
++         aria-live="polite"
++         class="inline-feedback inline-feedback--idle"
++         id=":r2:-feedback"
++       >
++         Stuck? Open the step-by-step hint below.
++       </p>
++       <div
++         class="calculation-help"
++       >
+          <div
+            role="note"
+          >
+            <strong>
+              Try it this way:
+            </strong>
+            <span>
+              Add the two that arrive no matter what: $500 + $4,500.
+            </span>
++         </div>
++       </div>
+      </div>
++   </div>
++ </body>
+
+ ❯ src/components/primitives/inPlaceArrival.test.tsx:118:85
+    116|     const hint = document.querySelector("[role='note']");
+    117|     expect(hint).toHaveTextContent(/Add the two that arrive no matter …
+    118|     expect(document.activeElement, "focus went to the body instead of …
+       |                                                                                     ^
+    119|   });
+    120|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/10]⎯
+
+ FAIL  src/components/primitives/inPlaceArrival.test.tsx > the hint ladder speaks to the student who asked for it > puts the student back on the box holding the answer when the last rung supplies it
+AssertionError: focus went to the body instead of back to the answer: expected <body><div>…(1)</div></body> to be <input id=":r3:" …(5)></input> // Object.is equality
+
+- Expected
++ Received
+
++ <body>
++   <div>
++     <div
++       class="calculation "
++     >
++       <span
++         class="field-label"
++       >
++         What Avery can count on
++       </span>
++       <p
++         class="calculation__given"
++         id=":r3:-prompt"
++       >
++         Avery’s savings, plus base pay for every week of the season.
++       </p>
++       <div
++         class="calculation__total"
++       >
++         <span
++           aria-hidden="true"
++         >
++           Total
++         </span>
++         <div
++           class="calculation__entry"
++         >
++           <span
++             aria-hidden="true"
++           >
++             $
++           </span>
+            <input
+              aria-describedby=":r3:-prompt :r3:-feedback"
+              aria-label="What Avery can count on"
+              autocomplete="off"
+              id=":r3:"
+              inputmode="numeric"
+              value="5000"
+            />
++           <button
++             class="button button--primary"
++             type="button"
++           >
++             Check
++           </button>
++         </div>
++       </div>
++       <p
++         aria-live="polite"
++         class="inline-feedback inline-feedback--correct"
++         id=":r3:-feedback"
++       >
++         That's the full amount.
++       </p>
++     </div>
++   </div>
++ </body>
+
+ ❯ src/components/primitives/inPlaceArrival.test.tsx:128:92
+    126|     const box = screen.getByLabelText(PROPS.label);
+    127|     expect(box).toHaveValue("5000");
+    128|     expect(document.activeElement, "focus went to the body instead of …
+       |                                                                                            ^
+    129|   });
+    130| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/10]⎯
+
+ FAIL  src/components/primitives/runMenuFocus.test.tsx > asking to leave a run > stands the student on the safe half of the confirm, not on the body
+AssertionError: focus fell to the body beside the destructive button: expected <body><div>…(1)</div></body> to be <button …(2)></button> // Object.is equality
+
+- Expected
++ Received
+
++ <body>
++   <div>
++     <details
++       class="run-menu"
++       open=""
++     >
++       <summary
++         aria-label="This run: UXQCP · seat 4"
++       >
++         UXQCP · seat 4
++       </summary>
++       <div>
++         <h2>
++           This is seat 4’s run.
++         </h2>
++         <p>
++           If that is not you, or you want to start again and pick a different one, you can leave this run here.
++         </p>
++         <p
++           class="run-menu__cost"
++         >
++           Nothing here has been turned in yet. Leaving clears this run off this computer, and it cannot be got back.
++         </p>
++         <div
++           class="run-menu__confirm"
++         >
++           <button
++             class="button button--danger"
++             type="button"
++           >
++             Yes — clear it and start again
++           </button>
+            <button
+              class="button button--quiet"
+              type="button"
+            >
+              No — keep working
+            </button>
++         </div>
++       </div>
++     </details>
++   </div>
++ </body>
+
+ ❯ src/components/primitives/runMenuFocus.test.tsx:41:8
+     39|     await askingToLeave();
+     40|     expect(document.activeElement, "focus fell to the body beside the …
+     41|       .toBe(screen.getByRole("button", { name: /no — keep working/i })…
+       |        ^
+     42|   });
+     43|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/10]⎯
+
+ FAIL  src/components/primitives/runMenuFocus.test.tsx > asking to leave a run > carries what leaving costs on both buttons, so it is read wherever the student lands
+AssertionError: "Yes — clear it and start again" says nothing about what leaving costs: expected null to be truthy
+
+- Expected:
+true
+
++ Received:
+null
+
+ ❯ src/components/primitives/runMenuFocus.test.tsx:56:90
+     54|       const button = screen.getByRole("button", { name });
+     55|       const described = button.getAttribute("aria-describedby");
+     56|       expect(described, `"${button.textContent}" says nothing about wh…
+       |                                                                                          ^
+     57|       expect(document.getElementById(described!)).toHaveTextContent(/c…
+     58|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/10]⎯
+
+ FAIL  src/components/primitives/runMenuFocus.test.tsx > asking to leave a run > puts the student back on the button they pressed when they decline
+AssertionError: expected <body><div>…(1)</div></body> to be <button …(2)></button> // Object.is equality
+
+- Expected
++ Received
+
++ <body>
++   <div>
++     <details
++       class="run-menu"
++       open=""
++     >
++       <summary
++         aria-label="This run: UXQCP · seat 4"
++       >
++         UXQCP · seat 4
++       </summary>
++       <div>
++         <h2>
++           This is seat 4’s run.
++         </h2>
++         <p>
++           If that is not you, or you want to start again and pick a different one, you can leave this run here.
++         </p>
++         <p
++           class="run-menu__cost"
++         >
++           Nothing here has been turned in yet. Leaving clears this run off this computer, and it cannot be got back.
++         </p>
+          <button
+            class="button button--secondary"
+            type="button"
+          >
+            Leave this run
+          </button>
++       </div>
++     </details>
++   </div>
++ </body>
+
+ ❯ src/components/primitives/runMenuFocus.test.tsx:64:36
+     62|     const { user } = await askingToLeave();
+     63|     await user.click(screen.getByRole("button", { name: /no — keep wor…
+     64|     expect(document.activeElement).toBe(screen.getByRole("button", { n…
+       |                                    ^
+     65|   });
+     66| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/10]⎯
+
+ FAIL  src/components/primitives/runMenuFocus.test.tsx > getting out of the run menu > closes on Escape and puts the student back on the control that opened it
+Error: [2mexpect([22m[31melement[39m[2m).not.toHaveAttribute([22m[32m[32m"open"[32m[39m[2m) // element.hasAttribute("open")[22m
+
+Expected the element not to have attribute:
+[32m  open[39m
+Received:
+[31m  open=""[39m
+ ❯ src/components/primitives/runMenuFocus.test.tsx:73:53
+     71|     await user.keyboard("{Escape}");
+     72|
+     73|     expect(document.querySelector(".run-menu")).not.toHaveAttribute("o…
+       |                                                     ^
+     74|     expect(document.activeElement).toBe(screen.getByText(/UXQCP/).clos…
+     75|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/10]⎯
+
+
+ Test Files  3 failed (3)
+      Tests  10 failed | 7 passed (17)
+   Start at  06:08:07
+   Duration  10.60s (transform 3.10s, setup 0ms, import 6.41s, tests 4.75s, environment 12.47s)
+
+
+✓ 10 pinning tests fail on the pre-fix code, and pass on the fix.

@@ -109,7 +109,12 @@ function BriefAnswers() {
             numbers of whichever world was built first, or the half of the room that took the
             market is being described by a sentence about a season they never played. */}
         <div><dt>What does it assess?</dt><dd>Whether students can <b>apply</b> budgeting under uncertainty — build a workable plan, keep it working when income and costs change, and justify it.</dd></div>
-        <div><dt>When do I use it?</dt><dd><b>After</b> you have taught the {TERMS.skills}. It is an application task, not a lesson.</dd></div>
+        {/* "It is an application task, not a lesson." came out of this row and is not lost:
+            it is the standing line under "Before students begin", two screens down, word
+            for word. What it bought is the clause in "What do students do?" that says who
+            chooses the story — a teacher can set one for the room, and a row that said
+            students pick was describing only the default. */}
+        <div><dt>When do I use it?</dt><dd><b>After</b> you have taught the {TERMS.skills}.</dd></div>
         {/* "One sitting, one device" was the sentence a teacher planned the lesson from, and
             the product has a whole cross-device resume subsystem built for the other case:
             `useAttemptCheckpoint` writes the run to the service on every change of stage,
@@ -147,7 +152,7 @@ function BriefAnswers() {
             old sentence and is asked "so is the last night a guess?" has been given the wrong
             answer to a fairness question about their own assessment. `marketDemand.test.ts`
             holds the count of stated nights against the numbers themselves. */}
-        <div><dt>What do students do?</dt><dd>They handle the money in one of two {TERMS.stories}, and they pick which. <b>Eight Weeks to the Showcase</b>: a player’s season: they choose housing, build a plan, absorb a Week 5 loss and a new required cost, and repair it. <b>Run the Pop-Up</b>: four Saturdays at a night market: they take a booth, decide how much food to cook against the crowd it draws, and cover a generator that dies with the biggest night still ahead. Three crowds are printed before they order; the last is a range.</dd></div>
+        <div><dt>What do students do?</dt><dd>They handle the money in one of two {TERMS.stories} — theirs to pick, or yours to set. <b>Eight Weeks to the Showcase</b>: a player’s season: they choose housing, build a plan, absorb a Week 5 loss and a new required cost, and repair it. <b>Run the Pop-Up</b>: four Saturdays at a night market: they take a booth, decide how much food to cook against the crowd it draws, and cover a generator that dies with the biggest night still ahead. Three crowds are printed before they order; the last is a range.</dd></div>
         {/* This row used to end "so a class where students chose differently still produces
             one answer about the class", and half of that is what the product does. The
             rubric half is true and structural: both worlds declare the same evidence
@@ -162,12 +167,12 @@ function BriefAnswers() {
             half-classes at 9:15. Both halves are pinned in `whatPools.test.ts`, from the
             analysis layer rather than from this file. */}
         <div><dt>Do the two give me the same thing back?</dt><dd>Yes, on the {TERMS.skills}. Both {TERMS.stories} are judged against the same named parts of the work, so a class that chose differently still gets one set of {TERMS.skill} results. What the room decided comes back one {TERMS.story} at a time, each with its own count — plan the debrief as two groups.</dd></div>
-        <div><dt>What do I get back?</dt><dd>For each student, what the evidence shows against each {TERMS.skill} — one line for each thing the work had to show, every judgement traceable to the moment in their own run. Plus what the class decided, and one written explanation you read and score yourself. Counts for your gradebook come with it.</dd></div>
+        <div><dt>What do I get back?</dt><dd>For each student, what the evidence shows against each {TERMS.skill} — one line for each thing the work had to show, each traceable to the moment in their own run. Plus what the class decided, and one written explanation you read and score yourself. Counts for your gradebook come with it.</dd></div>
         {/* Every clause after the first used to be false: there are accounts now, teachers do
             give an email address, the roster is where the names live, and there is no seat
             number to give out — a student signs in with a class code and the code on a card.
             A teacher following the old sentence would have lost the lesson in the room. */}
-        <div><dt>How do I launch it?</dt><dd>Create a class, paste your class list, and print the cards — one per student. Put the class code on the board; a student types that code and the code on their own card. They never type an email address, a password or a birthday. No list to hand? Students type the class code and their own first name instead.</dd></div>
+        <div><dt>How do I launch it?</dt><dd>Create a class, paste your class list, print the cards — one per student. Put the class code on the board; a student types that code and the code on their own card. They never type an email address, a password or a birthday. No list to hand? Students type the class code and their own first name instead.</dd></div>
       </dl>
       <div className="brief-answers__links">
         <Link to="/educator/classes">Run this with my class →</Link>

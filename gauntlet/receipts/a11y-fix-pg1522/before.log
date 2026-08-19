@@ -1,0 +1,45 @@
+
+
+######## B1 — the setup total, then plan Q1, both answered correctly ########
+[setup-total, correct] focus = button.button.button--primary "Check"
+[setup-total, correct] announced so far: ["[polite] Each place asks for something different. Pick the one you want to build the plan around.","[polite] Cousin’s Spare Room. 14 hours of every week belong to the trip. Now work out what eight weeks of it costs.","[polite] That's the full amount.","[polite] Cousin’s Spare Room. $300 of Avery’s money is spoken for, and 14 hours of every week belong to the trip."]
+[setup-total, correct] live regions:
+[polite] That's the full amount.
+[polite] Cousin’s Spare Room. $300 of Avery’s money is spoken for, and 14 hours of every week belong to the trip.
+
+[plan Q1, correct] focus = BODY (nothing focused)
+[plan Q1, correct] announced by the press: []
+[plan Q1, correct] live regions:
+
+
+
+######## B1b — two different wrong answers in a row ########
+attempt 1 ($100, wrong): focus = button.button.button--primary "Check"
+  announced: ["[polite] Too low. Both payments count — the money already saved and the base pay."]
+attempt 2 ($200, wrong): focus = button.button.button--primary "Check"
+  announced: []
+
+
+######## B2 — the hint ladder ########
+after "Show me one step": focus = BODY (nothing focused)
+  announced: []
+  A11Y TREE around the hint:
+    note
+    button "Show the answer and keep going" [invalid="false" focusable=true]
+after "Show the answer and keep going": focus = BODY (nothing focused)
+  announced: []
+  what the screen now says (MAJOR 4 check):
+You worked this out. Avery can count on $5,000 whatever happens on the court. It is the first line of Avery’s money.
+
+
+######## B3 — the run menu ########
+after opening the run menu: focus = summary "This run: AY7NQ · seat 1"
+after "Leave this run": focus = BODY (nothing focused)
+  announced: []
+  buttons now: ["Yes — clear it and start again","No — keep working"]
+  the next four Tab stops:
+    1: button.button.button--danger "Yes — clear it and start again"
+    2: button.button.button--quiet "No — keep working"
+    3: button.button.button--secondary "Choose this setup"
+    4: button.button.button--secondary "Choose this setup"
+  after Escape: run-menu[open] count = 1, focus = button.button.button--secondary "Choose this setup"

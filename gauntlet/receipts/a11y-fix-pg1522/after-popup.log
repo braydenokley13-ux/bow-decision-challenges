@@ -1,0 +1,23 @@
+
+
+######## Pop-Up — the four sums, right first time ########
+[what you owe before you open, correct] focus = p.popup-settled "What you owe before you open$390"
+  announced by the press: []
+  the next three Tab stops from there:
+    1: button.button.button--primary "See what is left"
+    2: button.reading-tools__pill "Reading help"
+    3: BODY (nothing focused)
+[what is left to plan with, correct] focus = p.popup-settled "What is left to plan with$1,510"
+  announced by the press: []
+  A11Y TREE around the settled line:
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+    paragraph
+      paragraph
+    paragraph
+    paragraph [focusable=true]
+    paragraph [focusable=true]
+          paragraph
+          paragraph
+
+-- back to a settled screen: does anything steal focus? --
+after Back: focus = h1.student-home__title "Your work is here."

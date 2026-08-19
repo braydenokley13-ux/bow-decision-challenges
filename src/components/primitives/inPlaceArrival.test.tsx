@@ -77,7 +77,7 @@ function watchLiveRegion(): { count: () => number } {
 }
 
 describe("the verdict outlives the press that produced it", () => {
-  it("says the same thing again when the student is wrong the same way twice", async () => {
+  it("says the same thing again when the student presses Check on the same answer again", async () => {
     const user = userEvent.setup();
     render(<CalculationInput {...PROPS} />);
     const box = screen.getByLabelText(PROPS.label);
@@ -87,14 +87,14 @@ describe("the verdict outlives the press that produced it", () => {
     await user.click(check);
     expect(screen.getByText(PROPS.low)).toBeInTheDocument();
 
-    // The same verdict, a second time. Before this fix nothing in the region changed and a
-    // screen reader said nothing at all.
+    // Press it again, unchanged — a student who did not hear the first verdict, or did not
+    // believe it. Before this fix the verdict was already the same string, so nothing in the
+    // region changed, so a live region had nothing to announce, so the press was silent. A
+    // student can sit on one sum pressing a button that says nothing back.
     const live = watchLiveRegion();
-    await user.clear(box);
-    await user.type(box, "200");
     await user.click(check);
 
-    expect(live.count(), "the second wrong answer did not change the live region").toBeGreaterThan(0);
+    expect(live.count(), "the second press did not change the live region, so nothing was said").toBeGreaterThan(0);
     expect(screen.getByText(PROPS.low)).toBeInTheDocument();
   });
 

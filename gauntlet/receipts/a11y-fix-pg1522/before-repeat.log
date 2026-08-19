@@ -1,0 +1,15 @@
+
+
+######## the same wrong answer, checked three times, nothing retyped ########
+press 1 (the box still reads $100): focus = button.button.button--primary "Check"
+  announced (deduped): ["[polite] Too low. Both payments count — the money already saved and the base pay."]
+  live-region mutations:
+    + 6499ms [polite] childList added="Too low. Both payments count — the money already saved and the base pay." → "Too low. Both payments count — the money already saved and the base pay."
+press 2 (the box still reads $100): focus = button.button.button--primary "Check"
+  announced (deduped): []
+  live-region mutations:
+    (none — nothing was said)
+press 3 (the box still reads $100): focus = button.button.button--primary "Check"
+  announced (deduped): []
+  live-region mutations:
+    (none — nothing was said)

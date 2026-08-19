@@ -13,18 +13,24 @@
 # a marker that the fix put there and the revert must remove, and the script stops if it is
 # still present after the restore.
 #
-#     gauntlet/receipts/a11y-fix-pg1522/revert-check.sh [fix-commit]
+#     gauntlet/receipts/a11y-fix-pg1522/revert-check.sh [before-ref] [fix-ref]
+#
+# The default `before` is the commit this branch stood at when the a11y-3 blockers were picked
+# up, named rather than derived as `HEAD^`: several agents share this working tree and one
+# commit swept four separate people's work in together, so "the commit before mine" is not a
+# thing the history can be asked for. What it can be asked for is the content of these four
+# files on a day none of this had been written, which is what the markers below check.
 #
 # Exits non-zero unless the revert applied *and* the tests failed under it.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-FIX="${1:-HEAD}"
-BEFORE="$(git -C "$ROOT" rev-parse "${FIX}^")"
+BEFORE="$(git -C "$ROOT" rev-parse "${1:-79e808f}")"
+FIX="${2:-HEAD}"
 OUT="$(mktemp -d)"
 trap 'rm -rf "$OUT"' EXIT
 
-echo "→ fix under test: $(git -C "$ROOT" rev-parse --short "$FIX")   before it: $(git -C "$ROOT" rev-parse --short "$BEFORE")"
+echo "→ fix at: $(git -C "$ROOT" rev-parse --short "$FIX")   source restored from: $(git -C "$ROOT" rev-parse --short "$BEFORE")"
 git -C "$ROOT" archive "$FIX" | tar -x -C "$OUT"
 ln -s "$ROOT/node_modules" "$OUT/node_modules"
 
