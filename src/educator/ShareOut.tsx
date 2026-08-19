@@ -7,7 +7,7 @@ import type { ShareOutItem, ShareOutSelection } from "../platform/identity/types
 import { useClassEvidence } from "./useClassEvidence";
 import { classRoll } from "./analysis";
 import { seatLabel, seatNames } from "./names";
-import { shareOutCandidates, shareOutSlides, type ShareOutCandidate, type ShareOutSlide } from "./shareOut";
+import { shareOutReading, shareOutSlides, type ShareOutCandidate, type ShareOutSlide } from "./shareOut";
 import type { AttributedSubmission } from "../platform/classes/types";
 import { WORLD_REGISTRY } from "../domain/scenario/registry";
 import { worldOfSubmission } from "./objectiveResults";
@@ -120,7 +120,10 @@ export function ShareOut() {
   const inClass = new Set(roll.rows.map((row) => row.sessionId));
   const named = selection?.named ?? false;
   const items = (selection?.items ?? []).filter((item) => inClass.has(item.sessionId));
-  const candidates = shareOutCandidates(roll.rows, submissions);
+  // Candidates, and the reasons too common to single anybody out with. The second used to be
+  // the first: the most frequent sentence on this page was true of every student who ran that
+  // story, and it cost a teacher seven reads to find that out.
+  const { candidates, tooCommon } = shareOutReading(roll.rows, submissions);
   const slides = shareOutSlides({ items, submissions, named, nameFor, summaryFor: summaryOf });
 
   if (presenting && slides.length > 0) {
@@ -244,6 +247,21 @@ export function ShareOut() {
             </ul>
             {candidates.length === 0 && (
               <p className="class-state">Nothing here splits this class yet. The debrief has the counts.</p>
+            )}
+            {/* Not offered, and said out loud rather than quietly dropped. A thing most of the
+                class did is worth knowing and is worth a minute of the debrief; it is not a
+                reason to put one child's work on the wall. */}
+            {tooCommon.length > 0 && (
+              <div className="class-state">
+                <p>Not offered as reasons — true of too much of the class to single anybody out:</p>
+                <ul>
+                  {tooCommon.map((common) => (
+                    <li key={`${common.worldId}-${common.reason}`}>
+                      “{common.reason}” — {common.earned} of the {common.ran} who ran {worldTitle(common.worldId)}.
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </section>
         </>

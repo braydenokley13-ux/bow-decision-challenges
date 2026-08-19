@@ -525,8 +525,24 @@ p { color: var(--ink-2); }
      `white-space: nowrap`, and the season strip below inherited that grid width. The strip
      was the visible symptom; these two columns were the cause. `minmax(0, …)` is what lets a
      grid column go narrower than its content, and it is the piece that was missing. */
-  .challenge-topbar { height: auto; min-height: 64px; grid-template-columns: minmax(0, 1fr) minmax(0, auto); padding: var(--s-3); }
-  .app-mark b, .app-mark small { white-space: normal; }
+
+  /* The mark keeps a track of its own, and the bar stops being 439px tall.
+     `minmax(0, 1fr) minmax(0, auto)` took the sideways scroll off the shell, which was the
+     blocker — but `auto` asks for everything it wants and a `minmax(0, …)` track has no floor,
+     so the drawers took the lot: measured at 360 the computed tracks were `0px 328px`. The
+     BOW mark, which is a link and the product's only branding, was laid out in a zero-width
+     column, and because its content cannot actually be zero it wrapped one glyph per line and
+     drove the sticky top bar to **439px tall on a 780px phone** — 56 % of the screen given to
+     chrome. Two `auto` tracks carry a real automatic minimum, so grid shrinks them towards
+     min-content together instead of starving one: measured at 360 that is `194.6px 133.4px`,
+     no overlap between them, still zero horizontal scroll, and a 172px bar. */
+  .challenge-topbar { height: auto; min-height: 64px; grid-template-columns: auto auto; padding: var(--s-3); }
+
+  /* `white-space: normal` lets the wordmark wrap between its words; `overflow-wrap` lets it
+     break inside one when even that is not enough. At a 320px window the market bar gives the
+     mark a 119px track and "DECISION CHALLENGES" wants 131 — without this the last word is
+     painted over the control beside it. */
+  .app-mark b, .app-mark small { white-space: normal; overflow-wrap: anywhere; }
   .run-menu summary, .contract-drawer summary { white-space: normal; }
 
   /* Two rows of top chrome down here, and the strip can wrap to three. The heading has to

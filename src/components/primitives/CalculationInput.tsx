@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { parseDollars } from "../../domain/core/money";
 import { Button } from "./Button";
 
@@ -47,6 +47,34 @@ export function CalculationInput({ label, prompt, terms, expected, onSubmit, onC
   const [raw, setRaw] = useState("");
   const [verdict, setVerdict] = useState<"idle" | "correct" | "low" | "high" | "invalid">("idle");
   const [showScaffold, setShowScaffold] = useState(false);
+  const answer = useRef<HTMLDivElement>(null);
+
+  /**
+   * What the student pressed Check to find out has to be on the screen.
+   *
+   * On a phone the input and the Check button sit at the bottom edge of the window, and the
+   * verdict line renders under them: measured at 390 x 844, three presses of **Check** left
+   * the message at y=840–857 and the "Show me one step" / "Show the answer" pair at y=866–971,
+   * all of it below an 844px fold, with the page not scrolling at all. A student pressing
+   * Check and seeing nothing move concludes the button is broken — and the two buttons they
+   * cannot see are the whole scaffold ladder.
+   *
+   * The message is announced (`aria-live="polite"` below), so this is the sighted half of the
+   * same event. `block: "nearest"` scrolls the least that will do and no-ops when the answer
+   * is already visible, and it honours the `scroll-padding` the plan rail sets, so this cannot
+   * park the message under the pinned money summary. The motion query is the one the rest of
+   * the product branches on.
+   */
+  useEffect(() => {
+    if (verdict === "idle") return;
+    const block = answer.current;
+    if (!block) return;
+    const target = block.querySelector(".calculation-help") ?? block.querySelector(".inline-feedback") ?? block;
+    const frame = requestAnimationFrame(() => {
+      target.scrollIntoView({ block: "nearest", behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [verdict, priorAttempts, showScaffold]);
 
   const submit = () => {
     // An empty box is not an attempt. Three idle taps on Check used to increment the
@@ -75,7 +103,7 @@ export function CalculationInput({ label, prompt, terms, expected, onSubmit, onC
   };
 
   return (
-    <div className={`calculation ${compact ? "calculation--compact" : ""}`}>
+    <div ref={answer} className={`calculation ${compact ? "calculation--compact" : ""}`}>
       {!labelHidden && <span className="field-label">{label}</span>}
       <p className="calculation__given" id={`${id}-prompt`}>{prompt}</p>
       {terms && <p className="terms">{terms}</p>}

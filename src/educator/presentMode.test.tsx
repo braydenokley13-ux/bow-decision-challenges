@@ -26,9 +26,9 @@ import type { ShareOutSlide } from "./shareOut";
  */
 
 const SLIDES: ShareOutSlide[] = [
-  { title: "Plan A", quote: "I kept back the most I could because the season is long.", summary: "$1,200 course · $1,600 backup · $400 rides" },
-  { title: "Plan B", quote: "I paid the course first so the seat could not go.", summary: "$1,200 course · $600 backup · $1,400 rides" },
-  { title: "Plan C", quote: "", summary: "$0 course · $1,600 backup · $1,600 rides" },
+  { sessionId: "s-avery-0001", title: "Plan A", quote: "I kept back the most I could because the season is long.", summary: "$1,200 course · $1,600 backup · $400 rides" },
+  { sessionId: "s-blair-0002", title: "Plan B", quote: "I paid the course first so the seat could not go.", summary: "$1,200 course · $600 backup · $1,400 rides" },
+  { sessionId: "s-casey-0003", title: "Plan C", quote: "", summary: "$0 course · $1,600 backup · $1,600 rides" },
 ];
 
 afterEach(cleanup);
