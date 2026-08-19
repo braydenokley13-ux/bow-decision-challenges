@@ -38,3 +38,82 @@ Fourteen names pasted from a class list. Twelve of them turned in work I generat
 | 13 | Hannah G. | **Homework.** Started in class, finished at home the next night on another browser. |
 | 14 | Omar F. | Never signed in. |
 
+---
+
+# What is genuinely good
+
+I want these on the record before the faults, because they are the reason I would even
+consider a second run.
+
+### 1. Setup really is a between-periods job
+
+Timed, in a browser, from a signed-out state:
+
+| Step | Elapsed |
+|---|---|
+| Account created (email + password), recovery code shown once | 3.2 s |
+| Class created, code + private link on screen | +3.6 s |
+| 14 names pasted, 14 cards rendered ready to print | +3.0 s |
+
+Receipts `02-make-account.png` … `11-cards-batch.png`. Machine time is not teacher time, but
+the *number of decisions* is what makes a setup slow, and there are four: a class name, an
+objective, one story or student's choice, and a paste. Nothing asks for a student email, a
+Google sign-in, an LMS token or a seating plan. I have set up worse tools in a free period and
+not finished. This one I would finish before the bell.
+
+### 2. It refuses to run in a configuration that would leak children's work
+
+Booting the class service with no `BOW_STORE_KEY` gives `/api/health`:
+
+```
+{"ok":false,"store":"unconfigured","classroomReady":false,
+ "reason":"This deployment has no store key, so it will not write a class. Set BOW_STORE_KEY
+  to 32 random bytes … openssl rand -base64 32 … Losing it loses every class."}
+```
+
+It will not write a class at all. With a key, the roster on disk is ciphertext
+(`classes/XEWFA/roster/3.json` is `{"v":1,"iv":…,"tag":…,"ct":…}`). A product that would
+rather not start than write twenty-eight children's names in plain JSON is one I can defend to
+a district data officer. That is rarer than it should be.
+
+### 3. Resume is the best thing in the product
+
+I broke six runs mid-flight (my harness died) and every one of them came back. The student home
+says exactly where they stopped — *"You stopped at Weeks 1–4 · Week 3's cash."* — and *Carry
+on* lands on that screen with the plan intact (`08-ana-home-returning.png`,
+`09-ana-resume.png`).
+
+It survives the two cases that matter in a school:
+
+* **Another computer.** Carlos signed in on a second machine with the same card and resumed
+  mid-season (`20-carlos-second-device-home.png`, `21-carlos-second-device-resumed.png`).
+* **The next night, at home.** Hannah left off at the Week 3 screen in class, signed in on a
+  different browser the following evening, and picked up at *"Week 3 pays Avery in cash."*
+  and finished. Nothing was lost and nothing had to be re-entered.
+
+This is the single feature that makes a 20–28 minute task survivable in a 40-minute period.
+Most classroom software fails here. This one does not.
+
+### 4. The live board answers the only question worth asking mid-lesson
+
+`30-live-board-during-lesson.png`, taken with runs in flight:
+
+```
+WHERE THE ROOM IS
+TURNED IN 10 of 14 · WORKING RIGHT NOW 2 of 14 · NOT STARTED 2 of 14
+Not started: Hannah G. and Omar F.
+Jaylen W.   Week 5 · first response            6 min ago
+Sofia M.    Weeks 1–4 · Week 3's cash          6 min ago
+```
+
+Every tile carries the denominator, the not-started students are **named in full** rather than
+"and 3 more", and the two who are stuck are listed with the screen they are stuck on and how
+long they have been quiet. That is a walking list. I read it and I get up. No other surface in
+this product earns its place as fast as this one.
+
+### 5. It will not describe a class it cannot describe
+
+With nothing marked, the header says *"Nothing is assessed yet — a student whose writing
+nobody has read has no usable result."* and the objective narration is withheld below five
+runs. A product that says "I don't know yet" is a product I can trust when it says it does.
+
