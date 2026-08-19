@@ -2,10 +2,10 @@ import { Link, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { AppMark } from "./components/primitives/AppMark";
 import { StudentChallenge } from "./stages/StudentChallenge";
 import { EducatorGuide, TeachingCompanion } from "./educator/EducatorPages";
+import { SampleRun } from "./educator/SampleRun";
 import { MyClasses } from "./educator/MyClasses";
 import { TeacherSignIn } from "./educator/SignIn";
 import { AssignFlow, ObjectiveDetail, ObjectiveList } from "./educator/ObjectivePages";
-import { ObjectiveMap } from "./educator/ObjectiveMap";
 import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPages";
 import { ReadingQueue } from "./educator/ReadingQueue";
 import { Debrief } from "./educator/Debrief";
@@ -103,10 +103,16 @@ export function App() {
       <Route path="/educator/sign-in" element={<TeacherSignIn />} />
       <Route path="/educator/classes/new" element={<MyClasses />} />
       <Route path="/educator/guide" element={<EducatorGuide />} />
-      {/* The objective a teacher assigns and the list they find it in. Real classes only;
-          there is no demo objective. */}
-      <Route path="/educator/map" element={<ObjectiveMap />} />
+      {/* The guide's own "Try it as a student", which used to land on a class-code prompt for
+          a code the person evaluating the product does not have. A real run of the real
+          screens with nothing behind it: no class, no seat, nothing saved and nothing sent. */}
+      <Route path="/educator/try" element={<SampleRun />} />
       <Route path="/educator/objectives" element={<ObjectiveList />} />
+      {/* The Objective Map's URL. The surface is gone — a nine-value status filter over a
+          teacher-maintained "taught" flag is a planbook — but the question it answered is a
+          column on the objectives page now, and a teacher's bookmark should land on the answer
+          rather than silently on the front door. */}
+      <Route path="/educator/map" element={<Navigate to="/educator/objectives" replace />} />
       <Route path="/educator/objectives/:frameworkId/:code" element={<ObjectiveDetail />} />
       {/* One path to assigning work, and it is the classes page. This is the URL the old
           second path shipped on. */}
