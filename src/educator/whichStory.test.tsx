@@ -59,10 +59,13 @@ function serviceRecordingTheAssignment(): { assignment: () => Assigned | null } 
 }
 
 /** Name it, pick a story, create it — the whole of what a teacher does on this screen. */
-async function createAClassSetTo(story: string): Promise<Assigned | null> {
+async function createAClassSetTo(story: string, options: { objective?: false } = {}): Promise<Assigned | null> {
   const service = serviceRecordingTheAssignment();
   render(<MemoryRouter><MyClasses /></MemoryRouter>);
   await userEvent.type(screen.getByLabelText(/name this class/i), "Period 3");
+  if (options.objective === false) {
+    await userEvent.selectOptions(screen.getByLabelText(/^objective$/i), "");
+  }
   await userEvent.click(screen.getByRole("radio", { name: new RegExp(story, "i") }));
   await userEvent.click(screen.getByRole("button", { name: /create/i }));
   await waitFor(() => expect(service.assignment()).not.toBeNull());
@@ -102,6 +105,24 @@ describe("every story a student can play is a story a class can be set", () => {
     const assigned = await createAClassSetTo("students pick");
     expect(assigned?.allowedWorldIds).toEqual(PLAYABLE_WORLDS.map((world) => world.id));
     expect(assigned?.studentChoosesWorld).toBe(true);
+  });
+
+  /**
+   * The two settings on this form are not one setting, and one of them used to eat the other.
+   *
+   * A class is only *set* by the second request; a class with none is read as the assignment
+   * the service synthesises for classes made before any of this existed — one story, no
+   * choice. That request was skipped whenever a teacher chose "run the challenge without
+   * one", so a decision about *objectives* silently discarded the story they had picked one
+   * control below it, and a room the front door promises a choice to was sent into the season
+   * with no picker at all. Measured against the real service before the fix: a class created
+   * with no objective and *Students pick* came back `allowedWorldIds: ["basketball"],
+   * studentChoosesWorld: false`.
+   */
+  it("sets the story on a class a teacher runs without an objective", async () => {
+    const assigned = await createAClassSetTo(`everyone.*${PLAYABLE_WORLDS[1]?.title ?? ""}`, { objective: false });
+    expect(assigned?.objectiveRef, "an objective nobody chose may never be written into the record").toBeNull();
+    expect(assigned?.allowedWorldIds).toEqual([PLAYABLE_WORLDS[1]?.id]);
   });
 
   /**

@@ -137,13 +137,23 @@ export function MyClasses() {
       // a code on a whiteboard with nothing behind it is recoverable, and a class that
       // failed to be created is a room of students who cannot start. If this call fails
       // the class still opens and reads as the one thing it was implicitly set.
-      if (objectiveCode !== NO_OBJECTIVE) {
-        await fetch(`${CLASS_API_BASE}/classes/${record.code}/assignments`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": record.teacherKey },
-          body: JSON.stringify({ objectiveRef: { frameworkId: FRAMEWORK_ID, code: objectiveCode }, ...storySetting() }),
-        });
-      }
+      //
+      // It is sent however the objective picker was left, because the two settings on this
+      // form are not one setting. It used to be skipped entirely for "run the challenge
+      // without one" — and a class with no stored assignment is read as the one the service
+      // synthesises for classes made before any of this existed: one story, no choice. So
+      // the story a teacher had just picked was thrown away by their choice about
+      // *objectives*, silently, and a room promised a choice on the front of the box was
+      // sent into the season with no picker at all. What a teacher opts out of there is an
+      // objective, which is what `objectiveRef: null` says.
+      await fetch(`${CLASS_API_BASE}/classes/${record.code}/assignments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": record.teacherKey },
+        body: JSON.stringify({
+          objectiveRef: objectiveCode === NO_OBJECTIVE ? null : { frameworkId: FRAMEWORK_ID, code: objectiveCode },
+          ...storySetting(),
+        }),
+      });
       rememberClass(record);
       reloadKnown();
       setCreated(record);
