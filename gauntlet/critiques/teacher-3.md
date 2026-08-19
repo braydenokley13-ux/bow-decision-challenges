@@ -772,6 +772,28 @@ that Ana gave up the course she had already paid for.
 
 ---
 
+# What I did not test
+
+Said plainly so nobody reads more into this than it holds.
+
+* **Fourteen students, not twenty-eight.** The reading queue's cost per student is flat and the
+  export is built from the roll, so I have no reason to think either breaks at 28 — but I did
+  not run 28, and the debrief's contrast/quote sections are the ones whose behaviour would
+  change most with class size.
+* **One story.** Every run here is *Eight Weeks to the Showcase*. The mixed-world case — half
+  the room in the night market — is where several of the code comments say past defects lived,
+  and I did not exercise it.
+* **One teacher account, one browser.** I did not test two teachers sharing a staffroom
+  machine, or signing in on a second computer to recover a class, though the endpoints and the
+  copy for both exist.
+* **No real children.** Every "student" here is me driving the real screens through a real
+  browser at machine speed. The pacing claim (20–28 minutes) is untested by this review and the
+  product says so itself.
+* **No assistive technology.** Another reviewer has the accessibility pass; I read with a mouse
+  and a keyboard.
+
+---
+
 # Findings at a glance
 
 | # | Severity | What it costs | Where |
