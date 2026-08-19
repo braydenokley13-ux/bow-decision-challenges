@@ -42,6 +42,21 @@ export default defineConfig({
    * anyway. Anything genuinely hung still fails on the per-test timeout above it.
    */
   expect: { timeout: 20_000 },
+  /**
+   * The per-test timeout the comment above already assumed was here, and was not.
+   *
+   * Playwright's default is thirty seconds, and every test in this suite long enough to notice
+   * had quietly grown its own `test.setTimeout` to escape it — 120s seven times, 180s twice,
+   * 240s twice. That is the same fact restated eleven times, and the number that mattered was
+   * whichever one somebody last guessed. Five minutes here is a ceiling for the whole suite, so
+   * a test that needs longer says so once, in its own file, next to the reason.
+   *
+   * It costs nothing on a passing run: a test that finishes in eight seconds still finishes in
+   * eight. It is only ever paid by a test that was going to fail anyway, and what it buys is
+   * that the failure is reported as the assertion that failed rather than as a timeout, which
+   * is the difference between a finding and a shrug.
+   */
+  timeout: 300_000,
   use: {
     baseURL: `http://127.0.0.1:${APP_PORT}`,
     trace: "retain-on-failure",

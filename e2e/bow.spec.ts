@@ -1983,7 +1983,12 @@ test("an objective with no world is a short honest page, not a dashboard of empt
 });
 
 test("a teacher assigns 1.3, three students submit, and the objective reports what they did", async ({ page, browser, request }) => {
-  test.setTimeout(180_000);
+  // Three whole student journeys back to back, in three fresh browser contexts, plus the
+  // teacher reading and marking all three afterwards. Measured at over 600s on a loaded
+  // four-core box — the 180s this carried was set when it was the only long test in the file
+  // and was never remeasured, so on a busy machine it failed as a timeout and reported nothing
+  // about the product. The journeys are the test; the budget is what gives way.
+  test.setTimeout(900_000);
 
   // The three students, named once. Every count this test reads off a teacher's screen is the
   // size of this list, so it is composed from it rather than typed as a 3 beside it — the
