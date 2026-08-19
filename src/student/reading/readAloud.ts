@@ -165,14 +165,33 @@ export function speechAvailable(): boolean {
 }
 
 /**
+ * Errors that mean the voice was stopped, rather than that there is no voice.
+ *
+ * Chrome fires `onerror` on every utterance it cancels, and the reader cancels one every time
+ * a student presses stop or leaves a screen. Reading those as "this machine cannot speak"
+ * would tell a child their Chromebook is broken the first time they changed their mind.
+ */
+const STOPPED: ReadonlySet<string> = new Set(["canceled", "cancelled", "interrupted"]);
+
+/**
  * The browser's own voice, at its own speed.
  *
  * No rate, pitch or voice is set. A student who wants a slower voice has already set one, in
  * the operating system, where it applies to everything they use; a second speed control in
  * one web page that disagrees with it is a worse experience than none. The language is taken
  * from the document so the browser picks an English voice rather than whichever came first.
+ *
+ * `cannotSpeak` is how a machine with no voice installed gets to say so. `speechSynthesis` is
+ * present on every browser this product supports; **a voice is not.** A Chromebook whose text
+ * to speech has never been switched on, and desktop Linux with no speech service running, both
+ * answer `speak` with `synthesis-failed` and say nothing — so the control was there, a student
+ * pressed it, and the screen did nothing at all and gave no reason. Measured on this machine's
+ * own Chromium: `speechSynthesis` present, `getVoices()` empty, `error: synthesis-failed` on
+ * the first utterance. Asking `getVoices().length` up front is not the fix, because Chrome
+ * fills that list asynchronously and would hide the control from students who do have a voice.
+ * Failing out loud, once, at the moment it fails, is.
  */
-export function browserVoice(): Voice {
+export function browserVoice(cannotSpeak?: () => void): Voice {
   let live: SpeechSynthesisUtterance | null = null;
   return {
     say(text, done) {
@@ -187,7 +206,10 @@ export function browserVoice(): Voice {
         done();
       };
       utterance.onend = settle;
-      utterance.onerror = settle;
+      utterance.onerror = (event) => {
+        if (!STOPPED.has(event.error)) cannotSpeak?.();
+        settle();
+      };
       live = utterance;
       // Chrome leaves the queue paused if a previous page paused it, and a paused queue
       // accepts `speak` and says nothing at all.

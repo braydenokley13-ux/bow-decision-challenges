@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   browserMarker, browserVoice, collectUnits, createReader, scrollUnitIntoView, speechAvailable, textOf,
   type Marker, type ReaderState, type Voice,
@@ -40,17 +40,46 @@ export function ReadingTools({ screenKey, region, voice, marker }: {
   const [showWords, setShowWords] = useState(false);
   const [screenText, setScreenText] = useState("");
   const [world, setWorld] = useState<string | null>(null);
+  // A machine that has `speechSynthesis` and no voice behind it. Found by pressing the button:
+  // the control was there, the screen did nothing, and nothing said why.
+  const [voiceless, setVoiceless] = useState(false);
   const opener = useRef<HTMLButtonElement>(null);
   const wordsButton = useRef<HTMLButtonElement>(null);
+  const box = useRef<HTMLElement>(null);
 
-  const canSpeak = voice !== undefined || speechAvailable();
+  const canSpeak = (voice !== undefined || speechAvailable()) && !voiceless;
   const reader = useMemo(
-    () => createReader({ voice: voice ?? browserVoice(), marker: marker ?? browserMarker(), scroll: scrollUnitIntoView }),
+    () => createReader({
+      voice: voice ?? browserVoice(() => setVoiceless(true)),
+      marker: marker ?? browserMarker(),
+      scroll: scrollUnitIntoView,
+    }),
     [voice, marker],
   );
 
   useEffect(() => reader.subscribe(setState), [reader]);
   useEffect(() => () => reader.stop(), [reader]);
+  // The run down the screen is already under way when the first sentence fails, and every
+  // sentence after it would fail in silence too.
+  useEffect(() => {
+    if (voiceless) reader.stop();
+  }, [voiceless, reader]);
+
+  /**
+   * How much of the bottom of the screen the tools are standing on, published to the stylesheet.
+   *
+   * They sit over the run, and on a phone the run has a money rail stuck to the same edge. A
+   * number in the stylesheet would be wrong twice over — the panel is a row taller on a screen
+   * that changed under the voice, and shorter on a machine with no voice at all — so the panel
+   * measures itself and `reading.css` reserves exactly that. Zero when it is closed, because a
+   * pill in a corner takes nothing away from anybody.
+   */
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const panel = preference.toolsOpen ? box.current?.getBoundingClientRect().height ?? 0 : 0;
+    root.style.setProperty("--bow-reading-tools", `${Math.round(panel)}px`);
+    return () => { root.style.removeProperty("--bow-reading-tools"); };
+  });
 
   // A new screen: stop, then start again if that is what this student asked for. The delay is
   // the run's own stage entrance — reading over a heading that is still animating in puts the
@@ -79,7 +108,7 @@ export function ReadingTools({ screenKey, region, voice, marker }: {
     // A landmark, because everything on a page belongs in one and this is the only thing on
     // these screens that sits outside the stage. `data-read-aloud="skip"` keeps the voice from
     // reading its own controls back, wherever a shell chooses to render it.
-    <aside className="reading-tools" aria-label="Reading help" data-read-aloud="skip" data-open={preference.toolsOpen ? "true" : "false"}>
+    <aside ref={box} className="reading-tools" aria-label="Reading help" data-read-aloud="skip" data-open={preference.toolsOpen ? "true" : "false"}>
       {preference.toolsOpen ? (
         <div className="reading-tools__panel">
           <div className="reading-tools__row">
@@ -115,6 +144,9 @@ export function ReadingTools({ screenKey, region, voice, marker }: {
           </div>
           {state === "changed" && (
             <p className="reading-tools__note" role="status">The screen changed, so the voice stopped. Press read to hear it as it is now.</p>
+          )}
+          {voiceless && (
+            <p className="reading-tools__note" role="status">This computer has no voice, so it cannot read out loud. Words still works.</p>
           )}
         </div>
       ) : (
