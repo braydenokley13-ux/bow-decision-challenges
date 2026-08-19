@@ -31,6 +31,27 @@ describe("challenge state machine", () => {
     expect(state.saved.working).toBeDefined();
   });
 
+  it("marks a calculation the product answered as supplied, on the calculation", () => {
+    // `support` is what the grader reads and what the screens read. This field is the older
+    // one and nothing set it, so anything asking it whether the student produced a figure was
+    // told yes however the figure got there — which is how a child who pressed "Show the
+    // answer" came to be told they had worked it out.
+    let state = challengeReducer(createInitialState(), { type: "CALCULATION_SUBMITTED", calcId: "reliable-floor", raw: "1", value: dollars(1), correct: false });
+    state = challengeReducer(state, { type: "SHOW_AND_CONTINUE_USED", interactionId: "reliable-floor" });
+    expect(state.calculations["reliable-floor"]?.supplied).toBe(true);
+    expect(state.support["reliable-floor"]).toBe("answer_supplied");
+    // And a later correct answer does not un-supply it.
+    state = challengeReducer(state, { type: "CALCULATION_SUBMITTED", calcId: "reliable-floor", raw: "5000", value: dollars(5000), correct: true });
+    expect(state.calculations["reliable-floor"]?.supplied).toBe(true);
+  });
+
+  it("writes no calculation for a hand-over that is not one", () => {
+    // The opening ranking and the plan boards take the same action with their own ids.
+    const state = challengeReducer(createInitialState(), { type: "SHOW_AND_CONTINUE_USED", interactionId: "setup-order" });
+    expect(state.calculations).toEqual({});
+    expect(state.support["setup-order"]).toBe("answer_supplied");
+  });
+
   it("routes a conditional Working Plan to Fallback Version", () => {
     let state = createInitialState();
     state = challengeReducer(state, { type: "SETUP_SELECTED", setupId: "cousin-room" });

@@ -1,4 +1,4 @@
-import type { CategoryId } from "../core/ids";
+import type { CalcId, CategoryId } from "../core/ids";
 import { dollars } from "../core/money";
 import { DEFAULT_WORLD_ID, numbersFor, PLAN_UNDER_PRESSURE_LAUNCH } from "../scenario/registry";
 import { balanceOf, readoutFor, residualOf, unassignedOf } from "../finance/formulas";
@@ -298,7 +298,25 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
       return append(next, action.type, action, "direct_scaffold", undefined, at);
     }
     case "SHOW_AND_CONTINUE_USED": {
-      const next = { ...state, support: { ...state.support, [action.interactionId]: "answer_supplied" as const } };
+      /**
+       * The answer was handed over, and both places that could say so now do.
+       *
+       * `support` is the field the grader prices this answer at and the field the screens
+       * read. `calculations[id].supplied` is the older one, and nothing has ever set it to
+       * true — so a screen that asked it whether the student had worked a figure out was
+       * told yes, always, and told a child who had just pressed "Show the answer" that they
+       * had done it themselves. That screen reads `support` now; this stops the other field
+       * being a trap for the next one. A hand-over on something that is not a calculation —
+       * a plan mode, the opening ranking — writes nothing here, because there is no
+       * calculation to mark.
+       */
+      const calcId = action.interactionId as CalcId;
+      const answered = state.calculations[calcId];
+      const next = {
+        ...state,
+        support: { ...state.support, [action.interactionId]: "answer_supplied" as const },
+        ...(answered ? { calculations: { ...state.calculations, [calcId]: { ...answered, supplied: true } } } : {}),
+      };
       return append(next, action.type, action, "answer_supplied", undefined, at);
     }
     case "DEFENSE_SUBMITTED": {
