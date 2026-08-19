@@ -1,12 +1,13 @@
-# Measured at 1366×768, before and after
+# Measured on the screen, before and after
 
 Chromium 1194, viewport 1366×768, DPR 2, against two servers running side by side: the commit
 the world-class review measured (`8c85ede`, port 5812) and this branch (port 5810), both
 talking to the same class service. Every number below was read with `getBoundingClientRect()`
 in the page, not off a screenshot.
 
-The permanent versions of these assertions are in `e2e/onscreen.spec.ts`. All five of them
-fail against 5812 and pass against 5810; the failure messages are the measurements.
+The permanent versions of these assertions are in `e2e/onscreen.spec.ts` and
+`src/educator/roster.test.tsx`. Every one of them fails against the pre-fix source and passes
+against this branch; the failure messages are the measurements.
 
 ## 1. The class code did not fit the card built to project it
 
@@ -79,6 +80,33 @@ After: focus still moves to the heading on every one of them — the announcemen
 it — and no ring is drawn until the page has been touched. A route change reached by pressing
 Enter on a link draws it, which the test checks by tabbing to **Guide** and pressing Enter.
 
+## 5. The teacher's pages at 320px starved a column instead of stacking
+
+Five of `app.css`'s responsive rules were written above the rules they override. A media query
+adds no specificity, so the later declaration won and the narrow layout never happened. Measured
+on `/educator/class/DEMO`, `/educator/class/DEMO/reading` and `/educator/class/DEMO/students/1`
+at 320×640, which is what a 1280px laptop gives a teacher at 400% zoom:
+
+| grid | before (used tracks) | after |
+| --- | --- | --- |
+| `.page-header--split` | `0px 236px` — the page's own `<h1>` | `256px` |
+| `.judgement` | `83px 120px` | `219px` |
+| `.rubric-row` | `0px 206px` | `222px` |
+| `.trail > li` | `220px 24px` | `256px` |
+
+Text set in a box under 90px wide and taller than one line, excluding the wordmark and table
+cells: **84 → 0** on the student's evidence page, **5 → 0** on the reading queue. The `<h1>`
+goes from 0px wide — Playwright reports it as *hidden* — to 240px. No page scrolled sideways
+either before or after, which is why an overflow check never saw any of it.
+
+## 6. Every control on a roster row now says whose row it is
+
+Six students is eighteen buttons with three distinct accessible names between them. After:
+eighteen distinct names, each led by the words printed on the button so voice control still
+works (WCAG 2.2 · 2.5.3). Asserted in `src/educator/roster.test.tsx` as a property — no two
+rows may offer a control with the same accessible name — and the check refuses to run if the
+markers it strips for the pre-fix comparison were not there to strip.
+
 ## What is measured here and not fixed
 
 **The reading pill still covers the reading.** `Reading help` is a fixed pill at (24, 700),
@@ -90,3 +118,21 @@ worse: the bar is only pinned while the page is taller than the window, so on th
 the lifted pill lands on the bar's natural position (44px of overlap at 1366×768). The fix the
 review asked for — the control in the top bar beside the seat menu — needs `student/reading`,
 which owns the pill, its sheet and its place in the tab order.
+
+The accessibility builder ran the same experiment from the other side and reverted it for a
+worse reason than mine: lifting the closed pill clear of the money rail put *Check this plan*
+**entirely hidden** underneath it at 320px with the tools closed — 0 visible samples out of 25.
+`gauntlet/receipts/a11y-fix-pg1522/` has the measurement. Two people have now moved that pill
+and put it back; the third should move it into the top bar rather than around the corner.
+
+Two failures that are already at HEAD and belong to somebody else, recorded so nobody spends
+the evening on them twice:
+
+- **`e2e/golden.spec.ts` and four `bow.spec.ts` journeys fail at HEAD**, all for one reason:
+  `openTheRun` clicks *Start the eight weeks* / *Go in* unconditionally, and a signed-in student
+  has not met that confirm screen since `StudentChallenge` started the session in an effect.
+  `flow.ts` handles it conditionally and golden's own helper never caught up. Seven golden
+  journeys, three minutes each, timing out on a button the product deliberately removed.
+- **The market's write-up gate.** `popup.spec.ts` now fails at *Turn in my answer*: the season's
+  writing gate was extended to the market this evening, so the suite's answer no longer carries
+  the student's own figures. Another agent's change, and their test to move.

@@ -46,8 +46,11 @@ import { owedUpFront } from "../src/domain/scenario/worlds/food-truck/economy";
  * asked, is the way on inside the window, and is the ring drawn only when a person used a
  * keyboard to get here.
  *
- * They run at 1366×768 because that is the size the product is used at — a school Chromebook —
- * and the width the review measured every one of its findings at.
+ * The project viewport is the size the product is used at — 1366×768 on a school Chromebook,
+ * and 1024×600 on the older one — which is where the review measured every one of its findings.
+ * Two of these set a viewport of their own and say why: the class code is checked at three
+ * widths including 360, and the teacher's pages are checked at 320, which is what a 1280px
+ * laptop gives a teacher at 400% zoom.
  */
 
 /** Chrome rounds sub-pixel geometry, and a glyph may sit a hair inside its own advance. */
@@ -132,7 +135,7 @@ function watchTheScreen(page: Page) {
   };
 }
 
-test.describe("what is on the screen at 1366x768", () => {
+test.describe("what is actually on the screen", () => {
   /**
    * The class code fits the card built to project it.
    *
