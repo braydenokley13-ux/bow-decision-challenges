@@ -48,7 +48,7 @@ async function main() {
     const built = buildSubmission({
       seatCode: card.seatCode,
       // Spread the class over the real option space so the analysis has something to analyse.
-      setupId: seat % 3 === 0 ? "cousin-room" : seat % 3 === 1 ? "studio" : "roommate",
+      setupId: seat % 3 === 0 ? "cousin-room" : seat % 3 === 1 ? "teammate-share" : "gym-sublet",
       closeOpeningInto: seat % 2 === 0 ? "goal" : "flexibleCash",
       takeClinics: seat % 4 === 0,
       reserveSeat: seat % 5 === 0,
