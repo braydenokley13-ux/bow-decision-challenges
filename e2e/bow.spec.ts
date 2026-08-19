@@ -2163,12 +2163,18 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   await page.getByRole("link", { name: "Open this class’s evidence" }).click();
   await expect(page.locator(".page-header")).toContainText("Period 3 · Grade 7");
   await expect(page.locator(".class-guard")).toContainText("fewer than 5 runs");
-  // What this class's lead now says, and the two halves are a claim each. This class was made
-  // through the create-a-class screen and never given a student list, so the denominator has to
-  // name the students BOW has actually seen rather than imply a room it cannot count — and with
-  // three assessed, under the five a class state needs, the share is refused and the count
-  // stands on its own. It read "3 of 3 assessed showed the skill", from before either rule.
-  await expect(page.locator(".page-header h1")).toContainText("3 of the 3 students BOW has seen turned in");
+  // What this class's lead now says, and the two halves are a claim each: every count carries
+  // its denominator, and with three assessed — under the five a class state needs — the share
+  // is refused and the count stands on its own. It read "3 of 3 assessed showed the skill",
+  // from before either rule.
+  //
+  // The denominator is the roster's, and the roster is nine because seating a student at seat
+  // 9 fills the eight seats in front of them. This asserted the no-list wording — "3 of the 3
+  // students BOW has seen" — which is `classLead`'s other branch and the right sentence for a
+  // class that never said who is in it. This class says: `enterChallengeWithKey` posts names,
+  // because a rostered class is what the pilot uses. Both sentences are the product working;
+  // only one of them is about this class, and `classLead.test.ts` holds the other.
+  await expect(page.locator(".page-header h1")).toContainText(`${SEATS.length} of ${Number(SEATS.at(-1))} turned in`);
   await expect(page.locator(".page-header h1")).toContainText("Every explanation read");
   await expect(page.locator(".page-header")).toContainText("3 of the 3 with a usable result showed it");
 
