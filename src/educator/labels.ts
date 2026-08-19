@@ -389,3 +389,16 @@ export function levelBucketKey(): KeyEntry[] {
 export const NAV_LABELS = {
   objectives: `${labelsFor(NAV_FRAMEWORK)?.unitNounShort ?? "Objective"}s`,
 } as const;
+
+/**
+ * "1 student was", "3 students were" — one join, because two of them disagreed.
+ *
+ * A teacher-experience review read *"1 student were never asked this in their run"* on the
+ * class page and said, plainly, that they could not parse it. The noun was pluralised and the
+ * verb was not, which is what happens when the two are written out at the call site each time:
+ * one of the four places that composes this sentence had a ternary on the noun and a literal
+ * verb. This is the join, so a fifth place cannot get it wrong on its own.
+ */
+export function studentsWho(count: number, singular: string, plural: string): string {
+  return `${count} ${count === 1 ? "student" : "students"} ${count === 1 ? singular : plural}`;
+}

@@ -2,7 +2,8 @@ import { Link } from "react-router-dom";
 import { MINIMUM_ASSESSED_FOR_A_STATE } from "../domain/competency/objectiveState";
 import { GAP_THRESHOLD_PERCENT, type RequirementGap, type TeachNextReading } from "../domain/competency/teachNext";
 import type { MisconceptionSpotlight } from "./misconceptions";
-import { levelLabel, LEVEL_BUCKET_LABELS, TERMS } from "./labels";
+import { levelLabel, LEVEL_BUCKET_LABELS, studentsWho, TERMS } from "./labels";
+import { useSeatLabel } from "./names";
 
 /**
  * "What should I teach next?" — §18, rendered in the order §18.1 fixes and in no other.
@@ -115,6 +116,11 @@ function GapTable({ gaps, assessed }: { gaps: readonly RequirementGap[]; assesse
  * A spotlight that added them together would report a marking backlog as a misconception.
  */
 function Spotlight({ spotlight, classCode, teacherKey }: { spotlight: MisconceptionSpotlight; classCode: string; teacherKey: string }) {
+  // The teacher's own label for the seat, where the class has one. This block and the pull-out
+  // group under it were the only two on the class page written in seat numbers, directly above
+  // a list of real names — nine children a teacher had to look up to form a group tomorrow, off
+  // a roster the product is already holding.
+  const label = useSeatLabel();
   const shown = spotlight.evidenced.filter((example) => example.writing !== null).slice(0, 3);
   const unread = spotlight.missing.filter((absence) => absence.why === "writing-unread");
   const unasked = spotlight.missing.filter((absence) => absence.why === "not-observed");
@@ -134,7 +140,7 @@ function Spotlight({ spotlight, classCode, teacherKey }: { spotlight: Misconcept
               <li key={example.seatCode}>
                 <blockquote>{example.writing}</blockquote>
                 <cite>
-                  Seat {example.seatCode} · {levelLabel(example.level).toLowerCase()}
+                  {label(example.seatCode)} · {levelLabel(example.level).toLowerCase()}
                   {teacherKey && <> · <Link to={`/educator/class/${classCode}/students/${example.seatCode}`}>open the evidence</Link></>}
                 </cite>
               </li>
@@ -143,9 +149,15 @@ function Spotlight({ spotlight, classCode, teacherKey }: { spotlight: Misconcept
         </>
       ) : (
         <p className="spotlight__none">
+          {/* What is actually true of *these* students. The sentence used to be "Nobody's
+              writing has been read yet", which is a claim about the whole class — and a
+              teacher-experience review read it on a fold where nine children's explanations
+              had been read and marked. The guard here has never been about the class: it is
+              `evidenced.filter(writing !== null)`, so the honest sentence is about the
+              students in this spotlight. */}
           {spotlight.evidenced.length === 0
             ? "No student's work shows this."
-            : "Nobody's writing has been read yet, so there is nothing to quote. The counts above come from what students did, not from what they wrote."}
+            : "None of these students' writing has been read yet, so there is nothing to quote. The counts above come from what students did, not from what they wrote."}
         </p>
       )}
 
@@ -155,8 +167,8 @@ function Spotlight({ spotlight, classCode, teacherKey }: { spotlight: Misconcept
           the work. */}
       {(unread.length > 0 || unasked.length > 0) && (
         <p className="spotlight__absence">
-          {unread.length > 0 && `${unread.length} student${unread.length === 1 ? "" : "s"} wrote an explanation nobody has read yet. `}
-          {unasked.length > 0 && `${unasked.length} student${unasked.length === 1 ? "" : "s"} were never asked this in their run. `}
+          {unread.length > 0 && `${studentsWho(unread.length, "wrote", "wrote")} an explanation nobody has read yet. `}
+          {unasked.length > 0 && `${studentsWho(unasked.length, "was", "were")} never asked this in their run. `}
           <strong>Neither is a student who got it wrong, and neither counts either way.</strong>
         </p>
       )}
@@ -171,6 +183,7 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
   classCode: string;
   teacherKey: string;
 }) {
+  const label = useSeatLabel();
   const top = reading.top;
   if (!top) return null;
   const needing = spotlight?.evidenced ?? [];
@@ -202,7 +215,7 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
         <p className="next-lesson__why">
           <strong>Why this class:</strong> {top.struggled} of {reading.assessed} assessed students
           ({top.percentOfAssessed}%) did not show “{top.label.toLowerCase()}”.
-          {top.notObserved > 0 && ` A further ${top.notObserved} were never asked it.`}
+          {top.notObserved > 0 && ` A further ${top.notObserved === 1 ? "1 was" : `${top.notObserved} were`} never asked it.`}
         </p>
       </section>
 
@@ -213,8 +226,8 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
             {needing.map((example) => (
               <li key={example.seatCode}>
                 {teacherKey
-                  ? <Link to={`/educator/class/${classCode}/students/${example.seatCode}`}>Seat {example.seatCode}</Link>
-                  : <span>Seat {example.seatCode}</span>}
+                  ? <Link to={`/educator/class/${classCode}/students/${example.seatCode}`}>{label(example.seatCode)}</Link>
+                  : <span>{label(example.seatCode)}</span>}
                 <small>{levelLabel(example.level)}</small>
               </li>
             ))}

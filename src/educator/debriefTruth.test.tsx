@@ -219,9 +219,14 @@ describe("the printed debrief counts the class the class page counts", () => {
         .map((node) => node.textContent ?? "")
         .filter((line) => line.includes("cut "));
       expect(lines.length).toBeGreaterThan(1); // this class disagreed about what to cut
-      const seats = lines.flatMap((line) => (/seats? ([\d, ]+)/.exec(line)?.[1] ?? "").split(",").map((seat) => seat.trim()).filter(Boolean));
-      expect(seats.length).toBeGreaterThan(0);
-      expect(new Set(seats).size).toBe(seats.length);
+      // Read as the names the sheet now prints. This used to parse "seats 7, 13" — the page a
+      // teacher reads aloud was the only block in the product still written in seat numbers, on
+      // a class whose roster BOW is holding. The rule under test has not changed: one student,
+      // one bucket.
+      const students = lines.flatMap((line) => (line.split("—")[1] ?? "").split(/,| and /).map((name) => name.trim()).filter(Boolean));
+      expect(students.length).toBeGreaterThan(0);
+      expect(students.some((name) => /^Seat \d+$/.test(name))).toBe(false);
+      expect(new Set(students).size).toBe(students.length);
     } finally { restore(); }
   });
 
@@ -298,13 +303,21 @@ describe("the printed debrief shares only what a teacher chose", () => {
       expect(quotes[1]!.querySelector("cite")?.textContent).toBe("Plan B");
 
       // Nobody else's writing came along with them, and neither did the two names.
+      //
+      // Scoped to §5, which is what this rule was always about and what the comment above says:
+      // the *chosen work* is labelled the way the room will see it labelled. §3 names students
+      // now, deliberately — it is the pull-out group a teacher forms tomorrow, and it was the
+      // last block in the product written in seat numbers on a class that has a roster. The
+      // promise being kept here is that a piece of writing a teacher put on the wall does not
+      // carry a name unless she asked for it.
+      const shared = section(view.container, 5).textContent ?? "";
       const text = view.container.textContent ?? "";
       for (const explanation of everyExplanation()) {
         if (explanation.startsWith("I counted")) continue;
         expect(text).not.toContain(explanation);
       }
-      expect(text).not.toContain("Mei L.");
-      expect(text).not.toContain("Devon P.");
+      expect(shared).not.toContain("Mei L.");
+      expect(shared).not.toContain("Devon P.");
       // The teacher's own note is theirs. It is not on the sheet they hold up.
       expect(text).not.toContain("opens the repair");
     } finally { restore(); }

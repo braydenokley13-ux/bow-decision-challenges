@@ -50,6 +50,35 @@ import { studentSpineFor } from "./studentSpine";
  * contrast is a selection rather than a category. What is suppressed is not hidden — it comes
  * back as `tooCommon`, which is a fact for the debrief and is offered as one.
  *
+ * **BOW does not recommend a piece of writing it has not had read.** The one card whose reason
+ * is a claim about the *writing* — "their writing is a good way into …" — was offered on the
+ * strength of a shortfall in the *run*, with nobody having read a word. A teacher-experience
+ * review found it four times in one class, by name, on a projection surface, attached to
+ * *"i dont know. i just guessed"* and to *"SHOOT YOUR SHOT!!!! … then week 5 happened and i was
+ * broke. my bad"*. The product says on three other screens that it does not score student
+ * writing and that an unread explanation has no usable result; this card was quietly making a
+ * pedagogical claim about one anyway. It is now offered only for an attempt whose writing a
+ * person has actually marked, and the sentence claims only what that person's marks and the
+ * run support.
+ *
+ * **A quote with nothing in it is not a candidate.** The same review was offered *"i dont know.
+ * i just guessed"* four times under the same heading. That is a statement about the card rather
+ * than about the child: a share-out card is a quote and a reason, and six words give a room
+ * nothing to disagree about. The writing stays exactly where a teacher reads writing.
+ *
+ * **A sentence about a student's own home does not go in front of a room.** The same review was
+ * offered, under a heading reading WORTH SHOWING, with a `Show this` button and the child's full
+ * name: *"My mom lost her job last year so I know what it is like when money goes away. I left
+ * $400 spare and it saved me."* Names default off and the teacher chooses, which is why that was
+ * not a refusal — but recommending it is a judgement the product should not be making on her
+ * behalf. Writing that names somebody in the student's household, or a hardship at home, is not
+ * offered as a candidate. It is not hidden: it is on that student's own page and in the reading
+ * queue, which is where a teacher reads a child's writing.
+ *
+ * The second of those is a lexical test and it is a blunt one. It is deliberately biased towards
+ * withholding: a candidate wrongly withheld costs a teacher one card out of a list she scrolls,
+ * and a candidate wrongly offered costs a twelve-year-old their family's circumstances on a wall.
+ *
  * **A reason that only one world can earn is not a reason.** Every per-student reason here is
  * asked of the world the student played (`runOutcome`), because the ones that read
  * `resolution` directly were Basketball's — `resolveSeason` returns nothing for a market run
@@ -73,6 +102,51 @@ export interface ShareOutCandidate {
 function quoteOf(submission: AttributedSubmission): string | null {
   const answer = writtenAnswerFrom(submission.log);
   return answer && answer.text.length > 0 ? answer.text : null;
+}
+
+/**
+ * Somebody in the student's own household, or something that happened to them.
+ *
+ * Two patterns, both anchored on the first person, because that is what makes a sentence a
+ * disclosure rather than a fact about the fiction: *Avery's sister* is the story, *my sister* is
+ * a child telling a teacher something. The second pattern catches the hardship phrasings that do
+ * not name a person — *"we couldn't afford"*, *"lost her job"* — and it is the half most likely
+ * to be incomplete, which is why the whole rule is stated as biased towards withholding rather
+ * than as a detector.
+ *
+ * It is not a content filter over the child's writing. Nothing is deleted, nothing is hidden
+ * from the teacher, and no student is told anything. The only thing it changes is whether BOW
+ * puts that sentence on a list headed "worth showing" with a button that projects it.
+ */
+/**
+ * Writing with too little in it to put in front of a room.
+ *
+ * Not a judgement about the child and not a judgement about the writing — BOW does not score
+ * student writing and says so on three screens. It is a judgement about **the card**: a
+ * share-out card is a quote and a reason, and a quote of six words gives a room nothing to
+ * disagree about. A teacher-experience review was offered *"i dont know. i just guessed"* four
+ * times, by name, under a heading reading WORTH SHOWING.
+ *
+ * Two mechanical tests, both about what is on the card. A word floor, because a discussion needs
+ * a sentence; and an answer that says outright that no reasoning happened, which is a statement
+ * the student made about their own answer rather than an assessment of it.
+ *
+ * The writing is not hidden and nothing about it is reported anywhere: it is on that student's
+ * page and in the reading queue, and it is exactly as markable as everybody else's.
+ */
+const MIN_QUOTE_WORDS = 12;
+
+export function tooLittleToDiscuss(text: string): boolean {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (words.length < MIN_QUOTE_WORDS) return true;
+  return /\b(?:i\s*(?:don'?t|do not|dont)\s*know|idk|i\s*(?:just\s*)?guessed|no\s*idea)\b/i.test(text);
+}
+
+export function namesSomebodyAtHome(text: string): boolean {
+  const said = text.toLowerCase();
+  const household = /\b(?:my|our)\s+(?:mom|mum|mother|dad|father|parents?|family|grandma|grandmother|grandpa|grandfather|nan|brother|sister|stepdad|stepmom|aunt|uncle|cousin|guardian|foster)\b/;
+  const hardship = /\b(?:lost (?:her|his|their|my|our) job|out of work|got evicted|we (?:were|are|got) homeless|food stamps|on benefits|welfare|couldn'?t afford|can'?t afford|cannot afford|passed away|in (?:the )?hospital|in hospital|got sick|is sick|divorc)/;
+  return household.test(said) || hardship.test(said);
 }
 
 /**
@@ -108,8 +182,21 @@ export interface CommonReason {
   ran: number;
 }
 
+/** Why a piece of work is not on the list, said without naming anybody. */
+export interface WithheldWriting {
+  why: "names-somebody-at-home" | "too-little-to-discuss";
+}
+
 export interface ShareOutReading {
   candidates: ShareOutCandidate[];
+  /**
+   * Work BOW declined to offer for the room, with no count and no seat.
+   *
+   * A count would be a fact about how many children in this class wrote about their own home,
+   * on a screen a teacher shows to a room, and it is not needed: the sentence this drives says
+   * what the rule is and where the writing actually lives.
+   */
+  withheld: WithheldWriting[];
   /**
    * Reasons true of too much of a story to single anybody out with. Kept, and said out loud
    * on the page, because "everybody covered the generator" is worth a teacher knowing — it is
@@ -201,16 +288,26 @@ export function shareOutReading(
       if (fixed) add(row, "fixed-it-themselves", "Went wrong here and fixed it themselves, with nothing on screen helping.");
 
       // A shortfall in the student's own words, which is what turns a gap into a discussion
-      // rather than a mark.
+      // rather than a mark — **once somebody has read the words**.
+      //
+      // This is the only card whose reason is a claim about the writing, and it was offered on
+      // the strength of the run alone. So it was said, by name, on a projection surface, about
+      // "i dont know. i just guessed". BOW has no opinion about student writing and says so on
+      // three other screens; the thing that gives this card a basis is the teacher's own marks,
+      // and until those exist the card has none. `reasoningCriteria` is present exactly when a
+      // person has recorded a reading.
       const shortfall = spine.shortfalls[0];
-      if (shortfall && quoteOf(submission)) {
+      if (shortfall && quoteOf(submission) && row.reasoningCriteria) {
         // Counted, never characterised. "Several" was a word standing in for a number nobody
         // had worked out, and in the class it was reproduced on the number was one.
         const short = shortOnRequirement.get(shortfall.evidenceRequirementId) ?? 1;
         const alsoShort = short > 1
           ? `, which ${short} of the ${ran} who ran this story did not show`
           : `, which nobody else in this story fell short on`;
-        add(row, "misconception", `Their writing is a good way into "${shortfall.label.toLowerCase()}"${alsoShort}.`);
+        // What is true: their run fell short here, and you have read what they wrote. The old
+        // sentence — "Their writing is a good way into X" — asserted a pedagogical judgement
+        // about writing nobody had opened.
+        add(row, "misconception", `Their run fell short on "${shortfall.label.toLowerCase()}"${alsoShort}, and you have read what they wrote about it.`);
       }
     }
   }
@@ -231,10 +328,24 @@ export function shareOutReading(
     .filter(([, entry]) => entry.earned > discriminationCeiling(entry.ran))
     .map(([key]) => key));
 
+  const withheld: WithheldWriting[] = [];
   for (const entry of earned) {
     if (suppressed.has(`${entry.row.worldId}::${entry.reason}`)) continue;
     const submission = byId.get(entry.row.sessionId);
     if (!submission) continue;
+    // Before anything is ranked. A card carries the student's own words and a button that puts
+    // them on a wall, so the sentence is read first and the whole submission is withheld —
+    // not the quote, because a card with the quote removed is an invitation to open the one
+    // piece of writing this rule exists to keep off the screen.
+    const quote = quoteOf(submission);
+    if (quote && namesSomebodyAtHome(quote)) {
+      if (!withheld.some((entry) => entry.why === "names-somebody-at-home")) withheld.push({ why: "names-somebody-at-home" });
+      continue;
+    }
+    if (quote && tooLittleToDiscuss(quote)) {
+      if (!withheld.some((entry) => entry.why === "too-little-to-discuss")) withheld.push({ why: "too-little-to-discuss" });
+      continue;
+    }
     const standing = best.get(entry.row.sessionId);
     if (standing && KIND_ORDER.indexOf(standing.kind) <= KIND_ORDER.indexOf(entry.kind)) continue;
     best.set(entry.row.sessionId, {
@@ -251,6 +362,7 @@ export function shareOutReading(
     candidates: [...best.values()].sort((a, b) =>
       KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || Number(a.seatCode) - Number(b.seatCode)),
     tooCommon: tooCommon.sort((a, b) => b.earned - a.earned),
+    withheld,
   };
 }
 

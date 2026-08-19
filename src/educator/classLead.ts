@@ -61,6 +61,13 @@ export interface ClassLeadInput {
   state: ObjectiveResultState | null;
   /** Whether this class may be described as a class at all (§15.3, §18.4). */
   narratable: boolean;
+  /**
+   * What the class was asked to show, as the tail of "…showed ___".
+   *
+   * The objective a teacher set, named the way they named it, or what the run itself asked for
+   * where they set none. Never a sentence: this lands in the largest type on the page.
+   */
+  demandLabel: string;
 }
 
 export interface ClassLeadReading {
@@ -84,25 +91,40 @@ function against(count: number, input: ClassLeadInput): string {
     : `${count} of the ${input.inClass} students BOW has seen`;
 }
 
-/** What the evidence so far says, at whatever denominator it actually has. */
+/**
+ * What the evidence so far says, at whatever denominator it actually has.
+ *
+ * `sofar` says whether there is still a pile to read; it does **not** change what the number
+ * counts. It used to label it `read so far`, and a teacher-experience review read
+ * *"21 of 21 still to read"* directly above *"0% of the 9 read so far showed it"* — two
+ * sentences about the same class, one saying nobody had been read and one saying nine had.
+ * Both numbers were right. The label was the lie: `assessed` is students whose run produced a
+ * result for everything the work asks for, which is not the same set as the ones whose writing
+ * somebody has marked, and a class can have nine of the first and none of the second.
+ */
 function evidenceLine(input: ClassLeadInput, sofar: boolean): { detail: string; note: string | null } {
-  const read = sofar ? " read so far" : " with a usable result";
+  const read = sofar ? " with a usable result so far" : " with a usable result";
   if (input.assessed === 0) {
     // One sentence, not two. The Ladder-4 description and a sentence saying the same thing in
     // other words were both being printed, an inch apart, about nobody.
+    //
+    // The clause used to read "a student whose writing nobody has read has no usable result",
+    // stated as the definition. It is the usual reason and it is not the rule — a run can be
+    // short of a result for reasons that have nothing to do with the marking pile — so it is
+    // now said as the usual reason.
     return sofar
-      ? { detail: "Nothing is assessed yet — a student whose writing nobody has read has no usable result.", note: null }
+      ? { detail: "Nothing is assessed yet — every run is still short of something the work had to show, and unread writing is usually why.", note: null }
       : { detail: CLASS_STATE_DESCRIPTIONS["not-assessed"], note: null };
   }
   if (input.percentDemonstrated === null) {
     return {
       // "1 of the 1" is not English. The article goes with a plural denominator and nowhere else.
-      detail: `${input.demonstrated} of ${input.assessed === 1 ? "" : "the "}${input.assessed}${read} showed it.`,
+      detail: `${input.demonstrated} of ${input.assessed === 1 ? "" : "the "}${input.assessed}${read} showed ${input.demandLabel}.`,
       note: CLASS_STATE_DESCRIPTIONS["too-few-assessed"],
     };
   }
   return {
-    detail: `${input.percentDemonstrated}% of the ${input.assessed}${read} showed it — ${input.demonstrated} of ${input.assessed}.`,
+    detail: `${input.percentDemonstrated}% of the ${input.assessed}${read} showed ${input.demandLabel} — ${input.demonstrated} of ${input.assessed}.`,
     note: null,
   };
 }
@@ -185,8 +207,14 @@ export function classLeadFor(input: ClassLeadInput): ClassLeadReading {
   }
   // The share leads, and it carries its own denominator inside the headline — because the
   // headline is what gets screenshotted and the caption is what gets left behind.
+  //
+  // And it says *showed what*. "26% of the 19 students with a usable result showed it." was
+  // the largest sentence on the page with no subject in it: a teacher-experience review read it
+  // and could not say what the 26% had shown. `demandLabel` is the class's own words for the
+  // thing being asked of it — the objective a teacher set, or the work itself where they set
+  // none — and it is composed by the caller because this module knows nothing about frameworks.
   return {
-    headline: `${input.percentDemonstrated}% of the ${input.assessed} students with a usable result showed it.`,
+    headline: `${input.percentDemonstrated}% of the ${input.assessed} students with a usable result showed ${input.demandLabel}.`,
     detail: `${input.demonstrated} of ${input.assessed} assessed · ${against(input.turnedIn, input)} turned in.`,
     note: null,
     action,

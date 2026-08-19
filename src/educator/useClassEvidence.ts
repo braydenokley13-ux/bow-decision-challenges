@@ -85,6 +85,10 @@ export function useClassEvidence(code: string | undefined): {
   scoreReasoning: (seatCode: string, sessionId: string, scores: ReasoningScores | null) => Promise<boolean>;
   recordOverride: (seatCode: string, sessionId: string, override: OverrideRequest) => Promise<boolean>;
   sendFeedback: (seatCode: string, sessionId: string, body: string, flagged: boolean) => Promise<boolean>;
+  /** Rewrite a note where it stands. Same note, same place in the sequence, `editedAt` set. */
+  reviseFeedback: (id: string, body: string, flagged: boolean) => Promise<boolean>;
+  /** Take a note back. The student stops seeing it; the teacher keeps the row. */
+  withdrawFeedback: (id: string) => Promise<boolean>;
 } {
   const isDemo = code === DEMO_CLASS_CODE;
   // The key comes from the link the educator was given, or from this browser if they have
@@ -236,5 +240,49 @@ export function useClassEvidence(code: string | undefined): {
     [code, teacherKey, reload],
   );
 
-  return { state: demo ?? blocked ?? fetched, teacherKey, reload, scoreReasoning, recordOverride, sendFeedback };
+  /**
+   * The two halves of taking something back, which the product had neither of.
+   *
+   * A teacher wrote a note to a child, thought better of it, and wrote a correction. Her panel
+   * showed one note under the heading "What they hear from you"; the child's home page showed
+   * both. The service has had `PATCH` and `DELETE` on a note since notes became a sequence —
+   * editing rewrites one where it stands, deleting tombstones it so the student stops seeing it
+   * and the teacher keeps the row — and nothing in the product called either.
+   */
+  const reviseFeedback = useCallback(
+    async (id: string, body: string, flagged: boolean): Promise<boolean> => {
+      if (!code || !teacherKey) return false;
+      try {
+        const response = await fetch(`${CLASS_API_BASE}/classes/${code}/feedback/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
+          body: JSON.stringify({ body, flagged }),
+        });
+        if (response.ok) reload();
+        return response.ok;
+      } catch {
+        return false;
+      }
+    },
+    [code, teacherKey, reload],
+  );
+
+  const withdrawFeedback = useCallback(
+    async (id: string): Promise<boolean> => {
+      if (!code || !teacherKey) return false;
+      try {
+        const response = await fetch(`${CLASS_API_BASE}/classes/${code}/feedback/${id}`, {
+          method: "DELETE",
+          headers: { "X-BOW-Teacher-Key": teacherKey },
+        });
+        if (response.ok) reload();
+        return response.ok;
+      } catch {
+        return false;
+      }
+    },
+    [code, teacherKey, reload],
+  );
+
+  return { state: demo ?? blocked ?? fetched, teacherKey, reload, scoreReasoning, recordOverride, sendFeedback, reviseFeedback, withdrawFeedback };
 }

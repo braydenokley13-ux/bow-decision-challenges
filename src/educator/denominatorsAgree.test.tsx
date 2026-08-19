@@ -227,7 +227,7 @@ describe("unread writing keeps a student out of this objective's denominator, an
     expect(text).toMatch(/can only add to the assessed count/);
   });
 
-  it("counts the run with a zero exactly as it counts the run without one", async () => {
+  it("counts the run with a zero exactly as it counts the run without one", () => {
     // The asymmetry, at the surface a teacher divides by. Two runs that differ only in whether
     // a row was failed must be in the denominator together or out of it together, or the class
     // percentage is taken over a set the thing being measured chose.

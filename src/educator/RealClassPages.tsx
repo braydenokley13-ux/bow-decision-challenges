@@ -29,6 +29,7 @@ import { classSpineFrom, type ClassSpine } from "./classSpine";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import { keyForClass, rememberClass, rememberedClasses } from "./classMemory";
 import { classLeadFor } from "./classLead";
+import { standardByRef } from "../domain/standards";
 import { studentSpineFor, type StudentSpine } from "./studentSpine";
 import { TeachNext } from "./TeachNext";
 
@@ -85,10 +86,11 @@ function ClassFrame({ state, children, title }: {
  * can read it from their seats. So the code is the page, at the size a projector needs, with
  * the address they type beside it.
  */
-function NothingYet({ code, label, teacherKey, hasRoster, roll, roster, progress, loadedAt, spine }: {
+function NothingYet({ code, label, teacherKey, hasRoster, roll, roster, progress, loadedAt, spine, onCheckAgain }: {
   code: string;
   label: string;
   teacherKey: string;
+  onCheckAgain: () => void;
   hasRoster: boolean;
   roll: ClassRoll;
   roster: readonly RosterRow[];
@@ -116,7 +118,7 @@ function NothingYet({ code, label, teacherKey, hasRoster, roll, roster, progress
           <span>{roll.seats.length} {roll.seats.length === 1 ? "student" : "students"} · 0 attempts</span>
         </div>
       </header>
-      {working && <LiveState roll={roll} roster={roster} progress={progress} code={code} loadedAt={loadedAt} />}
+      {working && <LiveState roll={roll} roster={roster} progress={progress} code={code} loadedAt={loadedAt} onCheckAgain={onCheckAgain} />}
       <section className="class-created">
         <div className="class-created__code class-created__code--projector">
           <p className="field-label">Class code</p>
@@ -161,7 +163,7 @@ function NothingYet({ code, label, teacherKey, hasRoster, roll, roster, progress
             {hasRoster ? "Their cards are on the " : "Or hand out named cards instead — "}
             <Link to={`/educator/class/${code}/roster`}>{hasRoster ? "class list" : "make the class list"}</Link>.
           </p>
-          <Button variant="secondary" onClick={() => window.location.reload()}>Check again</Button>
+          <Button variant="secondary" onClick={onCheckAgain}>Check again</Button>
         </div>
       </section>
     </>
@@ -307,6 +309,18 @@ function Distribution({ distribution }: { distribution: ChoiceDistribution }) {
  * `classLead.ts` decides which of those it is and writes the sentence; this renders it and
  * puts the next step under it as something to press. Nothing here composes a count.
  */
+/**
+ * What this class was asked to show, as the tail of "…showed ___".
+ *
+ * The objective a teacher set, in their framework's own code, or the work itself where they
+ * set none. Short on purpose: it lands in the largest type on the page, which is the sentence
+ * a teacher screenshots into a department report.
+ */
+function demandLabelFor(spine: ClassSpine): string {
+  const objective = spine.objectiveRef ? standardByRef(spine.objectiveRef) : undefined;
+  return objective ? `everything ${objective.code} asks for` : "everything the work asked for";
+}
+
 function ClassLead({ spine, roll, code }: {
   spine: ClassSpine;
   roll: ClassRoll;
@@ -325,6 +339,7 @@ function ClassLead({ spine, roll, code }: {
     demonstrated: spine.reading?.result.demonstrated ?? 0,
     percentDemonstrated: spine.reading?.result.percentDemonstrated ?? null,
     state: spine.reading?.result.state ?? null,
+    demandLabel: demandLabelFor(spine),
     narratable: spine.narratable,
   });
   return (
@@ -404,7 +419,7 @@ function sinceLabel(elapsed: number): string {
  * last-touched time are what a teacher can act on; anything finer would be surveillance
  * bought with nothing.
  */
-function LiveState({ roll, roster, progress, code, loadedAt }: {
+function LiveState({ roll, roster, progress, code, loadedAt, onCheckAgain }: {
   /** The class, counted once, by the same function every other number on this page reads. */
   roll: ClassRoll;
   roster: readonly RosterRow[];
@@ -412,6 +427,8 @@ function LiveState({ roll, roster, progress, code, loadedAt }: {
   code: string;
   /** When this page was fetched. Elapsed time is measured from it so the render is a function of its input. */
   loadedAt: number;
+  /** Ask the service again. The panel says when it last did, so this is a control and not a hope. */
+  onCheckAgain: () => void;
 }) {
   const label = useSeatLabel();
   if (roll.seats.length === 0) return null;
@@ -429,6 +446,19 @@ function LiveState({ roll, roster, progress, code, loadedAt }: {
       <div className="section-heading">
         <p className="eyebrow">Right now</p>
         <h2>Where the room is</h2>
+        {/* When this was taken, and a way to take it again.
+            "Right now" was a snapshot: two API calls, both at load, no refresh anywhere on a
+            class that has data. A teacher-experience review opened this page, started a student
+            in another browser, waited sixty seconds without touching anything, and the counts
+            never moved — on the one section of the product that tells her who is stuck. The
+            honest fix is not to make the heading quieter: it is to say when the reading was
+            taken and let her take another. Auto-polling is deliberately not it — a panel that
+            renumbers itself under a teacher who is reading a name off it is worse than one that
+            is plainly a minute old. */}
+        <p className="live-state__taken">
+          <span>As at {new Date(loadedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+          <Button variant="quiet" onClick={onCheckAgain}>Check again</Button>
+        </p>
       </div>
       {/* Every tile carries the class it is a count of. "Still working 3" was a number a
           teacher had to hold the class size in their head to read — and the morning after the
@@ -563,25 +593,52 @@ function ExportClass({ roll, submissions, roster, label }: {
  * "Worth talking about in person" is a flag on the teacher's own list. It is never shown to
  * the student, because a child reading "your teacher flagged you" learns nothing and worries.
  */
-function Feedback({ seatCode, sessionId, existing, onSend }: {
+function Feedback({ seatCode, sessionId, notes, onSend, onRevise, onWithdraw }: {
   seatCode: string;
   sessionId: string;
-  existing: TeacherFeedback | undefined;
+  /** Every note on this attempt, oldest first, tombstoned ones included. */
+  notes: readonly TeacherFeedback[];
   onSend: (body: string, flagged: boolean) => Promise<boolean>;
+  onRevise: (id: string, body: string, flagged: boolean) => Promise<boolean>;
+  onWithdraw: (id: string) => Promise<boolean>;
 }) {
   const [body, setBody] = useState("");
-  const [flagged, setFlagged] = useState(existing?.flagged ?? false);
+  const [flagged, setFlagged] = useState(false);
   const [said, setSaid] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  /** The note being rewritten in place, if any. Editing borrows the one composer. */
+  const [editing, setEditing] = useState<string | null>(null);
+  /** The note one press from being taken back. Same shape as the roster's erase confirmation. */
+  const [withdrawing, setWithdrawing] = useState<string | null>(null);
   const trimmed = body.trim();
+
+  const heard = notes.filter((note) => !note.deletedAt);
+  const takenBack = notes.filter((note) => note.deletedAt);
 
   const send = async () => {
     if (trimmed.length === 0 || sending) return;
     setSending(true);
-    const ok = await onSend(trimmed, flagged);
+    const ok = editing ? await onRevise(editing, trimmed, flagged) : await onSend(trimmed, flagged);
     setSending(false);
-    setSaid(ok ? "Sent. They will see it next time they open BOW." : "That did not send. Try again.");
-    if (ok) setBody("");
+    setSaid(ok
+      ? editing ? "Changed. That is what they see now." : "Sent. They will see it next time they open BOW."
+      : "That did not send. Try again.");
+    if (ok) { setBody(""); setEditing(null); }
+  };
+
+  const startEditing = (note: TeacherFeedback) => {
+    setEditing(note.id);
+    setBody(note.body);
+    setFlagged(note.flagged);
+    setWithdrawing(null);
+    setSaid(null);
+  };
+
+  const withdraw = async (id: string) => {
+    const ok = await onWithdraw(id);
+    setWithdrawing(null);
+    setSaid(ok ? "Taken back. They no longer see it." : "That did not send. Try again.");
+    if (ok && editing === id) { setEditing(null); setBody(""); }
   };
 
   return (
@@ -590,14 +647,65 @@ function Feedback({ seatCode, sessionId, existing, onSend }: {
         <p className="eyebrow">Write back</p>
         <h3>What they hear from you</h3>
       </div>
-      {existing && (
-        <blockquote className="feedback__sent">
-          {existing.body}
-          <cite>Sent {new Date(existing.at).toLocaleDateString()}</cite>
-        </blockquote>
+      {/* The whole sequence, oldest first, because that is the order it is read in on the
+          student's own home page — a correction printed above the sentence it corrects is
+          unreadable. This used to render `[0]` of the same list sorted the other way, so a
+          teacher who wrote twice saw one note under a heading that says it is what the child
+          hears, while the child had both.
+
+          The class names below are doubled on purpose. `feedback__sequence`,
+          `feedback__row-actions` and `feedback__confirm` are the hooks this block wants and
+          `app.css` does not have yet; the second name on each is an existing rule that already
+          carries the right visual role (a stacked list of records; a wrapped row of quiet
+          controls with a warning sentence above them). So this renders correctly today and the
+          rules can be written under their own names later without touching this file. */}
+      {heard.length === 0
+        ? <p className="feedback__none">Nothing has been written back about this run yet.</p>
+        : (
+          <ol className="feedback__sequence judgement-list">
+            {heard.map((note) => (
+              <li key={note.id}>
+                <blockquote className="feedback__sent">
+                  {note.body}
+                  <cite>
+                    Sent {new Date(note.at).toLocaleDateString()}
+                    {note.editedAt ? ` · changed ${new Date(note.editedAt).toLocaleDateString()}` : ""}
+                  </cite>
+                </blockquote>
+                {withdrawing === note.id ? (
+                  <p className="feedback__confirm classes-forget">
+                    <span className="classes-forget__warn">They may already have read this. Taking it back stops them seeing it from now on; it does not unsay it.</span>
+                    <Button variant="primary" onClick={() => void withdraw(note.id)}>Take it back from them</Button>
+                    <button type="button" className="button button--quiet" onClick={() => setWithdrawing(null)}>Leave it</button>
+                  </p>
+                ) : (
+                  <p className="feedback__row-actions classes-forget">
+                    <button type="button" className="button button--quiet" onClick={() => startEditing(note)}>Change it</button>
+                    <button type="button" className="button button--quiet" onClick={() => { setWithdrawing(note.id); setSaid(null); }}>Take it back</button>
+                  </p>
+                )}
+              </li>
+            ))}
+          </ol>
+        )}
+      {/* Kept, and said plainly. A teacher who takes back the wrong sentence has to be able to
+          see what they took back — the same reason removing a student from a roster keeps what
+          that student did. */}
+      {takenBack.length > 0 && (
+        <div className="feedback__withdrawn">
+          <p className="field-label">Taken back — they no longer see {takenBack.length === 1 ? "this" : "these"}</p>
+          {takenBack.map((note) => (
+            <blockquote key={note.id}>
+              {note.body}
+              <cite>Sent {new Date(note.at).toLocaleDateString()} · taken back {new Date(note.deletedAt!).toLocaleDateString()}</cite>
+            </blockquote>
+          ))}
+        </div>
       )}
       <label className="field" htmlFor={`feedback-${seatCode}-${sessionId}`}>
-        <span className="field-label">{existing ? "Say something else" : "One or two sentences"}</span>
+        <span className="field-label">
+          {editing ? "Change what this note says" : heard.length > 0 ? "Say something else" : "One or two sentences"}
+        </span>
         <textarea
           id={`feedback-${seatCode}-${sessionId}`}
           value={body}
@@ -613,8 +721,13 @@ function Feedback({ seatCode, sessionId, existing, onSend }: {
       </label>
       <div className="feedback__actions">
         <Button variant="primary" aria-disabled={trimmed.length === 0 || sending} onClick={() => void send()}>
-          {sending ? "Sending…" : "Send it"}
+          {sending ? "Sending…" : editing ? "Save the change" : "Send it"}
         </Button>
+        {editing && (
+          <button type="button" className="button button--quiet" onClick={() => { setEditing(null); setBody(""); }}>
+            Leave it as it was
+          </button>
+        )}
         <span>{MAX_FEEDBACK_LENGTH - body.length} left</span>
       </div>
       <p aria-live="polite">{said}</p>
@@ -624,7 +737,7 @@ function Feedback({ seatCode, sessionId, existing, onSend }: {
 
 export function RealClassOverview() {
   const { code } = useParams();
-  const { state, teacherKey } = useClassEvidence(code);
+  const { state, teacherKey, reload } = useClassEvidence(code);
 
   return (
     <ClassFrame state={state}>
@@ -655,6 +768,7 @@ export function RealClassOverview() {
               progress={ready.progress}
               loadedAt={ready.loadedAt}
               spine={spine}
+              onCheckAgain={reload}
             />
           );
         }
@@ -707,6 +821,7 @@ export function RealClassOverview() {
               progress={ready.progress}
               code={record.code}
               loadedAt={ready.loadedAt}
+              onCheckAgain={reload}
             />
 
             {!spine.narratable && (
@@ -750,8 +865,17 @@ export function RealClassOverview() {
                       now says what it is counting and states the assessed figure as the
                       separate fact it is. */}
                   <caption>
+                    {/* What a usable result actually is. This said "one whose written explanation
+                        somebody has read", which is the usual reason a student has not got one and
+                        is not what one is — a teacher-experience review read it on a fold where
+                        nine students had a usable result and twenty-one explanations were
+                        unread, and the two sentences could not both be believed. The objective
+                        page states the same fact about the same table; both now say it the same
+                        way, and both say what is true of the students who do not have one. */}
                     Counts across all {total} who turned in. {spine.assessed} of them have a usable
-                    result — one whose written explanation somebody has read.
+                    result — nothing the work had to show is missing from their run. The rest are
+                    still short of something, and the rows below name that as an absence rather
+                    than a zero.
                   </caption>
                   <thead><tr><th scope="col">Skill</th><th scope="col">Where the class is</th></tr></thead>
                   <tbody>
@@ -932,7 +1056,7 @@ function shortfallLine(spine: StudentSpine, row: StudentRow): string {
 export function RealStudentEvidence() {
   const { code, seatCode } = useParams();
   const [params] = useSearchParams();
-  const { state, scoreReasoning, recordOverride, sendFeedback } = useClassEvidence(code);
+  const { state, scoreReasoning, recordOverride, sendFeedback, reviseFeedback, withdrawFeedback } = useClassEvidence(code);
 
   return (
     <ClassFrame state={state} title="That student's work did not open.">
@@ -969,9 +1093,14 @@ export function RealStudentEvidence() {
             {...(submission ? { submission } : {})}
             onOverride={(override) => recordOverride(row.seatCode, row.sessionId, override)}
             onFeedback={(body, flagged) => sendFeedback(row.seatCode, row.sessionId, body, flagged)}
-            {...(ready.feedback.filter((entry) => entry.seatCode === row.seatCode && entry.sessionId === row.sessionId).sort((a, b) => b.at - a.at)[0]
-              ? { feedback: ready.feedback.filter((entry) => entry.seatCode === row.seatCode && entry.sessionId === row.sessionId).sort((a, b) => b.at - a.at)[0]! }
-              : {})}
+            onRevise={reviseFeedback}
+            onWithdraw={withdrawFeedback}
+            // Every note on this attempt, oldest first — the order the student reads them in.
+            // This used to pass the newest one and nothing else, under a heading that tells the
+            // teacher it is what the child hears.
+            notes={ready.feedback
+              .filter((entry) => entry.seatCode === row.seatCode && entry.sessionId === row.sessionId)
+              .sort((a, b) => a.at - b.at)}
           />
         );
       }}
@@ -1032,7 +1161,7 @@ function StudentLead({ spine, awaitingReading }: { spine: StudentSpine; awaiting
   );
 }
 
-function StudentPanel({ row, code, onScore, submission, onOverride, onFeedback, feedback, attempt }: {
+function StudentPanel({ row, code, onScore, submission, onOverride, onFeedback, onRevise, onWithdraw, notes, attempt }: {
   row: StudentRow;
   code: string;
   /** Which of this seat's attempts is on screen, and how many there are. */
@@ -1041,7 +1170,9 @@ function StudentPanel({ row, code, onScore, submission, onOverride, onFeedback, 
   submission?: AttributedSubmission;
   onOverride: (override: OverrideRequest) => Promise<boolean>;
   onFeedback: (body: string, flagged: boolean) => Promise<boolean>;
-  feedback?: TeacherFeedback;
+  onRevise: (id: string, body: string, flagged: boolean) => Promise<boolean>;
+  onWithdraw: (id: string) => Promise<boolean>;
+  notes: readonly TeacherFeedback[];
 }) {
   // Opens on the trail, because the reason to open one student is to check a conclusion —
   // and because §19.1 says the chain is read in order, not picked from.
@@ -1219,8 +1350,10 @@ function StudentPanel({ row, code, onScore, submission, onOverride, onFeedback, 
       <Feedback
         seatCode={row.seatCode}
         sessionId={row.sessionId}
-        {...(feedback ? { existing: feedback } : { existing: undefined })}
+        notes={notes}
         onSend={onFeedback}
+        onRevise={onRevise}
+        onWithdraw={onWithdraw}
       />
     </>
   );

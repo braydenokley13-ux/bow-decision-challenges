@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { EducatorShell, StateKey } from "./EducatorShell";
 import { useClassEvidence } from "./useClassEvidence";
-import { classRoll, seatList, worldSections, type StudentRow } from "./analysis";
+import { classRoll, worldSections, type StudentRow } from "./analysis";
 import { loadShareOutSelection, shareOutSlides, summaryOf } from "./shareOut";
 import type { ShareOutSelection } from "../platform/identity/types";
-import { seatLabel, seatNames } from "./names";
+import { seatLabel, seatLabels, seatNames } from "./names";
 import { formatDollars } from "../domain/core/money";
 import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
@@ -218,7 +218,10 @@ export function Debrief() {
                       {world.adaptation.cuts.map((entry) => (
                         <li key={entry.label}>
                           <b>{entry.seats.length} of {world.seats}</b> cut <strong>{entry.label}</strong> first
-                          <span> — {seatList(entry.seats)}</span>
+                          {/* Names where the class has them. This printed "seats 7, 13" on a
+                              page a teacher reads aloud to a room whose roster BOW is holding —
+                              nine names she had to look up to form a group. */}
+                          <span> — {seatLabels(entry.seats, names, entry.seats.length)}</span>
                         </li>
                       ))}
                     </ul>
@@ -330,7 +333,7 @@ function WhatToReview({ spine, classCode }: { spine: ClassSpine; classCode: stri
     <>
       <p>
         <b>{top.struggled} of {reading.assessed}</b> assessed students did not show “{top.label.toLowerCase()}”.
-        {top.notObserved > 0 && ` A further ${top.notObserved} were never asked it.`}
+        {top.notObserved > 0 && ` A further ${top.notObserved === 1 ? "1 was" : `${top.notObserved} were`} never asked it.`}
       </p>
       {reading.reteach ? (
         <>

@@ -277,8 +277,14 @@ function ClassResult({ entry, onThisObjective, unit }: { entry: ObjectiveClassRe
                 different sets of children. The class page states the same two facts in the
                 same order, because it is the same table about the same class. */}
             <caption>
+              {/* Said so it cannot be read as a claim about the whole row. A teacher-experience
+                  review read "nothing this objective asks of them is still missing" beside two
+                  students the same page lists as "evidence not all in" — the clause is about the
+                  assessed students and it was reading as though it were about the class. The
+                  class page states the same fact about the same table, in the same words. */}
               Counts across all {entry.submitted} who turned in. {entry.result.assessed} of them have a
-              usable result — nothing this {unit} asks of them is still missing.
+              usable result — nothing this {unit} asks for is missing from their run. The rest are
+              still short of something, and the rows below name that as an absence rather than a zero.
             </caption>
             <thead><tr><th scope="col">Skill</th><th scope="col">Where the class is</th></tr></thead>
             <tbody>

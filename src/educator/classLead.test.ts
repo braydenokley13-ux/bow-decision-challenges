@@ -22,10 +22,14 @@ import { MINIMUM_ASSESSED_FOR_A_STATE } from "../domain/competency/objectiveStat
  * after both are struck out must contain no digits at all, which is the whole of the rule
  * "no number without a denominator" expressed as something a build can fail on.
  */
-function denominated(text: string): { ok: boolean; leftover: string; pairs: [number, number][]; shares: [number, number][] } {
+function denominated(text: string, demandLabel = ""): { ok: boolean; leftover: string; pairs: [number, number][]; shares: [number, number][] } {
   const pairs: [number, number][] = [];
   const shares: [number, number][] = [];
   const rest = text
+    // The objective's own code — "1.3" — is a name, not a count, and it reaches the headline
+    // because the headline now says *showed what*. It is struck out by identity rather than by
+    // a pattern, so a real number can never be mistaken for one.
+    .replace(demandLabel, demandLabel ? "" : "")
     .replace(/(\d+)% of the (\d+)/g, (_match, share: string, whole: string) => {
       shares.push([Number(share), Number(whole)]);
       return "";
@@ -46,7 +50,16 @@ function everyShape(): ClassLeadInput[] {
         if (turnedIn > inClass) continue;
         for (const awaitingReading of [0, 1, turnedIn]) {
           if (awaitingReading > turnedIn) continue;
-          const assessedCeiling = turnedIn - awaitingReading;
+          // Every student who turned in, not `turnedIn - awaitingReading`.
+          //
+          // The old ceiling encoded a model this product does not have: that a usable result
+          // and a marked explanation are the same thing. They are not — `assessed` is a run
+          // that produced a result for everything the work asks for, and several of those
+          // requirements are read off decisions rather than off writing. A teacher-experience
+          // review found a real class sitting at `awaitingReading: 21, assessed: 9`, which the
+          // generator below could not produce, and the two sentences the page printed about
+          // that class contradicted each other for exactly that reason.
+          const assessedCeiling = turnedIn;
           for (const assessed of [0, 1, 4, assessedCeiling]) {
             if (assessed > assessedCeiling) continue;
             for (const demonstrated of [0, assessed]) {
@@ -67,6 +80,7 @@ function everyShape(): ClassLeadInput[] {
                 percentDemonstrated,
                 state: assessed === 0 ? "not-assessed" : percentDemonstrated === null ? "too-few-assessed" : "strong",
                 narratable: turnedIn >= 5,
+                demandLabel: "everything 1.3 asks for",
               });
             }
           }
@@ -82,7 +96,7 @@ describe("the ten-second lead", () => {
     for (const shape of everyShape()) {
       const lead = classLeadFor(shape);
       for (const line of [lead.headline, lead.detail]) {
-        const read = denominated(line);
+        const read = denominated(line, shape.demandLabel);
         expect(read.ok, `bare number in "${line}" (left over: "${read.leftover}") for ${JSON.stringify(shape)}`).toBe(true);
       }
     }
@@ -131,7 +145,8 @@ describe("the ten-second lead", () => {
   it("leads with who is not in while nothing has been turned in, and with the reading once work arrives", () => {
     const roomOf = (over: Partial<ClassLeadInput>): ClassLeadInput => ({
       inClass: 28, hasRoster: true, turnedIn: 0, working: 19, notStarted: 9, awaitingReading: 0,
-      assessed: 0, demonstrated: 0, percentDemonstrated: null, state: "not-assessed", narratable: false, ...over,
+      assessed: 0, demonstrated: 0, percentDemonstrated: null, state: "not-assessed", narratable: false,
+      demandLabel: "everything 1.3 asks for", ...over,
     });
     // Minute five. The nine at the door are the only thing a teacher can act on.
     expect(classLeadFor(roomOf({})).headline).toBe("9 of 28 have not started.");
@@ -161,6 +176,7 @@ describe("the ten-second lead", () => {
     const nobody = classLeadFor({
       inClass: 0, hasRoster: false, turnedIn: 0, working: 0, notStarted: null, awaitingReading: 0,
       assessed: 0, demonstrated: 0, percentDemonstrated: null, state: null, narratable: false,
+      demandLabel: "everything the work had to show",
     });
     expect(nobody.headline).toBe("Nothing turned in yet.");
     expect(denominated(nobody.headline).ok).toBe(true);
@@ -171,6 +187,7 @@ describe("the ten-second lead", () => {
     const seen = classLeadFor({
       inClass: 6, hasRoster: false, turnedIn: 4, working: 1, notStarted: null, awaitingReading: 0,
       assessed: 0, demonstrated: 0, percentDemonstrated: null, state: "not-assessed", narratable: false,
+      demandLabel: "everything the work had to show",
     });
     expect(seen.headline).toContain("students BOW has seen");
     // Without a list there is no missing student to name, and the lead does not invent one.

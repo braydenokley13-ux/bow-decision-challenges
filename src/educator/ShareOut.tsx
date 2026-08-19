@@ -115,7 +115,7 @@ export function ShareOut() {
   // Candidates, and the reasons too common to single anybody out with. The second used to be
   // the first: the most frequent sentence on this page was true of every student who ran that
   // story, and it cost a teacher seven reads to find that out.
-  const { candidates, tooCommon } = shareOutReading(roll.rows, submissions);
+  const { candidates, tooCommon, withheld } = shareOutReading(roll.rows, submissions);
   const slides = shareOutSlides({ items, submissions, named, nameFor, summaryFor: summaryOf });
 
   if (presenting && slides.length > 0) {
@@ -175,6 +175,7 @@ export function ShareOut() {
                   <li key={item.sessionId}>
                     <div>
                       <strong>{named ? nameFor(item.seatCode) : `Plan ${"ABCDE"[index] ?? index + 1}`}</strong>
+                      {named && <p className="class-state">Goes up as {nameFor(item.seatCode)}. Read it again first.</p>}
                       <label className="field">
                         <span className="field-label">Why this one — for you, not the room</span>
                         <input
@@ -204,6 +205,16 @@ export function ShareOut() {
                   argues about Ana. */}
               <span>Show names on the screen. Off means the room sees Plan A and Plan B.</span>
             </label>
+            {/* The one moment where a decision about a plan becomes a decision about a child, said
+                at the moment it is taken rather than in a guide. A teacher-experience review turned
+                this toggle on and the projector read a student's full name over a sentence about
+                that student's own household; nothing on the screen had asked her to read it first. */}
+            {named && (
+              <p className="class-state" role="status">
+                Names are on. Every plan below goes up with a child&rsquo;s name over it — read each one
+                again as the room will read it, including anything they wrote about themselves.
+              </p>
+            )}
             {items.length > 0 && (
               <Button id={PRESENT_BUTTON_ID} variant="primary" onClick={() => setPresenting(true)}>Show it</Button>
             )}
@@ -243,6 +254,22 @@ export function ShareOut() {
             {/* Not offered, and said out loud rather than quietly dropped. A thing most of the
                 class did is worth knowing and is worth a minute of the debrief; it is not a
                 reason to put one child's work on the wall. */}
+            {/* Withheld, and said as a rule rather than as a count. A number here would be a fact
+                about how many children in this class wrote about their own home, printed on a
+                screen a teacher opens in front of one. */}
+            {withheld.length > 0 && (
+              <div className="class-state">
+                <p>Some explanations are not offered here. They are on each student&rsquo;s own page and in the reading queue, which is where you read writing.</p>
+                <ul>
+                  {withheld.some((entry) => entry.why === "names-somebody-at-home") && (
+                    <li key="home">BOW does not put a sentence about a student&rsquo;s own home in front of a room.</li>
+                  )}
+                  {withheld.some((entry) => entry.why === "too-little-to-discuss") && (
+                    <li key="little">Some answers are too short to give a room anything to talk about. That is about the card, not about the student.</li>
+                  )}
+                </ul>
+              </div>
+            )}
             {tooCommon.length > 0 && (
               <div className="class-state">
                 <p>Not offered as reasons — true of too much of the class to single anybody out:</p>
