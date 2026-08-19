@@ -257,9 +257,11 @@ const USAGE =
 /**
  * One key, from wherever the operator put it — or the sentence to print instead of running.
  *
- * Both sources are ones the operating system keeps to the process owner. A file is the better
- * of the two for a runbook, because an environment variable set on the command line is still
- * in a shell history file afterwards and a key file can be `chmod 600` and deleted.
+ * None of the three places is argv. An environment variable is readable only by the process
+ * owner and root; a key file is whatever its mode says, which an operator can make `0600` and
+ * then delete; standard input never lands on a disk at all. A file or a pipe is the better
+ * choice for a runbook, because `BOW_NEW_STORE_KEY=… node …` typed at a prompt is still in a
+ * shell history file afterwards.
  */
 async function keyFor(
   role: "old" | "new",
