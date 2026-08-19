@@ -240,6 +240,51 @@ source of truth. And after a refused submission, both actions the product offers
 retry queue, under a sentence saying the work is with the teacher.
 
 
+## The container restart, and what it cost
+
+At 02:00 UTC the container was restarted and every agent in flight was killed. Six were
+working; none had committed. Their trees survived, their reports did not.
+
+What that cost, honestly: **the reasoning behind roughly 2,700 lines of work.** The code, its
+tests and its comments are all there and the unit suite came back green at **1,308 tests with
+one failure** — a comment quoting a price the scenario owns, which the pricing scan caught — so
+the work itself is intact and is now committed in five groups. What is gone is what each agent
+had established but not yet written down: which of their own fixes they had verified in a
+browser, what they had tried and rejected, and the answers to the questions I had asked them.
+
+Those commits say so in their own messages rather than claiming the work as verified. A fix
+marked closed by the agent that wrote it was never evidence; a fix committed by the lead with
+the agent's evidence lost is less than that, and the commits say which is which.
+
+**The durable lesson, already acted on:** every agent relaunched since carries an instruction to
+commit and push in small increments rather than accumulate hours in a dirty tree, and to run
+`scripts/verify-head.sh` before each push. That script exists for a different reason — HEAD broke
+three times earlier tonight because `tsc`, `eslint` and `vitest` all run against a working tree
+that is not what gets pushed — and it turns out to be the same discipline.
+
+### The state at the restart
+
+| | |
+| --- | --- |
+| Unit suite | **1,308 passing, 0 failing, 1 skipped** across 106 files |
+| `npx tsc -b` | clean |
+| `scripts/verify-head.sh` | HEAD builds from a clean checkout |
+| Browser suite | **unknown** — being established now, for the first time tonight |
+
+### What was in flight and is now committed
+
+- **The instrument can tell a decision from a click.** A figure records how it arrived — typed,
+  suggested, or determined by the arithmetic — and a row nobody touched produces no observation
+  at all rather than a favourable one. This is the largest thing the student red team found and
+  it is closed.
+- **One page header across every educator surface**, and a brand mark that takes its tone from
+  itself rather than from whatever wraps it.
+- **A browser suite that imports the product's own tables** instead of restating them, plus two
+  tests that were green while asserting nothing — one of them guarding an assessment-integrity
+  rule.
+- **Read-aloud and a glossary**, built and tested, not yet wired into a screen.
+
+
 ## Largest remaining gap
 
 **No longer J1.** The reading load was the largest measured gap for two rounds and it is now
