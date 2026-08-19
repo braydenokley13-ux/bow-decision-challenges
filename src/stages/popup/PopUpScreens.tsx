@@ -25,9 +25,28 @@ import { affordableTrays, readNight } from "./popupView";
 const S = POP_UP_SCENARIO;
 const COPY = S.screens;
 
+/** A copy template with this screen's numbers in it, the same way the ending fills its own. */
+function fillCopy(template: string, values: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (whole, key: string) => (key in values ? String(values[key]) : whole));
+}
+
 /** "1 tray", not "1 trays". The bug the critique found in the other world's copy. */
 function trayNote(trays: number): string {
   return `${trays} ${trays === 1 ? COPY.plan.lineNotes.stockOne : COPY.plan.lineNotes.stock}`;
+}
+
+/**
+ * What a "send the rest to one line" card leaves the truck able to cook.
+ *
+ * The stock line's own sentence used to be printed under all three cards, so the cushion card
+ * read *"Cushion — $1,770 — 0 trays of food to cook and sell."* The arithmetic was right — the
+ * cushion taking the rest leaves the stock line where it was — and the sentence was somebody
+ * else's. This one says what the number is actually about.
+ */
+function closerNote(trays: number): string {
+  if (trays === 0) return COPY.plan.lineNotes.closerNothing;
+  if (trays === 1) return COPY.plan.lineNotes.closerTraysOne;
+  return fillCopy(COPY.plan.lineNotes.closerTrays, { n: trays });
 }
 
 /* ---------------------------------------------------------------------------
@@ -94,13 +113,28 @@ function Settled({ label, amount }: { label: string; amount: number }) {
  * and how many the crowd will take on each night it covers. The subtraction is the student's,
  * and on the standing order there are two subtractions that pull opposite ways.
  */
-function TrayOrder({ saturday, nights, max, trays, onTrays }: {
+function TrayOrder({ saturday, nights, max, trays, onTrays, pricing = "settled", leaves, split }: {
   saturday: SaturdayNumber;
   /** One night, or the standing order that covers Saturdays 2 and 3 at once. */
   nights: 1 | 2;
   max: number;
   trays: number;
   onTrays: (trays: number) => void;
+  /**
+   * Whether this screen is still asking the student what the order costs.
+   *
+   * The control used to print the order's price directly above a box asking for the order's
+   * price, so the first calculation in the market could be answered by copying the number
+   * eighty pixels higher up. While the sum is open the control shows what it takes to work
+   * the answer out — the trays, what one tray costs and holds, and what the crowd will buy —
+   * and no total. The same rule covers what the order leaves on the stock line, because a
+   * student who can see the stock line and the leftover can subtract one from the other.
+   */
+  pricing?: "asked" | "settled";
+  /** What the stock line is left holding once this order is paid for, where a night follows. */
+  leaves?: { amount: number; trays: number } | undefined;
+  /** Where the money for this order actually comes from, where it is not all the stock line. */
+  split?: { fromStock: number; fromLine: number; line: PopUpLineId } | undefined;
 }) {
   const { state } = usePopUp();
   const spot = state.spotId;
@@ -123,8 +157,22 @@ function TrayOrder({ saturday, nights, max, trays, onTrays }: {
         </div>
         <p className="tray-order__hint">{COPY.saturday.trayHint}</p>
         <p className="tray-order__cost">
-          <span>{formatDollars(orderCost(N, trays * nights))}{nights === 2 ? ` ${COPY.saturday.bothNights}` : ""}</span>
-          <small>{max} {COPY.saturday.affordable}</small>
+          <span>{pricing === "settled" ? `${formatDollars(orderCost(N, trays * nights))}${nights === 2 ? ` ${COPY.saturday.bothNights}` : ""}` : ""}</span>
+          {/* Where the money comes off, once a line other than the stock line is on the hook
+              for part of it. The old note — "N is all your stock line pays for" — stops being
+              true the moment the student names one, so it is replaced rather than kept beside
+              a cap it no longer describes. */}
+          <small>
+            {split
+              ? split.fromLine > 0
+                ? fillCopy(COPY.saturday.foodMoney.split, {
+                  stock: formatDollars(split.fromStock),
+                  amount: formatDollars(split.fromLine),
+                  line: S.lines[split.line].inline,
+                })
+                : COPY.saturday.foodMoney.none
+              : `${max} ${COPY.saturday.affordable}`}
+          </small>
         </p>
       </div>
       {/* The plates, drawn in one colour. How many of them sell is what the student is here
@@ -141,6 +189,14 @@ function TrayOrder({ saturday, nights, max, trays, onTrays }: {
               <dd>{plates}</dd>
             </div>
           ))}
+          {pricing === "settled" && leaves && (
+            <div data-alert={leaves.trays === 0}>
+              <dt>{COPY.saturday.leaves}</dt>
+              <dd className="money">
+                {formatDollars(leaves.amount)} · {leaves.trays} {leaves.trays === 1 ? COPY.saturday.leftTray : COPY.saturday.leftTrays}
+              </dd>
+            </div>
+          )}
         </dl>
         {willTake.some((night) => night.handsBound) && (
           <p className="tray-order__crowd">{serveCap(N, willTake[0]!.night, helper)} {COPY.saturday.capped}</p>
@@ -401,7 +457,10 @@ export function PlanStage() {
   const supplyOneSplit = () => {
     const amounts = evenSplit(ledger.available, N.planIncrement);
     dispatch({ type: "SHOW_AND_CONTINUE_USED", interactionId: "opening" });
-    for (const line of POP_UP_LINES) dispatch({ type: "POPUP_LINE_CHANGED", board: "opening", line, amount: dollars(amounts[line]) });
+    // Marked as what it is. These three figures are the board's, not the student's, and a
+    // teacher reading "the student set a savings figure" off a split BOW filled in would be
+    // reading a claim about software.
+    for (const line of POP_UP_LINES) dispatch({ type: "POPUP_LINE_CHANGED", board: "opening", line, amount: dollars(amounts[line]), from: "suggested" });
     dispatch({ type: "POPUP_PLAN_SAVE_REQUESTED", board: "opening" });
   };
   const notes: Record<PopUpLineId, string> = {
@@ -458,7 +517,7 @@ export function PlanStage() {
         closerRead={(line, give) => {
           const stock = plan.stock + (line === "stock" ? give : 0);
           const bought = Math.floor(stock / N.trayCost);
-          return { text: trayNote(bought), warn: bought === 0 };
+          return { text: closerNote(bought), warn: bought === 0 };
         }}
       />
     </PopUpShell>
@@ -483,11 +542,23 @@ export function FirstSaturdayStage() {
   // that student depended on whether their laptop had gone to sleep.
   const sum = state.sums["first-order"];
   const ready = sum?.correct === true && sum.value === orderCost(N, trays);
+  const left = plan.stock - orderCost(N, trays);
   return (
     <PopUpShell stage="popup-first-saturday" kicker={COPY.first.kicker} title={COPY.first.title} ledger={ledger}>
       <p className="stage-deck">{COPY.first.deck}</p>
       <LinesHeld plan={plan} label={COPY.plan.placedLabel} />
-      <TrayOrder saturday={1} nights={1} max={max} trays={trays} onTrays={setWanted} />
+      {/* Until the student has priced the order themselves, this control prints no total and
+          no leftover: the stock line is on the screen above it, so either figure hands over
+          the subtraction the box underneath is asking for. */}
+      <TrayOrder
+        saturday={1}
+        nights={1}
+        max={max}
+        trays={trays}
+        onTrays={setWanted}
+        pricing={ready ? "settled" : "asked"}
+        leaves={{ amount: left, trays: affordableTrays(left, N) }}
+      />
       <div className="popup-sum">
         {ready
           ? <Settled label={COPY.saturday.order.label} amount={orderCost(N, trays)} />
@@ -673,7 +744,18 @@ export function StandingOrderStage() {
           ))}
         </ol>
         <LinesHeld plan={held} label={COPY.plan.placedLabel} />
-        <TrayOrder saturday={2} nights={2} max={max} trays={trays} onTrays={setWanted} />
+        {/* What this order leaves for the last Saturday, before it is placed. A student who
+            cooks to the crowd on all three of the first Saturdays can spend the stock line
+            down past a tray without the market ever mentioning it, and then meet the biggest
+            crowd of the run with an empty truck. */}
+        <TrayOrder
+          saturday={2}
+          nights={2}
+          max={max}
+          trays={trays}
+          onTrays={setWanted}
+          leaves={{ amount: held.stock - orderCost(N, trays * 2), trays: affordableTrays(held.stock - orderCost(N, trays * 2), N) }}
+        />
       </section>
 
       <div className="popup-action">
@@ -766,9 +848,22 @@ export function RepairStage() {
   const saved = state.saved.repair !== undefined;
   const settled = saved && ledger.residual === 0;
   const afterRepair = ledger.afterRepair;
-  const max = affordableTrays(afterRepair.stock, N);
+  /**
+   * The line the student names to pay for the last Saturday's food past the stock line.
+   *
+   * A draft rather than a decision of its own: nothing is committed until the order is, and
+   * the order is what carries it into the log. Null is "only the stock line", which is what
+   * every Saturday before this one is and what this one is until they say otherwise.
+   */
+  const [foodLine, setFoodLine] = useDraft<PopUpLineId | null>("food-truck", "food-line-saturday-4", null);
+  const offer = POP_UP_LINES.filter((line) => line !== "stock" && afterRepair[line] > 0);
+  const named = foodLine && offer.includes(foodLine) ? foodLine : null;
+  const purse = afterRepair.stock + (named ? afterRepair[named] : 0);
+  const max = affordableTrays(purse, N);
   const [wanted, setWanted] = useDraft("food-truck", "trays-saturday-4", 4);
   const trays = Math.min(wanted, max);
+  const cost = orderCost(N, trays);
+  const fromStock = Math.min(afterRepair.stock, cost);
   if (!spot) return null;
 
   const cookedSoFar = orderCost(N, (state.trays.first ?? 0) + (state.trays.middle ?? 0) * 2);
@@ -804,7 +899,7 @@ export function RepairStage() {
       toFind -= take;
     }
     dispatch({ type: "SHOW_AND_CONTINUE_USED", interactionId: "repair" });
-    for (const line of POP_UP_LINES) dispatch({ type: "POPUP_LINE_CHANGED", board: "repair", line, amount: dollars(amounts[line]) });
+    for (const line of POP_UP_LINES) dispatch({ type: "POPUP_LINE_CHANGED", board: "repair", line, amount: dollars(amounts[line]), from: "suggested" });
     dispatch({
       type: "POPUP_PLAN_SAVE_REQUESTED",
       board: "repair",
@@ -852,11 +947,43 @@ export function RepairStage() {
             <h2>{COPY.repair.lastTitle}</h2>
             <p>{COPY.repair.lastNote}</p>
             <LinesHeld plan={afterRepair} label={COPY.plan.placedLabel} />
-            <TrayOrder saturday={4} nights={1} max={max} trays={trays} onTrays={setWanted} />
+            {/*
+              The last Saturday is the only night whose order can reach a line that is not the
+              stock line, and this is where a student red team found the market's worst
+              screen: a stock line holding less than one tray, a stepper that would not move,
+              a crowd of seventy-eight printed beside it and no control anywhere that could
+              answer any of it. Nothing in this world's fiction ever said the cash in the box
+              could not buy food. What was missing was not permission, it was the question —
+              so it is asked here, plainly, with the price of answering it said out loud.
+            */}
+            {offer.length > 0 && (
+              <section className="cover-ask" aria-labelledby="food-money-ask">
+                <p id="food-money-ask">{COPY.saturday.foodMoney.ask}</p>
+                {affordableTrays(afterRepair.stock, N) === 0 && (
+                  <p className="popup-verdict" data-tone="hard">{COPY.saturday.foodMoney.short}</p>
+                )}
+                <div className="cover-ask__choice" role="group" aria-labelledby="food-money-ask">
+                  <button type="button" aria-pressed={named === null} onClick={() => setFoodLine(null)}>{COPY.saturday.foodMoney.only}</button>
+                  {offer.map((line) => (
+                    <button key={line} type="button" aria-pressed={named === line} onClick={() => setFoodLine(line)}>
+                      {S.lines[line].label} {formatDollars(afterRepair[line])}
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+            <TrayOrder
+              saturday={4}
+              nights={1}
+              max={max}
+              trays={trays}
+              onTrays={setWanted}
+              {...(named ? { split: { fromStock, fromLine: cost - fromStock, line: named } } : {})}
+            />
           </section>
           <div className="popup-action">
             <p>{S.saturdays[3]?.note}</p>
-            <Button type="button" onClick={() => dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 4, trays })}>{COPY.saturday.open}</Button>
+            <Button type="button" onClick={() => dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 4, trays, fromLine: named })}>{COPY.saturday.open}</Button>
           </div>
         </>
       ) : (
@@ -932,6 +1059,11 @@ export function SettleStage() {
       {neverCooked && <p className="popup-verdict" data-tone="hard">{COPY.settle.neverCooked}</p>}
       <section className="resolve-risks" aria-labelledby="popup-verdicts">
         <h2 id="popup-verdicts">{COPY.settle.verdicts.title}</h2>
+        {/* Every comparison below is money, and only money. The world is swept to prove no
+            booth, no hire and no split is the right answer — so the one screen that prints
+            "would have found $222 more" has to say what it counted, or a student reads it as
+            the score. */}
+        <p className="stage-deck">{COPY.settle.verdicts.counted}</p>
         <ul>
           {resolution.verdicts.map((verdict) => (
             <li key={verdict.id} data-outcome={verdict.outcome} data-taken={verdict.taken}>
@@ -1016,9 +1148,30 @@ export function WriteUpStage() {
   );
 }
 
+/**
+ * Beat 6. Turned in.
+ *
+ * This screen used to be a headline, one sentence of AI policy, and two thirds of an empty
+ * viewport. The other story's student, on the same product, on the same beat, got the arena,
+ * the card with the person they had been working for on it, the four decisions they had made
+ * itemised, their own paragraph set back to them, *"Nothing here has been read yet."*, and a
+ * replay button that said what replaying does and does not do. A student who played the market
+ * had no record of what they had said, and the load-bearing promise this product makes to a
+ * child — that a person reads this, not a machine — was made to them in half.
+ *
+ * They are one ending now, told in two stories' nouns. The hero is the market rather than the
+ * arena, the card is the booth rather than the jersey, the four itemised decisions are the
+ * booth and the three lines rather than the room and the four rows — and the two sentences
+ * that are about BOW rather than about either story are the same sentence.
+ */
 export function SubmittedStage() {
-  const { state, delivery, deliver, reset } = usePopUp();
+  const { state, delivery, deliver, reset, transport } = usePopUp();
   const ledger = ledgerOf(state);
+  const spot = S.spots.find((entry) => entry.id === state.spotId);
+  // What the three lines were left holding. The repair board where there was one, the opening
+  // plan where the run ended before the generator — either way, the plan as it stands.
+  const lines = ledger.afterRepair;
+  const chosen = state.writeUp.tileIds.length;
   const sent = useRef(false);
   useEffect(() => {
     if (sent.current) return;
@@ -1029,18 +1182,61 @@ export function SubmittedStage() {
     : delivery.status === "failed" ? COPY.submitted.failed
       : COPY.submitted.saving;
   return (
-    <PopUpShell stage="popup-submitted" kicker={COPY.settle.kicker} title={title} ledger={ledger}>
+    <PopUpShell
+      stage="popup-submitted"
+      kicker={COPY.settle.kicker}
+      title={title}
+      tone="dark"
+      ledger={ledger}
+      banner={
+        <dl className="pitch-facts">
+          <div><dt>{COPY.submitted.boothFact}</dt><dd>{spot?.title ?? "—"}</dd></div>
+          <div><dt>{COPY.submitted.classFact}</dt><dd>{state.meta.classCode || "—"}</dd></div>
+          <div><dt>{COPY.submitted.saturdaysFact}</dt><dd>{ledger.saturdays.length}</dd></div>
+          <div><dt>{COPY.submitted.platesFact}</dt><dd>{ledger.plates.sold}</dd></div>
+        </dl>
+      }
+    >
       <section className="handed-in">
+        {/* A delivery that did not happen is never drawn as one, exactly as the other story
+            draws it: everything downstream treats a submission as a fact about a student. */}
         <p className={`delivery delivery--${delivery.status}`} aria-live="polite">
-          {delivery.status === "failed" ? delivery.message : COPY.submitted.person}
+          {delivery.status === "delivered" && transport.promise}
+          {delivery.status === "sending" && COPY.submitted.saving}
+          {delivery.status === "idle" && COPY.submitted.saving}
+          {delivery.status === "failed" && delivery.message}
         </p>
         {delivery.status === "failed" && delivery.retryable && (
           <Button type="button" variant="secondary" onClick={() => void deliver()}>{COPY.submitted.retry}</Button>
         )}
-        {/* The paragraph the student just wrote, and three figures they have already read
-            twice, used to be printed back here. A confirmation screen's whole job is saying
-            the work arrived. */}
       </section>
+
+      {/* The receipt. It says what went, where it went, and who reads which part — and nothing
+          about how any of it did, because nothing has been read yet and a number here would be
+          an answer to a question nobody has asked. */}
+      <section className="handed-in__record">
+        <p className="stamp">{COPY.submitted.record}</p>
+        <ul className="handed-in__numbers">
+          {spot && <li><span>{COPY.submitted.boothLabel}</span><strong>{spot.title}</strong></li>}
+          {POP_UP_LINES.map((line) => (
+            <li key={line}><span>{S.lines[line].label}</span><strong className="money">{formatDollars(lines[line])}</strong></li>
+          ))}
+        </ul>
+        <p className="handed-in__said">
+          {chosen === 1
+            ? COPY.submitted.saidOne
+            : chosen > 1
+              ? COPY.submitted.said.replace("{n}", String(chosen))
+              : COPY.submitted.nothingWritten}
+        </p>
+        {/* `data-own-words` marks this as the student's own writing for the reading-load ruler,
+            which reports it and does not charge it — re-reading your own paragraph ninety
+            seconds after typing it to check it was sent is a glance rather than a read. The
+            attribute belongs on this element and on nothing the product wrote. */}
+        {state.writeUp.text.trim().length > 0 && <blockquote data-own-words>{state.writeUp.text}</blockquote>}
+        <p className="handed-in__reader">{COPY.submitted.person}</p>
+      </section>
+
       <div className="popup-action">
         <p>{COPY.submitted.againNote}</p>
         <Button type="button" variant="quiet" aria-disabled={delivery.status !== "delivered"} onClick={() => delivery.status === "delivered" && reset()}>

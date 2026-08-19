@@ -18,9 +18,23 @@ export interface PopUpSumEvidence {
   supplied: boolean;
 }
 
+/** Where one line's figure came from, as the save event recorded it. */
+export interface PopUpLineOrigin {
+  amountSource: "typed" | "suggested" | "remainder";
+  revised: boolean;
+}
+
 export interface PopUpBoardEvidence {
   entered: boolean;
   saved: boolean;
+  /**
+   * Where each figure on this board came from, for the lines the student actually moved.
+   *
+   * A line missing from this map was never touched. That is a different fact from "set to
+   * nothing", and the difference is the one the teacher's page was getting wrong: three
+   * students were reported as having planned a savings figure on a line they never opened.
+   */
+  lineSources: Partial<Record<PopUpLineId, PopUpLineOrigin>>;
   /** How the board stood at the first save the student asked for, before anything was fixed. */
   firstSaveBalance: Dollars;
   balance: Dollars;
@@ -82,6 +96,7 @@ function emptyBoard(): PopUpBoardEvidence {
     freeable: dollars(0),
     residual: dollars(0),
     residualAcknowledged: false,
+    lineSources: {},
     savesBeforeAcceptable: 0,
     lockedMoveAttempts: 0,
     support: "standard_access",
@@ -91,6 +106,7 @@ function emptyBoard(): PopUpBoardEvidence {
 
 interface SavePayload {
   board: PopUpBoardId;
+  lineSources?: Partial<Record<PopUpLineId, PopUpLineOrigin>>;
   balance: number;
   unassigned: number;
   freed: number;
@@ -191,6 +207,9 @@ export function derivePopUpFacts(log: readonly EvidenceEvent[]): PopUpFacts {
         board.freeable = dollars(save.freeable);
         board.residual = dollars(save.residual);
         board.residualAcknowledged = save.acknowledgedResidual !== undefined;
+        // The last save is the plan the student went with, so the last save's origins are the
+        // ones that describe it.
+        board.lineSources = (payload.lineSources as Partial<Record<PopUpLineId, PopUpLineOrigin>> | undefined) ?? board.lineSources;
         if (event.supportLevel !== "standard_access") board.support = event.supportLevel;
         board.evidenceRefs.push(event.id);
         break;

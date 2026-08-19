@@ -4,6 +4,7 @@ import {
   cashToPlan,
   drawFrom,
   owedUpFront,
+  payForTrays,
   playSaturday,
   rebateEarned,
   swapBill,
@@ -37,6 +38,14 @@ export interface LedgerInput {
   /** Whether the opening plan has been committed. */
   openingSaved: boolean;
   coverLine: PopUpLineId | null;
+  /**
+   * The line that pays for the last Saturday's food once the stock line runs out, or null.
+   *
+   * `economy.ts` carries the reasoning. What matters here is that only the fourth cook reads
+   * it: no earlier Saturday can reach another line, and the ledger a screen draws before the
+   * student has named one is the ledger they would get if they never did.
+   */
+  foodLine?: PopUpLineId | null;
   trays: { first: number | null; middle: number | null; last: number | null };
   helper: boolean | null;
   /** What the repair board holds — the three lines as the student would leave them. */
@@ -123,11 +132,10 @@ export function popUpLedger(input: LedgerInput, n: PopUpNumbers = POP_UP_NUMBERS
 
   let lines: PopUpPlan = { ...input.opening };
   const saturdays: SaturdayOutcome[] = [];
-  const cook = (saturday: SaturdayNumber, trays: number) => {
-    const affordable = Math.floor(lines.stock / n.trayCost);
-    const bought = Math.max(0, Math.min(Math.round(trays), affordable));
-    lines = { ...lines, stock: dollars(lines.stock - bought * n.trayCost) };
-    saturdays.push(playSaturday(n, spotId, saturday, bought, input.helper === true));
+  const cook = (saturday: SaturdayNumber, trays: number, alsoFrom: PopUpLineId | null = null) => {
+    const spent = payForTrays(n, lines, trays, alsoFrom);
+    lines = spent.left;
+    saturdays.push(playSaturday(n, spotId, saturday, spent.trays, input.helper === true));
   };
 
   let windfall = dollars(0);
@@ -172,7 +180,7 @@ export function popUpLedger(input: LedgerInput, n: PopUpNumbers = POP_UP_NUMBERS
 
   if (repair && residual === 0 && input.trays.last !== null) {
     lines = { ...afterRepair };
-    cook(4, input.trays.last);
+    cook(4, input.trays.last, input.foodLine ?? null);
   } else if (repair) {
     lines = { ...afterRepair };
   }

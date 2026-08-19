@@ -42,12 +42,24 @@ export const POP_UP_STAGE_BUDGET: Record<PopUpStageId, PopUpStageBudget> = {
   "popup-money": { seconds: 90, basis: "Read two pieces of money with a rule attached, decide about each, and work out what is left to plan with." },
   "popup-plan": { seconds: 160, basis: "Set three lines, name the line that takes the rest, and say what gives if conditional money does not come." },
   "popup-first-saturday": { seconds: 95, basis: "Order trays for opening night against one stated crowd, price the order, then read what sold and what went in the bin." },
-  "popup-standing-order": { seconds: 185, basis: "Settle the tips jar across three claims it will not stretch to and say what made the rest matter less, answer the friend on the window, then weigh one order against two unequal nights." },
+  // Ten seconds more than it used to be, and they are reading seconds rather than thinking
+  // ones: this screen now says what the order leaves on the stock line and what that buys,
+  // which is the fact a student red team lost the last Saturday for want of. `readingLoad`
+  // prices a budget in words at a fixed rate, so the seconds buy exactly the words added and
+  // the duration on the world's card has to cover them.
+  "popup-standing-order": { seconds: 195, basis: "Settle the tips jar across three claims it will not stretch to and say what made the rest matter less, answer the friend on the window, then weigh one order against two unequal nights and what it leaves for the last one." },
   "popup-generator": { seconds: 95, basis: "Read what happened to the generator and work out what the shop still wants." },
   "popup-repair": { seconds: 125, basis: "Free the money from lines that can still move, then set the last Saturday's order." },
-  "popup-settle": { seconds: 85, basis: "Read the last Saturday, the settle-up, and what each call actually did." },
+  // Seven seconds for one sentence: what the verdicts underneath are counted in. Every
+  // comparison on that panel is money and the world is swept to prove money is not the answer,
+  // so the panel has to name its own unit or a student reads it as a score.
+  "popup-settle": { seconds: 92, basis: "Read the last Saturday, the settle-up, and what each call actually did — counted, as the panel says, in money at the end of the run." },
   "popup-writeup": { seconds: 140, basis: "Pick two or three of their own numbers and write two to four sentences for the organiser." },
-  "popup-submitted": { seconds: 20, basis: "Confirmation that the work reached the class." },
+  // Twenty seconds bought a headline and a sentence of AI policy, which is what this screen
+  // was: two thin boxes over two thirds of an empty viewport, while the other story's student
+  // got their decisions itemised and their own paragraph read back. It is the same receipt in
+  // both stories now, so it is priced at the same forty seconds and against the same basis.
+  "popup-submitted": { seconds: 40, basis: "Read the receipt: where the work went, what went with it, and their own answer." },
 };
 
 /** Everything a student passes through. This world has no branch that skips a screen. */

@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { formatDollars } from "../../../core/money";
+import { dollars, formatDollars } from "../../../core/money";
 import { runPopUp, type PopUpRunOptions } from "../../../../test/runPopUp";
 import { analyseBalance } from "./balance";
 import { crowdOn, playSaturday, sellCap } from "./economy";
+import { popUpLedger, type LedgerInput } from "./ledger";
 import { createPopUpState, ledgerInputFor, ledgerOf, popUpReducer } from "./machine";
 import { POP_UP_NUMBERS as N } from "./numbers";
 import { resolveMarket, type MarketVerdict } from "./resolution";
@@ -207,5 +208,192 @@ describe("the ending says what each call actually did", () => {
     expect(booth.detail).toContain(formatDollars(N.spots["middle-row"].booth));
     const stock = verdict(resolveMarket(ledgerInputFor(state)).verdicts, "stock");
     expect(stock.detail).toContain(String(ledger.plates.sold));
+  });
+});
+
+/**
+ * The three sentences a student red team caught the ending saying about a run that went badly.
+ *
+ * All three were reproduced on the build they played, by hand, in a browser: a market at the
+ * bridge gate whose stock line was down to $50 when the generator died, the whole $270 taken
+ * off the cushion, and Saturday 4 — a crowd of 78, the biggest night of the run — cooked with
+ * nothing. The ending called it **Paid off** twice and told the student no other standing
+ * order beat theirs.
+ *
+ * Each `it` below fails on the reading that shipped. The first two are the headings; the third
+ * is the claim underneath one of them, and it is the one worth stating plainly: a sentence
+ * that says "nothing does better" has to have looked at everything, or it is a guess with a
+ * child's name on it.
+ */
+describe("the ending does not congratulate a run for a market it never ran", () => {
+  const BILL = N.generator.replacement - N.generator.deposit;
+
+  /** One run, built straight out of decisions rather than out of the test harness's defaults. */
+  function runOf(over: {
+    spotId: SpotId;
+    helper: boolean;
+    stock: number;
+    trays: { first: number; middle: number; last: number };
+    /** Which line the whole generator bill comes off. */
+    repairFrom: "cushion" | "stock";
+  }): LedgerInput {
+    const available = N.startCash - N.permit - N.spots[over.spotId].booth;
+    const base: LedgerInput = {
+      spotId: over.spotId,
+      counted: { catering: false, rebate: false },
+      opening: { stock: dollars(over.stock), cushion: dollars(available - over.stock), cut: dollars(0) },
+      openingSaved: true,
+      coverLine: "cushion",
+      foodLine: null,
+      trays: over.trays,
+      helper: over.helper,
+      repair: null,
+    };
+    const held = popUpLedger(base, N).held;
+    const from = over.repairFrom;
+    return { ...base, repair: { ...held, [from]: dollars(Math.max(0, held[from] - BILL)) } };
+  }
+
+  /** Takings minus what the food cost — the same measure the ending compares orders on. */
+  function net(input: LedgerInput): number {
+    const ledger = popUpLedger(input, N);
+    return ledger.takings - ledger.saturdays.reduce((total, day) => total + day.trays, 0) * N.trayCost;
+  }
+
+  /**
+   * The same run with a different standing order, with the repair carried across as what the
+   * student *gave* rather than as three absolute figures.
+   *
+   * Restated here rather than imported so the test is a second opinion about the rule instead
+   * of a second call to it. A counterfactual that keeps the absolute figures has the student
+   * freeing whatever the arithmetic happens to leave, which in one direction buys no generator
+   * at all and in the other strands money on a line nothing spends.
+   */
+  function withMiddle(input: LedgerInput, middle: number): LedgerInput {
+    const repair = input.repair;
+    if (!repair) return { ...input, trays: { ...input.trays, middle } };
+    const gave = popUpLedger(input, N).held;
+    const next = { ...input, trays: { ...input.trays, middle } };
+    const there = popUpLedger({ ...next, repair: null }, N).held;
+    const after = { ...there };
+    for (const line of ["stock", "cushion", "cut"] as const) {
+      after[line] = dollars(Math.max(0, there[line] - Math.max(0, gave[line] - repair[line])));
+    }
+    return { ...next, repair: after };
+  }
+
+  it("stops calling a swap that bought an empty night 'paid off'", () => {
+    // Clever Cam's run, reconstructed from the numbers on his screenshot: $770 of stock at the
+    // bridge gate, four trays a night for the first three Saturdays, $270 off the cushion. The
+    // bill was cleared, so the old reading printed PAID OFF over the sentence "the last
+    // Saturday ran and took $0" — a heading and its own detail contradicting each other on the
+    // biggest crowd of the market.
+    const cam = runOf({ spotId: "bridge-gate", helper: true, stock: 770, trays: { first: 4, middle: 4, last: 6 }, repairFrom: "cushion" });
+    const ledger = popUpLedger(cam, N);
+    expect(ledger.saturdays.find((day) => day.saturday === 4)?.cooked, "the run under test cooked on the last night").toBe(0);
+    expect(ledger.residual, "the bill was cleared, so this is not the shortfall branch").toBe(0);
+
+    const repair = verdict(resolveMarket(cam, N).verdicts, "repair");
+    expect(repair.outcome).toBe("cost_you");
+    expect(repair.detail).toContain(formatDollars(dollars(0)));
+    expect(repair.detail).not.toContain("The last Saturday ran and took");
+  });
+
+  it("never heads the swap 'paid off' on any run whose last Saturday cooked nothing", () => {
+    // Not an edge case: swept across three booths and every stock line the board can hold,
+    // thousands of reachable runs clear the bill and then open the truck with nothing on it.
+    let checked = 0;
+    for (const spotId of SPOTS) {
+      for (let stock = 0; stock <= 1200; stock += 50) {
+        const input = runOf({ spotId, helper: false, stock, trays: { first: 3, middle: 4, last: 6 }, repairFrom: "cushion" });
+        const ledger = popUpLedger(input, N);
+        if (ledger.residual > 0) continue;
+        if ((ledger.saturdays.find((day) => day.saturday === 4)?.cooked ?? 0) > 0) continue;
+        checked += 1;
+        const repair = resolveMarket(input, N).verdicts.find((entry) => entry.id === "repair");
+        expect(repair?.outcome, `${spotId} stock=$${stock}: ${repair?.detail}`).not.toBe("paid_off");
+      }
+    }
+    expect(checked, "the sweep found no run with an empty last Saturday to check").toBeGreaterThan(3);
+  });
+
+  it("stops calling a run 'paid off' on what it cooked when a night opened empty", () => {
+    // The other heading over the same run. "What you cooked — Paid off — 120 plates cooked,
+    // 115 sold" is true of three Saturdays and silent about the fourth, and the fourth is the
+    // one the student needed to hear about.
+    const cam = runOf({ spotId: "bridge-gate", helper: true, stock: 770, trays: { first: 4, middle: 4, last: 6 }, repairFrom: "cushion" });
+    const stock = verdict(resolveMarket(cam, N).verdicts, "stock");
+    expect(stock.outcome).toBe("fell_short");
+    expect(stock.detail).toContain("Saturday 4");
+    expect(stock.detail).toContain(String(sellCap(N, "bridge-gate", 4, true)));
+  });
+
+  it("makes the claim that no other standing order does better true wherever it is printed", () => {
+    // The strongest kind of false sentence the product could produce: a claim of optimality,
+    // made to a child, about a run they cannot check. It was computed from one tray more and
+    // one tray fewer and stated over every standing order there is.
+    //
+    // This sweeps the same space by hand and fails if the claim is ever printed over a run
+    // some other standing order beats. It found 48 of them on the reading that shipped.
+    const claim = "no other order for Saturdays 2 and 3";
+    let printed = 0;
+    for (const spotId of SPOTS) {
+      for (const helper of [false, true]) {
+        for (let stock = 0; stock <= 1200; stock += 50) {
+          for (let middle = 0; middle <= 6; middle += 1) {
+            const input = runOf({ spotId, helper, stock, trays: { first: 2, middle, last: 6 }, repairFrom: "cushion" });
+            if (popUpLedger(input, N).residual > 0) continue;
+            const stockVerdict = resolveMarket(input, N).verdicts.find((entry) => entry.id === "stock");
+            if (!stockVerdict?.detail.includes(claim)) continue;
+            printed += 1;
+            const mine = net(input);
+            for (let alt = 0; alt <= 16; alt += 1) {
+              const other = net(withMiddle(input, alt));
+              expect(other, `${spotId} helper=${helper} stock=$${stock} ${middle} trays: ${alt} trays takes $${other - mine} more`)
+                .toBeLessThanOrEqual(mine);
+            }
+          }
+        }
+      }
+    }
+    expect(printed, "the claim is never printed, so this test proves nothing").toBeGreaterThan(20);
+  }, 60_000);
+
+  it("names the best other order there was, not the one next door to it", () => {
+    // The other half of reading one tray either side. Where a neighbour *did* beat the
+    // student's order, the ending printed that neighbour as the improvement — so a student who
+    // cooked four trays a night at the back lane was told "3 trays, not 4, leaves you $120
+    // better off" when two trays a night leaves them $168 better off. Understated advice is a
+    // quieter failure than a false compliment and it is the same failure: a sentence that
+    // sounds like it looked at everything and looked at two things.
+    const input = runOf({ spotId: "back-lane", helper: false, stock: 600, trays: { first: 1, middle: 4, last: 2 }, repairFrom: "cushion" });
+    const mine = net(input);
+    const bestOf = (options: readonly number[]) => options.reduce((top, alt) => {
+      const value = net(withMiddle(input, alt));
+      return value > top.value ? { trays: alt, value } : top;
+    }, { trays: 4, value: mine });
+    const neighbour = bestOf([3, 5]);
+    const whole = bestOf([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+    expect(whole.value, "this run no longer has a better order outside its neighbourhood").toBeGreaterThan(neighbour.value);
+
+    const stock = verdict(resolveMarket(input, N).verdicts, "stock");
+    expect(stock.detail).toContain(`${whole.trays} trays a night`);
+    expect(stock.detail).toContain(formatDollars(dollars(whole.value - mine)));
+    expect(stock.detail).not.toContain(`${neighbour.trays} trays a night`);
+  });
+
+  it("keeps the counterfactual honest about the repair it carries across", () => {
+    // A saved repair board is three absolute figures. Copying them into a run that spent its
+    // stock line differently made the counterfactual free a different amount than the student
+    // actually freed — sometimes not enough to buy the generator at all, so the alternative
+    // silently lost its whole last Saturday and the student's own order looked untouchable.
+    // What travels is what they gave, line by line, so both runs buy the generator.
+    const input = runOf({ spotId: "middle-row", helper: false, stock: 700, trays: { first: 3, middle: 3, last: 4 }, repairFrom: "stock" });
+    const heavier = { ...input, trays: { ...input.trays, middle: 5 } };
+    const naive = popUpLedger(heavier, N);
+    expect(naive.residual, "the naive counterfactual loses the generator, which is the bug").toBeGreaterThan(0);
+    // The ending's own comparison does not: it re-derives the repair from what was given.
+    const stock = verdict(resolveMarket(input, N).verdicts, "stock");
+    expect(stock.detail).not.toMatch(/[{}]/);
   });
 });

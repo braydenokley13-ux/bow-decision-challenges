@@ -22,6 +22,39 @@ import { POP_UP_LINES, type PopUpLineId, type PopUpNumbers, type SaturdayNumber,
  * bonus exactly this way, and for the same reason: the two conditional sources are different
  * on purpose, and only the one whose condition the student's own choices decide belongs in a
  * sweep of defensible strategies.
+ *
+ * ## What this proves, and what it does not
+ *
+ * A student red team read the four crowd figures off the booth card, noticed that nothing in
+ * this market is rolled, and reported: *"Is there a dominant strategy? Yes, and the product
+ * tells you."* They are right about the thing they measured, and it is not the thing this
+ * harness measures. Both statements are true and it is worth being exact about which is which,
+ * because a reader who takes this file for a proof of the other claim will be misled.
+ *
+ * **What it proves:** no *option* on any one axis is the right answer regardless of what the
+ * student is trying to do. Every booth wins somewhere on the simplex of priorities; so does
+ * every answer about Marisol, the rebate, the extra tray, banking a cut, and each of the three
+ * lines the generator money can come out of. That is a claim about the menu, and it is the
+ * claim the product makes — `observer.ts` may not read a preference, and this is why it may
+ * not.
+ *
+ * **What it does not prove:** that no plan is best once an objective is fixed. It could not:
+ * `bestByPriority` below *finds* that plan, four times over, and finding it is the harness
+ * working. Fix "end the run with the most money", and the market is a deterministic
+ * optimisation whose inputs are all printed before the first order — which is exactly what the
+ * red team solved. Nothing here contradicts them.
+ *
+ * **Whether the printed crowds are a mistake:** no, and `types.ts` and `economy.ts` say why at
+ * the point the numbers are declared. An evening that turns out colder than the last one is a
+ * surprise; an evening you were told would be colder is a decision. This is an assessment as
+ * well as a game, and the competencies it assesses are planning within money that is actually
+ * there and repairing a plan when a cost changes — neither of which is forecasting demand.
+ * Hiding the crowds would score a child's stocking partly on luck, break the replay a teacher
+ * needs, and make this sweep impossible. The cost of the choice is real and is the red team's
+ * finding: a student who wants to optimise *can*, with arithmetic, before the market opens.
+ * The answer to that is not to hide the numbers. It is to make sure the ending never tells a
+ * child there was one right answer measured in money — see `resolution.ts`, which now says
+ * what its own comparisons are counted in.
  */
 
 export interface Strategy {

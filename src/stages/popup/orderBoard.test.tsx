@@ -106,12 +106,21 @@ describe("the order board asks the question instead of answering it", () => {
     // The readout beside the stepper, cell by cell. The world's own sentence about money in
     // the bin stays on the page — it is the stakes, and the student is meant to read it. What
     // may not be there is the answer: a live count of the plates that would be thrown away.
+    //
+    // The standing order grew a fourth cell after a student red team lost the biggest night of
+    // the market to a stock line it had never been shown spending: what this order leaves. It
+    // is the same money the student is already moving, said before they move it, and it is not
+    // the subtraction this test exists to keep off the screen — that one is plates the crowd
+    // will not buy, and it is still absent. The first Saturday has no such cell while its own
+    // sum is open, because the stock line is on the screen above it and the leftover would
+    // hand over the answer to "what does the order cost" by subtraction.
     for (const [state, screen, cells] of [
       [stateAfter(OPENING), () => <FirstSaturdayStage />, [COPY.saturday.cooked, COPY.saturday.crowdWillBuy]],
       [stateAfter(STANDING), () => <StandingOrderStage />, [
         COPY.saturday.cooked,
         `${COPY.settle.saturdayLabel} 2 ${COPY.saturday.nightBuys}`,
         `${COPY.settle.saturdayLabel} 3 ${COPY.saturday.nightBuys}`,
+        COPY.saturday.leaves,
       ]],
     ] as const) {
       shell.popUp = {
@@ -121,6 +130,7 @@ describe("the order board asks the question instead of answering it", () => {
       const view = render(<MemoryRouter>{screen()}</MemoryRouter>);
       const labels = [...view.container.querySelectorAll(".tray-order__facts dt")].map((cell) => cell.textContent);
       expect(labels).toEqual([...cells]);
+      expect(labels.join(" ")).not.toMatch(/bin|sell|spoil|waste/i);
       cleanup();
     }
   });

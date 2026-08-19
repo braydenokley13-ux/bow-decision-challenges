@@ -62,7 +62,14 @@ export interface PopUpScenario {
   };
   spots: readonly PopUpSpotCopy[];
   conditional: Record<PopUpSourceId, PopUpConditionalCopy>;
-  lines: Record<PopUpLineId, { label: string; job: string }>;
+  /**
+   * The three lines: what a control calls them, and what a sentence calls them.
+   *
+   * `label` is the name on the board. `inline` is the same line inside a sentence, because
+   * the ending was printing "$270 off the Your cut" — the label of a control dropped into
+   * prose that needed an article. Two forms of one name, so neither has to be bent.
+   */
+  lines: Record<PopUpLineId, { label: string; inline: string; job: string }>;
   /** Asked only when the plan has money in it that has a rule attached. */
   coverPrompt: string;
   supplier: { label: string; note: string };
@@ -140,7 +147,11 @@ export interface PopUpScreenCopy {
     lead: string;
     closer: { title: string; note: string };
     /** What each line is doing at the amount it currently holds. */
-    lineNotes: { stockOne: string; stock: string; cushion: string; cut: string };
+    lineNotes: {
+      stockOne: string; stock: string; cushion: string; cut: string;
+      /** What a "send the rest here" card leaves the truck able to cook. */
+      closerTrays: string; closerTraysOne: string; closerNothing: string;
+    };
     toPlanLabel: string;
     placedLabel: string;
     leftLabel: string;
@@ -172,7 +183,36 @@ export interface PopUpScreenCopy {
     order: PopUpSumCopy;
     /** The ceiling on the order, said as a fact about their own plan. */
     affordable: string;
+    /**
+     * What this order leaves on the stock line, printed wherever a Saturday still follows.
+     *
+     * It is the fact the market never said out loud. A student who cooks to the crowd on the
+     * first three Saturdays can spend the stock line down to less than one tray without ever
+     * being shown it happening, and then meet the biggest night of the run with nothing to
+     * cook. Saying what an order leaves is not advice about how much to cook — the two nights
+     * still pull opposite ways — it is the same money the student is already spending, said
+     * before they spend it rather than four screens later.
+     *
+     * Three words rather than a sentence, and `leftTrays` for what it buys, because this is a
+     * fact a student glances at while deciding rather than prose they read. The screens are
+     * budgeted at what they can be read in, and a longer way of saying the same figure is a
+     * longer way of saying the same figure.
+     */
+    leaves: string;
+    leftTrays: string;
+    leftTray: string;
     bothNights: string;
+    /** The last Saturday, where the order can reach a line that is not the stock line. */
+    foodMoney: {
+      ask: string;
+      /** Naming no other line: the stock line pays for the order and nothing else does. */
+      only: string;
+      split: string;
+      /** A named line that this order never actually has to reach. */
+      none: string;
+      /** Said once, where the stock line will not pay for a single tray on the last night. */
+      short: string;
+    };
     open: string;
     gate: string;
   };
@@ -318,6 +358,17 @@ export interface PopUpScreenCopy {
     retry: string;
     again: string;
     againNote: string;
+    /** The four facts the hero puts on the record: what this run was. */
+    boothFact: string;
+    classFact: string;
+    saturdaysFact: string;
+    platesFact: string;
+    /** The receipt. What went, in this world's own nouns. */
+    record: string;
+    boothLabel: string;
+    said: string;
+    saidOne: string;
+    nothingWritten: string;
   };
 }
 
@@ -331,9 +382,33 @@ export interface PopUpScreenCopy {
  */
 export interface PopUpVerdictCopy {
   title: string;
+  /**
+   * What the comparisons under the title are counted in.
+   *
+   * Every counterfactual on this panel is measured one way — takings minus what the food cost
+   * — because that is the only axis the ledger can check. The world itself is deliberately not
+   * measured that way: `balance.ts` sweeps it to prove no booth, no hire and no split is the
+   * right answer, and `observer.ts` is forbidden from reading how much anybody banked. A panel
+   * that prints "would have found $222 more" without saying what it counted invites a child to
+   * read one axis as the score, which is what a student red team did read it as.
+   *
+   * It says what it counts, and stops. Not "money is not everything" — a lesson tacked onto a
+   * receipt is a lesson nobody reads — just the unit the arithmetic is in.
+   */
+  counted: string;
   outcomes: { paidOff: string; costYou: string; fellShort: string; noEffect: string };
   booth: { label: string; paidOff: string; costYou: string; fellShort: string };
-  stock: { label: string; paidOff: string; paidOffSpoiled: string; costYou: string; fellShort: string; nothing: string };
+  stock: {
+    label: string;
+    paidOff: string;
+    paidOffSpoiled: string;
+    costYou: string;
+    fellShort: string;
+    nothing: string;
+    /** A Saturday the truck opened with nothing on it, on a night that would have bought. */
+    emptyNight: string;
+    emptyNights: string;
+  };
   helper: {
     labelBooked: string;
     labelAlone: string;
@@ -353,7 +428,7 @@ export interface PopUpVerdictCopy {
     rebateWindfall: string;
     noEffect: string;
   };
-  repair: { label: string; paidOff: string; costYou: string; fellShort: string };
+  repair: { label: string; paidOff: string; costYou: string; emptyLast: string; fellShort: string };
   cut: { label: string; paidOff: string; fellShort: string; noEffect: string };
 }
 
@@ -411,13 +486,15 @@ export const POP_UP_SCENARIO: PopUpScenario = {
     },
   },
   lines: {
-    stock: { label: "Stock", job: `This is the food you buy to sell. ${trayNote}` },
+    stock: { label: "Stock", inline: "the stock line", job: `This is the food you buy to sell. ${trayNote}` },
     cushion: {
       label: "Cushion",
+      inline: "the cushion",
       job: `This is cash you keep in the box instead of spending it. The generator on the truck is rented, and Ramos Rentals is holding ${formatDollars(N.generator.deposit)} against it. Trucks break, and a truck that is not running does not sell anything.`,
     },
     cut: {
       label: "Your cut",
+      inline: "your cut",
       job: "This is the money you bank for yourself at the end of the run. It is the whole reason you took the job, and nobody is going to set it for you.",
     },
   },
@@ -506,6 +583,13 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       closer: { title: "Send the rest to one line", note: "The line you name takes whatever is left over." },
       lineNotes: {
         stockOne: "tray of food to cook and sell.",
+        // The closer cards used to print the stock line's own sentence under all three of
+        // them, so "Cushion — $1,770 — 0 trays of food to cook and sell." read as a claim
+        // about the cushion. The number was right; the sentence was the wrong one. What these
+        // cards are actually saying is what the truck could cook if you pressed this one.
+        closerTrays: "Leaves {n} trays to cook.",
+        closerTraysOne: "Leaves 1 tray to cook.",
+        closerNothing: "Leaves nothing to cook.",
         stock: "trays of food to cook and sell.",
         cushion: "Cash in the box, and not spent yet.",
         cut: "Yours at the end of the run, if nothing eats it.",
@@ -541,7 +625,17 @@ export const POP_UP_SCENARIO: PopUpScenario = {
         high: "Too high. Check how many trays you actually ordered.",
       },
       affordable: "is all your stock line pays for.",
+      leaves: "Left on the stock line",
+      leftTrays: "trays",
+      leftTray: "tray",
       bothNights: "for both nights",
+      foodMoney: {
+        ask: "The order comes off the stock line. If you want more trays than it pays for, say which line pays the rest.",
+        only: "Only the stock line",
+        split: "{stock} off the stock line and {amount} off {line}.",
+        none: "The stock line pays for this whole order.",
+        short: "Your stock line will not pay for a whole tray. Nothing says the rest of your money cannot buy food — but every dollar you move here is a dollar you do not end the run with.",
+      },
       open: "Open the doors",
       gate: "Price the order to carry on",
     },
@@ -649,6 +743,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       action: "Answer the organiser",
       verdicts: {
         title: "What each call actually did.",
+        counted: "Counted in money at the end of the run, which is what this ending can check.",
         outcomes: { paidOff: "Paid off", costYou: "Cost you", fellShort: "Fell short", noEffect: "No effect" },
         booth: {
           label: "The {booth} booth",
@@ -658,11 +753,13 @@ export const POP_UP_SCENARIO: PopUpScenario = {
         },
         stock: {
           label: "What you cooked",
-          paidOff: "{cooked} plates cooked, {sold} sold, {takings}. Nothing was thrown away and no standing order does better on these four crowds.",
+          paidOff: "{cooked} plates cooked, {sold} sold, {takings}. Nothing was thrown away, and with the money you had, no other order for Saturdays 2 and 3 would have left you better off.",
           paidOffSpoiled: "{cooked} plates cooked, {sold} sold, {takings}. {binned} went in the bin on the thin night, and cooking less takes less.",
           costYou: "{binned} went in the bin. {alt} trays a night on Saturdays 2 and 3, not {actual}, leaves you {gap} better off.",
-          fellShort: "{unfed} people wanted a plate you did not have. {alt} trays a night on Saturdays 2 and 3, not {actual}, takes {gap} more.",
+          fellShort: "{unfed} people wanted a plate you did not have. {alt} trays a night on Saturdays 2 and 3, not {actual}, would have left you {gap} better off.",
           nothing: "You never cooked a plate, so the truck opened four times with nothing on it and took {zero}.",
+          emptyNight: "{cooked} plates cooked, {sold} sold, {takings} — and on Saturday {night} the truck opened with nothing on it while {wanted} people would have bought a plate.",
+          emptyNights: "{cooked} plates cooked, {sold} sold, {takings} — and on {empty} of the four Saturdays the truck opened with nothing on it. The worst was Saturday {night}, where {wanted} people would have bought a plate.",
         },
         helper: {
           labelBooked: "Booking Marisol",
@@ -676,17 +773,18 @@ export const POP_UP_SCENARIO: PopUpScenario = {
         },
         conditional: {
           label: "Money with a rule on it",
-          cateringCounted: "Your plan spent Sunrise Yoga's {catering}. They never confirmed, so {covered} came back off the {line}.",
+          cateringCounted: "Your plan spent Sunrise Yoga's {catering}. They never confirmed, so {covered} came back off {line}.",
           uncovered: "{uncovered} of it was never there to give back.",
-          rebateMissed: "Your plan spent the {rebate} rebate, the first Saturday did not sell out, and {covered} came off the {line}.",
+          rebateMissed: "Your plan spent the {rebate} rebate, the first Saturday did not sell out, and {covered} came off {line}.",
           rebateEarnedPlanned: "Your plan spent the {rebate} rebate and the first Saturday sold out, so nothing came back.",
           rebateWindfall: "You spent nothing you did not hold. The first Saturday sold out anyway and the {rebate} rebate went to the cushion.",
           noEffect: "You spent only money the truck already held. Neither amount came, and {zero} had to be found.",
         },
         repair: {
           label: "Where the swap money came from",
-          paidOff: "{bill} off the {lines}. The last Saturday ran and took {last}.",
+          paidOff: "{bill} off {lines}. The last Saturday ran and took {last}.",
           costYou: "{bill}, and {stock} of it off the stock line — Saturday 4 cooked {cooked} plates into a crowd wanting {crowd}.",
+          emptyLast: "{bill} off {lines}, and the generator went in the truck. The stock line had {left} on it by then, so Saturday 4 cooked nothing and took {zero} on the biggest crowd of the run.",
           fellShort: "{bill} wanted, {freed} freed, {residual} missing. The truck sat dark on the biggest night.",
         },
         cut: {
@@ -721,10 +819,23 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       sent: "Your answer is with your teacher.",
       saving: "Sending your answer…",
       failed: "Your answer is saved, but not sent yet.",
-      person: "A person reads what you wrote. Software can check whether the money adds up. It should not decide whether your thinking makes sense.",
+      // The load-bearing promise this product makes to a child, and it used to be made twice,
+      // differently, once per story — this one dropped the second half. A student who has just
+      // handed over twenty minutes of their own thinking needs to know two things: a person
+      // reads it, and nobody has yet. The second is the one that stops them refreshing.
+      person: "A person reads the writing, not software. Nothing here has been read yet.",
       retry: "Try sending again",
       again: "Run the market again",
-      againNote: "The same four Saturdays come out differently if you order differently.",
+      againNote: "The same four Saturdays come out differently if you order differently. What you turned in stays with your teacher either way.",
+      boothFact: "Your booth",
+      classFact: "Class",
+      saturdaysFact: "Saturdays run",
+      platesFact: "Plates sold",
+      record: "What you turned in",
+      boothLabel: "The booth you took",
+      said: "Your {n} numbers, and what you said about them:",
+      saidOne: "The number you stood on, and what you said about it:",
+      nothingWritten: "You turned this in without writing anything.",
     },
   },
 };
@@ -741,6 +852,7 @@ function screenCopy(s: PopUpScreenCopy): readonly string[] {
     ...sums.flatMap((sum) => [sum.label, sum.prompt, sum.terms, sum.scaffold, sum.low, sum.high]),
     s.plan.kicker, s.plan.title, s.plan.lead, s.plan.closer.title, s.plan.closer.note,
     s.plan.lineNotes.stockOne, s.plan.lineNotes.stock, s.plan.lineNotes.cushion, s.plan.lineNotes.cut,
+    s.plan.lineNotes.closerTrays, s.plan.lineNotes.closerTraysOne, s.plan.lineNotes.closerNothing,
     s.plan.toPlanLabel, s.plan.placedLabel, s.plan.leftLabel,
     s.plan.balanced, s.plan.unassigned, s.plan.over, s.plan.commit, s.plan.check,
     s.plan.help.open, s.plan.help.steps, s.plan.help.supply, s.plan.help.supplyNote,
@@ -776,6 +888,8 @@ function screenCopy(s: PopUpScreenCopy): readonly string[] {
     s.writeUp.pickMoreOne, s.writeUp.pickMore, s.writeUp.ready, s.writeUp.write, s.writeUp.longEnough, s.writeUp.submit,
     s.submitted.sent, s.submitted.saving, s.submitted.failed, s.submitted.person, s.submitted.retry,
     s.submitted.again, s.submitted.againNote,
+    s.submitted.boothFact, s.submitted.classFact, s.submitted.saturdaysFact, s.submitted.platesFact,
+    s.submitted.record, s.submitted.boothLabel, s.submitted.said, s.submitted.saidOne, s.submitted.nothingWritten,
   ];
 }
 

@@ -73,9 +73,28 @@ function fill(template: string, values: Record<string, string | number>): string
   return template.replace(/\{(\w+)\}/g, (whole, key: string) => (key in values ? String(values[key]) : whole));
 }
 
-/** The same run with exactly one decision changed, priced by the same ledger. */
+/**
+ * The same run with exactly one decision changed, priced by the same ledger.
+ *
+ * The repair is the one thing that cannot simply be carried across. A saved repair board is
+ * three absolute figures, and a counterfactual that changes what the stock line spent changes
+ * what the three lines were holding when the shop asked for its money — so copying the figures
+ * over would have the student freeing a different amount than they actually freed, and often
+ * failing to cover the bill at all. A counterfactual whose generator silently goes unbought is
+ * a counterfactual that flatters the run it is being compared against, which is the opposite
+ * of what these sentences are for. What travels is what the student *gave*, line by line.
+ */
 function ledgerWith(input: LedgerInput, n: PopUpNumbers, changed: Partial<LedgerInput>): PopUpLedger {
-  return popUpLedger({ ...input, ...changed }, n);
+  const next: LedgerInput = { ...input, ...changed };
+  const repair = input.repair;
+  if (!repair) return popUpLedger(next, n);
+  const heldHere = popUpLedger(input, n).held;
+  const heldThere = popUpLedger({ ...next, repair: null }, n).held;
+  const givenBack = { ...heldThere };
+  for (const line of POP_UP_LINES) {
+    givenBack[line] = dollars(Math.max(0, heldThere[line] - Math.max(0, heldHere[line] - repair[line])));
+  }
+  return popUpLedger({ ...next, repair: givenBack }, n);
 }
 
 /** Takings minus what the food actually cost. The only fair way to compare two orders. */
@@ -131,12 +150,28 @@ function boothVerdict(
   };
 }
 
+/**
+ * The most trays the standing order could have been, in the student's own run.
+ *
+ * Read off the stock line as it stood when that order was placed — after the first Saturday
+ * was paid for and any windfall had landed — and halved, because one order covers two nights
+ * and the screen would not let a student place one they could not pay for twice. It is the
+ * exact set of orders that were on offer, which is what makes a claim about "no other order"
+ * a claim about something rather than a claim about a neighbourhood.
+ */
+function standingOrderCeiling(input: LedgerInput, n: PopUpNumbers): number {
+  const atOrder = popUpLedger({ ...input, trays: { first: input.trays.first, middle: null, last: null } }, n);
+  return Math.floor(atOrder.held.stock / (2 * n.trayCost));
+}
+
 function stockVerdict(
   input: LedgerInput,
   ledger: PopUpLedger,
   n: PopUpNumbers,
   copy: PopUpVerdictCopy,
   unfed: number,
+  spotId: SpotId,
+  helper: boolean,
 ): MarketVerdict {
   const cooked = ledger.saturdays.reduce((total, day) => total + day.cooked, 0);
   const middle = input.trays.middle ?? 0;
@@ -144,13 +179,30 @@ function stockVerdict(
   if (cooked === 0) {
     return { id: "stock", label: copy.stock.label, taken: false, outcome: "fell_short", detail: fill(copy.stock.nothing, { zero }) };
   }
-  // The standing order is the one order in this run that faces two unequal nights, so it is
-  // the one worth a counterfactual: a tray more and a tray fewer, priced the same way.
+  /**
+   * The standing order, against every standing order the student could have placed.
+   *
+   * This used to compare one tray more and one tray fewer and then print "no standing order
+   * does better on these four crowds" whenever neither beat it. That is a claim about a
+   * neighbourhood dressed as a claim about the whole space, and on this world's numbers it is
+   * false often enough to find by looking: a run that cooked nothing on the middle Saturdays
+   * sat one tray away from worse in both directions and four trays away from sixty dollars
+   * better, and was told nothing beat it. A claim of optimality made to a child has to be
+   * true of the thing it names, so the sweep now runs the whole range and the sentence names
+   * exactly what was swept.
+   */
   const mine = net(ledger, n);
-  const alternatives = [middle - 1, middle + 1]
-    .filter((trays) => trays >= 0)
+  const ceiling = Math.max(middle, standingOrderCeiling(input, n));
+  const alternatives = Array.from({ length: ceiling + 1 }, (_, trays) => trays)
+    .filter((trays) => trays !== middle)
     .map((trays) => ({ trays, value: net(ledgerWith(input, n, { trays: { ...input.trays, middle: trays } }), n) }));
   const best = alternatives.reduce((top, option) => (option.value > top.value ? option : top), { trays: middle, value: mine });
+  // A Saturday the truck opened with nothing on it, on a night that would have bought plates.
+  // It outranks everything else this verdict could say: an order that was the best of its
+  // range is not what a student needs to hear about a run with an empty night in it.
+  const emptyNights = ledger.saturdays
+    .filter((day) => day.cooked === 0 && sellCap(n, spotId, day.saturday, helper) > 0)
+    .sort((a, b) => sellCap(n, spotId, b.saturday, helper) - sellCap(n, spotId, a.saturday, helper));
   const values = {
     cooked,
     sold: ledger.plates.sold,
@@ -160,7 +212,19 @@ function stockVerdict(
     actual: middle,
     alt: best.trays,
     gap: formatDollars(dollars(Math.round(best.value - mine))),
+    night: emptyNights[0]?.saturday ?? 0,
+    wanted: emptyNights[0] ? sellCap(n, spotId, emptyNights[0].saturday, helper) : 0,
+    empty: emptyNights.length,
   };
+  if (emptyNights[0]) {
+    return {
+      id: "stock",
+      label: copy.stock.label,
+      taken: true,
+      outcome: "fell_short",
+      detail: fill(emptyNights.length > 1 ? copy.stock.emptyNights : copy.stock.emptyNight, values),
+    };
+  }
   if (best.value <= mine) {
     // An order can be the best of the three and still have thrown food away — the extra tray
     // that fills the busy night bins its other half on the thin one, and on this world's
@@ -242,7 +306,7 @@ function conditionalVerdict(
   copy: PopUpVerdictCopy,
   scenario: PopUpScenario,
 ): MarketVerdict {
-  const lineLabel = scenario.lines[input.coverLine ?? "cushion"].label;
+  const lineLabel = scenario.lines[input.coverLine ?? "cushion"].inline;
   const zero = formatDollars(dollars(0));
   const values = {
     catering: formatDollars(n.catering.amount),
@@ -279,7 +343,10 @@ function repairVerdict(
   helper: boolean,
 ): MarketVerdict {
   const gave = POP_UP_LINES.filter((line) => ledger.held[line] - ledger.afterRepair[line] > 0);
-  const lines = gave.map((line) => scenario.lines[line].label).join(", ");
+  // "the cushion and your cut", not "Cushion, Your cut". A control's name dropped into a
+  // sentence is how the ending came to say "$270 off the Your cut".
+  const named = gave.map((line) => scenario.lines[line].inline);
+  const lines = named.length > 1 ? `${named.slice(0, -1).join(", ")} and ${named.at(-1)}` : named.join("");
   const fromStock = dollars(Math.max(0, ledger.held.stock - ledger.afterRepair.stock));
   const last = ledger.saturdays.find((day) => day.saturday === n.saturdays);
   const values = {
@@ -289,11 +356,27 @@ function repairVerdict(
     lines,
     last: formatDollars(last?.takings ?? dollars(0)),
     stock: formatDollars(fromStock),
+    left: formatDollars(ledger.afterRepair.stock),
     cooked: last?.cooked ?? 0,
     crowd: sellCap(n, spotId, n.saturdays, helper),
+    zero: formatDollars(dollars(0)),
   };
   if (ledger.residual > 0) {
     return { id: "repair", label: copy.repair.label, taken: true, outcome: "fell_short", detail: fill(copy.repair.fellShort, values) };
+  }
+  /**
+   * A generator bought for a truck that then opened with nothing to sell.
+   *
+   * This branch is the whole of a student red team's worst finding. The bill was cleared, so
+   * the old reading called it **Paid off** and then said, in the same sentence, "the last
+   * Saturday ran and took $0" — a heading and a fact that contradict each other, on the
+   * biggest crowd of the run. The money was found and it bought an empty night: that is what
+   * `cost you` is for, and it is true whichever line paid, because the question this verdict
+   * answers is what the swap money did rather than which row it came off.
+   */
+  const emptyLast = (last?.cooked ?? 0) === 0;
+  if (emptyLast) {
+    return { id: "repair", label: copy.repair.label, taken: true, outcome: "cost_you", detail: fill(copy.repair.emptyLast, values) };
   }
   // Money off the stock line is the one repair that charges itself to the last Saturday, and
   // it only reads as a cost when the crowd that night wanted more than the truck could cook.
@@ -352,7 +435,7 @@ export function resolveMarket(
   const verdicts: MarketVerdict[] = [];
   if (spotId) {
     verdicts.push(boothVerdict(input, ledger, n, copy, scenario, spotId));
-    verdicts.push(stockVerdict(input, ledger, n, copy, unfed));
+    verdicts.push(stockVerdict(input, ledger, n, copy, unfed, spotId, helper));
     if (input.helper !== null) verdicts.push(helperVerdict(input, ledger, n, copy, spotId));
     verdicts.push(conditionalVerdict(input, ledger, n, copy, scenario));
     // Only a run that actually stood at the repair board is judged on it. A student who never

@@ -93,6 +93,45 @@ describe("your cut is a planned amount, and only a statement can say so", () => 
     expect(levelOf(generous, "plan-within-income.er3")).toBe(5);
   });
 
+  it("says nothing at all when the line it is about was never touched", () => {
+    // The student red team's M1, on this world's board. One click on "Stock — takes what is
+    // left over" closes the whole opening plan; the cut sits at the board's own zero because
+    // nobody ever opened it. The old reading called that "Your cut held a figure the student
+    // set" and sent **Independently** to the teacher for three children at once.
+    //
+    // Null, not zero. This world cannot tell a student who decided to bank nothing from one
+    // who never read the line, and §10.4's answer to a question that never came up is silence.
+    const log = run({ oneClickPlan: true, closeOpeningInto: "stock" });
+    expect(levelOf(log, "plan-within-income.er3")).toBeNull();
+    expect(standing(log, "plan-within-income.er3")).toBeNull();
+    expect(reasonOf(log, "plan-within-income.er3")).toContain("never moved off the figure the board opened on");
+  });
+
+  it("says nothing when the figure on the line was the one BOW filled in", () => {
+    // The other way a number arrives without a student behind it. The board fills in one split
+    // that adds up for a student who cannot balance one — the same dignity the calculations
+    // offer — and a split BOW wrote is not a plan the student made.
+    const log = run({ supplySplit: "as-is" });
+    expect(levelOf(log, "plan-within-income.er3")).toBeNull();
+    expect(reasonOf(log, "plan-within-income.er3")).toContain("the one BOW suggested");
+  });
+
+  it("gives it back the moment the student moves the line themselves", () => {
+    // And this is why the record is "where it came from" rather than "was there help": a
+    // suggested figure the student then changes is a figure they set. Nothing is taken away
+    // from a student who used the help and then did the thinking.
+    const log = run({ supplySplit: "revised" });
+    expect(levelOf(log, "plan-within-income.er3")).toBe(5);
+    expect(reasonOf(log, "plan-within-income.er3")).toContain("a figure the student set");
+  });
+
+  it("still reads the leftovers landing on the cut as the misconception", () => {
+    // Unchanged, and it has to be: a one-click plan that closes on *your cut* is a statement.
+    // The student named the line that takes what is left, and it was their own pay.
+    const log = run({ oneClickPlan: true, closeOpeningInto: "cut" });
+    expect(levelOf(log, "plan-within-income.er3")).toBe(0);
+  });
+
   it("caps it at the help that was on screen", () => {
     // The engine applies §10.3's caps, not this world. A student who opened the step-by-step
     // help before closing their plan cannot reach 5 from it.

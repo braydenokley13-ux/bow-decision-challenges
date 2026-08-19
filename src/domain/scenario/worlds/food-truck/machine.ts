@@ -3,7 +3,7 @@ import type { ClaimReasonId } from "../../../core/ids";
 import type { CompetingClaimsSettlement, EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../../../evidence/types";
 import { costOfTipClaims, TIP_CLAIM_IDS } from "./claims";
 import { PLAN_UNDER_PRESSURE } from "../../../../platform/challenges/registry";
-import { orderCost, playSaturday, rebateEarned } from "./economy";
+import { orderCost, payForTrays, playSaturday, rebateEarned } from "./economy";
 import { EMPTY_PLAN, planSum, popUpLedger, type LedgerInput, type PopUpLedger } from "./ledger";
 import { POP_UP_NUMBERS } from "./numbers";
 import type { PopUpBoardId, PopUpLineId, PopUpNumbers, PopUpPlan, PopUpSourceId, PopUpSumId, SaturdayNumber, SpotId, TipClaimId } from "./types";
@@ -29,6 +29,23 @@ export interface PopUpSumState {
   attempts: number;
   correct: boolean;
   supplied: boolean;
+}
+
+/**
+ * How a figure on a board arrived, and whether the student revisited it.
+ *
+ * `typed` is the steppers: the student set this number. `suggested` is the split the board
+ * fills in for a student who could not balance one — the same help the calculations offer,
+ * and no more a statement about them than being handed an answer is. `remainder` is the card
+ * that sends what is left to a named line: the student chose the *line* and the arithmetic
+ * chose the *amount*, which is exactly why it is neither of the other two.
+ *
+ * `revised` is how a figure earns itself back. A suggested or leftover number the student then
+ * moved by hand is a number they set, and the evidence should say so.
+ */
+export interface PopUpLineSource {
+  amountSource: "typed" | "suggested" | "remainder";
+  revised: boolean;
 }
 
 export interface PopUpSnapshot {
@@ -63,7 +80,25 @@ export interface PopUpState {
   counted: Record<PopUpSourceId, boolean>;
   /** The line the student named to give money back from if a condition is not met. */
   coverLine: PopUpLineId | null;
+  /**
+   * The line the student named to pay for the last Saturday's food past the stock line.
+   *
+   * It is set by the order itself rather than by a decision of its own, because that is what
+   * it is: "cook six trays, and the last $310 of it comes off my cut" is one sentence and one
+   * commitment. `economy.ts` carries why this night can reach another line and no other can.
+   */
+  foodLine: PopUpLineId | null;
   drafts: Partial<Record<PopUpBoardId, PopUpPlan>>;
+  /**
+   * Where each line's figure came from, and whether the student went back to it.
+   *
+   * A line that never appears here was never moved: its figure is the board's own zero, and
+   * nothing about the student can be read off it. That distinction is the whole point. Three
+   * children were reported to their teacher as having planned a savings figure —
+   * `Independently` — on a line they had not touched, because the board can reach any amount
+   * one way or another and the log only recorded the amounts.
+   */
+  lineSources: Partial<Record<PopUpBoardId, Partial<Record<PopUpLineId, PopUpLineSource>>>>;
   saved: Partial<Record<PopUpBoardId, string>>;
   snapshots: PopUpSnapshot[];
   /** Trays ordered for the first Saturday, for each of the middle two, and for the last. */
@@ -84,12 +119,20 @@ export type PopUpAction =
   | { type: "POPUP_CONDITIONAL_MONEY_DECIDED"; sourceId: PopUpSourceId; counted: boolean }
   /** "If it does not come, this line gives it back." Named before the plan is committed. */
   | { type: "POPUP_COVER_LINE_NAMED"; line: PopUpLineId }
-  | { type: "POPUP_LINE_CHANGED"; board: PopUpBoardId; line: PopUpLineId; amount: Dollars }
+  /**
+   * One line moved on a board. `from` is "suggested" only for the split the board fills in
+   * when a student cannot balance one; everything a student touches themselves is typed.
+   */
+  | { type: "POPUP_LINE_CHANGED"; board: PopUpBoardId; line: PopUpLineId; amount: Dollars; from?: "typed" | "suggested" }
   /** "Put the rest here" — the student names the line that takes what is still unassigned. */
   | { type: "POPUP_REMAINDER_ASSIGNED"; board: PopUpBoardId; line: PopUpLineId; amount: Dollars }
   | { type: "POPUP_PLAN_SAVE_REQUESTED"; board: PopUpBoardId; acknowledgedResidual?: Dollars }
   | { type: "POPUP_LOCKED_MOVE_ATTEMPTED"; board: PopUpBoardId; lockedId: string }
-  | { type: "POPUP_STOCK_ORDERED"; saturday: SaturdayNumber; trays: number }
+  /**
+   * The order for one Saturday. `fromLine` is read on the last Saturday only: it is the line
+   * the student named to pay for the trays their stock line will not cover.
+   */
+  | { type: "POPUP_STOCK_ORDERED"; saturday: SaturdayNumber; trays: number; fromLine?: PopUpLineId | null }
   | { type: "POPUP_HELPER_DECIDED"; booked: boolean }
   /** The tips jar settled: what it paid for, and what made the rest matter less. */
   | { type: "POPUP_CLAIMS_SETTLED"; fundedIds: readonly TipClaimId[]; reason: ClaimReasonId }
@@ -119,7 +162,9 @@ export function createPopUpState(now = 1): PopUpState {
     spotId: null,
     counted: { catering: false, rebate: false },
     coverLine: null,
+    foodLine: null,
     drafts: {},
+    lineSources: {},
     saved: {},
     snapshots: [],
     trays: { first: null, middle: null, last: null },
@@ -141,6 +186,7 @@ export function ledgerInputFor(state: PopUpState): LedgerInput {
     opening: savedOpening?.plan ?? state.drafts.opening ?? EMPTY_PLAN,
     openingSaved: savedOpening !== undefined,
     coverLine: state.coverLine,
+    foodLine: state.foodLine,
     trays: state.trays,
     helper: state.helper,
     repair: savedRepair?.plan ?? state.drafts.repair ?? null,
@@ -215,6 +261,25 @@ function decisionPayload<T extends { type: string; at?: number }>(action: T): Om
   delete copy.type;
   delete copy.at;
   return copy as Omit<T, "type" | "at">;
+}
+
+/**
+ * One line's figure, re-sourced.
+ *
+ * A hand move onto a line that arrived some other way is the student taking it over, and that
+ * is what `revised` records. A hand move onto a line they were already setting by hand is not
+ * a revision of anything — it is the same student still typing.
+ */
+function withLineSource(
+  sources: PopUpState["lineSources"],
+  board: PopUpBoardId,
+  line: PopUpLineId,
+  amountSource: PopUpLineSource["amountSource"],
+): PopUpState["lineSources"] {
+  const onBoard = sources[board] ?? {};
+  const before = onBoard[line];
+  const revised = before !== undefined && (before.revised || before.amountSource !== amountSource);
+  return { ...sources, [board]: { ...onBoard, [line]: { amountSource, revised } } };
 }
 
 function draftFor(state: PopUpState, board: PopUpBoardId): PopUpPlan {
@@ -304,6 +369,7 @@ export function popUpReducer(state: PopUpState, action: TimestampedPopUpAction, 
       return {
         ...state,
         drafts: { ...state.drafts, [action.board]: { ...draftFor(state, action.board), [action.line]: action.amount } },
+        lineSources: withLineSource(state.lineSources, action.board, action.line, action.from ?? "typed"),
       };
 
     case "POPUP_REMAINDER_ASSIGNED": {
@@ -315,6 +381,7 @@ export function popUpReducer(state: PopUpState, action: TimestampedPopUpAction, 
       const moved = {
         ...state,
         drafts: { ...state.drafts, [action.board]: { ...current, [action.line]: dollars(current[action.line] + action.amount) } },
+        lineSources: withLineSource(state.lineSources, action.board, action.line, "remainder"),
       };
       const ledger = ledgerOf(moved, n);
       // What is still looking for a job once this line has taken its share. Zero means the
@@ -343,6 +410,9 @@ export function popUpReducer(state: PopUpState, action: TimestampedPopUpAction, 
         ...readout,
         unassigned,
         freeable: ledger.freeable,
+        // Where each figure on this board came from. A line missing from this map was never
+        // moved, and the absence is the honest form of "the student said nothing about it".
+        lineSources: state.lineSources[action.board] ?? {},
         ...(action.acknowledgedResidual !== undefined ? { acknowledgedResidual: action.acknowledgedResidual } : {}),
       }, supportFor(state, action.board), undefined, at);
 
@@ -364,7 +434,12 @@ export function popUpReducer(state: PopUpState, action: TimestampedPopUpAction, 
         ...(action.acknowledgedResidual !== undefined ? { acknowledgedResidual: action.acknowledgedResidual } : {}),
       };
       next = { ...next, snapshots: [...next.snapshots, snapshot], saved: { ...next.saved, [action.board]: snapshot.id } };
-      next = append(next, "POPUP_PLAN_SAVED", { board: action.board, snapshot, balance: readout.balance }, supportFor(state, action.board), undefined, at);
+      next = append(next, "POPUP_PLAN_SAVED", {
+        board: action.board,
+        snapshot,
+        balance: readout.balance,
+        lineSources: state.lineSources[action.board] ?? {},
+      }, supportFor(state, action.board), undefined, at);
       // The opening board hands over to the first Saturday. The repair board does not move
       // anywhere: the money has been found, and the next thing on the same screen is deciding
       // what the last Saturday can now afford to cook.
@@ -403,8 +478,21 @@ export function popUpReducer(state: PopUpState, action: TimestampedPopUpAction, 
       if (!state.spotId) return state;
       const key = action.saturday === 1 ? "first" : action.saturday === 4 ? "last" : "middle";
       const trays = Math.max(0, Math.round(action.trays));
-      const ordered = { ...state, trays: { ...state.trays, [key]: trays } };
-      let next = append(ordered, action.type, { saturday: action.saturday, trays, cost: orderCost(n, trays) }, "standard_access", undefined, at);
+      // Only the last Saturday can reach past the stock line, and only to the line the
+      // student named on the order itself.
+      const fromLine = action.saturday === n.saturdays ? action.fromLine ?? null : null;
+      // Where the money actually comes off, priced with the same function that will buy the
+      // trays, so the log says what the ledger did rather than what the screen guessed.
+      const spend = payForTrays(n, ledgerOf({ ...state, foodLine: fromLine }, n).afterRepair, trays, fromLine);
+      const ordered = { ...state, foodLine: fromLine, trays: { ...state.trays, [key]: trays } };
+      let next = append(ordered, action.type, {
+        saturday: action.saturday,
+        trays,
+        cost: orderCost(n, trays),
+        ...(action.saturday === n.saturdays
+          ? { fromStock: spend.fromStock, fromLine: spend.fromLine, ...(fromLine ? { line: fromLine } : {}) }
+          : {}),
+      }, "standard_access", undefined, at);
       if (action.saturday === 1) {
         next = playSaturdays(next, [1], n, at);
         return goTo(next, "popup-standing-order", at);

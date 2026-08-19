@@ -47,17 +47,46 @@ import type { DemandProfile } from "../../demand";
  * These are declarations, not measurements of students. Fitting them to outcomes would turn a
  * checkable fact about the world into a claim about children.
  */
+/**
+ * One more thing this world declares, which §9.2 has no field for and which the next person to
+ * read these numbers needs: **nothing in Run the Pop-Up is hidden and nothing is rolled.**
+ *
+ * All four crowds are printed on the booth card before a booth is taken and again on the order
+ * screen before an order is placed. A student who can multiply can work the whole market out
+ * before the first Saturday, and a student red team did exactly that and reported it as a
+ * dominant strategy. It is deliberate, and the reasons are worth having in one place:
+ *
+ * - The competencies assessed here are planning inside money that is actually there, and
+ *   repairing a plan when a cost changes. Neither is forecasting demand. A hidden crowd would
+ *   score a child's stocking partly on a roll, and put luck in the evidence.
+ * - A consequence a student cannot trace back to a decision teaches nothing. "You were told
+ *   Saturday 3 would be cold and you cooked for a warm one" is a lesson; "the crowd was small
+ *   this time" is weather.
+ * - A teacher has to be able to replay a run and get the same market, and `balance.ts` has to
+ *   be able to sweep it. Neither survives a die.
+ *
+ * The cost is real and belongs in the declaration rather than in a defence of it: for a
+ * student who wants to optimise, this world is arithmetic. What follows from that is not to
+ * hide the numbers — it is that nothing in the run may present one axis as the score, which is
+ * why `observer.ts` refuses to read any preference and why the ending now names the unit its
+ * own comparisons are counted in.
+ */
 export const POP_UP_DEMAND: DemandProfile = {
   // Re-measured after the density pass. Cutting the pitch screen, the settle table and three
   // summary sentences the ending's verdicts now say better took the copy from 3.78 to here.
   readingGradeLevel: 3.41,
   // Two rulers reach this number and it has to satisfy both. `worldParity.test.ts` counts the
-  // prose in `scenario.ts` — every branch, including the twenty-six ending verdicts a single
-  // run never prints — and measures 2530. `stages/readingLoad.test.tsx` renders the ten
-  // screens of the shortest complete path and counts what is actually on the glass: 2137.
-  // The declaration sits between them, inside fifteen per cent of each, because a number that
-  // matched one and not the other would be true of a run nobody has.
-  totalWordsStudentReads: 2330,
+  // prose in `scenario.ts` — every branch, including the ending verdicts a single run never
+  // prints — and `stages/readingLoad.test.tsx` renders the ten screens of the shortest
+  // complete path and counts what is actually on the glass. The declaration sits between them,
+  // inside fifteen per cent of each, because a number that matched one and not the other would
+  // be true of a run nobody has.
+  //
+  // Re-measured when the turn-in screen became a receipt. It was a headline and a sentence of
+  // AI policy over two thirds of an empty viewport while the other story's student was shown
+  // their four decisions and their own paragraph; it now says the same things in this world's
+  // nouns, and the words it costs are declared here rather than absorbed.
+  totalWordsStudentReads: 2600,
   arithmeticOperations: 4,
   arithmeticComplexity: "multiply",
   // Nine now: the booth, the two pieces of conditional money, the three-way split, the first
@@ -67,11 +96,17 @@ export const POP_UP_DEMAND: DemandProfile = {
   decisionsRequired: 9,
   simultaneousConstraints: 2,
   adaptationEvents: 1,
-  // `stages.ts` budgets the ten screens at 19m 5s, against 19m 20s across the eleven this
+  // `stages.ts` budgets the ten screens at 19m 22s, against 19m 20s across the eleven this
   // world used to have. The pitch screen and the ending's table are gone; the booths absorbed
   // the pitch's facts and now state four different crowds, the settle-up names what each call
   // did, and the first Saturday's takings buy a tips jar that three things want. Every one of
   // those additions was paid for out of what the two deletions returned, and the run is
-  // fifteen seconds shorter than it was rather than longer.
+  // two seconds longer than the eleven-screen version rather than shorter. The two seconds are
+  // seventeen words, both of them answers to a student red team: the standing order says what
+  // an order leaves on the stock line, which is the fact they lost the last Saturday of the
+  // market for want of, and the settle-up says what its own comparisons are counted in, which
+  // is the fact that turned "would have found $222 more" into a score in their reading of it.
+  // `readingLoad.test.tsx` prices those seconds in words at a fixed rate rather than taking
+  // this declaration's word for them.
   designMinutes: 22,
 };

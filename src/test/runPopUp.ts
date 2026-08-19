@@ -46,6 +46,18 @@ export interface PopUpRunOptions {
   closeOpeningInto?: PopUpLineId;
   /** Close the opening plan with the steppers instead, so no line is ever named. */
   closeByHand?: boolean;
+  /**
+   * The whole opening plan in one click: touch no line, and send every dollar to one of them.
+   *
+   * The run a student red team timed at two clicks. It is a real plan and it balances; what it
+   * is not is a statement about any line the student never opened.
+   */
+  oneClickPlan?: boolean;
+  /**
+   * Take the split the board fills in after three refused saves, and either leave it or go
+   * back and move a line by hand.
+   */
+  supplySplit?: "as-is" | "revised";
   /** Which lines the generator money comes out of, in order. */
   repairOrder?: readonly PopUpLineId[];
   /** Reach for money that is already committed, this many times, before repairing. */
@@ -78,6 +90,7 @@ const DEFAULTS = {
   cushionShare: 0.55,
   closeOpeningInto: "stock" as PopUpLineId,
   closeByHand: false,
+  oneClickPlan: false,
   repairOrder: ["cushion", "stock", "cut"] as readonly PopUpLineId[],
   reachForCommitted: 0,
   fumbleSums: [] as readonly PopUpSumId[],
@@ -143,7 +156,26 @@ export function runPopUp(options: PopUpRunOptions = {}): PopUpState {
     send({ type: "POPUP_COVER_LINE_NAMED", line: opts.coverLine });
   }
   const plan = openingPlanFor(options);
-  if (opts.closeByHand) {
+  if (opts.supplySplit) {
+    // What the board itself fills in: an even split, marked as the board's rather than the
+    // student's. A student who then moves a line has taken it over, and says so.
+    const available = availableToPlan(N, opts.spotId, { catering: opts.countCatering, rebate: opts.countRebate });
+    const each = toStep(available / 3, N.planIncrement);
+    const supplied: PopUpPlan = { stock: dollars(each), cushion: dollars(available - each * 2), cut: dollars(each) };
+    send({ type: "SHOW_AND_CONTINUE_USED", interactionId: "opening" });
+    for (const line of POP_UP_LINES) send({ type: "POPUP_LINE_CHANGED", board: "opening", line, amount: supplied[line], from: "suggested" });
+    if (opts.supplySplit === "revised") {
+      send({ type: "POPUP_LINE_CHANGED", board: "opening", line: "cut", amount: dollars(Math.max(0, supplied.cut - N.planIncrement)) });
+      send({ type: "POPUP_REMAINDER_ASSIGNED", board: "opening", line: "stock", amount: dollars(N.planIncrement) });
+    }
+  } else if (opts.oneClickPlan) {
+    send({
+      type: "POPUP_REMAINDER_ASSIGNED",
+      board: "opening",
+      line: opts.closeOpeningInto,
+      amount: availableToPlan(N, opts.spotId, { catering: opts.countCatering, rebate: opts.countRebate }),
+    });
+  } else if (opts.closeByHand) {
     for (const line of POP_UP_LINES) send({ type: "POPUP_LINE_CHANGED", board: "opening", line, amount: plan[line] });
   } else {
     for (const line of POP_UP_LINES) {

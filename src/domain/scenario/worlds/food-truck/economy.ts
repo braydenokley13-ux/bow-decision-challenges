@@ -149,6 +149,31 @@ export function drawFrom(
   return { taken: dollars(Math.max(0, amount) - outstanding), left };
 }
 
+/**
+ * Buying an order, and taking the money off the lines it actually comes off.
+ *
+ * The stock line pays first and pays as far as it goes. `alsoFrom` is the line the student
+ * named to cover the rest, and it exists for one night only — see `PopUpChoices.foodLine`.
+ * Both the live ledger and the whole-season resolution buy stock through this, so a screen
+ * and a settle-up can never disagree about how many trays a plan could pay for.
+ */
+export function payForTrays(
+  n: PopUpNumbers,
+  lines: PopUpPlan,
+  wanted: number,
+  alsoFrom: PopUpLineId | null = null,
+): { trays: number; cost: Dollars; fromStock: Dollars; fromLine: Dollars; left: PopUpPlan } {
+  const extra = alsoFrom && alsoFrom !== "stock" ? lines[alsoFrom] : 0;
+  const affordable = Math.floor((lines.stock + extra) / n.trayCost);
+  const trays = Math.max(0, Math.min(Math.round(wanted), affordable));
+  const cost = orderCost(n, trays);
+  const fromStock = dollars(Math.min(lines.stock, cost));
+  const fromLine = dollars(cost - fromStock);
+  const left: PopUpPlan = { ...lines, stock: dollars(lines.stock - fromStock) };
+  if (fromLine > 0 && alsoFrom && alsoFrom !== "stock") left[alsoFrom] = dollars(left[alsoFrom] - fromLine);
+  return { trays, cost, fromStock, fromLine, left };
+}
+
 export interface PopUpChoices {
   spotId: SpotId;
   countCatering: boolean;
@@ -163,6 +188,19 @@ export interface PopUpChoices {
   coverLine: PopUpLineId;
   /** The order the generator money comes out of the lines that can still move. */
   repairOrder: readonly PopUpLineId[];
+  /**
+   * The line that pays for the last Saturday's food once the stock line runs out.
+   *
+   * Null is "nothing but the stock line", which is what every Saturday before this one is.
+   * The last Saturday is the only night where the answer can be anything else, and the
+   * reason is not generosity: on Saturdays 1 to 3 a stock line that will not stretch means a
+   * smaller night and a bigger one still to come, and on Saturday 4 it means the truck does
+   * not open at all with no Saturday left to answer it. Nothing in this world's fiction ever
+   * said the cash in the box could not buy food — Ramos delivers on the Saturday morning and
+   * takes money — so a market that made a child lose the biggest night to a rule it never
+   * stated was enforcing a model, not a consequence.
+   */
+  foodLine?: PopUpLineId | null;
 }
 
 export interface SeasonOutcome {
@@ -210,11 +248,10 @@ export function resolveSeason(n: PopUpNumbers, choices: PopUpChoices): SeasonOut
   let lines: PopUpPlan = { ...choices.plan };
   const saturdays: SaturdayOutcome[] = [];
 
-  const cook = (saturday: SaturdayNumber, wanted: number): SaturdayOutcome => {
-    const affordable = Math.floor(lines.stock / n.trayCost);
-    const trays = Math.max(0, Math.min(Math.round(wanted), affordable));
-    lines = { ...lines, stock: dollars(lines.stock - orderCost(n, trays)) };
-    const outcome = playSaturday(n, choices.spotId, saturday, trays, choices.helper);
+  const cook = (saturday: SaturdayNumber, wanted: number, alsoFrom: PopUpLineId | null = null): SaturdayOutcome => {
+    const spent = payForTrays(n, lines, wanted, alsoFrom);
+    lines = spent.left;
+    const outcome = playSaturday(n, choices.spotId, saturday, spent.trays, choices.helper);
     saturdays.push(outcome);
     return outcome;
   };
@@ -259,7 +296,7 @@ export function resolveSeason(n: PopUpNumbers, choices: PopUpChoices): SeasonOut
   const lastSaturdayRan = stillShort === 0;
   if (lastSaturdayRan) {
     lines = repair.left;
-    cook(4, choices.trays.last);
+    cook(4, choices.trays.last, choices.foodLine ?? null);
   }
 
   const plates = saturdays.reduce(
