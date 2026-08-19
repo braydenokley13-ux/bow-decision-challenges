@@ -1,0 +1,52 @@
+[polite] 5 letters and numbers.
+[polite] That is 1 — a class code is 5.
+[polite] That is 2 — a class code is 5.
+[polite] That is 3 — a class code is 5.
+[polite] That is 4 — a class code is 5.
+[polite] Getting your classes…
+[polite] Finding where you got to…
+[polite] Getting your class…
+[polite] Opening your run…
+[polite] Each place asks for something different. Pick the one you want to build the plan around.
+[polite] Cousin’s Spare Room. 14 hours of every week belong to the trip. Now work out what eight weeks of it costs.
+[polite] That's the full amount.
+[polite] Cousin’s Spare Room. $300 of Avery’s money is spoken for, and 14 hours of every week belong to the trip.
+[polite] Still to give a job $3,100.
+[polite] This is what the trip alone takes. Rehab and anything else Avery takes on would come out of the same week.
+[polite] $3,100 still has no job.
+[polite] Still to give a job $1,900.
+[polite] $1,900 still has no job.
+[polite] Still to give a job $1,000.
+[polite] $1,000 still has no job.
+[polite] Nothing left to place.
+[polite] Every dollar has a job.
+[polite] $150left of $150. Cash Avery does not spend this week goes nowhere.
+[polite] $30left of $150. Cash Avery does not spend this week goes nowhere.
+[polite] $120 goes on the team shoes. The away-game travel share and the present for Avery’s sister go unpaid, because it was the one I only wanted.
+[polite] Your plan has $1,200 set aside for the course. Pick one to see what it does.
+[polite] Nothing moves today. The course still needs $1,200 by the end of the season, and your plan holds $1,200 toward it.
+[polite] Still to find $1,000.
+[polite] 5 hours more than Avery has. Leave the plan like this and something gets missed.
+[polite] $1,000 still to find.
+[polite] Still to find $550.
+[polite] Cut from your earlier plan: $450.
+[polite] $550 still to find.
+[polite] Nothing left to place.
+[polite] 8 hours more than Avery has. Leave the plan like this and something gets missed.
+[polite] Cut from your earlier plan: $1,000.
+[polite] Every dollar has a job.
+[polite] Two calls still to make. The plan moves once both are answered.
+[polite] One call still to make. The plan moves once both are answered.
+[polite] Nothing left to place.
+[polite] 8 hours more than Avery has. Leave the plan like this and something gets missed.
+[polite] Every dollar has a job.
+[polite] ◦ Tap 2 or 3 of Avery’s numbers. 2 more to go.◦ Then write each number you tapped into your answer.◦ Write 2 sentences or more, each with something in it. None yet.
+[polite] ◦ Tap 2 or 3 of Avery’s numbers. 1 more to go.◦ Then write each number you tapped into your answer.◦ Write 2 sentences or more, each with something in it. None yet.
+[polite] ✓ 2 of Avery’s numbers, tapped.◦ Write each number you tapped into your answer. $5,000 and $1,200 are not in it yet.◦ Write 2 sentences or more, each with something in it. None yet.
+[polite] ✓ 2 of Avery’s numbers, tapped.◦ Write each number you tapped into your answer. $5,000 and $1,200 are not in it yet.◦ Write 2 sentences or more, each with something in it. 1 so far.
+[polite] ✓ 2 of Avery’s numbers, tapped.◦ Write each number you tapped into your answer. $5,000 and $1,200 are not in it yet.✓ 2 sentences so far.
+[polite] ✓ 2 of Avery’s numbers, tapped.◦ Write each number you tapped into your answer. $1,200 is not in it yet.✓ 2 sentences so far.
+[polite] ✓ 2 of Avery’s numbers, tapped.✓ Both of your numbers are in what you wrote.✓ 2 sentences so far.
+[polite] Getting ready to send…
+[polite] Sending it to your class now…
+[polite] Your work goes to your teacher’s class when you turn it in.

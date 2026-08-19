@@ -1,0 +1,1208 @@
+
+===== 01-join-code =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  main
+    sectionheader
+      link "BOW Decision Challenges home" [focusable=true]
+    heading "What is your class code?" [focusable=true focused=true level=1]
+    paragraph
+    LabelText
+      textbox "CLASS CODE" [invalid="false" focusable=true required=false]
+    paragraph [live="polite"]
+    button "Next" [disabled=true invalid="false" focusable=true]
+    paragraph
+    paragraph
+    alert [live="assertive"]
+
+===== 02-join-card =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  main
+    sectionheader
+      link "BOW Decision Challenges home" [focusable=true]
+    heading "Type the code on your card." [focusable=true focused=true level=1]
+    paragraph
+    LabelText
+      textbox "YOUR CODE" [invalid="false" focusable=true required=false]
+    group "WHOSE COMPUTER IS THIS?" [invalid="false"]
+      Legend
+      LabelText
+        radio "A school one lots of people use — sign me out at the end of the day" [invalid="false" focusable=true checked="true"]
+      LabelText
+        radio "Mine — keep me signed in" [invalid="false" focusable=true checked="false"]
+    button "Go in" [disabled=true invalid="false" focusable=true]
+    button "Different class" [invalid="false" focusable=true]
+    paragraph
+    alert [live="assertive"]
+
+===== 03-student-home =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  main
+    sectionheader
+      link "BOW Decision Challenges home" [focusable=true]
+      button "Not you?" [invalid="false" focusable=true]
+    heading "YOUR WORK IS HERE." [focusable=true focused=true level=1]
+    paragraph
+    heading "Plan Under Pressure" [level=2]
+    paragraph
+    link "Start" [focusable=true]
+    sectionfooter
+      link "Join another class" [focusable=true]
+
+===== 04-world-picker =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  link "BOW Decision Challenges home" [focusable=true]
+  main
+    sectionheader
+      heading "PICK A WORLD. MAKE IT COUNT." [focusable=true focused=true level=1]
+      paragraph
+    list
+      listitem [level=1]
+        article
+          heading "EIGHT WEEKS TO THE SHOWCASE" [level=2]
+          paragraph
+          DescriptionList
+            term "YOU ARE"
+            definition
+            term "HOW LONG"
+            definition
+          button "Start this one: Eight Weeks to the Showcase" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          heading "RUN THE POP-UP" [level=2]
+          paragraph
+          DescriptionList
+            term "YOU ARE"
+            definition
+            term "HOW LONG"
+            definition
+          button "Start this one: Run the Pop-Up" [invalid="false" focusable=true]
+
+===== 05-setup-ranking =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "WHICH PLACE COSTS THE LEAST?" [level=1]
+    paragraph
+      strong
+    list
+      listitem [level=1]
+        group "Move Gym District Sublet"
+          button "Move Gym District Sublet earlier" [disabled=true invalid="false" focusable=true]
+          button "Move Gym District Sublet later" [invalid="false" focusable=true]
+      listitem [level=1]
+        group "Move Teammate Share"
+          button "Move Teammate Share earlier" [invalid="false" focusable=true]
+          button "Move Teammate Share later" [invalid="false" focusable=true]
+      listitem [level=1]
+        group "Move Cousin’s Spare Room"
+          button "Move Cousin’s Spare Room earlier" [invalid="false" focusable=true]
+          button "Move Cousin’s Spare Room later" [disabled=true invalid="false" focusable=true]
+    paragraph
+    button "Check the order" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 06-setup-checked =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "NOW PICK WHERE AVERY LIVES." [level=1]
+    paragraph
+    article
+      paragraph
+      button "Choose this setup" [invalid="false" focusable=true]
+    article
+      paragraph
+      button "Choose this setup" [invalid="false" focusable=true]
+    article
+      paragraph
+      button "Choose this setup" [invalid="false" focusable=true]
+    paragraph [live="polite"]
+    button "Pick a place to continue" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 07-setup-total =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "NOW PICK WHERE AVERY LIVES." [level=1]
+    paragraph
+    article
+      paragraph
+      button "Choose this setup" [invalid="false" focusable=true]
+    article
+      paragraph
+      button "Choose this setup" [invalid="false" focusable=true]
+    article
+      paragraph
+      button "Selected" [invalid="false" focusable=true focused=true]
+    paragraph
+    paragraph
+    textbox "What the Cousin’s Spare Room costs Avery" desc="No rent. $300 for groceries and gas across the 8 weeks." [invalid="false" focusable=true required=false describedby=":r1:-prompt :r1:-feedback"]
+    button "Check" [invalid="false" focusable=true]
+    paragraph [live="polite"]
+    paragraph [live="polite"]
+      strong
+    button "Work out the eight-week cost to continue" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 08-setup-total-checked =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "NOW PICK WHERE AVERY LIVES." [level=1]
+    paragraph
+    article
+      paragraph
+      button "Choose this setup" [invalid="false" focusable=true]
+    article
+      paragraph
+      button "Choose this setup" [invalid="false" focusable=true]
+    article
+      paragraph
+      button "Selected" [invalid="false" focusable=true]
+    paragraph
+    paragraph
+    textbox "What the Cousin’s Spare Room costs Avery" desc="No rent. $300 for groceries and gas across the 8 weeks. That's the full amount." [invalid="false" focusable=true required=false describedby=":r1:-prompt :r1:-feedback"]
+    button "Check" [invalid="false" focusable=true focused=true]
+    paragraph [live="polite"]
+    paragraph [live="polite"]
+      strong
+    button "Build the plan" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 09-plan-q1 =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "WHAT CAN AVERY COUNT ON?" [level=1]
+    complementary
+      region "AVERY’S MONEY"
+        paragraph
+        list
+          listitem [level=1]
+            emphasis
+          listitem [level=1]
+            emphasis
+          listitem [level=1]
+            button "Where Avery lives, Cousin’s Spare Room · 8 weeks. $300. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+          listitem [level=1]
+            emphasis
+        emphasis
+    list "The four questions in this plan"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    paragraph
+    paragraph
+    paragraph
+    textbox "What Avery can count on" desc="Avery’s savings, plus base pay for every week of the season." [invalid="false" focusable=true required=false describedby=":r5:-prompt :r5:-feedback"]
+    button "Check" [invalid="false" focusable=true]
+    paragraph [live="polite"]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 10-plan-q2 =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "WHICH BONUSES GO IN THE PLAN?" [level=1]
+    complementary
+      region "AVERY’S MONEY"
+        paragraph
+        list
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            emphasis
+          listitem [level=1]
+            button "Where Avery lives, Cousin’s Spare Room · 8 weeks. $300. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+          listitem [level=1]
+            emphasis
+        emphasis
+    list "The four questions in this plan"
+      listitem [level=1]
+        button "Money coming in" [invalid="false" focusable=true]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    paragraph
+    paragraph
+    region "Bonuses that might happen"
+      article
+        strong
+        paragraph
+        paragraph
+        button "Yes — count on it" [invalid="false" focusable=true pressed="false"]
+        button "No — leave it out" [invalid="false" focusable=true pressed="false"]
+      article
+        strong
+        paragraph
+        paragraph
+        button "Yes — count on it" [invalid="false" focusable=true pressed="false"]
+        button "No — leave it out" [invalid="false" focusable=true pressed="false"]
+    button "Back" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 11-plan-q3 =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "WHAT DOES AVERY ALREADY OWE?" [level=1]
+    complementary
+      region "AVERY’S MONEY"
+        paragraph
+        list
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            button "Where Avery lives, Cousin’s Spare Room · 8 weeks. $300. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+          listitem [level=1]
+            emphasis
+        emphasis
+    list "The four questions in this plan"
+      listitem [level=1]
+        button "Money coming in" [invalid="false" focusable=true]
+      listitem [level=1]
+        button "The two bonuses" [invalid="false" focusable=true]
+      listitem [level=1]
+      listitem [level=1]
+    paragraph
+    paragraph
+    paragraph
+    textbox "Money already spoken for" desc="What food, phone and laundry cost each week, for all 8 weeks." [invalid="false" focusable=true required=false describedby=":r7:-prompt :r7:-feedback"]
+    button "Check" [invalid="false" focusable=true]
+    paragraph [live="polite"]
+    button "Back" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 12-plan-board =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "WHAT DOES AVERY DO WITH THE REST?" [level=1]
+    complementary
+      region "AVERY’S MONEY"
+        paragraph
+        list
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            button "Where Avery lives, Cousin’s Spare Room · 8 weeks. $300. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+          listitem [level=1]
+            button "Food, phone and laundry, $200 a week · 8 weeks. $1,600. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+        strong
+        paragraph
+        paragraph
+        paragraph [live="polite"]
+    list "The four questions in this plan"
+      listitem [level=1]
+        button "Money coming in" [invalid="false" focusable=true]
+      listitem [level=1]
+        button "The two bonuses" [invalid="false" focusable=true]
+      listitem [level=1]
+        button "Money already owed" [invalid="false" focusable=true]
+      listitem [level=1]
+    paragraph
+    region "Avery’s plan"
+      paragraph
+      LabelText
+      strong
+      group "Sports-media course allocation"
+        button "Decrease Sports-media course by $100" [invalid="false" focusable=true]
+        spinbutton "Sports-media course" [invalid="false" focusable=true required=false valuetext="$0"]
+        button "Increase Sports-media course by $100" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Backup money allocation"
+        button "Decrease Backup money by $100" [invalid="false" focusable=true]
+        spinbutton "Backup money" [invalid="false" focusable=true required=false valuetext="$0"]
+        button "Increase Backup money by $100" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Rides and rest allocation"
+        button "Decrease Rides and rest by $100" [invalid="false" focusable=true]
+        spinbutton "Rides and rest" [invalid="false" focusable=true required=false valuetext="$0"]
+        button "Increase Rides and rest by $100" [invalid="false" focusable=true]
+      sectionheader
+        paragraph
+        strong
+      paragraph [live="polite"]
+      paragraph
+      paragraph [live="polite"]
+      region "SEND THE LAST $3,100 TO ONE ROW"
+        heading "SEND THE LAST $3,100 TO ONE ROW" [level=2]
+        button "Backup money — put $3,100 in" [invalid="false" focusable=true]
+        button "Rides and rest — put $3,100 in" [invalid="false" focusable=true]
+        paragraph
+      sectionfooter
+        paragraph [live="polite"]
+        button "Check this plan" [invalid="false" focusable=true]
+    button "Back" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 13-plan-board-filled =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "WHAT DOES AVERY DO WITH THE REST?" [level=1]
+    complementary
+      region "AVERY’S MONEY"
+        paragraph
+        list
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            button "Where Avery lives, Cousin’s Spare Room · 8 weeks. $300. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+          listitem [level=1]
+            button "Food, phone and laundry, $200 a week · 8 weeks. $1,600. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+        strong
+        paragraph
+        list
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            strong
+        paragraph [live="polite"]
+    list "The four questions in this plan"
+      listitem [level=1]
+        button "Money coming in" [invalid="false" focusable=true]
+      listitem [level=1]
+        button "The two bonuses" [invalid="false" focusable=true]
+      listitem [level=1]
+        button "Money already owed" [invalid="false" focusable=true]
+      listitem [level=1]
+    paragraph
+    region "Avery’s plan"
+      paragraph
+      LabelText
+      strong
+      group "Sports-media course allocation"
+        button "Decrease Sports-media course by $100" [invalid="false" focusable=true]
+        spinbutton "Sports-media course" [invalid="false" focusable=true required=false valuetext="$1,200"]
+        button "Increase Sports-media course by $100" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Backup money allocation"
+        button "Decrease Backup money by $100" [invalid="false" focusable=true]
+        spinbutton "Backup money" [invalid="false" focusable=true required=false valuetext="$900"]
+        button "Increase Backup money by $100" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Rides and rest allocation"
+        button "Decrease Rides and rest by $100" [invalid="false" focusable=true]
+        spinbutton "Rides and rest" [invalid="false" focusable=true focused=true required=false valuetext="$1,000"]
+        button "Increase Rides and rest by $100" [invalid="false" focusable=true]
+      sectionheader
+        paragraph
+        strong
+      paragraph [live="polite"]
+      paragraph
+      paragraph [live="polite"]
+      sectionfooter
+        paragraph [live="polite"]
+        button "Save this version" [invalid="false" focusable=true]
+    button "Back" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 14-after-save =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "WEEK 3 PAYS AVERY IN CASH." [level=1]
+    paragraph
+    region "The three claims on Week 3’s cash"
+      list
+        listitem [level=1]
+          button "Team shoes $120 The pair Avery plays in are splitting along the side. Avery can keep playi" [invalid="false" focusable=true pressed="false"]
+            strong
+        listitem [level=1]
+          button "Away-game travel share $60 Everyone on the bus pays their share. Avery already told the co" [invalid="false" focusable=true pressed="false"]
+            strong
+        listitem [level=1]
+          button "A present for Avery's sister $45 She turns eleven on Saturday." [invalid="false" focusable=true pressed="false"]
+            strong
+      paragraph [live="polite"]
+        strong
+    complementary "Weeks 1 to 4"
+      paragraph
+      list
+        listitem [level=1]
+          strong
+        listitem [level=1]
+          strong
+        listitem [level=1]
+          strong
+        listitem [level=1]
+          strong
+    paragraph [live="polite"]
+    button "Week 4 · the course office is calling" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 15-week3-claims =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "WEEK 3 PAYS AVERY IN CASH." [level=1]
+    paragraph
+    region "The three claims on Week 3’s cash"
+      list
+        listitem [level=1]
+          button "Team shoes $120 The pair Avery plays in are splitting along the side. Avery can keep playi" [invalid="false" focusable=true pressed="false"]
+            strong
+        listitem [level=1]
+          button "Away-game travel share $60 Everyone on the bus pays their share. Avery already told the co" [invalid="false" focusable=true pressed="false"]
+            strong
+        listitem [level=1]
+          button "A present for Avery's sister $45 She turns eleven on Saturday." [invalid="false" focusable=true pressed="false"]
+            strong
+      paragraph [live="polite"]
+        strong
+    complementary "Weeks 1 to 4"
+      paragraph
+      list
+        listitem [level=1]
+          strong
+        listitem [level=1]
+          strong
+        listitem [level=1]
+          strong
+        listitem [level=1]
+          strong
+    paragraph [live="polite"]
+    button "Week 4 · the course office is calling" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 16-week3-answered =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "WEEK 3 PAYS AVERY IN CASH." [level=1]
+    paragraph
+    region "The three claims on Week 3’s cash"
+      list
+        listitem [level=1]
+          button "Team shoes $120 The pair Avery plays in are splitting along the side. Avery can keep playi" [invalid="false" focusable=true pressed="true"]
+            strong
+        listitem [level=1]
+          button "Away-game travel share $60 Everyone on the bus pays their share. Avery already told the co" [disabled=true invalid="false" focusable=true pressed="false"]
+            strong
+            emphasis
+        listitem [level=1]
+          button "A present for Avery's sister $45 She turns eleven on Saturday. More than the $30 left." [disabled=true invalid="false" focusable=true pressed="false"]
+            strong
+            emphasis
+      paragraph [live="polite"]
+        strong
+      paragraph
+      list "WHAT MADE YOU LEAVE THE AWAY-GAME TRAVEL SHARE AND THE PRESENT FOR AVERY’S SISTER OUT?"
+        listitem [level=1]
+          button "It was the one I only wanted." [invalid="false" focusable=true focused=true pressed="true"]
+        listitem [level=1]
+          button "Nobody else was counting on it." [invalid="false" focusable=true pressed="false"]
+        listitem [level=1]
+          button "It can wait, even if it costs more." [invalid="false" focusable=true pressed="false"]
+        listitem [level=1]
+          button "It was the cheapest one to drop." [invalid="false" focusable=true pressed="false"]
+    complementary "Weeks 1 to 4"
+      paragraph
+      list
+        listitem [level=1]
+          strong
+        listitem [level=1]
+          strong
+        listitem [level=1]
+          strong
+        listitem [level=1]
+          strong
+    paragraph [live="polite"]
+      strong
+      strong
+    button "Week 4 · the course office is calling" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 17-deposit =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?" [level=1]
+    paragraph
+    region "Two prices for the same seat."
+      heading "Two prices for the same seat." [level=2]
+      button "Reserve it now $1,000 $200 cheaper. The money stops being yours to move." [invalid="false" focusable=true pressed="false"]
+        strong
+      button "Wait and decide later $1,200 Costs more. Every dollar stays where you can reach it." [invalid="false" focusable=true pressed="false"]
+        strong
+      paragraph [live="polite"]
+      button "Make the call to continue" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 18-week5-event =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "THE SHOWCASE IS OFF." [level=1]
+      paragraph
+      paragraph
+      paragraph
+      paragraph
+      blockquote
+        paragraph
+    paragraph
+    DescriptionList
+      term "Sports-media course"
+      definition
+      term "Backup money"
+      definition
+      term "Rides and rest"
+      definition
+    paragraph
+    paragraph
+    heading "WORK OUT WHAT WEEK 5 JUST DID TO THE PLAN." [level=2]
+    paragraph
+    button "BILL Where Avery lives 8 weeks at the Cousin’s Spare Room. $300" [invalid="false" focusable=true pressed="false"]
+      strong
+    button "BONUS Making the cut bonus Paid only if the Flight qualifies for the showcase. Your plan n" [invalid="false" focusable=true pressed="false"]
+      strong
+    button "BILL Required brace and off-site rehab What the clinic charges for the brace and the sessi" [invalid="false" focusable=true pressed="false"]
+      strong
+    button "BILL Extra travel to rehab Getting to rehab and back from the Cousin’s Spare Room. $300" [invalid="false" focusable=true pressed="false"]
+      strong
+    button "BILL Food, phone and laundry $200 a week, all 8 weeks. $1,600" [invalid="false" focusable=true pressed="false"]
+      strong
+    paragraph
+    paragraph
+    textbox "Total change to Avery’s money" desc="Everything Week 5 took away, plus every new bill it added." [invalid="false" focusable=true required=false describedby=":rf:-prompt :rf:-feedback"]
+    button "Check" [invalid="false" focusable=true]
+    paragraph [live="polite"]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 19-week5-sum =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "SOMETHING HAS TO GIVE." [level=1]
+    complementary
+      region "AVERY’S MONEY"
+        paragraph
+        list
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            button "Where Avery lives, Cousin’s Spare Room · 8 weeks. $300. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+          listitem [level=1]
+            button "Food, phone and laundry, $200 a week · 8 weeks. $1,600. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+          listitem [level=1]
+            button "New bills from Week 5. $1,000. Already promised — this cannot move." [invalid="false" focusable=true]
+            strong
+        strong
+        paragraph
+        list
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            strong
+        paragraph [live="polite"]
+    region "Avery’s plan"
+      list
+        listitem [level=1]
+      paragraph
+      LabelText
+      strong
+      button "Take $1,000 out of Sports-media course" [invalid="false" focusable=true]
+      group "Sports-media course allocation"
+        button "Decrease Sports-media course by $50" [invalid="false" focusable=true]
+        spinbutton "Sports-media course" [invalid="false" focusable=true required=false valuetext="$1,200"]
+        button "Increase Sports-media course by $50" [invalid="false" focusable=true]
+      LabelText
+      strong
+      button "Take $900 out of Backup money" [invalid="false" focusable=true]
+      group "Backup money allocation"
+        button "Decrease Backup money by $50" [invalid="false" focusable=true]
+        spinbutton "Backup money" [invalid="false" focusable=true required=false valuetext="$900"]
+        button "Increase Backup money by $50" [invalid="false" focusable=true]
+      LabelText
+      strong
+      button "Take $1,000 out of Rides and rest" [invalid="false" focusable=true]
+      group "Rides and rest allocation"
+        button "Decrease Rides and rest by $50" [invalid="false" focusable=true]
+        spinbutton "Rides and rest" [invalid="false" focusable=true required=false valuetext="$1,000"]
+        button "Increase Rides and rest by $50" [invalid="false" focusable=true]
+      sectionheader
+        paragraph
+        strong
+      paragraph [live="polite"]
+      paragraph
+      paragraph [live="polite"]
+      sectionfooter
+        paragraph [live="polite"]
+        button "Check this plan" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 20-triage =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "SOMETHING HAS TO GIVE." [level=1]
+    complementary
+      region "AVERY’S MONEY"
+        paragraph
+        list
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            button "Where Avery lives, Cousin’s Spare Room · 8 weeks. $300. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+          listitem [level=1]
+            button "Food, phone and laundry, $200 a week · 8 weeks. $1,600. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+          listitem [level=1]
+            button "New bills from Week 5. $1,000. Already promised — this cannot move." [invalid="false" focusable=true]
+            strong
+        strong
+        paragraph
+        list
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            strong
+        paragraph [live="polite"]
+    region "Avery’s plan"
+      list
+        listitem [level=1]
+      paragraph
+      LabelText
+      strong
+      button "Take $1,000 out of Sports-media course" [invalid="false" focusable=true]
+      group "Sports-media course allocation"
+        button "Decrease Sports-media course by $50" [invalid="false" focusable=true]
+        spinbutton "Sports-media course" [invalid="false" focusable=true required=false valuetext="$1,200"]
+        button "Increase Sports-media course by $50" [invalid="false" focusable=true]
+      LabelText
+      strong
+      button "Take $900 out of Backup money" [invalid="false" focusable=true]
+      group "Backup money allocation"
+        button "Decrease Backup money by $50" [invalid="false" focusable=true]
+        spinbutton "Backup money" [invalid="false" focusable=true required=false valuetext="$900"]
+        button "Increase Backup money by $50" [invalid="false" focusable=true]
+      LabelText
+      strong
+      button "Take $1,000 out of Rides and rest" [invalid="false" focusable=true]
+      group "Rides and rest allocation"
+        button "Decrease Rides and rest by $50" [invalid="false" focusable=true]
+        spinbutton "Rides and rest" [invalid="false" focusable=true required=false valuetext="$1,000"]
+        button "Increase Rides and rest by $50" [invalid="false" focusable=true]
+      sectionheader
+        paragraph
+        strong
+      paragraph [live="polite"]
+      paragraph
+      paragraph [live="polite"]
+      sectionfooter
+        paragraph [live="polite"]
+        button "Check this plan" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 21-clinics =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "TWO MORE CALLS TO MAKE." [level=1]
+    complementary
+      region "AVERY’S MONEY"
+        paragraph
+        list
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            button "Where Avery lives, Cousin’s Spare Room · 8 weeks. $300. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+          listitem [level=1]
+            button "Food, phone and laundry, $200 a week · 8 weeks. $1,600. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+          listitem [level=1]
+            button "New bills from Week 5. $1,000. Already promised — this cannot move." [invalid="false" focusable=true]
+            strong
+        strong
+    paragraph
+    heading "4 Saturday clinics. $500." [level=2]
+    paragraph
+    list "Avery's last 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    button "Take the clinics" [invalid="false" focusable=true pressed="false"]
+    button "Keep the Saturdays" [invalid="false" focusable=true pressed="false"]
+    paragraph
+    paragraph
+    heading "Is it still in the plan?" [level=2]
+    paragraph
+    list "Weeks left to keep the attendance bonus"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    button "Yes — count on it" [invalid="false" focusable=true pressed="false"]
+    button "No — plan without it" [invalid="false" focusable=true pressed="false"]
+    paragraph
+    paragraph [live="polite"]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 22-final-board =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "TWO MORE CALLS TO MAKE." [level=1]
+    complementary
+      region "AVERY’S MONEY"
+        paragraph
+        list
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            button "Where Avery lives, Cousin’s Spare Room · 8 weeks. $300. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+          listitem [level=1]
+            button "Food, phone and laundry, $200 a week · 8 weeks. $1,600. Already promised — this cannot mov" [invalid="false" focusable=true]
+            strong
+          listitem [level=1]
+            button "New bills from Week 5. $1,000. Already promised — this cannot move." [invalid="false" focusable=true]
+            strong
+        strong
+        paragraph
+        list
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            strong
+          listitem [level=1]
+            strong
+        paragraph [live="polite"]
+    paragraph
+    heading "4 Saturday clinics. $500." [level=2]
+    list "Avery's last 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    button "Take the clinics" [invalid="false" focusable=true pressed="false"]
+    button "✓Keep the Saturdays" [invalid="false" focusable=true pressed="true"]
+    paragraph
+    paragraph
+    heading "Is it still in the plan?" [level=2]
+    list "Weeks left to keep the attendance bonus"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    button "Yes — count on it" [invalid="false" focusable=true pressed="false"]
+    button "✓No — plan without it" [invalid="false" focusable=true focused=true pressed="true"]
+    paragraph
+    region "Your calls moved no money."
+      sectionheader
+        paragraph
+        heading "Your calls moved no money." [level=2]
+        paragraph
+      LabelText
+      strong
+      group "Sports-media course allocation"
+        button "Decrease Sports-media course by $50" [invalid="false" focusable=true]
+        spinbutton "Sports-media course" [invalid="false" focusable=true required=false valuetext="$1,200"]
+        button "Increase Sports-media course by $50" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Backup money allocation"
+        button "Decrease Backup money by $50" [invalid="false" focusable=true]
+        spinbutton "Backup money" [invalid="false" focusable=true required=false valuetext="$450"]
+        button "Increase Backup money by $50" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Rides and rest allocation"
+        button "Decrease Rides and rest by $50" [invalid="false" focusable=true]
+        spinbutton "Rides and rest" [invalid="false" focusable=true required=false valuetext="$450"]
+        button "Increase Rides and rest by $50" [invalid="false" focusable=true]
+      sectionheader
+        paragraph
+        strong
+      paragraph [live="polite"]
+      paragraph
+      sectionfooter
+        paragraph [live="polite"]
+        button "Save final plan" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 23-week8 =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "THE SEASON ENDS." [level=1]
+      paragraph
+      strong
+      list
+        listitem [level=1]
+        listitem [level=1]
+        listitem [level=1]
+      blockquote
+        paragraph
+    paragraph
+    strong
+    paragraph
+    paragraph
+    strong
+    paragraph
+    paragraph
+    strong
+    DescriptionList
+      term "Avery started the eight weeks with"
+      definition
+      term "Backup money this plan kept"
+      definition
+    paragraph
+    region "WHAT EACH DECISION ACTUALLY DID."
+      paragraph
+      heading "WHAT EACH DECISION ACTUALLY DID." [level=2]
+      list
+        listitem [level=1]
+          paragraph
+        listitem [level=1]
+          paragraph
+        listitem [level=1]
+          paragraph
+        listitem [level=1]
+          paragraph
+        listitem [level=1]
+          paragraph
+        listitem [level=1]
+          paragraph
+    paragraph
+    button "Explain my plan" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 24-defense =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "EXPLAIN YOUR PLAN." [level=1]
+    paragraph
+    heading "Why does your plan hold up?" [level=2]
+    paragraph
+    paragraph
+    button "Money your plan was built on $5,000" [invalid="false" focusable=true pressed="false"]
+    button "New bills from Week 5 $1,000" [invalid="false" focusable=true pressed="false"]
+    button "Saved for the course $1,200" [invalid="false" focusable=true pressed="false"]
+    button "Backup money kept $450" [invalid="false" focusable=true pressed="false"]
+    button "Spent on rides and rest $450" [invalid="false" focusable=true pressed="false"]
+    paragraph
+    button "My plan still works…" [invalid="false" focusable=true]
+    button "I protected…" [invalid="false" focusable=true]
+    button "I gave up…" [invalid="false" focusable=true]
+    LabelText
+    textbox "TWO TO FOUR SENTENCES" [invalid="false" focusable=true required=false]
+    sectionfooter
+      paragraph
+      paragraph
+      paragraph
+      button "Turn in my plan" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 25-defense-filled =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "EXPLAIN YOUR PLAN." [level=1]
+    paragraph
+    heading "Why does your plan hold up?" [level=2]
+    paragraph
+    paragraph
+    button "Money your plan was built on $5,000" [invalid="false" focusable=true pressed="true"]
+    button "New bills from Week 5 $1,000" [invalid="false" focusable=true pressed="false"]
+    button "Saved for the course $1,200" [invalid="false" focusable=true pressed="true"]
+    button "Backup money kept $450" [invalid="false" focusable=true pressed="false"]
+    button "Spent on rides and rest $450" [invalid="false" focusable=true pressed="false"]
+    paragraph
+    button "My plan still works…" [invalid="false" focusable=true]
+    button "I protected…" [invalid="false" focusable=true]
+    button "I gave up…" [invalid="false" focusable=true]
+    LabelText
+    textbox "TWO TO FOUR SENTENCES" [invalid="false" focusable=true focused=true required=false]
+    sectionfooter
+      paragraph
+      paragraph
+      paragraph
+      button "Turn in my plan" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 26-submitted =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Season progress"
+      paragraph
+    group
+      DisclosureTriangle "THE FOUR PAYMENTS" [focusable=true expanded=false]
+    group
+      DisclosureTriangle "This run: GYP6Y · seat 1" desc="GYP6Y · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "YOUR PLAN IS WITH YOUR TEACHER." [level=1]
+    article
+      paragraph
+      heading "Avery Reyes" [level=2]
+      DescriptionList
+        term "POS"
+        definition
+        term "AGE"
+        definition
+        term "TERM"
+        definition
+      paragraph
+    DescriptionList
+      term "CLASS"
+      definition
+    paragraph [live="polite"]
+    paragraph
+    list
+      listitem [level=1]
+        strong
+      listitem [level=1]
+        strong
+      listitem [level=1]
+        strong
+      listitem [level=1]
+        strong
+    paragraph
+    blockquote
+    paragraph
+    button "Try a different plan" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
