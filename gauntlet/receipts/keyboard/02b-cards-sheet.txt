@@ -1,0 +1,90 @@
+# The moment six cards are made, keyboard only. Snapshot d336f9d. Class QAAA3.
+# QUESTION: does a blind teacher learn that the join codes exist, before they are gone forever?
+
+######## KEYBOARD: to the paste box
+  Tab  1 → [banner] "BOW Decision Challenges home", link
+  Tab  2 → [navigation "Educator navigation"] "My classes", link
+  Tab  3 → "Objectives", link
+  Tab  4 → "Guide", link
+  Tab  5 → "SIGN IN", link
+  Tab  6 → [main] "← Class evidence", link
+  Tab  7 → "ONE NAME PER LINE", textbox, multi line
+  >>> reached the paste box in 7 Tab press(es)
+  TYPE "Gil Ayers
+Hana Bright
+Ivo Cortez"
+
+######## KEYBOARD: Tab once, Enter — the whole act of making cards
+  Tab → FOCUS: "Add them and make the cards", button
+  Enter (Add them and make the cards) → FOCUS: "Making cards…", button, unavailable
+   +600ms LIVE(live-born-with-content/polite): "3 cardsPrint these now. They are not shown again.Cut them up and hand one to each student. If one goes missing you can print a replacement from the list below — the lost one stops working when you do.PrintI have themGil AyersClass codeQAAA3Your code43WNHGo to BOW · type the class code · type your codeHana BrightClass codeQAAA3Your codeAH33HGo to BOW · type the class code · type your codeIvo CortezClass codeQAAA3Your codeQCE4UGo to BOW · type the class code · type your code" @div#root > div.educator-shell > main.educator-main > section.cards-sheet
+  FOCUS after the cards exist: "Add them and make the cards", button, unavailable
+
+######## ARRIVAL — cards made
+  url            http://127.0.0.1:6173/educator/class/QAAA3/roster?key=UMMEE4UNAAJQYXMJXFFGNQNQ
+  document.title Plan Under Pressure — BOW Decision Challenges
+  landmarks      banner, main, navigation "Educator navigation"
+  headings       h1 "Who is in this class." | h2 "Print these now. They are not shown again." | h2 "ADD STUDENTS" | h2 "THE LIST" | h2 "SIGN EVERYBODY OUT"
+  FOCUS ON ARRIVAL: "Add them and make the cards", button, unavailable
+
+######## VIRTUAL CURSOR — the cards sheet only
+  ····· "Paste your class list and BOW gives you one card per student to hand out. A student signs in by typing the class code and the code on their card — nothing else, and never a name they type themselves.", StaticText
+  ···· (no accessible name), paragraph
+  ····· "3 CARDS", StaticText
+  ···· "Print these now. They are not shown again.", heading, level 2
+  ····· "Print these now. They are not shown again.", StaticText
+  ···· (no accessible name), paragraph
+  ····· "Cut them up and hand one to each student. If one goes missing you can print a replacement from the list below — the lost one stops working when you do.", StaticText
+  ···· "Print", button
+  ····· "Print", StaticText
+  ···· "I have them", button
+  ····· "I have them", StaticText
+  ···· (no accessible name), list
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), paragraph
+  ······· "Gil Ayers", StaticText
+  ······ (no accessible name), DescriptionList
+  ······· "CLASS CODE", term
+  ········ "CLASS CODE", StaticText
+  ······· (no accessible name), definition
+  ········ "QAAA3", StaticText
+  ······· "YOUR CODE", term
+  ········ "YOUR CODE", StaticText
+  ······· (no accessible name), definition
+  ········ "43WNH", StaticText
+  ······ (no accessible name), paragraph
+  ······· "Go to BOW · type the class code · type your code", StaticText
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), paragraph
+  ······· "Hana Bright", StaticText
+  ······ (no accessible name), DescriptionList
+  ······· "CLASS CODE", term
+  ········ "CLASS CODE", StaticText
+  ······· (no accessible name), definition
+  ········ "QAAA3", StaticText
+  ······· "YOUR CODE", term
+  ········ "YOUR CODE", StaticText
+  ······· (no accessible name), definition
+  ········ "AH33H", StaticText
+  ······ (no accessible name), paragraph
+  ······· "Go to BOW · type the class code · type your code", StaticText
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), paragraph
+
+######## KEYBOARD: how many Tab presses from the button you pressed to the codes?
+  Tab  1 → "Undo — take those 3 back off the list", button
+  Tab  2 → [list] "Print a new card", button
+  Tab  3 → "Take off the list", button
+  Tab  4 → "Erase", button
+  Tab  5 → "Print a new card", button
+  Tab  6 → "Take off the list", button
+  Tab  7 → "Erase", button
+  Tab  8 → "Print a new card", button
+  Tab  9 → "Take off the list", button
+  Tab 10 → "Erase", button
+  Tab 11 → "Print a new card", button
+  Tab 12 → "Take off the list", button
+  Tab 13 → "Erase", button
+  Tab 14 → "Print a new card", button
+
+# innerText of the cards sheet is saved to cards-body.txt (the join codes).

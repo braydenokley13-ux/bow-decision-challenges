@@ -9,7 +9,7 @@ words on this screen: sublet, share, spare, rent
 
 ## question 1 — count on
 heading: WHAT CAN AVERY COUNT ON?
-autoread said 25 lines, first three:
+autoread said 39 lines, first three:
   - Where Avery stays
   - Now pick where Avery lives.
   - That is the order. Pick one, then add up what it costs Avery over the eight weeks.
