@@ -573,6 +573,107 @@ const IS_THE_ADD_ON_WORTH_IT_EVIDENCE: readonly EvidenceRequirement[] = [
 ] as const;
 
 /**
+ * `how-savings-grow` — mapped `full` to **both** NYSED 5.2 and 5.5, which is the only place in
+ * the framework where one competency carries two whole objectives.
+ *
+ * **ER4 exists because both of those objectives say *explain*.** 5.2: *"Define and
+ * differentiate between investment principal and interest, and then **explain** how interest
+ * allows savings or investments to grow over time."* 5.5: *"**Explain** why starting to save or
+ * invest earlier can lead to greater returns over time."* The mapping's own rationale for 5.5
+ * reads *"showing that an earlier start ends with more, **and saying why**"* — and until this
+ * rubric was written, nothing in this competency required a student to say anything. It carried
+ * `explanationRequired: false`.
+ *
+ * That is the same defect that demoted 2.3 and 2.4 to `partial`: an objective whose verb asks
+ * for words, mapped `full` to a competency with no written row. Those two were demoted because
+ * `keep-credit-costs-down` has no explanation to hang the clause on. This one has somewhere to
+ * put it, so it gets a written row and the flag moves to `true` to agree with the array —
+ * which is what keeps two `full` claims true rather than merely convenient.
+ *
+ * **ER2 is the compounding row and it is the one a world can fail to present.** Interest on the
+ * balance a period *ended* with is what makes growth non-linear; a world that computes every
+ * period against the opening balance is teaching *growth is linear* while appearing to teach
+ * the opposite. The row is written so that scaling one period cannot satisfy it.
+ *
+ * Three independent designs decomposed this the same way. None of them proposed the written
+ * row, which is exactly the blind spot a rubric written away from the board is for.
+ */
+const HOW_SAVINGS_GROW_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("how-savings-grow", 1, {
+    label: "Separates what was put in from what was earned",
+    kind: "decision",
+    required: true,
+    observableRule: "Splits a balance into the amount deposited and the amount the interest added, as two figures",
+    misconceptionIfNot: null,
+  }),
+  requirement("how-savings-grow", 2, {
+    label: "Carries growth forward on the balance it reached",
+    kind: "decision",
+    required: true,
+    observableRule: "Works out a later period's growth from the balance the previous period ended with, rather than by scaling a single period across the whole run",
+    misconceptionIfNot: "Growth is linear",
+  }),
+  requirement("how-savings-grow", 3, {
+    label: "Puts the same money on two start dates",
+    kind: "decision",
+    required: true,
+    observableRule: "Runs the same amount from an earlier and a later start and states the difference between them as a figure",
+    misconceptionIfNot: null,
+  }),
+  requirement("how-savings-grow", 4, {
+    label: "Says why the earlier start ends with more",
+    kind: "explanation",
+    required: true,
+    observableRule: "Accounts for the gap between the two start dates in terms of interest earning on interest over the extra time, rather than only in terms of more money going in",
+    misconceptionIfNot: "Interest is a fixed bonus",
+  }),
+] as const;
+
+/**
+ * `compare-rates` — mapped `full` to NYSED 5.3, whose verbs are *compare* and *demonstrate*.
+ *
+ * Both are actions, so every row here is a decision and `explanationRequired: false` is correct
+ * — the opposite call from `how-savings-grow` above, made for the opposite reason, out of the
+ * same reading of what the objective's own sentence asks for.
+ *
+ * **ER2 is what stops this being "pick the biggest number".** The objective says *across
+ * multiple institutions*, and real accounts differ in more than rate: a fee below a balance
+ * threshold, a lock that outlasts the deadline, a delay on getting the money out. A world where
+ * the highest rate is always right has no comparison in it — and, said plainly because the
+ * temptation runs the other way, a world where the highest rate is never right has taught
+ * something equally false.
+ *
+ * **A dominant strategy here is correct and is not a defect.** This competency asks a student
+ * to work out which account is better and to show what better is worth; there is an answer, and
+ * asking this to be a dilemma would be asking it to stop being itself. What must not have a
+ * right answer is what the student is saving *for* — and that belongs to `save-toward-a-goal`,
+ * one competency over.
+ */
+const COMPARE_RATES_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("compare-rates", 1, {
+    label: "Puts the offers on one footing",
+    kind: "decision",
+    required: true,
+    observableRule: "Prices more than one account over the same money and the same stretch of time before choosing between them",
+    misconceptionIfNot: null,
+  }),
+  requirement("compare-rates", 2, {
+    label: "Reads the conditions, not only the rate",
+    kind: "decision",
+    required: true,
+    observableRule: "The account chosen is one whose conditions — fees, minimums, when the money can be taken out — fit the dates the plan actually needs the money",
+    misconceptionIfNot: null,
+  }),
+  requirement("compare-rates", 3, {
+    label: "Shows what the better rate is worth",
+    kind: "decision",
+    required: true,
+    observableRule: "States what the chosen rate is worth against the alternative — as an amount, or as how much sooner the target is reached",
+    misconceptionIfNot: "A rate difference that small doesn't matter",
+  }),
+] as const;
+
+/**
  * The 21 competencies, in group order.
  *
  * **On the empty `evidenceRequirements` arrays.** Three competencies carry their evidence
@@ -924,10 +1025,12 @@ export const COMPETENCIES: readonly Competency[] = [
       "Project growth across periods.",
       "Compare two start dates and show the difference.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: HOW_SAVINGS_GROW_EVIDENCE,
     misconceptions: ["Interest is a fixed bonus", "Growth is linear"],
     gradeBand: "5-8",
-    explanationRequired: false,
+    // Both objectives this competency covers in full say "explain", and ER4 is the row that
+    // answers them. The flag has to agree with the array it describes.
+    explanationRequired: true,
     assessmentShape: "run-it-forward",
   },
   {
@@ -940,7 +1043,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "Pick one.",
       "Show how much sooner the goal arrives on the better rate.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: COMPARE_RATES_EVIDENCE,
     misconceptions: ["A rate difference that small doesn't matter"],
     gradeBand: "5-8",
     explanationRequired: false,

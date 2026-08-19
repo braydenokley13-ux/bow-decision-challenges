@@ -31,6 +31,42 @@ export interface ReteachTopic {
 
 export const RETEACH_TOPICS: readonly ReteachTopic[] = [
   {
+    id: "interest-earns-on-interest",
+    misconception: "Interest is a fixed bonus",
+    title: "The second year is bigger than the first",
+    focus: "A student can say why the same money at the same rate earns more later than earlier, and can point at the balance the growth is computed on.",
+    moves: [
+      "Work three periods by hand on one balance, writing the interest figure for each. They are three different numbers and nobody changed the rate — that is the whole idea, and it lands better from their own arithmetic than from a graph.",
+      "Now start the same money a year earlier and total both. Ask which part of the difference is extra deposits and which part is interest that itself earned interest.",
+      "Finish on the honest limit: at a small rate over a short horizon the difference is small, and saying so is what makes the case for the long horizon believable.",
+    ],
+    minutes: 15,
+  },
+  {
+    id: "growth-is-not-a-straight-line",
+    misconception: "Growth is linear",
+    title: "You cannot multiply one period by ten",
+    focus: "A student computes a later period against the balance the previous period ended with, rather than scaling a single period across the run.",
+    moves: [
+      "Everyone works period one, then predicts the ten-period total by multiplying. Then work it properly and put the two numbers side by side.",
+      "Ask where the extra came from. It came from the balance changing, which is the sentence to leave the lesson with.",
+      "Do it once at a rate small enough that the two answers nearly agree, so the class learns that the shortcut is wrong rather than that it is always wildly wrong.",
+    ],
+    minutes: 12,
+  },
+  {
+    id: "small-rates-over-long-times",
+    misconception: "A rate difference that small doesn't matter",
+    title: "Price the difference instead of judging it",
+    focus: "A student converts a rate gap into an amount or a date before deciding whether it matters, rather than judging the size of the percentage.",
+    moves: [
+      "Take two rates a class calls \"basically the same\" and run both to the goal. Report the answer in weeks, not percent — a date is the unit a saver actually feels.",
+      "Then change the horizon and run both again. The same gap is worth almost nothing over three months and a great deal over three years, and the lesson is that the rate alone never answers it.",
+      "Finish with an account whose conditions cost more than the rate gap is worth, so the rule stays \"price it\" and does not become \"always take the higher rate\".",
+    ],
+    minutes: 15,
+  },
+  {
     id: "cover-is-not-a-price-tag",
     misconception: "A lower premium is always better",
     title: "What the cheap one does not pay",

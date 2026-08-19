@@ -244,3 +244,54 @@ bottom, which is what fails here on the other axis. Three bars, one 256px window
 reachable between them. So the rule is written once, over all of the sticky chrome, at the end
 of the last stylesheet `main.tsx` loads, because `scenes.css` is what makes the rail a bottom
 bar and a rule in `app.css` cannot reach past it.
+
+
+---
+
+## 7. The rubrics: 1 written to 9, and two `full` claims that were not true
+
+`competencies.ts` shipped with **three** competencies carrying evidence requirements and
+eighteen carrying an empty array — which is why sixteen NYSED objectives read *not assessable*
+regardless of what any world does. The file calls writing them content work owned by a person
+and lists it among the decisions *"none of which should be settled by an implementer."*
+
+Nine are written now, and the set covers every module: `gross-to-net`, `what-taxes-fund`,
+`decide-to-borrow`, `keep-credit-costs-down`, `use-insurance`, `is-the-add-on-worth-it`,
+`how-savings-grow`, `compare-rates`, beside the `save-toward-a-goal` that was already there.
+
+Each was written **world-blind**, which is the architecture's order rather than a convenience:
+an evidence requirement belongs to the competency, and that is precisely what lets two worlds
+produce comparable evidence. Each was then checked against three or four independent designs
+from the mechanics war that had each proposed their own. The convergence was close to exact —
+including, in every case, the bad-thinking/good-outcome guard.
+
+### Writing a rubric is how you find out a claim was false
+
+Two `full` mappings could not have been true, and both are the same defect: **an objective
+whose verb asks for words, mapped `full` to a competency that required none.**
+
+- **`decide-to-borrow` → 2.2.** *"…different types of purchases, and describe situations in
+  which using credit may be helpful or harmful."* Four designers held that sentence and not one
+  reached the plural clause. Resolved on the written row — the case that would flip, in the
+  student's own words — because 2.2's verbs are *explain* and *describe*, and asking a world to
+  act out several kinds of purchase is answering a speech act with a mechanic.
+- **`how-savings-grow` → 5.2 and 5.5.** Both objectives say *explain*. The mapping's own
+  rationale for 5.5 reads *"showing that an earlier start ends with more, **and saying why**"* —
+  and the competency carried `explanationRequired: false`, so nothing required a student to say
+  anything at all. It has a required written row now and the flag agrees with it.
+
+The precedent for both is already in the shipped table: **2.3 and 2.4 were demoted from `full`
+to `partial` for exactly this reason** — their verbs ask for words and `keep-credit-costs-down`
+has no written row to hang them on. The difference in these two cases is that there was
+somewhere to put the clause. Where there is not, the mapping should move; where there is, the
+row is what makes the claim true.
+
+**Nine competencies remain unwritten and none of them is needed for the floor.**
+`plan-for-the-unexpected` is held deliberately — writing it trips a tripwire demanding it be
+routed in Basketball, which would make Basketball measure something the market cannot. The
+other eight sit behind objectives no October world is planned for, and a rubric nobody is going
+to build against is the paper coverage this product exists not to produce.
+
+**Coverage is unchanged at 1 of 23 and 1 of 5.** Nine rubrics moved the count of competencies
+with nothing written from seventeen to nine, and moved nothing a district reads. Only a world
+can do that.
