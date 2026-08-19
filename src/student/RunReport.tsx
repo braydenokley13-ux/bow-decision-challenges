@@ -52,7 +52,7 @@ export function RunReport() {
 
   useEffect(() => {
     if (!studentToken()) {
-      navigate("/join", { replace: true });
+      void navigate("/join", { replace: true });
       return;
     }
     let cancelled = false;
@@ -67,7 +67,7 @@ export function RunReport() {
       if (cancelled) return;
       if (source.status === "signed-out") {
         forgetStudent();
-        navigate("/join", { replace: true });
+        void navigate("/join", { replace: true });
         return;
       }
       setState({ status: "ready", classes: classes.ok ? classes.body.classes : [], source });

@@ -56,7 +56,7 @@ export function TeacherSignIn() {
       setIssued({ recoveryCode: recovery, claimed });
       return;
     }
-    navigate("/educator/classes", { replace: true });
+    void navigate("/educator/classes", { replace: true });
   };
 
   const submit = async () => {
@@ -105,7 +105,7 @@ export function TeacherSignIn() {
               )}
             </div>
             <div className="cards-sheet__acts">
-              <Button variant="primary" onClick={() => navigate("/educator/classes", { replace: true })}>I have written it down</Button>
+              <Button variant="primary" onClick={() => { void navigate("/educator/classes", { replace: true }); }}>I have written it down</Button>
             </div>
           </div>
         </section>

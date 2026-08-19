@@ -33,7 +33,7 @@ export function StudentHome() {
 
   useEffect(() => {
     if (!studentToken()) {
-      navigate("/join", { replace: true });
+      void navigate("/join", { replace: true });
       return;
     }
     let cancelled = false;
@@ -46,7 +46,7 @@ export function StudentHome() {
         // blip on a Chromebook cart logged a child out and sent them off to find their card.
         if (result.why === "signed-out") {
           forgetStudent();
-          navigate("/join", { replace: true });
+          void navigate("/join", { replace: true });
           return;
         }
         setState({ status: "error", message: "BOW could not reach your class just now. It is almost always the wifi. Your work is safe — try again in a minute." });
@@ -65,7 +65,7 @@ export function StudentHome() {
   }
 
   const signedInAs = state.classes[0]?.displayName ?? null;
-  return <Ready classes={state.classes} signedInAs={signedInAs} onSignOut={() => { forgetStudent(); navigate("/join", { replace: true }); }} />;
+  return <Ready classes={state.classes} signedInAs={signedInAs} onSignOut={() => { forgetStudent(); void navigate("/join", { replace: true }); }} />;
 }
 
 /**

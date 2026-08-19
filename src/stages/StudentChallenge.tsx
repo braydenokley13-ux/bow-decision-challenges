@@ -138,7 +138,7 @@ function OpeningStage() {
   useEffect(() => {
     if (!transport.requiresClass) return;
     if (!studentToken()) {
-      navigate("/join", { replace: true });
+      void navigate("/join", { replace: true });
       return;
     }
     let cancelled = false;
@@ -150,7 +150,7 @@ function OpeningStage() {
         // do again. A service that is merely unreachable says so and keeps them here.
         if (result.message.startsWith("No connection")) { setProblem(result.message); return; }
         forgetStudent();
-        navigate("/join", { replace: true });
+        void navigate("/join", { replace: true });
         return;
       }
       const wanted = (params.get("class") ?? "").toUpperCase();
@@ -161,7 +161,7 @@ function OpeningStage() {
       // Nought classes, or several and no answer about which: both are questions the student's
       // own screen already asks better than this one can.
       if (!picked) {
-        navigate("/home", { replace: true });
+        void navigate("/home", { replace: true });
         return;
       }
       setSeat({
@@ -277,7 +277,7 @@ function OpeningStage() {
               <Button
                 type="button"
                 variant="quiet"
-                onClick={() => { forgetStudent(); navigate("/join", { replace: true }); }}
+                onClick={() => { forgetStudent(); void navigate("/join", { replace: true }); }}
               >
                 Not you?
               </Button>

@@ -92,7 +92,7 @@ export function StudentJoin() {
     if (studentIdHeld() !== result.body.studentId) clearEveryAttempt();
     rememberStudent(result.body.token);
     rememberStudentId(result.body.studentId);
-    navigate("/home", { replace: true });
+    void navigate("/home", { replace: true });
   };
 
   return (
