@@ -17,6 +17,16 @@ so the service could not tell them from a child's.
 
 Drivers: `.scratch/teacher/`. Receipts: `gauntlet/receipts/teacher/`.
 
+To bring the stack back and re-check any finding against the same class (`RCMXE`, key in
+`.scratch/teacher/env.sh`, evidence in `.scratch/teacher/classes/`):
+
+```bash
+npx vite build --ssr server/index.ts --outDir .scratch/teacher/dist-server
+BOW_API_PORT=4188 BOW_CLASS_DIR=$PWD/.scratch/teacher/classes \
+  BOW_ALLOWED_ORIGIN=http://127.0.0.1:5181 node .scratch/teacher/dist-server/index.js &
+BOW_API_PORT=4188 npx vite --port 5181 --strictPort --host 127.0.0.1 &
+```
+
 **A caution about the moving target.** Other agents shipped into this branch throughout my run. The
 roster UI, printable join cards, server-side checkpoints, cross-device resume and a revision of the
 advertised run length all landed *while I was testing*. Where an earlier observation was superseded

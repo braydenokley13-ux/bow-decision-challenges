@@ -13,7 +13,7 @@
 | 0 — Reconstruct the product | **DONE** |
 | 1 — Research the external bar | **DONE** — 8 reports, `gauntlet/research/` |
 | 2 — Rank the gaps | **DONE** — `gauntlet/DEFECTS.md`, 60 reproduced defects |
-| 3 — Build / attack loops | **IN PROGRESS** — round 2 of N |
+| 3 — Build / attack loops | **IN PROGRESS** — round 3 of N |
 | 4 — Six-verdict judges | not started |
 
 ## Round 0 — twenty fresh critics
@@ -97,6 +97,56 @@ underneath — one claim was half-refused, with the reason.
   nineteen. And a teacher who zooms can award full marks again.
 - **`sort-by-need-want-goal` is becoming assessable** — Basketball's dead Weeks 1–4 is now one
   real decision, which takes the product from one assessable NYSED objective to two.
+
+## Round 3 — three more fresh critics, pointed at Round 2's own work
+
+Same discipline: the goal, the bar and the running artifact, not the builder's reasoning, and
+told they were allowed to reject. All three reproduced their claims in a real browser against a
+frozen snapshot of HEAD, because the tree was being committed to while they worked.
+
+| Critic | Verdict | Single largest reason |
+| --- | --- | --- |
+| Student red team — five simulated 12–14-year-olds, played to the end | **REJECT** | On a shared classroom computer the second student to sign in lands inside the first student's run — reads their finished plan and their private written explanation — and then cannot turn in their own work at all. Reproduced twice, once by accident and once deliberately with two clean seats. |
+| Teacher experience — a real teacher's five periods | **REJECT** (1 BLOCKER · 6 MAJOR · 5 MINOR) | A teacher has no account. Classes live only in one browser's `localStorage` plus a secret URL the product itself says "is not shown again"; a census of all four educator routes found zero password fields, zero sign-in controls — while `POST /api/auth/teacher` and `POST /api/classes/:code/claim` both worked when called directly. A reimaged laptop permanently destroys 28 children's assessed work. |
+| Product coherence — is this one product | **REJECT** (6 BLOCKER · 21 MAJOR · 11 MINOR) | The two stories are not one product: the share-out projects a claim the run did not produce, the Pop-Up's evidence trail prints raw event vocabulary (`popup-spot`, `POPUP_SUM_SUBMITTED`, `event-5`) where Basketball prints English, and the two worlds end in two different endings. |
+
+The student red team's closing finding is the one that decides this round: **the product told
+children and teachers four things about those children that were not true**, and one thing in
+the other direction — it told a teacher that a child who asked for help and was given it had
+failed.
+
+### Closed and verified since Round 3 opened
+
+- **B1 — a shared computer handed one child another child's private writing.** Signing in as a
+  different student now clears the device's attempts before the run mounts. Proved by deleting
+  the rule and watching `src/student/sharedDevice.test.tsx` go red, then restoring it. `0ea8372`
+- **B2 — "You worked this out", to a child who had just pressed *Show the answer*.** The board
+  now branches on whether the figure was produced or supplied. The log always carried the
+  difference; only the screen pretended otherwise. `300ce62`
+
+### Routed, in flight
+
+Every remaining finding from the three Round 3 critics is with a builder or a verifier, each
+given the critic's evidence verbatim rather than the lead's summary of it:
+
+- **The run must ask for a decision** — a 71.6-second shortcut-only run scored a competency
+  DEMONSTRATED; an untouched savings line read as "the line held a figure the student set,
+  **Independently**" for three students who never touched it; the Week 3 decision answerable by
+  spending nothing and tapping one chip; the answer printed 120px below the box asking for it;
+  a writing gate that blocks `idk` and admits forty characters of `aaaa`.
+- **The last Saturday must be playable** — an unrecoverable dead end on the biggest crowd of the
+  market, which the product then headlines **PAID OFF** and tells the student *"No other standing
+  order beats it on these four crowds."*
+- **Cross-device resume, verified rather than assumed** — a fresh verifier is establishing
+  whether "Carry on" now keeps its promise on a second device, and what the new server-authoritative
+  resume machinery does when the two copies disagree.
+- **A second security and privacy review** — the first reviewer's BLOCKER is claimed closed by
+  the lead, which is exactly the claim a fresh critic has to settle. Same brief: find a reason a
+  district should refuse.
+- The teacher's live panel reporting **Turned in** for children who never played · one student
+  with two attempts read against the wrong run · the phone findings (the only escape control from
+  a data-loss state renders at `left: -271px` on a 390px viewport) · the student who wants a
+  second go and has no button.
 
 ### In flight
 
