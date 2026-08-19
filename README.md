@@ -136,10 +136,35 @@ a source scan, because that drift is invisible to a behavioural test until someo
 
 ## How the assessment works
 
-90 structured points across 18 micro-skill observations, plus 10 points of written reasoning
-scored by a person. **No AI scoring, and no student writing is ever sent to a model** — the
-student is told a person will read it, and that is true. Support levels cap credit, and every
-point traces to a recorded event.
+**There is no score.** Not a percentage, not a band, not a letter, not a total — on any student
+surface, on any teacher surface, or in the export. An assessment judge went looking for one on
+the student page, the reading queue, the debrief, the share-out and the clipboard the *Copy for
+a gradebook* button actually writes, and reported that finding it would have been a `NO-GO`.
+
+This section used to open *"90 structured points across 18 micro-skill observations, plus 10
+points of written reasoning"*. That instrument is not what ships. A composite total is still
+computed in `domain/evidence/grade.ts` and **nothing renders it**; the sentence survived here
+because this file's own truth test (`src/docsDataClaims.test.ts`) checks what BOW says about a
+child's *data* and had never been pointed at what it says about their *assessment*. It is now.
+
+What ships instead: **21 competencies**, each declaring evidence requirements, every requirement
+read under one shared rubric of **5 / 4 / 3 / 2 / 0 — there is no level 1**, because two
+neighbouring levels a teacher cannot tell apart are not a rubric. Every judgement is anchored to
+the event that settled it and carries the observer's own sentence about why, so a teacher who
+disagrees can see what BOW saw and overrule it with a reason that is kept beside it.
+
+**A requirement nobody reached is absent, never a zero**, and the same is true of help: a
+student who pressed *Show the answer and keep going* has produced no evidence about that
+requirement, and the run records nothing rather than a failure. **Missing evidence settles
+nothing in either direction** — a competency with an unobserved requirement is *incomplete*
+whether the observed ones went well or badly, so the class denominator cannot be composed of
+the students the product learned least about.
+
+**No AI scoring, and no student writing is ever sent to a model** — the student is told a person
+will read it, and that is true. The written explanation is scored by a teacher on four criteria
+and by nothing else; there is no path in this product by which a machine scores a child's
+writing. The export carries *did it · part of it or none · never came up · asked*, with the
+denominator stated per student, because *never came up* is an absence and is not in it.
 
 The challenge is preference-neutral. Choosing a cheaper place, saving more, taking the extra
 work or declining it are never worth points on their own; only whether the resulting plan

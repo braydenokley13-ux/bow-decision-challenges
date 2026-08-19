@@ -261,6 +261,50 @@ describe("the README's account of what BOW holds is the handler's account", () =
     expect(readFileSync("vercel.json", "utf8")).toContain("connect-src 'self'");
   });
 
+  it("does not advertise a score the product refuses to produce", () => {
+    // **The hole this closes.** This file has held README's *"What BOW holds"* to the shipping
+    // handler since a privacy officer would read it first — and it had never been pointed at
+    // what the same file says about a child's *assessment*. So README advertised *"90
+    // structured points across 18 micro-skill observations, plus 10 points of written
+    // reasoning"* for as long as that was false, and an assessment judge found it while
+    // confirming, in a browser and in the export, that there is no total anywhere.
+    //
+    // The composite is still computed in `domain/evidence/grade.ts`; the rule is that nothing
+    // renders it and no document may promise it.
+    const readme = readFileSync("README.md", "utf8");
+    const section = readme.slice(readme.indexOf("## How the assessment works"), readme.indexOf("## What an educator gets"));
+    expect(section.length, "the section itself").toBeGreaterThan(400);
+    // A quoted retirement is exempt; an advertisement is not. The retired sentence is kept in
+    // the file, in quotation marks, saying what it used to claim — the same rule
+    // `dataClaims.sweep.test.ts` draws between a quoted claim and an asserted one.
+    const asserted = section
+      .split("\n")
+      .filter((line) => !line.includes("used to open"))
+      .join("\n");
+    for (const advertisement of [/\b90 structured points\b/, /\b100[- ]point\b/i, /\bout of 100\b/i]) {
+      expect(asserted, `README advertises ${advertisement}`).not.toMatch(advertisement);
+    }
+    // And it says the true things, so deleting the correction fails rather than passes.
+    for (const clause of [
+      "There is no score",
+      "there is no level 1",
+      "absent, never a zero",
+      "Missing evidence settles nothing in either direction",
+      "no student writing is ever sent to a model",
+    ]) {
+      expect(section.replace(/\s+/g, " "), clause).toContain(clause);
+    }
+  });
+
+  it("finds no rendered composite to advertise, which is what makes the section true", () => {
+    // The claim above is only honest while the composite stays unrendered. This is the check
+    // the judge did by hand — every `.tsx` under `src/`, for a use of the grade total.
+    const rendered = readdirSync("src", { recursive: true, encoding: "utf8" })
+      .filter((entry) => entry.endsWith(".tsx") && !entry.includes(".test."))
+      .filter((entry) => /\bfinalPoints\b|\bderiveGrade\b/.test(withoutComments(readFileSync(`src/${entry}`, "utf8"))));
+    expect(rendered, "a screen has started rendering the composite total").toEqual([]);
+  });
+
   it("still says all of it, so deleting the section fails rather than passes", () => {
     const readme = readFileSync("README.md", "utf8");
     const section = readme.slice(readme.indexOf("## What BOW holds"), readme.indexOf("## Check it"));
