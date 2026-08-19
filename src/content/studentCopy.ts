@@ -99,6 +99,13 @@ export const STUDENT_COPY = {
         title: "What can Avery count on?",
         ask: "How much money will Avery definitely have?",
         settled: "You worked this out.",
+        /* The same screen, when the student pressed "Show the answer and keep going".
+           `settled` used to fire either way, so a student who could not do the sum, asked for
+           help and was handed the figure was then told "You worked this out." — the identical
+           sentence somebody who did it got. A thirteen-year-old reads that as the machine
+           either not noticing or being sarcastic, and the one thing a child in that position
+           needs is for the room to be honest with them. */
+        shown: "Here is the answer.",
         next: "Next — the two bonuses",
       },
       bonuses: {
@@ -117,6 +124,7 @@ export const STUDENT_COPY = {
         title: "What does Avery already owe?",
         ask: "How much is gone before Avery chooses anything?",
         settled: "You worked this out.",
+        shown: "Here is the answer.",
         next: "Now decide what Avery protects",
       },
       decide: {

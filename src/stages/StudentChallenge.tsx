@@ -678,6 +678,11 @@ function WorkingStage() {
   const backup = state.stage === "fallback-version";
   const floorReady = state.calculations["reliable-floor"]?.correct === true;
   const essentialsReady = state.calculations["essentials-total"]?.correct === true;
+  // Whether the figure on screen is one the student produced or one the product handed over.
+  // The log has always recorded the difference honestly; the screen said the same sentence
+  // either way, and told a child who had just asked for the answer that they had worked it out.
+  const floorShown = state.calculations["reliable-floor"]?.supplied === true;
+  const essentialsShown = state.calculations["essentials-total"]?.supplied === true;
   // Where the student has got to, read off their own answers rather than off a counter, so
   // a refresh lands them back on the question they were actually looking at. From there,
   // `visited` grows only by actually opening a question — the answers open the door to the
@@ -811,7 +816,7 @@ function WorkingStage() {
                 showing. */}
             {floorReady ? (
               <p className="question__settled">
-                {question.countOn.settled} Avery can count on <b className="money">{formatDollars(reliableFloorExpectation(SCENARIO_NUMBERS))}</b> whatever
+                {floorShown ? question.countOn.shown : question.countOn.settled} Avery can count on <b className="money">{formatDollars(reliableFloorExpectation(SCENARIO_NUMBERS))}</b> whatever
                 happens on the court. It is the first line of Avery’s money.
               </p>
             ) : (
@@ -851,7 +856,7 @@ function WorkingStage() {
 
             {essentialsReady ? (
               <p className="question__settled">
-                {question.committed.settled} <b className="money">{formatDollars(essentialsExpectation(SCENARIO_NUMBERS))}</b> of Avery’s
+                {essentialsShown ? question.committed.shown : question.committed.settled} <b className="money">{formatDollars(essentialsExpectation(SCENARIO_NUMBERS))}</b> of Avery’s
                 money is gone on food, phone and laundry before Avery chooses anything. Rent is on top of it, and both are on the right.
               </p>
             ) : (
