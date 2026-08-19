@@ -5,7 +5,8 @@ import { EducatorShell } from "./EducatorShell";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import { CLASS_RETENTION_DAYS, educatorClassError, isClassError, type ClassCreation } from "../platform/classes/types";
 import { durationLabel, PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
-import { DEFAULT_WORLD_ID, PLAYABLE_WORLDS, WORLD_REGISTRY } from "../domain/scenario/registry";
+import { PLAYABLE_WORLDS } from "../domain/scenario/registry";
+import type { WorldId } from "../domain/core/ids";
 import { assessableStandards, FRAMEWORKS, labelsFor, standardByRef } from "../domain/standards";
 import type { FrameworkId } from "../domain/standards";
 import { forgetClass, rememberClass } from "./classMemory";
@@ -41,6 +42,9 @@ const FRAMEWORK_ID: FrameworkId = "nysed-pf-2026";
 /** The value the picker uses for "no objective", which is not the same as none existing. */
 const NO_OBJECTIVE = "";
 
+/** The value the story picker uses for "the students choose", which is not a story. */
+const STUDENTS_PICK = "students-pick";
+
 export function MyClasses() {
   const [params] = useSearchParams();
   const [label, setLabel] = useState("");
@@ -63,7 +67,15 @@ export function MyClasses() {
   // §17.2 step 2: student choice, every playable story selected. A teacher who wants one story
   // for everyone says so; a teacher who does nothing gets the promise the product makes to
   // students on the front of the box.
-  const [studentPicks, setStudentPicks] = useState(true);
+  //
+  // Which story, or that the students choose — one value rather than a boolean, because
+  // "one for everyone" was a boolean and a boolean can only name the story somebody wired
+  // into it. It named `DEFAULT_WORLD_ID`, so the only class a teacher could set was a
+  // basketball class, on the screen that had just told them the two stories are equals whose
+  // results pool. A teacher who wanted the whole room on the market — which is the setting
+  // that makes a debrief compare like with like — had no control for it at all.
+  const [story, setStory] = useState<WorldId | typeof STUDENTS_PICK>(STUDENTS_PICK);
+  const studentPicks = story === STUDENTS_PICK;
   const [assigning, setAssigning] = useState<string | null>(null);
   const [assigned, setAssigned] = useState<string | null>(null);
   // Whether "Forget these classes" has been asked and is one press from happening. Same shape
@@ -83,6 +95,16 @@ export function MyClasses() {
   const labels = labelsFor(FRAMEWORK_ID);
   const unit = labels?.unitNounShort ?? "Objective";
   const arriving = requested ? standardByRef({ frameworkId: FRAMEWORK_ID, code: requested }) : undefined;
+
+  /**
+   * What the assignment says about the story. Both calls below send it, and both used to
+   * build it themselves — which is how one of them could have been given the second story
+   * and the other left on the first.
+   */
+  const storySetting = () => ({
+    allowedWorldIds: story === STUDENTS_PICK ? PLAYABLE_WORLDS.map((world) => world.id) : [story],
+    studentChoosesWorld: story === STUDENTS_PICK,
+  });
 
   const create = async () => {
     if (working) return;
@@ -119,11 +141,7 @@ export function MyClasses() {
         await fetch(`${CLASS_API_BASE}/classes/${record.code}/assignments`, {
           method: "POST",
           headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": record.teacherKey },
-          body: JSON.stringify({
-            objectiveRef: { frameworkId: FRAMEWORK_ID, code: objectiveCode },
-            allowedWorldIds: studentPicks ? PLAYABLE_WORLDS.map((world) => world.id) : [DEFAULT_WORLD_ID],
-            studentChoosesWorld: studentPicks,
-          }),
+          body: JSON.stringify({ objectiveRef: { frameworkId: FRAMEWORK_ID, code: objectiveCode }, ...storySetting() }),
         });
       }
       rememberClass(record);
@@ -146,11 +164,7 @@ export function MyClasses() {
       const response = await fetch(`${CLASS_API_BASE}/classes/${record.code}/assignments`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": record.teacherKey },
-        body: JSON.stringify({
-            objectiveRef: { frameworkId: FRAMEWORK_ID, code: objectiveCode },
-            allowedWorldIds: studentPicks ? PLAYABLE_WORLDS.map((world) => world.id) : [DEFAULT_WORLD_ID],
-            studentChoosesWorld: studentPicks,
-          }),
+        body: JSON.stringify({ objectiveRef: { frameworkId: FRAMEWORK_ID, code: objectiveCode }, ...storySetting() }),
       });
       if (!response.ok) {
         const body: unknown = await response.json();
@@ -204,7 +218,24 @@ export function MyClasses() {
       {/* "Which challenge" named the two stories with the word the product uses for the
           thing they are both inside — Plan Under Pressure is the challenge, and these are the
           two situations in it. A teacher who set "which challenge" and then read "the
-          challenge" on the guide had two meanings for one word, one screen apart. */}
+          challenge" on the guide had two meanings for one word, one screen apart.
+
+          One row per playable story, read off the registry rather than written out here.
+          "One for everyone" was a single row wired to whichever story the registry calls the
+          default, so the season was the only story a whole class could be set: the market was
+          an equal on the row above it and unassignable on this one, and a teacher who wanted
+          the room on the market — the setting that makes a debrief compare like with like —
+          had to send thirty students to choose it one at a time and hope. A third story
+          arrives here as a row rather than as a rewrite.
+
+          The first row's sentence says which half of a mixed class pools, because only one
+          half does and this is the moment a teacher decides. It promised that "the results
+          pool either way", which is the half that is true said as though it were all of it:
+          the rubric does pool — both stories are observed against the same named parts of
+          the work and `classResultFor` counts them into one denominator — and the decisions
+          do not, by design, because `worldSections` splits them per story with its own count
+          each. A teacher who read the old sentence planned one discussion and found two
+          half-classes. `whatPools.test.tsx` is what keeps every teacher surface saying it. */}
       <fieldset className="class-form__worlds">
         <legend>Which {TERMS.story}</legend>
         <label>
@@ -212,26 +243,29 @@ export function MyClasses() {
             type="radio"
             name="class-worlds"
             checked={studentPicks}
-            onChange={() => setStudentPicks(true)}
+            onChange={() => setStory(STUDENTS_PICK)}
           />
           <span>
             <b>Students pick</b>
-            {PLAYABLE_WORLDS.map((world) => world.title).join(" or ")}. Both {TERMS.stories} collect the
-            same evidence, so the results pool either way.
+            {PLAYABLE_WORLDS.map((world) => world.title).join(" or ")}. Both are judged against the same
+            named parts of the work, so a class that chose differently still gets one set of skill results.
+            What the room decided comes back one {TERMS.story} at a time — plan the debrief as two groups.
           </span>
         </label>
-        <label>
-          <input
-            type="radio"
-            name="class-worlds"
-            checked={!studentPicks}
-            onChange={() => setStudentPicks(false)}
-          />
-          <span>
-            <b>One for everyone</b>
-            {WORLD_REGISTRY[DEFAULT_WORLD_ID]?.title}.
-          </span>
-        </label>
+        {PLAYABLE_WORLDS.map((world) => (
+          <label key={world.id}>
+            <input
+              type="radio"
+              name="class-worlds"
+              checked={story === world.id}
+              onChange={() => setStory(world.id)}
+            />
+            <span>
+              <b>Everyone: {world.title}</b>
+              {world.subtitle}
+            </span>
+          </label>
+        ))}
       </fieldset>
       <Button type="button" aria-disabled={working || label.trim().length === 0} onClick={() => void create()}>
         {working ? "Creating…" : "Create the class"}

@@ -207,20 +207,21 @@ const POOLING_CLAIMS: readonly RegExp[] = [
 ];
 
 /**
- * The offence that is still on the page, owned by a file this change could not touch.
+ * Nothing. Every teacher surface says which half pools.
  *
- * `MyClasses.tsx` is the class-creation form, and the sentence is the one a teacher reads at
- * the exact moment they decide: *"Both stories collect the same evidence, so the results pool
- * either way."* The first clause is true and the second is the unqualified promise. What would
- * fix it is one clause — say that the evidence pools and the decisions come back per story —
- * and it is somebody else's file tonight.
+ * `MyClasses.tsx` was the last entry: the class-creation form said *"Both stories collect the
+ * same evidence, so the results pool either way."* at the exact moment a teacher decides, and
+ * the first clause was true while the second was the unqualified promise. It now says that
+ * both are judged against the same named parts of the work, so a class that chose differently
+ * still gets one set of skill results, and that what the room decided comes back one story at
+ * a time.
  *
  * This list is a quarantine, not a permission. The assertion is an equality, so adding a new
- * claim fails, and so does **fixing** this one without deleting its line from here, which is
- * the only way a list like this stays honest. If a test failure brought you here saying the
- * entry no longer matches: good, that surface has been fixed. Delete the entry.
+ * claim fails, and so does **fixing** one without deleting its line from here, which is the
+ * only way a list like this stays honest. If a test failure brought you here saying an entry
+ * no longer matches: good, that surface has been fixed. Delete the entry.
  */
-const PENDING: readonly string[] = ["src/educator/MyClasses.tsx — results pool"];
+const PENDING: readonly string[] = [];
 
 /**
  * One entry per file, named by the first claim that fires.
