@@ -1,0 +1,45 @@
+### BOW key-mismatch destruction, SHA 18a818c8c8885e7e0cbdd547c536117dfa3d788c
+### store: file driver, BOW_CLASS_DIR=/tmp/judge-5/keytest
+
+--- boot with the RIGHT key K1 ---
+teacher signup: {"teacher":{"id":"t_d434cd567c8949e6acbdc0227c695d62","email":"ms.reyes@school.example","createdAt":1787127844768},"token":"eyJzdWIiOiJ0X2Q0MzRjZDU2N2M4OTQ5ZTZhY2JkYzAyMjdjNjk1ZDYyIiwia2luZCI6InRlYWNoZXIiLCJnZW4iOjAsImV4cCI6MTc4OTcxOTg0NH0.zlCpcEhKTXi3NeJvcr6L1fJrWUQnAbWhCCnT6V8l5gY","recoveryCode":"ZFOKVONRZJMKMSAQGADP"}
+class: {"code":"R6JPF","label":"Period 3 Real Class","challengeId":"plan-under-pressure","createdAt":1787127845007,"expiresAt":1797495845007,"teacherKey":"JE7G9NAXTNR7H39XNME9VNHN","joinMode":"open","teacherId":"t_d434cd567c8949e6acbdc0227c695d62"}
+{"cards":[{"seatCode":"1","displayName":"Aiden R","joinCode":"XQ3GF"},{"seatCode":"2","displayName":"Bianca T","joinCode":"T44RX"}]}
+class code = R6JPF
+--- disk before ---
+/tmp/judge-5/keytest/R6JPF/class.json
+/tmp/judge-5/keytest/R6JPF/roster/1.json
+/tmp/judge-5/keytest/R6JPF/roster/2.json
+/tmp/judge-5/keytest/_accounts/teachers-by-email/e8c005e96f5e4261944737cc747b5a64.json
+/tmp/judge-5/keytest/_accounts/teachers/t_d434cd567c8949e6acbdc0227c695d62.json
+/tmp/judge-5/keytest/_index/teacher/t_d434cd567c8949e6acbdc0227c695d62/R6JPF.json
+/tmp/judge-5/keytest/_vault-check.json
+
+--- boot with the WRONG key K2 (operator typo / bad rotation) ---
+health under wrong key:
+{"ok":false,"store":"file","durable":true,"classroomReady":false,"storeKey":"mismatch","reason":"The file store holds records this key cannot open. BOW_STORE_KEY has changed, or is not the one these classes were written with. Nothing has been deleted — put the original key back.","challenges":["plan-under-pressure"],"retention":{"days":120,"lastSweepAt":null,"lastSweepDeleted":null},"at":1787127848278}
+teacher signs in under wrong key:
+{"error":"bad_credentials","message":"That did not match. Check it and try again."} [401]
+teacher RE-REGISTERS (what the 401 pushes them to do):
+{"teacher":{"id":"t_f8e37d208d604079a650b42ee0545766","email":"ms.reyes@school.example","createdAt":1787127848562},"token":"eyJzdWIiOiJ0X2Y4ZTM3ZDIwOGQ2MDQwNzlhNjUwYjQyZWUwNTQ1NzY2Iiwia2luZCI6InRlYWNoZXIiLCJnZW4iOjAsImV4cCI6MTc4OTcxOTg0OH0.Q0A7d2e2-izU85gcpRV-RVE1o6jtPN2fbHGAlPNWzQM","recoveryCode":"AV4FD91M5PH3PNIP9Q7D"} [201]
+a class is created reusing the same code R6JPF:
+{"code":"R6JPF","label":"Somebody Else","challengeId":"plan-under-pressure","createdAt":1787127848782,"expiresAt":1797495848782,"teacherKey":"6JQVEU49E9AWUWAPR9937K6W","joinMode":"open"} [201]
+
+--- put the ORIGINAL key K1 back, exactly as health instructed ---
+health:
+{"ok":true,"store":"file","durable":true,"classroomReady":true,"storeKey":"ok","reason":"Classes are kept in the file store for 120 days.","challenges":["plan-under-pressure"],"retention":{"days":120,"lastSweepAt":null,"lastSweepDeleted":null},"at":1787127851809}
+the original class:
+{"error":"class_not_found","message":"No class with that code."} [404]
+the original teacher signs in:
+{"error":"bad_credentials","message":"That did not match. Check it and try again."} [401]
+--- disk after ---
+/tmp/judge-5/keytest/R6JPF/class.json
+/tmp/judge-5/keytest/R6JPF/roster/1.json
+/tmp/judge-5/keytest/R6JPF/roster/2.json
+/tmp/judge-5/keytest/_accounts/teachers-by-email/e8c005e96f5e4261944737cc747b5a64.json
+/tmp/judge-5/keytest/_accounts/teachers/t_d434cd567c8949e6acbdc0227c695d62.json
+/tmp/judge-5/keytest/_accounts/teachers/t_f8e37d208d604079a650b42ee0545766.json
+/tmp/judge-5/keytest/_index/teacher/t_d434cd567c8949e6acbdc0227c695d62/R6JPF.json
+/tmp/judge-5/keytest/_vault-check.json
+--- diff of class.json bytes before/after ---
+OVERWRITTEN
