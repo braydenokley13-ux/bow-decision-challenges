@@ -114,10 +114,11 @@ that produces every required evidence requirement, so an objective BOW cannot as
 reads *not yet available* rather than *not yet assessed*. Those are different sentences and
 a district reads them differently.
 
-`BUILT_WORLD_COVERAGE` today records **two** worlds producing all five requirements of
-`adapt-a-plan` and all five of `plan-within-income` — Basketball and Run the Pop-Up. **One
-NYSED objective is assessable — 1.3, and only 1.3.** Every other objective has a mapping and
-no world.
+`BUILT_WORLD_COVERAGE` today records **six** claims: Basketball and Run the Pop-Up each
+against `adapt-a-plan`, `plan-within-income` and `sort-by-need-want-goal`, every required
+requirement of each. `availableCompetencyIds()` therefore returns those three, and
+`coverageClaims.test.ts` pins the set. **One NYSED objective is assessable — 1.3, and only
+1.3.** Every other objective has a mapping and no world.
 
 Both worlds leave `save-toward-a-goal` uncovered, and they leave it uncovered for the same
 reason: in each of them the target, the deadline and whether the savings line survives are the
@@ -166,12 +167,22 @@ literal, so a New Jersey deployment reads New Jersey's nouns without a component
 Students see none of it: nothing under `/educator` is on a student route, and no student
 screen mentions a standard.
 
-**The Objective Map's nine states** are §15.3's, and they live in `objectiveState.ts` beside
-the thresholds they read. The order they are decided in is the correctness: availability
-first, so an objective BOW cannot assess never reads as one a class did badly at; a bundled
-objective held at *partly assessed* until every part of its completion rule is in; the
-denominator guard before the thresholds. Four of the nine are not claims about students at
-all, and `isResultState` is what any surface asks before treating one as one.
+**The Objective Map has five states** — `not-assessed`, `too-few-assessed`,
+`needs-attention`, `developing`, `strong` — and they live in `objectiveState.ts` beside the
+thresholds they read. The order they are decided in is the correctness: the empty
+denominator, then `MINIMUM_ASSESSED_FOR_A_STATE`, then the two thresholds, so a share is
+never worked out from a number of students too small to carry it.
+
+Two questions are settled before any of the five, and the reason none of them is a state is
+that neither answer is a claim about how a class did. Whether BOW can assess the objective
+at all is `isAssessable()` in `src/domain/standards/`; an objective that fails it gets its
+own page saying so rather than a state on this one, because *not yet available* and *not
+yet assessed* are different sentences. Whether one student has a usable result is
+`studentOutcomeFor`, which counts a bundled objective as assessed only once every part of
+its completion rule has one — a student part-way through a bundle is out of the denominator,
+not at the bottom of it. `CLASS_STATE_LABELS` and `CLASS_STATE_DESCRIPTIONS` are
+`Record<ObjectiveResultState, …>`, so a sixth state is a compiler error at every teacher-facing
+word for it.
 
 State is never carried by colour alone — every objective shows a mark whose geometry differs
 and its word beside it, so the table survives a greyscale printout and a colour vision
