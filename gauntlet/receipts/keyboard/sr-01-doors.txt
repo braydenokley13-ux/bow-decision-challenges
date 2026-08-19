@@ -1,0 +1,123 @@
+# BOW Decision Challenges — keyboard-only + screen-reader-approximation walk.
+# Snapshot 074ec2f3b6350d30c170577a193a6b95cef18879 (clean worktree). App :6473, class service :6480 (file store).
+# THIS IS NOT A SCREEN READER. It is the Chromium accessibility tree (CDP Accessibility.getFullAXTree)
+# plus a MutationObserver over every aria-live / role=alert / role=status / <output> region.
+# "ANNOUNCED" = a change inside a live region that already existed => a real SR speaks it.
+# "NOT ANNOUNCED BY MOST SRs" = the live region was inserted into the DOM with its text already
+#   present; NVDA/JAWS generally do not speak that, VoiceOver sometimes does.
+# Keys used: Tab, Shift+Tab, Enter, Space, arrows, Escape. Nothing was clicked.
+
+==================== THE FRONT DOOR ====================
+
+######## SCREEN — GET / — the front door
+  url             http://127.0.0.1:6473/
+  document.title  Plan Under Pressure — BOW Decision Challenges
+  landmarks       main (unnamed)
+  headings        h1"Somebody has to decide where the money goes."
+  --- what a blind student hears reading this screen top to bottom ---
+   "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+  ···· main
+  ····· sectionheader
+  ······ "BOW Decision Challenges home", link
+  ········ "BOW", StaticText
+  ········ "DECISION CHALLENGES", StaticText
+  ······ "For educators", link
+  ······· "For educators", StaticText
+  ······· paragraph
+  ········ "FINANCIAL LITERACY", StaticText
+  ········ "·", StaticText
+  ········ "GRADES 5–8", StaticText
+  ······· "Somebody has to decide where the money goes.", heading, level 1
+  ········ "Somebody has to decide where the money goes.", StaticText
+  ······· paragraph
+  ········ "Two stories, one job.", StaticText
+  ········ "Eight Weeks to the Showcase or Run the Pop-Up", StaticText
+  ········ "— you handle the money, and you find out what your decisions cost.", StaticText
+  ········ "I have a class code", link
+  ········· "I have a class code", StaticText
+  ······· list
+  ········ listitem, level 1
+  ········· strong
+  ·········· "Eight Weeks to the Showcase", StaticText
+  ·········· "Step into Avery's eight-week run.", StaticText
+  ·········· "22", StaticText
+  ·········· "–", StaticText
+  ·········· "28", StaticText
+  ·········· "minutes", StaticText
+  ········ listitem, level 1
+  ········· strong
+  ·········· "Run the Pop-Up", StaticText
+  ·········· "Four Saturdays, a food truck, and not enough money to stock it the way you want.", StaticText
+  ·········· "20", StaticText
+  ·········· "–", StaticText
+  ·········· "24", StaticText
+  ·········· "minutes", StaticText
+  FOCUS ON ARRIVAL → "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+  TITLE → "Plan Under Pressure — BOW Decision Challenges"
+  --- every Tab stop, in order ---
+  Tab  1 → "BOW Decision Challenges home", link
+  Tab  2 → "For educators", link
+  Tab  3 → "I have a class code", link
+  Tab  4 → *** DOCUMENT BODY — nothing is spoken ***
+  Tab  5 → "BOW Decision Challenges home", link   (ring closed here)
+
+==================== THE EDUCATOR DOOR ====================
+
+######## SCREEN — GET /educator/sign-in
+  url             http://127.0.0.1:6473/educator/sign-in
+  document.title  Plan Under Pressure — BOW Decision Challenges
+  landmarks       banner (unnamed) | navigation "Educator navigation" | main (unnamed)
+  headings        h1"Sign in"
+  --- what a blind student hears reading this screen top to bottom ---
+   "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+  ····· banner
+  ······ "BOW Decision Challenges home", link
+  ········· "BOW", StaticText
+  ········· "DECISION CHALLENGES", StaticText
+  ······ "Educator navigation", navigation
+  ······· "My classes", link
+  ········ "My classes", StaticText
+  ······· "Objectives", link
+  ········ "Objectives", StaticText
+  ······· "Guide", link
+  ········ "Guide", StaticText
+  ······ "SIGN IN", link
+  ······· "SIGN IN", StaticText
+  ····· main
+  ······ sectionheader
+  ······· paragraph
+  ········ "FOR TEACHERS", StaticText
+  ······· "Sign in", heading, level 1
+  ········ "Sign in", StaticText
+  ······· paragraph
+  ········ "An account is how your classes come back on another computer. Without one they live in this browser only, and a wiped laptop takes them with it.", StaticText
+  ······· LabelText
+  ········· "YOUR WORK EMAIL", StaticText
+  ········ "YOUR WORK EMAIL", textbox
+  ······· LabelText
+  ········· "PASSWORD", StaticText
+  ········ "PASSWORD", textbox
+  ······· "Sign in", button, disabled=true
+  ········ "Sign in", StaticText
+  ······· paragraph
+  ········ "BOW stores your email address and nothing else about you. It never sees a student’s email address, name or birthday — the names on your class list are yours, typed by you, and BOW has no way to know whether any of them is real.", StaticText
+  ········ "Make an account", button
+  ········· "Make an account", StaticText
+  ········ "I have my recovery code", button
+  ········· "I have my recovery code", StaticText
+  ······ alert, live=assertive, atomic=true
+  FOCUS ON ARRIVAL → "Sign in", heading, level 1
+  TITLE → "Plan Under Pressure — BOW Decision Challenges"
+  --- every Tab stop, in order ---
+  Tab  1 → "YOUR WORK EMAIL", textbox
+  Tab  2 → "PASSWORD", textbox
+  Tab  3 → "Sign in", button, disabled=true
+  Tab  4 → "Make an account", button
+  Tab  5 → "I have my recovery code", button
+  Tab  6 → *** DOCUMENT BODY — nothing is spoken ***
+  Tab  7 → "BOW Decision Challenges home", link
+  Tab  8 → "My classes", link
+  Tab  9 → "Objectives", link
+  Tab 10 → "Guide", link
+  Tab 11 → "SIGN IN", link
+  Tab 12 → "YOUR WORK EMAIL", textbox   (ring closed here)
