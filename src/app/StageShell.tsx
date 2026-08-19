@@ -61,7 +61,7 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
   const announcement = `${position.caption}. Part ${chapter + 1} of ${PROGRESS_STEPS.length}: ${PROGRESS_STEPS[chapter]?.label}.`;
   // The art direction comes from the world the attempt says it is in, so a second world
   // themes the same components by adding a block to `worlds.css` and nothing else.
-  const { state, handOver } = useChallenge();
+  const { state, delivery, handOver } = useChallenge();
   const world = state.meta.worldId;
   const heading = useRef<HTMLElement>(null);
   const topbar = useRef<HTMLElement>(null);
@@ -102,7 +102,7 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
         {/* Whose run this is, on every screen, with the way out of it. A restored attempt that
             cannot say who it belongs to is how the second student of the day ends up filing
             their work under the first student's seat. */}
-        <RunMenu classCode={state.meta.classCode} seatCode={state.meta.seatCode} submitted={state.stage === "submitted"} onLeave={handOver} />
+        <RunMenu classCode={state.meta.classCode} seatCode={state.meta.seatCode} handIn={delivery.status} onLeave={handOver} />
         </div>
       </header>
       <main className="stage-main" data-tone={tone}>

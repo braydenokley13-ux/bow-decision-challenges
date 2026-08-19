@@ -20,10 +20,28 @@ function buildEnvironment(): BuildEnvironment {
 /** Where the class API lives. Same origin in production; the dev server proxies /api. */
 export const CLASS_API_BASE = buildEnvironment().VITE_CLASS_API ?? "/api";
 
+/**
+ * How long any one call waits before it is treated as a network that is not coming back.
+ *
+ * There was no timeout here at all, and the failure that exposed it is the ordinary school
+ * one: a network that accepts the connection and never answers, rather than one that refuses.
+ * `fetch` will wait on that essentially forever. So the first attempt of a turn-in never
+ * resolved, `deliverWithRetry`'s ladder never got a turn — it is sitting on `await
+ * transport.deliver(...)` — and a student watched "Sending your plan…" for ninety seconds
+ * with no message, no retry and no way out. Ten seconds is longer than the slowest honest
+ * answer this service gives and far shorter than a child's patience.
+ */
+const CALL_TIMEOUT_MS = 10_000;
+
 async function call(path: string, init: RequestInit = {}): Promise<{ status: number; body: unknown } | null> {
+  // AbortController rather than AbortSignal.timeout, which jsdom does not have — and the timer
+  // is cleared on every path, so a fast answer does not leave one pending per request.
+  const giveUp = new AbortController();
+  const timer = setTimeout(() => giveUp.abort(), CALL_TIMEOUT_MS);
   try {
     const response = await fetch(`${CLASS_API_BASE}${path}`, {
       ...init,
+      signal: giveUp.signal,
       // Signed in as themselves, on every call. A class with a roster refuses work that
       // cannot say who sent it, and the request carrying twenty-five minutes of a student's
       // run is the last place to discover that. Absent on a class with no roster and on a
@@ -33,8 +51,11 @@ async function call(path: string, init: RequestInit = {}): Promise<{ status: num
     const text = await response.text();
     return { status: response.status, body: text ? JSON.parse(text) : null };
   } catch {
-    // A thrown fetch is the network, not the service. The caller retries these.
+    // A thrown fetch is the network, not the service — and an abort arrives here too, which is
+    // what makes a hung request retryable rather than terminal. The caller retries these.
     return null;
+  } finally {
+    clearTimeout(timer);
   }
 }
 

@@ -210,6 +210,47 @@ function attributed(submissions: readonly SubmissionRecord[], assignments: reado
   });
 }
 
+/**
+ * A second delivery of the same attempt, merged so that nothing a person wrote is lost.
+ *
+ * This used to be `{ ...stored, reasoningPoints: existing.reasoningPoints }` — one field of
+ * three carried across, and the other two silently deleted. What that cost, reproduced end to
+ * end: a teacher marks a student's writing criterion by criterion, then overrules one machine
+ * judgement with the note the product requires; the student opens the same turn-in screen the
+ * next morning; `SubmittedStage` re-POSTs on mount because its `sent` ref is per-mount; and
+ * the criteria and the override are gone. Nobody is told. The child's screen still says "Your
+ * plan is with your teacher."
+ *
+ * The state it left behind is worse than the deletion. `reasoningPoints` survived, so a total
+ * of 10 stood over criterion marks that no longer existed — precisely the disagreement this
+ * file says elsewhere must never be possible, between the number a teacher reads and the marks
+ * a competency result rests on.
+ *
+ * So the rule is stated as a rule rather than as a field list in an expression: **a student's
+ * device may replace only what a student's device sent.** Everything else on the record was
+ * written by a teacher, or stamped once and for all by the service, and a re-delivery is not
+ * evidence about any of it. `submissionMerge.test.ts` holds the two halves of that rule to the
+ * actual shape of `SubmissionRecord`, so a field added later cannot quietly land on the wrong
+ * side of it the way these two did.
+ */
+export function keepWhatWasNotSent(
+  fresh: SubmissionRecord,
+  existing: SubmissionRecord | undefined,
+): SubmissionRecord {
+  if (!existing) return fresh;
+  return {
+    ...fresh,
+    // Written by a teacher, on the record, after the fact. None of it is the student's to send.
+    reasoningPoints: existing.reasoningPoints,
+    ...(existing.reasoningCriteria === undefined ? {} : { reasoningCriteria: existing.reasoningCriteria }),
+    ...(existing.overrides === undefined ? {} : { overrides: existing.overrides }),
+    // When the work was handed in, which is a fact about the first delivery and not this one.
+    // Restamping it moves a child from on time to a day late for pressing reload, and it is
+    // the column a teacher sorts by when they want to know who has finished.
+    submittedAt: existing.submittedAt,
+  };
+}
+
 export async function handleApiRequest(request: ApiRequest, options: HandlerOptions): Promise<ApiResponse> {
   const { store } = options;
   const now = options.now?.() ?? Date.now();
@@ -461,10 +502,11 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       submittedAt: now,
       reasoningPoints: null,
     };
-    // Re-delivering after a dropped connection must not create a second student.
+    // Re-delivering after a dropped connection must not create a second student, and must not
+    // cost anybody anything they had. `keepWhatWasNotSent` is what makes the second half true.
     const existing = (await store.listSubmissions(record.code))
       .find((item) => item.seatCode === stored.seatCode && item.sessionId === stored.sessionId);
-    await store.putSubmission(existing ? { ...stored, reasoningPoints: existing.reasoningPoints } : stored);
+    await store.putSubmission(keepWhatWasNotSent(stored, existing));
     // The seat is no longer in progress. Leaving the checkpoint live would put a student on
     // the teacher's "still working" list after they had turned in, which is exactly the kind
     // of wrong that makes a live view worse than no live view.
