@@ -135,13 +135,6 @@ const ROUTED_ELSEWHERE: { path: string; sentence: string; why: string }[] = [
     why: "false in a class with no list, where the student typed the name",
   },
   {
-    path: "src/educator/RealClassPages.tsx",
-    sentence: "the only name it holds is the one you put on the list",
-    // Pasting a list into a class that was open does not remove the rows students named
-    // themselves before it; the class holds both.
-    why: "a class that was open before the list was pasted still holds the names its students typed",
-  },
-  {
     path: "src/educator/Roster.tsx",
     sentence: "never asks a student for a name of their own",
     // Printed on the screen that creates the class list — while every class without one is

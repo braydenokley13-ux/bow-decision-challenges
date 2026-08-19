@@ -136,12 +136,19 @@ function NothingYet({ code, label, keyQuery, teacherKey, hasRoster, roll, roster
               accounts", which stopped being true when students got sessions, seats and a run
               that follows them to another machine — and it is the sentence a teacher would
               repeat to a parent. What was always the point of it is still true and is what it
-              says now: no email address, no last name, nothing a child types about themselves
-              beyond the name their teacher chose to see. */}
+              says now: no email address and no last name.
+
+              What it does hold is said beside it, and it names both doors. This line ended
+              "the only name it holds is the one you put on the list", which is false of any
+              class that was open before the list was pasted: those seats were made when a
+              child typed their own first name at `/join`, they are stored with `selfNamed`,
+              and pasting a list appends beside them rather than replacing them. A teacher
+              plans on this sentence, and `dataClaims.test.ts` is the authority on it. */}
           {hasRoster ? (
             <p>
               Each student types the code, then the code on their own card. BOW never asks a child for an
-              email address or a last name — the only name it holds is the one you put on the list.
+              email address or a last name. It holds the names on your list, and any a student typed for
+              themselves before you made one.
             </p>
           ) : (
             <p>
