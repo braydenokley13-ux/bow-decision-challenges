@@ -451,6 +451,23 @@ function decide(parts: readonly (MicroSkillObservation | undefined)[]): Decision
   return { level: weakest?.points ?? null, part: weakest };
 }
 
+/**
+ * A conjunction, as one level and one sentence a teacher can act on.
+ *
+ * The level is `decide`'s. The sentence used to be `decide`'s too — the deciding half's
+ * reason and nothing else — and on a requirement that held in both halves that reported one
+ * of the two things the student did. An assessment review read the strongest run in a class
+ * and found the trail for *"Knows what money is actually available"* — the row whose rule is
+ * about conditional money — saying only *"The calculation reconciled with the scenario terms
+ * at the first attempt."* The conceptual half was the reason the row was met and it was
+ * invisible.
+ *
+ * So when every half held, every half's sentence goes in the trail. The market's `conjoin`
+ * has always done this and said why; this is the same rule, in the world that did not.
+ * Where a half failed or was never reached, the deciding half still speaks alone: that one
+ * is the whole of the judgement, and padding it with the halves that were fine would bury
+ * what a teacher is being told to look at.
+ */
 function combine(
   microSkillIds: readonly StructuredMicroSkillId[],
   byId: ReadonlyMap<StructuredMicroSkillId, MicroSkillObservation>,
@@ -458,11 +475,14 @@ function combine(
   const parts = microSkillIds.map((id) => byId.get(id));
   const evidenceRefs = [...new Set(parts.flatMap((part) => part?.evidenceRefs ?? []))];
   const decision = decide(parts);
+  const held = parts.every((part) => part !== undefined && part.points !== null && part.points > 0);
   return {
     level: decision.level,
     supportLevel: decision.part?.supportLevel ?? "standard_access",
     evidenceRefs: evidenceRefs.length > 0 ? evidenceRefs : microSkillIds.map((id) => `not-observed:${id}`),
-    detail: decision.part?.reason ?? "This part of the run was not reached.",
+    detail: held
+      ? parts.map((part) => part!.reason).join(" ")
+      : decision.part?.reason ?? "This part of the run was not reached.",
   };
 }
 
