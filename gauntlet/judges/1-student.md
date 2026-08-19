@@ -98,3 +98,15 @@ Each is falsifiable by running the product; none requires reading the code.
 I went in expecting to fail this on a screen that told a child they had done something they had not — because that is the cheapest lie for software of this shape to tell, and every product I know in this category tells it somewhere: a badge for a task the hint solved, a "great job" over a revealed answer, a summary that credits the scaffold to the student. I pressed **Show the answer and keep going** at every gate the product offered it, and then read back everything the product says about that run. It says *"Here is the answer"*, not *"You worked this out"*. It says *"this run cannot say how you would have got there on your own"*. It says, unprompted, *"Using them is allowed — they are there to be pressed — and it is written down as help you used, not as a mistake."* It quotes the child's own wrong number rather than hiding it. That is a harder thing to get right than the whole rest of the interface, and it is right.
 
 That is why this is `GO WITH CONDITIONS` and not `NO-GO`. The defects above are a wrong hundred dollars, a button that should not be greyed, a message that should say "type a number", and a chip that overlaps a bar. What would have made me refuse — one screen crediting a child with work the software did — is absent, and I looked for it on purpose.
+
+---
+
+## Postscript, written after the verdict
+
+Having committed the above, I read `gauntlet/DEFECTS.md`. Three notes for the synthesiser:
+
+- **None of my three conditions 1–3 appears there.** No entry mentions the Week-5 "asked for" figure, the empty-box `Check`, or the "Three things want the tips." control. They are new.
+- **Two entries describe a product I did not run.** F3/J4 say the Pop-Up ending "has no verdicts" and "prints a table it has already shown"; at `2feffa26` it printed six sorted verdicts — `PAID OFF The Middle Row booth`, `PAID OFF What you cooked`, `PAID OFF Where the swap money came from`, `PAID OFF Your cut`, `NO EFFECT Working the last night alone`, `NO EFFECT Money with a rule on it` (`popup-final.txt`). J3 says Saturdays 1–3 return the same crowd; my run sold 38, then 30 against a crowd of 45, then 25 (`popup-final.txt`, `p-11-mid.png`). Both look fixed. A reader working from DEFECTS.md alone would mis-describe the current build.
+- **G2 and I arrived at the same sentence independently.** I flagged *"A person reads this and writes back"* under "claims without evidence" before reading anything; G2 calls it a promise of a feature that does not exist. Treat that as two witnesses, not one.
+
+One thing DEFECTS.md raises that I did **not** test and cannot vouch for either way: J1/J3/F5 on reading load — 3,167 measured words in Basketball against a declared 22–28 minutes. I read every screen as an adult skimming for claims, not as a twelve-year-old reading for comprehension, so I have no evidence on whether the prose fits the period. If that is real it is a bigger student problem than anything on my list, and my `GO WITH CONDITIONS` does not cover it.
