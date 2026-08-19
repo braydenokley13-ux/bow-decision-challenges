@@ -320,7 +320,7 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, load: LoadReado
   const counterfactual = protect === null
     ? ""
     : protect > pool
-      ? ` Holding it needed ${formatDollars(protect)} in the rides row, and this plan had ${formatDollars(pool)} to spread across all three amounts — no way of splitting it would have kept the bonus.`
+      ? ` Holding it needed ${formatDollars(protect)} in the rides row, and this plan had ${formatDollars(pool)} to split across all three amounts — no way of splitting it would have kept the bonus.`
       : spentOnRides > 0
         ? ` Putting ${formatDollars(protect)} into rides — ${formatDollars(dollars(protect - spentOnRides))} more than you put there, out of your other two amounts — would have kept it.`
         : ` Putting ${formatDollars(protect)} into rides, out of your other two amounts, would have kept it.`;

@@ -256,7 +256,7 @@ describe("the educator guide answers the questions a lesson is planned on", () =
  * take the words out of a row that is already here, which is what the headphones row did.
  * When the count comes down, bring this constant down with it.
  */
-const BRIEF_ANSWERS_WORDS = 437;
+const BRIEF_ANSWERS_WORDS = 436;
 
 describe("the block that promises a minute", () => {
   it("costs no more than the words it costs today", () => {

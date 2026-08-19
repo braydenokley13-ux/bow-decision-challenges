@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { useDraft } from "../../app/attemptStore";
 import { Button } from "../../components/primitives/Button";
 import { CalculationInput } from "../../components/primitives/CalculationInput";
 import { MoneyAmount } from "../../components/primitives/MoneyAmount";
+import { useInPlaceArrival } from "../../components/primitives/useInPlaceArrival";
 import { MarketBackdrop } from "../../components/story/MarketBackdrop";
 import { dollars, formatDollars } from "../../domain/core/money";
 import { POP_UP_SCENARIO } from "../../domain/scenario/worlds/food-truck";
@@ -69,9 +70,16 @@ function refusedSaves(state: PopUpState, board: "opening" | "repair"): number {
  * together, which is the difference between a student assembling a number and a student
  * copying one.
  */
-function PopUpSum({ sumId, copy, expected, onCorrect }: { sumId: PopUpSumId; copy: PopUpSumCopy; expected: number; onCorrect?: () => void }) {
+function PopUpSum({ sumId, copy, expected, settled, onCorrect }: { sumId: PopUpSumId; copy: PopUpSumCopy; expected: number; settled: boolean; onCorrect?: () => void }) {
   const { state, dispatch } = usePopUp();
   const prior = state.sums[sumId];
+  // The box goes the moment the figure is right, and the line that reads the figure back is
+  // what takes its place. Both halves live here rather than in a ternary at each of the four
+  // screens that ask a sum, because the component has to outlive the swap to know a swap
+  // happened: a screen that opens with the sum already answered — a refresh, a step back —
+  // must not pull focus, and one where the student has just answered it must.
+  const answered = useInPlaceArrival<HTMLParagraphElement>(settled);
+  if (settled) return <Settled focusRef={answered} label={copy.label} amount={expected} />;
   return (
     <CalculationInput
       calcId={sumId}
@@ -104,10 +112,19 @@ function crowdRead(told: CrowdTold): string {
   return told.range ? `${told.low}–${told.high}` : String(told.low);
 }
 
-/** A figure the student has already worked out, read back where the next screen needs it. */
-function Settled({ label, amount }: { label: string; amount: number }) {
+/**
+ * A figure the student has already worked out, read back where the next screen needs it.
+ *
+ * Takes a ref because on the four screens where it replaces the box that asked for the figure
+ * it is also where the student now stands — see `PopUpSum`. Under its own name rather than
+ * `ref`, because this is a plain function component and React would swallow that one.
+ * `tabIndex={-1}` is what lets the line be stood on, and it is set only where something is
+ * going to stand on it: the screens that print a figure nobody is being moved to keep saying
+ * "paragraph" in the tree rather than "paragraph, focusable".
+ */
+function Settled({ label, amount, focusRef }: { label: string; amount: number; focusRef?: RefObject<HTMLParagraphElement> }) {
   return (
-    <p className="popup-settled">
+    <p className="popup-settled" ref={focusRef} tabIndex={focusRef ? -1 : undefined}>
       <span>{label}</span>
       <strong className="money">{formatDollars(amount)}</strong>
     </p>
@@ -399,9 +416,7 @@ export function SpotStage() {
       </ul>
       {chosen && (
         <div className="popup-sum">
-          {owedDone
-            ? <Settled label={COPY.spot.owed.label} amount={owedUpFront(N, chosen)} />
-            : <PopUpSum sumId="owed-up-front" copy={COPY.spot.owed} expected={owedUpFront(N, chosen)} />}
+          <PopUpSum settled={owedDone} sumId="owed-up-front" copy={COPY.spot.owed} expected={owedUpFront(N, chosen)} />
         </div>
       )}
       <div className="popup-action">
@@ -460,9 +475,7 @@ export function MoneyStage() {
       </ul>
       {answered && (
         <div className="popup-sum">
-          {planDone
-            ? <Settled label={COPY.money.toPlan.label} amount={cashToPlan(N, spot)} />
-            : <PopUpSum sumId="cash-to-plan" copy={COPY.money.toPlan} expected={cashToPlan(N, spot)} />}
+          <PopUpSum settled={planDone} sumId="cash-to-plan" copy={COPY.money.toPlan} expected={cashToPlan(N, spot)} />
         </div>
       )}
       <div className="popup-action">
@@ -616,11 +629,7 @@ export function FirstSaturdayStage() {
         leaves={{ amount: left, trays: affordableTrays(left, N) }}
       />
       <div className="popup-sum">
-        {ready
-          ? <Settled label={COPY.saturday.order.label} amount={orderCost(N, trays)} />
-          : (
-            <PopUpSum key={trays} sumId="first-order" copy={COPY.saturday.order} expected={orderCost(N, trays)} />
-          )}
+        <PopUpSum key={trays} settled={ready} sumId="first-order" copy={COPY.saturday.order} expected={orderCost(N, trays)} />
       </div>
       <div className="popup-action">
         <p>{S.saturdays[0]?.note}</p>
@@ -881,9 +890,7 @@ export function GeneratorStage() {
       </section>
 
       <div className="popup-sum">
-        {gapDone
-          ? <Settled label={COPY.generator.gap.label} amount={swapBill(N)} />
-          : <PopUpSum sumId="swap-gap" copy={COPY.generator.gap} expected={swapBill(N)} />}
+        <PopUpSum settled={gapDone} sumId="swap-gap" copy={COPY.generator.gap} expected={swapBill(N)} />
       </div>
       {/* What the three lines are holding, on the screen that says which of them can still
           move. A coherence critic's charge was that this world has no ledger where the other

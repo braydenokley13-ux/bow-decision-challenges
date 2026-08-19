@@ -93,15 +93,37 @@ function AlignmentBlock() {
  * the plan and both end in writing, and every clause of it is still on this page: the breaks
  * are named in each story's own line, and the writing in "What do I get back?" and in the
  * third step of Running it.
+ *
+ * The carry-on clause in "How long?" was paid for the same way, out of two sentences that had
+ * to be rewritten anyway because they had stopped being true: the market's "every crowd figure
+ * is printed" and the pooling row's "one answer about the class". Nothing here was widened to
+ * make room for it.
  */
 function BriefAnswers() {
   return (
     <section className="brief-answers">
       <div className="section-heading"><p className="eyebrow">Read this first</p><h2>The whole resource in one minute.</h2></div>
       <dl>
-        <div><dt>What does it assess?</dt><dd>Whether students can <b>apply</b> budgeting under uncertainty — build a workable eight-week plan, keep it working when income and costs change, and justify it.</dd></div>
+        {/* Not "an eight-week plan". Eight weeks is one story's shape; the other runs four
+            Saturdays. A row that says what the challenge assesses may not be written in the
+            numbers of whichever world was built first, or the half of the room that took the
+            market is being described by a sentence about a season they never played. */}
+        <div><dt>What does it assess?</dt><dd>Whether students can <b>apply</b> budgeting under uncertainty — build a workable plan, keep it working when income and costs change, and justify it.</dd></div>
         <div><dt>When do I use it?</dt><dd><b>After</b> you have taught the {TERMS.skills}. It is an application task, not a lesson.</dd></div>
-        <div><dt>How long?</dt><dd><b>{durationLabel(PLAN_UNDER_PRESSURE)}</b> for most students. One sitting, one device.</dd></div>
+        {/* "One sitting, one device" was the sentence a teacher planned the lesson from, and
+            the product has a whole cross-device resume subsystem built for the other case:
+            `useAttemptCheckpoint` writes the run to the service on every change of stage,
+            `ResumeGate` fetches it back on any machine the class code is carried to, and the
+            class page is built around "who stopped on Tuesday and has not come back". A
+            teacher who believed this booked one period, and treated the child who carried on
+            at home as a problem rather than as the case the product was built for.
+
+            Both halves are now what the product does, and both are pinned in
+            `carryOn.test.tsx`: the sitting, because the run is checkpointed rather than held
+            in one page, and the device, because what comes back is fetched with the class
+            code rather than read out of that browser's storage. The words came out of the
+            market's crowd sentence and the pooling row below, which had to change anyway. */}
+        <div><dt>How long?</dt><dd><b>{durationLabel(PLAN_UNDER_PRESSURE)}</b> for most students, in one sitting or across days. The class code and the code on their card open the run they left, on any computer.</dd></div>
         {/* This row is new, and the words it took back are the three that ended the row above
             it: "no sound". The product reads the screen out loud — `ReadingTools` is on every
             screen of both stories — so the guide was false, and false in the direction
@@ -117,8 +139,29 @@ function BriefAnswers() {
             `readingHelp.test.tsx` — including the last, which is the sentence this guide owed a
             teacher with students new to English and had never said. */}
         <div><dt>Do students need headphones?</dt><dd>Yes, or a quiet room. Any student can press <b>Reading help</b> to hear the screen read out loud, or to look up a word on it. You turn nothing on, it stays on the device, and who used it is never recorded — so it cannot count against a student. Nothing is translated: a student new to English gets the same two tools, in English.</dd></div>
-        <div><dt>What do students do?</dt><dd>They handle the money in one of two {TERMS.stories}, and they pick which. <b>Eight Weeks to the Showcase</b>: a player’s season, where they choose housing, build a plan, absorb a Week 5 loss and a new required cost, and repair it. <b>Run the Pop-Up</b>: four Saturdays at a night market, where they take a booth, decide how much food to cook against the crowd it draws, and cover a generator that dies with the biggest night still ahead. Every crowd figure is printed before the student orders, so what is assessed is planning against known demand rather than predicting it.</dd></div>
-        <div><dt>Do the two give me the same thing back?</dt><dd>Yes, and that is the point of having two. Both {TERMS.stories} collect evidence against the same named parts of the work and are judged on the same rubric, so a class where students chose differently still produces one answer about the class. What differs is the {TERMS.story}, the decisions and the numbers — never what is being looked for.</dd></div>
+        {/* The crowd sentence used to read "Every crowd figure is printed before the student
+            orders, so what is assessed is planning against known demand rather than
+            predicting it." It was true when it was written and false three commits later:
+            `POP_UP_NUMBERS.nights[4]` gained a `told` band, so the fireworks Saturday is
+            stated to the student as a range and lands inside it. The teacher who reads the
+            old sentence and is asked "so is the last night a guess?" has been given the wrong
+            answer to a fairness question about their own assessment. `marketDemand.test.ts`
+            holds the count of stated nights against the numbers themselves. */}
+        <div><dt>What do students do?</dt><dd>They handle the money in one of two {TERMS.stories}, and they pick which. <b>Eight Weeks to the Showcase</b>: a player’s season: they choose housing, build a plan, absorb a Week 5 loss and a new required cost, and repair it. <b>Run the Pop-Up</b>: four Saturdays at a night market: they take a booth, decide how much food to cook against the crowd it draws, and cover a generator that dies with the biggest night still ahead. Three crowds are printed before they order; the last is a range.</dd></div>
+        {/* This row used to end "so a class where students chose differently still produces
+            one answer about the class", and half of that is what the product does. The
+            rubric half is true and structural: both worlds declare the same evidence
+            requirements in `BUILT_WORLD_COVERAGE`, both are observed through `WorldContract`,
+            and `classResultFor` counts every submission on the assignment into one
+            denominator — the skills table on the class page really does read across a mixed
+            room. The decisions half is false and deliberately so: `worldSections` splits the
+            room by {TERMS.story} and each section carries its own count, because a question
+            one {TERMS.story} never asked cannot be divided by the whole class.
+
+            A teacher who read the old sentence planned one discussion and found two
+            half-classes at 9:15. Both halves are pinned in `whatPools.test.ts`, from the
+            analysis layer rather than from this file. */}
+        <div><dt>Do the two give me the same thing back?</dt><dd>Yes, on the {TERMS.skills}. Both {TERMS.stories} are judged against the same named parts of the work, so a class that chose differently still gets one set of {TERMS.skill} results. What the room decided comes back one {TERMS.story} at a time, each with its own count — plan the debrief as two groups.</dd></div>
         <div><dt>What do I get back?</dt><dd>For each student, what the evidence shows against each {TERMS.skill} — one line for each thing the work had to show, every judgement traceable to the moment in their own run. Plus what the class decided, and one written explanation you read and score yourself. Counts for your gradebook come with it.</dd></div>
         {/* Every clause after the first used to be false: there are accounts now, teachers do
             give an email address, the roster is where the names live, and there is no seat
@@ -150,7 +193,7 @@ export function EducatorGuide() {
         <h1>{PLAN_UNDER_PRESSURE.title}</h1>
         <p>
           An application task for adaptive budgeting under uncertainty. {durationLabel(PLAN_UNDER_PRESSURE)},
-          one sitting, one device. {PLAN_UNDER_PRESSURE.placement}.
+          in one sitting or across days. {PLAN_UNDER_PRESSURE.placement}.
         </p>
         <p className="guide-actions">
           <Link className="button button--primary" to="/educator/classes">Create a class</Link>
@@ -217,8 +260,14 @@ export function EducatorGuide() {
           <h2>Running it</h2>
         </div>
         <ol>
-          <li><Link to="/educator/classes">Create a class</Link>, paste your class list, print the cards and hand them out. Students type the class code from the board and the code on their card.</li>
-          <li>Allow {durationLabel(PLAN_UNDER_PRESSURE)}. Do not coach a financial strategy.</li>
+          {/* The last clause is the one trap in multi-day use, and it is a real one. A class
+              with no list joins by name, and the open-join branch of the service issues a
+              fresh seat and a fresh code for every name it is given — there is no lookup by
+              name — so a student typing the same name on a second machine starts a second
+              run rather than resuming the first. The code they were issued is never shown to
+              them; the roster's "Print a new card" is where it comes from. */}
+          <li><Link to="/educator/classes">Create a class</Link>, paste your class list, print the cards and hand them out. Students type the class code from the board and the code on their card. Without a list they type their own name instead — print those students a card before they leave, or typing the name again starts a second run.</li>
+          <li>Allow {durationLabel(PLAN_UNDER_PRESSURE)}, in one period or across days: a student who stops signs in again on any computer and presses <b>Carry on</b>. Do not coach a financial strategy.</li>
           <li>Read and score the written explanations. Nothing a student writes is machine-scored.</li>
           <li>Open the class: what the evidence shows, and what to teach next.</li>
           <li>Run the debrief with the room.</li>

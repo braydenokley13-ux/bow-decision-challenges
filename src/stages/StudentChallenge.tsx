@@ -6,6 +6,7 @@ import { StageShell } from "../app/StageShell";
 import { AppMark } from "../components/primitives/AppMark";
 import { Button } from "../components/primitives/Button";
 import { CalculationInput } from "../components/primitives/CalculationInput";
+import { useInPlaceArrival } from "../components/primitives/useInPlaceArrival";
 import { MoneyAmount } from "../components/primitives/MoneyAmount";
 import { PlanBoard, type BoardVariant } from "../components/financial/PlanBoard";
 import { PlanScene } from "../components/financial/PlanScene";
@@ -331,6 +332,12 @@ function OpeningStage() {
  */
 
 /**
+ * What the ranking is called when it asks for help, in the same vocabulary as every other
+ * gated question: `state.support` is keyed by the thing being worked out.
+ */
+const RANK_INTERACTION = "setup-order";
+
+/**
  * Beat 3. Three places, priced in two currencies.
  *
  * Comparing full cost across time used to be two multiplication drills that gated the
@@ -339,12 +346,40 @@ function OpeningStage() {
  * from totals the screen hands them. Only after that do the totals appear — and each card
  * also says what the place costs out of Avery's week, so the cheapest is not automatically
  * the best.
+ *
+ * It is also the first screen of the world, and it used to be the only gated question in the
+ * product with no way out of it. Every sum has three rungs — two wrong tries open a worked
+ * step, three open "show the answer and keep going", and the supply is recorded so it caps
+ * credit — and this screen had none of them. Six wrong presses answered with the same
+ * sentence six times, and the only route on was to permute three items until one of six
+ * orders was accepted: brute force, which is the behaviour the ladder exists to prevent, on
+ * the screen that decides whether a student meets the rest of the run at all. The student who
+ * cannot do $225 × 8 in their head is stopped in the first two minutes of a twenty-five
+ * minute period while the room moves on, and a student who cannot get past the front door
+ * cannot be assessed on anything behind it.
+ *
+ * So the same three rungs, in the same words, with the same bargain: the answer is handed
+ * over, it is recorded as handed over, and the ordering the student never made earns nothing.
+ * `SHOW_AND_CONTINUE_USED` is the whole of what is written — no `SETUP_RANKED` is dispatched
+ * for it, because a ranking event says the student put them in that order and they did not.
  */
 function SetupStage() {
   const { state, dispatch } = useChallenge();
   const { setups } = BASKETBALL_SCENARIO;
   const [order, setOrder] = useState<SetupId[]>(() => state.setupRanking?.order ?? setups.map((setup) => setup.id));
-  const ranked = state.setupRanking?.correct === true;
+  const wrongTries = rankingAttempts(state);
+  const supplied = state.support[RANK_INTERACTION] === "answer_supplied";
+  /**
+   * The one beat between the answer being handed over and the screen moving on.
+   *
+   * A supplied sum lands in the box the student is looking at. A supplied order has to land
+   * in the list, and the list is gone the instant the screen counts the ranking as done — so
+   * the hand-over puts the three places in the right order and holds there until the student
+   * says they have seen it. It is local, so a reload lands on the next question rather than
+   * on an answer the student has already read.
+   */
+  const [showingAnswer, setShowingAnswer] = useState(false);
+  const ranked = state.setupRanking?.correct === true || (supplied && !showingAnswer);
   const totalEntered = state.calculations["chosen-setup-total"]?.correct === true;
   const chosen = setups.find((setup) => setup.id === state.setupId);
   const ready = ranked && state.setupId !== null && totalEntered;
@@ -458,7 +493,18 @@ function SetupStage() {
                   </p>
                 </div>
                 <p className="place-card__tradeoff">{setup.tradeoff}</p>
-                <Button variant={state.setupId === setup.id ? "primary" : "secondary"} type="button" onClick={() => dispatch({ type: "SETUP_SELECTED", setupId: setup.id })}>{state.setupId === setup.id ? "Selected" : "Choose this setup"}</Button>
+                {/* Three cards carrying one label is three tab stops a screen reader cannot
+                    tell apart, on the screen that carries the run's first real decision — and
+                    the place names are `<b>`, not headings, so the tree does not separate them
+                    either. Named the way the world picker two screens earlier already names
+                    its two: the accessible name says which place it is and still contains the
+                    visible words, so both readings agree. */}
+                <Button
+                  variant={state.setupId === setup.id ? "primary" : "secondary"}
+                  type="button"
+                  aria-label={`${state.setupId === setup.id ? "Selected" : "Choose this setup"}: ${setup.title}`}
+                  onClick={() => dispatch({ type: "SETUP_SELECTED", setupId: setup.id })}
+                >{state.setupId === setup.id ? "Selected" : "Choose this setup"}</Button>
               </article>
             ))}
           </div>
@@ -754,8 +800,15 @@ function WorkingStage() {
   // Whether the figure on screen is one the student produced or one the product handed over.
   // The log has always recorded the difference honestly; the screen said the same sentence
   // either way, and told a child who had just asked for the answer that they had worked it out.
-  const floorShown = state.calculations["reliable-floor"]?.supplied === true;
-  const essentialsShown = state.calculations["essentials-total"]?.supplied === true;
+  //
+  // Read off `support`, which is what `SHOW_AND_CONTINUE_USED` actually writes and what the
+  // grader prices this answer at. The flag this used to read — `calculations[id].supplied` —
+  // is never set to `true` anywhere in this world, so `shown` was unreachable and every
+  // student got `settled`: the child who asked for the answer was told "You worked this out."
+  // in the same words as the child who did. Reading the one field the teacher's evidence also
+  // reads is what stops the sentence and the record ever disagreeing again.
+  const floorShown = state.support["reliable-floor"] === "answer_supplied";
+  const essentialsShown = state.support["essentials-total"] === "answer_supplied";
   // Where the student has got to, read off their own answers rather than off a counter, so
   // a refresh lands them back on the question they were actually looking at. From there,
   // `visited` grows only by actually opening a question — the answers open the door to the
@@ -773,6 +826,11 @@ function WorkingStage() {
   const answeredBonus = (sourceId: string) => state.log.some((event) =>
     event.type === "INCOME_SOURCE_TOGGLED" && (event.payload as { sourceId?: string }).sourceId === sourceId);
   const bonusesAnswered = BETS.every(([sourceId]) => answeredBonus(sourceId));
+  // Both boxes vanish the moment their answer is right, and the sentence that takes their
+  // place is where the student now is — and, for a student who cannot see the screen, the
+  // only thing left saying what the press did.
+  const floorSettled = useInPlaceArrival<HTMLParagraphElement>(floorReady);
+  const essentialsSettled = useInPlaceArrival<HTMLParagraphElement>(essentialsReady);
   const gates = { floorReady, essentialsReady, bonusesAnswered };
   const seed = seedVisited(gates);
   const [visited, setVisited] = useState(seed);
@@ -913,7 +971,7 @@ function WorkingStage() {
                 line guards it; a fifth sentence is the screen explaining what it is already
                 showing. */}
             {floorReady ? (
-              <p className="question__settled">
+              <p className="question__settled" ref={floorSettled} tabIndex={-1}>
                 {floorShown ? question.countOn.shown : question.countOn.settled} Avery can count on <b className="money">{formatDollars(reliableFloorExpectation(SCENARIO_NUMBERS))}</b> whatever
                 happens on the court. It is the first line of Avery’s money.
               </p>
@@ -953,7 +1011,7 @@ function WorkingStage() {
           <div className="question">
 
             {essentialsReady ? (
-              <p className="question__settled">
+              <p className="question__settled" ref={essentialsSettled} tabIndex={-1}>
                 {essentialsShown ? question.committed.shown : question.committed.settled} <b className="money">{formatDollars(essentialsExpectation(SCENARIO_NUMBERS))}</b> of Avery’s
                 money is gone on food, phone and laundry before Avery chooses anything. Rent is on top of it, and both are on the right.
               </p>

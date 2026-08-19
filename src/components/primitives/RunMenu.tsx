@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Button } from "./Button";
+import { useEffect, useId, useRef, useState } from "react";
 import type { DeliveryState } from "../../platform/evidence/transport";
 
 interface RunMenuProps {
@@ -57,13 +56,55 @@ const COST: Record<DeliveryState["status"], string> = {
 export function RunMenu({ classCode, seatCode, handIn, onLeave }: RunMenuProps) {
   const [confirming, setConfirming] = useState(false);
   const named = classCode !== "" && seatCode !== "";
+  const costId = useId();
+  const drawer = useRef<HTMLDetailsElement>(null);
+  const summary = useRef<HTMLElement>(null);
+  /**
+   * The safe button, held by identity rather than found by position, exactly as the roster's
+   * erase confirmation holds its own.
+   *
+   * Pressing *Leave this run* removes the button that was pressed and puts two in its place,
+   * and focus fell to `<body>`: the next `Tab` landed on *"Yes — clear it and start again"*,
+   * which is the one control in the run that destroys a student's unsent work. The whole
+   * product teaches `Tab` to the button, `Enter` — so on a shared Chromebook that reflex, once,
+   * erased the run. Focus goes to the safe half instead, and the sentence saying what leaving
+   * costs is the description on both buttons, so it is read wherever the student lands rather
+   * than only if they happen to browse back up to it. A raw `<button>` because `Button` is not
+   * a `forwardRef` component and would drop the ref.
+   */
+  const keepWorking = useRef<HTMLButtonElement>(null);
+  /** And back to the button that opened the confirm when the student declines it. */
+  const leave = useRef<HTMLButtonElement>(null);
+  const first = useRef(true);
+  useEffect(() => {
+    if (first.current) { first.current = false; return; }
+    // Closing the drawer also clears the confirm, and the button to put focus back on is
+    // inside content the browser has just hidden. Nothing to move to, so nothing moves.
+    if (!drawer.current?.open) return;
+    if (confirming) keepWorking.current?.focus();
+    else leave.current?.focus();
+  }, [confirming]);
   return (
-    <details className="run-menu" onToggle={() => setConfirming(false)}>
+    <details
+      className="run-menu"
+      ref={drawer}
+      onToggle={() => setConfirming(false)}
+      /* Escape closes the drawer and puts the student back on the control that opened it.
+         A `<details>` does not do this on its own, so the only ways out of this menu were its
+         own two buttons — one of which is the destructive one. */
+      onKeyDown={(event) => {
+        if (event.key !== "Escape" || !drawer.current?.open) return;
+        event.stopPropagation();
+        drawer.current.open = false;
+        setConfirming(false);
+        summary.current?.focus();
+      }}
+    >
       {/* The seat is the summary rather than a word like "menu", because the first job of this
           control is to tell a student whose work is on the screen in front of them. The spoken
           name contains the visible one word for word, so a student driving this by voice can
           ask for what they can see. */}
-      <summary aria-label={named ? `This run: ${classCode} · seat ${seatCode}` : "This run has no seat yet"}>
+      <summary ref={summary} aria-label={named ? `This run: ${classCode} · seat ${seatCode}` : "This run has no seat yet"}>
         {named ? `${classCode} · seat ${seatCode}` : "No seat yet"}
       </summary>
       <div>
@@ -76,16 +117,16 @@ export function RunMenu({ classCode, seatCode, handIn, onLeave }: RunMenuProps) 
             two things this used to be able to say — and they are the two a student is most
             likely to be reading it in, since a turn-in that went through leaves nothing to
             wonder about. Each says where the work is and what leaving would cost from there. */}
-        <p className="run-menu__cost">
+        <p className="run-menu__cost" id={costId}>
           {COST[handIn]}
         </p>
         {confirming ? (
           <div className="run-menu__confirm">
-            <Button type="button" variant="danger" onClick={onLeave}>Yes — clear it and start again</Button>
-            <Button type="button" variant="quiet" onClick={() => setConfirming(false)}>No — keep working</Button>
+            <button type="button" className="button button--danger" aria-describedby={costId} onClick={onLeave}>Yes — clear it and start again</button>
+            <button type="button" className="button button--quiet" ref={keepWorking} aria-describedby={costId} onClick={() => setConfirming(false)}>No — keep working</button>
           </div>
         ) : (
-          <Button type="button" variant="secondary" onClick={() => setConfirming(true)}>Leave this run</Button>
+          <button type="button" className="button button--secondary" ref={leave} onClick={() => setConfirming(true)}>Leave this run</button>
         )}
       </div>
     </details>

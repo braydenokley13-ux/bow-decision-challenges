@@ -33,7 +33,35 @@ npm run dev    # the app, on :4173 — proxies /api
 Then either create a class at `/educator/classes/new` and join it with the code, or run with
 `VITE_EVIDENCE_TRANSPORT=localOnly` to work on the student flow with nothing sent anywhere.
 
-No student accounts, no email addresses, no names. A class is a code; a seat is a number.
+## What BOW holds
+
+Every clause here is a claim a district will check, so every clause is held to the code that
+makes it true by `src/docsDataClaims.test.ts`.
+
+- **A teacher's account is an email address and a password.** There is no name field on it,
+  and the address is the sign-in identifier and nothing else.
+- **A student is asked for no email address, no password and no birthday.** They type the
+  class code from the board and the code on the card their teacher printed.
+- **BOW does hold student names.** They arrive by two doors and both are real: a teacher
+  pastes a class list, or a class with no list has the child type a first name at `/join`,
+  which is stored `selfNamed`. BOW checks neither against anything and has no way to know
+  whether either is a real name.
+- **A student's own written explanation is held too**, inside their evidence log, and free
+  text written by a twelve-year-old can contain anything. **None of it is ever sent to a
+  model.** There is no model client in this repository and no third-party call from the app;
+  the deployed policy in `vercel.json` is `connect-src 'self'`.
+- **Who can open any of it.** The class list and the evidence take the teacher key or the
+  account that owns the class (`opensClass` in `server/identity.ts`). The unauthenticated
+  door answers a class code with the class label and the join mode, and nothing about who is
+  in the class. A signed-in student reads back their own row.
+- **Where it sits.** Sealed per record with AES-256-GCM under `BOW_STORE_KEY`, which is also
+  what the session-signing secret is derived from. A durable store that has not been given
+  one refuses to open a class.
+- **How long.** `CLASS_RETENTION_DAYS` days from the day the class is made, then an hourly
+  sweep deletes the class and everything in it. One child can be erased sooner — the name,
+  the work, the checkpoints and their teacher's notes — from the class list.
+
+A class is a code and a seat is a number. The seat usually has a name on it.
 
 ## Check it
 

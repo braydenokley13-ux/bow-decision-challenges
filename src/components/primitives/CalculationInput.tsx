@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { parseDollars } from "../../domain/core/money";
 import { Button } from "./Button";
+import { useInPlaceArrival } from "./useInPlaceArrival";
 
 interface CalculationInputProps {
   /**
@@ -47,7 +48,24 @@ export function CalculationInput({ label, prompt, terms, expected, onSubmit, onC
   const [raw, setRaw] = useState("");
   const [verdict, setVerdict] = useState<"idle" | "correct" | "low" | "high" | "invalid">("idle");
   const [showScaffold, setShowScaffold] = useState(false);
+  /**
+   * How many verdicts this box has given, used as the key of the line that carries them.
+   *
+   * A live region announces a *mutation*, not a state, and the same wrong answer twice — or
+   * two different wrong answers that are wrong the same way — produces the identical
+   * sentence. Measured: attempt one announced `Too low. Both payments count…` and attempt two
+   * announced nothing at all, because nothing in the region had changed. A student hears a
+   * hint once and then presses Check into silence however many times they try. Keying the
+   * line on the count takes the old node out and puts a new one in, so every press is a
+   * mutation and every press speaks.
+   */
+  const [saidTimes, setSaidTimes] = useState(0);
+  /** Set when the last rung of the ladder hands the answer over. See the effect below. */
+  const [handedOver, setHandedOver] = useState(false);
   const answer = useRef<HTMLDivElement>(null);
+  const field = useRef<HTMLInputElement>(null);
+  // The hint replaces the button that asked for it, so the hint is what focus follows.
+  const hint = useInPlaceArrival<HTMLDivElement>(showScaffold);
 
   /**
    * What the student pressed Check to find out has to be on the screen.
@@ -77,6 +95,7 @@ export function CalculationInput({ label, prompt, terms, expected, onSubmit, onC
   }, [verdict, priorAttempts, showScaffold]);
 
   const submit = () => {
+    setSaidTimes((times) => times + 1);
     // An empty box is not an attempt. Three idle taps on Check used to increment the
     // attempt count, unlock "show the answer and keep going", and write answer_supplied
     // into the student's permanent record without them ever trying the problem.
@@ -93,10 +112,26 @@ export function CalculationInput({ label, prompt, terms, expected, onSubmit, onC
     onScaffold?.();
   };
 
+  /**
+   * Where the student stands after the last rung of the ladder hands the answer over.
+   *
+   * The press removes the button that was pressed — the whole help block goes, because the
+   * sum is answered — and on the screens where this box stays (the one whose answer does not
+   * settle it into a sentence) that dropped focus onto `<body>`. The box is where the answer
+   * now is, and its description is the verdict, so that is where the student is put. On the
+   * screens where the box itself is replaced this effect never runs: the component is gone by
+   * then, and the line that took its place takes the focus instead.
+   */
+  useEffect(() => {
+    if (handedOver) field.current?.focus();
+  }, [handedOver]);
+
   const showAnswerAndContinue = () => {
     const supplied = String(expected);
     setRaw(supplied);
     setVerdict("correct");
+    setSaidTimes((times) => times + 1);
+    setHandedOver(true);
     onShowAndContinue?.();
     onSubmit(supplied, parseDollars(supplied), true);
     onCorrect?.();
@@ -113,6 +148,7 @@ export function CalculationInput({ label, prompt, terms, expected, onSubmit, onC
           <span aria-hidden="true">$</span>
           <input
             id={id}
+            ref={field}
             aria-label={label}
             aria-describedby={`${id}-prompt ${id}-feedback`}
             inputMode="numeric"
@@ -125,18 +161,22 @@ export function CalculationInput({ label, prompt, terms, expected, onSubmit, onC
         </div>
       </div>
       <p id={`${id}-feedback`} className={`inline-feedback inline-feedback--${verdict}`} aria-live="polite">
-        {verdict === "correct" && "That's the full amount."}
-        {verdict === "low" && (low ?? "Too low. Check that you counted every amount.")}
-        {verdict === "high" && (high ?? "Too high. Check whether something got counted twice.")}
-        {/* Says which of the two things is wrong. A dollar sign, a comma and a run of zero
-            cents are all accepted now, so what is left to refuse is a part of a dollar — and
-            "enter a whole dollar amount" was being shown to students who had entered one. */}
-        {verdict === "invalid" && "Whole dollars only — 1400, not 1400.50. A $ and commas are fine."}
-        {verdict === "idle" && priorAttempts >= 2 && "Stuck? Open the step-by-step hint below."}
+        {/* Keyed, so that a verdict identical to the one already standing is still a change
+            in the region and is still spoken. See `saidTimes`. */}
+        <span key={saidTimes}>
+          {verdict === "correct" && "That's the full amount."}
+          {verdict === "low" && (low ?? "Too low. Check that you counted every amount.")}
+          {verdict === "high" && (high ?? "Too high. Check whether something got counted twice.")}
+          {/* Says which of the two things is wrong. A dollar sign, a comma and a run of zero
+              cents are all accepted now, so what is left to refuse is a part of a dollar — and
+              "enter a whole dollar amount" was being shown to students who had entered one. */}
+          {verdict === "invalid" && "Whole dollars only — 1400, not 1400.50. A $ and commas are fine."}
+          {verdict === "idle" && priorAttempts >= 2 && "Stuck? Open the step-by-step hint below."}
+        </span>
       </p>
       {priorAttempts >= 2 && verdict !== "correct" && (
         <div className="calculation-help">
-          {!showScaffold ? <Button type="button" variant="quiet" onClick={openScaffold}>Show me one step</Button> : <div role="note"><strong>Try it this way:</strong><span>{scaffold ?? "Add every amount shown. If an amount happens every week, multiply it by the number of weeks first."}</span></div>}
+          {!showScaffold ? <Button type="button" variant="quiet" onClick={openScaffold}>Show me one step</Button> : <div role="note" ref={hint} tabIndex={-1}><strong>Try it this way:</strong><span>{scaffold ?? "Add every amount shown. If an amount happens every week, multiply it by the number of weeks first."}</span></div>}
           {priorAttempts >= 3 && <Button type="button" variant="quiet" onClick={showAnswerAndContinue}>Show the answer and keep going</Button>}
         </div>
       )}

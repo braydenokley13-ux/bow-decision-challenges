@@ -339,13 +339,21 @@ set. Evidence still is not.
 
 ## Security model
 
-The class code goes on a whiteboard, so every student in the room has it. It therefore
-grants exactly two things: resolving the class, and submitting to it.
+The class code goes on a whiteboard, so every student in the room has it. It therefore grants
+exactly one thing: **resolving the class** — the label and the join mode, so a child can
+confirm they typed the right five characters. It does not open the roster and it no longer
+turns work in. Submission takes a student session, in every class with no exception: a review
+that held nothing but a class code posted a fabricated run under a seat it had never joined
+and the teacher's evidence room accepted it, so `POST /classes/:code/submissions` now refuses
+a caller it cannot identify, and refuses one whose own seat index does not put them in that
+class.
 
-Reading the room takes the **teacher key** — generated at class creation, returned once,
-stored in the educator's browser, and never derivable from the class code. Without that
-split, students read each other's work. `service.test.ts` proves the class code cannot open
-the evidence room, including when passed as the key.
+Reading the room takes the **teacher key** — generated at class creation, returned once, and
+never derivable from the class code — **or the teacher account that owns the class**
+(`opensClass`). The key was the only route when it was the only credential; accounts are the
+primary route now, and the link is the fallback for a teacher who has not made one. Without
+that split, students read each other's work. `service.test.ts` proves the class code cannot
+open the evidence room, including when passed as the key.
 
 ## Storage, retention, deployment
 
@@ -378,7 +386,16 @@ count an educator reads.
 - A generic rule engine, a config-driven interaction engine, or a JSON challenge builder. A
   challenge ships its own stages, scenario and copy as code. The registry only makes it
   addressable.
-- A full educator portal, student accounts, or a roster.
+- A composite score, a mark on a child's writing made by software, or a clickstream. A
+  teacher scores the written explanation and the gradebook export carries their marks beside
+  BOW's observations rather than merged into one number; the attempt checkpoint writes on a
+  change of stage and otherwise at most every fifteen seconds, so what the service holds is
+  where a student got to, not a recording of how they got there.
+
+  This bullet used to read *"a full educator portal, student accounts, or a roster"*. All
+  three exist now — teacher accounts and a student session issued at `/join`, a roster of
+  printed cards, and the class, reading, share-out and objective surfaces in `src/educator/`
+  — which is why the line was rewritten rather than deleted.
 - Challenge #2 itself, and any abstraction it has not yet asked for.
 - A framework loader, a mapping editor, a second state framework, a district service or a
   research pipeline. The standards layer exists so a second state does not require a

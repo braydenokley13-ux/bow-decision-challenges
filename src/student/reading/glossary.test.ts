@@ -308,11 +308,19 @@ describe("the panel shows the words on the screen a student is on", () => {
  * screen says, so a glossary entry written ahead of its copy breaks the suite in the other
  * direction. Until then this file is red by one word, on purpose, and the word is the answer.
  *
+ * *spread* arrived the same way and gets the same answer. A Week 8 counterfactual started
+ * saying a plan had money *to spread across all three amounts*; *spreads* was already on this
+ * list, which again is what tells you nobody had decided about the word. The decision is that
+ * it is an ordinary verb in that clause and not the run's name for anything — the run's own
+ * name for giving money out is *every dollar has a job*, which `glossary.ts` defines. Putting
+ * *spread* in the panel beside it would be the second vocabulary for one idea that the header
+ * of this file is about.
+ *
  * A word that gets added to this list because the suite named it, without anybody looking at
  * it, defeats the only thing this list is for.
  */
 const PLAIN_ENOUGH = new Set<string>([
-  "stands", "when",
+  "spread", "stands", "when",
   "about", "above", "account", "across", "actually", "add", "added", "adds", "again", "against",
   "age", "all", "almost", "alone", "along", "amount", "amounts", "an", "another", "answer",
   "answered", "any", "anybody", "anything", "anyway", "are", "arena", "around", "arrive", "arrived",
