@@ -128,13 +128,6 @@ function offencesIn(sentence: string): string[] {
  */
 const ROUTED_ELSEWHERE: { path: string; sentence: string; why: string }[] = [
   {
-    path: "src/content/studentCopy.ts",
-    sentence: "The only name here is the one your teacher wrote",
-    // Rendered by `StudentChallenge` for every seat that has a label, including the seats in an
-    // open class where the label is the one the student typed at /join themselves.
-    why: "false in a class with no list, where the student typed the name",
-  },
-  {
     path: "src/educator/Roster.tsx",
     sentence: "never asks a student for a name of their own",
     // Printed on the screen that creates the class list — while every class without one is

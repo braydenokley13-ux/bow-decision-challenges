@@ -37,10 +37,30 @@ export const STUDENT_COPY = {
     chooseKicker: "Before you start",
     chooseHeadline: "Two ways in. You pick one.",
     chooseLede: "Either way, the money is yours to handle.",
-    /* What BOW itself stores, stated precisely, on a screen that is now showing the student a
-       name. The name is one their teacher typed about their own class; the account behind it
-       holds no personal information at all, and that distinction is the honest sentence. */
-    privacy: "The only name here is the one your teacher wrote on their class list. BOW never asks for your email, your birthday, or anything about your real money.",
+    /* What BOW holds about this student, said on the screen that shows them a name.
+
+       This read *"the only name here is the one your teacher wrote on their class list"*,
+       which is true of a class that has a list and false of every class that has not. An
+       open class has no list, so the student types a first name at `/join` and the service
+       files it as a roster row like any other, marked `selfNamed` (`server/identity.ts`) —
+       and `StudentChallenge` draws this line for any seat carrying a label, without asking
+       which door the label came through. The child it was certainly wrong about was the
+       child who had typed the name themselves.
+
+       It is worth saying where this currently renders, because the answer is why a false
+       sentence survived here: nowhere. `StudentChallenge` returns its waiting screen
+       whenever `transport.requiresClass`, which is the pilot transport, and the two
+       transports that do reach the opening screen start from a seat whose `displayName` is
+       null — so the guard on that line has no build in which it is true. The line is one
+       change to that gate away from a child's screen, and it is the seat's own name it will
+       be printed under, so it is held to the same standard as if it were on screen today.
+
+       Both doors are named now, in that order, because a student reading a sentence about
+       their own name has to be able to tell which one happened to them. The middle sentence
+       is the reason the name exists at all, and it replaces the reassurance that was doing
+       that job falsely: the point of a name here is that a teacher can tell whose work is
+       whose, and a student is owed that plainly rather than told it is nobody's business. */
+    privacy: "That name came from the class list your teacher made, or you wrote it yourself when you signed in. Your teacher can see it next to your work. BOW never asks for your email, your birthday, or anything about your real money.",
     /* A student who arrived without a code used to meet a form they could not fill in and no
        way forward. One line, stated as a fact rather than an apology. */
     noCode: "No code? Your teacher gives it out at the start of the lesson.",
