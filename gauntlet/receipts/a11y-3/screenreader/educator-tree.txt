@@ -1,0 +1,217 @@
+
+===== 01-new-class =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      paragraph
+      heading "Create your first class." [focusable=true focused=true level=1]
+      paragraph
+    LabelText
+    textbox "NAME THIS CLASS" desc="Students need the class code and the card you print for them. They never type an email address or a password. Classes and their evidence are kept for 120 days, then deleted." [invalid="false" focusable=true required=false describedby="class-form-status"]
+    LabelText
+    combobox "OBJECTIVE" desc="NYSED has not reviewed or endorsed BOW." [invalid="false" focusable=true expanded=false describedby="class-objective-note"]
+      MenuListPopup
+        option "1.3 · Create a budget" [focusable=true]
+        option "Run the challenge without one" [focusable=true]
+    paragraph
+    group "WHICH STORY" [invalid="false"]
+      Legend
+      LabelText
+        radio "Students pick Eight Weeks to the Showcase or Run the Pop-Up. Both stories collect the same" [invalid="false" focusable=true checked="true"]
+      LabelText
+        radio "One for everyone Eight Weeks to the Showcase." [invalid="false" focusable=true checked="false"]
+    button "Create the class" [disabled=true invalid="false" focusable=true]
+    paragraph [live="polite"]
+    paragraph
+      link "See a sample class" [focusable=true]
+
+===== 02-class-created =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      paragraph
+      heading "Here is the code." [focusable=true level=1]
+    paragraph
+    strong
+    paragraph
+    heading "A11y-3 · Period 2" [level=2]
+    list
+      listitem [level=1]
+        ListMarker "1. "
+        link "Paste your class list" [focusable=true]
+      listitem [level=1]
+        ListMarker "2. "
+        code
+      listitem [level=1]
+        ListMarker "3. "
+      listitem [level=1]
+        ListMarker "4. "
+    paragraph
+    paragraph
+    code
+    paragraph
+    link "Open this class" [focusable=true]
+
+===== 03-roster-empty =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true focused=true]
+    sectionheader
+      link "← Class evidence" [focusable=true]
+      paragraph
+      heading "Who is in this class." [level=1]
+      paragraph
+    paragraph
+    heading "ADD STUDENTS" [level=2]
+    LabelText
+      textbox "ONE NAME PER LINE" [invalid="false" focusable=true required=false]
+    paragraph
+    button "Add them and make the cards" [disabled=true invalid="false" focusable=true]
+    paragraph
+    heading "THE LIST" [level=2]
+    paragraph
+    paragraph
+      strong
+    paragraph
+    heading "SIGN EVERYBODY OUT" [level=2]
+    paragraph
+    button "Sign the whole class out" [invalid="false" focusable=true]
+    alert [live="assertive"]
+
+===== 04-roster-cards =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      link "← Class evidence" [focusable=true]
+      paragraph
+      heading "Who is in this class." [level=1]
+      paragraph
+    paragraph
+    heading "Print these now. They are not shown again." [level=2]
+    paragraph
+    button "Print" [invalid="false" focusable=true]
+    button "I have them" [invalid="false" focusable=true]
+    list
+      listitem [level=1]
+        paragraph
+        DescriptionList
+          term "CLASS CODE"
+          definition
+          term "YOUR CODE"
+          definition
+        paragraph
+      listitem [level=1]
+        paragraph
+        DescriptionList
+          term "CLASS CODE"
+          definition
+          term "YOUR CODE"
+          definition
+        paragraph
+      listitem [level=1]
+        paragraph
+        DescriptionList
+          term "CLASS CODE"
+          definition
+          term "YOUR CODE"
+          definition
+        paragraph
+      listitem [level=1]
+        paragraph
+        DescriptionList
+          term "CLASS CODE"
+          definition
+          term "YOUR CODE"
+          definition
+        paragraph
+      listitem [level=1]
+        paragraph
+        DescriptionList
+          term "CLASS CODE"
+          definition
+          term "YOUR CODE"
+          definition
+        paragraph
+      listitem [level=1]
+        paragraph
+        DescriptionList
+          term "CLASS CODE"
+          definition
+          term "YOUR CODE"
+          definition
+        paragraph
+    paragraph
+    heading "ADD STUDENTS" [level=2]
+    LabelText
+      textbox "ONE NAME PER LINE" [invalid="false" focusable=true required=false]
+    paragraph
+    button "Add them and make the cards" [disabled=true invalid="false" focusable=true focused=true]
+    paragraph
+      button "Undo — take those 6 back off the list" [invalid="false" focusable=true]
+    paragraph
+    heading "THE LIST" [level=2]
+    list
+      listitem [level=1]
+        strong
+        button "Print a new card" [invalid="false" focusable=true]
+        button "Take off the list" [invalid="false" focusable=true]
+        button "Erase" [invalid="false" focusable=true]
+      listitem [level=1]
+        strong
+        button "Print a new card" [invalid="false" focusable=true]
+        button "Take off the list" [invalid="false" focusable=true]
+        button "Erase" [invalid="false" focusable=true]
+      listitem [level=1]
+        strong
+        button "Print a new card" [invalid="false" focusable=true]
+        button "Take off the list" [invalid="false" focusable=true]
+        button "Erase" [invalid="false" focusable=true]
+      listitem [level=1]
+        strong
+        button "Print a new card" [invalid="false" focusable=true]
+        button "Take off the list" [invalid="false" focusable=true]
+        button "Erase" [invalid="false" focusable=true]
+      listitem [level=1]
+        strong
+        button "Print a new card" [invalid="false" focusable=true]
+        button "Take off the list" [invalid="false" focusable=true]
+        button "Erase" [invalid="false" focusable=true]
+      listitem [level=1]
+        strong
+        button "Print a new card" [invalid="false" focusable=true]
+        button "Take off the list" [invalid="false" focusable=true]
+        button "Erase" [invalid="false" focusable=true]
+    paragraph
+      strong
+    paragraph
+    heading "SIGN EVERYBODY OUT" [level=2]
+    paragraph
+    button "Sign the whole class out" [invalid="false" focusable=true]
+    alert [live="assertive"]

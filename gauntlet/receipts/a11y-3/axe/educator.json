@@ -1,0 +1,20 @@
+{
+  "screen": "01-new-class",
+  "url": "http://127.0.0.1:5410/educator/classes/new",
+  "violations": []
+}
+{
+  "screen": "02-class-created",
+  "url": "http://127.0.0.1:5410/educator/classes/new",
+  "violations": []
+}
+{
+  "screen": "03-roster-empty",
+  "url": "http://127.0.0.1:5410/educator/class/J9HF4/roster?key=V6T3ENVVE7MFAKTA3Y4KPXXP",
+  "violations": []
+}
+{
+  "screen": "04-roster-cards",
+  "url": "http://127.0.0.1:5410/educator/class/J9HF4/roster?key=V6T3ENVVE7MFAKTA3Y4KPXXP",
+  "violations": []
+}

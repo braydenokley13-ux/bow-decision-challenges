@@ -117,3 +117,149 @@ With nothing marked, the header says *"Nothing is assessed yet — a student who
 nobody has read has no usable result."* and the objective narration is withheld below five
 runs. A product that says "I don't know yet" is a product I can trust when it says it does.
 
+---
+
+# Findings, ranked by what they cost
+
+## F1 — [CRITICAL] The class board tells me five children cut the course first. They are the five who paid for it.
+
+**What the board says.** `30-live-board-during-lesson.png`, "After Week 5":
+
+```
+What moved
+5 of 10 cut sports-media course first
+    Ana R., Devon P., Priya S., Ibrahim K. and Mei L.
+2 of 10 cut backup money first        Leila H. and Marcus T.
+3 of 10 cut rides and rest first      Nina D., Carlos V. and Tyrell B.
+```
+
+**What the same screen says four inches higher**, under "When did they commit to the course?":
+
+```
+5  Reserved the seat at Week 4
+    Ana R., Devon P., Priya S., Ibrahim K. and Mei L.
+```
+
+The two lists are **identical, name for name**. The five students the product says gave up the
+course first are precisely the five who committed to it early and paid for it. The board is
+reporting the exact opposite of what those children did, on the same screen, in two rows a
+teacher reads one after the other.
+
+**Why it happens.** `src/domain/finance/formulas.ts`:
+
+```ts
+/** The most the adjustable course row may hold. A reserved seat is already paid. */
+export function courseRowCapFor(input, n) {
+  return input.depositTaken ? dollars(0) : n.course.fullPrice;
+}
+```
+
+Once a student reserves the seat at Week 4, the product itself **locks the course row to $0**
+on every later board. There is nothing for the student to decide there any more.
+
+`src/educator/analysis.ts`, `adaptationSummary`, then reads exactly that forced zero as a
+choice:
+
+```ts
+const deltas = (["goal","reserve","flexibleCash"] as const).map((category) => ({
+  category, delta: row.final![category] - row.opening![category],
+}));
+const reductions = deltas.filter((entry) => entry.delta < 0).sort((a, b) => a.delta - b.delta);
+…
+const deepest = reductions[0]!.category;   // "the deepest cut is the one that says
+                                           //  what they were willing to give up first"
+```
+
+**The evidence, from Ana R.'s own log** (`GET /api/classes/XEWFA/submissions`, seat 1):
+
+```
+PLAN_SAVED working                amounts {goal: 1200, reserve: 900,  flexibleCash: 1000}
+COURSE_DEPOSIT_DECIDED            taken: true
+PLAN_SAVED week5-first-response   amounts {goal:    0, reserve: 550,  flexibleCash: 550}
+PLAN_SAVED final                  amounts {goal:    0, reserve: 550,  flexibleCash: 550}
+```
+
+`final.goal − opening.goal = −1200`. Largest reduction on the board. Ana is filed under *cut
+the course first*. Ana put the maximum the row would hold on the course, then **paid for it**
+at Week 4 so it could not be taken away, and rode out Week 5 from her reserve. Her own written
+explanation says so: *"the course seat was paid at Week 4 so nobody could take it back."*
+
+Every non-reserving student in the class (Leila, Marcus, Nina, Carlos, Tyrell) kept `goal:
+1200` all the way through and is correctly filed under reserve or rides. So the defect is not
+noise — it partitions the class by the single decision it is meant to be reading, and gets
+that partition exactly backwards.
+
+**What it costs.** This is not a number in a corner. It feeds the debrief prompt
+(`analysis.ts:709`):
+
+> *"When the money got tight, you did not all cut the same thing first. What does that say
+> about what you were protecting?"*
+
+I would have stood in front of thirteen-year-olds and used that prompt, and the product would
+have had me tell Ana, Devon, Priya, Ibrahim and Mei — the five who protected the course hardest
+— that they were the ones who let it go. Ana would have known I was wrong. That is the one
+thing a teacher cannot recover from in a debrief.
+
+**Reproduce.**
+1. Start the API and app as above. Create a class, paste a roster.
+2. Play two runs to submission: one that presses *Reserve it now* at the Week 4 deadline, one
+   that presses *Wait and decide later*. Put $1,200 on the course row in the opening plan for
+   both.
+3. Open `/educator/class/<CODE>?key=<KEY>` and read "When did they commit to the course?" and
+   "After Week 5 · What moved" together.
+
+**The fix is not subtle**: a row the product locked is not a row the student cut.
+`adaptationSummary` has `depositTaken` available in the same snapshot inputs it is reading the
+amounts from.
+
+---
+
+## F2 — [HIGH] "Counts across the 0 of 10 with a usable result" sits directly above counts of ten students
+
+`30-live-board-during-lesson.png`, "Where the class is on each skill", before I had marked
+anything:
+
+```
+Counts across the 0 of 10 with a usable result — one whose written explanation somebody has read.
+
+Build a plan that fits the money actually available …          10 evidence not all in
+Separate what a person needs, wants, values and is saving …    2 part way · 1 not yet · 7 evidence not all in
+Repair a plan after income or costs change …                   10 showed it
+```
+
+The caption says the denominator is **zero**. Every row totals **ten**. Both cannot be true,
+and the caption is the false one.
+
+`src/educator/RealClassPages.tsx:742` prints `{spine.assessed} of {total}`, where
+`spine.assessed` is the count of students with a *usable* result — nobody, because nobody's
+writing had been read. But the counts in the table come from `classResultFor`
+(`src/educator/objectiveResults.ts:217`), which increments **every** submission:
+
+```ts
+for (const submission of mine) {
+  const results = competencyResultsFor(submission);
+  …
+  if (outcome.assessed) assessedSeats.push(…);   // assessed gates the spotlight
+  for (const result of results) {
+    const row = counts.get(result.competencyId) ?? { ...EMPTY_COUNTS };
+    row[result.state] += 1;                      // …but not the counts
+  }
+}
+```
+
+Two costs, and the second is worse than the first.
+
+**It misstates its own denominator.** A teacher who takes the caption at face value reads
+"10 showed it" as ten of nobody, which is nonsense, so they stop reading captions on this
+product.
+
+**It makes a positive claim about ten children from evidence the same page says is not in.**
+*"Repair a plan after income or costs change, using only the money that can still move, and
+protect what was already committed — 10 showed it"* is a competency judgement on my whole
+class, printed above the line telling me nothing is assessed yet. It is also the competency F1
+gets backwards. This is the surface I would have used to decide the class did not need
+re-teaching on repair.
+
+**Reproduce.** Turn in five or more runs, mark none of them, open
+`/educator/class/<CODE>?key=<KEY>`, read the caption and the rows beneath it.
+
