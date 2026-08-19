@@ -4,15 +4,33 @@ import type { WorldId } from "../../domain/core/ids";
  * Who is who, and the deliberate shape of what BOW is willing to know about them.
  *
  * The organising decision in this file is that **a student account holds no personal
- * information at all**. It is an id and a credential. Every human-readable label lives on a
- * `RosterEntry`, which belongs to a class, which belongs to a teacher — so the only name in
- * the system is one a teacher typed, about their own students, in their own class, and it
- * is deleted when that class is. BOW does not ask for, store, or have any way to learn a
- * student's real name, email address, birthday, school or device.
+ * information at all**. `StudentAccount` is an id, a timestamp and a session counter — an
+ * identity rather than a description of a person, and nothing on it says who the person is.
  *
- * That is not a privacy flourish. It is what makes the answer to a district's §2-d question
- * short: the student record a vendor holds is `{ id, createdAt }`, and the labels are the
- * district's own data held on the district's own teacher's class.
+ * Every human-readable label lives on a `RosterEntry` instead, which belongs to a class,
+ * which belongs to a teacher. It gets there through one of two doors, and this comment named
+ * only the first: *"the only name in the system is one a teacher typed"*. Either the teacher
+ * pasted their class list, or the class has no list and the student typed a first name at
+ * `/join` — which is what `selfNamed` records, twenty-five lines below the sentence that
+ * denied it. Both write the same row, and BOW cannot tell whether either is a real name
+ * because it never checks one against anything.
+ *
+ * What is true of both doors is the shape, and the shape is the whole of what may be said: a
+ * first name, against a seat, in one teacher's class. It is handed back to that teacher's
+ * account or to whoever holds that class's key (`opensClass`) and to nobody else — the
+ * unauthenticated door answers a class code with the label and the join mode and no roster at
+ * all. It is sealed at rest (`server/vault.ts`), and it goes when the class goes.
+ *
+ * The reassurance that survives unqualified is about the fields that are not here. A student
+ * is asked for no email address, no password and no birthday, on any screen, and there is no
+ * such field on any student surface to ask with. The one thing BOW does learn about the
+ * machine is whether it is shared (`DeviceClass`, below, asked once at the door so that a cart
+ * Chromebook does not leave one child sitting inside the last one's session).
+ *
+ * What is deliberately not written here is a compliance claim. This file describes what is
+ * stored; whether that satisfies any particular law, framework or district is a judgement for
+ * the people who make it, on evidence, and a comment asserting the answer would be the same
+ * class of defect as the sentence above it — a reassuring line nobody had checked.
  *
  * The second decision is that **the roster names seats rather than replacing them.** Every
  * piece of evidence this product has ever stored is keyed by `(classCode, seatCode)`, and a
@@ -80,7 +98,11 @@ export interface StudentAccount {
 }
 
 /**
- * One seat on one class's roster, with the label its teacher gave it.
+ * One seat on one class's roster, with the label somebody put on it.
+ *
+ * Somebody, not the teacher: `selfNamed` below is the field that says which, and the two are
+ * stored identically because nothing downstream may treat a child's own first name as less of
+ * a name than the one their teacher pasted.
  *
  * `studentId` is null until a student claims the seat. Claiming is what turns a printed card
  * into an account: the join code on the card is checked against `joinCodeHash`, and from
@@ -95,7 +117,7 @@ export interface RosterEntry {
   classCode: string;
   /** The seat this row names. The join to every piece of evidence the class holds. */
   seatCode: string;
-  /** What the teacher typed. BOW does not know whether it is a real name. */
+  /** What the teacher pasted, or what the student typed. Neither is checked against anything. */
   displayName: string;
   studentId: string | null;
   addedAt: number;

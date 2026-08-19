@@ -7,11 +7,29 @@ import type { StandardRef } from "../../domain/standards/types";
 /**
  * The whole class-service contract, in one file both sides read.
  *
- * This is deliberately not an LMS. There are no student accounts, no roster, no names and
- * no email addresses — a class is a code, a seat is a number a student picks up when they
- * sit down, and a submission is the evidence log that seat produced. Everything an educator
- * sees is derived from those logs, which means the service stores no claim it cannot show
- * its working for.
+ * A class is a code, a seat is a number a student picks up when they sit down, and a
+ * submission is the evidence log that seat produced. Everything an educator sees is derived
+ * from those logs, which is what lets the service store no claim it cannot show its working
+ * for.
+ *
+ * What this comment used to add to that was *"there are no student accounts, no roster, no
+ * names and no email addresses"*, and by the time anybody read it back all four clauses were
+ * false. There are student accounts — `StudentAccount`, an id and a timestamp. There is a
+ * roster: one `RosterEntry` per seat. Every row carries a `displayName`, which arrives either
+ * from the class list a teacher pasted or from the first name a student typed at `/join` in a
+ * class that has no list, and BOW has no way to tell whether either is a real name. And a
+ * teacher signs in with an email address, which is the account.
+ *
+ * All four live next door in `src/platform/identity/types.ts`. What was true when the sentence
+ * was written, and is still true, is that *this file* has none of them — which is a fact about
+ * one module, and was never a fact about the product. A file whose types do not mention names
+ * is not a product that does not hold them, and a comment is the wrong place to learn that.
+ *
+ * The narrower claim is the one worth keeping, because it is the one that survives reading the
+ * store: the class service holds no identifier anybody else issued. No student number, no SIS
+ * id, no email address for a child, no birthday, no school. What it holds is a first name
+ * against a seat in one teacher's class — sealed at rest (`server/vault.ts`), readable by that
+ * class's teacher, and dropped with the class after `CLASS_RETENTION_DAYS`.
  */
 
 /** A class an educator created. The code is what students type; the key is what an educator keeps. */
@@ -67,9 +85,12 @@ export interface Assignment {
   /**
    * Who it was set for, or `null` for the whole class.
    *
-   * V1 has no student accounts and no roster (§17.4), so the only identifier a student has
-   * is the seat they sat down at. The field keeps the product definition's name because the
-   * thing it identifies is a student; what stands in for one here is a seat code.
+   * The strings in here are **seat codes**. The field keeps the product definition's name
+   * because the thing it identifies is a student, and it was written when a seat was the only
+   * identifier a student had. That has not been true for a while — there are accounts and
+   * there is a roster row per seat — but the field has not changed and must not: the parser in
+   * `assignments.ts` reads these as seats, and every piece of evidence this product has ever
+   * stored is keyed by `(classCode, seatCode)` rather than by an account.
    */
   assignedStudentIds: readonly string[] | null;
   createdAt: number;
