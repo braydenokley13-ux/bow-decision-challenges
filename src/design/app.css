@@ -1711,3 +1711,20 @@ p { color: var(--ink-2); }
   .rubric-row { grid-template-columns: minmax(0, 1fr); }
   .map-header, .map-controls, .topic-bands, .map-note { padding-left: var(--s-5); padding-right: var(--s-5); }
 }
+
+/* The teacher's own closing question, on both sides of it.
+
+   Set apart from the canonical writing above it on purpose and not merely for rhythm: a
+   student has to be able to tell which question BOW is going to score, and a teacher has to be
+   able to tell which answer is not part of what BOW claims. Quieter than the panel it sits
+   under, ruled off, and never inside the rubric card. */
+.closing-question { display: grid; gap: var(--s-3); margin-top: var(--s-6); padding: var(--s-5); background: var(--surface-sunken); border-left: 3px solid var(--border-strong); }
+.closing-question__must { color: var(--fin-over-ink); font-weight: 600; }
+.closing-question__may { color: var(--ink-3); }
+.closing-question__asked { margin: 0; font: var(--t-body-lg); }
+.closing-question textarea { width: 100%; }
+.closing-question__note { margin: 0; color: var(--ink-3); font: var(--t-micro); }
+
+.closing-answer { margin-top: var(--s-6); padding-top: var(--s-5); border-top: 1px solid var(--border-default); }
+.closing-answer__asked { margin: 0 0 var(--s-3); color: var(--ink-2); font: var(--t-body); font-style: italic; }
+.closing-answer__given { margin: 0 0 var(--s-3); }

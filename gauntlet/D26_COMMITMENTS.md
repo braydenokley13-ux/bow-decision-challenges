@@ -28,7 +28,7 @@ teachers review or test parts of the platform."*
 | 5 | *"connect each simulation more directly to the NYS Financial Literacy Standards"* | **the gap** | See below. This is the promise the rest of this file is about. |
 | 6 | *"teachers … see which concepts students applied, the decisions they made, and how those decisions affected their outcomes … by logging into the website"* | **built, and nearly empty** | Every surface exists and works: objective pages, per-student evidence trail, decision-by-decision judgements with the moment each came from. What flows through them is **one objective's worth of evidence**. |
 | 7 | *"At a few key points … students explain their reasoning"* | **holds** | Both worlds take written reasoning at defined moments, a person scores it, and BOW never scores writing itself. *"A few key points"* is the right number and the product agrees. |
-| 8 | *"building toward a capability for teachers to add their own questions at the end"* | **does not exist** | No `customPrompt`, `finalPrompt`, `teacherPrompt` or equivalent anywhere in `src/`. The letter's *building toward* is honest; there is no code. |
+| 8 | *"building toward a capability for teachers to add their own questions at the end"* | **built, golden path passing** | Teacher writes it on the assignment (never on the challenge version); student answers it on the write-up screen under the challenge's own question, in the teacher's name; a *required* one holds the turn-in button; the answer survives a reload and a re-delivery; the teacher reads it under the canonical writing and outside the rubric. `golden 1b` walks the whole path and asserts the line it may not cross — the answer is not in the evidence log and not in the scoring panel. |
 | 9 | *"data-safe accounts … save their work and continue … without losing progress"* | **holds, tested** | Student accounts, server-side checkpoints, cross-device resume. `golden 3: a run survives the day and finishes on another machine` passes. |
 | 10 | *"teachers … monitor where students are … and review important decisions and responses"* | **holds** | `ProgressRow` drives a live class view; the reading queue and evidence trail carry the decisions and the writing. |
 | 11 | *"in-class, homework, and multi-day assignments"* | **holds** | Follows from 9. Resume is across devices and across days. |
@@ -97,7 +97,8 @@ and 2 of 5 topics — a real improvement and not the sentence in the letter.
 
 ## What this changes about the gauntlet
 
-1. **The teacher-test packet moves up.** It is the only commitment with a pre-October deadline,
+1. **The teacher-test packet is now the only unbuilt commitment.** It is the only one with a
+   pre-October deadline,
    it costs a day rather than a fortnight, and the letter offers it unprompted. It also
    converts every *heuristic* judgement in this run into something a real teacher can falsify.
 2. **The custom end-of-simulation question is now a named deliverable**, not a §37 design idea.

@@ -382,6 +382,10 @@ describe("the panel shows the words on the screen a student is on", () => {
  * it, defeats the only thing this list is for.
  */
 const PLAIN_ENOUGH = new Set<string>([
+  // The possessive of a word already on this list, arriving with the teacher’s own closing
+  // question. A Grade 5 reader who reads "teacher" does not stop at "teacher’s". The
+  // apostrophe is the typographic one every other possessive in the student copy uses.
+  "teacher’s",
   // Read for the first time when the scan learned to see through the market's `{rent}`
   // placeholders: eleven words in the pop-up's ending verdicts that no reviewer had ever
   // been shown, because the brace tripped `isProse` and dropped the whole sentence. Two of

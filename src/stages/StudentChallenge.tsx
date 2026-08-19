@@ -39,6 +39,8 @@ import { DEFAULT_WORLD_ID, PLAYABLE_WORLDS, WORLD_CHOICE_UI_READY } from "../dom
 import { PopUpChallenge } from "./popup/PopUpChallenge";
 import type { StageId } from "../domain/evidence/types";
 import { checkWriting, NUMBERS_WANTED } from "../domain/evidence/writingGate";
+import { closingAnswerOutstanding, rememberClosingQuestion } from "../student/closingQuestion";
+import { ClosingQuestionCard } from "../student/ClosingQuestionCard";
 
 const BONUS_WEEKS = bonusWeeks(SCENARIO_NUMBERS);
 const CLINIC_WEEKS = clinicWeeks(SCENARIO_NUMBERS);
@@ -188,9 +190,15 @@ function OpeningStage() {
       pickerReady: WORLD_CHOICE_UI_READY,
       defaultWorldId: DEFAULT_WORLD_ID,
     }));
+    // The teacher's own closing question, filed against this run before the first screen.
+    // It belongs to the assignment rather than to the world, so it is kept outside both
+    // reducers — see `student/closingQuestion.ts` — and asking for it later would mean every
+    // surface that could show it needing the assignment threaded to it.
+    const sessionId = crypto.randomUUID();
+    rememberClosingQuestion(sessionId, seat.assignment?.closingQuestion);
     dispatch({
       type: "SESSION_STARTED",
-      sessionId: crypto.randomUUID(),
+      sessionId,
       classCode: seat.classCode,
       seatCode: seat.seatCode,
       ...(seat.assignment ? { assignmentId: seat.assignment.id } : {}),
@@ -1543,6 +1551,9 @@ function DefenseStage() {
   // typed, and the screen comes back with the student's own words in it.
   const [selected, setSelected] = useDraft<string[]>(state.meta.worldId, "defense-tiles", state.defense.tileIds);
   const [text, setText] = useDraft(state.meta.worldId, "defense-text", state.defense.text);
+  // Read once for the first render, then kept in step by the card's own callback. The card
+  // owns the text; this screen owns the button; neither re-renders the other for free.
+  const [closingOutstanding, setClosingOutstanding] = useState(() => closingAnswerOutstanding(state.meta.sessionId));
   const final = amountsFor(state, "final");
   const finalInput = snapshotForMode(state, "final");
   // Every chip is derived from the student's own saved plan, and any chip worth $0
@@ -1629,9 +1640,22 @@ function DefenseStage() {
                 </p>
               ))}
             </div>
-            <Button aria-disabled={!gate.ready} onClick={() => gate.ready && dispatch({ type: "DEFENSE_SUBMITTED", tileIds: selected, text })}>Turn in my plan</Button>
+            <Button aria-disabled={!gate.ready || closingOutstanding} onClick={() => gate.ready && !closingOutstanding && dispatch({ type: "DEFENSE_SUBMITTED", tileIds: selected, text })}>Turn in my plan</Button>
+            {/* Named rather than left as a disabled button with no reason on it. A student who
+                cannot see why the control is off can only get past it by guessing. */}
+            {closingOutstanding && (
+              <p className="writing-rules" aria-live="polite">
+                <span aria-hidden="true">◦</span> Your teacher’s question needs an answer too.
+              </p>
+            )}
           </footer>
         </section>
+        {/* The teacher's own question, after the challenge's own. Its own card, in their name,
+            because a student has to be able to tell which one BOW is going to score. */}
+        <ClosingQuestionCard
+          sessionId={state.meta.sessionId}
+          onAnswered={() => setClosingOutstanding(closingAnswerOutstanding(state.meta.sessionId))}
+        />
       </div>
     </StageShell>
   );

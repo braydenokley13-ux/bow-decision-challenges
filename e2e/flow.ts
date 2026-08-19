@@ -515,7 +515,19 @@ export async function readWeek8Resolution(page: Page) {
  * than restating an amount: `numbers.ts` owns those, the tile prints them, and a suite with its
  * own copy of a price is the thing `pricing.test.ts` exists to stop.
  */
-export async function submitDefense(page: Page, text: string, tileIndices: number[] = [0, 2]) {
+/**
+ * The write-up, and anything else that screen is carrying.
+ *
+ * `onWriteUp` runs after the defence is typed and before it is turned in. It is the one moment
+ * the rest of that screen can be inspected — the teacher's own closing question sits under the
+ * challenge's own, and a required one holds the turn-in button until it is answered.
+ */
+export async function submitDefense(
+  page: Page,
+  text: string,
+  onWriteUp?: () => Promise<void>,
+  tileIndices: number[] = [0, 2],
+) {
   const figures: string[] = [];
   for (const index of tileIndices) {
     const tile = page.locator(".interview__stats button").nth(index);
@@ -523,6 +535,7 @@ export async function submitDefense(page: Page, text: string, tileIndices: numbe
     figures.push((await tile.locator(".money").innerText()).trim());
   }
   await page.getByLabel("Two to four sentences").fill(`${text} The numbers I stood on are ${figures.join(" and ")}.`);
+  if (onWriteUp) await onWriteUp();
   await page.getByRole("button", { name: "Turn in my plan" }).click();
 }
 

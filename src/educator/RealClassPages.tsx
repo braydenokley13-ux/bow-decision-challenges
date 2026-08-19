@@ -1274,6 +1274,27 @@ function StudentPanel({ row, code, onScore, submission, onOverride, onFeedback, 
           <p className="response-note">
             <Link to={`/educator/class/${code}/reading`}>Read the whole class in one queue →</Link>
           </p>
+
+          {/* The teacher's own closing question, and the answer to it — under the canonical
+              writing, in its own block, said as theirs.
+
+              It is deliberately not in the rubric panel beside it and never will be. §37: a
+              question one teacher wrote may not move what BOW claims about a child, or two
+              classes set the same challenge would mean different things and nothing on any
+              screen would say so. What it is here is a thing to read before a discussion.
+
+              Absent for every attempt whose assignment carried no question, which is most. */}
+          {submission?.closingAnswer && (
+            <div className="closing-answer">
+              <p className="eyebrow">Your own question</p>
+              <blockquote className="closing-answer__asked">{submission.closingAnswer.questionText}</blockquote>
+              <blockquote className="closing-answer__given">{submission.closingAnswer.answer}</blockquote>
+              <p className="response-note">
+                You asked this, not BOW. It is not scored, it is not part of the skills reported above,
+                and it does not appear in the export.
+              </p>
+            </div>
+          )}
         </div>
         <div className="rubric-panel">
           {/* Not "10-point reasoning rubric". That sentence introduced a second scale as a
