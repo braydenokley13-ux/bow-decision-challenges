@@ -399,6 +399,24 @@ function SetupStage() {
     const correct = order.every((id, index) => id === setupCostOrder(SCENARIO_NUMBERS)[index]);
     dispatch({ type: "SETUP_RANKED", order, correct });
   };
+  /**
+   * The middle rung: one place worked all the way out, and the method for the other two.
+   *
+   * The dearest place rather than a named one, so a re-pricing cannot leave this hint doing
+   * the arithmetic of a season that no longer exists. Its terms are already written per week,
+   * which is the thing the student has to get past.
+   */
+  const dearest = [...setups].sort((first, second) => second.total - first.total)[0]!;
+  const stepOpen = openedStep || state.support[RANK_INTERACTION] === "direct_scaffold";
+  const openStep = () => {
+    setOpenedStep(true);
+    dispatch({ type: "SCAFFOLD_OPENED", interactionId: RANK_INTERACTION });
+  };
+  const handOverTheOrder = () => {
+    setOrder(setupCostOrder(SCENARIO_NUMBERS));
+    setShowingAnswer(true);
+    dispatch({ type: "SHOW_AND_CONTINUE_USED", interactionId: RANK_INTERACTION });
+  };
 
   return (
     <StageShell
