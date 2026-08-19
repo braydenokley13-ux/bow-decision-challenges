@@ -13,8 +13,23 @@
 | 0 — Reconstruct the product | **DONE** |
 | 1 — Research the external bar | **DONE** — 8 reports, `gauntlet/research/` |
 | 2 — Rank the gaps | **DONE** — `gauntlet/DEFECTS.md`, 60 reproduced defects |
-| 3 — Build / attack loops | **IN PROGRESS** — round 3 of N |
-| 4 — Six-verdict judges | not started |
+| 3 — Build / attack loops | **DONE** — three rounds, ten critics, 38 critique documents |
+| 4 — Six-verdict judges | **IN PROGRESS** — six launched against `760e49d` |
+
+### The tree the judges were given
+
+`scripts/verify-head.sh` against `760e49d`, exported to a clean checkout and installed from
+the lockfile — not the working tree, the commit:
+
+```
+→ tsc -b        → eslint        → stylelint        → npm run build
+→ vitest run    Test Files 145 passed | 1 skipped (146)
+                     Tests 1663 passed | 1 skipped (1664)
+✓ HEAD typechecks, lints, builds and passes its tests from a clean checkout
+```
+
+Each judge pins their own SHA at the moment they start and states which SHA their claims are
+true of, because the tree keeps moving while they work.
 
 ## Round 0 — twenty fresh critics
 
