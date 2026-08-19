@@ -400,7 +400,12 @@ studentTest("refreshing mid-challenge preserves stage, setup, and entered plan n
   // The plan asks one question at a time, and a refresh lands the student back on the
   // question they were actually answering rather than at the top of the sequence.
   await expect(page.getByRole("heading", { name: "What does Avery do with the rest?" })).toBeVisible();
-  await expect(page.getByRole("spinbutton", { name: "Sports-media course" })).toHaveValue("900");
+  // The field writes money the way the row beside it writes money — `AllocationControl` says
+  // so in its own comment, because a bare `1500` next to a `$1,500` was one amount in two
+  // notations and the bare one was what a twelve-year-old read the decision off. So the
+  // assertion is that 900 survived the refresh, said in the product's own formatter; spelling
+  // "900" here pinned the notation this product deliberately gave up.
+  await expect(page.getByRole("spinbutton", { name: "Sports-media course" })).toHaveValue(money(900));
   await expect(page.getByText("Teammate Share")).toBeVisible();
 });
 
