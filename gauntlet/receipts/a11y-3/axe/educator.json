@@ -83,3 +83,13 @@
   "url": "http://127.0.0.1:5410/educator/try",
   "violations": []
 }
+{
+  "screen": "20-assign",
+  "url": "http://127.0.0.1:5410/educator/classes",
+  "violations": []
+}
+{
+  "screen": "20-the-sample-class",
+  "url": "http://127.0.0.1:5410/educator/class/DEMO",
+  "violations": []
+}
