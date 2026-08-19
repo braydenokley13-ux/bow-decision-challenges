@@ -1,0 +1,24 @@
+import { test } from "@playwright/test";
+const CODE = process.env.J3_CODE!;
+const KEY = process.env.J3_KEY!;
+const SEATS = (process.env.J3_SEATS ?? "1").split(",");
+const OUT = process.env.J3_OUT ?? "/tmp/judge-3/judge-shots/teacher";
+
+test("teacher pages", async ({ page }) => {
+  test.setTimeout(240_000);
+  const pages: [string, string][] = [
+    ["overview", `/educator/class/${CODE}?key=${KEY}`],
+    ["reading", `/educator/class/${CODE}/reading?key=${KEY}`],
+    ["debrief", `/educator/class/${CODE}/debrief?key=${KEY}`],
+    ["share-out", `/educator/class/${CODE}/share-out?key=${KEY}`],
+    ["roster", `/educator/class/${CODE}/roster?key=${KEY}`],
+    ...SEATS.map((s) => [`student-${s}`, `/educator/class/${CODE}/students/${s}?key=${KEY}`] as [string, string]),
+  ];
+  for (const [name, url] of pages) {
+    await page.goto(url);
+    await page.waitForTimeout(1800);
+    await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: true });
+    const text = (await page.locator("body").innerText()).replace(/\n{3,}/g, "\n\n");
+    console.log(`\n\n========== ${name} :: ${url} ==========\n${text}`);
+  }
+});

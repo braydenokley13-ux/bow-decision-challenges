@@ -1,0 +1,9 @@
+
+Running 1 test using 1 worker
+
+CLASSCODE XTGKK TEACHERKEY 9CGWJXPA3MGGAMT9C9TXJV44
+HINT SHOWN: WHAT THE COUSIN’S SPARE ROOM COSTS AVERY No rent. $300 for groceries and gas across the 8 weeks. All eight weeks, before anything else is paid for. TOTAL $ Check Too low. Check that you counted every amount. Try it this way: Take the price in the terms and carry it across all 8 weeks.
+
+GATE [real prose, no digits] disabled=true
+  text: "I kept Avery at the cousin's room because the rent is almost nothing, and I left both bonuses out because neither one is promised. When Week Five took the showcase away I cut the rides money instead of the course, because the course is what Avery is saving for."
+  rules: 2 of Avery’s numbers, tapped. | Write each number you tapped into your answer. | 2 sentences so far.

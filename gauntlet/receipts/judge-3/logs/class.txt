@@ -1,0 +1,96 @@
+
+Running 1 test using 1 worker
+
+CLASSCODE U9FTK TEACHERKEY EUJNCHTFNRFWGP6XTPK3WVEQ
+
+--- seat 1: fast clicker ---
+  fast 0 [WHAT DOES AVERY DO WITH THE REST?] -> Check this plan
+  fast 1 [WHAT DOES AVERY DO WITH THE REST?] -> Check this plan
+  fast 2 [WHAT DOES AVERY DO WITH THE REST?] -> Check this plan
+  fast 3 [WHAT DOES AVERY DO WITH THE REST?] -> Rides and rest — put $3,400 in
+  fast 6 [WHAT DOES AVERY DO WITH THE REST?] -> Save this version
+  fast 7 [WHAT IF THEY NEVER ARRIVE?] -> Check this plan
+  fast 8 [WHAT IF THEY NEVER ARRIVE?] -> Save it, $1,800 still missing
+  fast 9 [WEEK 3 PAYS AVERY IN CASH.] -> Team shoes$120The pair Avery plays in are spl
+  fast 10 [WEEK 3 PAYS AVERY IN CASH.] -> Team shoes$120The pair Avery plays in are spl
+  fast 11 [WEEK 3 PAYS AVERY IN CASH.] -> Team shoes$120The pair Avery plays in are spl
+  fast 12 [WEEK 3 PAYS AVERY IN CASH.] -> Away-game travel share$60Everyone on the bus 
+  fast: click failed at WEEK 3 PAYS AVERY IN CASH.
+  fast 13 [WEEK 3 PAYS AVERY IN CASH.] -> Away-game travel share$60Everyone on the bus 
+  fast: click failed at WEEK 3 PAYS AVERY IN CASH.
+  fast 14 [WEEK 3 PAYS AVERY IN CASH.] -> Away-game travel share$60Everyone on the bus 
+  fast: click failed at WEEK 3 PAYS AVERY IN CASH.
+  fast 15 [WEEK 3 PAYS AVERY IN CASH.] -> A present for Avery's sister$45She turns elev
+  fast: click failed at WEEK 3 PAYS AVERY IN CASH.
+  fast 16 [WEEK 3 PAYS AVERY IN CASH.] -> A present for Avery's sister$45She turns elev
+  fast: click failed at WEEK 3 PAYS AVERY IN CASH.
+  fast 17 [WEEK 3 PAYS AVERY IN CASH.] -> A present for Avery's sister$45She turns elev
+  fast: click failed at WEEK 3 PAYS AVERY IN CASH.
+  fast 18 [WEEK 3 PAYS AVERY IN CASH.] -> It was the one I only wanted.
+  fast 19 [WEEK 3 PAYS AVERY IN CASH.] -> It was the one I only wanted.
+  fast 20 [WEEK 3 PAYS AVERY IN CASH.] -> It was the one I only wanted.
+  fast 21 [WEEK 3 PAYS AVERY IN CASH.] -> Nobody else was counting on it.
+  fast 22 [WEEK 3 PAYS AVERY IN CASH.] -> Nobody else was counting on it.
+  fast 23 [WEEK 3 PAYS AVERY IN CASH.] -> Nobody else was counting on it.
+  fast 24 [WEEK 3 PAYS AVERY IN CASH.] -> It can wait, even if it costs more.
+  fast 25 [WEEK 3 PAYS AVERY IN CASH.] -> It can wait, even if it costs more.
+  fast 26 [WEEK 3 PAYS AVERY IN CASH.] -> It can wait, even if it costs more.
+  fast 27 [WEEK 3 PAYS AVERY IN CASH.] -> It was the cheapest one to drop.
+  fast 28 [WEEK 3 PAYS AVERY IN CASH.] -> It was the cheapest one to drop.
+  fast 29 [WEEK 3 PAYS AVERY IN CASH.] -> It was the cheapest one to drop.
+  fast 30 [WEEK 3 PAYS AVERY IN CASH.] -> Week 4 · the course office is calling
+  fast 31 [HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?] -> Reserve it now$1,000$200 cheaper. The money s
+  fast 32 [HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?] -> Reserve it now$1,000$200 cheaper. The money s
+  fast 33 [HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?] -> Reserve it now$1,000$200 cheaper. The money s
+  fast 34 [HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?] -> Wait and decide later$1,200Costs more. Every 
+  fast 35 [HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?] -> Wait and decide later$1,200Costs more. Every 
+  fast 36 [HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?] -> Wait and decide later$1,200Costs more. Every 
+  fast 37 [HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?] -> Lock it in and play Week 5
+  fast 39 [THE SHOWCASE IS OFF.] -> BillWhere Avery lives8 weeks at the Gym Distr
+  fast 40 [THE SHOWCASE IS OFF.] -> BillWhere Avery lives8 weeks at the Gym Distr
+  fast 41 [THE SHOWCASE IS OFF.] -> BillWhere Avery lives8 weeks at the Gym Distr
+  fast 42 [THE SHOWCASE IS OFF.] -> BonusMaking the cut bonusPaid only if the Fli
+  fast 43 [THE SHOWCASE IS OFF.] -> BonusMaking the cut bonusPaid only if the Fli
+  fast 44 [THE SHOWCASE IS OFF.] -> BonusMaking the cut bonusPaid only if the Fli
+  fast 45 [THE SHOWCASE IS OFF.] -> BillRequired brace and off-site rehabWhat the
+  fast 46 [THE SHOWCASE IS OFF.] -> BillRequired brace and off-site rehabWhat the
+  fast 47 [THE SHOWCASE IS OFF.] -> BillRequired brace and off-site rehabWhat the
+  fast 48 [THE SHOWCASE IS OFF.] -> BillFood, phone and laundry$200 a week, all 8
+  fast 49 [THE SHOWCASE IS OFF.] -> BillFood, phone and laundry$200 a week, all 8
+  fast 50 [THE SHOWCASE IS OFF.] -> BillFood, phone and laundry$200 a week, all 8
+  fast 51 [THE SHOWCASE IS OFF.] -> Check
+  fast 52 [THE SHOWCASE IS OFF.] -> Check
+  fast: [THE SHOWCASE IS OFF.] took the answer
+  fast 54 [THE SHOWCASE IS OFF.] -> Keep going
+  fast 55 [SOMETHING HAS TO GIVE.] -> Check this plan
+  fast 56 [SOMETHING HAS TO GIVE.] -> Save it, $1,700 still missing
+  fast 57 [TWO MORE CALLS TO MAKE.] -> Take the clinics
+  fast 58 [TWO MORE CALLS TO MAKE.] -> Take the clinics
+  fast 59 [TWO MORE CALLS TO MAKE.] -> Take the clinics
+  fast 60 [TWO MORE CALLS TO MAKE.] -> Keep the Saturdays
+  fast 61 [TWO MORE CALLS TO MAKE.] -> Keep the Saturdays
+  fast 62 [TWO MORE CALLS TO MAKE.] -> Keep the Saturdays
+  fast 63 [TWO MORE CALLS TO MAKE.] -> Yes — count on it
+  fast 64 [TWO MORE CALLS TO MAKE.] -> Yes — count on it
+  fast 65 [TWO MORE CALLS TO MAKE.] -> Yes — count on it
+  fast 66 [TWO MORE CALLS TO MAKE.] -> No — plan without it
+  fast 67 [TWO MORE CALLS TO MAKE.] -> No — plan without it
+  fast 68 [TWO MORE CALLS TO MAKE.] -> No — plan without it
+  fast 69 [TWO MORE CALLS TO MAKE.] -> Check this plan
+  fast 70 [TWO MORE CALLS TO MAKE.] -> Save it, $2,500 still missing
+  fast 71 [THE SEASON ENDS.] -> Explain my plan
+  fast: wrote "asdf asdf $5,000 asdf. qwer qwer $700 qwer."
+  fast: submitted at 73
+
+--- seat 2: reasoned but bad ---
+  reasoned-bad: submitted
+
+--- seat 3: competent ---
+  competent: submitted
+
+--- seat 4: walked away ---
+  abandoned: stopped after the opening plan
+CLASS READY U9FTK EUJNCHTFNRFWGP6XTPK3WVEQ
+  ✓  1 [chromium-1366] › e2e/judge3-class.spec.ts:5:1 › one class, five kinds of student (1.6m)
+
+  1 passed (1.6m)

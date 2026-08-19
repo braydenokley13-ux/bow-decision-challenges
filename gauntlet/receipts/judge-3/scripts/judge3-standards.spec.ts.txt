@@ -1,0 +1,10 @@
+import { test } from "@playwright/test";
+test("standards pages", async ({ page }) => {
+  test.setTimeout(200_000);
+  for (const [name, url] of [["objectives", "/educator/objectives"], ["guide", "/educator/guide"]] as const) {
+    await page.goto(url);
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: `/tmp/judge-3/judge-shots/standards/${name}.png`, fullPage: true });
+    console.log(`\n\n===== ${name} =====\n` + (await page.locator("body").innerText()).replace(/\n{3,}/g, "\n\n"));
+  }
+});

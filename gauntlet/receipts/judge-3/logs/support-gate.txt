@@ -1,0 +1,22 @@
+
+Running 1 test using 1 worker
+
+CLASSCODE XTGKK TEACHERKEY 9CGWJXPA3MGGAMT9C9TXJV44
+HINT SHOWN: WHAT THE COUSIN’S SPARE ROOM COSTS AVERY No rent. $300 for groceries and gas across the 8 weeks. All eight weeks, before anything else is paid for. TOTAL $ Check Too low. Check that you counted every amount. Try it this way: Take the price in the terms and carry it across all 8 weeks.
+
+GATE [real prose, no digits] disabled=true
+  text: "I kept Avery at the cousin's room because the rent is almost nothing, and I left both bonuses out because neither one is promised. When Week Five took the showcase away I cut the rides money instead of the course, because the course is what Avery is saving for."
+  rules: 2 of Avery’s numbers, tapped. | Write each number you tapped into your answer. | 2 sentences so far.
+
+GATE [real prose, numbers written as words] disabled=true
+  text: "I put twelve hundred dollars toward the course and kept nine hundred back. That reserve is what paid for the brace when Week Five landed."
+  rules: 2 of Avery’s numbers, tapped. | Write each number you tapped into your answer. | 2 sentences so far.
+
+GATE [junk with the right digits] disabled=false
+  text: "asdf asdf $5,000 asdf. qwer qwer $1,200 qwer."
+  rules: 2 of Avery’s numbers, tapped. | Both of your numbers are in what you wrote. | 2 sentences so far.
+
+GATE [one long real sentence with both figures] disabled=true
+  text: "I protected the course payment of $5,000 and gave up $1,200 of the rides money to do it because walking is free and the course is not"
+  rules: 2 of Avery’s numbers, tapped. | Both of your numbers are in what you wrote. | Write 2 sentences or more, each with something in it.
+TILE LABELS: ["Money your plan was built on\n$5,000","New bills from Week 5\n$1,000","Saved for the course\n$1,200","Backup money kept\n$450","Spent on rides and rest\n$450"]

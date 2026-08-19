@@ -1,0 +1,14 @@
+import { test } from "@playwright/test";
+import * as F from "./flow";
+import * as J from "./judge3-lib";
+const CODE = process.env.J3_CODE!;
+test("add two more students", async ({ page, request }) => {
+  test.setTimeout(280_000);
+  const log = (s: string) => console.log("  " + s);
+  for (const [seat, name, play] of [["9", "fast", J.playFast], ["10", "reasoned-bad", J.playReasonedButBad]] as const) {
+    console.log(`--- seat ${seat}: ${name} ---`);
+    await F.gotoFreshChallenge(page);
+    await J.openRun(page, CODE, seat);
+    try { await play(page, log); } catch (e) { console.log(`  seat ${seat} FAILED: ${String(e).slice(0, 300)}`); await page.screenshot({ path: `/tmp/judge-3/judge-shots/fail-${seat}.png`, fullPage: true }); console.log((await page.locator("main").innerText()).slice(0, 1200)); }
+  }
+});

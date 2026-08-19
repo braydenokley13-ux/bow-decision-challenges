@@ -1,0 +1,87 @@
+
+Running 1 test using 1 worker
+
+override buttons: 14
+PANEL AROUND OVERRIDE:
+ ery required cost is included in the plan exactly once, at the right amount
+
+Carrying the place and the eight weeks of essentials into the plan once each, at what they cost. The student asked for the answer and BOW supplied it after 3 tries, so the total that was submitted is BOW's and not evidence about them.
+
+BOW
+Did not do it
+
+WHAT YOU READ IT AS
+Right first time
+Did it unaided, the first time it mattered.
+Fixed it themselves
+Got it wrong, saw what that cost, and put it right — with no hint.
+Did it after a hint
+Right, once BOW named the problem.
+Part of it
+Some of it, not all of it.
+Did not do it
+None of it — or BOW supplied the answer, which shows nothing about the student.
+Never came up
+This run never asked it of them.
+WHY — THIS IS KEPT WITH THE JUDGEMENT
+
+A judgement with no reason is a number nobody can check later.
+
+Cancel
+Record it
+The plan actually balances
+The saved plan does not exceed available money and leaves nothing unassigned
+
+The saved plan spends no more than Avery has and leaves no dollar without a job. Overcommitment is judged at the first saved attempt. Accounting for every dollar is judged from the final saved Working Plan balance.
+
+BOW
+Fixed it themselves
+
+I read this differently
+Savings is a planned amount
+Savings is set to a deliberate figure before discretionary categories are filled, not as the remainder after them
+
+Where the figure on the course line came from when the opening plan was closed. The course is what Avery is saving into, so a student who let that row take whatever the other two left has let the arithmetic set their savings, and a student who set the figure themselves and let another row absorb the rest has planned it. The course line held a figure the student set, and another row took the last of the money.
+
+BOW
+Right first time
+
+I read this differently
+Knows what money is actually available
+Totals available money correctly before allocating, and does not include money that has a condition attached without marking it as conditional
+
+Totalling the money that actually arrives, and keeping the two bonuses out of it unless they are treated as removable. The student asked for the answer and BOW supplied it after 3 tries, so the total that was submitted is BOW's and not evidence about them.
+
+BOW
+Did not do it
+
+I read this differently
+Explains the trade-off made
+Names something given up, says what it was given up for, and refers to at least one of their own numbers
+
+Avery's defense is where the student names what they gave up and what they gave it up for. The defense was submitted and is waiting for a person to read it. BOW does not score student writing.
+
+BOW
+Never came up
+
+I read this differently
+Separate what a person needs, wants, values and is saving toward, and use that separation to make a spending decision when there is not enough money for everything.
+Fits the choice to the money there is
+Pays for as much as the money in hand can actually reach, and commits no more than there is
+
+Making one week's cash reach as far as it can across three claims that together cost more than it — committing no more than there is, and leaving nothing behind that one of the unpaid claims could still have taken. $120 of the $150 went on the team shoes, and the $30 left over could not have covered the away-game travel share and the present for Avery’s sister.
+
+BOW
+Right first time
+
+I read this differently
+Chooses on 
+CONTROLS: ["BUTTON[button] \"Evidence trail\"","BUTTON[button] \"The plan\"","BUTTON[button] \"The explanation\"","BUTTON[button] \"What next\"","BUTTON[button] \"Right first time\"","BUTTON[button] \"Fixed it themselves\"","BUTTON[button] \"Did it after a hint\"","BUTTON[button] \"Part of it\"","BUTTON[button] \"Did not do it\"","BUTTON[button] \"Never came up\"","TEXTAREA[textarea] \"\"","BUTTON[button] \"Cancel\"","BUTTON[submit] \"Record it\"","BUTTON[button] \"I read this differently\"","BUTTON[button] \"I read this differently\"","BUTTON[button] \"I read this differently\"","BUTTON[button] \"I read this differently\"","BUTTON[button] \"I read this differently\"","BUTTON[button] \"I read this differently\"","BUTTON[button] \"I read this differently\"","BUTTON[button] \"I read this differently\"","BUTTON[button] \"I read this differently\"","BUTTON[button] \"I read this differently\"","BUTTON[button] \"I read this differently\"","BUTTON[button] \"I read this differently\"","BUTTON[button] \"I read this differently\"","BUTTON[button] \"Workability: 0 of 2\"","BUTTON[button] \"Workability: 1 of 2\"","BUTTON[button] \"Workability: 2 of 2\"","BUTTON[button] \"Protected priority: 0 of 2\"","BUTTON[button] \"Protected priority: 1 of 2\"","BUTTON[button] \"Protected priority: 2 of 2\"","BUTTON[button] \"Trade-off: 0 of 2\"","BUTTON[button] \"Trade-off: 1 of 2\"","BUTTON[button] \"Trade-off: 2 of 2\"","BUTTON[button] \"Numerical evidence: 0 of 4\"","BUTTON[button] \"Numerical evidence: 1 of 4\"","BUTTON[button] \"Numerical evidence: 2 of 4\"","BUTTON[button] \"Numerical evidence: 3 of 4\"","BUTTON[button] \"Numerical evidence: 4 of 4\"","BUTTON[submit] \"Save review\"","TEXTAREA[textarea] \"Name one thing they did and one thing to try next time.\"","INPUT[checkbox] \"\"","BUTTON[submit] \"Send it\""]
+copy button: 1 Copy Judge 3 override for a gradebook
+CLIPBOARD >>>
+Seat	Student	Attempt	Story	Turned in	What the work had to show — did it	What the work had to show — part of it, or none of it	What the work had to show — never came up (this run never asked)	What the work had to show — asked of this run (did it + part of it, or none of it, and what a mark is out of)	Workability (/2)	Protected priority (/2)	Trade-off (/2)	Numerical evidence (/4)	Reasoning (/10) — your own marks	BOW judgements you overruled	Skill: Separate what a person needs, wants, values and is saving toward, and use that separation to make a spending decision when there is not enough money for everything.	Skill: Build a plan that fits the money actually available, covers required costs, and gives savings a planned amount rather than whatever is left over.	Skill: Repair a plan after income or costs change, using only the money that can still move, and protect what was already committed.	Session
+1	Ada	1	Eight Weeks to the Showcase	2026-08-19	4	7	2	11						0	Not yet	Not yet	Not yet	c06dcdae-443e-4c59-8028-0b8e95e612e6
+2	Ben	1	Eight Weeks to the Showcase	2026-08-19	10	0	3	10						0	Evidence not all in	Evidence not all in	Showed it	0d61e630-b670-4fbd-b709-a2d32cbf9055
+  ✓  1 [chromium-1366] › e2e/judge3-override.spec.ts:4:1 › override and gradebook (7.9s)
+
+  1 passed (9.4s)

@@ -1,0 +1,22 @@
+
+Running 1 test using 1 worker
+
+ATTEMPT 1: WHAT THE COUSIN’S SPARE ROOM COSTS AVERY No rent. $300 for groceries and gas across the 8 weeks. All eight weeks, before anything else is paid for. TOTAL $ Check Too low. Check that you counted every amount.
+  BUTTONS: ["Choose this setup: Gym District Sublet","Choose this setup: Teammate Share","Selected: Cousin’s Spare Room","Check","Work out the eight-week cost to continue"]
+ATTEMPT 2: WHAT THE COUSIN’S SPARE ROOM COSTS AVERY No rent. $300 for groceries and gas across the 8 weeks. All eight weeks, before anything else is paid for. TOTAL $ Check Too low. Check that you counted every amount. Show me one step
+  BUTTONS: ["Choose this setup: Gym District Sublet","Choose this setup: Teammate Share","Selected: Cousin’s Spare Room","Check","Show me one step","Work out the eight-week cost to continue"]
+ATTEMPT 3: WHAT THE COUSIN’S SPARE ROOM COSTS AVERY No rent. $300 for groceries and gas across the 8 weeks. All eight weeks, before anything else is paid for. TOTAL $ Check Too high. Check whether something got counted twice. Show me one step Show the answer and keep going
+  BUTTONS: ["Choose this setup: Gym District Sublet","Choose this setup: Teammate Share","Selected: Cousin’s Spare Room","Check","Show me one step","Show the answer and keep going","Work out the eight-week cost to continue"]
+ATTEMPT 4: WHAT THE COUSIN’S SPARE ROOM COSTS AVERY No rent. $300 for groceries and gas across the 8 weeks. All eight weeks, before anything else is paid for. TOTAL $ Check Too high. Check whether something got counted twice. Show me one step Show the answer and keep going
+  BUTTONS: ["Choose this setup: Gym District Sublet","Choose this setup: Teammate Share","Selected: Cousin’s Spare Room","Check","Show me one step","Show the answer and keep going","Work out the eight-week cost to continue"]
+ATTEMPT 5: WHAT THE COUSIN’S SPARE ROOM COSTS AVERY No rent. $300 for groceries and gas across the 8 weeks. All eight weeks, before anything else is paid for. TOTAL $ Check Too high. Check whether something got counted twice. Show me one step Show the answer and keep going
+  BUTTONS: ["Choose this setup: Gym District Sublet","Choose this setup: Teammate Share","Selected: Cousin’s Spare Room","Check","Show me one step","Show the answer and keep going","Work out the eight-week cost to continue"]
+ATTEMPT 6: WHAT THE COUSIN’S SPARE ROOM COSTS AVERY No rent. $300 for groceries and gas across the 8 weeks. All eight weeks, before anything else is paid for. TOTAL $ Check Too high. Check whether something got counted twice. Show me one step Show the answer and keep going
+  BUTTONS: ["Choose this setup: Gym District Sublet","Choose this setup: Teammate Share","Selected: Cousin’s Spare Room","Check","Show me one step","Show the answer and keep going","Work out the eight-week cost to continue"]
+ATTEMPT 7: WHAT THE COUSIN’S SPARE ROOM COSTS AVERY No rent. $300 for groceries and gas across the 8 weeks. All eight weeks, before anything else is paid for. TOTAL $ Check Too high. Check whether something got counted twice. Show me one step Show the answer and keep going
+  BUTTONS: ["Choose this setup: Gym District Sublet","Choose this setup: Teammate Share","Selected: Cousin’s Spare Room","Check","Show me one step","Show the answer and keep going","Work out the eight-week cost to continue"]
+ATTEMPT 8: WHAT THE COUSIN’S SPARE ROOM COSTS AVERY No rent. $300 for groceries and gas across the 8 weeks. All eight weeks, before anything else is paid for. TOTAL $ Check Too high. Check whether something got counted twice. Show me one step Show the answer and keep going
+  BUTTONS: ["Choose this setup: Gym District Sublet","Choose this setup: Teammate Share","Selected: Cousin’s Spare Room","Check","Show me one step","Show the answer and keep going","Work out the eight-week cost to continue"]
+  ✓  1 [chromium-1366] › e2e/judge3-gate.spec.ts:4:1 › setup total gate: what happens to a student who keeps getting it wrong (7.1s)
+
+  1 passed (8.4s)

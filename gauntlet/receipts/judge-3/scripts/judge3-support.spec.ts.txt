@@ -1,0 +1,69 @@
+import { test, expect } from "@playwright/test";
+import * as F from "./flow";
+import * as J from "./judge3-lib";
+import { savePlan, week5TotalFor, NUMBERS as N, type PlanContext } from "./plan";
+
+test("a student who asks for a hint and then gets it right, and the writing gate", async ({ page, request }) => {
+  test.setTimeout(280_000);
+  const cls = await F.createClass(request, "Judge 3 support");
+  console.log("CLASSCODE", cls.code, "TEACHERKEY", cls.teacherKey);
+  await F.gotoFreshChallenge(page);
+  await J.openRun(page, cls.code, "1");
+
+  // Ranking right first time.
+  await F.rankPlacesCorrectly(page);
+  await page.locator(".place-card").nth(2).getByRole("button", { name: "Choose this setup" }).click();
+  // One wrong try, then ask for the step, then the right answer.
+  const field = page.getByLabel(/What the .* costs Avery/);
+  await field.fill("240");
+  await page.locator(".chosen-total").getByRole("button", { name: "Check" }).click();
+  await page.waitForTimeout(250);
+  await field.fill("250");
+  await page.locator(".chosen-total").getByRole("button", { name: "Check" }).click();
+  await page.waitForTimeout(250);
+  await page.getByRole("button", { name: "Show me one step" }).click();
+  console.log("HINT SHOWN:", (await page.locator(".chosen-total").innerText()).replace(/\s+/g, " ").slice(0, 400));
+  await field.fill(String(N.setupCosts["cousin-room"]));
+  await page.locator(".chosen-total").getByRole("button", { name: "Check" }).click();
+  await page.waitForTimeout(300);
+  await page.getByRole("button", { name: "Build the plan" }).click();
+
+  const plan: PlanContext = { setupId: "cousin-room" };
+  await F.completeWorkingCalcs(page);
+  await savePlan(page, "working", plan);
+  await F.playSeasonWeeks(page, { claim: 0, reason: 0, deposit: false });
+  await F.passWeek5Calculation(page, String(week5TotalFor(plan)));
+  await savePlan(page, "week5-first-response", plan);
+  await F.decideOpportunity(page, { clinics: false, countBonus: false });
+  await savePlan(page, "final", { ...plan, clinics: false, countCompletionFinal: false });
+  await F.readWeek8Resolution(page);
+
+  // --- the writing gate, on a real explanation with no digits in it ---
+  const tiles = page.locator(".interview__stats button");
+  await tiles.nth(0).click(); await tiles.nth(2).click();
+  const chosen = await tiles.locator("css=.money").allInnerTexts();
+  const box = page.getByLabel("Two to four sentences");
+  const turnIn = page.getByRole("button", { name: "Turn in my plan" });
+  const gate = async (tag: string, text: string) => {
+    await box.fill(text);
+    await page.waitForTimeout(250);
+    const said = (await page.locator(".interview").innerText()).replace(/\s+/g, " ");
+    console.log(`\nGATE [${tag}] disabled=${await turnIn.isDisabled()}\n  text: ${JSON.stringify(text)}\n  rules: ${(said.match(/Tap \d[^.]*\.|Write each number[^.]*\.|Write 2 sentences[^.]*\.|\d sentences so far\.|Both of your numbers[^.]*\.|All \d of your numbers[^.]*\.|\d of Avery’s numbers, tapped\./g) ?? []).join(" | ")}`);
+  };
+  await gate("real prose, no digits",
+    "I kept Avery at the cousin's room because the rent is almost nothing, and I left both bonuses out because neither one is promised. When Week Five took the showcase away I cut the rides money instead of the course, because the course is what Avery is saving for.");
+  await gate("real prose, numbers written as words",
+    "I put twelve hundred dollars toward the course and kept nine hundred back. That reserve is what paid for the brace when Week Five landed.");
+  await gate("junk with the right digits", `asdf asdf ${chosen[0]} asdf. qwer qwer ${chosen[2]} qwer.`);
+  await gate("one long real sentence with both figures",
+    `I protected the course payment of ${chosen[0]} and gave up ${chosen[2]} of the rides money to do it because walking is free and the course is not`);
+  console.log("TILE LABELS:", JSON.stringify(await tiles.allInnerTexts()));
+  await page.screenshot({ path: "/tmp/judge-3/judge-shots/gate.png", fullPage: true });
+  await F.submitDefense(page, "I kept the course whole and cut the rides.", [0, 2]);
+  await F.waitForDelivery(page);
+  console.log("DONE", cls.code, cls.teacherKey);
+  await page.goto(`/educator/class/${cls.code}/students/1?key=${cls.teacherKey}`);
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: "/tmp/judge-3/judge-shots/support/student-1.png", fullPage: true });
+  console.log("\n===== TEACHER PAGE =====\n" + (await page.locator("body").innerText()).replace(/\n{3,}/g, "\n\n"));
+});
