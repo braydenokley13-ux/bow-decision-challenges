@@ -507,3 +507,143 @@ exactly right and I have never seen another tool do it:
 > Not offered as reasons — true of too much of the class to single anybody out:
 > *"Went wrong here and fixed it themselves, with nothing on screen helping."* — 5 of the 11.
 
+
+---
+
+## F10 — [MEDIUM] The same page names students in one section and numbers them in the next
+
+On `/educator/class/<CODE>` after marking (`70-class-after-marking.png`), within one scroll:
+
+| Section | How it refers to children |
+|---|---|
+| Where the room is | *"Not started: **Omar F.**"* |
+| Teach next → Who needs it | *"**Seat 4** · Did not do it"*, *"Seat 8"*, *"Seat 9"* |
+| In their own words | *"**Seat 4** · did not do it · open the evidence"* |
+| What they decided | *"**Marcus T.**", "Leila H. and Mei L."* … |
+| After Week 5 | *"**Ana R.**, Devon P., Priya S. …"* |
+
+And on the printed debrief (`73-debrief-print.pdf`):
+
+| Section | |
+|---|---|
+| 2 · Put two real plans side by side | **SEAT 4** / **SEAT 5** |
+| 3 · What changed when it went wrong | *"5 of 11 cut sports-media course first — **seats 1, 2, 5, 8, 11**"* |
+| 5 · Read these explanations aloud | *"— **Ana R.**", "— Devon P."* … |
+
+The class has a roster. The product has the names — it uses them four inches away. "Who needs
+it: Seat 4, Seat 8, Seat 9" is the single most actionable line on the post-lesson page and it is
+the one I have to translate by hand, three children at a time, against a card list I printed an
+hour ago. Same for "seats 1, 2, 5, 8, 11" on the sheet I am reading from at the front.
+
+This is exactly the clerical work a computer should do, and the computer is doing it correctly
+elsewhere on the same page.
+
+---
+
+## F11 — [MEDIUM] Three lines of the class read carry a count and no names
+
+Under "After Week 5", every line has names except the three that matter most for a follow-up:
+
+```
+Backup money absorbed a loss        1 of 10
+Finished with something uncovered   1 of 10
+Landed a plan they never changed    0 of 10
+```
+
+*"1 of 11 finished with something uncovered"* is the one child in my room whose plan did not
+work. The page will not tell me which one. `adaptationSummary` computes
+`leftUncovered: string[]` and `buffered: string[]` — the seat codes are right there in the same
+object the named rows are built from — and the renderer prints only `.length`.
+
+---
+
+## F12 — [LOW-MEDIUM] "Working right now" is not right now for the last half of a lesson
+
+`90-live-state-next-day.png`, taken an hour after the last of my students stopped:
+
+```
+WHERE THE ROOM IS
+TURNED IN 11 of 14 · WORKING RIGHT NOW 2 of 14 · NOT STARTED 1 of 14
+Jaylen W.   Week 5 · first response       64 min ago
+Sofia M.    Weeks 1–4 · Week 3's cash     64 min ago
+```
+
+Nobody is working. The threshold is `LESSON_QUIET_MS = 90 * 60_000`
+(`src/educator/analysis.ts:400`), chosen — the comment says — to be "deliberately longer than
+any lesson this runs in". My lessons are 42 minutes. So for the whole of a normal period,
+*every* student who has stopped still counts as *working right now*, including the ones who
+gave up twenty minutes ago, and the tile that would tell me otherwise — *Started, not turned
+in* — is hidden until 90 minutes have passed, which is after I have gone to lunch.
+
+I want to be fair about this: the list underneath **does** carry the answer, in minutes, sorted
+oldest-first, which is why this is not higher up the list. It is the tile that is wrong, not the
+panel. But the tile is the thing you read at a glance while walking, and at minute 35 of a
+42-minute lesson it is the number I would act on.
+
+
+---
+
+## F13 — [HIGH] One child had a second go, and the printed debrief now describes a class of twelve, files that child under two contradictory answers, and reports a different assessed rate from the class page
+
+Carlos V. pressed *Play it again* — the product's own invitation, on the child's own home page,
+with the honest sentence *"a new run is turned in as well as it, not instead of it — your
+teacher sees both."* One extra attempt, nothing exotic.
+
+Here is the same class, at the same moment, on the two educator surfaces:
+
+| | Class page `/educator/class/XEWFA` | **Printed debrief** `/…/debrief` |
+|---|---|---|
+| Headline | "11 of 14 turned in. 1 of 11 still to read." | "11 students finished." |
+| Assessed rate | **"70% of the 10 read so far showed it — 7 of 10."** | **"73% of the 11 assessed students showed it."** |
+| Cut the course first | "5 **of 11** … Ana R., Devon P., Priya S., Ibrahim K. and Mei L." | "5 **of 12** — seats 1, 2, 5, 8, 11" |
+| Cut backup money first | "4 of 11 — Leila H., Marcus T., **Carlos V.** and Hannah G." | "4 of 12 — seats 3, 4, **10**, 13" |
+| Cut rides and rest first | "2 of 11 — Nina D. and Tyrell B." | "3 of 12 — seats 9, **10**, 12" |
+
+Three separate failures in that table.
+
+1. **Seat 10 is in two buckets on the printed page.** Carlos's first run cut backup money and
+   his second cut rides, and the debrief counts both, so the sheet I read from says one child
+   did two mutually exclusive things.
+2. **The denominator is 12 for a class of 11**, four lines under a heading that says "11
+   students finished".
+3. **The debrief says every student is assessed while the class page says one is not.** Carlos's
+   latest attempt is unread — the class page says "1 awaiting your reading" and drops him from
+   its rate. The debrief counts his *older, marked* attempt and asserts 11 of 11 assessed.
+
+The cause is one argument:
+
+```ts
+// src/educator/RealClassPages.tsx:641-642 — correct
+const counted = roll.rows.flatMap((row) => submissions.filter((e) => e.sessionId === row.sessionId));
+const spine = classSpineFrom({ record, assignments, submissions: counted });
+
+// src/educator/Debrief.tsx:72 — raw
+const spine = classSpineFrom({ record, assignments, submissions });
+```
+
+The class page passes the roll (one latest attempt per seat still on the roster). The debrief
+passes every submission record. Both then call the same function, which is why the file's own
+header comment believes the problem is solved:
+
+> *Both surfaces now read `classSpineFrom`, so disagreeing is no longer something they can do.*
+> — `Debrief.tsx:28`
+
+They read the same function with different inputs, and they disagree. `RealClassPages.tsx`
+makes the same claim from the other side — *"the debrief, the queue and the export all count
+the first of those"* — and the debrief does not.
+
+**What it costs.** The debrief is the printed artefact. The number I say out loud, and the one
+I would put in a department meeting, is the wrong one, and it is wrong in the flattering
+direction. Any student who takes the product up on *Play it again* — which the product
+encourages, correctly, because there is no score to beat — moves the number.
+
+**Reproduce.**
+1. Have five or more students turn in and mark them all.
+2. Sign in as one of them, press *Play it again*, complete a second run with different Week 5
+   decisions, turn it in. Do not mark it.
+3. Open the class page and the debrief side by side. Compare the assessed rate, the "After
+   Week 5" denominators, and look for that seat in two buckets.
+
+Receipts: `100-class-two-attempts.png`, `101-debrief-two-attempts.png`,
+`103-debrief-two-attempts.pdf`.
+
