@@ -102,7 +102,7 @@ Call log:
    at walkthrough.spec.ts:116
 ```
 
-(`gauntlet/receipts/judge-6/walkthrough-failure.log`.) `e2e/flow.ts`'s
+(`gauntlet/receipts/judge-6/walkthrough-failure.txt`.) `e2e/flow.ts`'s
 `playSeasonWeeks` does it properly (`.claims__list` → `.claims__why` → `TO_DEPOSIT`) and every
 assertion test uses that; the walkthrough does not. I added the two missing clicks to my own
 copy of the same sequence and it passed that point in three seconds and completed all 25

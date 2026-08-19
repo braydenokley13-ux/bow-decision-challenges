@@ -1,0 +1,54 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 [j6] › e2e-judge6/walkthrough-repro.spec.ts:38:3 › walkthrough at 1366 (4.0m)
+
+
+  1) [j6] › e2e-judge6/walkthrough-repro.spec.ts:38:3 › walkthrough at 1366 ────────────────────────
+
+    Test timeout of 240000ms exceeded.
+
+    Error: locator.click: Test timeout of 240000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Wait and decide later' })
+
+
+      114 |     await page.getByRole("button", { name: TO_DEPOSIT }).click();
+      115 |     await shoot("08c-deposit-deadline");
+    > 116 |     await page.getByRole("button", { name: "Wait and decide later" }).click();
+          |                                                                       ^
+      117 |     await shoot("08d-deposit-chosen");
+      118 |     await page.getByRole("button", { name: "Lock it in and play Week 5" }).click();
+      119 |     await shoot("09-week5-reveal");
+        at /tmp/judge-6/e2e-judge6/walkthrough-repro.spec.ts:116:71
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/walkthrough-repro-walkthrough-at-1366-j6/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/walkthrough-repro-walkthrough-at-1366-j6/error-context.md
+
+  1 failed
+    [j6] › e2e-judge6/walkthrough-repro.spec.ts:38:3 › walkthrough at 1366 ─────────────────────────
+
+--------------------------------------------------------------------------------------
+Judge 6 note. This is `e2e/walkthrough.spec.ts` copied verbatim into my own test dir, cut
+to the 1366 size and given a 240s per-test budget instead of 180s, run against a class
+service and app that were already up. It produced 15 of ~25 screenshots and then waited
+240 seconds for a button that the product is correct not to be showing.
+
+Three independent runs, two of them through `npm run walkthrough` unmodified, stopped at
+the same screenshot: 08c-deposit-deadline.
+
+Cause: walkthrough.spec.ts presses TO_DEPOSIT on the Week 3 screen without first funding a
+claim and giving a reason. e2e/flow.ts::playSeasonWeeks — which every assertion test uses —
+does `.claims__list button` then `.claims__why button` then TO_DEPOSIT. The walkthrough
+does not. Adding those two clicks to the same sequence in
+gauntlet/receipts/judge-6/specs/basketball.spec.ts carries it past this point in ~3s and
+through all 25 screens in 37s.
+
+The walkthrough test.skip()s unless WALKTHROUGH_OUT is set, so no CI build runs it.
+62c724bf40112cf03b45d6431186c1fa  /tmp/judge-6-shots/wrepro/1366-01-home.png
+62c724bf40112cf03b45d6431186c1fa  /tmp/judge-6-shots/wrepro/1366-02-opening.png
+8f3e19d8a8cdcfe4550e0b9abb0f1397  /tmp/judge-6-shots/wrepro/1366-03-deal-and-places.png
+8f3e19d8a8cdcfe4550e0b9abb0f1397  /tmp/judge-6-shots/wrepro/1366-04-rank-the-places.png
