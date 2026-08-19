@@ -10,15 +10,72 @@ import type { EvidenceEvent } from "../../domain/evidence/types";
 const NOW = 1_770_000_000_000;
 
 function api(store: ClassStore, now = NOW) {
-  return (method: string, path: string, body?: unknown, key?: string) =>
+  return (method: string, path: string, body?: unknown, key?: string, token?: string) =>
     handleApiRequest(
-      { method, path, headers: key ? { "x-bow-teacher-key": key } : {}, ...(body !== undefined ? { body } : {}) },
+      {
+        method,
+        path,
+        headers: {
+          ...(key ? { "x-bow-teacher-key": key } : {}),
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
+        ...(body !== undefined ? { body } : {}),
+      },
       { store, now: () => now },
     );
 }
 
+/**
+ * A seat on the class list, and a session holding it.
+ *
+ * Every submission in this file goes through this now, because the service refuses work that
+ * cannot say who sent it — in every class, not only a rostered one. It used to make the
+ * exception for a class with no list, and that exception was an unauthenticated write endpoint
+ * keyed on a code written on a whiteboard: a security review posted a fabricated run under seat
+ * 7 of a class it had never joined and the teacher's evidence room accepted it as a child's.
+ *
+ * Seats are handed out in order, so this asks for as many rows as it takes to reach the one it
+ * wants and signs in with the last card.
+ */
+const SEATS = new Map<string, string>();
+
+async function seatToken(store: ClassStore, created: ClassCreation, seatCode = "7", now = NOW): Promise<string> {
+  const known = SEATS.get(`${created.code}:${seatCode}`);
+  if (known) return known;
+  const call = api(store, now);
+  const wanted = Number(seatCode);
+  const roster = ((await call("GET", `/classes/${created.code}/roster`, undefined, created.teacherKey)).body as { roster: { seatCode: string }[] }).roster;
+  let card = roster.find((row) => row.seatCode === seatCode) as { seatCode: string; joinCode: string } | undefined;
+  if (!card) {
+    const names = Array.from({ length: wanted - roster.length }, (_, index) => `Test Student ${roster.length + index + 1}`);
+    const made = await call("POST", `/classes/${created.code}/roster`, { names }, created.teacherKey);
+    card = ((made.body as { cards: { seatCode: string; joinCode: string }[] }).cards).at(-1);
+  }
+  const joined = await call("POST", `/classes/${created.code}/join`, { joinCode: card?.joinCode, device: "shared" });
+  const token = (joined.body as { token: string }).token;
+  SEATS.set(`${created.code}:${seatCode}`, token);
+  return token;
+}
+
+/** One student turning their own work in, which is the only way work arrives. */
+async function turnIn(store: ClassStore, created: ClassCreation, over: Record<string, unknown> = {}, now = NOW) {
+  const seatCode = typeof over.seatCode === "string" ? over.seatCode : submission.seatCode;
+  const token = await seatToken(store, created, seatCode, now);
+  return api(store, now)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code, ...over }, undefined, token);
+}
+
+/**
+ * A whole run, in miniature: a student sat down and, at the end, wrote something.
+ *
+ * The written answer is here rather than being the one event this fixture omits, because the
+ * service now refuses to record a reasoning mark against an attempt that contains no writing
+ * — a mark on an empty string used to become a rubric level printed under the heading BOW.
+ * A fixture that could be scored without any writing in it was describing a submission the
+ * product does not accept.
+ */
 const log: EvidenceEvent[] = [
   { id: "event-1", sequence: 1, timestamp: NOW, type: "SESSION_STARTED", stage: "entry", challengeId: PLAN_UNDER_PRESSURE.id, challengeVersion: PLAN_UNDER_PRESSURE.version, sessionId: "session-aaaaaaaa", worldId: "basketball", conceptIds: [], competencyIds: [], evidenceRequirementIds: [], payload: {}, supportLevel: "standard_access" },
+  { id: "event-2", sequence: 2, timestamp: NOW, type: "DEFENSE_SUBMITTED", stage: "defense", challengeId: PLAN_UNDER_PRESSURE.id, challengeVersion: PLAN_UNDER_PRESSURE.version, sessionId: "session-aaaaaaaa", worldId: "basketball", conceptIds: [], competencyIds: [], evidenceRequirementIds: [], payload: { text: "I kept the backup money because the bonus is not guaranteed.", tileIds: ["reserve"] }, supportLevel: "standard_access" },
 ];
 
 const submission = {
@@ -152,7 +209,7 @@ describe("joining and submitting", () => {
   it("accepts a student's evidence", async () => {
     const store = memoryStore();
     const created = await makeClass(store);
-    const result = await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code });
+    const result = await turnIn(store, created);
     expect(result.status).toBe(202);
     expect(await store.listSubmissions(created.code)).toHaveLength(1);
   });
@@ -165,7 +222,7 @@ describe("joining and submitting", () => {
   it("replaces rather than duplicates when a delivery is retried", async () => {
     const store = memoryStore();
     const created = await makeClass(store);
-    const send = () => api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code });
+    const send = () => turnIn(store, created);
     await send();
     await send();
     await send();
@@ -175,9 +232,9 @@ describe("joining and submitting", () => {
   it("keeps a score a person already gave when the same seat re-delivers", async () => {
     const store = memoryStore();
     const created = await makeClass(store);
-    await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code });
+    await turnIn(store, created);
     await api(store)("PATCH", `/classes/${created.code}/submissions/7`, { reasoningPoints: 8 }, created.teacherKey);
-    await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code });
+    await turnIn(store, created);
     const stored = await store.listSubmissions(created.code);
     expect(stored[0]!.reasoningPoints).toBe(8);
   });
@@ -186,7 +243,7 @@ describe("joining and submitting", () => {
     const store = memoryStore();
     const created = await makeClass(store);
     for (const [seatCode, sessionId] of [["7", "session-aaaaaaaa"], ["12", "session-bbbbbbbb"]]) {
-      await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code, seatCode, sessionId });
+      await turnIn(store, created, { seatCode, sessionId });
     }
     expect((await store.listSubmissions(created.code)).map((record) => record.seatCode)).toEqual(["7", "12"]);
   });
@@ -204,15 +261,20 @@ describe("joining and submitting", () => {
     const store = memoryStore();
     const created = await makeClass(store);
     await store.putClass({ ...(await store.getClass(created.code))!, challengeId: "some-other-challenge" });
-    const result = await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code });
+    const result = await turnIn(store, created);
     expect(result.status).toBe(409);
   });
 
   it("refuses a malformed seat or an empty log", async () => {
     const store = memoryStore();
     const created = await makeClass(store);
+    // Signed in as a real seat, sending a malformed body — which is the order the checks have
+    // to run in for these answers to mean anything. A caller with no session is refused before
+    // the body is read at all, and 403 for a bad seat code would be the wrong answer to a real
+    // student's typo.
+    const token = await seatToken(store, created);
     for (const bad of [{ seatCode: "0" }, { seatCode: "abc" }, { log: [] }, { sessionId: "x" }]) {
-      const result = await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code, ...bad });
+      const result = await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code, ...bad }, undefined, token);
       expect(result.status).toBe(400);
     }
   });
@@ -237,7 +299,7 @@ describe("only the educator can read the room", () => {
   it("opens the evidence room to the key", async () => {
     const store = memoryStore();
     const created = await makeClass(store);
-    await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code });
+    await turnIn(store, created);
     const result = await api(store)("GET", `/classes/${created.code}/submissions`, undefined, created.teacherKey);
     expect(result.status).toBe(200);
     expect((result.body as { submissions: SubmissionRecord[] }).submissions).toHaveLength(1);
@@ -246,7 +308,7 @@ describe("only the educator can read the room", () => {
   it("refuses a reasoning score from anyone without the key, and clamps one from the educator", async () => {
     const store = memoryStore();
     const created = await makeClass(store);
-    await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code });
+    await turnIn(store, created);
 
     expect((await api(store)("PATCH", `/classes/${created.code}/submissions/7`, { reasoningPoints: 9 })).status).toBe(403);
 
@@ -282,7 +344,9 @@ describe("a class holds the work it was set", () => {
     // assignment measures, so it is not recorded as what it measures.
     expect(assignment.competencyIds).toEqual(["plan-within-income"]);
     expect(assignment.classId).toBe(created.code);
-    expect(assignment.allowedWorldIds).toEqual(["basketball"]);
+    // A request that names no world gets every world that is actually built. Two are now, and
+    // choice is still off, because a teacher who did not ask for it has not asked for it.
+    expect(assignment.allowedWorldIds).toEqual(["basketball", "food-truck"]);
     expect(assignment.studentChoosesWorld).toBe(false);
     expect(assignment.format).toBe("decision-challenge");
     expect(assignment.assignedStudentIds).toBeNull();
@@ -345,14 +409,12 @@ describe("a class holds the work it was set", () => {
     const created = await makeClass(store);
     const assignment = (await setWork(store, created)).body as Assignment;
 
-    const accepted = await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code, assignmentId: assignment.id });
+    const accepted = await turnIn(store, created, { assignmentId: assignment.id });
     expect(accepted.status).toBe(202);
     expect((await store.listSubmissions(created.code))[0]!.assignmentId).toBe(assignment.id);
 
     const other = await makeClass(memoryStore());
-    const refused = await api(store)("POST", `/classes/${created.code}/submissions`, {
-      ...submission, classCode: created.code, seatCode: "8", assignmentId: legacyAssignmentId(other.code),
-    });
+    const refused = await turnIn(store, created, { seatCode: "8", assignmentId: legacyAssignmentId(other.code) });
     expect(refused.status).toBe(404);
     expect((refused.body as { error: string }).error).toBe("assignment_not_found");
     expect(await store.listSubmissions(created.code)).toHaveLength(1);
@@ -364,7 +426,7 @@ describe("a class holds the work it was set", () => {
     const store = memoryStore();
     const created = await makeClass(store);
     await setWork(store, created);
-    await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code });
+    await turnIn(store, created);
 
     expect((await api(store)("GET", `/classes/${created.code}/submissions`)).status).toBe(403);
     expect((await api(store)("GET", `/classes/${created.code}/submissions`, undefined, created.code)).status).toBe(403);
@@ -378,7 +440,7 @@ describe("a class created before any of this still works", () => {
   /** A class written by the previous build: no assignments anywhere, and evidence in it. */
   async function preAssignmentClass(store: ClassStore) {
     const created = await makeClass(store);
-    await api(store)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code });
+    await turnIn(store, created);
     expect(await store.listAssignments(created.code)).toHaveLength(0);
     return created;
   }

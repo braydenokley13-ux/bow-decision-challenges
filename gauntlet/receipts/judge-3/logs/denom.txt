@@ -1,0 +1,765 @@
+
+Running 1 test using 1 worker
+
+
+
+========== overview :: /educator/class/RVPN6?key=XXJ3NQQMXDXMUGPA9PT4DRMR ==========
+B
+BOW
+DECISION CHALLENGES
+My classes
+Objectives
+Guide
+SIGN IN
+
+JUDGE 3 DENOMINATOR · EIGHT WEEKS TO THE SHOWCASE Rename
+
+8 of 8 turned in. 8 of 8 still to read.
+
+0% of the 5 read so far showed it — 0 of 5.
+
+Read the 8 explanations →
+
+8 students · 8 attempts
+8 awaiting your reading
+
+RIGHT NOW
+
+WHERE THE ROOM IS
+TURNED IN
+8 of 8
+WORKING RIGHT NOW
+0 of 8
+NOT STARTED
+0 of 8
+
+WHAT SHOULD I TEACH NEXT?
+
+WHAT APPEARS MISUNDERSTOOD
+
+No named misconception sits behind this one.
+
+Correctly totals what was lost and what is newly required
+
+Nobody's writing has been read yet, so there is nothing to quote. The counts above come from what students did, not from what they wrote.
+
+TEACH NEXT
+
+Works out the size of the change
+
+BOW has no reteach topic for this one, because the model names no misconception behind it.What the work had to show is: correctly totals what was lost and what is newly required.
+
+Why this class: 5 of 5 assessed students (100%) did not show “works out the size of the change”.
+
+WHO NEEDS IT
+
+Seat 1
+Did not do it
+Seat 2
+Did not do it
+Seat 3
+Did not do it
+Seat 4
+Did not do it
+Seat 5
+Did not do it
+Show the counts behind this
+
+WHAT THE EVIDENCE SHOWS
+
+WHERE THE CLASS IS ON EACH SKILL
+Counts across all 8 who turned in. 5 of them have a usable result — one whose written explanation somebody has read.
+SKILL	WHERE THE CLASS IS
+Repair a plan after income or costs change, using only the money that can still move, and protect what was already committed.	3 showed it · 5 not yet
+Separate what a person needs, wants, values and is saving toward, and use that separation to make a spending decision when there is not enough money for everything.	5 not yet · 3 evidence not all in
+Build a plan that fits the money actually available, covers required costs, and gives savings a planned amount rather than whatever is left over.	5 not yet · 3 evidence not all in
+
+WHAT THESE WORDS MEAN
+
+Showed it — Showed every part the work had to show, with no hint.
+
+Not yet — At least one part was not shown.
+
+Evidence not all in — Some of it has no judgement yet — usually because nobody has read the writing.
+
+EIGHT WEEKS TO THE SHOWCASE · 8 STUDENTS
+
+WHAT THEY DECIDED
+Where did they put Avery?
+5
+Gym District Sublet
+Student 1, Student 2, Student 3, Student 4 and Student 5
+0
+Teammate Share
+Nobody
+3
+Cousin’s Spare Room
+Student 6, Student 7 and Student 8
+Which income did they plan around?
+5
+Counted the Making the cut bonus in the opening plan
+Student 1, Student 2, Student 3, Student 4 and Student 5
+3
+Left it out from the start
+Student 6, Student 7 and Student 8
+When did they commit to the course?
+0
+Reserved the seat at Week 4
+Nobody
+8
+Waited and paid the full price
+Student 1, Student 2, Student 3, Student 4, Student 5, Student 6 and 2 more
+Did they take the paid Saturdays?
+0
+Took the Saturday clinics
+Nobody
+8
+Kept the Saturdays
+Student 1, Student 2, Student 3, Student 4, Student 5, Student 6 and 2 more
+Did the final plan still count the attendance bonus?
+0
+Built the final plan around the Perfect attendance bonus
+Nobody
+8
+Planned without it
+Student 1, Student 2, Student 3, Student 4, Student 5, Student 6 and 2 more
+
+AFTER WEEK 5
+
+What moved
+3
+of 8 cut rides and rest first
+Student 6, Student 7 and Student 8
+Backup money absorbed a loss
+0 of 8
+Finished with something uncovered
+0 of 8
+Landed a plan they never changed
+5 of 8
+
+OPEN THESE
+
+EVERY STUDENT WHO TURNED IN
+Student 1
+Not yet
+Chooses on what the claim is, not what it costs — Did not do it · 6 more
+Student 2
+Not yet
+Chooses on what the claim is, not what it costs — Did not do it · 6 more
+Student 3
+Not yet
+Chooses on what the claim is, not what it costs — Did not do it · 6 more
+Student 4
+Not yet
+Chooses on what the claim is, not what it costs — Did not do it · 6 more
+Student 5
+Not yet
+Chooses on what the claim is, not what it costs — Did not do it · 6 more
+Student 6
+Evidence not all in
+Written explanation still to read.
+Student 7
+Evidence not all in
+Written explanation still to read.
+Student 8
+Evidence not all in
+Written explanation still to read.
+Copy Judge 3 denominator for a gradebook
+
+NEXT
+Run the debrief
+
+Two real plans, what changed after Week 5, and what to review — from this class's evidence.
+
+Open the debriefPick what the room sees
+THIS CLASS
+Who is in this class
+
+Names, join cards, a card reissued for a student who lost theirs, and taking somebody off the list.
+
+Class list
+
+
+========== reading :: /educator/class/RVPN6/reading?key=XXJ3NQQMXDXMUGPA9PT4DRMR ==========
+B
+BOW
+DECISION CHALLENGES
+My classes
+Objectives
+Guide
+SIGN IN
+← Class evidence
+
+JUDGE 3 DENOMINATOR · READING QUEUE
+
+Read and score the explanations.
+
+8 of 8 turned in · 8 still to read. You score the writing; nothing here is machine-scored.
+
+← Previous
+
+1 of 8 · Student 1 · still to read
+
+Next →
+Student 1
+asdf asdf $5,000 asdf. qwer qwer $700 qwer.
+
+Open this student’s evidence →
+
+SCORE THE WRITING — FOUR THINGS, YOU DECIDE
+
+Workability
+Explains why the final plan actually holds
+0
+1
+2
+Protected priority
+Names what they chose to keep, and why
+0
+1
+2
+Trade-off
+Names what that choice cost them
+0
+1
+2
+Numerical evidence
+Two accurate, relevant numbers from their own plan
+0
+1
+2
+3
+4
+Reasoning total
+—/10
+Save and read the next
+Score all four to save.
+
+
+========== debrief :: /educator/class/RVPN6/debrief?key=XXJ3NQQMXDXMUGPA9PT4DRMR ==========
+B
+BOW
+DECISION CHALLENGES
+My classes
+Objectives
+Guide
+SIGN IN
+
+JUDGE 3 DENOMINATOR · EIGHT WEEKS TO THE SHOWCASE
+
+Debrief
+
+8 students finished. 0% of the 5 assessed students showed it.
+
+Back to the class
+Print this debrief
+1 · OPEN WITH THE DISAGREEMENT
+
+“You put Avery in 2 different places and the plans all worked. What was each one buying?”
+
+5 chose Gym District Sublet, 3 chose Cousin’s Spare Room.
+
+2 · PUT TWO REAL PLANS SIDE BY SIDE
+
+PLAN 1
+
+Gym District Sublet
+Course seat
+Waited
+Saturdays
+Kept them
+Counted the bonus
+No
+Sports-media course
+$0
+Backup money
+$0
+Rides and rest
+$3,400
+
+Made every session. $1,200 short of the course. Ends holding $800.
+
+Not yet · Chooses on what the claim is, not what it costs — Did not do it
+
+PLAN 2
+
+Cousin’s Spare Room
+Course seat
+Waited
+Saturdays
+Kept them
+Counted the bonus
+No
+Sports-media course
+$1,200
+Backup money
+$450
+Rides and rest
+$450
+
+Lost the bonus in Week 6. Course paid. Ends holding $450.
+
+Evidence not all in
+
+WHAT THESE WORDS MEAN
+
+Not yet — At least one part was not shown.
+
+Evidence not all in — Some of it has no judgement yet — usually because nobody has read the writing.
+
+3 · WHAT CHANGED WHEN IT WENT WRONG
+
+After Week 5
+
+3 of 8 cut rides and rest first — seats 6, 7, 8
+0 of 8 backup money absorbed a loss.
+0 of 8 finished with something uncovered.
+5 of 8 landed a plan they never changed.
+4 · WHAT TO REVIEW
+
+5 of 5 assessed students did not show “works out the size of the change”.
+
+BOW names no misconception behind this one, so there is no reteach to hand you. What the work had to show is: correctly totals what was lost and what is newly required.
+
+The students who need it are on the class page.
+
+5 · THE EXPLANATIONS YOU CHOSE TO SHARE
+
+Nothing chosen. Student writing reaches the room only when you pick it.
+
+Pick what the room sees.
+
+
+========== share-out :: /educator/class/RVPN6/share-out?key=XXJ3NQQMXDXMUGPA9PT4DRMR ==========
+B
+BOW
+DECISION CHALLENGES
+My classes
+Objectives
+Guide
+SIGN IN
+← Class evidence
+
+JUDGE 3 DENOMINATOR · SHARE-OUT
+
+Pick what the room sees.
+
+Nothing is shown unless you choose it. Up to 5, in the order you want to take them — two that disagree first is usually the way in.
+
+CHOSEN · 0 OF 5
+
+WHAT YOU WILL SHOW, IN ORDER
+
+Nothing chosen yet. Pick from the list below.
+
+Show names on the screen. Off means the room sees Plan A and Plan B.
+
+FROM THIS CLASS’S OWN WORK
+
+WORTH SHOWING
+
+Student 1 · Eight Weeks to the Showcase
+
+Decided differently from another plan in this class, in Eight Weeks to the Showcase.
+
+asdf asdf $5,000 asdf. qwer qwer $700 qwer.
+Show this
+
+Student 6 · Eight Weeks to the Showcase
+
+Decided differently from another plan in this class, in Eight Weeks to the Showcase.
+
+I kept Avery at the cousin's room because the rent is the one cost I could get almost to nothing, and I left both bonuses out of the total because neither of them is promised. When Week 5 took the showcase away I cut the rides money rather than the course, because the course is the thing Avery is saving for and the rides can go back to walking. The numbers I stood on are $5,000 and $1,200.
+Show this
+
+Not offered as reasons — true of too much of the class to single anybody out:
+
+“Went wrong here and fixed it themselves, with nothing on screen helping.” — 5 of the 8 who ran Eight Weeks to the Showcase.
+“Their writing is a good way into "chooses on what the claim is, not what it costs", which 5 of the 8 who ran this story did not show.” — 5 of the 8 who ran Eight Weeks to the Showcase.
+
+
+========== roster :: /educator/class/RVPN6/roster?key=XXJ3NQQMXDXMUGPA9PT4DRMR ==========
+B
+BOW
+DECISION CHALLENGES
+My classes
+Objectives
+Guide
+SIGN IN
+← Class evidence
+
+CLASS LIST
+
+Who is in this class.
+
+Paste your class list and BOW gives you one card per student to hand out. A student signs in by typing the class code and the code on their card — nothing else, and never a name they type themselves.
+
+8 ON THE LIST · ROOM FOR 52 MORE
+
+ADD STUDENTS
+ONE NAME PER LINE
+
+Write what you want to see on your own screens. First names, initials, table numbers — BOW never checks it against anything. Once this list exists, a student gets in with the class code and the code on their card, and types no name at all.
+
+Add them and make the cards
+
+8 OF 8 HAVE SIGNED IN
+
+THE LIST
+Student 1
+Seat 1
+Signed in 8/19/2026
+Print a new card
+Take off the list
+Erase
+Student 2
+Seat 2
+Signed in 8/19/2026
+Print a new card
+Take off the list
+Erase
+Student 3
+Seat 3
+Signed in 8/19/2026
+Print a new card
+Take off the list
+Erase
+Student 4
+Seat 4
+Signed in 8/19/2026
+Print a new card
+Take off the list
+Erase
+Student 5
+Seat 5
+Signed in 8/19/2026
+Print a new card
+Take off the list
+Erase
+Student 6
+Seat 6
+Signed in 8/19/2026
+Print a new card
+Take off the list
+Erase
+Student 7
+Seat 7
+Signed in 8/19/2026
+Print a new card
+Take off the list
+Erase
+Student 8
+Seat 8
+Signed in 8/19/2026
+Print a new card
+Take off the list
+Erase
+
+A new card stops the old one working. Taking a student off the list keeps everything they turned in — it stops them signing in, and their work stays in the evidence. Erase is the other one: it deletes the name and everything that student did, for a family who has asked you to. Nobody else in the class is affected, and it cannot be undone.
+
+END OF THE DAY
+
+SIGN EVERYBODY OUT
+
+One press ends every student session in this class, on every device. Nothing they did is lost. Use it when the Chromebooks go back on the trolley.
+
+Sign the whole class out
+
+
+========== student-1 :: /educator/class/RVPN6/students/1?key=XXJ3NQQMXDXMUGPA9PT4DRMR ==========
+B
+BOW
+DECISION CHALLENGES
+My classes
+Objectives
+Guide
+SIGN IN
+← Class evidence
+
+TURNED IN 8/19/2026, 8:59:37 AM
+
+Student 1
+
+Gym District Sublet · waited on the course · kept the Saturdays · made every session
+
+WHAT THE EVIDENCE SHOWS
+
+Not yet
+Separate what a person needs, wants, values and is saving toward, and use that separation to make a spending decision when there is not enough money for everything.
+NOT YET
+Build a plan that fits the money actually available, covers required costs, and gives savings a planned amount rather than whatever is left over.
+NOT YET
+Repair a plan after income or costs change, using only the money that can still move, and protect what was already committed.
+NOT YET
+Chooses on what the claim is, not what it costs — Did not do it
+The reason holds up against what they did — Did not do it
+Knows what money is actually available — Did not do it
+Covers what is required first — Did not do it
+Works out the size of the change — Did not do it
+Frees enough to cover it — Did not do it
+Ends with a plan that works, or says what is still short — Part of it
+
+2 things the work had to show were never asked in this run. Absences, not zeros.
+
+WHAT THESE WORDS MEAN
+
+Not yet — At least one part was not shown.
+
+Evidence trail
+The plan
+The explanation
+What next
+
+WHAT BOW CONCLUDED, AND WHY
+
+EVERY JUDGEMENT ON THIS ATTEMPT
+
+WHAT THESE WORDS MEAN
+
+Right first time — Did it unaided, the first time it mattered.
+
+Fixed it themselves — Got it wrong, saw what that cost, and put it right — with no hint.
+
+Part of it — Some of it, not all of it.
+
+Did not do it — None of it — or BOW supplied the answer, which shows nothing about the student.
+
+Never came up — This run never asked it of them.
+
+Build a plan that fits the money actually available, covers required costs, and gives savings a planned amount rather than whatever is left over.
+Covers what is required first
+Every required cost is included in the plan exactly once, at the right amount
+
+Carrying the place and the eight weeks of essentials into the plan once each, at what they cost. The student asked for the answer and BOW supplied it after 3 tries, so the total that was submitted is BOW's and not evidence about them.
+
+BOW
+Did not do it
+
+I read this differently
+The plan actually balances
+The saved plan does not exceed available money and leaves nothing unassigned
+
+The saved plan spends no more than Avery has and leaves no dollar without a job. Overcommitment is judged at the first saved attempt. Accounting for every dollar is judged from the final saved Working Plan balance.
+
+BOW
+Fixed it themselves
+
+I read this differently
+Savings is a planned amount
+Savings is set to a deliberate figure before discretionary categories are filled, not as the remainder after them
+
+Where the figure on the course line came from when the opening plan was closed. The course is what Avery is saving into, so a student who let that row take whatever the other two left has let the arithmetic set their savings, and a student who set the figure themselves and let another row absorb the rest has planned it. The course line held a figure the student set, and another row took the last of the money.
+
+BOW
+Right first time
+
+I read this differently
+Knows what money is actually available
+Totals available money correctly before allocating, and does not include money that has a condition attached without marking it as conditional
+
+Totalling the money that actually arrives, and keeping the two bonuses out of it unless they are treated as removable. The student asked for the answer and BOW supplied it after 3 tries, so the total that was submitted is BOW's and not evidence about them.
+
+BOW
+Did not do it
+
+I read this differently
+Explains the trade-off made
+Names something given up, says what it was given up for, and refers to at least one of their own numbers
+
+Avery's defense is where the student names what they gave up and what they gave it up for. The defense was submitted and is waiting for a person to read it. BOW does not score student writing.
+
+BOW
+Never came up
+
+I read this differently
+Separate what a person needs, wants, values and is saving toward, and use that separation to make a spending decision when there is not enough money for everything.
+Fits the choice to the money there is
+Pays for as much as the money in hand can actually reach, and commits no more than there is
+
+Making one week's cash reach as far as it can across three claims that together cost more than it — committing no more than there is, and leaving nothing behind that one of the unpaid claims could still have taken. $120 of the $150 went on the team shoes, and the $30 left over could not have covered the away-game travel share and the present for Avery’s sister.
+
+BOW
+Right first time
+
+I read this differently
+Chooses on what the claim is, not what it costs
+Says what the unpaid claim was to them — something needed, something promised, or something only wanted — rather than that it was the cheapest one to drop
+
+Saying what the unpaid claim was to Avery rather than what it cost. Price is a fact about a claim and it is not a judgement about whether the claim matters, and this row is where the difference between the two shows. They gave the price as the reason — “It was the cheapest one to drop.” — which says which claim was smallest and nothing about which one mattered.
+
+BOW
+Did not do it
+
+I read this differently
+The reason holds up against what they did
+The reason given is true of something they left unpaid and not of what they paid for, so it accounts for this choice rather than any choice
+
+Whether the reason the student gave is actually true of what they left unpaid, and not equally true of what they paid for. A basis that fits both halves of a choice explains neither of them. The reason given was the price, so nothing was claimed about the away-game travel share and the present for Avery’s sister that could be true or false of it.
+
+BOW
+Did not do it
+
+I read this differently
+Says what made one claim matter more
+Names what made one claim matter more than another — something needed, a promise to somebody, or something they were saving toward — rather than what it cost
+
+Avery's defense is where the student says what made one claim matter more than another — something needed, a promise to somebody, or something they were saving toward. The defense was submitted and is waiting for a person to read it. BOW does not score student writing.
+
+BOW
+Never came up
+
+I read this differently
+Repair a plan after income or costs change, using only the money that can still move, and protect what was already committed.
+Works out the size of the change
+Correctly totals what was lost and what is newly required
+
+Totalling what Week 5 took away and what it newly requires, with every component of the change counted. The student asked for the answer and BOW supplied it after 3 tries, so the total that was submitted is BOW's and not evidence about them.
+
+BOW
+Did not do it
+
+I read this differently
+Frees enough to cover it
+Frees at least the shortfall, or as much as was actually available if full repair was impossible
+
+Freeing as much as the shortfall needed at the first response, measured against the most that could have been freed. The first response freed $0 of the $1,700 that could be freed from existing resources.
+
+BOW
+Did not do it
+
+I read this differently
+Uses only money that can still move
+Repairs from categories that are still adjustable; does not try to reclaim committed money
+
+Repairing out of the amounts that can still move, without reaching for money already committed. Locked-move attempts during final repair are observed separately from contingency attempts.
+
+BOW
+Right first time
+
+I read this differently
+Ends with a plan that works, or says what is still short
+Final plan balances, or the remaining uncovered amount is explicitly acknowledged
+
+Finishing on a plan that balances, or carrying a known uncovered amount forward on purpose. Final viability is the financial state at submission.
+
+BOW
+Part of it
+
+I read this differently
+Explains what they protected and why
+Names what they refused to cut and why
+
+Avery's defense is where the student names what they refused to cut and why. The defense was submitted and is waiting for a person to read it. BOW does not score student writing.
+
+BOW
+Never came up
+
+I read this differently
+
+IN THE ORDER IT HAPPENED
+
+WHAT THIS STUDENT DID
+The first plan
+Worked out a total
+Step 1 of 9
+Covers what is required first
+Did not do it
+Carrying the place and the eight weeks of essentials into the plan once each, at what they cost. The student asked for the answer and BOW supplied it after 3 tries, so the total that was submitted is BOW's and not evidence about them.
+The first plan
+Checked the plan
+Step 2 of 9
+The plan actually balances
+Fixed it themselves
+The saved plan spends no more than Avery has and leaves no dollar without a job. Overcommitment is judged at the first saved attempt. Accounting for every dollar is judged from the final saved Working Plan balance.
+The first plan
+Named the row that takes the rest
+Step 3 of 9
+Savings is a planned amount
+Right first time
+Where the figure on the course line came from when the opening plan was closed. The course is what Avery is saving into, so a student who let that row take whatever the other two left has let the arithmetic set their savings, and a student who set the figure themselves and let another row absorb the rest has planned it. The course line held a figure the student set, and another row took the last of the money.
+The plan without the bonus
+Saved the plan
+Step 4 of 9
+Knows what money is actually available
+Did not do it
+Totalling the money that actually arrives, and keeping the two bonuses out of it unless they are treated as removable. The student asked for the answer and BOW supplied it after 3 tries, so the total that was submitted is BOW's and not evidence about them.
+Weeks 1–4 · Week 3’s cash
+Settled who got Week 3’s cash, and said why
+Step 5 of 9
+Fits the choice to the money there is
+Right first time
+Making one week's cash reach as far as it can across three claims that together cost more than it — committing no more than there is, and leaving nothing behind that one of the unpaid claims could still have taken. $120 of the $150 went on the team shoes, and the $30 left over could not have covered the away-game travel share and the present for Avery’s sister.
+Chooses on what the claim is, not what it costs
+Did not do it
+Saying what the unpaid claim was to Avery rather than what it cost. Price is a fact about a claim and it is not a judgement about whether the claim matters, and this row is where the difference between the two shows. They gave the price as the reason — “It was the cheapest one to drop.” — which says which claim was smallest and nothing about which one mattered.
+The reason holds up against what they did
+Did not do it
+Whether the reason the student gave is actually true of what they left unpaid, and not equally true of what they paid for. A basis that fits both halves of a choice explains neither of them. The reason given was the price, so nothing was claimed about the away-game travel share and the present for Avery’s sister that could be true or false of it.
+Week 5 · the news
+Worked out a total
+Step 6 of 9
+Works out the size of the change
+Did not do it
+Totalling what Week 5 took away and what it newly requires, with every component of the change counted. The student asked for the answer and BOW supplied it after 3 tries, so the total that was submitted is BOW's and not evidence about them.
+Week 5 · first response
+Saved the plan
+Step 7 of 9
+Frees enough to cover it
+Did not do it
+Freeing as much as the shortfall needed at the first response, measured against the most that could have been freed. The first response freed $0 of the $1,700 that could be freed from existing resources.
+Week 5 · the two calls
+Saved the plan
+Step 8 of 9
+Uses only money that can still move
+Right first time
+Repairing out of the amounts that can still move, without reaching for money already committed. Locked-move attempts during final repair are observed separately from contingency attempts.
+Ends with a plan that works, or says what is still short
+Part of it
+Finishing on a plan that balances, or carrying a known uncovered amount forward on purpose. Final viability is the financial state at submission.
+Explaining the plan
+Wrote the explanation
+Step 9 of 9
+Explains the trade-off made
+Never came up
+Avery's defense is where the student names what they gave up and what they gave it up for. The defense was submitted and is waiting for a person to read it. BOW does not score student writing.
+Says what made one claim matter more
+Never came up
+Avery's defense is where the student says what made one claim matter more than another — something needed, a promise to somebody, or something they were saving toward. The defense was submitted and is waiting for a person to read it. BOW does not score student writing.
+Explains what they protected and why
+Never came up
+Avery's defense is where the student names what they refused to cut and why. The defense was submitted and is waiting for a person to read it. BOW does not score student writing.
+
+GRADEBOOK LINE · WHAT THE WORK HAD TO SHOW
+
+DID IT
+4
+PART OF IT, OR NONE OF IT
+7
+NEVER CAME UP
+2
+ASKED OF THIS RUN
+11
+
+A mark on this attempt is out of 11 — did it plus part of it, or none of it. The 2 this run never asked are not in it: absences, not zeros.
+
+WHAT THESE THREE COUNT
+
+Did it — All of it — alone, after seeing what went wrong, or after a hint.
+
+Part of it, or none of it — Some of what it asked for, or nothing.
+
+Never came up — This run never asked it of them. Absences, not zeros.
+
+Reasoning not read yet
+The only number that leaves BOW is the one a person records after reading the writing. Nobody has read this yet.
+
+WRITE BACK
+
+What they hear from you
+ONE OR TWO SENTENCES
+Worth talking about in person — for your list, not theirs.
+Send it
+1200 left
+  ✓  1 [chromium-1366] › e2e/judge3-teacher.spec.ts:7:1 › teacher pages (17.4s)
+
+  1 passed (18.5s)

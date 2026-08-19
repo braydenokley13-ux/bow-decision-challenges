@@ -40,6 +40,13 @@ export interface LoadReadout {
   attendanceHolds: boolean;
   /** What one hour a week costs to buy back. */
   blockCost: Dollars;
+  /**
+   * The most money this week can absorb. Every hour there is to buy, at the block price —
+   * past it a dollar buys nothing at all, because there is no hour left for it to buy. It is
+   * a fact the student needs *before* they spend, which is why it is on the readout rather
+   * than discovered from a row that stopped responding.
+   */
+  buybackCeiling: Dollars;
   /** What it would cost to get back under the line, or null when already under it. */
   costToProtect: Dollars | null;
   /** What it would cost from here, given what has already been spent. */
@@ -77,6 +84,7 @@ export function loadFor(input: LoadInputs, n: ScenarioNumbers): LoadReadout {
     overBy,
     attendanceHolds: overBy === 0,
     blockCost: n.load.blockBuybackCost,
+    buybackCeiling: dollars(demand * n.load.blockBuybackCost),
     costToProtect: shortfallFromDemand === 0 ? null : dollars(shortfallFromDemand * n.load.blockBuybackCost),
     costToClear: dollars(overBy * n.load.blockBuybackCost),
   };

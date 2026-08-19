@@ -114,32 +114,38 @@
 .perf-rule--vertical { width: 1px; height: auto; background: var(--rule-perf-v); }
 
 /*
- * The mark. Small, quiet, and the same everywhere it appears.
+ * The mark. One rendering, and it carries its own ground.
  *
- * The wordmark takes the brand colour on the light chrome and inherits on the dark scenes,
- * because a single fixed colour cannot clear AA against both. This is not something the axe
- * scan can catch: the scenes put an SVG court behind the mark, so the computed background
- * is indeterminate and the check reports incomplete rather than failing. It was found by
- * looking at the rendered page.
+ * It used to be four inherited custom properties — `--mark-ground`, `--mark-plate-ink`,
+ * `--mark-ink`, `--mark-note` — which meant the mark did not decide how it looked: whatever
+ * element happened to wrap it did. `.scene, .home__bar` set all four, for dark scenes that no
+ * longer exist. Measured on the live pages, the result was two marks on the *same* cream
+ * ground `rgb(240,233,219)`: the front door drew an outlined cream plate with a navy letter
+ * and a black product name, and every other surface in the product drew a solid navy plate
+ * with a white letter and the product name in BOW blue. A third rendering — a near-navy
+ * letter on the navy plate at 1.05:1 on `/join`, i.e. no letter at all — came from the same
+ * cause one level down, `.join-shell__bar span` beating `.app-mark__monogram` on specificity.
+ *
+ * A logo whose colours any ancestor may set is not a component, and none of the three
+ * renderings was a decision anybody made. So the plate is opaque and paints itself: navy
+ * ground, white letter, wordmark in ink, product name in BOW blue, on cream, on tan, on
+ * white. There is no tone switch, because there is no surface that needs one — every bar
+ * that carries the mark is light chrome. A dark bar arriving later is a decision for the
+ * person who adds it, taken once, here, rather than guessed at per page.
+ *
+ * `.app-mark .app-mark__monogram` rather than `.app-mark__monogram`: the monogram is a
+ * `<span>`, and a bar rule of the form `.some-bar span` is (0,1,1) and beats (0,1,0). The
+ * two bars that did this have been narrowed to their own children in `app.css`; this is the
+ * floor under that, so the next bar cannot repaint the letter by accident.
  */
-.app-mark__monogram {
-  border-color: var(--mark-ground, var(--bow-brand));
-  background: var(--mark-ground, var(--bow-brand));
+.app-mark .app-mark__monogram {
+  border-color: var(--bow-brand);
+  background: var(--bow-brand);
   color: var(--bow-brand-ink);
 }
 
-.app-mark b { color: var(--mark-ink, var(--ink-1)); }
-.app-mark small { color: var(--mark-note, var(--bow-brand)); }
-
-/* Every dark scene: the mark inherits the light text it is sitting in. The opening bar is
-   no longer one of them — that screen is set on cream now, and the mark there is the same
-   mark the rest of the light chrome carries. */
-.scene, .home__bar {
-  --mark-ink: currentcolor;
-  --mark-note: var(--world-hero-second);
-  --mark-ground: var(--surface-raised);
-  --mark-plate-ink: var(--bow-brand-strong);
-}
+.app-mark b { color: var(--ink-1); }
+.app-mark small { color: var(--bow-brand); }
 
 /* Educator chrome is brand surface, not world surface — a teacher is in BOW, not in Avery's
    season, and the navigation should say so. */

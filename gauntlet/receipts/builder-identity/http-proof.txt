@@ -1,0 +1,31 @@
+
+=== C5 — a teacher ends every session on their account ===
+captured token, GET /me before: 200
+POST /auth/teacher/signout: {"signedOut":true,"at":1787131837993,"message":"Every device signed in to this account has been signed out. Sign in again to carry on."}
+captured token, GET /me after:  401
+captured token, /me/teaching:   401
+
+=== C5 — and a password change, which also turns the generation ===
+{"teacher":{"id":"t_6e0254b951d1497890b1af9d7189b96f","email":"after.1787131837@school.example","createdAt":1787131837644},"token":"eyJzdWIiOiJ0XzZlMDI1NGI5NTFkMTQ5Nzg5MGIxYWY5ZDcxODliOTZmIiwia2luZCI6InRlYWNoZXIiLCJnZW4iOjIsImV4cCI6MTc4OTcyMzgzOH0.QesruzLMEN5ARtW1HQUOvub9l0OZUobiE1BmaQ8A-aU","messag
+token captured before the change, GET /me after: 401
+the token it handed back, GET /me:               200
+
+=== C3 — a leaked teacher key, replaced, class intact ===
+class NQGQR, old key H4REYKXJ46EQ4AEXNDP6ADWF
+POST /api/classes/NQGQR/key -> 200
+{"code":"NQGQR","teacherKey":"QK7A4W4CJWDAR9UF3PQMUQVQ","replacedAt":1787131838877,"message":"This class has a new key. Any link or bookmark carrying the old one has stopped working, on every device including yours — open the class from My Classes to get the new link. Nothing your students have done has changed."}
+
+old key, evidence room:  403
+new key, evidence room:  200
+roster still has the children: {"roster":[{"seatCode":"1","displayName":"Aiden R","claimed":false,"claimedAt":null,"removedAt":null},{"seatCode":"2","displayName":"Bianca T","claimed":true,"claimedAt":1787131838745,"removedAt":null}],"joinMode":"roste
+the student's checkpoint survives: {"attempt":{"classCode":"NQGQR","seatCode":"2","studentId":"s_534bed1da3384c968a1392fcdc0f9ef7","assignmentId":"","worldId":"basketball","stage":"working-plan","startedAt":1787131838862,"updatedAt":17
+/me/teaching carries the new key: 1
+
+=== C6 — the same flood the review ran, against the fixed service ===
+open class VTYJ4 (no roster, no teacher account) — the review's exact starting point
+self-served 15 student sessions in 1909ms
+one request body: 3.5M
+413 413 413 413 413 413 413 413 413 413 413 413 413 413 413 
+15 x 3.4MB checkpoints attempted in 615ms; store grew 0KB (was 65MB before the fix)
+what the student is told: {"error":"bad_request","message":"This attempt is too big to save to your class. Everything you have done is still on this device — shorten what you have written and it will save again."}
+a 250KB payload (inside the cap) still saves: 200

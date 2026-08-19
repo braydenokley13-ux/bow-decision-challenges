@@ -2,7 +2,8 @@ import { Link } from "react-router-dom";
 import { MINIMUM_ASSESSED_FOR_A_STATE } from "../domain/competency/objectiveState";
 import { GAP_THRESHOLD_PERCENT, type RequirementGap, type TeachNextReading } from "../domain/competency/teachNext";
 import type { MisconceptionSpotlight } from "./misconceptions";
-import type { ObjectiveClassResult } from "./objectiveResults";
+import { levelLabel, LEVEL_BUCKET_LABELS, studentsWho, TERMS } from "./labels";
+import { useSeatLabel } from "./names";
 
 /**
  * "What should I teach next?" — §18, rendered in the order §18.1 fixes and in no other.
@@ -19,21 +20,56 @@ import type { ObjectiveClassResult } from "./objectiveResults";
  * Nothing here is generated. Every sentence is a fixed template filled with a count that
  * came from real submissions, and every state that refuses to make a claim says why it is
  * refusing rather than going quiet.
+ *
+ * It takes a reading rather than a page's own data, because the class page and the objective
+ * page render the same one. Two copies of this component would be two answers to "what
+ * should I teach next?" for the same class.
  */
 
-/** The counts behind every required requirement. The audit trail for the card above it. */
+/** Nothing happened here: nobody fell short of it, and nobody went unasked. */
+function nothingHappened(gap: RequirementGap): boolean {
+  return gap.struggled === 0 && gap.notObserved === 0;
+}
+
+/**
+ * How many rows of nothing it takes before they are worth saying once.
+ *
+ * Two is not a wall and folding two would cost a teacher two labels to save two lines. Ten
+ * is a wall: a reviewer opened the sample class and met a thirteen-row table of which ten
+ * read `0 of 12` and `0%`, directly under a banner that had already told them nothing stood
+ * out. Seven hundred pixels of a screen a teacher opens between lessons, restating the
+ * sentence above it.
+ */
+const FOLD_ROWS_OF_NOTHING_FROM = 3;
+
+/**
+ * The counts behind everything the work had to show. The audit trail for the card above it.
+ *
+ * The first column's header is Ladder 1's noun for the unit, and it is the phrase the rest
+ * of the product was renamed onto: this table already used it when five other surfaces were
+ * calling the same object a requirement, a criterion, a required part, an evidence
+ * requirement or a micro-skill.
+ *
+ * The third column used to read "Never asked", one of eleven phrasings of a level improvised
+ * in JSX. It is Ladder 2's `null`, read from the table, and it stays in its own column: an
+ * opportunity the run never presented can never be read as a student who got it wrong.
+ */
 function GapTable({ gaps, assessed }: { gaps: readonly RequirementGap[]; assessed: number }) {
+  // The reading sorts worst first, so the rows nothing happened on are the tail of it.
+  const quiet = gaps.filter(nothingHappened);
+  const folded = quiet.length >= FOLD_ROWS_OF_NOTHING_FROM;
+  const rows = folded ? gaps.filter((gap) => !nothingHappened(gap)) : gaps;
   return (
     <table className="micro-table next-lesson__gaps">
       <thead>
         <tr>
-          <th scope="col">What the work had to show</th>
-          <th scope="col">Did not show it</th>
-          <th scope="col">Never asked</th>
+          <th scope="col">{TERMS.Requirement}</th>
+          <th scope="col">{LEVEL_BUCKET_LABELS.short}</th>
+          <th scope="col">{levelLabel(null)}</th>
         </tr>
       </thead>
       <tbody>
-        {gaps.map((gap) => (
+        {rows.map((gap) => (
           <tr key={gap.evidenceRequirementId}>
             <th scope="row">
               {gap.label}
@@ -49,6 +85,24 @@ function GapTable({ gaps, assessed }: { gaps: readonly RequirementGap[]; assesse
             <td>{gap.notObserved === 0 ? "—" : `${gap.notObserved} of ${assessed}`}</td>
           </tr>
         ))}
+        {/* One row for every row that had nothing in it, in the same three columns and with
+            the same denominator, and every one of them named underneath. This is a fold and
+            not a deletion: an audit trail that quietly dropped ten of thirteen rows would be
+            worse than the wall it replaced, and a district reading down this table can still
+            find the one it came for. */}
+        {folded && (
+          <tr>
+            <th scope="row">
+              {rows.length === 0 ? "All" : "The other"} {quiet.length} things the work had to show
+              <small>{quiet.map((gap) => gap.label).join(" · ")}</small>
+            </th>
+            <td>
+              0 of {assessed}
+              {quiet.some((gap) => gap.percentOfAssessed !== null) && <small>0%</small>}
+            </td>
+            <td>—</td>
+          </tr>
+        )}
       </tbody>
     </table>
   );
@@ -62,6 +116,11 @@ function GapTable({ gaps, assessed }: { gaps: readonly RequirementGap[]; assesse
  * A spotlight that added them together would report a marking backlog as a misconception.
  */
 function Spotlight({ spotlight, classCode, teacherKey }: { spotlight: MisconceptionSpotlight; classCode: string; teacherKey: string }) {
+  // The teacher's own label for the seat, where the class has one. This block and the pull-out
+  // group under it were the only two on the class page written in seat numbers, directly above
+  // a list of real names — nine children a teacher had to look up to form a group tomorrow, off
+  // a roster the product is already holding.
+  const label = useSeatLabel();
   const shown = spotlight.evidenced.filter((example) => example.writing !== null).slice(0, 3);
   const unread = spotlight.missing.filter((absence) => absence.why === "writing-unread");
   const unasked = spotlight.missing.filter((absence) => absence.why === "not-observed");
@@ -81,8 +140,8 @@ function Spotlight({ spotlight, classCode, teacherKey }: { spotlight: Misconcept
               <li key={example.seatCode}>
                 <blockquote>{example.writing}</blockquote>
                 <cite>
-                  Seat {example.seatCode} · {example.level === 0 ? "not demonstrated" : "partly there"}
-                  {teacherKey && <> · <Link to={`/educator/class/${classCode}/students/${example.seatCode}?key=${teacherKey}`}>open the evidence</Link></>}
+                  {label(example.seatCode)} · {levelLabel(example.level).toLowerCase()}
+                  {teacherKey && <> · <Link to={`/educator/class/${classCode}/students/${example.seatCode}`}>open the evidence</Link></>}
                 </cite>
               </li>
             ))}
@@ -90,18 +149,27 @@ function Spotlight({ spotlight, classCode, teacherKey }: { spotlight: Misconcept
         </>
       ) : (
         <p className="spotlight__none">
+          {/* What is actually true of *these* students. The sentence used to be "Nobody's
+              writing has been read yet", which is a claim about the whole class — and a
+              teacher-experience review read it on a fold where nine children's explanations
+              had been read and marked. The guard here has never been about the class: it is
+              `evidenced.filter(writing !== null)`, so the honest sentence is about the
+              students in this spotlight. */}
           {spotlight.evidenced.length === 0
             ? "No student's work shows this."
-            : "Nobody's writing has been read yet, so there is nothing to quote. The counts above come from what students did, not from what they wrote."}
+            : "None of these students' writing has been read yet, so there is nothing to quote. The counts above come from what students did, not from what they wrote."}
         </p>
       )}
 
+      {/* The product's epistemology, said in a sentence rather than as a two-word fragment in
+          front of it. "Not evidence either way." was correct and important and nobody who had
+          not already agreed with it could parse it; the sentence underneath was always doing
+          the work. */}
       {(unread.length > 0 || unasked.length > 0) && (
         <p className="spotlight__absence">
-          <strong>Not evidence either way.</strong>{" "}
-          {unread.length > 0 && `${unread.length} student${unread.length === 1 ? "" : "s"} wrote an explanation nobody has read yet. `}
-          {unasked.length > 0 && `${unasked.length} student${unasked.length === 1 ? "" : "s"} were never asked this in their run. `}
-          Neither is a student who got it wrong.
+          {unread.length > 0 && `${studentsWho(unread.length, "wrote", "wrote")} an explanation nobody has read yet. `}
+          {unasked.length > 0 && `${studentsWho(unasked.length, "was", "were")} never asked this in their run. `}
+          <strong>Neither is a student who got it wrong, and neither counts either way.</strong>
         </p>
       )}
     </section>
@@ -115,6 +183,7 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
   classCode: string;
   teacherKey: string;
 }) {
+  const label = useSeatLabel();
   const top = reading.top;
   if (!top) return null;
   const needing = spotlight?.evidenced ?? [];
@@ -138,7 +207,7 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
             <h4>{top.label}</h4>
             <p className="next-lesson__focus">
               BOW has no reteach topic for this one, because the model names no misconception behind it.
-              What the work has to show is: {top.observableRule.charAt(0).toLowerCase()}{top.observableRule.slice(1)}.
+              {TERMS.Requirement} is: {top.observableRule.charAt(0).toLowerCase()}{top.observableRule.slice(1)}.
             </p>
           </>
         )}
@@ -146,7 +215,7 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
         <p className="next-lesson__why">
           <strong>Why this class:</strong> {top.struggled} of {reading.assessed} assessed students
           ({top.percentOfAssessed}%) did not show “{top.label.toLowerCase()}”.
-          {top.notObserved > 0 && ` A further ${top.notObserved} were never asked it.`}
+          {top.notObserved > 0 && ` A further ${top.notObserved === 1 ? "1 was" : `${top.notObserved} were`} never asked it.`}
         </p>
       </section>
 
@@ -157,9 +226,9 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
             {needing.map((example) => (
               <li key={example.seatCode}>
                 {teacherKey
-                  ? <Link to={`/educator/class/${classCode}/students/${example.seatCode}?key=${teacherKey}`}>Seat {example.seatCode}</Link>
-                  : <span>Seat {example.seatCode}</span>}
-                <small>{example.level === 0 ? "did not show it" : "partly showed it"}</small>
+                  ? <Link to={`/educator/class/${classCode}/students/${example.seatCode}`}>{label(example.seatCode)}</Link>
+                  : <span>{label(example.seatCode)}</span>}
+                <small>{levelLabel(example.level)}</small>
               </li>
             ))}
           </ul>
@@ -169,9 +238,12 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
   );
 }
 
-export function TeachNext({ entry, teacherKey }: { entry: ObjectiveClassResult; teacherKey: string }) {
-  const { teachNext: reading, spotlight } = entry;
-
+export function TeachNext({ reading, spotlight, classCode, teacherKey }: {
+  reading: TeachNextReading;
+  spotlight: MisconceptionSpotlight | null;
+  classCode: string;
+  teacherKey: string;
+}) {
   // Nothing to read. The headline above already said whether anybody has turned work in,
   // and repeating it here as a second empty state would be the page saying it twice.
   if (reading.state === "not-assessed") return null;
@@ -207,10 +279,13 @@ export function TeachNext({ entry, teacherKey }: { entry: ObjectiveClassResult; 
   return (
     <section className="next-lesson" data-state={reading.state}>
       <p className="eyebrow">What should I teach next?</p>
-      {spotlight && <Spotlight spotlight={spotlight} classCode={entry.record.code} teacherKey={teacherKey} />}
-      <Action reading={reading} spotlight={spotlight} classCode={entry.record.code} teacherKey={teacherKey} />
+      {spotlight && <Spotlight spotlight={spotlight} classCode={classCode} teacherKey={teacherKey} />}
+      <Action reading={reading} spotlight={spotlight} classCode={classCode} teacherKey={teacherKey} />
       <details className="next-lesson__working">
-        <summary>Every requirement behind this {reading.assessed}-student result</summary>
+        {/* Named in plain English rather than in the vocabulary the table below exists to
+            explain. A teacher clicking into an audit trail should not have to already know
+            what BOW calls the rows in it. */}
+        <summary>Show the counts behind this</summary>
         <GapTable gaps={reading.gaps} assessed={reading.assessed} />
       </details>
     </section>

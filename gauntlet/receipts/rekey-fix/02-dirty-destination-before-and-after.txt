@@ -1,0 +1,79 @@
+# NEW-2 (LOW, vendor-review-5 §3) — rekey neither refused nor cleaned a non-empty --to.
+# Reproduced, then fixed. Live transcript.
+
+================================================================================
+BEFORE — commit 8685d0b
+================================================================================
+
+A record sealed under a THIRD key planted in the destination — the shape of a previous BOW
+store, a rekey pointed at the wrong directory, or a half-finished one somebody restarted
+with a different key:
+
+  $ mkdir -p dirty/FOREIGN1
+  $ seal --key "$THIRD" '{"code":"FOREIGN1","label":"Somebody else third-key class"}' > dirty/FOREIGN1/class.json
+  {"v":1,"iv":"usH7iSTq2Xyro1l2","tag":"R2q6wdricFFzfDSJJGYy1g==","ct":"e2yFrhFqy4UOJ8ds…
+
+  $ node .../rekey.js --from src --to dirty --old-key … --new-key …
+  6000 records under /.../repro/src
+  6000 converted, 0 already done. /.../repro/src is untouched.
+  exit=0
+
+  FOREIGN1 still present: YES
+  canary planted:         YES
+  FOREIGN1 under the new key: UNREADABLE
+
+So the run reports success, the canary says the directory is good, health reports
+storeKey: ok / classroomReady: true (vendor receipt 06 ran the service against it), and a
+class that is physically present answers 404. Present-but-unreadable behind a green light is
+the exact failure the canary exists to prevent, arriving through the one door it does not
+watch.
+
+================================================================================
+AFTER — commit 0ff5f25
+================================================================================
+
+  $ BOW_OLD_STORE_KEY=… BOW_NEW_STORE_KEY=… node .../rekey.js --from src --to dirty2
+  6000 records under /.../repro/src
+  1 record(s) already in /.../repro/dirty2 are not in /.../repro/src, starting with
+  FOREIGN1/class.json. A conversion writes only what the source holds, so those would stay
+  sealed under whatever key wrote them while /.../repro/dirty2 reported itself healthy.
+  Nothing has been written. Point --to at an empty directory, or pass --force to convert into
+  this one and leave them exactly as they are.
+  exit=1
+
+  files in the destination afterwards: 1   (the planted one, untouched)
+  canary planted: no                       (so a service pointed here refuses to start)
+
+Refused before the first write, not after the last one — a refusal that had already copied
+6000 records would be its own mess to clean up.
+
+  $ … --force
+  1 record(s) in /.../repro/dirty2 are not from /.../repro/src and are being left exactly as
+  they are (--force), starting with FOREIGN1/class.json. The new key does not open them.
+  6000 converted, 0 already done. /.../repro/src is untouched.
+  exit=0
+
+--force converts and says plainly what it is leaving behind and that the new key will not
+open it, because forcing does not repair those records — it only records that somebody meant
+it.
+
+================================================================================
+The rule, and why it is not "refuse a non-empty --to"
+================================================================================
+
+The check is: every `.json` in --to must be a path the source also holds (the canary is
+excluded — this run rewrites it last anyway).
+
+"Refuse any non-empty destination" would have cost property 6. A resumed run's destination is
+full of records: all of them written by the run that crashed, all of them paths in the source.
+Under this rule that is not a stranger and resume still works —
+
+  $ rm dst2/C00007/class.json
+  $ BOW_OLD_STORE_KEY=… BOW_NEW_STORE_KEY=… node .../rekey.js --from src --to dst2
+  1 converted, 5999 already done.
+  exit=0
+
+— while a foreign record, which by definition is not a path the source holds, is caught.
+A destination record that *is* in the source but was sealed with some other key is still
+overwritten from the source, exactly as vendor receipt 04 verified; that is a correct
+conversion, not a stranger.

@@ -1,0 +1,9 @@
+# 06 — FINDING (low): rekey does not refuse/clean a non-empty --to destination
+# A foreign record already in --to (sealed under a THIRD key) survives; canary is planted
+# under the new key; health then reports ok/classroomReady while the foreign record is unreadable.
+
+planted third-key FOREIGN1/class.json into the destination
+20 converted, 0 already done. /home/user/bow-decision-challenges/.scratch/vendor5/r6/data is untouched.
+FOREIGN1 still present after rekey? YES ; canary planted? YES
+health with foreign record present: storeKey ok classroomReady True
+reading the surviving-but-unreadable FOREIGN1: {"error":"class_not_found","message":"No class with that code."}

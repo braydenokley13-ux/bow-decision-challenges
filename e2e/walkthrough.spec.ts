@@ -1,7 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import { CHOICE_LABELS } from "../src/components/financial/choices";
 import { expect, test } from "@playwright/test";
-import { NUMBERS, SAVE_LABEL, closeOpeningByNamingTheRest, fillPlanToBalance, savePlan, week5TotalFor, type PlanContext } from "./plan";
+import { NUMBERS, SAVE_LABEL, closeOpeningByNamingTheRest, fillPlanToBalance, savePlan, saveOpeningPlan, week5TotalFor, type PlanContext } from "./plan";
 import {
   completeSetupStage,
   createClass,
@@ -15,7 +15,12 @@ import {
   decideOpportunity,
   gotoFreshChallenge,
   submitDefense,
+  MOVED_TILES,
+  TO_DEPOSIT,
+  API,
 } from "./flow";
+import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
+import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
 
 /**
  * The rendered product, at the sizes schools actually use.
@@ -102,24 +107,22 @@ for (const size of SIZES) {
     await fillPlanToBalance(page, "working", context);
     await shoot("06-working-plan");
     await setAmount(page, CHOICE_LABELS.flexibleCash, "0");
-    await page.getByRole("button", { name: new RegExp(`^Put \\$.* into ${CHOICE_LABELS.flexibleCash}$`) }).click();
-    await page.getByRole("button", { name: SAVE_LABEL.working }).click();
+    await saveOpeningPlan(page);
 
     await shoot("07a-bonus-pulled");
     await fillPlanToBalance(page, "fallback", context);
     await shoot("07-fallback");
     await page.getByRole("button", { name: SAVE_LABEL.fallback }).click();
-    await shoot("08-season-week-1");
+    await shoot("08-season-weeks");
 
-    for (const week of [2, 3, 4]) {
-      await page.getByRole("button", { name: `Play Week ${week}` }).click();
-      if (week === 4) await shoot("08b-season-week-4");
-    }
-    await page.getByRole("button", { name: "Wait and decide later" }).click();
+    await page.getByRole("button", { name: TO_DEPOSIT }).click();
     await shoot("08c-deposit-deadline");
+    await page.getByRole("button", { name: "Wait and decide later" }).click();
+    await shoot("08d-deposit-chosen");
     await page.getByRole("button", { name: "Lock it in and play Week 5" }).click();
     await shoot("09-week5-reveal");
-    const tiles = page.locator(".gap-tiles button");
+    // Only the cards Week 5 actually moved: the strip also carries committed lines it does not.
+    const tiles = page.locator(MOVED_TILES);
     for (let index = 0; index < (await tiles.count()); index += 1) await tiles.nth(index).click();
     await page.getByLabel("Total change to Avery’s money").fill(String(week5TotalFor(context)));
     await page.locator(".gap-builder .calculation").getByRole("button", { name: "Check" }).click();
@@ -173,7 +176,7 @@ for (const size of SIZES) {
 
     // The class the walkthrough created is set the objective, so the objective screens have
     // a real result behind them rather than an empty state pretending to be one.
-    const set = await request.post(`http://127.0.0.1:4180/api/classes/${created.code}/assignments`, {
+    const set = await request.post(`${API}/classes/${created.code}/assignments`, {
       headers: { "X-BOW-Teacher-Key": created.teacherKey },
       data: { objectiveRef: { frameworkId: "nysed-pf-2026", code: "1.3" } },
     });
@@ -181,14 +184,19 @@ for (const size of SIZES) {
     // A person reads the three written explanations. Without that nobody is assessed, and
     // the results page would be captured in its "nothing to read yet" state — which is a
     // real state, and not the one this artefact exists to show.
-    const room = await request.get(`http://127.0.0.1:4180/api/classes/${created.code}/submissions`, {
+    const room = await request.get(`${API}/classes/${created.code}/submissions`, {
       headers: { "X-BOW-Teacher-Key": created.teacherKey },
     });
     const roster = (await room.json()) as { submissions: { seatCode: string; sessionId: string }[] };
+    // Full marks, read off the rubric. This was `{ "C6.1": 2, ... "C6.4": 4 }` and a literal 10
+    // beside it — a fourth copy of a table that lives in `reasoning.ts` and whose total lives in
+    // `grade.ts`. A fifth criterion, or a maximum that moved, would have left this walkthrough
+    // posting marks that no longer add up and capturing a screen full of them.
+    const fullMarks = Object.fromEntries(REASONING_CRITERIA.map((criterion) => [criterion.id, criterion.max]));
     for (const entry of roster.submissions) {
-      const scored = await request.patch(`http://127.0.0.1:4180/api/classes/${created.code}/submissions/${entry.seatCode}`, {
+      const scored = await request.patch(`${API}/classes/${created.code}/submissions/${entry.seatCode}`, {
         headers: { "X-BOW-Teacher-Key": created.teacherKey },
-        data: { sessionId: entry.sessionId, reasoningPoints: 10, reasoningCriteria: { "C6.1": 2, "C6.2": 2, "C6.3": 2, "C6.4": 4 } },
+        data: { sessionId: entry.sessionId, reasoningPoints: REASONING_MAXIMUM, reasoningCriteria: fullMarks },
       });
       expect(scored.status(), await scored.text()).toBe(200);
     }
@@ -199,20 +207,26 @@ for (const size of SIZES) {
 
     const evidence = `/educator/class/${created.code}?key=${created.teacherKey}`;
     for (const [name, path] of [
-      ["15b-class-setup", "/educator/classes/new"],
+      ["15b-class-setup", "/educator/classes"],
       ["15f-objectives", "/educator/objectives"],
       ["15g-objective-detail", "/educator/objectives/nysed-pf-2026/1.3"],
       ["15h-objective-coming", "/educator/objectives/nysed-pf-2026/4.2"],
-      ["15i-assign", "/educator/assign?frameworkId=nysed-pf-2026&code=1.3"],
+      ["15i-assign", "/educator/classes?objective=1.3"],
       ["15c-real-class", evidence],
       ["15d-real-student", `/educator/class/${created.code}/students/21?key=${created.teacherKey}`],
       ["15e-debrief", `/educator/class/${created.code}/debrief?key=${created.teacherKey}`],
+      ["15j-reading-queue", `/educator/class/${created.code}/reading?key=${created.teacherKey}`],
       ["16-educator-guide", "/educator/guide"],
-      ["17-demo-evidence", "/educator/demo"],
-      ["18-concept-drilldown", "/educator/demo/concepts/contingency"],
-      ["19-seat-14", "/educator/demo/students/14"],
-      ["20-reasoning", "/educator/demo/students/14/reasoning"],
-      ["21-standards", "/educator/demo/standards"],
+      // The sample class has no screens of its own any more: every `/educator/demo/*` address
+      // redirects onto the real class surfaces, fed the fixture. Three captures used to be
+      // taken past those redirects — `18-concept-drilldown`, `20-reasoning` and `21-standards`
+      // — and each one landed on a page another capture in this same list already took, under a
+      // name saying it was something else. A walkthrough that files the objectives list as "the
+      // standards page" is worse than not shooting it: a reviewer counts twenty-two screens and
+      // signs off on nineteen. What is left is the two addresses that still reach a distinct
+      // screen.
+      ["17-sample-class", "/educator/demo"],
+      ["19-sample-seat", "/educator/demo/students/14"],
       ["22-companion", "/educator/teaching-companion"],
     ] as const) {
       await page.goto(path);

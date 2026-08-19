@@ -32,6 +32,10 @@ const PLAN_CONCEPTS: Record<PlanMode, readonly ConceptId[]> = {
 
 const STATIC_CONCEPTS: Partial<Record<EvidenceEventType, readonly ConceptId[]>> = {
   SETUP_RANKED: ["full-cost"],
+  // Three claims against one week's cash is a budget that will not close, decided in front
+  // of the student rather than on a board. It speaks to what a workable division of money
+  // looks like when there is not enough of it, and to nothing about income or adaptation.
+  COMPETING_CLAIMS_SETTLED: ["viable-budget"],
   SETUP_SELECTED: ["full-cost"],
   COURSE_DEPOSIT_DECIDED: ["viable-budget", "contingency"],
   INCOME_SOURCE_TOGGLED: ["income-reliability"],
@@ -100,10 +104,19 @@ const REMAINDER_REQUIREMENTS: Partial<Record<PlanMode, readonly EvidenceRequirem
 };
 
 const STATIC_REQUIREMENTS: Partial<Record<EvidenceEventType, readonly EvidenceRequirementId[]>> = {
+  // The whole of the settlement, in one event: how far the money was made to reach, what
+  // kind of reason was given, and whether that reason is true of what actually went unpaid.
+  // Three requirements from one moment because the moment carries three separable facts —
+  // the observer reads each of them from a different field of the same payload.
+  COMPETING_CLAIMS_SETTLED: [
+    "sort-by-need-want-goal.er1",
+    "sort-by-need-want-goal.er2",
+    "sort-by-need-want-goal.er3",
+  ],
   INCOME_SOURCE_TOGGLED: ["plan-within-income.er1"],
   COMPLETION_INCOME_DECIDED: ["plan-within-income.er1"],
   GAP_TILE_TOGGLED: ["adapt-a-plan.er1"],
-  DEFENSE_SUBMITTED: ["plan-within-income.er5", "adapt-a-plan.er5"],
+  DEFENSE_SUBMITTED: ["plan-within-income.er5", "adapt-a-plan.er5", "sort-by-need-want-goal.er4"],
 };
 
 export function evidenceRequirementsForEvent(type: EvidenceEventType, payload: unknown): readonly EvidenceRequirementId[] {

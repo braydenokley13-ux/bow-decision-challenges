@@ -1,0 +1,14 @@
+# 07 — Migration door gone: no runtime path accepts an unsealed record
+## grep: only rekey.ts (offline) and vault.ts definition + tests reference acceptLegacyPlaintext
+server/rekey.ts:98:  // The source is opened with whatever it was written with. `acceptLegacyPlaintext` is used
+server/rekey.ts:103:    : vault(options.newKey, { acceptLegacyPlaintext: true });
+server/vault.ts:32: * and still served, but by an operator turning it on for one boot (`acceptLegacyPlaintext`)
+server/vault.ts:87: * `acceptLegacyPlaintext` exists for tests and for an offline converter, and there is no way to
+server/vault.ts:93:export function vault(key: Buffer, options: { acceptLegacyPlaintext?: boolean } = {}): Vault {
+server/vault.ts:117:      if (!isSealed(parsed)) return options.acceptLegacyPlaintext ? (parsed as T) : null;
+## storeFromEnvironment only ever calls vault(key) with NO options:
+store.ts:914:  const keeper = key ? vault(key) : undefined;
+
+## Runtime refusal: a forged PLAINTEXT class.json is not opened by a running service
+read forged plaintext class: {"error":"class_not_found","message":"No class with that code."}
+health: storeKey mismatch ok False

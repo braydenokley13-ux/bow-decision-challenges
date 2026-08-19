@@ -1,0 +1,118 @@
+import { test, expect, type Page } from "@playwright/test";
+import * as F from "./flow";
+
+const OUT = "/tmp/judge-3/judge-shots/fast";
+
+async function dump(page: Page, tag: string) {
+  const heading = (await page.locator("main h1, main h2").first().innerText().catch(() => "")).replace(/\s+/g, " ");
+  const btns = await page.locator("main button:not([disabled])").evaluateAll((els) =>
+    els.map((e) => ((e as HTMLElement).getAttribute("aria-label") || (e as HTMLElement).textContent || "").replace(/\s+/g, " ").trim()).filter(Boolean));
+  console.log(`\n### ${tag} :: [${heading}]\n    ${JSON.stringify(btns)}`);
+}
+
+/** Wrong answers until the product hands over the answer, then take it. */
+async function guessUntilGivenTheAnswer(page: Page, scope: string, label: RegExp | string) {
+  for (let i = 1; i <= 6; i += 1) {
+    const give = page.getByRole("button", { name: "Show the answer and keep going" });
+    if (await give.count()) { await give.first().click(); console.log(`  ANSWER SUPPLIED after ${i - 1} wrong tries (${scope})`); return; }
+    await page.getByLabel(label).fill(String(1000 + i * 137));
+    await page.locator(scope).getByRole("button", { name: "Check" }).click();
+    await page.waitForTimeout(200);
+  }
+  throw new Error(`never got an answer at ${scope}`);
+}
+
+test("fast clicker", async ({ page, request }) => {
+  test.setTimeout(280_000);
+  const cls = await F.createClass(request, "Judge 3 fast clicker");
+  console.log("CLASSCODE", cls.code, "TEACHERKEY", cls.teacherKey);
+  await F.gotoFreshChallenge(page);
+  const card = await F.seatOnRoster(page, cls.code, "1");
+  console.log("SEAT", JSON.stringify(card));
+  await F.signIn(page, { ...card, classCode: cls.code });
+  await page.getByRole("link", { name: /^(Start|Carry on)$/ }).click();
+  await F.startIfConfirmAsked(page);
+  await F.chooseSeasonIfOffered(page);
+  await F.stepPastTheDeal(page);
+
+  // Ranking: press Check without ordering anything, then take the answer.
+  await page.getByRole("button", { name: "Check the order" }).click();
+  await page.waitForTimeout(250);
+  for (let i = 0; i < 8; i += 1) {
+    if (await page.getByRole("button", { name: "Show the answer and keep going" }).count()) { console.log(`  RANKING answer offered after ${i + 1} wrong checks`); break; }
+    await page.getByRole("button", { name: "Check it again" }).click();
+    await page.waitForTimeout(250);
+  }
+  await dump(page, "ranking after wrong checks");
+  await page.getByRole("button", { name: "Show the answer and keep going" }).click();
+  await page.getByRole("button", { name: "Keep going" }).click();
+
+  // Take the first place card, guess its total until the answer is handed over.
+  await page.locator(".place-card").nth(0).getByRole("button", { name: "Choose this setup" }).click();
+  await guessUntilGivenTheAnswer(page, ".chosen-total", /What the .* costs Avery/);
+  await dump(page, "after setup total");
+  await page.getByRole("button", { name: "Build the plan" }).click();
+
+  // Q1
+  await guessUntilGivenTheAnswer(page, ".calculation", F.PLAN_STEP.countOn);
+  await page.getByRole("button", { name: F.PLAN_STEP.toBonuses }).click();
+  // Bonuses: say yes to both without reading.
+  for (const i of [0, 1]) await page.locator(".bet").nth(i).getByRole("button", { name: F.PLAN_STEP.countBonus }).click();
+  await page.getByRole("button", { name: F.PLAN_STEP.toCommitted }).click();
+  // Q3
+  await guessUntilGivenTheAnswer(page, ".calculation", F.PLAN_STEP.committed);
+  await page.getByRole("button", { name: F.PLAN_STEP.toPlan }).click();
+
+  // Board: shortcut everything into one row, declare the rest zero, check.
+  await dump(page, "board");
+  await page.getByRole("button", { name: /Backup money — put/ }).click();
+  for (const name of [/Sports-media course — nothing this season/, /Rides and rest — nothing this season/]) {
+    const b = page.getByRole("button", { name });
+    if (await b.count()) await b.click();
+  }
+  await dump(page, "board ready");
+
+  // From here, the dumbest forward move on every screen.
+  const FORWARD = /^(Save |Lock |Next|Keep going|Play |Explain|Turn in|Continue|Reserve|Wait and|Take the|Keep the|Yes —|No —|Build |Check this plan|Say what|Start|Go |I am done|Send|Finish|Move on|Plan without|Count it)/i;
+  const SKIP = /^(Back|See where|Where Avery lives|Food, phone|1Money|2The two|3Money|Decrease|Increase|Move .*(earlier|later)|Not you|Sign out|Read|Hide|Selected:|Show me one step)/i;
+  const seen = new Map<string, number>();
+  for (let step = 0; step < 120; step += 1) {
+    await page.waitForTimeout(110);
+    if (await page.getByRole("heading", { name: "Your plan is with your teacher." }).count()) { console.log("SUBMITTED at step", step); break; }
+    const heading = (await page.locator("main h1, main h2").first().innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 55);
+    if (await page.locator(".interview__stats button").count()) {
+      const tiles = page.locator(".interview__stats button");
+      const figs: string[] = [];
+      for (const i of [0, 1]) { await tiles.nth(i).click(); figs.push((await tiles.nth(i).locator(".money").innerText()).trim()); }
+      const junk = `asdf asdf ${figs[0]} asdf. qwer qwer ${figs[1]} qwer.`;
+      await page.getByLabel("Two to four sentences").fill(junk);
+      const turnIn = page.getByRole("button", { name: "Turn in my plan" });
+      console.log("WRITING junk:", JSON.stringify(junk), "| turn-in disabled?", await turnIn.isDisabled());
+      await page.screenshot({ path: `${OUT}/writing.png`, fullPage: true });
+      await turnIn.click(); continue;
+    }
+    const give = page.getByRole("button", { name: "Show the answer and keep going" });
+    if (await give.count()) { console.log(`  ${step} [${heading}] ANSWER SUPPLIED`); await give.first().click(); continue; }
+    const btns = page.locator("main button:not([disabled])");
+    const read = async () => btns.evaluateAll((els) => els.map((e) => ((e as HTMLElement).getAttribute("aria-label") || (e as HTMLElement).textContent || "").replace(/\s+/g, " ").trim()));
+    let labels = await read();
+    const inputs = page.locator("main input:not([type=checkbox]):not([type=radio]):not([type=hidden])");
+    let typed = "";
+    for (let i = 0; i < (await inputs.count()); i += 1) {
+      const el = inputs.nth(i);
+      if (!(await el.isVisible().catch(() => false))) continue;
+      const v = await el.inputValue().catch(() => "");
+      if (v === "" || v === "0") { await el.fill(String(300 + step * 17)); typed += `${300 + step * 17} `; }
+    }
+    if (typed) { labels = await read(); const ci = labels.findIndex((l) => /^Check$/i.test(l)); if (ci >= 0) { console.log(`  ${step} [${heading}] typed ${typed}-> Check`); await btns.nth(ci).click(); continue; } }
+    const cands = labels.map((l, i) => ({ l, i })).filter((c) => c.l && !SKIP.test(c.l));
+    let pick = cands.filter((c) => FORWARD.test(c.l)).find((c) => (seen.get(`${heading}|${c.l}`) ?? 0) < 3)
+      ?? cands.find((c) => (seen.get(`${heading}|${c.l}`) ?? 0) < 3) ?? cands.at(-1);
+    if (!pick) { console.log("NO BUTTON", heading, labels); break; }
+    seen.set(`${heading}|${pick.l}`, (seen.get(`${heading}|${pick.l}`) ?? 0) + 1);
+    console.log(`  ${step} [${heading}] -> "${pick.l.slice(0, 50)}"`);
+    await btns.nth(pick.i).click({ timeout: 8000 }).catch((e) => console.log("   click failed", String(e).slice(0, 70)));
+  }
+  await page.screenshot({ path: `${OUT}/end.png`, fullPage: true });
+  console.log("FINAL:", (await page.locator("main").innerText()).slice(0, 1200));
+});

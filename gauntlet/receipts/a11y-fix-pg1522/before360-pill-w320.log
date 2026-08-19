@@ -1,0 +1,11 @@
+
+
+######## viewport {"width":360,"height":740}, reading tools CLOSED ########
+
+--- plan Q1 ---
+  button.button.button--secondary "Leave this run" is under p.calculation__given
+  button.ledger__toggle "See where the money goes" is under aside.reading-tools
+
+--- the opening plan board ---
+  button.button.button--secondary "Leave this run" is under main.stage-main
+  button.ledger__toggle "See where the money goes" is under aside.reading-tools

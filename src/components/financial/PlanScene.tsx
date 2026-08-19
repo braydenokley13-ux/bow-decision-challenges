@@ -1,4 +1,4 @@
-import type { PropsWithChildren, ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type PropsWithChildren, type ReactNode } from "react";
 
 /**
  * Every planning moment, laid out the same way: the decision on the left, Avery's money on
@@ -15,10 +15,63 @@ import type { PropsWithChildren, ReactNode } from "react";
  * the order reversed.
  */
 export function PlanScene({ ledger, children }: PropsWithChildren<{ ledger: ReactNode }>) {
+  const rail = useRef<HTMLElement>(null);
+  const height = usePinnedRailHeight(rail);
   return (
-    <div className="plan-scene">
-      <aside className="plan-rail">{ledger}</aside>
+    <div className="plan-scene" style={{ "--rail-height": `${height}px` } as CSSProperties}>
+      <aside ref={rail} className="plan-rail">{ledger}</aside>
       <div className="plan-scene__work">{children}</div>
     </div>
   );
+}
+
+/**
+ * How much of the bottom of the screen the pinned rail is standing on, right now.
+ *
+ * The stylesheet used to reserve a fixed 68px for it, which was a guess and was wrong in both
+ * directions. Idle at 390px the rail is 94px tall, so the last allocation row sat under it
+ * with nowhere left to scroll — a stepper a student could see and could not press. Opened, the
+ * rail takes half the viewport, and at the bottom of the page that put the button that commits
+ * the plan *behind the top bar*: not merely awkward, but a required control with no scroll
+ * position that reveals it.
+ *
+ * A measurement cannot drift from the thing it measures, so the rail is measured. The number
+ * feeds the padding the work column reserves and the scroll padding the browser uses when it
+ * moves focus, which is the half that keeps a keyboard user from being sent behind the bar.
+ */
+function usePinnedRailHeight(rail: { current: HTMLElement | null }): number {
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    const element = rail.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const pinned = window.matchMedia("(max-width: 980px)");
+    const measure = () => setHeight(pinned.matches ? Math.ceil(element.getBoundingClientRect().height) : 0);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    pinned.addEventListener("change", measure);
+    return () => {
+      observer.disconnect();
+      pinned.removeEventListener("change", measure);
+    };
+  }, [rail]);
+  useEffect(() => {
+    // Set on the document because the scroll container is the page, not the layout: this is
+    // what stops `scrollIntoView` and a focus move parking a control under the pinned rail.
+    //
+    // `--bow-reading-tools` is in the sum because opening the reading help moves the rail:
+    // `reading.css` lifts the pinned rail by exactly that much so it does not sit on the
+    // panel, and the rail then lands on whatever was underneath it. Measured at 320 x 640
+    // with the tools open, walking the tab ring and sampling twenty-five points inside each
+    // focused element: `button "Check this plan"` was under `aside.plan-rail` at 0 of 25 —
+    // entirely hidden, which is a WCAG 2.2 · 2.4.11 failure on the control that commits the
+    // run's biggest decision, caused by turning the accommodation on. Left as a `calc` with
+    // the custom property still in it rather than resolved here, so opening and closing the
+    // tools moves this number without this effect having to run again.
+    document.documentElement.style.scrollPaddingBottom = height > 0 ? `calc(${height + 16}px + var(--bow-reading-tools, 0px))` : "";
+    return () => {
+      document.documentElement.style.scrollPaddingBottom = "";
+    };
+  }, [height]);
+  return height;
 }

@@ -1,0 +1,96 @@
+Judge 6 — measurements taken in Chromium 1194 (Playwright 1.62.1) against the snapshot
+of 18a818c8c8885e7e0cbdd547c536117dfa3d788c, app on 127.0.0.1:4306, class service on
+127.0.0.1:4386 (memory store). Load average at time of capture: 2.3–6.2.
+
+--------------------------------------------------------------------------------------
+1. The closed "Reading help" pill sits on top of the plan board's status line
+   Screen: /challenges/plan-under-pressure, working-plan, question 4 of 4, 1366x768
+   getBoundingClientRect / elementFromPoint:
+
+   statusText           "$4,900 still has no job."
+   statusRect           x=111 y=718 w=255 h=24
+   pillRect             x=24  y=700 w=146 h=44
+   horizontal overlap   59px          (the pill covers "$4,9")
+   vertical overlap     24px          (the whole height of the line)
+   elementAtStatusStart BUTTON.reading-tools__pill
+   z-index              pill 40, commit bar 5
+
+   Same collision measured at 1280x800, 1024x600, 768x1024, 390x844 and 320x640.
+   At 390 the pill (w=342) covers the docked rail's "Still to give a job $4,900".
+   At 320 it covers the screen's instruction "Give each part of the plan an amount."
+
+--------------------------------------------------------------------------------------
+2. The sticky commit bar covers content at every width
+   1366x768   bar y=692 h=76 pinned=true — covers "Avery's week" heading and week meter
+   1024x600   bar y=524 h=76 pinned=true — covers "Backup money"/"Rides and rest" rows and a $0
+   768x1024   bar y=948 h=76 pinned=true — covers "Send the last $4,900 to one row"
+   390x844    bar y=732 h=112 pinned=true — covers the money rail
+
+--------------------------------------------------------------------------------------
+3. Join error is 367px from the field it describes
+   /join, correct class code, wrong card code, 1366x768
+   field    x=411 y=317 w=544 h=44   aria-describedby=null  aria-invalid=null
+   "Go in"  x=411 y=480 w=94  h=44
+   error    x=16  y=728 w=1334 h=24  class="join-error" role="alert"
+            parent MAIN.join-shell  (a sibling of the form, not of the field)
+   focus after the failed submit: BUTTON "Go in"
+
+--------------------------------------------------------------------------------------
+4. Two container widths on one page
+   /educator/class/HEMWK/debrief   .page-header  93 → 1273  (1180px)
+                                   .debrief      93 →  853  ( 760px)
+                                   .debrief__section x5  93 → 853
+   The rule under the title runs 420px past every section beneath it.
+   /educator/class, /educator/guide, /educator/objectives are all 93 → 1273 throughout.
+
+--------------------------------------------------------------------------------------
+5. Reflow — no horizontal overflow anywhere I looked
+   6 pages (home, guide, classes, objectives, debrief, reading queue) x 5 widths
+   (1366, 1024, 768, 390, 320): document.scrollWidth - clientWidth === 0 in all 30.
+   25 basketball screens and 25 pop-up screens at 1366x768: 0 in all 50.
+
+--------------------------------------------------------------------------------------
+6. Console
+   Full basketball run (25 screens): 0 console errors, 0 page errors.
+   Full pop-up run (25 screens): 0 console errors, 0 page errors.
+   19 educator page loads: 4 messages, all "Failed to load resource: 403/404" from the
+   two deliberately-bad-credential URLs I requested.
+
+--------------------------------------------------------------------------------------
+7. Motion inventory (all stylesheets)
+   @keyframes: bulletin-in, stage-in, week-in  (3)
+   rules containing `transition:`: 14
+
+--------------------------------------------------------------------------------------
+8. Type
+   Home h1      87.4px / 80.4 lh / 700 / -3.93px tracking, system-ui stack
+   Stage h1     52px at 1366, 51.2 at 1280, 32 at 1024, 38.4 at 768/390/320
+   --font-display is defined as `var(--font-ui)`; no webfont, no font file in the repo.
+   No image asset of any kind in src/ or public/ (0 .png/.jpg/.svg/.webp files).
+   Two hand-authored inline SVGs exist: CourtBackdrop.tsx, MarketBackdrop.tsx.
+
+--------------------------------------------------------------------------------------
+9. Controls under 44x44 CSS px on the plan board (present at every width incl. 390/320)
+   "1 Money coming in"     153x34
+   "2 The two bonuses"     152x34
+   "3 Money already owed"  174x34
+   inline glossary links   "Where Avery lives" 216x24, "Food, phone and laundry" 199x38
+
+--------------------------------------------------------------------------------------
+10. Focus rings
+   3px solid #123a8f + 5px white halo on every control I tabbed to except
+   SUMMARY "The four payments ▾", which keeps the UA default (auto 1px rgb(16,16,16)).
+
+--------------------------------------------------------------------------------------
+11. Page length
+   /educator/class/DEMO                       scrollHeight 5816px (7.6 screens)
+   /educator/class/DEMO/students/14           scrollHeight 7316px (9.5 screens)
+   /educator/class/CCGMU/students/12          scrollHeight 7468px (9.7 screens)
+   innerText word counts: pop-up student evidence 2,680 words; basketball 2,432;
+   sample seat 2,570. Reading queue 159 words. Debrief 186 words.
+
+--------------------------------------------------------------------------------------
+12. document.title is byte-identical on every route I loaded
+   "Plan Under Pressure — BOW Decision Challenges" on /, /join, /educator/classes,
+   /educator/sign-in, /educator/guide, /educator/try, /educator/objectives, every
+   /educator/class/* page, and the 404 fallback.

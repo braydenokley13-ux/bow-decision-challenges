@@ -3,8 +3,10 @@ import type { Competency, CompetencyGroupId, CompetencyId, EvidenceRequirement, 
 /**
  * The 21 BOW financial-literacy competencies for Grades 5–8.
  *
- * These 21 cover all 23 NYSED Grades 5–8 Personal Finance objectives, and the cover is
- * deliberately not one-to-one in either direction: NYSED 2.1 is three skills wearing one
+ * These 21 are *mapped* to all 23 NYSED Grades 5–8 Personal Finance objectives, which is a
+ * weaker and more accurate claim than covering them: most of those mappings are `partial` or
+ * `supporting`, and only one objective can be assessed today. The mapping is deliberately not
+ * one-to-one in either direction: NYSED 2.1 is three skills wearing one
  * number, while 5.2 and 5.5 are one skill described from two angles. A model that assumed
  * one objective = one skill would misreport in both directions. The mapping that records
  * which is which lives in `src/domain/standards/mappings/`, not here.
@@ -99,6 +101,73 @@ const PLAN_WITHIN_INCOME_EVIDENCE: readonly EvidenceRequirement[] = [
   }),
 ] as const;
 
+/**
+ * `sort-by-need-want-goal` — the competency the product could declare and not observe.
+ *
+ * It sat here with an empty array for as long as no world had a moment where several
+ * claims wanted the same money at once. Every other beat in both worlds divides money the
+ * student already controls into rows a plan names; none of them makes a *person* the thing
+ * on the other side of the decision. So there was nothing to write an observable rule
+ * about, and writing one anyway would have produced a rubric row nothing could fill.
+ *
+ * The four below are written against a moment that now exists: a fixed sum, three claims
+ * that cost more than it together, and one required statement about what made the student
+ * leave one of them out. They divide as three decisions and one explanation, and the split
+ * is not arbitrary.
+ *
+ * **ER1** is arithmetic and neutral: it asks whether the money was spent as far as it
+ * reaches, which more than one allocation satisfies and which none of them is right for.
+ *
+ * **ER2 and ER3 are separate on purpose, and a teacher can tell them apart at a glance.**
+ * ER2 asks whether the reason was the right *kind* — about what the thing was, not what it
+ * cost. ER3 asks whether that reason was *true* of what actually went unpaid. They fail
+ * independently and they mean different things: a student who says "it was the cheapest one
+ * to drop" has not made a values judgement at all, and a student who says "it was the one I
+ * only wanted" about the shoes that were splitting has made one and got it wrong. The first
+ * needs the difference between price and worth taught; the second needs the difference
+ * between wanting and needing taught. One row could not say which.
+ *
+ * **ER4 is required and may not be dropped.** The objective this competency covers in full
+ * ends "and explain how each influences spending and savings decisions"; the verb is
+ * *explain*, and a closed-set tap is not an explanation however well it is scored. It is
+ * aimed deliberately at the *basis* rather than the trade, because `plan-within-income.er5`
+ * already scores the trade — "names something given up, says what it was given up for, and
+ * refers to at least one of their own numbers" — and two rubric rows a teacher cannot tell
+ * apart is a defect this product names out loud elsewhere. ER4 asks what made one claim
+ * matter more than another. ER5 asks what was given up and what for. A student can answer
+ * either one well and the other badly.
+ */
+const SORT_BY_NEED_WANT_GOAL_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("sort-by-need-want-goal", 1, {
+    label: "Fits the choice to the money there is",
+    kind: "decision",
+    required: true,
+    observableRule: "Pays for as much as the money in hand can actually reach, and commits no more than there is",
+    misconceptionIfNot: null,
+  }),
+  requirement("sort-by-need-want-goal", 2, {
+    label: "Chooses on what the claim is, not what it costs",
+    kind: "decision",
+    required: true,
+    observableRule: "Says what the unpaid claim was to them — something needed, something promised, or something only wanted — rather than that it was the cheapest one to drop",
+    misconceptionIfNot: null,
+  }),
+  requirement("sort-by-need-want-goal", 3, {
+    label: "The reason holds up against what they did",
+    kind: "decision",
+    required: true,
+    observableRule: "The reason given is true of something they left unpaid and not of what they paid for, so it accounts for this choice rather than any choice",
+    misconceptionIfNot: "A need is anything I feel strongly about",
+  }),
+  requirement("sort-by-need-want-goal", 4, {
+    label: "Says what made one claim matter more",
+    kind: "explanation",
+    required: true,
+    observableRule: "Names what made one claim matter more than another — something needed, a promise to somebody, or something they were saving toward — rather than what it cost",
+    misconceptionIfNot: null,
+  }),
+] as const;
+
 const ADAPT_A_PLAN_EVIDENCE: readonly EvidenceRequirement[] = [
   requirement("adapt-a-plan", 1, {
     label: "Works out the size of the change",
@@ -137,6 +206,25 @@ const ADAPT_A_PLAN_EVIDENCE: readonly EvidenceRequirement[] = [
   }),
 ] as const;
 
+/**
+ * `save-toward-a-goal` — mapped `full` to NYSED 5.1, which is two clauses joined by "and":
+ * identify common reasons people save money, and build a plan that reaches a short-term
+ * goal within a year. ER1 through ER4 are the plan; none of them ever touches the first
+ * clause — a target and a date, a per-period amount, protecting it, and reaching it are all
+ * about the goal, never about why it exists.
+ *
+ * **ER5 is required for exactly that reason.** It was written optional once, on the theory
+ * that a plan speaks for itself and the reason behind it is a nice-to-have. It is not: with
+ * ER5 optional, a world could produce every *required* requirement — the whole bar
+ * `isCompetencyAvailable` checks — without the student ever naming a reason to save, and
+ * this competency would still report `full` coverage of an objective whose first clause it
+ * had never reached. `full` promises a student who demonstrates the competency has done
+ * everything the standard asks; a demonstration with ER5 unobserved would break that
+ * promise silently, because `null` — the world never asked — reads identically to a pass in
+ * every roll-up above this file. Requiring it is what makes the `full` claim on 5.1 true
+ * rather than merely convenient. `coverageClaims.test.ts` asserts the general rule this one
+ * change is an instance of: a `full` mapping may not stand on an optional requirement.
+ */
 const SAVE_TOWARD_A_GOAL_EVIDENCE: readonly EvidenceRequirement[] = [
   requirement("save-toward-a-goal", 1, {
     label: "Sets a target and a date",
@@ -169,7 +257,7 @@ const SAVE_TOWARD_A_GOAL_EVIDENCE: readonly EvidenceRequirement[] = [
   requirement("save-toward-a-goal", 5, {
     label: "Says what the saving was for",
     kind: "explanation",
-    required: false,
+    required: true,
     observableRule: "Connects the amount to the reason",
     misconceptionIfNot: null,
   }),
@@ -203,7 +291,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "Give up something they wanted to protect something they needed or had committed to.",
       "Say which value drove it.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: SORT_BY_NEED_WANT_GOAL_EVIDENCE,
     misconceptions: [
       "A need is anything I feel strongly about",
       "A goal is a wish, not a line in the budget",
@@ -512,7 +600,9 @@ export const COMPETENCIES: readonly Competency[] = [
       "A goal is a wish, not a per-period number",
     ],
     gradeBand: "5-8",
-    explanationRequired: false,
+    // ER5 — the "why" behind the target — is required now, so the flag that says whether a
+    // written explanation is required evidence has to agree with the array it describes.
+    explanationRequired: true,
     assessmentShape: "plan-and-repair",
   },
   {

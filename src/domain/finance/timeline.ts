@@ -1,6 +1,7 @@
 import type { SetupId } from "../core/ids";
 import { dollars, type Dollars } from "../core/money";
 import type { ScenarioNumbers } from "../scenario/types";
+import type { PlanAmounts } from "./types";
 
 /**
  * The season as it is actually lived, week by week.
@@ -85,10 +86,19 @@ export interface DepositPreview {
   shortBy: Dollars;
   /** Course money freed by paying less than was set aside, which needs a new job. */
   freed: Dollars;
+  /** Every dollar the plan is holding that the student can still move today. */
+  movableNow: Dollars;
+  /**
+   * What would still be movable once the seat is held. The course line is what pays for the
+   * seat and stops being adjustable, so this is the money left to meet whatever the rest of
+   * the season brings — the other half of the trade, and the half the screen used not to say.
+   */
+  movableAfter: Dollars;
 }
 
-export function depositPreview(courseSetAside: Dollars, n: ScenarioNumbers): DepositPreview {
+export function depositPreview(amounts: PlanAmounts, n: ScenarioNumbers): DepositPreview {
   const price = n.course.depositPrice;
+  const courseSetAside = amounts.goal;
   return {
     price,
     laterPrice: n.course.fullPrice,
@@ -96,5 +106,7 @@ export function depositPreview(courseSetAside: Dollars, n: ScenarioNumbers): Dep
     setAside: courseSetAside,
     shortBy: dollars(Math.max(0, price - courseSetAside)),
     freed: dollars(Math.max(0, courseSetAside - price)),
+    movableNow: dollars(amounts.goal + amounts.reserve + amounts.flexibleCash),
+    movableAfter: dollars(amounts.reserve + amounts.flexibleCash),
   };
 }

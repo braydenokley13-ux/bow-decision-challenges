@@ -3,9 +3,10 @@ import { dollars, formatDollars } from "../core/money";
 import type { SetupId } from "../core/ids";
 import { SCENARIO_NUMBERS as N } from "../scenario/numbers";
 import { bonusWeeks } from "../scenario/season";
+import { availableFor, lockedFor } from "./formulas";
 import { loadFor } from "./load";
 import { resolveSeason } from "./resolution";
-import type { SnapshotInputs } from "./types";
+import type { PlanAmounts, SnapshotInputs } from "./types";
 
 const plan = (over: Partial<SnapshotInputs> & { setupId?: SetupId } = {}): SnapshotInputs => ({
   mode: "final",
@@ -120,6 +121,58 @@ describe("the season resolves from the student's own decisions", () => {
  * something other than a shrug, so each one has to re-run the model with exactly one
  * decision changed rather than assert a story about it.
  */
+/**
+ * Every verdict on the ending panel, swept for the two ways a heading can lie.
+ *
+ * The panel is four to six cards, each a coloured badge over a sentence, and it is the last
+ * thing a student reads about their own season. A badge that disagrees with the sentence
+ * under it is worse than no badge: it teaches a reader that the labels are decoration.
+ */
+describe("no verdict contradicts its own card", () => {
+  const seasons = () => {
+    const plans: SnapshotInputs[] = [];
+    for (const setupId of ["gym-sublet", "teammate-share", "cousin-room"] as const) {
+      for (const includeCompletion of [false, true]) {
+        for (const includeOptionalWork of [false, true]) {
+          for (const depositTaken of [false, true]) {
+            for (const flexibleCash of [0, 600, 2100]) {
+              plans.push(plan({ setupId, includeCompletion, includeOptionalWork, depositTaken, amounts: { goal: dollars(600), reserve: dollars(400), flexibleCash: dollars(flexibleCash) } }));
+            }
+          }
+        }
+      }
+    }
+    return plans;
+  };
+
+  it("never labels a decision as taken on a season where it was not", () => {
+    // "Building the plan around the attendance bonus — NO EFFECT — Your plan was already
+    // built without it." A heading and its own sentence disagreeing about what the student
+    // did. Every label on this panel now names the call that was actually made, so no label
+    // can appear on both sides of a decision.
+    const bySide = new Map<string, Set<boolean>>();
+    for (const final of seasons()) {
+      for (const risk of resolveSeason(final, N).risks) {
+        const seen = bySide.get(risk.label) ?? new Set<boolean>();
+        seen.add(risk.taken);
+        bySide.set(risk.label, seen);
+      }
+    }
+    const ambiguous = [...bySide.entries()].filter(([, sides]) => sides.size > 1).map(([label]) => label);
+    expect(ambiguous).toEqual([]);
+  });
+
+  it("never heads a verdict that went well with a sentence about what it cost", () => {
+    for (const final of seasons()) {
+      for (const risk of resolveSeason(final, N).risks) {
+        if (risk.outcome !== "paid_off" && risk.outcome !== "no_effect") continue;
+        const opening = risk.detail.split(". ")[0] ?? "";
+        expect(opening, `${risk.id} on ${final.setupId}`).not.toMatch(/paid .*more|cost .*more|never came|did not have enough/);
+      }
+    }
+  });
+});
+
 describe("the season says which risk paid off and which one cost", () => {
   const verdict = (resolution: ReturnType<typeof resolveSeason>, id: string) =>
     resolution.risks.find((risk) => risk.id === id)!;
@@ -182,7 +235,10 @@ describe("the season says which risk paid off and which one cost", () => {
     expect(partial.attendanceHeld).toBe(false);
     expect(partial.load.bought).toBe(1);
     expect(verdict(partial, "buying-time").outcome).toBe("fell_short");
-    expect(verdict(partial, "buying-time").detail).toContain("1 hours back");
+    // "1 hours back" is what this said, and this test pinned it. The count is one because
+    // the plan bought exactly one hour, which is the case a hard-coded plural gets wrong, so
+    // the assertion is now the sentence a student would actually read.
+    expect(verdict(partial, "buying-time").detail).toContain("1 hour back");
   });
 
   /**
@@ -202,29 +258,100 @@ describe("the season says which risk paid off and which one cost", () => {
   });
 
   /**
-   * "The bonus never came" is an outcome. "The bonus never came, and this much more in
-   * Avery's week would have kept it" is something a student can argue about with the person
-   * next to them, and something they can act on the second time through. The amount has to
-   * be exact, or the sentence is a figure of speech dressed as a model.
+   * "The bonus never came" is an outcome. "The bonus never came, and this much in Avery's
+   * week would have kept it" is something a student can argue about with the person next to
+   * them, and something they can act on the second time through. The amount has to be exact,
+   * or the sentence is a figure of speech dressed as a model.
+   *
+   * This test used to be run at `flexibleCash: 0` only, and that is exactly why the sentence
+   * shipped wrong for two years of grid: `costToClear` is what the week costs **from here**,
+   * and it coincides with what the rides row has to hold only when the row is empty — which
+   * is what a fixture plans. On a run that put $1,150 into rides the screen said $1,500 would
+   * have held the bonus, on a week whose rides row had to hold $2,550. The figure was short
+   * by exactly what the student had already spent, in every case where they had spent
+   * anything. So the row now carries money, and the check below is made over the grid.
    */
   it("says what it would have taken to keep the bonus, and the amount actually keeps it", () => {
     const missed = plan({
       setupId: "cousin-room",
       includeCompletion: true,
-      amounts: { goal: dollars(0), reserve: dollars(0), flexibleCash: dollars(0) },
+      amounts: { goal: dollars(0), reserve: dollars(750), flexibleCash: dollars(1150) },
     });
     const resolution = resolveSeason(missed, N);
     expect(resolution.attendanceHeld).toBe(false);
     expect(verdict(resolution, "attendance-bonus").outcome).toBe("cost_you");
-    expect(verdict(resolution, "attendance-bonus").detail).toContain(formatDollars(resolution.load.costToClear));
+    // What the row had to hold, not what was left to find. The plan already holds $1,150.
+    expect(resolution.load.costToProtect).toBe(1650);
+    expect(resolution.load.costToClear).toBe(600);
+    expect(verdict(resolution, "attendance-bonus").detail).toContain(formatDollars(dollars(1650)));
 
-    // Spend exactly that and the season resolves the other way, so the counterfactual is
-    // the model's own answer rather than a sentence written beside it.
-    const cleared = resolveSeason({ ...missed, amounts: { ...missed.amounts, flexibleCash: resolution.load.costToClear } }, N);
+    // Put exactly the printed figure in the rides row and the season resolves the other way,
+    // so the counterfactual is the model's own answer rather than a sentence written beside it.
+    const cleared = resolveSeason({ ...missed, amounts: { ...missed.amounts, flexibleCash: dollars(1650) } }, N);
     expect(cleared.attendanceHeld).toBe(true);
 
     // And the sentence is not offered on a season the bonus survived.
     expect(verdict(cleared, "attendance-bonus").detail).not.toContain("would have kept it");
+  });
+
+  /**
+   * The same claim, over every losing season this world can reach.
+   *
+   * The figure is read back **out of the printed sentence** rather than recomputed, because
+   * the defect was in the step between the model and the words: the model knew the row had
+   * to hold $2,550 and the sentence said $1,500. A test that asks the model what it thinks
+   * agrees with the model.
+   *
+   * Two things are asked of every cell. The figure, put into the rides row, has to actually
+   * hold the bonus — that is the arithmetic. And where the sentence tells a student to move
+   * money out of their other two amounts, those amounts have to hold enough to move: on the
+   * run this pins, the two rows the sentence named held $1,150 between them and it asked for
+   * $1,500, so the advice was unfollowable under either reading of "putting". A plan that
+   * could never have reached the figure is told so instead, which is the true lesson of that
+   * run — the bonus was already out of reach when the week was chosen.
+   */
+  it("prints a rides figure that holds the bonus, and only asks for money the plan had", () => {
+    const ridesFigure = /\$([\d,]+)(?: into rides| in the rides row)/g;
+    let couldHave = 0;
+    let couldNot = 0;
+
+    for (const setupId of ["gym-sublet", "teammate-share", "cousin-room"] as const) {
+      for (const includeOptionalWork of [false, true]) {
+        for (const depositTaken of [false, true]) {
+          const shell = plan({ setupId, includeOptionalWork, depositTaken, includeCompletion: true });
+          const pool = availableFor(shell, N) - lockedFor(shell, N);
+          for (let spent = 0; spent <= pool; spent += N.load.blockBuybackCost) {
+            const amounts = { goal: dollars(0), reserve: dollars(pool - spent), flexibleCash: dollars(spent) };
+            const resolution = resolveSeason({ ...shell, amounts }, N);
+            if (resolution.attendanceHeld) continue;
+            const where = `${setupId}/clinics=${String(includeOptionalWork)}/deposit=${String(depositTaken)}/rides=${spent}`;
+            const detail = verdict(resolution, "attendance-bonus").detail;
+
+            const figures = [...detail.matchAll(ridesFigure)].map((match) => Number(match[1]!.replaceAll(",", "")));
+            expect(figures, `${where}: ${detail}`).toHaveLength(1);
+            const asked = figures[0]!;
+
+            // 1. The figure is the truth about the week: put it in the row and the bonus holds.
+            const withIt = loadFor({ setupId, rehabActive: true, clinicsAccepted: includeOptionalWork, timeMoney: dollars(asked) }, N);
+            expect(withIt.attendanceHolds, `${where}: ${formatDollars(dollars(asked))} does not hold it`).toBe(true);
+
+            // 2. And the sentence's own claim about reachability is true either way.
+            if (detail.includes("would have kept it")) {
+              couldHave += 1;
+              expect(asked - spent, `${where}: ${detail}`).toBeLessThanOrEqual(amounts.goal + amounts.reserve);
+            } else {
+              couldNot += 1;
+              expect(asked, `${where}: ${detail}`).toBeGreaterThan(pool);
+              expect(detail, where).toContain("no way of splitting it");
+            }
+          }
+        }
+      }
+    }
+
+    // Neither branch is theoretical, so neither can rot unnoticed.
+    expect(couldHave).toBeGreaterThan(0);
+    expect(couldNot).toBeGreaterThan(0);
   });
 
   it("writes every amount in a verdict as money rather than as a bare number", () => {
@@ -241,6 +368,154 @@ describe("the season says which risk paid off and which one cost", () => {
           }
         }
       }
+    }
+  });
+
+  /**
+   * The defect this pins is the one a publication gate exists to catch: the deposit verdict
+   * used to be `depositTaken ? "paid_off" : "no_effect"`, so reserving won on every season
+   * ever played and waiting registered as nothing on every season ever played. A trade-off
+   * whose verdict cannot change is a right answer wearing a choice's clothes.
+   */
+  describe("the course seat is judged by what the season did with the money it tied up", () => {
+    const pressure = (shortfall: number, movable: number) => ({
+      shortfall: dollars(shortfall),
+      movable: dollars(movable),
+    });
+    const deposit = (over: Parameters<typeof plan>[0], week5: ReturnType<typeof pressure>, opening?: PlanAmounts) =>
+      verdict(resolveSeason(plan(over), N, opening, "attendance bonus", week5), "course-deposit");
+
+    it("reads the same reserved seat two ways on two seasons", () => {
+      // Same call, same everything else: the movable lines held Week 5 on one season and did
+      // not on the other, and that is the whole difference.
+      const absorbed = deposit({ depositTaken: true }, pressure(500, 1900));
+      const squeezed = deposit({ depositTaken: true }, pressure(500, 400));
+      expect(absorbed.outcome).toBe("paid_off");
+      expect(squeezed.outcome).toBe("cost_you");
+      expect(absorbed.outcome).not.toBe(squeezed.outcome);
+    });
+
+    /**
+     * This test used to read *"calls a reserved seat costly when the course line had to come
+     * down to cover Week 5"*, and it asserted that reading into place by handing the verdict a
+     * cut course line beside movable money that covered the bill four times over. No run can
+     * produce that pair, so what it pinned was a defect rather than a behaviour.
+     *
+     * A student who reserves the seat has no course line left to cut: the money commits to the
+     * locked costs at Week 4, `courseRowCapFor` drops the row's ceiling to zero and the reducer
+     * empties it in every draft they are holding. The caller computed the flag as `final.goal <
+     * opening.goal`, which is therefore true of every student who had been saving for the
+     * course — so the trade this verdict exists to weigh had one fixed answer for exactly the
+     * students who had committed to it, and a plan that absorbed Week 5 comfortably was headed
+     * **Cost you** over "reserving it stopped being money Avery could move". The opening plan
+     * is built here too, so the flag is derived the way the product derives it.
+     */
+    it("does not read the row reserving emptied as the plan being raided for Week 5", () => {
+      const saving: PlanAmounts = { goal: dollars(1200), reserve: dollars(900), flexibleCash: dollars(300) };
+      const reserved = { depositTaken: true, amounts: { goal: dollars(0), reserve: dollars(600), flexibleCash: dollars(600) } };
+      const absorbed = deposit(reserved, pressure(700, 2400), saving);
+      expect(absorbed.outcome).toBe("paid_off");
+      expect(absorbed.detail).not.toContain("stopped being money Avery could move");
+
+      // The same student, on a season the movable money could not carry, still reads as costly
+      // — so this is the trade being weighed, not the verdict being softened.
+      const squeezed = deposit(reserved, pressure(1500, 400), saving);
+      expect(squeezed.outcome).toBe("cost_you");
+      expect(squeezed.detail).toContain("stopped being money Avery could move");
+
+      // And how much was parked on the course row before Week 4 changes nothing, because none
+      // of it was moved by the student.
+      for (const parked of [0, 400, 1200]) {
+        const read = deposit(reserved, pressure(700, 2400), { ...saving, goal: dollars(parked) });
+        expect(read.outcome, `parked ${parked}`).toBe("paid_off");
+      }
+    });
+
+    it("reads waiting three ways, depending on what the movable money was asked for", () => {
+      const covered = deposit({}, pressure(1000, 3100));
+      const notEnough = deposit({}, pressure(1000, 400));
+      const untested = deposit({}, pressure(0, 3100));
+      expect(covered.outcome).toBe("paid_off");
+      expect(notEnough.outcome).toBe("fell_short");
+      // This used to expect "no effect", and the screen printed that heading directly above a
+      // sentence saying Avery had paid the full price rather than the deposit. Waiting is never
+      // free: the season that never tests the plan is the one where the extra bought room
+      // nobody needed, which is a cost with nothing back — not an absence of one.
+      expect(untested.outcome).toBe("cost_you");
+      expect(new Set([covered.outcome, notEnough.outcome, untested.outcome]).size).toBe(3);
+    });
+
+    /**
+     * The invariant behind the fix above, applied to every verdict this world can produce.
+     *
+     * A student reads the heading before the sentence. A heading that contradicts the money in
+     * its own detail line teaches the wrong thing more effectively than no heading at all.
+     */
+    it("never heads a verdict 'no effect' over a detail that names money changing hands", () => {
+      for (const depositTaken of [false, true]) {
+        for (const week5 of [pressure(0, 3100), pressure(500, 1900), pressure(1200, 400)]) {
+          const read = deposit({ depositTaken }, week5);
+          if (read.outcome !== "no_effect") continue;
+          expect(read.detail, `${String(depositTaken)} / ${week5.shortfall} of ${week5.movable}`)
+            .not.toMatch(/paid .*more|cost .*less|instead of/);
+        }
+      }
+    });
+
+    /**
+     * The same rule, one level out: it is not only "no effect" that can contradict its body.
+     *
+     * A green **Paid off** shipped over *"The course cost the full price rather than the
+     * deposit, so Avery paid more"* — the badge and the first thing under it disagreeing about
+     * whether the decision went well, on a season where the course also ended unpaid. The
+     * premium is real and it is still printed; a verdict that leads with it may not be headed
+     * with a win.
+     */
+    it("never opens a verdict that went well with what the decision cost", () => {
+      for (const depositTaken of [false, true]) {
+        for (const week5 of [pressure(0, 3100), pressure(500, 1900), pressure(1200, 400)]) {
+          const read = deposit({ depositTaken }, week5);
+          if (read.outcome !== "paid_off" && read.outcome !== "no_effect") continue;
+          const opening = read.detail.split(". ")[0] ?? "";
+          expect(opening, `${String(depositTaken)} / ${week5.shortfall} of ${week5.movable}`).not.toMatch(/paid .*more|cost .*more/);
+        }
+      }
+    });
+
+    it("names the price difference on every season, whichever way the call went", () => {
+      const premium = formatDollars(N.course.fullPrice - N.course.depositPrice);
+      for (const depositTaken of [false, true]) {
+        for (const week5 of [pressure(0, 3100), pressure(500, 1900), pressure(1200, 400)]) {
+          const read = deposit({ depositTaken }, week5);
+          expect(read.detail, `${String(depositTaken)} / ${week5.shortfall} of ${week5.movable}`).toContain(premium);
+          expect(read.detail).toContain(formatDollars(N.course.depositPrice));
+          expect(read.detail).toContain(formatDollars(N.course.fullPrice));
+        }
+      }
+    });
+
+    it("leaves no verdict on this decision constant across seasons", () => {
+      // Read the way the publication gate reads the rest of the model: sweep the space and
+      // check that neither answer owns one outcome.
+      const seasons = [pressure(0, 3100), pressure(500, 1900), pressure(1200, 400)];
+      for (const depositTaken of [false, true]) {
+        const outcomes = new Set(seasons.map((week5) => deposit({ depositTaken }, week5).outcome));
+        expect(outcomes.size, `depositTaken=${String(depositTaken)}`).toBeGreaterThan(1);
+      }
+    });
+  });
+
+  /**
+   * The clinics cost hours whatever else happened. The "cost Avery nothing extra" line this
+   * replaces un-said the tiredness the Week 5 screen had just insisted on.
+   */
+  it("states both the money and the hours on every season the clinics were taken", () => {
+    for (const setupId of ["gym-sublet", "teammate-share", "cousin-room"] as const) {
+      const resolution = resolveSeason(plan({ setupId, includeCompletion: true, includeOptionalWork: true }), N);
+      const clinics = verdict(resolution, "clinics");
+      expect(clinics.detail, setupId).toContain(formatDollars(N.optionalWorkIncome));
+      expect(clinics.detail, setupId).toContain(`${N.load.clinicBlocks} hours a week`);
+      expect(clinics.detail, setupId).not.toContain("nothing extra");
     }
   });
 

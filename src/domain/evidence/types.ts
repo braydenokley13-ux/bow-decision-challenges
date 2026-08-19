@@ -1,4 +1,4 @@
-import type { CalcId, CategoryId, SetupId, WorldId } from "../core/ids";
+import type { CalcId, CategoryId, ClaimReasonId, SetupId, WorldId } from "../core/ids";
 import type { Dollars } from "../core/money";
 import type { PlanAmounts, PlanMode, PlanReadout, SnapshotInputs } from "../finance/types";
 import type { StructuredMicroSkillId, EvidencePoints, ConceptId } from "../blueprint/types";
@@ -9,10 +9,26 @@ export type MasteryStatus = "demonstrated_independently" | "demonstrated_with_su
 export type Trajectory = "independent_first_opportunity" | "corrected_after_consequence" | "corrected_after_scaffold" | "new_difficulty_during_adaptation" | "persistent_gap" | "insufficient_evidence";
 export type C4ObservationContext = "opening_income_fallback" | "week5_cost_response";
 
+/**
+ * Every screen any world can be on.
+ *
+ * The three at the top belong to the platform — a student joins and picks a world before any
+ * world's story starts. Everything after them belongs to one world and is named for it, so
+ * the union reads as what it is: two worlds' interiors, side by side, sharing an envelope and
+ * nothing else. A world does not inherit another world's stages, and `WorldRegistryEntry`
+ * declares which of these each one can actually be in — a restored attempt is checked against
+ * its own world's list rather than against all of them.
+ */
 export type StageId =
-  | "entry" | "join" | "choose-world" | "the-offer" | "role-contract" | "setup-comparison" | "working-plan"
+  | "entry" | "join" | "choose-world"
+  // Plan Under Pressure, in the basketball world.
+  | "the-offer" | "role-contract" | "setup-comparison" | "working-plan"
   | "fallback-version" | "income-check" | "season-weeks" | "week5-transition" | "week5-event" | "first-response"
-  | "opportunity-final-repair" | "remaining-risk-preview" | "week8-resolution" | "defense" | "submitted";
+  | "opportunity-final-repair" | "remaining-risk-preview" | "week8-resolution" | "defense" | "submitted"
+  // Run the Pop-Up, at the Riverside Night Market.
+  | "popup-spot" | "popup-money" | "popup-plan" | "popup-first-saturday"
+  | "popup-standing-order" | "popup-generator" | "popup-repair" | "popup-settle"
+  | "popup-writeup" | "popup-submitted";
 
 export interface PlanSnapshot {
   id: string;
@@ -39,20 +55,38 @@ export interface PlanSnapshot {
  * an event type appears that is not on this list.
  */
 export type EvidenceEventType =
-  | "SESSION_STARTED" | "WORLD_CONFIRMED" | "STAGE_ENTERED" | "CALCULATION_SUBMITTED" | "SETUP_RANKED" | "SETUP_SELECTED"
+  // The platform's own moments, and the two supports. Every world writes these.
+  | "SESSION_STARTED" | "WORLD_CONFIRMED" | "STAGE_ENTERED" | "SCAFFOLD_OPENED" | "SHOW_AND_CONTINUE_USED"
+  // Plan Under Pressure, in the basketball world.
+  | "CALCULATION_SUBMITTED" | "SETUP_RANKED" | "SETUP_SELECTED"
   | "COURSE_DEPOSIT_DECIDED"
+  // Named for what it is rather than for where it happens: three claims wanted the same
+  // money, the student said which ones got it, and said what made them leave the rest.
+  // A second world with a week like this writes the same type and the same payload.
+  | "COMPETING_CLAIMS_SETTLED"
   | "INCOME_SOURCE_TOGGLED" | "PLAN_SAVE_REQUESTED" | "PLAN_SAVED" | "PLAN_REMAINDER_ASSIGNED" | "LOCKED_MOVE_ATTEMPTED"
   | "WEEK5_ADVANCE_CONFIRMED" | "GAP_TILE_TOGGLED" | "OPTIONAL_WORK_DECIDED"
-  | "COMPLETION_INCOME_DECIDED" | "SCAFFOLD_OPENED" | "SHOW_AND_CONTINUE_USED"
-  | "DEFENSE_SUBMITTED";
+  | "COMPLETION_INCOME_DECIDED"
+  | "DEFENSE_SUBMITTED"
+  // Run the Pop-Up, at the Riverside Night Market.
+  | "POPUP_SUM_SUBMITTED" | "POPUP_SPOT_SELECTED" | "POPUP_CONDITIONAL_MONEY_DECIDED" | "POPUP_COVER_LINE_NAMED"
+  | "POPUP_PLAN_SAVE_REQUESTED" | "POPUP_PLAN_SAVED" | "POPUP_REMAINDER_ASSIGNED" | "POPUP_LOCKED_MOVE_ATTEMPTED"
+  | "POPUP_STOCK_ORDERED" | "POPUP_HELPER_DECIDED" | "POPUP_SATURDAY_PLAYED"
+  | "POPUP_WRITEUP_SUBMITTED";
 
 export const EVIDENCE_EVENT_TYPES: readonly EvidenceEventType[] = [
-  "SESSION_STARTED", "WORLD_CONFIRMED", "STAGE_ENTERED", "CALCULATION_SUBMITTED", "SETUP_RANKED", "SETUP_SELECTED",
+  "SESSION_STARTED", "WORLD_CONFIRMED", "STAGE_ENTERED", "SCAFFOLD_OPENED", "SHOW_AND_CONTINUE_USED",
+  "CALCULATION_SUBMITTED", "SETUP_RANKED", "SETUP_SELECTED",
   "COURSE_DEPOSIT_DECIDED",
+  "COMPETING_CLAIMS_SETTLED",
   "INCOME_SOURCE_TOGGLED", "PLAN_SAVE_REQUESTED", "PLAN_SAVED", "PLAN_REMAINDER_ASSIGNED", "LOCKED_MOVE_ATTEMPTED",
   "WEEK5_ADVANCE_CONFIRMED", "GAP_TILE_TOGGLED", "OPTIONAL_WORK_DECIDED",
-  "COMPLETION_INCOME_DECIDED", "SCAFFOLD_OPENED", "SHOW_AND_CONTINUE_USED",
+  "COMPLETION_INCOME_DECIDED",
   "DEFENSE_SUBMITTED",
+  "POPUP_SUM_SUBMITTED", "POPUP_SPOT_SELECTED", "POPUP_CONDITIONAL_MONEY_DECIDED", "POPUP_COVER_LINE_NAMED",
+  "POPUP_PLAN_SAVE_REQUESTED", "POPUP_PLAN_SAVED", "POPUP_REMAINDER_ASSIGNED", "POPUP_LOCKED_MOVE_ATTEMPTED",
+  "POPUP_STOCK_ORDERED", "POPUP_HELPER_DECIDED", "POPUP_SATURDAY_PLAYED",
+  "POPUP_WRITEUP_SUBMITTED",
 ] as const;
 
 /**
@@ -125,6 +159,59 @@ export interface AlternateStateEvidence {
 }
 
 /**
+ * Where the figure standing in one row of a plan came from.
+ *
+ * This exists because a board with one-press shortcuts on it produces two things that look
+ * identical in a saved plan and are not the same fact about a student: an amount they chose,
+ * and an amount that arrived because they pressed the biggest button on the screen. A run
+ * that cannot tell them apart credits a decision nobody made — which is exactly what
+ * "Savings is a planned amount — the course line held a figure the student set" was saying
+ * about students who never touched that line.
+ *
+ * It is deliberately **not** a `SupportLevel`. Support answers "how much help did they have
+ * with the arithmetic", and `answer_supplied` scores zero because a copied number says
+ * nothing about whether a student can produce one. A one-press fill is a different fact in
+ * both directions: the student really did choose *which line to protect*, and really did not
+ * choose *the amount*. Folding the two together would either deny them the decision they
+ * made or credit them with one they did not.
+ *
+ * - `typed` — the student produced this figure: the steppers, the keyboard, or a figure that
+ *   arrived some other way and that they then changed. This is the only value that means
+ *   "the amount is theirs".
+ * - `suggested` — BOW proposed this figure and the student accepted it whole. They chose the
+ *   line; the number is BOW's. The scaffold that fills in one balanced plan writes this.
+ * - `remainder` — the student named this row to take whatever the rest of the plan left
+ *   over. They chose the line; the *arithmetic* chose the number. It is separated from
+ *   `suggested` because the two mean different things to the one requirement that reads
+ *   them: a suggested figure is a number BOW picked, and a remainder is not a number anybody
+ *   picked. "Savings is whatever is left" is the misconception this product exists to catch,
+ *   and it is `remainder` on the savings row, not `suggested` on it.
+ *
+ * The fourth state is the absence of an entry: a row nobody touched. It is not a value here
+ * on purpose — a map with no key for a row cannot be mistaken for a decision, and every
+ * reader has to handle it.
+ */
+export type AmountSource = "typed" | "suggested" | "remainder";
+
+/** How one row's figure arrived, and whether the student has since changed it. */
+export interface AmountProvenance {
+  source: AmountSource;
+  /**
+   * The row has held a figure BOW produced, and the student changed it afterwards.
+   *
+   * It is what makes an accepted suggestion earnable back: a student who pressed a fill,
+   * looked at what it did and moved the number has made the amount theirs, and `source`
+   * reads `typed` from that moment. This flag is what lets the sentence a teacher reads say
+   * which of those two things happened rather than only that the figure is now the
+   * student's.
+   */
+  revised: boolean;
+}
+
+/** One plan's rows, by where each figure came from. A missing row was never touched. */
+export type PlanAmountSources = Partial<Record<CategoryId, AmountProvenance>>;
+
+/**
  * One moment where the student sent the money still unassigned to a named row.
  *
  * The board has always demanded that every dollar end up somewhere. What it never recorded
@@ -153,9 +240,42 @@ export interface RemainderChoice {
   evidenceRef: string;
 }
 
+/**
+ * One week's worth of competing claims, settled.
+ *
+ * The payload of `COMPETING_CLAIMS_SETTLED`, and world-neutral in the same way the event
+ * name is: ids are the world's own strings, everything else is the shared vocabulary. It
+ * carries what was paid for, what was left unpaid, the reason the student gave, and the
+ * amounts — enough for an observer to judge it and enough for the world's own ending to
+ * say what actually happened, without either one re-deriving the other's half.
+ *
+ * `unfundedIds` is stored rather than computed from `fundedIds`, because the set of claims
+ * a world put in front of the student is a fact about the run and not about the world as it
+ * stands today. A log written by a version that offered a fourth claim has to still read.
+ */
+export interface CompetingClaimsSettlement {
+  /** The money that was on the table, and only for this. It never reaches the plan. */
+  cash: Dollars;
+  fundedIds: readonly string[];
+  unfundedIds: readonly string[];
+  /** What the funded claims cost together. */
+  spent: Dollars;
+  /** What was left over once they were paid for. */
+  leftOver: Dollars;
+  /** What the student said made them leave the rest out. */
+  reason: ClaimReasonId;
+}
+
 export interface AssessmentFacts {
   calculations: Partial<Record<CalcId, CalculationEvidence>>;
-  opening?: { snapshot: PlanSnapshot; balance: Dollars; firstSaveBalance: Dollars; conditionalExposure: Dollars; support: SupportLevel; evidenceRefs: string[] };
+  /**
+   * `sources` is optional and absent means *this log predates the record*, not *no row was
+   * touched*. An attempt saved before the board recorded where each figure came from cannot
+   * be re-read through the new rule without changing what a finished attempt means, so the
+   * observer falls back to what such a log can actually support. A run recorded today always
+   * carries one, with a key for every row the student acted on and none for the rest.
+   */
+  opening?: { snapshot: PlanSnapshot; balance: Dollars; firstSaveBalance: Dollars; conditionalExposure: Dollars; support: SupportLevel; evidenceRefs: string[]; sources?: PlanAmountSources };
   fallback?: AlternateStateEvidence;
   firstResponse?: AlternateStateEvidence;
   preview?: AlternateStateEvidence;
@@ -171,6 +291,17 @@ export interface AssessmentFacts {
    */
   remainderChoices?: readonly RemainderChoice[];
   optionalDecision?: { accepted: boolean; sequence: number; evidenceRef: string };
+  /**
+   * What the student said about each piece of conditional income while building the opening
+   * plan, in the order they said it.
+   *
+   * The bonus screen will not advance until both cards have been answered, so a run recorded
+   * today always carries one of these per source. Absent means *this log predates the record*
+   * — not *no decision was made* — which is the same rule `sources` follows on the plan
+   * snapshot, and for the same reason: a finished attempt must not be re-read under a rule
+   * that did not exist when it was saved.
+   */
+  conditionalIncomeDecisions?: readonly { sourceId: string; included: boolean; sequence: number; evidenceRef: string }[];
   /** Whether the student decided about the still-conditional payment, and when. */
   completionDecision?: { included: boolean; sequence: number; evidenceRef: string };
   finalPlanSequence?: number;
@@ -198,13 +329,27 @@ export interface ConceptResult {
   misconceptionTags: string[];
 }
 
+/**
+ * `summary` used to be a sixth field here, and it is gone.
+ *
+ * It was a sixth vocabulary for "how well did this student do" — `strong_application`,
+ * `secure_application`, `developing_application`, `limited_application` — computed for every
+ * attempt from a 65/80/90 threshold ladder over the composite total, and rendered on no
+ * screen since the bespoke demo pages were deleted. Four `*_application` strings would be
+ * indefensible in front of a teacher, and a field sitting in the result type waiting to be
+ * rendered is not dead weight so much as a loaded gun: the next person adding a status reads
+ * `GradeResult`, finds a ready-made verdict, and a sixth vocabulary is back on a screen.
+ *
+ * Deleted rather than fenced, for the same reason `STATUS_LABELS` and `conceptSummaries`
+ * were. It also took the last live use of the composite total's thresholds with it — the
+ * same composite `studentSpine.test.ts` says must not come back.
+ */
 export interface GradeResult {
   structuredPoints: number;
   structuredMaximum: number;
   reasoningPoints: number | null;
   finalPoints: number | null;
   incomplete: boolean;
-  summary: "strong_application" | "secure_application" | "developing_application" | "limited_application" | "incomplete" | "pending_reasoning";
 }
 
 export interface AssessmentResult {

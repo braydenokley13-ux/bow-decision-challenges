@@ -1,0 +1,24 @@
+import { test, expect } from "@playwright/test";
+import * as F from "./flow";
+
+test("board buttons", async ({ page, request }) => {
+  test.setTimeout(120_000);
+  const cls = await F.createClass(request, "Judge 3 board");
+  console.log("CLASS", cls.code, cls.teacherKey);
+  await F.gotoFreshChallenge(page);
+  await F.enterChallenge(page, { classCode: cls.code, seatCode: "1" });
+  await F.completeSetupStage(page, 2);
+  await F.completeWorkingCalcs(page);
+  const dump = async (tag: string) => {
+    const names = await page.locator("main button, main a[href], main input, main [role=button]").evaluateAll((els) =>
+      els.map((e) => {
+        const el = e as HTMLElement;
+        return `${el.tagName}[${(el as HTMLInputElement).type ?? ""}] "${(el.getAttribute("aria-label") || el.textContent || "").trim().slice(0, 70)}" disabled=${(el as HTMLButtonElement).disabled ?? false}`;
+      }),
+    );
+    console.log(`\n--- ${tag} ---\n` + names.join("\n"));
+  };
+  await dump("board fresh");
+  await page.getByRole("button", { name: /Backup money/ }).last().click();
+  await dump("board after shortcut");
+});

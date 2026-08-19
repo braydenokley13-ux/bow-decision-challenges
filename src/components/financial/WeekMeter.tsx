@@ -1,12 +1,28 @@
 import { formatDollars } from "../../domain/core/money";
+import { hours, hoursPerWeek } from "../../domain/core/units";
 import type { LoadReadout } from "../../domain/finance/load";
 
 interface WeekMeterProps {
   load: LoadReadout;
   /** What is taking the hours, in the order they stack. */
   parts: readonly { id: string; label: string; blocks: number }[];
-  /** Named so the meter can say what the line is actually protecting. */
-  atStake: string;
+  /**
+   * What the line is actually protecting, or `null` where this plan is not counting on it.
+   *
+   * It used to be named unconditionally. A student who had just pressed *"No — plan without
+   * it"* was told on the very next screen that leaving the plan alone meant "the attendance
+   * bonus does not arrive" — coaching that ignores the decision they had made two seconds
+   * earlier, about money their plan no longer holds.
+   */
+  atStake: string | null;
+  /**
+   * Money still unassigned on this board, which is the only money that could go into rides.
+   *
+   * The "another $X on rides would cover it" line used to be printed on a board that was
+   * already over: a student with $400 to find was told to spend $1,350. A suggestion the
+   * screen beside it forbids is not help.
+   */
+  headroom: number;
   /** What one hour costs, so the row can be reasoned about rather than nudged. */
   rate: number;
 }
@@ -24,7 +40,7 @@ interface WeekMeterProps {
  * fourteen hours were covered while the picture showed the load getting bigger, and a
  * reader who compared the two believed neither.
  */
-export function WeekMeter({ load, parts, atStake, rate }: WeekMeterProps) {
+export function WeekMeter({ load, parts, atStake, headroom, rate }: WeekMeterProps) {
   const scale = Math.max(load.capacity, load.demand);
   const width = (blocks: number) => `${(blocks / scale) * 100}%`;
   const state = !load.atRisk ? "quiet" : load.attendanceHolds ? "safe" : "over";
@@ -37,7 +53,7 @@ export function WeekMeter({ load, parts, atStake, rate }: WeekMeterProps) {
             to say `net`, which is the number the bar deliberately does not show — the paid-for
             hours are measured under it — and a reader who checked the two disagreed with us. */}
         <p className="week-meter__read">
-          <strong>{load.demand} hours</strong>
+          <strong>{hours(load.demand)}</strong>
           <span>
             a week of getting places, outside practice, games and school
             {load.bought > 0 ? ` — ${load.bought} paid for, ${load.net} still on Avery` : ""}
@@ -55,7 +71,7 @@ export function WeekMeter({ load, parts, atStake, rate }: WeekMeterProps) {
             not a limit, it is a riddle — so it now says what it is a limit on. */}
         {load.atRisk && (
           <span className="week-meter__limit" style={{ left: width(load.limit) }}>
-            <b>{load.limit} hours is all Avery has</b>
+            <b>{hours(load.limit)} is all Avery has</b>
           </span>
         )}
       </div>
@@ -73,15 +89,20 @@ export function WeekMeter({ load, parts, atStake, rate }: WeekMeterProps) {
         {!load.atRisk
           ? "This is what the trip alone takes. Rehab and anything else Avery takes on would come out of the same week."
           : load.attendanceHolds
-            ? `Avery can fit it all in, makes every session, and ${atStake} still arrives.`
-            : `${load.overBy} hour${load.overBy === 1 ? "" : "s"} more than Avery has. Leave the plan like this and something gets missed — and then ${atStake} does not arrive.`}
-        {load.atRisk && !load.attendanceHolds && (
+            ? `Avery can fit it all in and makes every session${atStake ? `, and ${atStake} still arrives` : ""}.`
+            : `${hours(load.overBy)} more than Avery has. Leave the plan like this and something gets missed${atStake ? `, and then ${atStake} does not arrive` : ""}.`}
+        {load.atRisk && !load.attendanceHolds && headroom >= load.costToClear && load.costToClear > 0 && (
           <> Another <strong className="money">{formatDollars(load.costToClear)}</strong> on rides would cover it.</>
         )}
       </p>
-      {/* The exchange rate, stated. Without it the + key is trial and error rather than a
-          decision, which is the opposite of what this row is here to teach. */}
-      <p className="week-meter__rate">Every {formatDollars(rate)} spent on rides buys back one hour a week.</p>
+      {/* The exchange rate and its ceiling, both stated before a dollar is spent. Without the
+          rate the + key is trial and error; without the ceiling a student can put money into
+          this row past the point where it buys anything and only find out at Week 8, which is
+          the one thing on this screen the model does silently. */}
+      <p className="week-meter__rate">
+        Every {formatDollars(rate)} spent on rides buys back {hoursPerWeek(1)}.
+        {" "}There are only {hours(load.demand)} to buy, so past {formatDollars(load.buybackCeiling)} more money buys nothing.
+      </p>
     </section>
   );
 }

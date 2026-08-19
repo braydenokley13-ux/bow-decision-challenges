@@ -1,0 +1,50 @@
+# SHA 51fbae262fa90f9cafefe1da1e27efc3001524f9.  HIGH (I argue REFUSE): an authenticated student
+# destroys any other teacher's class on the FILE store via a path-traversal in `sessionId`.
+#
+# Root cause: server/handler.ts readSubmission() validates sessionId by LENGTH ONLY (8..64),
+# no character restriction. server/store.ts submissionKey() = `${seatCode}:${sessionId}`, and
+# fileStore.submissionPath() = join(root, code, "submissions", `${key}.json`). A sessionId
+# containing "/../" climbs out of the submissions directory. Content is AES-GCM sealed, so the
+# corruption is *valid ciphertext* — it opens, keyCheck stays "ok", nothing flags it.
+#
+# Threat model: the attacker is an ordinary STUDENT. The only door is /join, and an open class
+# hands a session to anyone who types the code. So the attacker needs (a) a student session in
+# ANY open class — trivially self-obtained — and (b) the victim class CODE, which is public
+# (whiteboard, URL, shared with a whole room).
+
+## Setup
+  attacker class (open join): 3YK66   attacker joins it -> seat 1 + student token
+  victim class (another teacher's):    XN9UD
+
+## Attack: attacker POSTs a submission to their OWN class (3YK66) with a crafted sessionId.
+  sessionId = "aaaaaaaa/../../../XN9UD/class"   (len 29, passes the 8..64 check)
+  filename becomes "1:aaaaaaaa/../../../XN9UD/class.json"
+  path from root/3YK66/submissions resolves to root/XN9UD/class.json
+  -> HTTP 202 {"seatCode":"1","submittedAt":...}      (accepted)
+  attacker's own submissions dir: EMPTY (the write escaped it)
+
+## Result: the victim class is destroyed.
+  root/XN9UD/class.json now decrypts to the attacker's SubmissionRecord, not a StoredClass:
+    {"classCode":"3YK66","seatCode":"1","sessionId":"aaaaaaaa/../../../XN9UD/class",...}
+  GET /classes/XN9UD  -> 200 with garbage: code undefined, label gone, teacherKey gone,
+                          assignment id "assignment-undefined-legacy"
+  victim TEACHER, with their real teacher key, GET /classes/XN9UD/submissions -> HTTP 403
+     (opensClass compares key against record.teacherKey, which no longer exists)
+
+# The victim teacher is permanently locked out of their own class and every child's evidence in
+# it, with no error anyone can see — the store reports healthy. The same primitive can target
+# _vault-check.json (break health), _accounts/teachers/<id>.json (corrupt an account), or any
+# roster/submission/checkpoint file (corrupt evidence). Any .json the server reads is destroyable
+# by any student who knows a class code.
+#
+# Fix: reject a sessionId that is not [A-Za-z0-9._-]+ in readSubmission (and anywhere a
+# client-supplied string becomes a path component). The redis driver is unaffected (the key is a
+# hash field, not a path) — this is file-store specific, but the file store is the self-host path.
+
+## Escalation: it escapes the data root entirely (arbitrary .json write anywhere the process can write)
+  sessionId = "a/../../../../ESCAPED_MARKER"  -> HTTP 202
+  file created at: /home/user/bow-decision-challenges/.scratch/vendor5/ESCAPED_MARKER.json   (OUTSIDE /home/user/bow-decision-challenges/.scratch/vendor5/data/)
+  So the primitive is "overwrite/create any .json path the server user can write", sealed content.
+  On a self-hosted box the service user typically owns the app dir: package.json, config .json,
+  the canary, or disk-fill are all reachable. (Overwrites are sealed-garbage = destruction, not
+  code injection, but destruction of a term of children's work is the payload that matters.)

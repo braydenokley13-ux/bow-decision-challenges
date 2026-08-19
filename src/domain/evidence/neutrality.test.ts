@@ -1,9 +1,12 @@
-import { readFileSync, readdirSync } from "node:fs";
+import { sourceWithoutComments } from "../../test/source";
+import { readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { dollars } from "../core/money";
 import { observeCompetencies } from "../competency/observe";
 import type { EvidenceRequirementObservation } from "../competency/types";
-import type { AssessmentFacts, AlternateStateEvidence, PlanSnapshot } from "./types";
+import type { AssessmentFacts, AlternateStateEvidence, EvidenceEvent, PlanSnapshot } from "./types";
+import { deriveFacts } from "./facts";
+import { runChallenge } from "../../test/runChallenge";
 import { observeStructured } from "./observe";
 
 function snapshot(sequence = 10): PlanSnapshot {
@@ -102,6 +105,33 @@ describe("choice-neutral scoring", () => {
     expect(scores(takesJob, everySkill)).toEqual(scores(keepsRest, everySkill));
   });
 
+  it("does not pay a student for leaving both bonuses out, and does not pay them for nothing", () => {
+    // The axis this suite never covered, and the one an economics review found a weakly
+    // dominant strategy on: C1.2 used to award 5/5 to any plan whose conditional exposure was
+    // zero — no fallback to build, no evidence of any kind, and one fewer instrument to lose
+    // marks on. Nothing anywhere rewards counting a bonus, so "count neither" was five free
+    // points, against a README that promises the challenge is preference-neutral.
+    //
+    // Neutral does not mean "the same level whatever you do". It means the ceiling is the same
+    // from equivalent behaviour and neither route is handed a level it did not produce. Both
+    // halves are asserted here, on runs driven through the real reducer.
+    const level = (options: Parameters<typeof runChallenge>[0], log?: (events: readonly EvidenceEvent[]) => EvidenceEvent[]) => {
+      const events = [...runChallenge(options).log];
+      return observeStructured(deriveFacts(log ? log(events) : events))
+        .find((observation) => observation.microSkillId === "C1.2")?.points;
+    };
+    const declined = level({ seatCode: "3" });
+    const counted = level({ seatCode: "4", countCompletion: true });
+    expect(counted).toBe(5);
+    expect(declined, "leaving both bonuses out no longer reaches a different ceiling").toBe(counted);
+    // And the branch rests on the two answers rather than on the absence of a fallback: a run
+    // that reached the screen and left one card unanswered has not shown the same thing.
+    const halfAnswered = level({ seatCode: "5" }, (events) =>
+      events.filter((event) => !(event.type === "INCOME_SOURCE_TOGGLED"
+        && (event.payload as { sourceId?: string }).sourceId === "outcome-1000")));
+    expect(halfAnswered!).toBeLessThan(declined!);
+  });
+
   it("does not reward which category a student cut to absorb the Week 5 shortfall", () => {
     const cutTheGoal = facts();
     const cutSpendingMoney = facts();
@@ -136,11 +166,6 @@ function competencySources(): string[] {
 }
 
 /** Comments are stripped: a comment explaining the boundary is not a violation of it. */
-function withoutComments(path: string): string {
-  return readFileSync(path, "utf8")
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-}
 
 const ENGINE_SOURCES = competencySources().filter((path) => !path.endsWith("availability.ts") && !path.endsWith("index.ts"));
 
@@ -154,7 +179,7 @@ describe("the shared engine cannot tell which world it is scoring", () => {
     // `availability.ts` is the one file in the layer that names worlds at all — §4.5 makes
     // a competency's availability depend on whether some world can produce its evidence —
     // and it is excluded above. It answers "does a world exist for this"; it never scores.
-    expect(withoutComments(path), path).not.toMatch(/world/i);
+    expect(sourceWithoutComments(path), path).not.toMatch(/world/i);
   });
 
   it("gives the same result to the same evidence however it was labelled", () => {
@@ -166,8 +191,8 @@ describe("the shared engine cannot tell which world it is scoring", () => {
       { evidenceRequirementId: "adapt-a-plan.er3", kind: "decision", level: 5, supportLevel: "standard_access", evidenceRefs: [`${ref}:3`], reason: ref },
       { evidenceRequirementId: "adapt-a-plan.er4", kind: "decision", level: 4, supportLevel: "standard_access", evidenceRefs: [`${ref}:4`], reason: ref },
     ];
-    const fromOne = observeCompetencies(observation("basketball"), { submitted: true });
-    const fromAnother = observeCompetencies(observation("food-truck"), { submitted: true });
+    const fromOne = observeCompetencies(observation("basketball"));
+    const fromAnother = observeCompetencies(observation("food-truck"));
     expect(fromOne).toEqual(fromAnother);
     expect(fromOne[0]?.state).toBe("demonstrated");
   });

@@ -1,13 +1,18 @@
 import { useId, useState } from "react";
-import type { CategoryId } from "../../domain/core/ids";
 import { dollars, formatDollars, parseDollars } from "../../domain/core/money";
 
 interface AllocationControlProps {
-  id: CategoryId;
+  /**
+   * The line this row moves, named in the calling world's own vocabulary. It reaches the DOM
+   * as `data-category` and nothing here reads it, so a second world's line ids theme the same
+   * row without the primitive learning either world's nouns.
+   */
+  id: string;
   label: string;
   description: string;
   value: number;
-  step: 50 | 100;
+  /** The step both keys move by. Each world sets its own; nothing here assumes a size. */
+  step: number;
   max: number;
   originalValue?: number | undefined;
   /** When present the row is already committed and cannot be moved; this says why. */
@@ -86,7 +91,16 @@ export function AllocationControl({ id, label, description, value, step, max, or
           aria-valuemax={max}
           aria-valuenow={value}
           aria-valuetext={formatDollars(value)}
-          value={raw ?? String(value)}
+          /*
+           * Money, written the way the row beside it writes money.
+           *
+           * This box and the `<strong>` 40px to its left are the same number, and they were
+           * printing it two different ways: "$1,500" in the money column and a bare "1500" in
+           * the field. One row, one amount, two notations — and the bare integer is the one a
+           * child is asked to read a decision off. `parseDollars` has always stripped "$" and
+           * "," on the way back in, so the field can say what the row says.
+           */
+          value={raw ?? formatDollars(value)}
           onChange={(event) => setRaw(event.target.value)}
           onBlur={() => commit(raw ?? String(value))}
           onKeyDown={(event) => {

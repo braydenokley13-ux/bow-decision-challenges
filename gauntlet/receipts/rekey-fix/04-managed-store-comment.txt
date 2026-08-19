@@ -1,0 +1,44 @@
+# NEW-4 (LOW, vendor-review-5 §3) — a stale comment told a reader at-rest encryption on the
+# managed path was optional when the code requires it.
+
+The behaviour, checked first — a keyless managed configuration does not run:
+
+  storeFromEnvironment({ KV_REST_API_URL: "https://kv.test", KV_REST_API_TOKEN: "token" })
+    .blockedReason
+  -> "This deployment has no store key, so it will not write a class. Set BOW_STORE_KEY to 32
+      random bytes, base64 or hex — `openssl rand -base64 32`. …"
+
+Two comments disagreed with that, not one. The review named the first; the second is the same
+belief one function along, and it contradicted the paragraph directly beneath it.
+
+  server/store.ts:647  (redisRestStore, over `put`/`get`)
+    "Optional rather than required, because unlike the disk this is not the configuration a
+     district self-hosts, and refusing to start a working managed deployment on an upgrade
+     would take a lesson down to fix a paperwork question."
+
+  server/store.ts:917  (storeFromEnvironment, over the `if (url && token)` line)
+    "The managed path runs without one. At-rest encryption there is the subprocessor's control
+     and belongs in a data processing agreement; a key still seals the values and lifts the
+     signing secret off the store, so it is worth having and is not worth taking a working
+     deployment down over on an upgrade."
+    …immediately above…
+    "Same rule as the disk below… This was optional for one release, on the reasoning that
+     refusing to boot would take a lesson down over a paperwork question — but a keyless
+     managed deployment also put the token-signing secret in the same store as the data, so it
+     was never a paperwork question."
+
+The second is now deleted (the paragraph under it was already correct and complete) and the
+first rewritten to say the key is required and why the earlier reasoning was wrong. The
+history stays in both, because it is the reason the rule exists.
+
+The test (`storeHardening.test.ts`, "what the source says about at-rest encryption on the
+managed path") asserts the behaviour and then the tense: this file may record that a key *was*
+optional, never that it is. Against HEAD~ it fails on
+`expected … not to contain 'Optional rather than required'`.
+
+Not fixed, and outside this change's territory: `redisRestStore`'s `put`/`get` still read
+`keeper ? keeper.seal(value) : JSON.stringify(value)` (server/store.ts ~651). `keeper` is a
+required `Vault` parameter and `storeFromEnvironment` refuses the keyless managed case, so the
+plaintext branch is unreachable — the same stale belief, in code rather than in a comment. It
+is two lines to delete and it deserves its own change; the comment now names the invariant so
+whoever gets there can see why.

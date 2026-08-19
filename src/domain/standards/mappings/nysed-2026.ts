@@ -9,12 +9,21 @@ import type { Coverage, Mapping, StandardCompletionRule } from "../types";
  * was built wrong.
  *
  * What the 37 rows below prove about the model: eleven of the 23 objectives are not
- * one-to-one. Two competencies each fully cover two objectives — `keep-credit-costs-down`
- * covers 2.3 and 2.4, `how-savings-grow` covers 5.2 and 5.5 — so a teacher who assigns 2.4
- * gets evidence for 2.3 as well. That is a gift rather than a bug, and it has to be
- * labelled on screen or it looks like a mistake. In the other direction, NYSED 2.1 is three
- * skills wearing one number and 4.1 is two, which is what the completion rules at the
- * bottom of this file exist for.
+ * one-to-one. One competency fully covers two objectives — `how-savings-grow` covers 5.2
+ * and 5.5 — so a teacher who assigns 5.5 gets evidence for 5.2 as well. That is a gift
+ * rather than a bug, and it has to be labelled on screen or it looks like a mistake. In the
+ * other direction, NYSED 2.1 is three skills wearing one number and 4.1 is two, which is
+ * what the completion rules at the bottom of this file exist for.
+ *
+ * **Four rows are deliberately `partial` where the objective's own verb asks for more than
+ * a decision competency provides.** 1.6 asks for a comparison across four payment methods
+ * and `choose-how-to-pay` reaches one; 2.3 and 2.4 say "Explain" and "Describe" and
+ * `keep-credit-costs-down` has `explanationRequired: false`; 4.4's second clause asks the
+ * student to recommend an action and `protect-your-information` has the same false. Each of
+ * the four is real evidence toward its objective and none of the four is the whole of it,
+ * and none has a completion rule — no other competency covers what is missing, so writing
+ * one would invent a "yes" the model cannot back. `mappingIntegrity.test.ts` names all four
+ * so a fifth all-partial objective still fails the build until a person makes the same call.
  *
  * No row here is inferred. Each was written by a person and carries a `verifiedOn` date.
  */
@@ -33,7 +42,20 @@ function row(
 
 export const NYSED_2026_MAPPINGS: readonly Mapping[] = [
   // ── Topic 1 — Budgeting and Money Management ───────────────────────────────────────
-  row("sort-by-need-want-goal", "1.1", "full", "Separating needs, wants, values and goals and using that separation to make a spending decision is the whole of the objective."),
+  // Was `full`, and a fresh verifier who read NYSED's own text before reading anything in this
+  // repository showed it was not. 1.1 names four categories — needs, wants, values **and
+  // goals** — and two kinds of decision, "spending **and savings** decisions". BOW's competing
+  // claims are a need, an obligation and a want in both stories; no claim is money the student
+  // was saving toward something, neither world offers "I was saving for something else" as a
+  // reason, and the money in that moment cannot be banked by explicit design. The observer
+  // separately refuses `save-toward-a-goal.er3` on purpose — which is exactly the evidence a
+  // `full` claim here would have to rest on. The competency's own statement only ever claimed a
+  // spending decision, so the over-claim was in this row and nowhere else.
+  //
+  // Correcting it returns the honestly assessable count to one. That is a smaller number than
+  // the product printed yesterday and it is the true one, which is the trade this whole
+  // framework exists to make.
+  row("sort-by-need-want-goal", "1.1", "partial", "Covers needs, wants and values — as an obligation to another person — inside a spending decision under competition. It does not reach the goals category or the savings decisions the objective also names: no claim in either story is money set aside toward a goal, and the money in that moment cannot be banked."),
 
   row("explain-different-outcomes", "1.2", "full", "Naming the specific factors that made two same-income outcomes differ is exactly what this competency asks for."),
   row("adapt-a-plan", "1.2", "partial", "Covers the 'unexpected expenses' factor by making the student repair a plan after one, but not the comparison the objective is built on."),
@@ -47,7 +69,11 @@ export const NYSED_2026_MAPPINGS: readonly Mapping[] = [
   row("notice-influence", "1.5", "full", "Naming what is pushing a spending decision — peers, advertising, technology, a deadline — and deciding anyway is the objective."),
   row("judge-a-claim", "1.5", "partial", "Covers the advertising and online-content part of 'external influences' by testing whether a claim is trusted."),
 
-  row("choose-how-to-pay", "1.6", "full", "Picking a method for a specific purchase and naming what it risks and what it protects covers the objective's comparison demand."),
+  // NYSED 1.6 asks for all four methods compared on four attributes. `choose-how-to-pay`
+  // reaches one chosen method (with debit standing in for NYSED's check, not a fifth option)
+  // and one risk plus one protection for it — one of four methods, two of four attributes,
+  // not the comparison the objective is built on. `partial` until BOW builds the comparison.
+  row("choose-how-to-pay", "1.6", "partial", "Picks one payment method for one purchase and names one risk and one protection for it — a slice of the four-method, four-attribute comparison 1.6 asks for, not the whole of it."),
 
   // ── Topic 2 — Credit and Debt Management ───────────────────────────────────────────
   // 2.1 is three skills under one number. See the completion rule below.
@@ -56,8 +82,14 @@ export const NYSED_2026_MAPPINGS: readonly Mapping[] = [
   row("sort-by-need-want-goal", "2.1", "partial", "Covers the 'needs versus wants' part the objective names first."),
 
   row("decide-to-borrow", "2.2", "full", "Deciding whether borrowing is worth it for a specific purchase, and saying when it helps and when it hurts, is the objective."),
-  row("keep-credit-costs-down", "2.3", "full", "Paying in full, paying on time and understanding the billing cycle are the strategies this competency runs forward."),
-  row("keep-credit-costs-down", "2.4", "full", "Responding to a missed payment and its fee, rate change and longer payoff sits inside this competency's demand."),
+  // 2.3's verb is "Explain," and `keep-credit-costs-down` has `explanationRequired: false` —
+  // nothing in it requires the student to say why paying in full beats paying the minimum,
+  // only to do it. Running the strategies forward is real evidence toward the objective; it
+  // is not the explanation the objective's own sentence asks for.
+  row("keep-credit-costs-down", "2.3", "partial", "Runs the strategies — paying in full, paying on time, minding the billing cycle — forward as decisions, which is evidence toward 2.3's demand but not the explanation its verb asks for; this competency does not require one."),
+  // Same gap, same competency, one objective over: 2.4 says "Describe," and living through a
+  // missed payment's consequences is not describing them.
+  row("keep-credit-costs-down", "2.4", "partial", "Has the student live through a missed payment's fee, rate change and longer payoff, which is evidence toward 2.4's demand but not the description its verb asks for; this competency does not require one."),
 
   // ── Topic 3 — Earning Income ───────────────────────────────────────────────────────
   row("compare-earning-paths", "3.1", "full", "Comparing the education, training and skills several careers require against what each pays is the objective."),
@@ -77,7 +109,11 @@ export const NYSED_2026_MAPPINGS: readonly Mapping[] = [
   row("is-the-add-on-worth-it", "4.3", "full", "Weighing an extended warranty's price against the item's replacement cost and its failure likelihood is the objective."),
   row("use-insurance", "4.3", "partial", "Covers the shared-risk reasoning an extended-warranty decision rests on."),
 
-  row("protect-your-information", "4.4", "full", "Recognising an attempt to steal personal information and taking the right protective action is the objective."),
+  // 4.4 is two clauses: identify the method, and recommend actions a person can take.
+  // `protect-your-information` reaches the first by having the student act correctly in the
+  // moment — and `explanationRequired: false` means nothing in it requires them to say what
+  // they would recommend, only to do the right thing this once.
+  row("protect-your-information", "4.4", "partial", "Covers the 'identify' half of 4.4 by having the student act correctly on a real attempt; the objective's second half asks the student to recommend actions, and this competency does not require that explanation."),
 
   // ── Topic 5 — Saving and Investing ─────────────────────────────────────────────────
   row("save-toward-a-goal", "5.1", "full", "Naming a reason to save and building a plan that reaches a short-term goal inside a year is the objective."),

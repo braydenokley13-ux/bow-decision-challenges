@@ -1,14 +1,19 @@
 import { allocateClassCode, generateTeacherKey, isWellFormedClassCode, isWellFormedSeatCode, normaliseClassCode, normaliseSeatCode } from "../src/platform/classes/codes";
-import { assignmentIdFor, assignmentsForClass, generateAssignmentId, readAssignmentRequest } from "../src/platform/classes/assignments";
+import { lastSweepResult, sweepIfDue } from "./retention";
+import { assignmentBelongsToClass, assignmentIdFor, assignmentsForClass, generateAssignmentId, readAssignmentRequest } from "../src/platform/classes/assignments";
 import { CLASS_RETENTION_DAYS, type Assignment, type AttributedSubmission, type ClassErrorCode, type EvidenceSubmission, type SubmissionRecord, type TeacherOverride } from "../src/platform/classes/types";
 import { EVIDENCE_EVENT_TYPES } from "../src/domain/evidence/types";
 import { evidenceRequirementById } from "../src/domain/competency/competencies";
 import type { EvidenceRequirementId, RubricLevel } from "../src/domain/competency/types";
 import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
+import { hasWrittenAnswer } from "../src/domain/evidence/writtenAnswer";
 import { clampCriterion, REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../src/domain/blueprint/reasoning";
 import { challengeById, PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
-import { standardByRef, type FrameworkId } from "../src/domain/standards";
-import type { ClassStore, StoredClass } from "./store";
+import { contractFor } from "../src/domain/scenario/contracts";
+import { DEFAULT_WORLD_ID } from "../src/domain/scenario/registry";
+import type { ClassStore, KeyCheck, StoredClass } from "./store";
+import { cryptoRandom } from "./crypto";
+import { callerOf, cleanDisplayName, handleIdentityRequest, opensClass, seatOf, spendRate, underRate, withinRate } from "./identity";
 
 /**
  * The class service, as one function of (method, path, body) → (status, body).
@@ -18,6 +23,71 @@ import type { ClassStore, StoredClass } from "./store";
  * suite with a memory store — so what the browser tests exercise is the code that ships,
  * not a mock of it.
  */
+
+/**
+ * Whether this store's key still opens what this store already wrote — asked once, and acted on.
+ *
+ * **The defect this closes, reproduced by a security judge against the shipped server.** A
+ * mistyped or half-rotated `BOW_STORE_KEY` makes every sealed record unreadable. `keyCheck()`
+ * noticed, `/health` said so, and then **every write route stayed open**. Their transcript, on
+ * one directory across three boots:
+ *
+ * - right key: a teacher, a class `R6JPF`, two children on the roster.
+ * - wrong key: health `{"ok":false,"storeKey":"mismatch"}` — correct — then the teacher's
+ *   sign-in 401s, which pushes them to **re-register**, which succeeds, and the class is
+ *   re-created reusing the same code, which is a shipped feature.
+ * - original key back, exactly as health instructed: `GET /classes/R6JPF` → **404**, teacher
+ *   sign-in → **401**, `class.json` overwritten. Health: `{"ok":true,"classroomReady":true}`.
+ *
+ * Green over the wreckage, because the canary was written under the first key and still opens
+ * under it: one file cannot see that the store has become a mixture. And it is worse than a
+ * lost class — the children's roster rows are still on the disk, sealed under a key nothing
+ * uses, attached to a `class.json` nothing can open, so `expiredClassCodes` cannot see them
+ * and the retention sweep will never reach them. The judge ran it five years into the future
+ * and got `[]`. Two real first names, permanent, under a sign-in screen that says *"A class
+ * and everything in it is deleted 120 days after you make it."*
+ *
+ * `server/store.ts` predicted this in a comment above the canary and only the detection half
+ * was built. This is the other half: **a store whose key does not open it does not get
+ * written to.** The same `blockedReason` gate the `unconfigured` store uses already exists
+ * four lines below; a mismatch simply never reached it.
+ *
+ * **Why it latches.** Only a restart can change the answer — the key comes from the
+ * environment — so `ok` and `mismatch` are settled and are remembered rather than re-read on
+ * every request. `fresh` is not settled: it means the canary is absent and the store is empty,
+ * which the first class written turns into `ok`. So `fresh` is re-asked and nothing else is.
+ *
+ * **And why it is keyed by the store rather than by the process.** A deployment has one store
+ * for its life, so a module-level flag would be correct in production and wrong in the suite —
+ * one test that pointed a mismatched store at the handler would latch the answer for every
+ * test after it, in a file order nobody controls. A `WeakMap` gives the production reading and
+ * the test reading the same code with no seam to remember to call.
+ */
+const SETTLED = new WeakMap<ClassStore, KeyCheck>();
+
+export async function storeKeyState(store: ClassStore): Promise<KeyCheck> {
+  const settled = SETTLED.get(store);
+  if (settled !== undefined) return settled;
+  const state = (await store.keyCheck?.()) ?? "ok";
+  if (state !== "fresh") SETTLED.set(store, state);
+  return state;
+}
+
+/**
+ * What a service that cannot read its own store says, to an operator, once.
+ *
+ * It no longer says *"Nothing has been deleted"*, which was true at the instant it printed and
+ * false after the next write. What it says now is what the service has actually done — stopped
+ * — and what that buys: the records are still there, sealed, and the original key still opens
+ * them.
+ */
+export function mismatchReason(storeId: string): string {
+  return `The ${storeId} store holds records this key cannot open. BOW_STORE_KEY has changed, `
+    + "or is not the one these classes were written with. BOW has stopped writing to this store "
+    + "so that nothing is added under the wrong key: sign-in, class creation and turning work in "
+    + "all refuse until it is fixed. The records are still there and the original key still "
+    + "opens them — put it back and restart.";
+}
 
 /** The five levels the shared rubric allows, and nothing else. There is no level 1. */
 const RUBRIC_LEVELS: readonly RubricLevel[] = [0, 2, 3, 4, 5];
@@ -49,6 +119,14 @@ export interface ApiRequest {
   path: string;
   headers: Record<string, string | undefined>;
   body?: unknown;
+  /** The raw query string, without the leading "?". Read by the routes that take one. */
+  query?: string;
+  /**
+   * Whatever the transport knows about who is calling — a remote address, a forwarded-for
+   * header, or nothing. Used for rate limiting and for nothing else: it is never stored,
+   * never logged and never attached to a student.
+   */
+  clientId?: string;
 }
 
 export interface ApiResponse {
@@ -71,14 +149,30 @@ function fail(status: number, error: ClassErrorCode, message: string): ApiRespon
  * before it is stored: the event vocabulary is closed, and an event type this build does
  * not know would poison every educator view derived from the log.
  */
+/**
+ * What an identifier a client chose is allowed to look like.
+ *
+ * Letters, digits, dot, dash, underscore. No slash, no backslash, no colon, nothing that means
+ * anything to a filesystem. Deliberately narrower than the ids this product generates, so the
+ * rule can be read without knowing how they are generated.
+ */
+const SAFE_ID = /^[A-Za-z0-9._-]{8,64}$/;
+
 function readSubmission(body: unknown): EvidenceSubmission | null {
   if (!body || typeof body !== "object") return null;
   const candidate = body as Partial<EvidenceSubmission>;
   if (typeof candidate.seatCode !== "string" || !isWellFormedSeatCode(candidate.seatCode)) return null;
-  if (typeof candidate.sessionId !== "string" || candidate.sessionId.length < 8 || candidate.sessionId.length > 64) return null;
+  // Checked against a character set, not only a length. A signed-in student sent
+  // `aaaaaaaa/../../../<somebody-else's-class>/class` as a session id, and the file store —
+  // which builds a filename out of `${seatCode}:${sessionId}` — wrote their submission over
+  // another teacher's `class.json`. Two hundred and two, and a whole class's evidence
+  // permanently unreachable by the teacher who owned it, from a student session anybody can
+  // self-serve with a class code off a whiteboard.
+  if (typeof candidate.sessionId !== "string" || !SAFE_ID.test(candidate.sessionId)) return null;
   if (typeof candidate.challengeId !== "string" || !challengeById(candidate.challengeId)) return null;
   if (typeof candidate.challengeVersion !== "string" || candidate.challengeVersion.length > 32) return null;
-  if (candidate.assignmentId !== undefined && (typeof candidate.assignmentId !== "string" || candidate.assignmentId.length > 64)) return null;
+  // Same rule, and for the same reason: an assignment id becomes a filename too.
+  if (candidate.assignmentId !== undefined && (typeof candidate.assignmentId !== "string" || !SAFE_ID.test(candidate.assignmentId))) return null;
   if (!Array.isArray(candidate.log) || candidate.log.length === 0 || candidate.log.length > 5000) return null;
   const known = new Set<string>(EVIDENCE_EVENT_TYPES);
   for (const event of candidate.log) {
@@ -119,10 +213,35 @@ function readReasoningCriteria(value: unknown): ReasoningScores | null | undefin
   return Object.keys(scores).length > 0 ? scores : null;
 }
 
-async function liveClass(store: ClassStore, code: string, now: number): Promise<StoredClass | ApiResponse> {
-  if (!isWellFormedClassCode(code)) return fail(404, "class_not_found", "No class with that code.");
+/**
+ * The class behind a code, or the answer to give instead.
+ *
+ * The miss is rate limited and the hit is not, and that asymmetry is the whole design. A class
+ * code is five characters from a restricted alphabet on a whiteboard, so the space is walkable,
+ * and every route under `/classes/:code` was answering an unlimited number of guesses about
+ * which codes exist. But a limit keyed on an address cannot be charged for a *hit*: a school is
+ * one address, thirty students arrive within two minutes, and a bucket they share is a bucket
+ * an attacker on the same network can empty on their behalf. That mistake has been made once
+ * here already, on the submission route, and it locked a class out of turning work in.
+ *
+ * A room hits codes that exist. An enumerator, by definition, does not.
+ */
+async function liveClass(store: ClassStore, code: string, now: number, clientId = "anonymous"): Promise<StoredClass | ApiResponse> {
+  // A miss is answered only after the limit is checked, and a hit is never checked at all —
+  // which means the order matters and is deliberate. Guarding the whole function was the first
+  // attempt and its own test caught it: once an attacker had filled the bucket, the room they
+  // share an address with stopped being let into their own class. A limit that can be spent on
+  // somebody else's behalf is the submission-route mistake wearing a different hat.
+  const miss = () => {
+    if (!underRate(`lookup:${clientId}`, 200, 15 * 60 * 1000, now)) {
+      return fail(429, "unavailable", "Too many class codes tried from here just now. Wait a minute and try again.");
+    }
+    spendRate(`lookup:${clientId}`, 15 * 60 * 1000, now);
+    return fail(404, "class_not_found", "No class with that code.");
+  };
+  if (!isWellFormedClassCode(code)) return miss();
   const record = await store.getClass(normaliseClassCode(code));
-  if (!record) return fail(404, "class_not_found", "No class with that code.");
+  if (!record) return miss();
   if (record.expiresAt <= now) return fail(410, "class_expired", "That class has closed.");
   return record;
 }
@@ -156,11 +275,58 @@ function attributed(submissions: readonly SubmissionRecord[], assignments: reado
   });
 }
 
+/**
+ * A second delivery of the same attempt, merged so that nothing a person wrote is lost.
+ *
+ * This used to be `{ ...stored, reasoningPoints: existing.reasoningPoints }` — one field of
+ * three carried across, and the other two silently deleted. What that cost, reproduced end to
+ * end: a teacher marks a student's writing criterion by criterion, then overrules one machine
+ * judgement with the note the product requires; the student opens the same turn-in screen the
+ * next morning; `SubmittedStage` re-POSTs on mount because its `sent` ref is per-mount; and
+ * the criteria and the override are gone. Nobody is told. The child's screen still says "Your
+ * plan is with your teacher."
+ *
+ * The state it left behind is worse than the deletion. `reasoningPoints` survived, so a total
+ * of 10 stood over criterion marks that no longer existed — precisely the disagreement this
+ * file says elsewhere must never be possible, between the number a teacher reads and the marks
+ * a competency result rests on.
+ *
+ * So the rule is stated as a rule rather than as a field list in an expression: **a student's
+ * device may replace only what a student's device sent.** Everything else on the record was
+ * written by a teacher, or stamped once and for all by the service, and a re-delivery is not
+ * evidence about any of it. `submissionMerge.test.ts` holds the two halves of that rule to the
+ * actual shape of `SubmissionRecord`, so a field added later cannot quietly land on the wrong
+ * side of it the way these two did.
+ */
+export function keepWhatWasNotSent(
+  fresh: SubmissionRecord,
+  existing: SubmissionRecord | undefined,
+): SubmissionRecord {
+  if (!existing) return fresh;
+  return {
+    ...fresh,
+    // Written by a teacher, on the record, after the fact. None of it is the student's to send.
+    reasoningPoints: existing.reasoningPoints,
+    ...(existing.reasoningCriteria === undefined ? {} : { reasoningCriteria: existing.reasoningCriteria }),
+    ...(existing.overrides === undefined ? {} : { overrides: existing.overrides }),
+    // When the work was handed in, which is a fact about the first delivery and not this one.
+    // Restamping it moves a child from on time to a day late for pressing reload, and it is
+    // the column a teacher sorts by when they want to know who has finished.
+    submittedAt: existing.submittedAt,
+  };
+}
+
 export async function handleApiRequest(request: ApiRequest, options: HandlerOptions): Promise<ApiResponse> {
   const { store } = options;
   const now = options.now?.() ?? Date.now();
-  const random = options.random ?? Math.random;
+  // A CSPRNG by default. The class code and the teacher key are the two things standing
+  // between a stranger and a class of children's work, and `Math.random` is a sequence an
+  // attacker who can create classes can observe and then replay.
+  const random = options.random ?? cryptoRandom;
   const segments = request.path.split("/").filter(Boolean);
+  const clientId = request.clientId ?? "anonymous";
+  const body = (request.body ?? {}) as Record<string, unknown>;
+  const identityContext = { store, now, random, clientId };
 
   /**
    * GET /health — what a deploy smoke test and a load balancer both ask for, and the one
@@ -172,26 +338,95 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
    * environment variable away from losing a class looked identical to a working one.
    */
   if (request.method === "GET" && segments.length === 1 && segments[0] === "health") {
-    const classroomReady = store.durable && !store.blockedReason;
+    // Can this store's key still open what this store already wrote? A rotated or mistyped
+    // key reads as an empty store rather than as an error, so without asking, a deployment
+    // holding a term of unreadable classes reports itself ready and a teacher finds out by
+    // standing in front of a class whose work has apparently never existed.
+    const key = await storeKeyState(store);
+    const lost = key === "mismatch";
+    const classroomReady = store.durable && !store.blockedReason && !lost;
     const reason = store.blockedReason
-      ?? (store.durable
-        ? `Classes are kept in the ${store.id} store for ${CLASS_RETENTION_DAYS} days.`
-        : `The ${store.id} store keeps nothing past this process. Fine for tests and demos, not for a class.`);
+      ?? (lost
+        ? mismatchReason(store.id)
+        : store.durable
+          ? `Classes are kept in the ${store.id} store for ${CLASS_RETENTION_DAYS} days.`
+          : `The ${store.id} store keeps nothing past this process. Fine for tests and demos, not for a class.`);
     return {
       // A deployment that cannot start a class says so in the status line too, so a smoke
-      // test that only checks for 200 still catches it.
-      status: store.blockedReason ? 503 : 200,
-      body: { ok: !store.blockedReason, store: store.id, durable: store.durable, classroomReady, reason, challenges: [PLAN_UNDER_PRESSURE.id], at: now },
+      // test that only checks for 200 still catches it. A store nobody can read counts.
+      status: store.blockedReason || lost ? 503 : 200,
+      body: {
+        ok: !store.blockedReason && !lost,
+        store: store.id,
+        durable: store.durable,
+        classroomReady,
+        storeKey: key,
+        reason,
+        challenges: [PLAN_UNDER_PRESSURE.id],
+        // What the retention promise has actually done, so a district can see the control
+        // rather than take it on trust. `null` until the first sweep of this process; a
+        // driver whose records expire by themselves sweeps and correctly finds nothing.
+        retention: { days: CLASS_RETENTION_DAYS, lastSweepAt: lastSweepResult()?.at ?? null, lastSweepDeleted: lastSweepResult()?.deleted.length ?? null },
+        at: now,
+      },
     };
   }
+
+  /**
+   * A store this key cannot read is refused here, before anything is written into it.
+   *
+   * `blockedReason` below is the same gate the `unconfigured` store uses, and a mismatch never
+   * reached it: `keyCheck()` was asked by `/health` alone, so the service reported the fault
+   * accurately and then carried on writing. What that costs is in `storeKeyState`'s note above
+   * — a re-registered teacher, a re-created class over the top of the old one, and two
+   * children's names left sealed on a disk that the retention sweep can no longer see.
+   *
+   * Ordered after `/health` deliberately: the one route whose job is to say what is wrong has
+   * to keep answering. Ordered before the sweep, because a sweep is a write too, and deleting
+   * on evidence this process cannot read is the worst version of this.
+   */
+  if (await storeKeyState(store) === "mismatch") return fail(503, "unavailable", mismatchReason(store.id));
+
+  // A host with no timer of its own — a serverless function is a process per request — still
+  // has to execute the retention promise. This claims the hour before it awaits anything and
+  // never blocks the request it rode in on, so a burst of thirty submissions starts one sweep.
+  if (!store.blockedReason) sweepIfDue(store, now);
 
   // Anything past here touches the store. A deployment with nowhere durable to write says
   // so once, in words, rather than failing later as an unexplained 503.
   if (store.blockedReason) return fail(503, "unavailable", store.blockedReason);
 
+  // Accounts, rosters, sessions, checkpoints, feedback and share-outs. It answers first and
+  // returns `null` for a path it does not own, so there is one router and no path that both
+  // modules can claim.
+  const identity = await handleIdentityRequest(
+    { method: request.method, segments, headers: request.headers, body, query: new URLSearchParams(request.query ?? "") },
+    identityContext,
+  );
+  if (identity) return identity;
+
   // POST /classes — an educator creates a class and receives the key that reads it.
   if (request.method === "POST" && segments.length === 1 && segments[0] === "classes") {
-    const body = (request.body ?? {}) as { label?: unknown; challengeId?: unknown; code?: unknown };
+    // Who is being counted matters more than the number.
+    //
+    // This used to be thirty an hour per client id, and a client id is an egress address. A
+    // school district is one egress address: forty teachers in a September PD session, each
+    // making the four classes they teach, is a hundred and sixty legitimate creations from
+    // one address in twenty minutes, and this refused a hundred and thirty of them. The
+    // teacher whose class would not create has no way to know it was their neighbour's fault
+    // and no way to wait it out inside the session they are sitting in.
+    //
+    // So a signed-in teacher is counted as themselves, generously — nobody teaches thirty
+    // classes an hour, and if they did it would still be their own quota to spend. The
+    // address-wide window stays for callers who have not signed in, where it is the only
+    // thing standing between an unauthenticated endpoint and a script, and it is set where a
+    // whole staffroom fits under it rather than where one enthusiastic teacher does not.
+    const creator = await callerOf(request.headers, { store, now });
+    const bucket = creator?.kind === "teacher" ? `create:teacher:${creator.id}` : `create:${clientId}`;
+    const ceiling = creator?.kind === "teacher" ? 60 : 400;
+    if (!withinRate(bucket, ceiling, 60 * 60 * 1000, now)) {
+      return fail(429, "unavailable", "Too many classes from here just now. Wait a minute.");
+    }
     const challengeId = typeof body.challengeId === "string" ? body.challengeId : "";
     if (!challengeById(challengeId)) return fail(400, "bad_request", "That challenge does not exist.");
     const label = typeof body.label === "string" && body.label.trim() ? body.label.trim().slice(0, 60) : "Untitled class";
@@ -215,6 +450,11 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       }
     }
 
+    // A signed-in teacher owns the classes they create, so their list survives the browser
+    // that made them. A class created without an account still works exactly as it did —
+    // requiring one here would have shut the door on every teacher mid-term.
+    const owner = await callerOf(request.headers, { store, now });
+    const teacherId = owner?.kind === "teacher" ? owner.id : undefined;
     const record: StoredClass = {
       code,
       label,
@@ -222,13 +462,18 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       createdAt: now,
       expiresAt: now + CLASS_RETENTION_DAYS * 24 * 60 * 60 * 1000,
       teacherKey: generateTeacherKey(random),
+      // Open until a class list is pasted. A teacher who has four minutes and no list still
+      // gets a working lesson, and pasting the list later closes the door behind it.
+      joinMode: "open",
+      ...(teacherId ? { teacherId } : {}),
     };
     await store.putClass(record);
+    if (teacherId) await store.linkClassToTeacher(teacherId, code);
     return { status: 201, body: record };
   }
 
   if (segments[0] !== "classes" || segments.length < 2) return fail(404, "bad_request", "No such endpoint.");
-  const found = await liveClass(store, segments[1] ?? "", now);
+  const found = await liveClass(store, segments[1] ?? "", now, clientId);
   if (isResponse(found)) return found;
   const record = found;
 
@@ -259,16 +504,76 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
 
   // POST /classes/:code/submissions — a student turns their evidence in.
   if (request.method === "POST" && segments.length === 3 && segments[2] === "submissions") {
+    // There is no address-keyed limit on this route, and that is the fix rather than an
+    // omission.
+    //
+    // There used to be one, charged before anything was checked and keyed on the caller's
+    // address plus the class code. A school is behind one address, so the bucket was shared by
+    // the whole room — and a security reviewer emptied it with a hundred and twenty junk posts
+    // that were never going to be accepted, knowing nothing but the class code off a
+    // whiteboard. A real student's genuine turn-in then got a 429. One device on the school
+    // network could stop a class handing work in for ten minutes. Any limit keyed on an address
+    // has that shape, including a limit that charges only failures: the room and the attacker
+    // are the same address, so the attacker spends the room's budget.
+    //
+    // What that limit was protecting is already protected. It was added when this endpoint
+    // took work from anybody holding a class code — a review posted two hundred forged runs in
+    // eight and a half seconds — and the answer to that was authentication, which landed
+    // separately. A forged submission now costs a signature check and is refused; there is
+    // nothing expensive behind it to shield. The limit that remains is per student, on work
+    // that was actually accepted.
     const submission = readSubmission(request.body);
     if (!submission) return fail(400, "bad_request", "That submission could not be read.");
+
+    // A class with a roster knows who is in it, so work has to arrive from one of them. A
+    // class with no roster is a class created before accounts existed, or one whose teacher
+    // has not built one, and it keeps the behaviour it has always had — because refusing
+    // those would be refusing work students have already done.
+    // Work arrives from the person who did it, in every class, with no exception.
+    //
+    // This used to apply only where the class had a roster, and the reasoning at the time was
+    // that a class with none was one created before accounts existed and refusing it would be
+    // refusing work students had already done. That reasoning has expired: the only door into
+    // this product is `/join`, and it issues a session on the open path too, so there is no
+    // student anywhere who reaches the end of a run without one. What the exception left behind
+    // was an unauthenticated write endpoint keyed on a code written on a whiteboard — a vendor
+    // review posted a fabricated run under seat 7 of a class it had never joined and got a 202,
+    // and the work landed in the teacher's evidence room looking exactly like a child's.
+    const student = await callerOf(request.headers, { store, now });
+    if (!student || student.kind !== "student") {
+      return fail(403, "not_authorised", "Sign in as yourself before turning this in.");
+    }
+    // Counted before the seat is resolved, and charged whether the work is accepted or refused.
+    // Both halves are the fix. Charging only accepted work meant a signed-in caller could send
+    // refused requests without limit; and resolving the seat by scanning the roster made every
+    // one of those a **whole-class decrypt** — up to sixty sealed records opened before the
+    // check that would refuse it. A reviewer sustained that from one ordinary join card and took
+    // legitimate requests from 2ms to 184ms with no 429 anywhere.
+    if (!withinRate(`submit:${student.id}`, 20, 10 * 60 * 1000, now)) {
+      return fail(429, "unavailable", "That has been sent several times already. Wait a minute and try again.");
+    }
+    // The student's own seat index first; the roster only if that index says they belong here.
+    const seat = await seatOf(store, student.id, record.code);
+    if (!seat || seat.seatCode !== submission.seatCode) {
+      return fail(403, "not_authorised", "Sign in as yourself before turning this in.");
+    }
     if (submission.challengeId !== record.challengeId) {
       return fail(409, "challenge_mismatch", "That class is running a different challenge.");
     }
-    // A named assignment has to be one this class actually holds. A submission naming
-    // nothing is accepted and attributed on read — that is every submission stored before
-    // this checkpoint, and refusing them would delete a class's history to add a field.
-    const assignments = await assignmentsOn(store, record);
-    if (submission.assignmentId !== undefined && !assignments.some((assignment) => assignment.id === submission.assignmentId)) {
+    // A named assignment must belong to **this class**, and that is the whole of the check.
+    //
+    // It used to be checked against the assignments the class currently holds, and answered
+    // 404 — which the client treats as non-retryable. So a student who joined before their
+    // teacher set the class an objective in another tab was holding the synthesised
+    // assignment id, which stops being offered the moment a real one is stored; they reached
+    // the end of twenty-five minutes and were told "That class was not set that work." Their
+    // work was gone, the code they were told to go and check was fine, and nothing about the
+    // failure was theirs.
+    //
+    // Belonging to this class is what the check was actually for — it stops work being filed
+    // under another room's assignment — and it is true of every id this class has ever
+    // handed out, including the one it has stopped handing out.
+    if (submission.assignmentId !== undefined && !assignmentBelongsToClass(submission.assignmentId, record.code)) {
       return fail(404, "assignment_not_found", "That class was not set that work.");
     }
     const stored: SubmissionRecord = {
@@ -277,16 +582,68 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       submittedAt: now,
       reasoningPoints: null,
     };
-    // Re-delivering after a dropped connection must not create a second student.
+    // Re-delivering after a dropped connection must not create a second student, and must not
+    // cost anybody anything they had. `keepWhatWasNotSent` is what makes the second half true.
     const existing = (await store.listSubmissions(record.code))
       .find((item) => item.seatCode === stored.seatCode && item.sessionId === stored.sessionId);
-    await store.putSubmission(existing ? { ...stored, reasoningPoints: existing.reasoningPoints } : stored);
+    await store.putSubmission(keepWhatWasNotSent(stored, existing));
+    // The seat is no longer in progress. Leaving the checkpoint live would put a student on
+    // the teacher's "still working" list after they had turned in, which is exactly the kind
+    // of wrong that makes a live view worse than no live view.
+    const checkpoint = (await store.listCheckpoints(record.code)).find((entry) => entry.seatCode === stored.seatCode);
+    if (checkpoint && !checkpoint.submittedAt) await store.putCheckpoint({ ...checkpoint, submittedAt: now });
     return { status: 202, body: { seatCode: stored.seatCode, submittedAt: stored.submittedAt } };
   }
 
-  // Everything past here reads or writes other people's work, so it takes the key.
-  const key = request.headers["x-bow-teacher-key"];
-  if (!key || key !== record.teacherKey) return fail(403, "not_authorised", "This link does not open that class.");
+  // Everything past here reads or writes other people's work, so it takes proof: the class's
+  // own key, or a session belonging to the account that owns it.
+  const caller = await callerOf(request.headers, { store, now });
+  if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
+    return fail(403, "not_authorised", "This link does not open that class.");
+  }
+
+  // PATCH /classes/:code — the name, and only the name.
+  //
+  // A class could not be renamed. Not by anybody, not ever: there was `POST /classes`, there
+  // was `DELETE`, and there was nothing in between — so a teacher who typed "Perido 6" between
+  // periods carried it for the class's whole hundred-and-twenty-day life, onto every printed
+  // card, the debrief they read aloud, and the exported gradebook. The product's only answer to
+  // a typo was to delete the class and lose the children's work inside it.
+  //
+  // Creation is deliberately four seconds long, which is exactly why this is needed: a setup
+  // that cheap is a setup a teacher does fast, and fast is where the typo comes from.
+  //
+  // The name is the only field this accepts. The code, the key, the owner and the dates are
+  // identity and provenance, and a route that could edit them would be a different and much
+  // more dangerous route wearing this one's name.
+  if (request.method === "PATCH" && segments.length === 2) {
+    const label = cleanDisplayName((body as { label?: unknown }).label);
+    if (!label) return fail(400, "bad_request", "Give the class a name.");
+    await store.putClass({ ...record, label: label.slice(0, 60) });
+    return { status: 200, body: { code: record.code, label: label.slice(0, 60) } };
+  }
+
+  // DELETE /classes/:code — the class and everything in it, gone.
+  //
+  // The operation a district asks for and this service could not perform. A retention
+  // promise nothing can execute is a sentence in a document rather than a property of the
+  // system, and the FTC's guidance makes a school's ability to have data deleted a condition
+  // of the consent a school gives on a parent's behalf.
+  if (request.method === "DELETE" && segments.length === 2) {
+    await store.deleteClass(record.code);
+    return { status: 200, body: { code: record.code, deleted: true } };
+  }
+
+  // POST /classes/:code/claim — a teacher who holds the key binds the class to their account.
+  if (request.method === "POST" && segments.length === 3 && segments[2] === "claim") {
+    if (caller?.kind !== "teacher") return fail(403, "not_authorised", "Sign in first.");
+    if (record.teacherId && record.teacherId !== caller.id) {
+      return fail(403, "not_authorised", "Another account already holds this class.");
+    }
+    await store.putClass({ ...record, teacherId: caller.id });
+    await store.linkClassToTeacher(caller.id, record.code);
+    return { status: 200, body: { code: record.code, teacherId: caller.id } };
+  }
 
   // POST /classes/:code/assignments — the educator sets this class something.
   if (request.method === "POST" && segments.length === 3 && segments[2] === "assignments") {
@@ -306,30 +663,35 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
   // GET /classes/:code/submissions — the educator's evidence room.
   if (request.method === "GET" && segments.length === 3 && segments[2] === "submissions") {
     const assignments = await assignmentsOn(store, record);
+    // The key is not echoed back. It is the credential this request was authorised with, and
+    // a response body is the easiest place for a credential to end up somewhere it should not
+    // be — a screenshot, a copied JSON blob, a browser cache.
+    const classForRead: Omit<StoredClass, "teacherKey"> & { teacherKey?: string } = { ...record };
+    delete classForRead.teacherKey;
     return {
       status: 200,
-      body: { class: record, assignments, submissions: attributed(await store.listSubmissions(record.code), assignments) },
+      body: {
+        class: classForRead,
+        assignments,
+        submissions: attributed(await store.listSubmissions(record.code), assignments),
+        roster: (await store.listRoster(record.code)).map((entry) => ({
+          seatCode: entry.seatCode,
+          displayName: entry.displayName,
+          claimed: entry.studentId !== null,
+          removedAt: entry.removedAt ?? null,
+        })),
+        progress: (await store.listCheckpoints(record.code))
+          .filter((entry) => !entry.submittedAt)
+          .map((entry) => ({
+            seatCode: entry.seatCode,
+            worldId: entry.worldId,
+            stage: entry.stage,
+            startedAt: entry.startedAt,
+            updatedAt: entry.updatedAt,
+          })),
+        feedback: await store.listFeedback(record.code),
+      },
     };
-  }
-
-  // PUT /classes/:code/taught — the teacher records that this class has been taught an
-  // objective, or takes it back. Never derived from anything a student did (§15.3).
-  if (request.method === "PUT" && segments.length === 3 && segments[2] === "taught") {
-    const body = (request.body ?? {}) as { frameworkId?: unknown; standardCode?: unknown; taught?: unknown };
-    if (typeof body.frameworkId !== "string" || typeof body.standardCode !== "string" || typeof body.taught !== "boolean") {
-      return fail(400, "bad_request", "That coverage mark could not be read.");
-    }
-    if (!standardByRef({ frameworkId: body.frameworkId as FrameworkId, code: body.standardCode })) {
-      return fail(400, "bad_request", "No objective in this framework carries that code.");
-    }
-    const others = (record.taughtObjectives ?? []).filter(
-      (marker) => marker.frameworkId !== body.frameworkId || marker.standardCode !== body.standardCode,
-    );
-    const taughtObjectives = body.taught
-      ? [...others, { frameworkId: body.frameworkId, standardCode: body.standardCode, markedAt: now }]
-      : others;
-    await store.putClass({ ...record, taughtObjectives });
-    return { status: 200, body: { taughtObjectives } };
   }
 
   // POST /classes/:code/submissions/:seat/overrides — a teacher disagrees, on the record.
@@ -343,6 +705,15 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       ? submissions.find((item) => item.seatCode === seatCode && item.sessionId === body.sessionId)
       : submissions.filter((item) => item.seatCode === seatCode).at(-1);
     if (!target) return fail(404, "class_not_found", "No submission from that seat.");
+    // Only requirements this attempt actually put in front of BOW can be overruled. The
+    // model declaring a requirement is not enough: an override on one this world's observer
+    // never produced would be a judgement about nothing, unreadable from the trail and
+    // unattached to any moment a second teacher could check.
+    const contract = contractFor(target.log[0]?.worldId ?? DEFAULT_WORLD_ID);
+    const produced = contract ? contract.observe(target.log, { reasoningCriteria: target.reasoningCriteria }) : [];
+    if (!produced.some((observation) => observation.evidenceRequirementId === override.evidenceRequirementId)) {
+      return fail(400, "bad_request", "That attempt never raised that requirement, so there is no judgement to read differently.");
+    }
     // Appended, never replaced. The machine judgement is in the log and stays there; a
     // second thought writes a second row rather than editing the first.
     const overrides = [...(target.overrides ?? []), override];
@@ -365,6 +736,14 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       ? submissions.find((item) => item.seatCode === seatCode && item.sessionId === body.sessionId)
       : submissions.filter((item) => item.seatCode === seatCode).at(-1);
     if (!target) return fail(404, "class_not_found", "No submission from that seat.");
+    // **There has to be something to have read.** A mark against an empty answer became a
+    // rubric level, printed under the heading `BOW` beside the rule it was supposed to have
+    // met, on a page that said lower down that the student wrote nothing. Clearing a score
+    // is always allowed; recording one is not, when there is no writing behind it.
+    const scoring = criteria !== null || points !== null;
+    if (scoring && !hasWrittenAnswer(target.log)) {
+      return fail(409, "bad_request", "There is no written explanation on this attempt to score.");
+    }
     // Clamping lives in the grader too, but a score arriving over the wire has to be
     // clamped where it is stored or the grader is not the only thing that can set it. The
     // total is recomputed from the marks whenever they are sent, so the number a teacher

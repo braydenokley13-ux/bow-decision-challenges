@@ -1,0 +1,17 @@
+074ec2f3b6350d30c170577a193a6b95cef18879
+ M e2e/bow.spec.ts
+ M src/domain/scenario/worlds/food-truck/balance.ts
+ M src/domain/scenario/worlds/food-truck/economy.ts
+ M src/domain/scenario/worlds/food-truck/numbers.ts
+ M src/domain/scenario/worlds/food-truck/scenario.ts
+ M src/domain/scenario/worlds/food-truck/types.ts
+ M src/stages/popup/PopUpScreens.tsx
+?? gauntlet/receipts/economics/SNAPSHOT.txt
+?? gauntlet/receipts/economics/worktree-at-review.diff
+?? gauntlet/receipts/popup2/setup-01-classes.png
+?? gauntlet/receipts/reading/a11y-before-erase.png
+?? gauntlet/receipts/reading/a11y-before-myclasses.png
+?? gauntlet/receipts/reading/a11y-before.json
+?? gauntlet/receipts/teacher2/
+?? src/rangeprobe.test.ts
+3baaf32169377a786eef12d05bf2078e  -

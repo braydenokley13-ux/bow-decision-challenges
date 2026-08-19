@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { NYSED_OBJECTIVES, ALIGNMENT_DISCLAIMER } from "../blueprint/standards";
 import { NYSED_2026, NYSED_2026_STANDARDS, NYSED_2026_TOPICS } from "./frameworks/nysed-2026";
-import { standardsIn } from "./index";
+import { gradeBandLabel, standardsIn } from "./index";
 
 /**
  * The 23 official objectives, asserted literally.
@@ -117,19 +116,6 @@ describe("NYSED Grades 5–8 wording", () => {
     expect(new Set(indexes).size).toBe(indexes.length);
   });
 
-  it("has not drifted from the five objectives already verified in the blueprint layer", () => {
-    // Two copies of the same official sentence exist while the educator surfaces still read
-    // the older module. Two copies that can disagree are worse than one copy that is wrong,
-    // because only one of them gets corrected.
-    expect(NYSED_OBJECTIVES.length).toBeGreaterThan(0);
-    for (const legacy of NYSED_OBJECTIVES) {
-      const standard = NYSED_2026_STANDARDS.find((item) => item.code === legacy.objectiveId);
-      expect(standard?.text, `NYSED ${legacy.objectiveId}`).toBe(legacy.officialObjective);
-      expect(standard?.topicName, `NYSED ${legacy.objectiveId} topic`).toBe(legacy.topic);
-      expect(standard?.shortLabel, `NYSED ${legacy.objectiveId} short label`).toBe(legacy.shortLabel);
-    }
-  });
-
   it("cites the official source and the date a human checked it", () => {
     expect(NYSED_2026.sourceUrl).toBe("https://www.nysed.gov/standards-instruction/personal-finance-topics-grade-bands");
     expect(NYSED_2026.sourcePdfUrl).toBe("https://www.nysed.gov/sites/default/files/programs/standards-instruction/ny-personal-finance-learning-objectives_march-2026.pdf");
@@ -138,11 +124,39 @@ describe("NYSED Grades 5–8 wording", () => {
     expect(NYSED_2026_STANDARDS.every((standard) => standard.gradeBand === "5-8")).toBe(true);
   });
 
+  it("names the grade band this deployment carries, not the whole 70-objective document", () => {
+    // NYSED's March 2026 document publishes 70 objectives across three bands (K–4: 14,
+    // 5–8: 23, 9–12: 33). This deployment carries only 23 of them, and "23" or "NYSED" on
+    // its own reads as the whole document to a reviewer who opens the source and counts 70.
+    expect(gradeBandLabel("nysed-pf-2026")).toBe("Grades 5–8");
+  });
+
+  it("pins the exact PDF the wording above was checked against", () => {
+    // The document at `sourcePdfUrl` was re-issued under this same "March 2026" label on
+    // 2026-07-16 — proof a version string alone cannot tell a stale verification from a
+    // current one. These three are what a future re-check diffs the next download against;
+    // a mismatch on any of them is the signal to re-verify every objective above, not just
+    // to update a date.
+    expect(NYSED_2026.sourcePdfSha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(NYSED_2026.sourcePdfSha256).toBe("0402cea2057df89bbcb9d0a4e56e0b1d066e864a553a7010888411063a29c6d7");
+    expect(NYSED_2026.sourcePdfBytes).toBe(873_070);
+    expect(NYSED_2026.sourcePdfPages).toBe(14);
+  });
+
+  it("carries NYSED's own one-line definition for every topic, not BOW's paraphrase", () => {
+    for (const topic of NYSED_2026_TOPICS) {
+      expect(topic.description.trim().length, topic.name).toBeGreaterThan(20);
+    }
+    expect(NYSED_2026_TOPICS.find((topic) => topic.code === "1")?.description).toBe(
+      "The understanding of how to allocate one's financial resources to meet life goals",
+    );
+    expect(NYSED_2026_TOPICS.find((topic) => topic.code === "5")?.description).toBe(
+      "The understanding of the role of putting money aside to plan for longer-term expenditures",
+    );
+  });
+
   it("never claims NYSED reviewed or endorsed BOW", () => {
     expect(NYSED_2026.labels.attribution).toBe("NYSED has not reviewed or endorsed BOW.");
-    // The disclaimer the educator surfaces already show ends in the same sentence, so the
-    // claim BOW makes about the state is written once and cannot drift between layers.
-    expect(ALIGNMENT_DISCLAIMER).toContain(NYSED_2026.labels.attribution);
     expect(NYSED_2026.labels).toMatchObject({
       unitNoun: "Learning Objective",
       unitNounShort: "Objective",

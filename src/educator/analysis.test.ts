@@ -39,7 +39,15 @@ describe("one student's run reads back as what they did", () => {
     expect(row.result.grade.structuredPoints).toBeGreaterThan(0);
     expect(row.result.grade.structuredPoints).toBeLessThanOrEqual(row.result.grade.structuredMaximum);
     expect(row.result.grade.finalPoints).toBeNull();
-    expect(row.result.grade.summary).toBe("pending_reasoning");
+    // This used to assert `grade.summary === "pending_reasoning"`. That field is deleted: it
+    // was a sixth vocabulary for how well a student did — `strong_application`,
+    // `secure_application`, `developing_application`, `limited_application` — computed for
+    // every attempt and rendered nowhere. The fact it was standing in for is the one that
+    // matters and it is already on the line above: **until a person has read the writing
+    // there is no final number**, and `incomplete` says whether the run was finished, which
+    // is a different question and is asserted separately below.
+    expect(row.result.grade.incomplete).toBe(false);
+    expect(row.result.grade.reasoningPoints).toBeNull();
   });
 
   it("resolves the season the plan actually produced", () => {
@@ -59,10 +67,13 @@ describe("a class of three reads back as three different plans", () => {
     }
   });
 
-  it("finds the housing split and says it is one", () => {
+  it("finds the housing split and names the seats inside it", () => {
     const housing = analysis.distributions.find((item) => item.id === "housing")!;
-    expect(housing.shares.filter((share) => share.seats.length > 0)).toHaveLength(3);
-    expect(housing.note).toContain("split");
+    const used = housing.shares.filter((share) => share.seats.length > 0);
+    expect(used).toHaveLength(3);
+    // Counts and seats, and no authored sentence over the top of them.
+    expect(used.flatMap((share) => share.seats).sort()).toEqual(["12", "3", "9"]);
+    expect(Object.keys(housing)).toEqual(["id", "question", "shares"]);
   });
 
   it("contrasts two students who genuinely played it differently", () => {
@@ -86,31 +97,71 @@ describe("a class of three reads back as three different plans", () => {
     }
   });
 
-  it("names the seats behind every follow-up rather than only a count", () => {
-    for (const concept of analysis.concepts) {
-      for (const seat of concept.needsFollowUp) {
-        expect(analysis.rows.map((row) => row.seatCode)).toContain(seat);
+  /**
+   * This used to walk `analysis.concepts[].needsFollowUp`. That field is deleted, along with
+   * the concept taxonomy it belonged to: `C1`–`C6` and labels like "Build an executable
+   * contingency" were a fourth vocabulary for the thing the rest of the product now calls a
+   * skill, they reached no screen, and a summary sitting in `ClassAnalysis` waiting to be
+   * rendered is how a retired vocabulary comes back.
+   *
+   * The invariant it was checking is not about concepts and is worth keeping, so it is kept
+   * against the distributions, which are what the class page actually renders: **every seat a
+   * count names is a seat that turned work in.** A number a teacher cannot open is a number
+   * they have to take on faith.
+   */
+  it("names only seats that actually submitted behind every count", () => {
+    const seats = new Set(analysis.rows.map((row) => row.seatCode));
+    for (const distribution of analysis.distributions) {
+      for (const share of distribution.shares) {
+        for (const seat of share.seats) expect(seats).toContain(seat);
+      }
+    }
+    for (const world of analysis.worlds) {
+      for (const entry of world.adaptation?.cuts ?? []) {
+        for (const seat of entry.seats) expect(seats).toContain(seat);
       }
     }
   });
 });
 
 describe("a class that all played it the same way says so", () => {
-  const analysis = analyseClass(["2", "5", "8"].map((seatCode) => buildSubmission({ ...CAUTIOUS, seatCode })));
+  const seats = ["2", "5", "8", "11", "14"];
+  const analysis = analyseClass(seats.map((seatCode) => buildSubmission({ ...CAUTIOUS, seatCode })));
 
   it("reports consensus rather than manufacturing a split", () => {
     const housing = analysis.distributions.find((item) => item.id === "housing")!;
-    expect(housing.shares.filter((share) => share.seats.length > 0)).toHaveLength(1);
-    expect(housing.note).toContain("whole class");
+    const used = housing.shares.filter((share) => share.seats.length > 0);
+    expect(used).toHaveLength(1);
+    expect(used[0]!.seats).toEqual(seats);
   });
 
   it("still offers one prompt, and it is about the consensus", () => {
     expect(analysis.prompts).toHaveLength(1);
     expect(analysis.prompts[0]!.id).toBe("consensus");
+    expect(analysis.prompts[0]!.because).toContain(`All ${seats.length}`);
   });
 
   it("draws no contrast between two identical plans", () => {
     expect(analysis.contrast).toBeNull();
+  });
+});
+
+describe("a class too small to be described as a class", () => {
+  /**
+   * The guard §15.3 and §18.4 both name, at the layer that produces the sentences. A
+   * consensus line from three runs is a claim about the twenty-five nobody assessed, and
+   * this is the state a teacher hits mid-lesson rather than an edge case.
+   */
+  it("offers no consensus prompt below the minimum denominator", () => {
+    const small = analyseClass(["2", "5", "8"].map((seatCode) => buildSubmission({ ...CAUTIOUS, seatCode })));
+    expect(small.rows).toHaveLength(3);
+    expect(small.prompts).toEqual([]);
+  });
+
+  it("still counts every seat, because a count is true at any denominator", () => {
+    const small = analyseClass(["2", "5", "8"].map((seatCode) => buildSubmission({ ...CAUTIOUS, seatCode })));
+    const housing = small.distributions.find((item) => item.id === "housing")!;
+    expect(housing.shares.flatMap((share) => share.seats)).toEqual(["2", "5", "8"]);
   });
 });
 
@@ -123,6 +174,48 @@ describe("adaptation is read from what students moved, not from what they said",
     for (const entry of analysis.adaptation.cutFirst) {
       expect(["goal", "reserve", "flexibleCash"]).toContain(entry.category);
     }
+  });
+
+  /**
+   * The defect this pins is the worst kind an assessment product can carry: a true-sounding
+   * sentence about something a child did not do.
+   *
+   * The class board and the printed debrief both read *"5 of 11 cut sports-media course
+   * first — Ana R., Devon P., Priya S., Ibrahim K. and Mei L."* four inches under *"Reserved
+   * the seat at Week 4 — Ana R., Devon P., Priya S., Ibrahim K. and Mei L."* The two lists
+   * were identical, name for name, because the deepest reduction on a reserver's board is
+   * the course row — and the product is what emptied it. Pressing *Reserve it now* commits
+   * the money to the locked costs, `courseRowCapFor` drops the row's ceiling to zero and the
+   * reducer zeroes it in every draft; the student never touched it. It then fed the debrief
+   * prompt *"What does that say about what you were protecting?"*, so a teacher would have
+   * asked five children to account for a choice the product made on their behalf.
+   *
+   * The seats here run the real machine, so the forced zero in the log is the one a browser
+   * writes. What is asserted is the partition the board prints: the students who reserved
+   * the seat and the students who cut the course first cannot be the same list.
+   */
+  it("never files the course row the product emptied as a cut the student chose", () => {
+    const reserved = ["1", "2", "5"];
+    const waited = ["3", "4"];
+    const run = (seatCode: string, reserveSeat: boolean) =>
+      buildSubmission({ seatCode, reserveSeat, setupId: "teammate-share", split: { goal: 0.5, reserve: 0.3 } });
+    const analysis = analyseClass([
+      ...reserved.map((seatCode) => run(seatCode, true)),
+      ...waited.map((seatCode) => run(seatCode, false)),
+    ]);
+
+    // The board's own two lists, built the way the two rows of the page build them.
+    const reservers = analysis.rows.filter((row) => row.reservedSeat).map((row) => row.seatCode);
+    const cutCourseFirst = analysis.adaptation.cutFirst.find((entry) => entry.category === "goal")?.seats ?? [];
+    expect(reservers).toEqual(reserved);
+    expect(cutCourseFirst).toEqual(waited);
+    for (const seatCode of reservers) expect(cutCourseFirst).not.toContain(seatCode);
+
+    // And they are still counted: a student whose course row the product emptied made real
+    // cuts elsewhere, and those are the ones that say what they were protecting.
+    const backupFirst = analysis.adaptation.cutFirst.find((entry) => entry.category === "reserve")?.seats ?? [];
+    expect(backupFirst).toEqual(reserved);
+    expect(analysis.adaptation.cutFirst.flatMap((entry) => entry.seats).sort()).toEqual([...reserved, ...waited].sort());
   });
 
   it("separates a shortfall the buffer absorbed from one that was left open", () => {

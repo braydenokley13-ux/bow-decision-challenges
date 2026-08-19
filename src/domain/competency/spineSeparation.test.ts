@@ -1,3 +1,4 @@
+import { sourceWithoutComments } from "../../test/source";
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
@@ -53,13 +54,23 @@ const WORLD_SOURCES = [
  * depend on the measurement rather than the other way round.
  *
  * The edge is named rather than matched on a filename, so adding a file to it is a decision
- * somebody writes down here. It is two files: the observer, which maps what the world scored
- * onto evidence requirements, and the written-defense module, which does the same job for the
- * half of the evidence a person scores rather than the world.
+ * somebody writes down here. Per world it is the observer, which maps what the world saw onto
+ * evidence requirements, and the written-answer module, which does the same job for the half
+ * of the evidence a person scores rather than the world.
+ *
+ * Run the Pop-Up adds two more: the table that says which of its moments are evidence about
+ * which requirement, and its end of the coverage claim. Both are edge files by the same test —
+ * they exist to state what this world produces, and they are the only files in it that name a
+ * requirement. Its scenario, numbers, machine, ledger and balance harness name none, which is
+ * the property this scan is actually protecting.
  */
 const WORLD_ASSESSMENT_EDGE = [
   "src/domain/scenario/worlds/basketball/observer.ts",
   "src/domain/scenario/worlds/basketball/writtenDefense.ts",
+  "src/domain/scenario/worlds/food-truck/observer.ts",
+  "src/domain/scenario/worlds/food-truck/writtenAnswer.ts",
+  "src/domain/scenario/worlds/food-truck/eventEvidence.ts",
+  "src/domain/scenario/worlds/food-truck/coverage.ts",
 ];
 
 const WORLD_STORY_SOURCES = WORLD_SOURCES.filter((path) => !WORLD_ASSESSMENT_EDGE.includes(path));
@@ -77,11 +88,6 @@ const CANONICAL_COMPETENCY_SOURCES = COMPETENCY_SOURCES.filter(
 );
 
 /** `//` is only a comment when it is not the `//` in a URL. */
-function withoutComments(path: string): string {
-  return readFileSync(path, "utf8")
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-}
 
 /** A framework code like `1.3`, but not the `1.0` inside a version string like `1.0.0`. */
 const BARE_OBJECTIVE_CODE = /(?<![\w.])[1-5]\.\d(?![\d.])/g;
@@ -99,16 +105,16 @@ describe("the spine stays separated", () => {
   });
 
   it.each(COMPETENCY_SOURCES)("keeps a state's name out of %s", (path) => {
-    expect(withoutComments(path)).not.toMatch(NAMES_A_STATE);
+    expect(sourceWithoutComments(path)).not.toMatch(NAMES_A_STATE);
   });
 
   it.each(COMPETENCY_SOURCES)("keeps a bare objective code out of %s", (path) => {
-    const found = withoutComments(path).match(BARE_OBJECTIVE_CODE);
+    const found = sourceWithoutComments(path).match(BARE_OBJECTIVE_CODE);
     expect(found, `${path} carries objective codes ${String(found)}`).toBeNull();
   });
 
   it.each(COMPETENCY_SOURCES)("never imports the standards layer into %s", (path) => {
-    const source = withoutComments(path);
+    const source = sourceWithoutComments(path);
     for (const [, specifier] of source.matchAll(IMPORTS)) {
       expect(specifier, `${path} imports ${String(specifier)}`).not.toMatch(/standards/);
     }
@@ -117,13 +123,13 @@ describe("the spine stays separated", () => {
   it.each(CANONICAL_COMPETENCY_SOURCES)("keeps worlds out of the canonical competency definitions in %s", (path) => {
     // A competency does not know which worlds assess it. `availability.ts` holds that edge
     // on purpose and is deliberately excluded from this case.
-    expect(withoutComments(path)).not.toMatch(/world/i);
+    expect(sourceWithoutComments(path)).not.toMatch(/world/i);
   });
 
   it.each(STANDARDS_SOURCES)("keeps worlds out of %s", (path) => {
     // A framework describes a state's objectives. It has no idea any world exists, which is
     // what makes adding a second state a mapping file rather than a rebuild.
-    const source = withoutComments(path);
+    const source = sourceWithoutComments(path);
     expect(source).not.toMatch(/worldId|WorldId/);
     for (const [, specifier] of source.matchAll(IMPORTS)) {
       expect(specifier, `${path} imports ${String(specifier)}`).not.toMatch(/scenario|worlds/);
@@ -133,7 +139,7 @@ describe("the spine stays separated", () => {
   it("addresses a standard as a framework plus a code, never as a bare string", () => {
     const types = readFileSync("src/domain/standards/types.ts", "utf8");
     expect(types).toContain("export interface StandardRef");
-    const index = withoutComments("src/domain/standards/index.ts");
+    const index = sourceWithoutComments("src/domain/standards/index.ts");
     // Every public lookup that takes a standard takes the framework with it. A signature
     // of `(code: string)` alone is the defect this asserts against.
     expect(index).toMatch(/standardByRef\(ref: StandardRef\)/);
@@ -144,19 +150,24 @@ describe("the spine stays separated", () => {
 
   it("scans every file in every world, including any added since this test was written", () => {
     expect(WORLD_SOURCES).toContain("src/domain/scenario/worlds/basketball/scenario.ts");
+    expect(WORLD_SOURCES).toContain("src/domain/scenario/worlds/food-truck/scenario.ts");
     for (const path of WORLD_ASSESSMENT_EDGE) {
       expect(WORLD_SOURCES, `${path} is not in the scan`).toContain(path);
       expect(WORLD_STORY_SOURCES).not.toContain(path);
     }
-    // The edge is exactly these two. A third file reaching for the competency layer has to
-    // be argued for here rather than added quietly to make a failing scan go green.
-    expect(WORLD_ASSESSMENT_EDGE).toHaveLength(2);
+    // A world's edge is small and it is argued for here rather than grown quietly to make a
+    // failing scan go green. Basketball needs two files; Run the Pop-Up needs four, because it
+    // states its own event tagging and its own coverage claim instead of leaving both in the
+    // shared layer. Every other file in both worlds is story, and names no requirement at all.
+    expect(WORLD_ASSESSMENT_EDGE.filter((path) => path.includes("/basketball/"))).toHaveLength(2);
+    expect(WORLD_ASSESSMENT_EDGE.filter((path) => path.includes("/food-truck/"))).toHaveLength(4);
+    expect(WORLD_ASSESSMENT_EDGE).toHaveLength(6);
   });
 
   it.each(WORLD_SOURCES)("keeps the standards layer out of %s", (path) => {
     // A world assesses competencies. It must never know that New York calls one of them
     // 1.3, or the world would have to change when New York renumbers.
-    const source = withoutComments(path);
+    const source = sourceWithoutComments(path);
     expect(source, path).not.toMatch(NAMES_A_STATE);
     for (const [, specifier] of source.matchAll(IMPORTS)) {
       expect(specifier, `${path} imports ${String(specifier)}`).not.toMatch(/standards/);
@@ -164,7 +175,7 @@ describe("the spine stays separated", () => {
   });
 
   it.each(WORLD_STORY_SOURCES)("keeps the competency layer out of the story in %s", (path) => {
-    for (const [, specifier] of withoutComments(path).matchAll(IMPORTS)) {
+    for (const [, specifier] of sourceWithoutComments(path).matchAll(IMPORTS)) {
       expect(specifier, `${path} imports ${String(specifier)}`).not.toMatch(/competency/);
     }
   });

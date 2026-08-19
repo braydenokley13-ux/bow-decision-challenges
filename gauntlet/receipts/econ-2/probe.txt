@@ -1,0 +1,50 @@
+=== BASKETBALL: what each housing costs in hours, and what the attendance bonus costs to protect ===
+attendanceLimit=8  weeklyCapacity=24  blockBuybackCost=$150
+gym-sublet      clinics=false weeks1-4 demand=1h  weeks6-8 demand=4h  overBy=0h  costToProtect=$0  overCapacity=false
+gym-sublet      clinics=true  weeks1-4 demand=1h  weeks6-8 demand=10h  overBy=2h  costToProtect=$300  overCapacity=false
+teammate-share  clinics=false weeks1-4 demand=6h  weeks6-8 demand=10h  overBy=2h  costToProtect=$300  overCapacity=false
+teammate-share  clinics=true  weeks1-4 demand=6h  weeks6-8 demand=16h  overBy=8h  costToProtect=$1200  overCapacity=false
+cousin-room     clinics=false weeks1-4 demand=14h  weeks6-8 demand=19h  overBy=11h  costToProtect=$1650  overCapacity=false
+cousin-room     clinics=true  weeks1-4 demand=14h  weeks6-8 demand=25h  overBy=17h  costToProtect=$2550  overCapacity=true
+
+=== BASKETBALL: money available to allocate, by branch (spendableFor) ===
+gym-sublet      clinics=false deposit=false count800=false spendable=$900  bonusCosts=$0  affordable=true  shareOfSpendable=0%
+gym-sublet      clinics=false deposit=false count800=true  spendable=$1700  bonusCosts=$0  affordable=true  shareOfSpendable=0%
+gym-sublet      clinics=false deposit=true  count800=false spendable=$-100  bonusCosts=$0  affordable=false  shareOfSpendable=n/a%
+gym-sublet      clinics=false deposit=true  count800=true  spendable=$700  bonusCosts=$0  affordable=true  shareOfSpendable=0%
+gym-sublet      clinics=true  deposit=false count800=false spendable=$1300  bonusCosts=$300  affordable=true  shareOfSpendable=23%
+gym-sublet      clinics=true  deposit=false count800=true  spendable=$2100  bonusCosts=$300  affordable=true  shareOfSpendable=14%
+gym-sublet      clinics=true  deposit=true  count800=false spendable=$300  bonusCosts=$300  affordable=true  shareOfSpendable=100%
+gym-sublet      clinics=true  deposit=true  count800=true  spendable=$1100  bonusCosts=$300  affordable=true  shareOfSpendable=27%
+teammate-share  clinics=false deposit=false count800=false spendable=$1550  bonusCosts=$300  affordable=true  shareOfSpendable=19%
+teammate-share  clinics=false deposit=false count800=true  spendable=$2350  bonusCosts=$300  affordable=true  shareOfSpendable=13%
+teammate-share  clinics=false deposit=true  count800=false spendable=$550  bonusCosts=$300  affordable=true  shareOfSpendable=55%
+teammate-share  clinics=false deposit=true  count800=true  spendable=$1350  bonusCosts=$300  affordable=true  shareOfSpendable=22%
+teammate-share  clinics=true  deposit=false count800=false spendable=$1950  bonusCosts=$1200  affordable=true  shareOfSpendable=62%
+teammate-share  clinics=true  deposit=false count800=true  spendable=$2750  bonusCosts=$1200  affordable=true  shareOfSpendable=44%
+teammate-share  clinics=true  deposit=true  count800=false spendable=$950  bonusCosts=$1200  affordable=false  shareOfSpendable=126%
+teammate-share  clinics=true  deposit=true  count800=true  spendable=$1750  bonusCosts=$1200  affordable=true  shareOfSpendable=69%
+cousin-room     clinics=false deposit=false count800=false spendable=$2100  bonusCosts=$1650  affordable=true  shareOfSpendable=79%
+cousin-room     clinics=false deposit=false count800=true  spendable=$2900  bonusCosts=$1650  affordable=true  shareOfSpendable=57%
+cousin-room     clinics=false deposit=true  count800=false spendable=$1100  bonusCosts=$1650  affordable=false  shareOfSpendable=150%
+cousin-room     clinics=false deposit=true  count800=true  spendable=$1900  bonusCosts=$1650  affordable=true  shareOfSpendable=87%
+cousin-room     clinics=true  deposit=false count800=false spendable=$2500  bonusCosts=$2550  affordable=false  shareOfSpendable=102%
+cousin-room     clinics=true  deposit=false count800=true  spendable=$3300  bonusCosts=$2550  affordable=true  shareOfSpendable=77%
+cousin-room     clinics=true  deposit=true  count800=false spendable=$1500  bonusCosts=$2550  affordable=false  shareOfSpendable=170%
+cousin-room     clinics=true  deposit=true  count800=true  spendable=$2300  bonusCosts=$2550  affordable=false  shareOfSpendable=111%
+
+=== BASKETBALL: does the sweep contain the showcase bonus? ===
+Strategy has a countOutcome axis: false
+States swept: 9696
+outcomeIncome ($1000) appears in spendableFor: no
+
+=== POP-UP: the truck that closes while holding its own takings ===
+Reachable end states: 174339; states where the last Saturday never runs: 726
+  ...of which the student HAD planned trays for the last Saturday: 519
+  worst such: bridge-gate trays=5/6/1 — $1500 taken over Saturdays 1-3, $250 reachable, bill $270
+  most money ever taken over Saturdays 1-3 in any run: $1500 (none of it reachable by the repair board)
+Worst case: bridge-gate trays=5/6/0 — $1500 taken at the window over Saturdays 1-3,
+  $250 of it reachable by the repair board, bill $270 → truck does not open on the biggest night.
+generator: replacement $420 − deposit $150 = bill $270
+helper: $70 for one Saturday night on the window (serve cap 45 → 80)
+plate economics: tray $60 / 10 plates = $6 a plate, sells for $12 (food cost 50%)

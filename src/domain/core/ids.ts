@@ -17,7 +17,29 @@ export function isKnownWorld(id: string): id is WorldId {
 export type SetupId = "gym-sublet" | "teammate-share" | "cousin-room";
 export type IncomeSourceId = "saved-500" | "base-4500" | "completion-800" | "outcome-1000" | "optional-work-500";
 export type CategoryId = "goal" | "reserve" | "flexibleCash";
+
+/**
+ * The three adjustable rows, in the order every surface reads them.
+ *
+ * Written out once because the order is load-bearing: a tie between two equal cuts is
+ * broken by it, so a list built ad hoc in one module and in a different order in another
+ * would report two different answers about the same student.
+ */
+export const CATEGORY_ORDER: readonly CategoryId[] = ["goal", "reserve", "flexibleCash"] as const;
 export type CalcId = "chosen-setup-total" | "essentials-total" | "reliable-floor" | "week5-change";
+
+/**
+ * Why a student left one of several competing claims unpaid.
+ *
+ * Written in no world's vocabulary on purpose. A claim on limited money is either something
+ * only wanted, something nobody else is depending on, something that can be put off at a
+ * price, or — and this is the one the competency exists to catch — the cheapest thing on
+ * the list. Those four hold of a night market's stock order and a basketball season's week
+ * alike, so a second world producing `COMPETING_CLAIMS_SETTLED` says the same four things
+ * and its evidence pools with this one's. The claims themselves are the world's; this is
+ * not.
+ */
+export type ClaimReasonId = "only-wanted" | "no-one-counting" | "can-wait" | "cheapest";
 
 export const CALCULATION_IDS: readonly CalcId[] = [
   "chosen-setup-total",

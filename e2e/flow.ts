@@ -2,8 +2,11 @@ import { expect, type APIRequestContext, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { COUNT_BONUS_BUTTON, NUMBERS as N } from "./plan";
 import { PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
-import { weeksBeforeDisruption } from "../src/domain/scenario/season";
 import type { ClassCreation } from "../src/platform/classes/types";
+import { buildSubmission } from "../src/test/runChallenge";
+import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
+import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
+import { STUDENT_COPY } from "../src/content/studentCopy";
 
 /**
  * One driver for both the assertion suite and the screenshot walkthrough.
@@ -45,7 +48,7 @@ export async function noHorizontalOverflow(page: Page) {
  * thing a pilot depends on.
  */
 export async function createClass(request: APIRequestContext, label = "Browser suite"): Promise<ClassCreation> {
-  const response = await request.post("http://127.0.0.1:4180/api/classes", {
+  const response = await request.post(`${API}/classes`, {
     data: { label, challengeId: PLAN_UNDER_PRESSURE.id },
   });
   expect(response.status(), await response.text()).toBe(201);
@@ -67,18 +70,267 @@ export function createClassKeyFor(code: string): string {
   return known;
 }
 
-export async function gotoFreshChallenge(page: Page) {
-  await page.goto(PLAN_UNDER_PRESSURE.route);
-  await page.evaluate(() => localStorage.clear());
-  await page.reload();
+/**
+ * Extra finished runs, posted through the real submission endpoint.
+ *
+ * Every log here is produced by driving the real reducer through a real run — the same
+ * module the unit suite uses — so what the service stores and what the educator surface
+ * reads is indistinguishable from a browser's. It exists because some educator behaviour
+ * only appears at a class-sized denominator: the minimum-n guard opens at five runs, and
+ * walking five students through the whole challenge in a browser to assert one heading is
+ * ten minutes of test for a rule that does not depend on the clicking.
+ */
+export async function seedRuns(
+  request: APIRequestContext,
+  classCode: string,
+  seats: readonly { seat: string; savingsAsLeftovers?: boolean }[],
+): Promise<void> {
+  for (const entry of seats) {
+    // Seated and signed in, exactly as a student is. Since a rostered class refuses work that
+    // cannot say who sent it, a seeded run that skipped this would be testing the educator
+    // surface against evidence the service would have rejected from a real room.
+    const token = await seatAndSignIn(request, classCode, entry.seat);
+    const built = buildSubmission({
+      seatCode: entry.seat,
+      closeOpeningInto: entry.savingsAsLeftovers === false ? "flexibleCash" : "goal",
+      defenseText: `Seat ${entry.seat}: I kept the course money where it was and gave up part of the reserve after Week 5.`,
+    });
+    const response = await request.post(`${API}/classes/${classCode}/submissions`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: {
+        classCode,
+        seatCode: built.seatCode,
+        sessionId: built.sessionId,
+        challengeId: built.challengeId,
+        challengeVersion: built.challengeVersion,
+        log: built.log,
+      },
+    });
+    expect(response.status(), await response.text()).toBe(202);
+  }
 }
 
-/** Joins the class and steps past the contract. Seats differ so runs never collide. */
+/**
+ * A seat on the roster and a session holding it, without a browser.
+ *
+ * The same two calls the join screen makes, in the same order, with the same bodies — so a
+ * seeded student is indistinguishable from a real one to everything downstream. Seats are
+ * handed out in order, so this asks for as many rows as it takes to reach the one it wants.
+ */
+async function seatAndSignIn(request: APIRequestContext, classCode: string, seatCode: string): Promise<string> {
+  const key = createClassKeyFor(classCode);
+  const wanted = Number(seatCode);
+  if (!Number.isInteger(wanted) || wanted < 1) throw new Error(`Seat ${seatCode} is not a seat number.`);
+  const listed = await request.get(`${API}/classes/${classCode}/roster`, { headers: { "X-BOW-Teacher-Key": key } });
+  const already = ((await listed.json()) as { roster?: readonly { seatCode: string }[] }).roster ?? [];
+  let card = already.find((row) => row.seatCode === String(wanted)) as JoinCard | undefined;
+  if (!card) {
+    const names = Array.from({ length: wanted - already.length }, (_, index) => `Seeded Student ${already.length + index + 1}`);
+    const created = await request.post(`${API}/classes/${classCode}/roster`, {
+      headers: { "X-BOW-Teacher-Key": key },
+      data: { names },
+    });
+    expect(created.status(), await created.text()).toBe(201);
+    card = ((await created.json()) as { cards: JoinCard[] }).cards.at(-1);
+  }
+  if (!card?.joinCode) throw new Error(`Seat ${seatCode} in ${classCode} was already claimed; seed it before anyone signs in.`);
+  const joined = await request.post(`${API}/classes/${classCode}/join`, {
+    data: { classCode, seatCode: card.seatCode, joinCode: card.joinCode, device: "shared" },
+  });
+  expect(joined.status(), await joined.text()).toBe(200);
+  return ((await joined.json()) as { token: string }).token;
+}
+
+/** A person's marks on one seat's writing, through the endpoint the reading queue uses. */
+export async function scoreWriting(
+  request: APIRequestContext,
+  classCode: string,
+  teacherKey: string,
+  seat: string,
+): Promise<void> {
+  const scores = Object.fromEntries(REASONING_CRITERIA.map((criterion) => [criterion.id, criterion.max]));
+  const response = await request.patch(`${API}/classes/${classCode}/submissions/${seat}`, {
+    headers: { "X-BOW-Teacher-Key": teacherKey },
+    data: { reasoningPoints: REASONING_MAXIMUM, reasoningCriteria: scores },
+  });
+  expect(response.status(), await response.text()).toBe(200);
+}
+
+/**
+ * A browser with nothing in it, parked somewhere that will not bounce.
+ *
+ * It used to land on the challenge route and reload, which worked while that route *was*
+ * the sign-in. It is not one any more: arriving there without a session sends the student to
+ * `/join`, so clearing storage there and reloading is a race between the wipe and the
+ * redirect. The front door has no session of its own to lose.
+ */
+export async function gotoFreshChallenge(page: Page) {
+  await page.goto("/");
+  await page.evaluate(() => localStorage.clear());
+}
+
+/**
+ * Where the class service lives for a test talking to it directly rather than through a page.
+ *
+ * One constant, exported, because there were nineteen copies of the literal `4180` across
+ * five files and they are not decoration. A browser test reaches the service through the app
+ * — Vite proxies `/api` at whatever origin `baseURL` names — while `request.post` here goes
+ * straight to the service. When those two resolve to different processes the suite seeds a
+ * class into one service and then asks the other about it, and every student journey fails
+ * on a class that was created successfully a line earlier. That is not a hypothesis: with the
+ * app on a private port and the literal still here, the seeding helpers kept writing to a
+ * class service somebody else had started an hour before.
+ *
+ * `playwright.config.ts` reads `BOW_API_PORT` for the same purpose and defaults it the same
+ * way, so the page and the request agree by construction rather than by both being edited.
+ */
+export const API_ORIGIN = `http://127.0.0.1:${process.env.BOW_API_PORT ?? "4180"}`;
+export const API = `${API_ORIGIN}/api`;
+
+/**
+ * Puts a named seat on a class's roster and hands back the card a student would be given.
+ *
+ * Seats are handed out in order by the service, which is the right behaviour for a teacher
+ * pasting a class list and the wrong shape for a test that wants seat 7 in particular — so
+ * this asks for as many rows as it takes to reach the seat it wants and returns the last.
+ *
+ * Seating the roster is not test scaffolding around the product: a class with a roster is the
+ * configuration the product is *for*, and it is the one where a submission has to arrive from
+ * somebody who is actually in the room. A suite that only ever ran open-join classes would
+ * have covered the path a pilot does not use.
+ */
+export async function seatOnRoster(page: Page, classCode: string, seatCode: string): Promise<JoinCard> {
+  const wanted = Number(seatCode);
+  if (!Number.isInteger(wanted) || wanted < 1) throw new Error(`Seat ${seatCode} is not a seat number.`);
+  const existing = await page.request.get(`${API}/classes/${classCode}/roster`, {
+    headers: { "X-BOW-Teacher-Key": createClassKeyFor(classCode) },
+  });
+  const already = ((await existing.json()) as { roster?: readonly { seatCode: string }[] }).roster ?? [];
+  const seated = already.find((entry) => entry.seatCode === String(wanted));
+  if (seated) throw new Error(`Seat ${seatCode} in ${classCode} is already on the roster.`);
+  const names = Array.from({ length: wanted - already.length }, (_, index) => `Test Student ${already.length + index + 1}`);
+  const response = await page.request.post(`${API}/classes/${classCode}/roster`, {
+    headers: { "X-BOW-Teacher-Key": createClassKeyFor(classCode) },
+    data: { names },
+  });
+  expect(response.status(), await response.text()).toBe(201);
+  const cards = ((await response.json()) as { cards: JoinCard[] }).cards;
+  const card = cards.at(-1);
+  if (!card || card.seatCode !== String(wanted)) throw new Error(`Asked for seat ${seatCode}, got ${card?.seatCode}.`);
+  return card;
+}
+
+/** What a student is handed on a card, and the three things they type or tap to get in. */
+export interface JoinCard { seatCode: string; displayName: string; joinCode: string }
+
+/**
+ * Signs a student in through the door a student actually uses: class code, their own name off
+ * their teacher's list, the code on their card.
+ *
+ * This is the whole of identity in this product now. There is no second route, and there is
+ * deliberately no test-only one — a suite that reached the run by setting a token would not be
+ * covering the screen every student in the pilot meets first.
+ */
+export async function signIn(page: Page, card: JoinCard & { classCode: string }) {
+  await page.goto("/join");
+  await page.getByLabel("Class code").fill(card.classCode);
+  await page.getByRole("button", { name: "Next" }).click();
+  // Two typed codes and no list of names in between: the card resolves the seat by itself, so
+  // the door never has to publish who is in the class.
+  await page.getByLabel("Your code").fill(card.joinCode);
+  await page.getByRole("button", { name: "Go in" }).click();
+  // Arrived, and arrived as this student.
+  //
+  // This waited for a `Start`/`Carry on` link, which exists in only two of the student page's
+  // three states: a student who has already turned in is offered *Run it again?* instead, and
+  // deliberately — starting again must not read as the only thing left to do, and it does not
+  // take the last run back. So a journey that signed the same student in a second time to read
+  // their teacher's reply failed at the door, on a link the screen is right not to be showing.
+  //
+  // What is true in every state is that the page is theirs and says whose it is. Waiting on the
+  // name is also the stronger assertion: two students signing in one after the other on one
+  // Chromebook becoming one account is the defect this door was rebuilt to close, and a helper
+  // every student journey passes through is the right place to keep watching for it.
+  await expect(page.locator(".student-home__bar")).toContainText(card.displayName);
+}
+
+/**
+ * Signs in, opens the run, picks the season where the class offers a choice, and steps past
+ * the contract. Seats differ so runs never collide.
+ *
+ * A class set to let students choose opens on the picker, which is the product working: this
+ * helper drives the Basketball path, so it answers that question rather than assuming the
+ * screen is not there.
+ */
 export async function enterChallenge(page: Page, options: { classCode: string; seatCode?: string }) {
-  await page.getByLabel("Class code").fill(options.classCode);
-  await page.getByLabel("Seat", { exact: true }).fill(options.seatCode ?? "7");
-  await page.getByRole("button", { name: "Start the eight weeks" }).click();
-  await page.getByRole("button", { name: "Find Avery a place" }).click();
+  const card = await seatOnRoster(page, options.classCode, options.seatCode ?? "7");
+  await signIn(page, { ...card, classCode: options.classCode });
+  await page.getByRole("link", { name: /^(Start|Carry on)$/ }).click();
+  await startIfConfirmAsked(page);
+  await chooseSeasonIfOffered(page);
+  await stepPastTheDeal(page);
+}
+
+/**
+ * The confirm screen, on the builds that still draw one.
+ *
+ * A signed-in student does not meet this any more, and that is a decision rather than a
+ * regression: `StudentChallenge.tsx` starts the session in an effect the moment a seat
+ * resolves, because the student "came from their own home page, which shows their name,
+ * offers 'Not you?' and has a button reading *Start*" — two critics and a student red team
+ * counted four screens between the door and the game, two of which only confirmed what the
+ * student had just done. So the reducer leaves `entry` before anything is painted and the
+ * run opens on the picker.
+ *
+ * The button is still real and still has to work. A build with no class service resolves a
+ * seat during render and draws this screen for real, which is how the guide's "Try it as a
+ * student" lets a teacher play the run without a roster — so this presses it where it is
+ * offered rather than deleting the step.
+ *
+ * Waiting on whichever screen actually arrives, rather than on the button alone, is the same
+ * lesson `stepPastTheDeal` records: clicking a screen the product has stopped showing hangs
+ * every student journey in the suite on one line, for a reason none of them was checking.
+ */
+export async function startIfConfirmAsked(page: Page) {
+  const confirm = page.getByRole("button", { name: /^(Start the eight weeks|Go in)$/ });
+  const picker = page.getByRole("heading", { name: STUDENT_COPY.choose.title });
+  const contract = page.getByRole("button", { name: "Find Avery a place" });
+  const ranking = page.getByRole("heading", { name: /Which place costs the least/i });
+  await expect(confirm.or(picker).or(contract).or(ranking).first()).toBeVisible();
+  if (await confirm.count()) await confirm.click();
+}
+
+/**
+ * The contract screen, where the build still has one.
+ *
+ * The beats either side of it have been rebuilt more than once and the screen itself has come
+ * and gone with them, so pressing through it unconditionally made every student test in the
+ * suite fail at the same line for a reason that had nothing to do with what any of them was
+ * checking. This waits for whichever screen actually arrives and steps past the deal only if
+ * the deal is one of them.
+ */
+export async function stepPastTheDeal(page: Page) {
+  const deal = page.getByRole("button", { name: "Find Avery a place" });
+  const ranking = page.getByRole("heading", { name: /Which place costs the least/i });
+  await expect(deal.or(ranking).first()).toBeVisible();
+  if (await deal.count()) await deal.click();
+}
+
+/**
+ * Answers the world choice with Basketball, where this class was set to offer one.
+ *
+ * Which screen comes next depends on the class, so this waits for whichever one actually
+ * arrives before deciding. Asking whether the picker is visible the instant after the join
+ * button is pressed answers "no" for a class that is about to show it, which is how a
+ * whole run ends up stranded on a screen it never meant to skip.
+ */
+export async function chooseSeasonIfOffered(page: Page) {
+  const picker = page.getByRole("heading", { name: STUDENT_COPY.choose.title });
+  const contract = page.getByRole("button", { name: "Find Avery a place" });
+  await expect(picker.or(contract)).toBeVisible();
+  if (await picker.isVisible()) {
+    await page.getByRole("button", { name: /Start this one/ }).first().click();
+  }
 }
 
 export const SETUP_ORDER = ["gym-sublet", "teammate-share", "cousin-room"] as const;
@@ -139,27 +391,51 @@ export const PLAN_STEP = {
  * They used to be three stacked sections on one page revealed in order. They are now three
  * screens under one stage, so the suite presses the same buttons a student does rather than
  * filling a form that happens to be taller than the window.
+ *
+ * **Both bonuses are answered out loud, always, including when the answer is no.** This used to
+ * press a button only where the caller wanted a bonus counted and walk past the card otherwise,
+ * which worked while both cards opened with *No — leave it out* already pressed. That default
+ * was removed on purpose (`StudentChallenge.tsx`: a student who pressed Next without reading
+ * scored full marks on the micro-skill that asks whether conditional money was kept out of the
+ * total, for a decision they never made), and the step now refuses to advance until a person
+ * has answered both. A helper that skips the card is a helper asserting the old default is
+ * still there — and it fails not on the bonus screen but one screen later, looking for a button
+ * that has not been earned yet.
  */
 export async function completeWorkingCalcs(page: Page, opts: { attendance?: boolean; showcase?: boolean } = {}) {
   await page.getByLabel(PLAN_STEP.countOn).fill(String(N.savings + N.basePay));
   await page.locator(".calculation").getByRole("button", { name: "Check" }).click();
   await page.getByRole("button", { name: PLAN_STEP.toBonuses }).click();
-  if (opts.attendance) await page.locator(".bet").first().getByRole("button", { name: PLAN_STEP.countBonus }).click();
-  if (opts.showcase) await page.locator(".bet").nth(1).getByRole("button", { name: PLAN_STEP.countBonus }).click();
+  const answers = [Boolean(opts.attendance), Boolean(opts.showcase)];
+  for (const [index, counted] of answers.entries()) {
+    await page.locator(".bet").nth(index).getByRole("button", { name: counted ? PLAN_STEP.countBonus : PLAN_STEP.leaveBonus }).click();
+  }
   await page.getByRole("button", { name: PLAN_STEP.toCommitted }).click();
   await page.getByLabel(PLAN_STEP.committed).fill(String(N.essentialsTotal));
   await page.locator(".calculation").getByRole("button", { name: "Check" }).click();
   await page.getByRole("button", { name: PLAN_STEP.toPlan }).click();
 }
 
+/** What the season screen calls the button that opens the course-deposit decision. */
+export const TO_DEPOSIT = `Week ${N.course.depositDeadlineWeek} · the course office is calling`;
+
 /**
- * Plays Weeks 1–4 one at a time and answers the course-deposit deadline that closes them.
- * The weeks are stepped rather than skipped because stepping is what a student does.
+ * Answers Week 3's competing claims, then the course-deposit deadline that follows them.
+ *
+ * Weeks 1–4 used to be four presses of "Play Week N" charging the same rent every time, then
+ * one press that resolved them together. There is a decision in the middle of them now: Avery
+ * is handed cash three things want and cannot all have, and the week does not end until the
+ * student has funded something and said what made them leave the rest out. So the helper does
+ * what a student does — takes one claim, gives a reason — rather than pressing past a beat the
+ * product will refuse to let anybody press past.
+ *
+ * `claim` is which of the three, in the order the screen lists them. The first fits inside the
+ * cash on its own and the other two then cannot, which is the shape of the decision.
  */
-export async function playSeasonWeeks(page: Page, opts: { deposit?: boolean } = {}) {
-  for (const week of weeksBeforeDisruption(N).slice(1)) {
-    await page.getByRole("button", { name: `Play Week ${week}` }).click();
-  }
+export async function playSeasonWeeks(page: Page, opts: { deposit?: boolean; claim?: number; reason?: number } = {}) {
+  await page.locator(".claims__list button").nth(opts.claim ?? 0).click();
+  await page.locator(".claims__why button").nth(opts.reason ?? 0).click();
+  await page.getByRole("button", { name: TO_DEPOSIT }).click();
   await page.getByRole("button", { name: opts.deposit ? "Reserve it now" : "Wait and decide later" }).click();
   await page.getByRole("button", { name: "Lock it in and play Week 5" }).click();
 }
@@ -172,9 +448,17 @@ export async function setAmount(page: Page, label: string, value: string) {
 
 
 
-/** Selects every gap tile shown (they are exactly the components of the expected total) and checks the sum. */
+/**
+ * The cards Week 5 actually moved. The strip also carries committed lines the week leaves
+ * alone — rent, the weekly basics, a seat already reserved, a bonus the student left out —
+ * so selecting every card on screen is now a wrong answer rather than the whole task.
+ */
+export const MOVED_TILES = ".gap-tiles button[data-line='lost'], .gap-tiles button[data-line='bill']";
+export const HELD_TILES = ".gap-tiles button[data-line='committed'], .gap-tiles button[data-line='uncounted']";
+
+/** Selects the gap tiles that belong to this student's plan and checks the sum. */
 export async function passWeek5Calculation(page: Page, total: string) {
-  const tiles = page.locator(".gap-tiles button");
+  const tiles = page.locator(MOVED_TILES);
   const count = await tiles.count();
   for (let i = 0; i < count; i += 1) await tiles.nth(i).click();
   await page.getByLabel("Total change to Avery’s money").fill(total);
@@ -192,9 +476,29 @@ export async function readWeek8Resolution(page: Page) {
   await page.getByRole("button", { name: "Explain my plan" }).click();
 }
 
+/**
+ * The written explanation, turned in the way the screen now asks for it.
+ *
+ * This tapped two figures and typed the caller's paragraph, which was the whole of it while the
+ * gate behind the button was `text.trim().length >= 40`. That gate is gone (`writingGate.ts`),
+ * and deliberately: it refused `idk. idk. idk. idk.` and accepted forty characters of `aaaa`,
+ * so the product was teaching padding to whoever noticed. What replaced it asks for three
+ * things a machine can honestly check — two or three of the student's own figures tapped, those
+ * same figures written into the paragraph, and two sentences with something in each — and none
+ * of them reads what the writing says.
+ *
+ * So the helper writes the figures it tapped, and it reads them off the tiles it tapped rather
+ * than restating an amount: `numbers.ts` owns those, the tile prints them, and a suite with its
+ * own copy of a price is the thing `pricing.test.ts` exists to stop.
+ */
 export async function submitDefense(page: Page, text: string, tileIndices: number[] = [0, 2]) {
-  for (const index of tileIndices) await page.locator(".interview__stats button").nth(index).click();
-  await page.getByLabel("Two to four sentences").fill(text);
+  const figures: string[] = [];
+  for (const index of tileIndices) {
+    const tile = page.locator(".interview__stats button").nth(index);
+    await tile.click();
+    figures.push((await tile.locator(".money").innerText()).trim());
+  }
+  await page.getByLabel("Two to four sentences").fill(`${text} The numbers I stood on are ${figures.join(" and ")}.`);
   await page.getByRole("button", { name: "Turn in my plan" }).click();
 }
 

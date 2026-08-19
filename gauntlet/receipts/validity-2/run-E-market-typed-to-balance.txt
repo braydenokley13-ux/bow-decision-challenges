@@ -1,0 +1,313 @@
+# run-E-market-typed-to-balance
+# recorded 2026-08-19T05:24:02.042Z against http://127.0.0.1:5011
+
+--- class PG7UE seat 8 — Eli — types until it balances
+
+
+===== [01] the booths  (342 words on screen)
+B
+BOW
+DECISION CHALLENGES
+
+BEFORE THE MARKET
+
+Saturday 1
+—
+Saturday 2
+—
+Saturday 3
+—
+Saturday 4
+—
+PG7UE · SEAT 8
+
+RIVERSIDE NIGHT MARKET
+
+FOUR SATURDAYS. ONE TRUCK.
+IN THE ACCOUNT
+$1,900
+THE MARKET
+4 Saturdays
+PAID BEFORE YOU OPEN
+City permit and booth
+
+Mo has cooked at Salt and Smoke for two summers and never had a booth of his own. The market runs for four Saturdays. There is $1,900 in the truck's account, and the permit and the booth are paid before anybody sells a plate.
+
+Mo does the cooking. You handle the money, and you have four Saturdays to get it right.
+
+Where do you set up?
+
+The organiser prices a booth by the crowd that walks past it. Take one. The same four Saturdays at every booth. What changes is how many walk past yours. The last one is a range: nobody can say how many will come for the fireworks.
+
+CITY PERMIT
+
+$150 for the four Saturdays. Every stall pays it.
+
+$150
+BACK LANE
+
+$90 for the four Saturdays
+
+PLATES THE CROWD HERE WILL BUY
+
+SAT 1
+22
+SAT 2
+26
+SAT 3
+14
+SAT 4
+24–37
+
+The cheapest booth going, and quiet for a reason. Most of the crowd turns at the top of the lane.
+
+Take this booth
+MIDDLE ROW
+
+$240 for the four Saturdays
+
+PLATES THE CROWD HERE WILL BUY
+
+SAT 1
+38
+SAT 2
+46
+SAT 3
+25
+SAT 4
+42–65
+
+Halfway down the main run, across from the band. People come past all evening and you are charged for every one.
+
+Take this booth
+BRIDGE GATE
+
+$480 for the four Saturdays
+
+PLATES THE CROWD HERE WILL BUY
+
+SAT 1
+54
+SAT 2
+65
+SAT 3
+35
+SAT 4
+59–92
+
+Everybody walks in past this booth. It is the dearest going, and on your own you cannot hand over more than 45 plates in an evening.
+
+Take this booth
+
+The organiser prices a booth by the crowd that walks past it. Take one.
+
+Take a booth to carry on
+Reading help
+
+
+===== [02] the money that might arrive  (201 words on screen)
+B
+BOW
+DECISION CHALLENGES
+
+BEFORE THE MARKET
+
+Saturday 1
+—
+Saturday 2
+—
+Saturday 3
+—
+Saturday 4
+—
+PG7UE · SEAT 8
+
+MONEY WITH A RULE ON IT
+
+TWO AMOUNTS MIGHT TURN UP.
+
+Neither one is promised. Say whether your plan counts on it.
+
+In the account
+$1,900
+
+What you owe before you open
+$390
+
+Sunrise Yoga
+$260
+
+The studio down the road wants 40 plates for a Sunday class, and they are offering $260 for them.
+
+They only pay if they confirm the booking, and they have told you they will not decide until the second Saturday.
+
+Plan as if this money arrives?
+
+Yes — count it in
+No — leave it out
+Sell-out rebate
+$150
+
+The organiser gives $150 back off your booth to any stall that clears everything on opening night.
+
+You only get it if you sell out on the first Saturday. That means every plate you brought is gone, and there were at least 20 of them.
+
+Plan as if this money arrives?
+
+Yes — count it in
+No — leave it out
+
+Ramos Foods delivers on the Saturday morning. What you order is what you have.
+
+Answer both before you carry on
+Reading help
+
+
+===== [03] the opening plan board  (281 words on screen)
+B
+BOW
+DECISION CHALLENGES
+
+BEFORE THE MARKET
+
+Saturday 1
+—
+Saturday 2
+—
+Saturday 3
+—
+Saturday 4
+—
+PG7UE · SEAT 8
+
+THE OPENING PLAN
+
+GIVE EVERY DOLLAR A JOB.
+
+Three lines. All of the money has to land on them, and the market starts the moment it does.
+
+TO PLAN WITH
+$1,510
+ON THE THREE LINES
+$0
+STILL TO PLACE
+$1,510
+Stock
+This is the food you buy to sell. Ramos Foods sells to the market by the tray, and a tray is 10 plates. Every tray costs you $60, and every plate you hand over the counter sells for $12. Trays do not come in halves, so you will almost never match the crowd exactly.
+Cushion
+This is cash you keep in the box instead of spending it. The generator on the truck is rented, and Ramos Rentals is holding $150 against it. Trucks break, and a truck that is not running does not sell anything.
+Your cut
+This is the money you bank for yourself at the end of the run. It is the whole reason you took the job, and nobody is going to set it for you.
+Stock
+0 trays of food to cook and sell.
+$0
+−
++
+Cushion
+Cash in the box, and not spent yet.
+$0
+−
++
+Your cut
+Yours at the end of the run, if nothing eats it.
+$0
+−
++
+Send the rest to one line
+
+The line you name takes whatever is left over.
+
+→
+Stock
+$1,510
+Leaves 25 trays to cook.
+→
+Cushion
+$1,510
+Leaves nothing to cook.
+→
+Your cut
+$1,510
+Leaves nothing to cook.
+
+$1,510 still has no job.
+
+Check this plan
+Reading help
+
+--- money to plan: $1510
+
+--- board says still unassigned: $510
+
+
+===== [04] every line typed, cut filled last with what was left, no closer pressed  (283 words on screen)
+B
+BOW
+DECISION CHALLENGES
+
+BEFORE THE MARKET
+
+Saturday 1
+—
+Saturday 2
+—
+Saturday 3
+—
+Saturday 4
+—
+PG7UE · SEAT 8
+
+THE OPENING PLAN
+
+GIVE EVERY DOLLAR A JOB.
+
+Three lines. All of the money has to land on them, and the market starts the moment it does.
+
+TO PLAN WITH
+$1,510
+ON THE THREE LINES
+$1,500
+STILL TO PLACE
+$10
+Stock
+This is the food you buy to sell. Ramos Foods sells to the market by the tray, and a tray is 10 plates. Every tray costs you $60, and every plate you hand over the counter sells for $12. Trays do not come in halves, so you will almost never match the crowd exactly.
+Cushion
+This is cash you keep in the box instead of spending it. The generator on the truck is rented, and Ramos Rentals is holding $150 against it. Trucks break, and a truck that is not running does not sell anything.
+Your cut
+This is the money you bank for yourself at the end of the run. It is the whole reason you took the job, and nobody is going to set it for you.
+Stock
+10 trays of food to cook and sell.
+$600
+−
++
+Cushion
+Cash in the box, and not spent yet.
+$400
+−
++
+Your cut
+Yours at the end of the run, if nothing eats it.
+$500
+−
++
+Send the rest to one line
+
+The line you name takes whatever is left over.
+
+→
+Stock
+$10
+Leaves 10 trays to cook.
+→
+Cushion
+$10
+Leaves 10 trays to cook.
+→
+Your cut
+$10
+Leaves 10 trays to cook.
+
+$10 still has no job.
+
+Check this plan
+Reading help

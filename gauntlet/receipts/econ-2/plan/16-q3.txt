@@ -1,0 +1,83 @@
+=== TEXT ===
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+BEFORE THE SEASON
+1
+2
+3
+4
+5
+6
+7
+8
+
+Before the season. Part 2 of 5: The plan.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+BUILD AVERY’S PLAN · QUESTION 3 OF 4
+
+WHAT DOES AVERY ALREADY OWE?
+
+AVERY’S MONEY
+
++
+Arrives no matter what
+$5,000
++
+Only if a bonus rule is met
+$1,800
+−
+Where Avery lives
+−$300
+Cousin’s Spare Room · 8 weeks
+−
+Food, phone and laundry
+not worked out yet
+$200 a week · 8 weeks
+
+LEFT FOR AVERY TO DECIDE
+not worked out yet
+
+1
+Money coming in
+2
+The two bonuses
+3
+Money already owed
+4
+What Avery does with the rest
+
+How much is gone before Avery chooses anything?
+
+What food, phone and laundry cost each week, for all 8 weeks.
+
+Rent is on top of this. It comes out of the plan automatically.
+
+TOTAL
+$
+Check
+
+Back
+Reading help
+
+=== CONTROLS ===
+A "Back to the educator guide"
+A "B / BOW / DECISION CHALLENGES"
+BUTTON[button] ""
+BUTTON[button] "See where the money goes"
+BUTTON[button] "Where Avery lives"
+BUTTON[button] "1 / Money coming in"
+BUTTON[button] "2 / The two bonuses"
+INPUT[text] "Money already spoken for"
+BUTTON[button] "Check"
+BUTTON[button] "Back"
+BUTTON[button] "Reading help"

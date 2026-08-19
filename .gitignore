@@ -6,6 +6,20 @@ test-results
 .DS_Store
 *.log
 *.tsbuildinfo
-screens
+/screens
 dist-server
+# Any throwaway server build an agent or an operator makes beside the real one. These are
+# compiled output, and one of them sitting in the tree put a whole second copy of the server
+# into the lint path, where it produced errors nobody could act on.
+dist-*/
 .bow-classes
+/.scratch
+
+# Browser storage state written by hand during a session. One of these was found in the tree
+# holding a live teacher session token — untracked, but one `git add -A` away from being
+# published in a repository whose whole subject is not publishing children's work.
+*storage-state*.json
+.scratch-*.json
+
+# Working screenshots. Curated receipts live in gauntlet/receipts/.
+gauntlet/screens/

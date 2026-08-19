@@ -27,19 +27,53 @@ export interface StageBudget {
 }
 
 export const STAGE_BUDGET: Partial<Record<StageId, StageBudget>> = {
-  entry: { seconds: 55, basis: "Read the offer and the roster card, then type a class code and a seat number." },
-  "role-contract": { seconds: 40, basis: "Read four contract lines split into safe and conditional, then continue." },
+  entry: { seconds: 55, basis: "Read the offer and the roster card, then start the run." },
+  // The picker was on the critical path of both worlds with no row here at all, so every word
+  // on it was a word no budget had paid for — which is exactly the drift this table exists to
+  // stop, and it went unnoticed because nothing counted the words on a screen.
+  // 104 rendered words is 42 s of reading; the rest is the only moment in the run where a
+  // student weighs two whole stories against each other.
+  "choose-world": { seconds: 55, basis: "Read two cards on the same four facts, weigh them, and open one." },
   "setup-comparison": { seconds: 115, basis: "Order three places by full cost, choose one, and total it across the season." },
-  "working-plan": { seconds: 165, basis: "Two calculations, two decisions about conditional income, then split what is left and say which row takes the rest." },
+  // Was 165, and it was the largest untrue number in this table. The four questions render
+  // 491 words between them — 196 s of reading at the rate above — before a single figure is
+  // typed. On top of that: two calculations and three amounts entered by hand, two decisions
+  // about conditional income, and the closing statement about which row takes the rest. 275 s
+  // is 196 of reading, ~36 of deliberate input at four seconds each, and ~45 of deciding.
+  // Cutting the screen to fit 165 would have meant cutting the questions, and the questions
+  // are the challenge.
+  "working-plan": { seconds: 275, basis: "Read four questions; type two totals and three amounts; decide about two conditional payments; name the row that takes the rest." },
   "fallback-version": { seconds: 50, basis: "One number to clear on a plan already built: one to three taps, or the steppers." },
-  "season-weeks": { seconds: 145, basis: "Play three more weeks, read what each one costs, then answer the deposit deadline." },
-  "week5-event": { seconds: 110, basis: "Read two bulletins and Avery's line, select the components that moved, total them." },
+  // Was 145 when it was three "Play Week N" presses; then 75 when the weeks resolved
+  // together and the screen was a feed of four cards whose own deck opened "Nothing here is
+  // new." It is 95 now, and the twenty seconds are not prose: the screen lost 138 rendered
+  // words and gained the only decision in the first half of the season. Reading is 73 s of
+  // it at the rate above; the rest is four deliberate taps and a beat to weigh three claims
+  // that cannot all be paid for.
+  "season-weeks": { seconds: 95, basis: "Read the four weeks draining at the rate this housing charges, then settle three claims on one week's cash and say what made the rest go unpaid." },
+  "week5-transition": { seconds: 55, basis: "Read two prices for the same seat and what each does to the movable money, pick one, read the effect, commit." },
+  // Was 110. The card set now includes committed lines Week 5 does not move, so each card is
+  // read against the plan rather than tapped, and the app no longer prints the running sum.
+  "week5-event": { seconds: 125, basis: "Read two bulletins and Avery's line, judge four to six cards against the plan, total the ones that moved." },
   "first-response": { seconds: 115, basis: "Triage: read what each amount currently buys, then cut until the shortfall clears." },
   "opportunity-final-repair": { seconds: 100, basis: "Two decisions with their tradeoffs, then place what those decisions moved." },
   "remaining-risk-preview": { seconds: 40, basis: "The same move as the backup version, on a plan the student now knows well." },
-  "week8-resolution": { seconds: 85, basis: "Read the ending: the three weeks, three outcome cards, four verdicts, the change table." },
+  // Was 85, against a screen that renders 309 words — 124 s of reading on its own. The change
+  // table is gone and the Week 3 settlement is said once rather than per verdict, and what is
+  // left is six verdicts, each with the counterfactual that makes it answerable. That is the
+  // beat, not padding around it, so the seconds moved to meet it rather than the other way.
+  // Was 85, against a screen that renders 319 words on its longest branch — 128 s of reading on
+  // its own. The change table is gone and the Week 3 settlement is stated once rather than per
+  // verdict; what is left is a verdict for every call, each with the counterfactual that makes
+  // it answerable, including one for every claim the student left unpaid in Week 3. That is the
+  // beat, not padding around it, so the seconds moved to meet it rather than the other way. The
+  // number covers the worst branch a student can reach: paying for one claim in Week 3 leaves
+  // two unpaid, and each of those is a verdict here, with one number for all of them.
+  "week8-resolution": { seconds: 140, basis: "Read the ending: the last weeks, three outcome cards, and a verdict on every call with what it actually cost." },
   defense: { seconds: 145, basis: "Pick two or three of their own numbers and write two to four sentences." },
-  submitted: { seconds: 20, basis: "Confirmation that the work reached the class." },
+  // 80 words: where it went, the plan that went with it, and the student's own paragraph read
+  // back. 20 s never covered reading it, only pressing past it.
+  submitted: { seconds: 40, basis: "Read the receipt: where the work went, what went with it, and their own answer." },
 };
 
 /**
@@ -48,8 +82,8 @@ export const STAGE_BUDGET: Partial<Record<StageId, StageBudget>> = {
  * no-bonus check exists too.
  */
 export const LONGEST_PATH: readonly StageId[] = [
-  "entry", "role-contract", "setup-comparison", "working-plan", "fallback-version",
-  "season-weeks", "week5-event", "first-response", "opportunity-final-repair",
+  "entry", "choose-world", "setup-comparison", "working-plan", "fallback-version",
+  "season-weeks", "week5-transition", "week5-event", "first-response", "opportunity-final-repair",
   "remaining-risk-preview", "week8-resolution", "defense", "submitted",
 ] as const;
 

@@ -59,8 +59,8 @@ or any view module from `src/domain/**`.
 | `standards/` | ✅ frameworks, standards, mappings, completion rules, framework labels | — |
 | `finance/` | ✅ formulas, load, timeline, resolution, consequences, plan modes | prices arrive as `ScenarioNumbers` |
 | `evidence/` | ✅ envelope, facts, observation, grading | micro-skills are PUP's |
-| `machine/` | ✅ reducer, selectors | stage list is PUP's |
-| `scenario/` | — | **entirely PUP**: numbers, worlds, balance harness |
+| `machine/` | ✅ reducer, selectors | stage list is Basketball's; Run the Pop-Up ships its own machine |
+| `scenario/` | ✅ world registry, world contracts, demand profiles, the reading ruler | each world's numbers, story, machine, observer and balance harness are its own |
 | `blueprint/` | — | **entirely PUP**: concepts, micro-skills, and the five-objective alignment the educator surfaces still read |
 
 `src/domain/finance/**` additionally may not import a world — it receives `ScenarioNumbers`
@@ -114,9 +114,30 @@ that produces every required evidence requirement, so an objective BOW cannot as
 reads *not yet available* rather than *not yet assessed*. Those are different sentences and
 a district reads them differently.
 
-`BUILT_WORLD_COVERAGE` today records Basketball producing all five requirements of
-`adapt-a-plan` and all five of `plan-within-income`. **One NYSED objective is assessable —
-1.3, and only 1.3.** Every other objective has a mapping and no world.
+`BUILT_WORLD_COVERAGE` today records **six** claims: Basketball and Run the Pop-Up each
+against `adapt-a-plan`, `plan-within-income` and `sort-by-need-want-goal`, every required
+requirement of each. `availableCompetencyIds()` therefore returns those three, and
+`coverageClaims.test.ts` pins the set. **One NYSED objective is assessable — 1.3, and only
+1.3.** Every other objective has a mapping and no world.
+
+Both worlds leave `save-toward-a-goal` uncovered, and they leave it uncovered for the same
+reason: in each of them the target, the deadline and whether the savings line survives are the
+*student's strategy*, and each world's balance harness exists to prove no strategy is the right
+one. Closing that gap in one world and not the other is the failure §9.1 is about — a student
+who picked the other story would be measured on less — so the honest move is a gap in both.
+
+### The second world — `worlds/food-truck/`
+
+Run the Pop-Up is four Saturdays at a night market, and it shares an envelope with Basketball
+and nothing else. Its constraint is **spoilage** rather than time: the supplier sells by the
+tray, no crowd is a round number of trays, and stock nobody buys is money in the bin. It has
+its own numbers, story, stage machine, ledger, observer and balance harness, and its economy is
+deliberately not `ScenarioNumbers` — §7.1's split is what stops two worlds becoming one
+interior wearing two pictures.
+
+What it shares is the part that has to be shared: the evidence envelope, the four support
+levels, the common rubric, the mastery rules, and the named evidence requirements. The rubric
+engine took no change to admit it and takes no world id, which is the whole claim.
 
 `plan-within-income.er3` — *savings is a planned amount, not the remainder* — is the one that
 took a world change rather than a wiring change. Nothing in the log could tell a student who
@@ -146,12 +167,22 @@ literal, so a New Jersey deployment reads New Jersey's nouns without a component
 Students see none of it: nothing under `/educator` is on a student route, and no student
 screen mentions a standard.
 
-**The Objective Map's nine states** are §15.3's, and they live in `objectiveState.ts` beside
-the thresholds they read. The order they are decided in is the correctness: availability
-first, so an objective BOW cannot assess never reads as one a class did badly at; a bundled
-objective held at *partly assessed* until every part of its completion rule is in; the
-denominator guard before the thresholds. Four of the nine are not claims about students at
-all, and `isResultState` is what any surface asks before treating one as one.
+**The Objective Map has five states** — `not-assessed`, `too-few-assessed`,
+`needs-attention`, `developing`, `strong` — and they live in `objectiveState.ts` beside the
+thresholds they read. The order they are decided in is the correctness: the empty
+denominator, then `MINIMUM_ASSESSED_FOR_A_STATE`, then the two thresholds, so a share is
+never worked out from a number of students too small to carry it.
+
+Two questions are settled before any of the five, and the reason none of them is a state is
+that neither answer is a claim about how a class did. Whether BOW can assess the objective
+at all is `isAssessable()` in `src/domain/standards/`; an objective that fails it gets its
+own page saying so rather than a state on this one, because *not yet available* and *not
+yet assessed* are different sentences. Whether one student has a usable result is
+`studentOutcomeFor`, which counts a bundled objective as assessed only once every part of
+its completion rule has one — a student part-way through a bundle is out of the denominator,
+not at the bottom of it. `CLASS_STATE_LABELS` and `CLASS_STATE_DESCRIPTIONS` are
+`Record<ObjectiveResultState, …>`, so a sixth state is a compiler error at every teacher-facing
+word for it.
 
 State is never carried by colour alone — every objective shows a mark whose geometry differs
 and its word beside it, so the table survives a greyscale printout and a colour vision
@@ -189,8 +220,13 @@ browser remembers. That limit is stated on the screen rather than hidden.
 ### `src/educator/` — the educator surface
 
 `analysis.ts` turns submitted evidence into what a class did. It is the **only** thing that
-feeds a real class view, and `noFixture.test.ts` enforces that structurally: the real-class
-modules cannot import a fixture, and every fixture page is mounted under `/educator/demo`.
+feeds a real class view. `/educator/demo` renders those same real-class components — there is
+no separate fixture page any more — fed evidence `useClassEvidence` builds from
+`src/fixtures/demoClass.ts` instead of the service, and only for the one class code
+(`DEMO_CLASS_CODE`) that is structurally too short to ever be a real one.
+`noFixture.test.tsx` enforces that behaviourally: a well-formed class code always reaches the
+service and never the fixture, an empty real class renders as empty rather than as the
+sample, and the sample is labelled on every screen it appears on.
 
 ### The design system, and what it is enforced by
 
@@ -248,14 +284,23 @@ student is confused:
 
 | What | Where | Key |
 | --- | --- | --- |
-| A student's in-progress attempt | `localStorage` | `bow.attempt.v2.<challengeId>` |
+| A student's in-progress attempt | `localStorage` | `bow.attempt.v2.<challengeId>.<worldId>` |
 | Classes an educator opened here | `localStorage` | `bow.educator.v1.classes` |
 | A class and its submissions | the class store | `class:<CODE>` / `submissions:<CODE>` |
 
-The attempt key is **per challenge**. A single global key meant Challenge #2 would open
-Plan Under Pressure's attempt, fail to recognise it, and back it up as unreadable —
-destroying work belonging to a challenge the student was not playing. The pre-namespaced key
-is still read once so an attempt in flight survives the change.
+The attempt key is **per challenge and per world**, and both halves were learned the same way.
+A single global key meant Challenge #2 would open Plan Under Pressure's attempt, fail to
+recognise it, and back it up as unreadable — destroying work belonging to a challenge the
+student was not playing. Keying only by challenge left the identical trap one level down: two
+worlds under one challenge share a challenge id, so a student who started Basketball and then
+opened the food truck would have been handed the Basketball attempt back. Same key, same
+challenge id, valid shape, wrong world — a board priced by one world's economy while the story
+on screen came from another's.
+
+A restored attempt is checked against **its own world's** stage list, which each world declares
+in `WORLD_REGISTRY`. Checking a second world's attempt against the first world's screens would
+quarantine real work for the crime of being in a different story. The two pre-world keys are
+still read once, for Basketball only, so an attempt in flight survives the change.
 
 ## Evidence envelope
 
@@ -294,13 +339,21 @@ set. Evidence still is not.
 
 ## Security model
 
-The class code goes on a whiteboard, so every student in the room has it. It therefore
-grants exactly two things: resolving the class, and submitting to it.
+The class code goes on a whiteboard, so every student in the room has it. It therefore grants
+exactly one thing: **resolving the class** — the label and the join mode, so a child can
+confirm they typed the right five characters. It does not open the roster and it no longer
+turns work in. Submission takes a student session, in every class with no exception: a review
+that held nothing but a class code posted a fabricated run under a seat it had never joined
+and the teacher's evidence room accepted it, so `POST /classes/:code/submissions` now refuses
+a caller it cannot identify, and refuses one whose own seat index does not put them in that
+class.
 
-Reading the room takes the **teacher key** — generated at class creation, returned once,
-stored in the educator's browser, and never derivable from the class code. Without that
-split, students read each other's work. `service.test.ts` proves the class code cannot open
-the evidence room, including when passed as the key.
+Reading the room takes the **teacher key** — generated at class creation, returned once, and
+never derivable from the class code — **or the teacher account that owns the class**
+(`opensClass`). The key was the only route when it was the only credential; accounts are the
+primary route now, and the link is the fallback for a teacher who has not made one. Without
+that split, students read each other's work. `service.test.ts` proves the class code cannot
+open the evidence room, including when passed as the key.
 
 ## Storage, retention, deployment
 
@@ -333,7 +386,16 @@ count an educator reads.
 - A generic rule engine, a config-driven interaction engine, or a JSON challenge builder. A
   challenge ships its own stages, scenario and copy as code. The registry only makes it
   addressable.
-- A full educator portal, student accounts, or a roster.
+- A composite score, a mark on a child's writing made by software, or a clickstream. A
+  teacher scores the written explanation and the gradebook export carries their marks beside
+  BOW's observations rather than merged into one number; the attempt checkpoint writes on a
+  change of stage and otherwise at most every fifteen seconds, so what the service holds is
+  where a student got to, not a recording of how they got there.
+
+  This bullet used to read *"a full educator portal, student accounts, or a roster"*. All
+  three exist now — teacher accounts and a student session issued at `/join`, a roster of
+  printed cards, and the class, reading, share-out and objective surfaces in `src/educator/`
+  — which is why the line was rewritten rather than deleted.
 - Challenge #2 itself, and any abstraction it has not yet asked for.
 - A framework loader, a mapping editor, a second state framework, a district service or a
   research pipeline. The standards layer exists so a second state does not require a

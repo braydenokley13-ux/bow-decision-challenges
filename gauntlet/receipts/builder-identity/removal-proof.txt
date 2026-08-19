@@ -1,0 +1,91 @@
+
+==================== C5  remove the sessionGeneration bump from POST /auth/teacher/signout ====================
+revert applied. running the test:
+     × turns a captured token off everywhere, without the recovery code 476ms
+     × closes the door the captured token was actually worth — every class key it could read 323ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  2 failed | 6 passed (8)
+
+==================== C5  remove the sessionGeneration bump from POST /auth/teacher/password ====================
+revert applied. running the test:
+     × ends every other session and leaves the one that changed it working 576ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  1 failed | 7 passed (8)
+
+==================== C3  remove the POST /classes/:code/key route from the table ====================
+revert applied. running the test:
+     × hands back a new key that opens the class, and turns the old one off 542ms
+     × leaves every piece of the children's work exactly where it was 637ms
+     × puts the new key where a teacher on a new laptop already looks for it 508ms
+     × tells the teacher the three things that are true afterwards 529ms
+     × will not take the key it is replacing as proof 522ms
+     × tells a teacher holding an unclaimed class what to do next, rather than just no 207ms
+     × gives a stranger and a signed-out caller nothing, and no hint that the class exists 518ms
+     × bounds how fast a key can be spun, so a stuck client cannot chase a teacher's link 528ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 8 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  8 failed | 1 passed (9)
+
+==================== C6  remove the payload cap from PUT /me/attempt ====================
+revert applied. running the test:
+     × refuses a payload bigger than any real attempt, and says something true to the child 115ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  1 failed | 5 passed (6)
+
+==================== C6  remove the per-student rate limit from PUT /me/attempt ====================
+revert applied. running the test:
+     × bounds how many a self-served session can send in a window 110ms
+     × charges the student and not the room, so one flooding session cannot stop the class 202ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+ Test Files  1 failed (1)
+      Tests  2 failed | 4 passed (6)
+
+==================== C8  add back the review's tenth route, exactly as they wrote it ====================
+revert applied. the other gates first — the point of the finding is that they stay green:
+  npx tsc -b         -> 0 complaint(s) about server/identity.ts
+  (unrelated errors from other agents in flight: 0)
+  npx eslint server/ -> exit 0 (green)
+  the old suite:  Test Files  1 passed (1)
+  the old suite:       Tests  37 passed (37)
+and the boundary test:
+     × holds no route branch outside the table 8ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: expected [ 'request.method ===' ] to deeply equal []
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+
+==================== C8  declare a gated route as ungated, without adding it to the allow-list ====================
+revert applied.
+running the test:
+     × declares an auth mode for every route and puts every ungated one on the allow-list 9ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: expected [ 'POST classes/:code/signout' ] to deeply equal []
+ Test Files  1 failed (1)
+      Tests  1 failed | 2 passed (3)
+
+==================== EXTRA  paste the CORS + security-header block back into the Vercel file ====================
+revert applied. running the test:
+     × leaves the serverless file with no copy of either decision 5ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  src/platform/classes/transportParity.test.ts > one header block, two transports > leaves the serverless file with no copy of either decision
+AssertionError: expected 'import { handleApiRequest } from "../…' not to match /Access-Control-Allow-Origin/
+ Test Files  1 failed (1)
+      Tests  1 failed | 6 passed (7)
+
+==================== EXTRA  give the Vercel file its own copy of the address rule again ====================
+revert applied. running the test:
+     × leaves the serverless file with no copy of either decision 1ms
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+AssertionError: expected 'import { handleApiRequest } from "../…' to match /hops: Number\(process\.env\.BOW_TRUST…/
+ FAIL  src/platform/classes/transportParity.test.ts > one header block, two transports > leaves the serverless file with no copy of either decision
+AssertionError: expected 'import { handleApiRequest } from "../…' not to match /function callerOf/
+ Test Files  1 failed (1)
+      Tests  2 failed | 5 passed (7)
+
+==================== every proof done — the files are restored ====================
+ api/[[...route]].ts |   54 +-
+ server/identity.ts  | 1771 +++++++++++++++++++++++++++++++++------------------
+ 2 files changed, 1172 insertions(+), 653 deletions(-)

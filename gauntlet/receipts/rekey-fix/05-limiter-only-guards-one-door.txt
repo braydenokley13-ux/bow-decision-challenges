@@ -1,0 +1,42 @@
+# NOT one of the four. Found while fixing NEW-3, reported rather than fixed: the class-code
+# miss limiter guards the class service's door and not the identity one, so the enumeration
+# ceiling round 5 measured at 200 misses (vendor review 5 §4d) is bypassed by asking a
+# different route for the same fact.
+#
+# Same service as receipt 03: file store, real key, 127.0.0.1:4839, killed afterwards.
+# 250 + 205 + 2 requests, all sequential, all from one address with no BOW_TRUST_PROXY.
+
+  250 misses on GET /classes/:code/roster  (identity door):  {"404":250,"429":0,"other":0}
+  then one miss on GET /classes/:code      (class service):   404
+      ^ the bucket was still empty: those 250 were never charged
+
+  205 misses on GET /classes/:code         (class service):  {"404":199,"429":6,"other":0}
+      ^ 199 + the one above = the documented 200-miss ceiling, then it throttles
+  then GET /classes/:code/roster with the bucket full:        404
+      ^ and the identity door ignores the full bucket too, in the other direction
+
+`liveClass` (server/handler.ts:163) charges a miss and never a hit, which is the asymmetry
+§4d checked and approved. `handleIdentityRequest`'s `/classes/:code` block calls neither
+`underRate` nor `spendRate` anywhere between the door and its routes — the only rate limit in
+that file below the door is the join-code window on `POST /auth/student/join`, a different
+bucket for a different secret. So `GET /classes/:code/roster` answers "does this class exist"
+without limit, and answers 200 with `{label, joinMode}` when it does — the class label as well
+as the existence.
+
+Not raised as a child-data alarm: the roster door deliberately gives a signed-out caller only
+the label and the join mode, never a name (that rule is itself a fix from an earlier round and
+still holds). What is missing is the ceiling, not the redaction. The keyspace is 25^5 ≈ 9.7M,
+which is why the limiter exists at all.
+
+Reported and not fixed, deliberately. Adding the charge is not one line: every route under
+this door loads the class itself, so a door-level guard either duplicates that read on the
+hot paths (a whole class joining) or means moving the lookup up into the door — and §4d is
+explicit about what happens when this limiter is charged for something a room does legitimately
+(a shared school address, thirty arrivals in two minutes, and a bucket an attacker on the same
+network can empty on their behalf). It wants the same miss-charged/hit-free shape `liveClass`
+has, and it wants its own test that a room arriving is never throttled. That is a change worth
+its own head, not a rider on a 404-versus-503 fix.
+
+Note the same shape applies to the authenticated routes under this door, which answer 404 for
+a class that does not exist and 403 for one the caller may not open — an existence oracle
+without a bearer token at all, on the same unmetered path.

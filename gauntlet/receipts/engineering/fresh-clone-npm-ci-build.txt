@@ -1,0 +1,43 @@
+=== npm ci ===
+
+added 350 packages in 17s
+
+real	0m17.336s
+user	0m3.928s
+sys	0m1.759s
+npm ci exit=0
+=== npm run build ===
+
+> bow-decision-challenges@2.2.0 build
+> tsc -b && vite build && npm run build:server
+
+vite v8.2.1 building client environment for production...
+[2Ktransforming...✓ 182 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   3.03 kB │ gzip:   1.54 kB
+dist/assets/index-Dk3E_T2V.css  182.28 kB │ gzip:  29.36 kB
+dist/assets/index-6TxclEOy.js   700.19 kB │ gzip: 204.10 kB
+
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.43s
+
+> bow-decision-challenges@2.2.0 build:server
+> vite build --ssr server/index.ts --outDir dist-server
+
+vite v8.2.1 building ssr environment for production...
+[2Ktransforming...✓ 59 modules transformed.
+rendering chunks...
+computing gzip size...
+dist-server/index.js  322.40 kB │ gzip: 93.74 kB
+
+✓ built in 105ms
+
+real	1m13.779s
+user	0m30.624s
+sys	0m2.500s
+build exit=0

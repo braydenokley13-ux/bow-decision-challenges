@@ -1,0 +1,118 @@
+# NEW-1 (MEDIUM, vendor-review-5 §3) — `npm run rekey` put both store keys on argv.
+# Reproduced first, then fixed, on this box. Everything below is a live transcript.
+#
+# Paths are under the session scratchpad rather than the repo because the repo build output
+# (dist-server/) is shared with other agents working concurrently and was emptied under me
+# once mid-run. The bundle is the same one `npm run build:rekey` produces.
+
+================================================================================
+BEFORE — commit 8685d0b, `vite build --ssr server/rekey.ts`
+================================================================================
+
+Source store: 3000 classes / 6000 sealed records, ~83 MB, so the conversion runs long
+enough to be caught in a process listing (it takes ~4s).
+
+  $ node .../dist-server/rekey.js --from .../src --to .../dst \
+      --old-key "$OLD" --new-key "$NEW" &
+  $ ps -o pid,args -ww -p $!
+
+  PID COMMAND
+17752 node /.../dist-server/rekey.js --from /.../repro/src --to /.../repro/dst
+      --old-key eRyOg64HxTn4Cj0q9d3fXZsIElRJ+4Rn+td2V7UAu8Q=
+      --new-key w9rzPuGd+B1BqPbEG3TADvlegNlB9sCiQOiMFtqaYDA=
+      (one line in the original; wrapped here)
+
+  $ tr '\0' ' ' < /proc/17752/cmdline
+node /.../dist-server/rekey.js --from /.../repro/src --to /.../repro/dst --old-key
+eRyOg64HxTn4Cj0q9d3fXZsIElRJ+4Rn+td2V7UAu8Q= --new-key w9rzPuGd+B1BqPbEG3TADvlegNlB9sCiQOiMFtqaYDA=
+
+Both keys, in full, for the length of the maintenance window.
+
+  $ ls -l /proc/17752/cmdline /proc/17752/environ
+  -r--r--r-- 1 root root 0 /proc/17752/cmdline     <- world-readable
+  -r-------- 1 root root 0 /proc/17752/environ     <- owner only
+
+That permission pair is the whole finding: the running service reads BOW_STORE_KEY from the
+environment, which the kernel keeps to the owner; this command read the same class of secret
+from the one file the kernel hands to everybody. (This container runs a single user, so the
+mode bits are the evidence for the unprivileged case rather than a second shell.)
+
+What either string is worth — the reason this is not a hygiene nit:
+
+  session-signing secret from the OLD key: 2AiS9SbsCcMXM0vCG1b_6W0Ljrss-_AKjaeSmIf5EwU
+  session-signing secret from the NEW key: jfYGvXV5033a0LnP5DLJsEQJIx_VMWRpy7r3wXRFbYE
+
+i.e. HMAC(key, "bow.derive.v1.session") — `keeper.derive("session")`, the secret every teacher
+and student token is signed with. Either key decrypts the store *and* mints tokens.
+
+================================================================================
+AFTER — commit 0ff5f25
+================================================================================
+
+  $ BOW_OLD_STORE_KEY=… BOW_NEW_STORE_KEY=… \
+      node .../dist-server/rekey.js --from .../src --to .../dst2 &
+  $ ps -o pid,args -ww -p $!
+
+  PID COMMAND
+ 7795 node /.../dist-server/rekey.js --from /.../repro/src --to /.../repro/dst2
+
+  $ grep -c -e "$OLD" -e "$NEW" ps-after.txt cmdline-after.txt
+  ps-after.txt:0
+  cmdline-after.txt:0          <- neither key appears in either
+
+  $ ls -l /proc/7795/cmdline /proc/7795/environ
+  -r--r--r-- 1 root root 0 /proc/7795/cmdline
+  -r-------- 1 root root 0 /proc/7795/environ     <- the keys are in here now
+
+  6000 records under /.../repro/src
+  6000 converted, 0 already done. /.../repro/src is untouched.
+
+The old flags are refused by name rather than dropped in silence, because the operator
+following an old runbook has to be told both what to type and that what they just typed is
+already public:
+
+  $ node .../rekey.js --from … --to … --old-key "$OLD" --new-key "$NEW"
+  --old-key and --new-key are gone. A key on the command line is readable by every process on the host
+  (`ps -eo args`, /proc/<pid>/cmdline) for as long as the conversion runs, and either of these keys
+  decrypts the whole store and derives the session-signing secret.
+
+  Treat any key on this command line as exposed: it is in the process table and in your shell history.
+  Then re-run it the way below.
+  … full usage …
+  exit=2      (and the destination directory was not created)
+
+The other two sources work, so nothing forces a key into a shell history:
+
+  $ printf '%s\n' "$NEW" | node .../rekey.js --from … --to … \
+      --old-key-file old.keyfile --new-key-file -
+  6000 converted, 0 already done.
+  exit=0
+
+  $ BOW_OLD_STORE_KEY=hunter2 BOW_NEW_STORE_KEY=… node .../rekey.js --from … --to …
+  The old key is not 32 bytes of base64 or hex. `openssl rand -base64 32` prints one.
+  exit=2
+
+  $ node .../rekey.js --from … --to …          # nothing set at all
+  No new key. Set BOW_NEW_STORE_KEY, or pass --new-key-file <path> (or - to read it from standard input).
+  No old key. Set BOW_OLD_STORE_KEY, or pass --old-key-file <path> (or - to read it from standard input).
+  … full usage …
+
+  $ node .../rekey.js --help                   # exit 0, same text
+
+BOW_STORE_KEY — the running service's own variable — is still not read. Property 1 of the six
+is "both keys explicit, nothing inferred from the environment the service happens to be
+running with", and inheriting a maintenance shell's BOW_STORE_KEY would have broken it while
+fixing this. There is a test for exactly that.
+
+================================================================================
+The six properties, re-checked after the change
+================================================================================
+
+  1. Both keys explicit          — env vars / key file / stdin, named for this run; BOW_STORE_KEY ignored.
+  2. Nothing mutated in place    — sha256 of every file in the source, before and after a full run:
+                                     before 1f59ca3ec378cc0bf4559b955b61b0de4c5d73b0009e8a694bd26fa5fb11197c
+                                     after  1f59ca3ec378cc0bf4559b955b61b0de4c5d73b0009e8a694bd26fa5fb11197c
+  3. Every record verified       — unchanged code path; unreadable-record abort still exercised by test.
+  4. Canary planted last         — unchanged, and a refused dirty destination gets no canary (receipt 02).
+  5. Reversible                  — source untouched (2); old key still opens it.
+  6. Resumable                   — a finished destination minus one record: "1 converted, 5999 already done".

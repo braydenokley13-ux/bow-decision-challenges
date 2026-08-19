@@ -1,0 +1,28 @@
+import { chromium } from "playwright";
+import fs from "node:fs";
+const BASE="http://127.0.0.1:5603", CODE=process.env.CODE, OUT=process.env.OUT;
+fs.mkdirSync(OUT,{recursive:true});
+const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const ctx = await b.newContext({viewport:{width:1366,height:950}});
+const p = await ctx.newPage();
+p.on("pageerror",(e)=>console.log("PAGEERROR:",e.message));
+let step=0;
+const dump=async(tag)=>{step+=1;const n=String(step).padStart(2,"0");
+  const t=await p.evaluate(()=>document.body.innerText);
+  fs.writeFileSync(`${OUT}/${n}-${tag}.txt`,t);
+  await p.screenshot({path:`${OUT}/${n}-${tag}.png`,fullPage:true});
+  console.log(`\n##### ${n} ${tag} #####\n${t}`);};
+const btns=async()=>{const els=await p.locator("button:visible").all();const o=[];
+  for(const e of els) o.push(((await e.innerText())||"").replace(/\s+/g," ").trim()+(await e.getAttribute("aria-disabled")==="true"?" [DISABLED]":""));return o;};
+try{
+  await p.goto(`${BASE}/join`,{waitUntil:"networkidle"});
+  await p.getByLabel(/class code/i).fill(CODE);
+  await p.getByRole("button",{name:"Next"}).click();
+  await p.locator("#display-name").waitFor({timeout:20000});
+  await p.locator("#display-name").fill("Critic");
+  await p.getByRole("button",{name:/Go in/i}).click();
+  await p.waitForTimeout(2000);
+  await dump("home");
+  console.log("BTNS:",JSON.stringify(await btns()));
+}catch(e){console.log("ERR",e.message);}
+await b.close();

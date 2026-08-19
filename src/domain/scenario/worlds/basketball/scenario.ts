@@ -9,7 +9,7 @@ const CLINIC_SATURDAYS = clinicWeeks(SCENARIO_NUMBERS).length;
 export const BASKETBALL_SCENARIO: WorldScenario = {
   id: "basketball",
   title: "Eight Weeks to the Showcase",
-  subtitle: "Avery Reyes has eight weeks with the Harbor City Flight—and a plan that will not stay simple.",
+  subtitle: "Eight weeks with the Harbor City Flight, a course to pay for, and two payments that might not arrive.",
   role: {
     name: "Avery Reyes",
     age: 18,
@@ -20,15 +20,32 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
   incomeCopy: {
     savings: { label: "Already saved", note: "Money Avery already has." },
     base: { label: "Base pay after taxes", note: "Pay that arrives no matter how the team performs." },
+    // The two `ifNot` lines are the only place the cost of a condition not being met is
+    // stated, so neither of them may lose its consequence. What they lost is the second
+    // sentence: "nothing is paid for missing fewer" restated all-or-nothing in different
+    // words, and eleven players and a bracket were a roster count where "not Avery" was the
+    // whole point. Sentence-case labels, because every other amount on the screen beside
+    // them is sentence case.
     completion: {
-      label: "Perfect Attendance Bonus",
+      label: "Perfect attendance bonus",
       note: "Payment tied to making every practice and game.",
-      rule: "Avery makes every practice and every game.",
+      // Says what actually decides it. The model has never read Avery's diligence: the payment
+      // turns on `load.attendanceHolds`, which is the hours the week already owes — the trip
+      // to and from the club, rehab from Week 6, the clinics if they are taken — against the
+      // hours the plan bought back. A card reading only "Avery makes every practice and every
+      // game" left a student to find that out at Week 8, on a screen that then reports three
+      // weeks of missed sessions to a child whose only decision was a cheaper room. Naming the
+      // week here does not settle the values objection to pricing a long commute as
+      // unreliability — `gauntlet/critiques/econ-2.md` F7, and it wants a curriculum lead —
+      // but it does stop the bet being about a quality of Avery's the world never models.
+      rule: "there is room in Avery's week for every practice and every game.",
+      ifNot: "A week too full to get to them all costs the whole payment.",
     },
     outcome: {
-      label: "Making the Cut Bonus",
+      label: "Making the cut bonus",
       note: "Payment tied to reaching the showcase.",
       rule: "The Flight qualifies for the showcase.",
+      ifNot: "Avery cannot decide this one. The rest of the league does.",
     },
     optionalWork: { label: "Saturday clinics", note: "Coaching fee for the last four Saturdays." },
   },
@@ -57,44 +74,6 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
       { title: "Decide whether to count on the bonuses", detail: "Two payments might arrive. Neither one is promised." },
     ],
   },
-  season: [
-    {
-      week: "Week 1",
-      note: "First practice Monday. Avery comes off the bench in the opener and does not turn the ball over once.",
-      voice: {
-        "gym-sublet": "Five minutes door to gym. I’m the first one in the building every morning.",
-        "teammate-share": "Bus gets me there twenty minutes early. My roommate slept through it twice already.",
-        "cousin-room": "Alarm at 5:40. Seventy minutes across the city before anyone else is awake.",
-      },
-    },
-    {
-      week: "Week 2",
-      note: "Sixteen points against Rivertown. Avery starts the next game and keeps the spot.",
-      voice: {
-        "gym-sublet": "Stayed late shooting because I can just walk home after.",
-        "teammate-share": "We ride in together now. Cheaper and I actually talk to someone before 9am.",
-        "cousin-room": "Did my homework on the train. It’s the only quiet hour I get.",
-      },
-    },
-    {
-      week: "Week 3",
-      note: "The Flight win two of three. Rent, food, and phone come out of the account right on schedule.",
-      voice: {
-        "gym-sublet": "Rent is the biggest thing I pay and I feel it every week.",
-        "teammate-share": "Splitting the room is the only reason this works.",
-        "cousin-room": "My cousin won’t take more money. I buy the groceries instead.",
-      },
-    },
-    {
-      week: "Week 4",
-      note: "Most minutes on the roster. Two weeks of practice left before the showcase bracket is set.",
-      voice: {
-        "gym-sublet": "Legs feel good. I’m not spending them getting here.",
-        "teammate-share": "Long days, but I’m sleeping fine.",
-        "cousin-room": "Two and a half hours a day on buses is starting to show up in my legs.",
-      },
-    },
-  ],
   setups: [
     {
       id: "gym-sublet",

@@ -1,0 +1,109 @@
+B
+BOW
+DECISION CHALLENGES
+My classes
+Objectives
+Guide
+SIGN OUT
+← Class evidence
+
+CLASS LIST
+
+Who is in this class.
+
+Paste your class list and BOW gives you one card per student to hand out. A student signs in by typing the class code and the code on their card — nothing else, and never a name they type themselves.
+
+12 ON THE LIST · ROOM FOR 48 MORE
+
+ADD STUDENTS
+ONE NAME PER LINE
+
+Write what you want to see on your own screens. First names, initials, table numbers — BOW never checks it against anything and never asks a student for a name of their own.
+
+Add them and make the cards
+
+0 OF 12 HAVE SIGNED IN
+
+THE LIST
+Aaliyah R.
+Seat 1
+Has not signed in
+Print a new card
+Take off the list
+Erase
+José Álvarez
+Seat 2
+Has not signed in
+Print a new card
+Take off the list
+Erase
+Fatoumata D.
+Seat 3
+Has not signed in
+Print a new card
+Take off the list
+Erase
+أحمد حسن
+Seat 4
+Has not signed in
+Print a new card
+Take off the list
+Erase
+陈美玲
+Seat 5
+Has not signed in
+Print a new card
+Take off the list
+Erase
+Nguyễn Thị Hương
+Seat 6
+Has not signed in
+Print a new card
+Take off the list
+Erase
+Yusuf Öztürk
+Seat 7
+Has not signed in
+Print a new card
+Take off the list
+Erase
+সুমাইয়া আক্তার
+Seat 8
+Has not signed in
+Print a new card
+Take off the list
+Erase
+Dmitri S.
+Seat 9
+Has not signed in
+Print a new card
+Take off the list
+Erase
+Maria-Jose de la Cruz-Hernández
+Seat 10
+Has not signed in
+Print a new card
+Take off the list
+Erase
+Kayden
+Seat 11
+Has not signed in
+Print a new card
+Take off the list
+Erase
+Xochitl M.
+Seat 12
+Has not signed in
+Print a new card
+Take off the list
+Erase
+
+A new card stops the old one working. Taking a student off the list keeps everything they turned in — it stops them signing in, and their work stays in the evidence. Erase is the other one: it deletes the name and everything that student did, for a family who has asked you to. Nobody else in the class is affected, and it cannot be undone.
+
+END OF THE DAY
+
+SIGN EVERYBODY OUT
+
+One press ends every student session in this class, on every device. Nothing they did is lost. Use it when the Chromebooks go back on the trolley.
+
+Sign the whole class out

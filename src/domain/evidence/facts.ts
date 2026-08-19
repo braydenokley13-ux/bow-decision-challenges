@@ -5,7 +5,7 @@ import type { ScenarioNumbers } from "../scenario/types";
 import { amountFreed, assigned, balanceOf, exposureFor, residualOf, unassignedOf } from "../finance/formulas";
 import type { PlanMode } from "../finance/types";
 import { eventPayload } from "../machine/reducer";
-import type { EvidenceEvent, AssessmentFacts, CalculationEvidence, PlanSnapshot, AlternateStateEvidence } from "./types";
+import type { EvidenceEvent, AssessmentFacts, CalculationEvidence, PlanAmountSources, PlanSnapshot, AlternateStateEvidence } from "./types";
 
 /**
  * What the plan was worth when the student saved it. A snapshot saved by the app carries
@@ -25,6 +25,12 @@ interface PlanSavePayload {
   mode: PlanMode;
   snapshot: PlanSnapshot;
   balance: number;
+  /**
+   * Where each row's figure came from. Absent on every attempt saved before the board
+   * recorded it, and the absence is load-bearing: a reader must not treat "this log cannot
+   * say" as "no row was touched".
+   */
+  sources?: PlanAmountSources;
 }
 
 interface PlanRequestPayload {
@@ -147,12 +153,19 @@ export function deriveFacts(log: EvidenceEvent[], n: ScenarioNumbers = SCENARIO_
       conditionalExposure: savedExposure(snapshot, n),
       support: openingSaved.event.supportLevel,
       evidenceRefs: [openingSaved.event.id, ...(firstOpeningRequest ? [firstOpeningRequest.id] : [])],
+      // Carried through only where the log actually holds it, so an older attempt keeps
+      // `undefined` rather than an empty map that would read as "every row untouched".
+      ...(openingSaved.payload.sources ? { sources: openingSaved.payload.sources } : {}),
     };
     const fallback = alternate(log, "fallback", snapshot, n);
     if (fallback) facts.fallback = fallback;
-    // The first response starts from whatever the student last committed, so that
-    // is the state their Week 5 repair is measured against.
-    const firstResponse = alternate(log, "week5-first-response", latestSaved(log, "fallback")?.payload.snapshot ?? snapshot, n);
+    // The first response starts from the plan the season ran on — the opening plan — because
+    // that is the state Week 5 landed on and the state the student was made to price when
+    // they worked out what the week had cost. It used to start from the backup check, which
+    // is a what-if the student builds on top of their plan and never lives on: a run that
+    // counted a bonus was told Week 5 cost $2,000 and then scored on whether it freed the
+    // $200 the backup check happened to be short.
+    const firstResponse = alternate(log, "week5-first-response", snapshot, n);
     if (firstResponse) facts.firstResponse = firstResponse;
   }
   if (finalSaved) {
@@ -178,6 +191,14 @@ export function deriveFacts(log: EvidenceEvent[], n: ScenarioNumbers = SCENARIO_
     };
   }
   if (optional) facts.optionalDecision = { accepted: eventPayload<{ accepted: boolean }>(optional).accepted, sequence: optional.sequence, evidenceRef: optional.id };
+  // Set only where the log actually holds decisions, so that a log written before the bonus
+  // screen recorded them keeps `undefined` — "this log cannot say" — rather than an empty
+  // list, which would read as "the student answered nothing".
+  const income = eventsOf(log, "INCOME_SOURCE_TOGGLED").map((event) => {
+    const payload = eventPayload<{ sourceId: string; included: boolean }>(event);
+    return { sourceId: payload.sourceId, included: payload.included, sequence: event.sequence, evidenceRef: event.id };
+  });
+  if (income.length > 0) facts.conditionalIncomeDecisions = income;
   const completion = eventsOf(log, "COMPLETION_INCOME_DECIDED").at(-1);
   if (completion) facts.completionDecision = { included: eventPayload<{ included: boolean }>(completion).included, sequence: completion.sequence, evidenceRef: completion.id };
   if (finalSaved) facts.finalPlanSequence = finalSaved.event.sequence;

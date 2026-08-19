@@ -1,0 +1,53 @@
+=== the sentence, and the arithmetic under it ===
+limit 8h   one hour costs $150
+
+clinics=true  rides row already holds $   0  demand=25h bought=0h net=25h overBy=17h
+   the ending says: "Avery missed a session, and the money your plan was counting on never came. Putting $2,550 into rides — taken out of your other two amounts — would have kept it."
+   a rides row of exactly that amount buys 17h
+   the rides row actually needed to hold: $2550  (i.e. $2550 MORE than it does)
+
+clinics=true  rides row already holds $ 300  demand=25h bought=2h net=23h overBy=15h
+   the ending says: "Avery missed a session, and the money your plan was counting on never came. Putting $2,250 into rides — taken out of your other two amounts — would have kept it."
+   a rides row of exactly that amount buys 15h
+   the rides row actually needed to hold: $2550  (i.e. $2250 MORE than it does)
+
+clinics=true  rides row already holds $1050  demand=25h bought=7h net=18h overBy=10h
+   the ending says: "Avery missed a session, and the money your plan was counting on never came. Putting $1,500 into rides — taken out of your other two amounts — would have kept it."
+   a rides row of exactly that amount buys 10h
+   the rides row actually needed to hold: $2550  (i.e. $1500 MORE than it does)
+
+clinics=true  rides row already holds $1150  demand=25h bought=7h net=18h overBy=10h
+   the ending says: "Avery missed a session, and the money your plan was counting on never came. Putting $1,500 into rides — taken out of your other two amounts — would have kept it."
+   a rides row of exactly that amount buys 10h
+   the rides row actually needed to hold: $2550  (i.e. $1400 MORE than it does)
+
+clinics=true  rides row already holds $1500  demand=25h bought=10h net=15h overBy=7h
+   the ending says: "Avery missed a session, and the money your plan was counting on never came. Putting $1,050 into rides — taken out of your other two amounts — would have kept it."
+   a rides row of exactly that amount buys 7h
+   the rides row actually needed to hold: $2550  (i.e. $1050 MORE than it does)
+
+clinics=false rides row already holds $   0  demand=19h bought=0h net=19h overBy=11h
+   the ending says: "Avery missed a session, and the money your plan was counting on never came. Putting $1,650 into rides — taken out of your other two amounts — would have kept it."
+   a rides row of exactly that amount buys 11h
+   the rides row actually needed to hold: $1650  (i.e. $1650 MORE than it does)
+
+clinics=false rides row already holds $ 300  demand=19h bought=2h net=17h overBy=9h
+   the ending says: "Avery missed a session, and the money your plan was counting on never came. Putting $1,350 into rides — taken out of your other two amounts — would have kept it."
+   a rides row of exactly that amount buys 9h
+   the rides row actually needed to hold: $1650  (i.e. $1350 MORE than it does)
+
+clinics=false rides row already holds $1050  demand=19h bought=7h net=12h overBy=4h
+   the ending says: "Avery missed a session, and the money your plan was counting on never came. Putting $600 into rides — taken out of your other two amounts — would have kept it."
+   a rides row of exactly that amount buys 4h
+   the rides row actually needed to hold: $1650  (i.e. $600 MORE than it does)
+
+clinics=false rides row already holds $1150  demand=19h bought=7h net=12h overBy=4h
+   the ending says: "Avery missed a session, and the money your plan was counting on never came. Putting $600 into rides — taken out of your other two amounts — would have kept it."
+   a rides row of exactly that amount buys 4h
+   the rides row actually needed to hold: $1650  (i.e. $500 MORE than it does)
+
+clinics=false rides row already holds $1500  demand=19h bought=10h net=9h overBy=1h
+   the ending says: "Avery missed a session, and the money your plan was counting on never came. Putting $150 into rides — taken out of your other two amounts — would have kept it."
+   a rides row of exactly that amount buys 1h
+   the rides row actually needed to hold: $1650  (i.e. $150 MORE than it does)
+

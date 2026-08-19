@@ -7,30 +7,31 @@ import type { StandardRef } from "../../domain/standards/types";
 /**
  * The whole class-service contract, in one file both sides read.
  *
- * This is deliberately not an LMS. There are no student accounts, no roster, no names and
- * no email addresses — a class is a code, a seat is a number a student picks up when they
- * sit down, and a submission is the evidence log that seat produced. Everything an educator
- * sees is derived from those logs, which means the service stores no claim it cannot show
- * its working for.
- */
-
-/**
- * A teacher saying they have taught something to this class.
+ * A class is a code, a seat is a number a student picks up when they sit down, and a
+ * submission is the evidence log that seat produced. Everything an educator sees is derived
+ * from those logs, which is what lets the service store no claim it cannot show its working
+ * for.
  *
- * §15.3 is emphatic that this is set by a person and never inferred, and the reason is that
- * it is the only thing on the Objective Map that is a claim about *teaching* rather than
- * about evidence. BOW can see what students did; it cannot see a lesson, and a product that
- * guessed at one would be reporting a teacher's week back to them as a finding.
+ * What this comment used to add to that was *"there are no student accounts, no roster, no
+ * names and no email addresses"*, and by the time anybody read it back all four clauses were
+ * false. There are student accounts — `StudentAccount`, an id and a timestamp. There is a
+ * roster: one `RosterEntry` per seat. Every row carries a `displayName`, which arrives either
+ * from the class list a teacher pasted or from the first name a student typed at `/join` in a
+ * class that has no list, and BOW has no way to tell whether either is a real name. And a
+ * teacher signs in with an email address, which is the account.
  *
- * It lives on the class rather than in the browser that ticked it, so a teacher opening
- * their own class on a second device sees their own coverage record.
+ * All four live next door in `src/platform/identity/types.ts`. What was true when the sentence
+ * was written, and is still true, is that *this file* has none of them — which is a fact about
+ * one module, and was never a fact about the product. A file whose types do not mention names
+ * is not a product that does not hold them, and a comment is the wrong place to learn that.
+ *
+ * The narrower claim is the one worth keeping, because it is the one that survives reading the
+ * store: the class service holds no identifier anybody else issued. No student number, no SIS
+ * id, no email address for a child, no birthday, no school. What it holds is a first name
+ * against a seat in one teacher's class — sealed at rest (`server/vault.ts`), read by that
+ * class's teacher and by the student whose row it is, and dropped with the class after
+ * `CLASS_RETENTION_DAYS`.
  */
-export interface TaughtMarker {
-  frameworkId: string;
-  standardCode: string;
-  /** When the teacher said so, so a coverage record can be read as a history later. */
-  markedAt: number;
-}
 
 /** A class an educator created. The code is what students type; the key is what an educator keeps. */
 export interface ClassRecord {
@@ -40,8 +41,6 @@ export interface ClassRecord {
   createdAt: number;
   /** When the service will drop this class and everything in it. */
   expiresAt: number;
-  /** What this class has been taught, as its teacher recorded it. Absent until they do. */
-  taughtObjectives?: readonly TaughtMarker[];
 }
 
 /**
@@ -87,9 +86,12 @@ export interface Assignment {
   /**
    * Who it was set for, or `null` for the whole class.
    *
-   * V1 has no student accounts and no roster (§17.4), so the only identifier a student has
-   * is the seat they sat down at. The field keeps the product definition's name because the
-   * thing it identifies is a student; what stands in for one here is a seat code.
+   * The strings in here are **seat codes**. The field keeps the product definition's name
+   * because the thing it identifies is a student, and it was written when a seat was the only
+   * identifier a student had. That has not been true for a while — there are accounts and
+   * there is a roster row per seat — but the field has not changed and must not: the parser in
+   * `assignments.ts` reads these as seats, and every piece of evidence this product has ever
+   * stored is keyed by `(classCode, seatCode)` rather than by an account.
    */
   assignedStudentIds: readonly string[] | null;
   createdAt: number;
@@ -205,3 +207,38 @@ export const CLASS_ERROR_MESSAGES: Record<ClassErrorCode, string> = {
 
 /** How long a class and its evidence are kept before the service drops them. */
 export const CLASS_RETENTION_DAYS = 120;
+
+/**
+ * The same eight failures, said to the adult. `CLASS_ERROR_MESSAGES` is written for the
+ * person who is eleven and stuck at the join screen, which is the right default — it is
+ * what almost every one of these renders to. But four of those sentences send the reader
+ * to their teacher, and on an educator surface the reader *is* the teacher. Telling a
+ * teacher whose class will not open to "check the letters with your teacher" is not a
+ * small infelicity: it is the product failing to know who it is talking to at the exact
+ * moment that person has lost a room full of student work and needs to be told what to do.
+ *
+ * Only the codes whose wording actually turns on the audience are overridden. The rest
+ * fall through to the student text on purpose, because "The class service is not reachable
+ * right now" is the same true sentence whoever is reading it, and a second copy of it is
+ * a second thing to keep in step.
+ */
+const EDUCATOR_OVERRIDES: Partial<Record<ClassErrorCode, string>> = {
+  class_not_found:
+    "No class with that code. Check the letters — it is not case sensitive. A class is kept for " +
+    `${CLASS_RETENTION_DAYS} days and then dropped, so a class from last term will not open.`,
+  class_expired:
+    `That class has closed. Classes are kept for ${CLASS_RETENTION_DAYS} days after they are created. ` +
+    "Its evidence is gone; start a new class for this group.",
+  assignment_not_found: "That class was not set that work. Set it from your class list, then reload.",
+  challenge_mismatch: "That class is running a different challenge. Open it from your own class list.",
+};
+
+/**
+ * The message to put in front of an educator for `code`. Every educator surface calls this
+ * rather than indexing `CLASS_ERROR_MESSAGES` directly, which is what keeps the two sets
+ * from drifting: adding a code to `ClassErrorCode` forces a student sentence, and this
+ * function decides whether the adult needs a different one.
+ */
+export function educatorClassError(code: ClassErrorCode): string {
+  return EDUCATOR_OVERRIDES[code] ?? CLASS_ERROR_MESSAGES[code];
+}

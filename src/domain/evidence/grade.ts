@@ -1,10 +1,27 @@
-import type { ConceptResult, GradeResult, MicroSkillObservation } from "./types";
+import type { GradeResult, MicroSkillObservation } from "./types";
 import { STRUCTURED_MICRO_SKILLS } from "../blueprint/microSkills";
 import { CONCEPTS } from "../blueprint/concepts";
+import { REASONING_CRITERIA, reasoningMaximumFrom } from "../blueprint/reasoning";
 
 /** Derived from the blueprint rather than written down, so adding a skill cannot make it lie. */
 export const STRUCTURED_MAXIMUM = STRUCTURED_MICRO_SKILLS.reduce((total, skill) => total + skill.maxPoints, 0);
-export const REASONING_MAXIMUM = CONCEPTS.find((concept) => concept.id === "financial-defense")?.weight ?? 10;
+
+/**
+ * The same, for the half a person marks — and the rubric's arithmetic, not the weight's.
+ *
+ * This read `CONCEPTS.find((c) => c.id === "financial-defense")?.weight ?? 10`, which made
+ * it the third place ten was typed and the wrong one of the three to read. Every surface
+ * that shows this number shows it under a total summed from `REASONING_CRITERIA`, so the
+ * denominator has to come from that same list; taking it from the weight meant the two
+ * halves of the fraction had independent sources and could disagree without anything
+ * saying so. `reasoningMaximumFrom` sums the criteria and asserts the weight matches, so
+ * the fraction moves in one piece and the third copy of ten is gone with the fallback.
+ *
+ * It also makes the criteria path safe wherever it is totalled without a clamp:
+ * `reasoningTotal` is a sum of per-criterion clamps over exactly this list, so it cannot
+ * reach a number this one does not cover.
+ */
+export const REASONING_MAXIMUM = reasoningMaximumFrom(REASONING_CRITERIA, CONCEPTS);
 
 /** The educator scores the written reasoning; nothing stops them typing 40 without this. */
 function clampReasoning(points: number | null): number | null {
@@ -18,9 +35,18 @@ export interface GradeContext {
   submitted: boolean;
 }
 
+/**
+ * The points, and nothing that reads as a verdict.
+ *
+ * This used to take `concepts` as well, and the only thing it did with them was compute a
+ * `summary` — `strong_application` / `secure_application` / `developing_application` /
+ * `limited_application`, off a 65/80/90 ladder over the composite total. Nothing rendered it,
+ * the four strings could not be shown to a teacher as they stood, and the composite it rested
+ * on is the one the student page removed. Both are gone, so the parameter is too: a function
+ * that takes an argument it does not read is a function lying about what it depends on.
+ */
 export function deriveGrade(
   observations: MicroSkillObservation[],
-  concepts: ConceptResult[],
   reasoningPoints: number | null = null,
   context: GradeContext = { submitted: true },
 ): GradeResult {
@@ -33,23 +59,17 @@ export function deriveGrade(
   // simply skills this student did not show.
   const incomplete = unobserved && !context.submitted;
   if (incomplete) {
-    return { structuredPoints, structuredMaximum: STRUCTURED_MAXIMUM, reasoningPoints: reasoning, finalPoints: null, incomplete: true, summary: "incomplete" };
+    return { structuredPoints, structuredMaximum: STRUCTURED_MAXIMUM, reasoningPoints: reasoning, finalPoints: null, incomplete: true };
   }
   if (reasoning === null) {
-    return { structuredPoints, structuredMaximum: STRUCTURED_MAXIMUM, reasoningPoints: null, finalPoints: null, incomplete: false, summary: "pending_reasoning" };
+    return { structuredPoints, structuredMaximum: STRUCTURED_MAXIMUM, reasoningPoints: null, finalPoints: null, incomplete: false };
   }
 
-  const finalPoints = structuredPoints + reasoning;
-  const notDemonstrated = concepts.filter((concept) => concept.status === "not_demonstrated" || concept.status === "not_observed").length;
-  const developing = concepts.some((concept) => concept.status === "developing");
-  const summary = finalPoints < 65 || notDemonstrated >= 2
-    ? "limited_application"
-    : finalPoints < 80 || developing || notDemonstrated === 1
-      ? "developing_application"
-      : finalPoints < 90
-        ? "secure_application"
-        : concepts.every((concept) => concept.status === "demonstrated_independently" || concept.status === "demonstrated_with_support")
-          ? "strong_application"
-          : "developing_application";
-  return { structuredPoints, structuredMaximum: STRUCTURED_MAXIMUM, reasoningPoints: reasoning, finalPoints, incomplete: false, summary };
+  return {
+    structuredPoints,
+    structuredMaximum: STRUCTURED_MAXIMUM,
+    reasoningPoints: reasoning,
+    finalPoints: structuredPoints + reasoning,
+    incomplete: false,
+  };
 }

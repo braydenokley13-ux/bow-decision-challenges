@@ -1,0 +1,380 @@
+# ROSTER AND CARDS, KEYBOARD ONLY. Snapshot 074ec2f. Class N7M3U.
+# Nothing clicked.
+
+==================== THE ROSTER ====================
+
+######## SCREEN — the empty roster
+  url             http://127.0.0.1:6473/educator/class/N7M3U/roster?key=WM9KJCP9X9MCW6EUYT9CK4KC
+  document.title  Plan Under Pressure — BOW Decision Challenges
+  landmarks       banner (unnamed) | navigation "Educator navigation" | main (unnamed)
+  headings        h1"Who is in this class." h2"ADD STUDENTS" h2"THE LIST" h2"SIGN EVERYBODY OUT"
+  --- what a blind student hears reading this screen top to bottom ---
+   "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+  ····· banner
+  ······ "BOW Decision Challenges home", link
+  ········· "BOW", StaticText
+  ········· "DECISION CHALLENGES", StaticText
+  ······ "Educator navigation", navigation
+  ······· "My classes", link
+  ········ "My classes", StaticText
+  ······· "Objectives", link
+  ········ "Objectives", StaticText
+  ······· "Guide", link
+  ········ "Guide", StaticText
+  ······ "SIGN OUT", button
+  ······· "SIGN OUT", StaticText
+  ····· main
+  ······ sectionheader
+  ······· "← Class evidence", link
+  ········ "← Class evidence", StaticText
+  ······· paragraph
+  ········ "CLASS LIST", StaticText
+  ······· "Who is in this class.", heading, level 1
+  ········ "Who is in this class.", StaticText
+  ······· paragraph
+  ········ "Paste your class list and BOW gives you one card per student to hand out. A student signs in by typing the class code and the code on their card — nothing else, and never a name they type themselves.", StaticText
+  ········ paragraph
+  ········· "0", StaticText
+  ········· "ON THE LIST · ROOM FOR", StaticText
+  ········· "60", StaticText
+  ········· "MORE", StaticText
+  ········ "ADD STUDENTS", heading, level 2
+  ········· "ADD STUDENTS", StaticText
+  ······· LabelText
+  ········· "ONE NAME PER LINE", StaticText
+  ········ "ONE NAME PER LINE", textbox
+  ······· paragraph
+  ········ "Write what you want to see on your own screens. First names, initials, table numbers — BOW never checks it against anything and never asks a student for a name of their own.", StaticText
+  ······· "Add them and make the cards", button, disabled=true
+  ········ "Add them and make the cards", StaticText
+  ········ paragraph
+  ········· "0", StaticText
+  ········· "OF", StaticText
+  ········· "0", StaticText
+  ········· "HAVE SIGNED IN", StaticText
+  ········ "THE LIST", heading, level 2
+  ········· "THE LIST", StaticText
+  ······· paragraph
+  ········ "Nobody yet. Until you add a list, anybody with the class code can sign in by typing their own name — which is fine for a lesson you set up in four minutes, and is the reason to paste a list before one you are marking.", StaticText
+  ······· paragraph
+  ········ "A new card stops the old one working. Taking a student off the list keeps everything they turned in — it stops them signing in, and their work stays in the evidence.", StaticText
+  ········ strong
+  ········· "Erase", StaticText
+  ········ StaticText
+  ········ "is the other one: it deletes the name and everything that student did, for a family who has asked you to. Nobody else in the class is affected, and it cannot be undone.", StaticText
+  ········ paragraph
+  ········· "END OF THE DAY", StaticText
+  ········ "SIGN EVERYBODY OUT", heading, level 2
+  ········· "SIGN EVERYBODY OUT", StaticText
+  ······· paragraph
+  ········ "One press ends every student session in this class, on every device. Nothing they did is lost. Use it when the Chromebooks go back on the trolley.", StaticText
+  ······· "Sign the whole class out", button
+  ········ "Sign the whole class out", StaticText
+  ······ alert, live=assertive, atomic=true
+  FOCUS ON ARRIVAL → "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+  --- every Tab stop ---
+  Tab  1 → "BOW Decision Challenges home", link
+  Tab  2 → "My classes", link
+  Tab  3 → "Objectives", link
+  Tab  4 → "Guide", link
+  Tab  5 → "SIGN OUT", button
+  Tab  6 → "← Class evidence", link
+  Tab  7 → "ONE NAME PER LINE", textbox
+  Tab  8 → "Add them and make the cards", button, disabled=true
+  Tab  9 → "Sign the whole class out", button
+  Tab 10 → *** DOCUMENT BODY — nothing is spoken ***
+  Tab 11 → "BOW Decision Challenges home", link   (ring closed here)
+
+  Tab ×6 → "ONE NAME PER LINE", textbox
+  Pasting eight names, one per line (typed — a paste is the same keystrokes to the field):
+     FOCUS LOST TO BODY from div#root > div.educator-shell > main.educator-main > section.dashboard-section > button.button.button--secondary
+  FOCUS NOW → "ONE NAME PER LINE", textbox, value=Amara Ojo
+Ben Feldman
+Carlos Reyes
+Dana 
+  --- the ring after pasting ---
+  Tab  1 → "Add them and make the cards", button
+  Tab  2 → "Sign the whole class out", button
+  Tab  3 → *** DOCUMENT BODY — nothing is spoken ***
+  Tab  4 → "BOW Decision Challenges home", link
+  Tab  5 → "My classes", link
+  Tab  6 → "Objectives", link
+  Tab  7 → "Guide", link
+  Tab  8 → "SIGN OUT", button
+  Tab  9 → "← Class evidence", link
+  Tab 10 → "ONE NAME PER LINE", textbox, value=Amara Ojo
+Ben Feldman
+Carlos Reyes
+Dana 
+  Tab 11 → "Add them and make the cards", button   (ring closed here)
+  Tab ×10 → "Add them and make the cards", button
+  PRESS Enter — commit the roster
+     FOCUS LOST TO BODY from div#root > div.educator-shell > main.educator-main > section.dashboard-section > button.button.button--secondary
+     FOCUS LOST TO BODY from div#root > div.educator-shell > main.educator-main > section.dashboard-section > button.button.button--secondary
+     NOT ANNOUNCED BY MOST SRs (live region created with its text already in it) [polite]: "8 cardsPrint these now. They are not shown again.Cut them up and hand one to each student. If one goes missing you can print a replacement from the list below — the lost one stops working when you do.PrintI have themAmara OjoClass codeN7M3UYour codeCEG4NGo to BOW · type the class code · type your codeBen FeldmanClass codeN7M3UYour codeDFPDRGo to BOW · type the class code · type your codeCarlos ReyesClass codeN7M3UYour codeAUGY6Go to BOW · type the class code · type your codeDana WhitfieldClass codeN7M3UYour codeXU3AWGo to BOW · type the class code · type your codeEli NakamuraClass codeN7M3UYour codeCJRXMGo to BOW · type the class code · type your codeFarrah AzizClass codeN7M3UYour codeYX66YGo to BOW · type the class code · type your codeGil AyersClass codeN7M3UYour codeFDFA4Go to BOW · type the class code · type your codeHana PetrovClass codeN7M3UYour codeNYEKNGo to BOW · type the class code · type your code"
+     FOCUS NOW → "Add them and make the cards", button, disabled=true
+
+######## SCREEN — the roster, filled
+  url             http://127.0.0.1:6473/educator/class/N7M3U/roster?key=WM9KJCP9X9MCW6EUYT9CK4KC
+  document.title  Plan Under Pressure — BOW Decision Challenges
+  landmarks       banner (unnamed) | navigation "Educator navigation" | main (unnamed)
+  headings        h1"Who is in this class." h2"Print these now. They are not shown again." h2"ADD STUDENTS" h2"THE LIST" h2"SIGN EVERYBODY OUT"
+  --- what a blind student hears reading this screen top to bottom ---
+   "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+  ····· banner
+  ······ "BOW Decision Challenges home", link
+  ········· "BOW", StaticText
+  ········· "DECISION CHALLENGES", StaticText
+  ······ "Educator navigation", navigation
+  ······· "My classes", link
+  ········ "My classes", StaticText
+  ······· "Objectives", link
+  ········ "Objectives", StaticText
+  ······· "Guide", link
+  ········ "Guide", StaticText
+  ······ "SIGN OUT", button
+  ······· "SIGN OUT", StaticText
+  ····· main
+  ······ sectionheader
+  ······· "← Class evidence", link
+  ········ "← Class evidence", StaticText
+  ······· paragraph
+  ········ "CLASS LIST", StaticText
+  ······· "Who is in this class.", heading, level 1
+  ········ "Who is in this class.", StaticText
+  ······· paragraph
+  ········ "Paste your class list and BOW gives you one card per student to hand out. A student signs in by typing the class code and the code on their card — nothing else, and never a name they type themselves.", StaticText
+  ········· paragraph
+  ·········· "8 CARDS", StaticText
+  ········· "Print these now. They are not shown again.", heading, level 2
+  ·········· "Print these now. They are not shown again.", StaticText
+  ········· paragraph
+  ·········· "Cut them up and hand one to each student. If one goes missing you can print a replacement from the list below — the lost one stops working when you do.", StaticText
+  ········· "Print", button
+  ·········· "Print", StaticText
+  ········· "I have them", button
+  ·········· "I have them", StaticText
+  ······· list
+  ········ listitem, level 1
+  ········· paragraph
+  ·········· "Amara Ojo", StaticText
+  ········· DescriptionList
+  ··········· "CLASS CODE", term
+  ············ "CLASS CODE", StaticText
+  ··········· definition
+  ············ "N7M3U", StaticText
+  ··········· "YOUR CODE", term
+  ············ "YOUR CODE", StaticText
+  ··········· definition
+  ············ "CEG4N", StaticText
+  ········· paragraph
+  ·········· "Go to BOW · type the class code · type your code", StaticText
+  ········ listitem, level 1
+  ········· paragraph
+  ·········· "Ben Feldman", StaticText
+  ········· DescriptionList
+  ··········· "CLASS CODE", term
+  ············ "CLASS CODE", StaticText
+  ··········· definition
+  ············ "N7M3U", StaticText
+  ··········· "YOUR CODE", term
+  ············ "YOUR CODE", StaticText
+  ··········· definition
+  ············ "DFPDR", StaticText
+  ········· paragraph
+  ·········· "Go to BOW · type the class code · type your code", StaticText
+  ········ listitem, level 1
+  ········· paragraph
+  ·········· "Carlos Reyes", StaticText
+  ········· DescriptionList
+  ··········· "CLASS CODE", term
+  ············ "CLASS CODE", StaticText
+  ··········· definition
+  ············ "N7M3U", StaticText
+  ··········· "YOUR CODE", term
+  ············ "YOUR CODE", StaticText
+  ··········· definition
+  ············ "AUGY6", StaticText
+  ········· paragraph
+  ·········· "Go to BOW · type the class code · type your code", StaticText
+  ········ listitem, level 1
+  ········· paragraph
+  ·········· "Dana Whitfield", StaticText
+  ········· DescriptionList
+  ··········· "CLASS CODE", term
+  ············ "CLASS CODE", StaticText
+  ··········· definition
+  ············ "N7M3U", StaticText
+  ··········· "YOUR CODE", term
+  ············ "YOUR CODE", StaticText
+  ··········· definition
+  ············ "XU3AW", StaticText
+  ········· paragraph
+  ·········· "Go to BOW · type the class code · type your code", StaticText
+  ········ listitem, level 1
+  ········· paragraph
+  ·········· "Eli Nakamura", StaticText
+  ········· DescriptionList
+  ··········· "CLASS CODE", term
+  ············ "CLASS CODE", StaticText
+  ··········· definition
+  ············ "N7M3U", StaticText
+  ··········· "YOUR CODE", term
+  ············ "YOUR CODE", StaticText
+  ··········· definition
+  ············ "CJRXM", StaticText
+  ········· paragraph
+  ·········· "Go to BOW · type the class code · type your code", StaticText
+  ········ listitem, level 1
+  ········· paragraph
+  ·········· "Farrah Aziz", StaticText
+  ········· DescriptionList
+  ··········· "CLASS CODE", term
+  ············ "CLASS CODE", StaticText
+  ··········· definition
+  ············ "N7M3U", StaticText
+  ··········· "YOUR CODE", term
+  ············ "YOUR CODE", StaticText
+  ··········· definition
+  ············ "YX66Y", StaticText
+  ········· paragraph
+  ·········· "Go to BOW · type the class code · type your code", StaticText
+  ········ listitem, level 1
+  ········· paragraph
+  ·········· "Gil Ayers", StaticText
+  ········· DescriptionList
+  ··········· "CLASS CODE", term
+  ············ "CLASS CODE", StaticText
+  ··········· definition
+  ············ "N7M3U", StaticText
+  ··········· "YOUR CODE", term
+  ············ "YOUR CODE", StaticText
+  ··········· definition
+  ············ "FDFA4", StaticText
+  ········· paragraph
+  ·········· "Go to BOW · type the class code · type your code", StaticText
+  ········ listitem, level 1
+  ········· paragraph
+  ·········· "Hana Petrov", StaticText
+  ········· DescriptionList
+  ··········· "CLASS CODE", term
+  ············ "CLASS CODE", StaticText
+  ··········· definition
+  ············ "N7M3U", StaticText
+  ··········· "YOUR CODE", term
+  ············ "YOUR CODE", StaticText
+  ··········· definition
+  ············ "NYEKN", StaticText
+  ········· paragraph
+  ·········· "Go to BOW · type the class code · type your code", StaticText
+  ········ paragraph
+  ········· "8", StaticText
+  ········· "ON THE LIST · ROOM FOR", StaticText
+  ········· "52", StaticText
+  ········· "MORE", StaticText
+  ········ "ADD STUDENTS", heading, level 2
+  ········· "ADD STUDENTS", StaticText
+  ······· LabelText
+  ········· "ONE NAME PER LINE", StaticText
+  ········ "ONE NAME PER LINE", textbox
+  ······· paragraph
+  ········ "Write what you want to see on your own screens. First names, initials, table numbers — BOW never checks it against anything and never asks a student for a name of their own.", StaticText
+  ······· "Add them and make the cards", button, disabled=true
+  ········ "Add them and make the cards", StaticText
+  ······· paragraph
+  ········ "Undo — take those 8 back off the list", button
+  ········· "Undo — take those", StaticText
+  ········· "8", StaticText
+  ········· "back off the list", StaticText
+  ········ paragraph
+  ········· "0", StaticText
+  ········· "OF", StaticText
+  ········· "8", StaticText
+  ········· "HAVE SIGNED IN", StaticText
+  ········ "THE LIST", heading, level 2
+  ········· "THE LIST", StaticText
+  ······· list
+  ········ listitem, level 1
+  ·········· strong
+  ··········· "Amara Ojo", StaticText
+  ·········· "Seat", StaticText
+  ·········· "1", StaticText
+  ·········· "Has not signed in", StaticText
+  ·········· "Print a new card", button
+  ··········· "Print a new card", StaticText
+  ·········· "Take off the list", button
+  ··········· "Take off the list", StaticText
+  ·········· "Erase", button
+  ··········· "Erase", StaticText
+  ········ listitem, level 1
+  ·········· strong
+  ··········· "Ben Feldman", StaticText
+  ·········· "Seat", StaticText
+  ·········· "2", StaticText
+  ·········· "Has not signed in", StaticText
+  ·········· "Print a new card", button
+  ··········· "Print a new card", StaticText
+  ·········· "Take off the list", button
+  ··········· "Take off the list", StaticText
+  ·········· "Erase", button
+  ··········· "Erase", StaticText
+  ········ listitem, level 1
+  ·········· strong
+  ··········· "Carlos Reyes", StaticText
+  ·········· "Seat", StaticText
+  ·········· "3", StaticText
+  ·········· "Has not signed in", StaticText
+  ·········· "Print a new card", button
+  ··········· "Print a new card", StaticText
+  ·········· "Take off the list", button
+  ··········· "Take off the list", StaticText
+  ·········· "Erase", button
+  ··········· "Erase", StaticText
+  ········ listitem, level 1
+  ·········· strong
+  ··········· "Dana Whitfield", StaticText
+  ·········· "Seat", StaticText
+  ·········· "4", StaticText
+  ·········· "Has not signed in", StaticText
+  ·········· "Print a new card", button
+  ··········· "Print a new card", StaticText
+  ·········· "Take off the list", button
+  ··········· "Take off the list", StaticText
+  --- every Tab stop on the filled roster ---
+  Tab  1 → "Undo — take those 8 back off the list", button
+  Tab  2 → "Print a new card", button
+  Tab  3 → "Take off the list", button
+  Tab  4 → "Erase", button
+  Tab  5 → "Print a new card", button
+  Tab  6 → "Take off the list", button
+  Tab  7 → "Erase", button
+  Tab  8 → "Print a new card", button
+  Tab  9 → "Take off the list", button
+  Tab 10 → "Erase", button
+  Tab 11 → "Print a new card", button
+  Tab 12 → "Take off the list", button
+  Tab 13 → "Erase", button
+  Tab 14 → "Print a new card", button
+  Tab 15 → "Take off the list", button
+  Tab 16 → "Erase", button
+  Tab 17 → "Print a new card", button
+  Tab 18 → "Take off the list", button
+  Tab 19 → "Erase", button
+  Tab 20 → "Print a new card", button
+  Tab 21 → "Take off the list", button
+  Tab 22 → "Erase", button
+  Tab 23 → "Print a new card", button
+  Tab 24 → "Take off the list", button
+  Tab 25 → "Erase", button
+  Tab 26 → "Sign the whole class out", button
+  Tab 27 → "BOW Decision Challenges home", link
+  Tab 28 → "My classes", link
+  Tab 29 → "Objectives", link
+  Tab 30 → "Guide", link
+  Tab 31 → "SIGN OUT", button
+  Tab 32 → "← Class evidence", link
+  Tab 33 → "Print", button
+  Tab 34 → "I have them", button
+  Tab 35 → "ONE NAME PER LINE", textbox
+  Tab 36 → "Add them and make the cards", button, disabled=true
+  Tab 37 → "Undo — take those 8 back off the list", button   (ring closed here)

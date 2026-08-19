@@ -1,0 +1,99 @@
+
+ RUN  v4.1.10 /tmp/claude-0/-home-user-bow-decision-challenges/154df4db-b27f-5b40-abad-57bf3769b363/scratchpad/snap
+
+stderr | src/stages/readingLoad.test.tsx > the words a student reads, measured off the rendered screen > measures both worlds through one instrument
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+
+Eight Weeks to the Showcase — words a student reads on the critical path
+screen                               new   raw
+choose-world (the picker)            107   107
+setup-comparison (rank)               85    88
+setup-comparison (pick)              140   195
+working-plan Q1 (income)             123   137
+working-plan Q2 (bonuses)            106   198
+working-plan Q3 (owed)                51   137
+working-plan Q4 (the board)          180   259
+season-weeks                         152   164
+week5-transition (deposit)           108   120
+week5-event                          263   275
+first-response (triage)              216   259
+opportunity-final-repair             187   257
+week8-resolution (the ending)        317   341
+defense                              143   159
+submitted                             81   103
+----------------------------------------------
+TOTAL                               2259  2799
+
+stage                           words  budget  verdict
+choose-world                      107     137  ok
+setup-comparison                  225     287  ok
+working-plan                      460     687  ok
+season-weeks                      152     237  ok
+week5-transition                  108     137  ok
+week5-event                       263     312  ok
+first-response                    216     287  ok
+opportunity-final-repair          187     250  ok
+week8-resolution                  317     350  ok
+defense                           143     362  ok
+submitted                          81     100  ok
+
+budget      1315s = 21.9 min  ->  3287 words at 150 wpm
+measured    2259 words  ->  15.1 min at 150 wpm, 18.8 min at 120 wpm
+fastest     21.9 min — this world's own budget, whose reading is priced at 150 wpm
+slowest     25.7 min — the same screens at 120 wpm, plus the interaction time the budget declares
+scaffold    121 words behind collapsed disclosures, read only if the student opens them
+own words   28 words of the student's own writing quoted back to them, reported and not charged
+symbols     97 tokens excluded for carrying no letter or digit
+
+Run the Pop-Up — words a student reads on the critical path
+screen                               new   raw
+popup-spot (three booths)            336   336
+popup-spot (+ the sum)                35   354
+popup-money                          161   191
+popup-plan                           247   266
+popup-first-saturday                 124   148
+popup-standing-order                 473   515
+popup-generator                      189   237
+popup-repair (find the money)         96   130
+popup-repair (Saturday 4 order)      174   249
+popup-settle (the ending)            227   256
+popup-writeup                        144   175
+popup-submitted                       89   118
+----------------------------------------------
+TOTAL                               2295  2975
+
+stage                           words  budget  verdict
+popup-spot                        371     375  ok
+popup-money                       161     225  ok
+popup-plan                        247     400  ok
+popup-first-saturday              124     237  ok
+popup-standing-order              473     487  ok
+popup-generator                   189     237  ok
+popup-repair                      270     312  ok
+popup-settle                      227     230  ok
+popup-writeup                     144     350  ok
+popup-submitted                    89     100  ok
+
+budget      1182s = 19.7 min  ->  2955 words at 150 wpm
+measured    2295 words  ->  15.3 min at 150 wpm, 19.1 min at 120 wpm
+fastest     19.7 min — this world's own budget, whose reading is priced at 150 wpm
+slowest     23.5 min — the same screens at 120 wpm, plus the interaction time the budget declares
+scaffold    50 words behind collapsed disclosures, read only if the student opens them
+own words   32 words of the student's own writing quoted back to them, reported and not charged
+symbols     64 tokens excluded for carrying no letter or digit
+ ✓ src/stages/readingLoad.test.tsx > the words a student reads, measured off the rendered screen > measures both worlds through one instrument 1018ms
+ ✓ src/stages/readingLoad.test.tsx > the words a student reads, measured off the rendered screen > proves the one exclusion is small 1ms
+ ✓ src/stages/readingLoad.test.tsx > the words a student reads, measured off the rendered screen > keeps every world's reading inside the budget that world declares 0ms
+ ✓ src/stages/readingLoad.test.tsx > the words a student reads, measured off the rendered screen > lets no screen quietly grow past what its own stage claims 2ms
+ ✓ src/stages/readingLoad.test.tsx > the words a student reads, measured off the rendered screen > advertises a duration both ends of which are true of the screens 1ms
+ ✓ src/stages/readingLoad.test.tsx > the words a student reads, measured off the rendered screen > holds each world's declared word count to what the screens actually render 0ms
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  05:31:19
+   Duration  4.84s (transform 2.21s, setup 0ms, import 2.59s, tests 1.03s, environment 1.01s)
+
+
+[exited with code 0]

@@ -1,0 +1,28 @@
+import { test, expect } from "@playwright/test";
+import * as F from "./flow";
+import * as J from "./judge3-lib";
+
+test("one class, five kinds of student", async ({ page, request, browser }) => {
+  test.setTimeout(280_000);
+  const cls = await F.createClass(request, "Judge 3 marking");
+  console.log("CLASSCODE", cls.code, "TEACHERKEY", cls.teacherKey);
+  const log = (s: string) => console.log("  " + s);
+
+  const runs: [string, string, (p: any, l: (s: string) => void) => Promise<void>][] = [
+    ["1", "fast clicker", J.playFast],
+    ["2", "reasoned but bad", J.playReasonedButBad],
+    ["3", "competent", J.playCompetent],
+    ["4", "walked away", J.playAbandoned],
+  ];
+  for (const [seat, name, play] of runs) {
+    console.log(`\n--- seat ${seat}: ${name} ---`);
+    await F.gotoFreshChallenge(page);
+    await J.openRun(page, cls.code, seat);
+    try { await play(page, log); } catch (e) { console.log(`  seat ${seat} FAILED: ${String(e).slice(0, 400)}`); await page.screenshot({ path: `/tmp/judge-3/judge-shots/fail-seat-${seat}.png`, fullPage: true }); console.log("  SCREEN:", (await page.locator("main").innerText()).slice(0, 800)); console.log("  BUTTONS:", JSON.stringify(await page.locator("main button").evaluateAll((els) => els.map((e) => ((e as HTMLElement).getAttribute("aria-label") || (e as HTMLElement).textContent || "").replace(/\s+/g, " ").trim())))); }
+  }
+  // Three more finished runs so the class crosses the five-result threshold.
+  await F.seedRuns(request, cls.code, [{ seat: "5" }, { seat: "6" }, { seat: "7", savingsAsLeftovers: false }]);
+  // And one name on the list who never signed in.
+  await F.seatOnRoster(page, cls.code, "8");
+  console.log("CLASS READY", cls.code, cls.teacherKey);
+});

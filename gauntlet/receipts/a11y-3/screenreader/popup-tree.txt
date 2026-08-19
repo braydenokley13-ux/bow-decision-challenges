@@ -1,0 +1,1263 @@
+
+===== 01-booths =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: P3DM3 · seat 1" desc="P3DM3 · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "FOUR SATURDAYS. ONE TRUCK." [level=1]
+      DescriptionList
+        term "IN THE ACCOUNT"
+        definition
+        term "THE MARKET"
+        definition
+        term "PAID BEFORE YOU OPEN"
+        definition
+    paragraph
+    paragraph
+    heading "Where do you set up?" [level=2]
+    paragraph
+    paragraph
+    paragraph
+    list
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Back Lane" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Middle Row" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Bridge Gate" [invalid="false" focusable=true]
+    paragraph
+    button "Take a booth to carry on" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 02-booth-taken =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: P3DM3 · seat 1" desc="P3DM3 · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "FOUR SATURDAYS. ONE TRUCK." [level=1]
+      DescriptionList
+        term "IN THE ACCOUNT"
+        definition
+        term "THE MARKET"
+        definition
+        term "PAID BEFORE YOU OPEN"
+        definition
+    paragraph
+    paragraph
+    heading "Where do you set up?" [level=2]
+    paragraph
+    paragraph
+    paragraph
+    list
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Back Lane" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Booked: Middle Row" [invalid="false" focusable=true focused=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Bridge Gate" [invalid="false" focusable=true]
+    paragraph
+    paragraph
+    textbox "What you owe before you open" desc="The permit and the booth are both paid before you sell a plate." [invalid="false" focusable=true required=false describedby=":r1:-prompt :r1:-feedback"]
+    button "Check" [invalid="false" focusable=true]
+    paragraph [live="polite"]
+    paragraph
+    button "Take a booth to carry on" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 03-owed-checked =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: P3DM3 · seat 1" desc="P3DM3 · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "FOUR SATURDAYS. ONE TRUCK." [level=1]
+      DescriptionList
+        term "IN THE ACCOUNT"
+        definition
+        term "THE MARKET"
+        definition
+        term "PAID BEFORE YOU OPEN"
+        definition
+    paragraph
+    paragraph
+    heading "Where do you set up?" [level=2]
+    paragraph
+    paragraph
+    paragraph
+    list
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Back Lane" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Booked: Middle Row" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Bridge Gate" [invalid="false" focusable=true]
+    strong
+    paragraph
+    button "See what is left" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 04-money =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: P3DM3 · seat 1" desc="P3DM3 · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "TWO AMOUNTS MIGHT TURN UP." [level=1]
+    paragraph
+    strong
+    strong
+    list
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          paragraph
+          button "Yes — count it in: Sunrise Yoga" [invalid="false" focusable=true pressed="false"]
+          button "No — leave it out: Sunrise Yoga" [invalid="false" focusable=true pressed="false"]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          paragraph
+          button "Yes — count it in: Sell-out rebate" [invalid="false" focusable=true pressed="false"]
+          button "No — leave it out: Sell-out rebate" [invalid="false" focusable=true pressed="false"]
+    paragraph
+    button "Answer both before you carry on" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 05-board =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: P3DM3 · seat 1" desc="P3DM3 · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "GIVE EVERY DOLLAR A JOB." [level=1]
+    paragraph
+    strong
+    strong
+    strong
+    list
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    region "To plan with"
+      LabelText
+      strong
+      group "Stock allocation"
+        button "Decrease Stock by $50" [invalid="false" focusable=true]
+        spinbutton "Stock" [invalid="false" focusable=true required=false valuetext="$0"]
+        button "Increase Stock by $50" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Cushion allocation"
+        button "Decrease Cushion by $50" [invalid="false" focusable=true]
+        spinbutton "Cushion" [invalid="false" focusable=true required=false valuetext="$0"]
+        button "Increase Cushion by $50" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Your cut allocation"
+        button "Decrease Your cut by $50" [invalid="false" focusable=true]
+        spinbutton "Your cut" [invalid="false" focusable=true required=false valuetext="$0"]
+        button "Increase Your cut by $50" [invalid="false" focusable=true]
+      region "Send the rest to one line"
+        heading "Send the rest to one line" [level=3]
+        paragraph
+        button "Stock $1,510 Leaves 25 trays to cook. — takes what is left over" [invalid="false" focusable=true]
+          strong
+        button "Cushion $1,510 Leaves nothing to cook. — takes what is left over" [invalid="false" focusable=true]
+          strong
+        button "Your cut $1,510 Leaves nothing to cook. — takes what is left over" [invalid="false" focusable=true]
+          strong
+      sectionfooter
+        paragraph [live="polite"]
+        button "Check this plan" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 01-booths =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "FOUR SATURDAYS. ONE TRUCK." [level=1]
+      DescriptionList
+        term "IN THE ACCOUNT"
+        definition
+        term "THE MARKET"
+        definition
+        term "PAID BEFORE YOU OPEN"
+        definition
+    paragraph
+    paragraph
+    heading "Where do you set up?" [level=2]
+    paragraph
+    paragraph
+    paragraph
+    list
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Back Lane" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Middle Row" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Bridge Gate" [invalid="false" focusable=true]
+    paragraph
+    button "Take a booth to carry on" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 02-booth-taken =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "FOUR SATURDAYS. ONE TRUCK." [level=1]
+      DescriptionList
+        term "IN THE ACCOUNT"
+        definition
+        term "THE MARKET"
+        definition
+        term "PAID BEFORE YOU OPEN"
+        definition
+    paragraph
+    paragraph
+    heading "Where do you set up?" [level=2]
+    paragraph
+    paragraph
+    paragraph
+    list
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Back Lane" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Booked: Middle Row" [invalid="false" focusable=true focused=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Bridge Gate" [invalid="false" focusable=true]
+    paragraph
+    paragraph
+    textbox "What you owe before you open" desc="The permit and the booth are both paid before you sell a plate." [invalid="false" focusable=true required=false describedby=":r1:-prompt :r1:-feedback"]
+    button "Check" [invalid="false" focusable=true]
+    paragraph [live="polite"]
+    paragraph
+    button "Take a booth to carry on" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 03-owed-checked =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "FOUR SATURDAYS. ONE TRUCK." [level=1]
+      DescriptionList
+        term "IN THE ACCOUNT"
+        definition
+        term "THE MARKET"
+        definition
+        term "PAID BEFORE YOU OPEN"
+        definition
+    paragraph
+    paragraph
+    heading "Where do you set up?" [level=2]
+    paragraph
+    paragraph
+    paragraph
+    list
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Back Lane" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Booked: Middle Row" [invalid="false" focusable=true]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+          paragraph
+          button "Take this booth: Bridge Gate" [invalid="false" focusable=true]
+    strong
+    paragraph
+    button "See what is left" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 04-money =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "TWO AMOUNTS MIGHT TURN UP." [level=1]
+    paragraph
+    strong
+    strong
+    list
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          paragraph
+          button "Yes — count it in: Sunrise Yoga" [invalid="false" focusable=true pressed="false"]
+          button "No — leave it out: Sunrise Yoga" [invalid="false" focusable=true pressed="false"]
+      listitem [level=1]
+        article
+          paragraph
+          paragraph
+          paragraph
+          button "Yes — count it in: Sell-out rebate" [invalid="false" focusable=true pressed="false"]
+          button "No — leave it out: Sell-out rebate" [invalid="false" focusable=true pressed="false"]
+    paragraph
+    button "Answer both before you carry on" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 05-board =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "GIVE EVERY DOLLAR A JOB." [level=1]
+    paragraph
+    strong
+    strong
+    strong
+    list
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    region "To plan with"
+      LabelText
+      strong
+      group "Stock allocation"
+        button "Decrease Stock by $50" [invalid="false" focusable=true]
+        spinbutton "Stock" [invalid="false" focusable=true required=false valuetext="$0"]
+        button "Increase Stock by $50" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Cushion allocation"
+        button "Decrease Cushion by $50" [invalid="false" focusable=true]
+        spinbutton "Cushion" [invalid="false" focusable=true required=false valuetext="$0"]
+        button "Increase Cushion by $50" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Your cut allocation"
+        button "Decrease Your cut by $50" [invalid="false" focusable=true]
+        spinbutton "Your cut" [invalid="false" focusable=true required=false valuetext="$0"]
+        button "Increase Your cut by $50" [invalid="false" focusable=true]
+      region "Send the rest to one line"
+        heading "Send the rest to one line" [level=3]
+        paragraph
+        button "Stock $1,510 Leaves 25 trays to cook. — takes what is left over" [invalid="false" focusable=true]
+          strong
+        button "Cushion $1,510 Leaves nothing to cook. — takes what is left over" [invalid="false" focusable=true]
+          strong
+        button "Your cut $1,510 Leaves nothing to cook. — takes what is left over" [invalid="false" focusable=true]
+          strong
+      sectionfooter
+        paragraph [live="polite"]
+        button "Check this plan" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 06-board-closed =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "GIVE EVERY DOLLAR A JOB." [level=1]
+    paragraph
+    strong
+    strong
+    strong
+    list
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    region "To plan with"
+      LabelText
+      strong
+      group "Stock allocation"
+        button "Decrease Stock by $50" [invalid="false" focusable=true]
+        spinbutton "Stock" [invalid="false" focusable=true required=false valuetext="$600"]
+        button "Increase Stock by $50" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Cushion allocation"
+        button "Decrease Cushion by $50" [invalid="false" focusable=true]
+        spinbutton "Cushion" [invalid="false" focusable=true required=false valuetext="$400"]
+        button "Increase Cushion by $50" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Your cut allocation"
+        button "Decrease Your cut by $50" [invalid="false" focusable=true]
+        spinbutton "Your cut" [invalid="false" focusable=true required=false valuetext="$510"]
+        button "Increase Your cut by $50" [invalid="false" focusable=true]
+      sectionfooter
+        paragraph [live="polite"]
+        button "Lock the plan in" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 07-saturday-1 =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "HOW MUCH DO YOU COOK?" [level=1]
+    paragraph
+    region "On the three lines"
+      paragraph
+      DescriptionList
+        term "STOCK"
+        definition
+        term "CUSHION"
+        definition
+        term "YOUR CUT"
+        definition
+    paragraph
+    group "TRAYS TO COOK"
+      button "One tray fewer" [invalid="false" focusable=true]
+      status [live="polite" invalid="false"]
+      button "One tray more" [invalid="false" focusable=true]
+    paragraph
+    DescriptionList
+      term "PLATES YOU ARE COOKING"
+      definition
+      term "THE CROWD WILL BUY"
+      definition
+    paragraph
+    paragraph
+    textbox "What the order costs" desc="The trays you are about to cook, at what Ramos Foods charges for one." [invalid="false" focusable=true required=false describedby=":rb:-prompt :rb:-feedback"]
+    button "Check" [invalid="false" focusable=true]
+    paragraph [live="polite"]
+    paragraph
+    button "Price the order to carry on" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 08-tips =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "THE FIRST NIGHT IS IN." [level=1]
+      region "Saturday 1"
+        paragraph
+        DescriptionList
+          term "COOKED"
+          definition
+          term "SOLD"
+          definition
+          term "IN THE BIN"
+          definition
+          term "TAKINGS"
+          definition
+        paragraph
+    paragraph
+    region "Three things want the tips."
+      paragraph
+      heading "Three things want the tips." [level=2]
+      paragraph
+      paragraph
+      strong
+      strong
+      strong
+      list
+        listitem [level=1]
+          article
+            paragraph
+            button "Pay for this: A seal for the cool box" [invalid="false" focusable=true pressed="false"]
+        listitem [level=1]
+          article
+            paragraph
+            button "Pay for this: Your share of the night cleaner" [invalid="false" focusable=true pressed="false"]
+        listitem [level=1]
+          article
+            paragraph
+            button "Pay for this: A painted sign for the truck" [invalid="false" focusable=true pressed="false"]
+      paragraph
+      group "WHAT MADE THE ONE YOU LEFT OUT MATTER LESS?"
+        button "It was the one I only wanted." [invalid="false" focusable=true pressed="false"]
+        button "Nobody else was counting on it." [invalid="false" focusable=true pressed="false"]
+        button "It can wait, even if it costs more." [invalid="false" focusable=true pressed="false"]
+        button "It was the cheapest one to drop." [invalid="false" focusable=true pressed="false"]
+      paragraph
+      button "Three things want the tips." [disabled=true invalid="false" focusable=true]
+    paragraph
+    paragraph
+    paragraph
+    paragraph
+    button "Book Marisol" [invalid="false" focusable=true pressed="false"]
+    button "Work it alone" [invalid="false" focusable=true pressed="false"]
+    heading "The next two Saturdays" [level=2]
+    paragraph
+    list
+      listitem [level=1]
+      listitem [level=1]
+    region "On the three lines"
+      paragraph
+      DescriptionList
+        term "STOCK"
+        definition
+        term "CUSHION"
+        definition
+        term "YOUR CUT"
+        definition
+    paragraph
+    group "TRAYS TO COOK"
+      button "One tray fewer" [invalid="false" focusable=true]
+      status [live="polite" invalid="false"]
+      button "One tray more" [invalid="false" focusable=true]
+    paragraph
+    DescriptionList
+      term "PLATES YOU ARE COOKING"
+      definition
+      term "SATURDAY 2 WILL BUY"
+      definition
+      term "SATURDAY 3 WILL BUY"
+      definition
+      term "LEFT ON THE STOCK LINE"
+      definition
+    paragraph
+    button "Say what the jar pays for" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 09-standing =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "THE FIRST NIGHT IS IN." [level=1]
+      region "Saturday 1"
+        paragraph
+        DescriptionList
+          term "COOKED"
+          definition
+          term "SOLD"
+          definition
+          term "IN THE BIN"
+          definition
+          term "TAKINGS"
+          definition
+        paragraph
+    paragraph
+    region "Three things want the tips."
+      paragraph
+      heading "Three things want the tips." [level=2]
+      paragraph
+      paragraph
+      strong
+      strong
+      strong
+      list
+        listitem [level=1]
+          article
+            paragraph
+            button "Paying for it: A seal for the cool box" [disabled=true invalid="false" focusable=true pressed="true"]
+        listitem [level=1]
+          article
+            paragraph
+            button "Pay for this: Your share of the night cleaner" [disabled=true invalid="false" focusable=true pressed="false"]
+        listitem [level=1]
+          article
+            paragraph
+            button "Pay for this: A painted sign for the truck" [disabled=true invalid="false" focusable=true pressed="false"]
+      paragraph
+      group "WHAT MADE THE ONE YOU LEFT OUT MATTER LESS?"
+        button "✓It was the one I only wanted." [disabled=true invalid="false" focusable=true pressed="true"]
+        button "Nobody else was counting on it." [disabled=true invalid="false" focusable=true pressed="false"]
+        button "It can wait, even if it costs more." [disabled=true invalid="false" focusable=true pressed="false"]
+        button "It was the cheapest one to drop." [disabled=true invalid="false" focusable=true pressed="false"]
+      paragraph [live="polite"]
+    paragraph
+    paragraph
+    paragraph
+    paragraph
+    button "Book Marisol" [invalid="false" focusable=true pressed="false"]
+    button "Work it alone" [invalid="false" focusable=true pressed="false"]
+    heading "The next two Saturdays" [level=2]
+    paragraph
+    list
+      listitem [level=1]
+      listitem [level=1]
+    region "On the three lines"
+      paragraph
+      DescriptionList
+        term "STOCK"
+        definition
+        term "CUSHION"
+        definition
+        term "YOUR CUT"
+        definition
+    paragraph
+    group "TRAYS TO COOK"
+      button "One tray fewer" [invalid="false" focusable=true]
+      status [live="polite" invalid="false"]
+      button "One tray more" [invalid="false" focusable=true]
+    paragraph
+    DescriptionList
+      term "PLATES YOU ARE COOKING"
+      definition
+      term "SATURDAY 2 WILL BUY"
+      definition
+      term "SATURDAY 3 WILL BUY"
+      definition
+      term "LEFT ON THE STOCK LINE"
+      definition
+    paragraph
+    button "Answer Marisol to carry on" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 10-generator =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "THE GENERATOR IS DEAD." [level=1]
+      list
+        listitem [level=1]
+          paragraph
+          paragraph
+        listitem [level=1]
+          paragraph
+          paragraph
+        listitem [level=1]
+          paragraph
+          paragraph
+    heading "The last two Saturdays" [level=2]
+    region "Saturday 2"
+      paragraph
+      DescriptionList
+        term "COOKED"
+        definition
+        term "SOLD"
+        definition
+        term "IN THE BIN"
+        definition
+        term "TAKINGS"
+        definition
+      paragraph
+    region "Saturday 3"
+      paragraph
+      DescriptionList
+        term "COOKED"
+        definition
+        term "SOLD"
+        definition
+        term "IN THE BIN"
+        definition
+        term "TAKINGS"
+        definition
+      paragraph
+        strong
+    paragraph
+    paragraph
+    paragraph
+    textbox "What you still owe on the swap" desc="The replacement generator, once Ramos puts your deposit against it." [invalid="false" focusable=true required=false describedby=":rd:-prompt :rd:-feedback"]
+    button "Check" [invalid="false" focusable=true]
+    paragraph [live="polite"]
+    region "On the three lines"
+      paragraph
+      DescriptionList
+        term "STOCK"
+        definition
+        term "CUSHION"
+        definition
+        term "YOUR CUT"
+        definition
+    paragraph
+    button "Find the money" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 11-repair =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "WHERE DOES THE MONEY COME FROM?" [level=1]
+    strong
+    strong
+    strong
+    paragraph
+    region "The shop wants"
+      LabelText
+      strong
+      group "Stock allocation"
+        button "Decrease Stock by $10" [invalid="false" focusable=true]
+        spinbutton "Stock" [invalid="false" focusable=true required=false valuetext="$60"]
+        button "Increase Stock by $10" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Cushion allocation"
+        button "Decrease Cushion by $10" [invalid="false" focusable=true]
+        spinbutton "Cushion" [invalid="false" focusable=true required=false valuetext="$550"]
+        button "Increase Cushion by $10" [invalid="false" focusable=true]
+      LabelText
+      strong
+      group "Your cut allocation"
+        button "Decrease Your cut by $10" [invalid="false" focusable=true]
+        spinbutton "Your cut" [invalid="false" focusable=true required=false valuetext="$510"]
+        button "Increase Your cut by $10" [invalid="false" focusable=true]
+      button "City permit ALREADY SPENT $150" [invalid="false" focusable=true]
+        strong
+      button "Middle Row ALREADY SPENT $240" [invalid="false" focusable=true]
+        strong
+      button "Ramos Foods ALREADY SPENT $540" [invalid="false" focusable=true]
+        strong
+      sectionfooter
+        paragraph [live="polite"]
+        button "Check this plan" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 12-saturday-4 =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "WHERE DOES THE MONEY COME FROM?" [level=1]
+    strong
+    strong
+    strong
+    paragraph
+    paragraph
+    paragraph
+    heading "The last one, and the biggest." [level=2]
+    paragraph
+    region "On the three lines"
+      paragraph
+      DescriptionList
+        term "STOCK"
+        definition
+        term "CUSHION"
+        definition
+        term "YOUR CUT"
+        definition
+    region "The order comes off the stock line. If you want more trays than it pays for, say which lin"
+      paragraph
+      group "The order comes off the stock line. If you want more trays than it pays for, say which lin"
+        button "✓Only the stock line" [invalid="false" focusable=true pressed="true"]
+        button "Cushion $280" [invalid="false" focusable=true pressed="false"]
+        button "Your cut $510" [invalid="false" focusable=true pressed="false"]
+    paragraph
+    group "TRAYS TO COOK"
+      button "One tray fewer" [invalid="false" focusable=true]
+      status [live="polite" invalid="false"]
+      button "One tray more" [invalid="false" focusable=true]
+    paragraph
+    DescriptionList
+      term "PLATES YOU ARE COOKING"
+      definition
+      term "THE CROWD WILL BUY"
+      definition
+    paragraph
+    paragraph
+    button "Open the doors" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 13-settle =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "THE ORGANISER SETTLES UP." [level=1]
+      region "Saturday 4"
+        paragraph
+        DescriptionList
+          term "COOKED"
+          definition
+          term "SOLD"
+          definition
+          term "IN THE BIN"
+          definition
+          term "TAKINGS"
+          definition
+        paragraph
+    DescriptionList
+      term "PLATES SOLD"
+      definition
+      term "MONEY IN THE BIN"
+      definition
+      term "TAKINGS"
+      definition
+      term "YOUR CUT, BANKED"
+      definition
+      term "THE ACCOUNT STARTED AT"
+      definition
+      term "MONEY IN HAND"
+      definition
+    region "What each call actually did."
+      heading "What each call actually did." [level=2]
+      paragraph
+      list
+        listitem [level=1]
+          paragraph
+        listitem [level=1]
+          paragraph
+        listitem [level=1]
+          paragraph
+        listitem [level=1]
+          paragraph
+        listitem [level=1]
+          paragraph
+        listitem [level=1]
+          paragraph
+    paragraph
+    button "Answer the organiser" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 14-writeup =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "WHAT DID THE MONEY DO?" [level=1]
+    paragraph
+    paragraph
+    paragraph
+    paragraph
+    button "What the market paid you $1,140" [invalid="false" focusable=true pressed="false"]
+    button "Money you threw away $30" [invalid="false" focusable=true pressed="false"]
+    button "Your cut, banked $510" [invalid="false" focusable=true pressed="false"]
+    button "Cash left in the box $280" [invalid="false" focusable=true pressed="false"]
+    button "What the new generator cost you $270" [invalid="false" focusable=true pressed="false"]
+    button "Plates you sold 95" [invalid="false" focusable=true pressed="false"]
+    button "I protected…" [invalid="false" focusable=true]
+    button "I gave up…" [invalid="false" focusable=true]
+    button "The money went…" [invalid="false" focusable=true]
+    LabelText
+    textbox "TWO TO FOUR SENTENCES" [invalid="false" focusable=true required=false]
+    sectionfooter
+      paragraph [live="polite"]
+      button "Turn in my answer" [disabled=true invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 15-writeup-filled =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true]
+      paragraph
+      heading "WHAT DID THE MONEY DO?" [level=1]
+    paragraph
+    paragraph
+    paragraph
+    paragraph
+    button "What the market paid you $1,140" [invalid="false" focusable=true pressed="true"]
+    button "Money you threw away $30" [invalid="false" focusable=true pressed="true"]
+    button "Your cut, banked $510" [invalid="false" focusable=true pressed="false"]
+    button "Cash left in the box $280" [invalid="false" focusable=true pressed="false"]
+    button "What the new generator cost you $270" [invalid="false" focusable=true pressed="false"]
+    button "Plates you sold 95" [invalid="false" focusable=true pressed="false"]
+    button "I protected…" [invalid="false" focusable=true]
+    button "I gave up…" [invalid="false" focusable=true]
+    button "The money went…" [invalid="false" focusable=true]
+    LabelText
+    textbox "TWO TO FOUR SENTENCES" [invalid="false" focusable=true focused=true required=false]
+    sectionfooter
+      paragraph [live="polite"]
+      button "Turn in my answer" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]
+
+===== 16-submitted =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    paragraph
+    list "The 4 Saturdays"
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    group
+      DisclosureTriangle "This run: 69D3F · seat 1" desc="69D3F · SEAT 1" [focusable=true expanded=false]
+  main
+    sectionheader [focusable=true focused=true]
+      paragraph
+      heading "YOUR ANSWER IS WITH YOUR TEACHER." [level=1]
+      DescriptionList
+        term "YOUR BOOTH"
+        definition
+        term "CLASS"
+        definition
+        term "SATURDAYS RUN"
+        definition
+        term "PLATES SOLD"
+        definition
+    paragraph [live="polite"]
+    list
+      listitem [level=1]
+        strong
+      listitem [level=1]
+        strong
+      listitem [level=1]
+        strong
+      listitem [level=1]
+        strong
+    paragraph
+    blockquote
+    paragraph
+    paragraph
+    button "Run the market again" [invalid="false" focusable=true]
+  complementary "Reading help"
+    button "Reading help" [invalid="false" focusable=true]

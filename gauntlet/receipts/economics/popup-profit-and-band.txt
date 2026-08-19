@@ -1,0 +1,13 @@
+MAX endMoney: 2136 {"spotId":"bridge-gate","helper":true,"countRebate":false,"trays":{"first":4,"middle":3,"last":8},"cut":0,"repairFirst":"cushion"} profit vs startCash: 236
+MAX banked  : 1420 {"spotId":"back-lane","helper":false,"countRebate":false,"trays":{"first":2,"middle":0,"last":0},"cut":1450,"repairFirst":"stock"} endMoney 1660 fed 20
+profit min/median/max: -970 -340 236
+share of viable plans that LOSE money: 95.6%
+share breaking even or better: 4.4%
+
+Saturday 4 band, per booth/helper: does the MIDPOINT order equal the order that was actually best?
+  back-lane    helper=false told 32-32 mid=32 lands=32 | bestAtMid=3 bestAtRealised=3 match=true facesRange=false netAtMidOrder=$180 netAtBest=$180
+  back-lane    helper=true  told 32-32 mid=32 lands=32 | bestAtMid=3 bestAtRealised=3 match=true facesRange=false netAtMidOrder=$180 netAtBest=$180
+  middle-row   helper=false told 45-45 mid=45 lands=45 | bestAtMid=4 bestAtRealised=4 match=true facesRange=false netAtMidOrder=$240 netAtBest=$240
+  middle-row   helper=true  told 55-55 mid=55 lands=55 | bestAtMid=5 bestAtRealised=5 match=true facesRange=false netAtMidOrder=$300 netAtBest=$300
+  bridge-gate  helper=false told 45-45 mid=45 lands=45 | bestAtMid=4 bestAtRealised=4 match=true facesRange=false netAtMidOrder=$240 netAtBest=$240
+  bridge-gate  helper=true  told 78-78 mid=78 lands=78 | bestAtMid=8 bestAtRealised=8 match=true facesRange=false netAtMidOrder=$456 netAtBest=$456

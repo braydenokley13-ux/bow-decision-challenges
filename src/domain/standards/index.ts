@@ -99,8 +99,36 @@ export function standardsIn(frameworkId: FrameworkId): readonly Standard[] {
   return [...standardsOf(frameworkId)].sort((left, right) => left.sortIndex - right.sortIndex);
 }
 
+/**
+ * "Grades 5–8" — the one sentence every count or framework name is missing without it.
+ *
+ * NYSED's March 2026 document publishes 70 objectives across three grade bands (K–4: 14,
+ * 5–8: 23, 9–12: 33); this deployment carries only the 5–8 band, and "23" or "NYSED" on its
+ * own reads as the whole document to a reviewer who opens the source and counts 70. Built
+ * from `Standard.gradeBand` rather than a second hand-typed string, so a band this function
+ * names is a band a `Standard` actually carries — and so a framework that ever mixes bands
+ * says both, in the order they appear, rather than picking one.
+ */
+export function gradeBandLabel(frameworkId: FrameworkId): string {
+  const bands = [...new Set(standardsOf(frameworkId).map((standard) => standard.gradeBand))];
+  if (bands.length === 0) return "";
+  const words = bands.map((band) => {
+    const [start, end] = band.split("-");
+    return start && end ? `${start}–${end}` : band;
+  });
+  return `Grades ${words.join(", ")}`;
+}
+
 export function standardByRef(ref: StandardRef): Standard | undefined {
-  return standardsOf(ref.frameworkId).find((standard) => standard.code === ref.code);
+  const candidates = standardsOf(ref.frameworkId).filter((standard) => standard.code === ref.code);
+  // More than one candidate is exactly the failure the doc comment on `StandardRef` names:
+  // a code reused across grade bands inside one framework. `.find` would silently hand back
+  // whichever one happened to come first and merge two different objectives' results under
+  // one code. `mappingIntegrity.test.ts` fails the build before data like that can ship, so
+  // this branch is defence in depth rather than the primary guard — but refusing to guess
+  // is the honest failure mode either way: a code a teacher cannot open reads as a bug, and
+  // a wrong objective answering silently under the right one reads as nothing at all.
+  return candidates.length === 1 ? candidates[0] : undefined;
 }
 
 export function mappingsForStandard(ref: StandardRef): readonly Mapping[] {

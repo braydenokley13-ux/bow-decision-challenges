@@ -57,8 +57,17 @@ describe("support level suppresses structured credit", () => {
 
     expect(independent["C3.2"]).toBe(5);
     expect(independent["C3.3"]).toBe(5);
-    expect(supplied["C3.2"]).toBe(0);
-    expect(supplied["C3.3"]).toBe(0);
+    // `null`, and these two lines used to read `.toBe(0)`.
+    //
+    // The premise above — *"support must actually suppress credit"* — is unchanged and a null
+    // suppresses it harder than a zero, because a null can never become a positive judgement
+    // anywhere downstream. What the zero additionally did was assert a *failure*: it reported
+    // to a teacher that this child had been unable to build a plan, when what happened is that
+    // BOW built it for them, and it then admitted the child to the class denominator on the
+    // strength of that. An assessment judge traced the whole chain. The rule this file exists
+    // to pin is the floor on credit; the zero was a claim beyond it.
+    expect(supplied["C3.2"]).toBeNull();
+    expect(supplied["C3.3"]).toBeNull();
   });
 
   it("caps a scaffolded final plan below independent credit", () => {

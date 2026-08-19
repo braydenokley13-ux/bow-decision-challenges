@@ -1,0 +1,41 @@
+import { test } from "@playwright/test";
+import * as F from "./flow";
+import * as J from "./judge3-lib";
+import { savePlan, week5TotalFor, NUMBERS as N, type PlanContext } from "./plan";
+
+test("hint then right", async ({ page, request }) => {
+  test.setTimeout(260_000);
+  const cls = await F.createClass(request, "Judge 3 hint");
+  console.log("CLASSCODE", cls.code, cls.teacherKey);
+  await F.gotoFreshChallenge(page);
+  await J.openRun(page, cls.code, "1");
+  await F.rankPlacesCorrectly(page);
+  await page.locator(".place-card").nth(2).getByRole("button", { name: "Choose this setup" }).click();
+  const field = page.getByLabel(/What the .* costs Avery/);
+  for (const wrong of ["240", "250"]) {
+    await field.fill(wrong);
+    await page.locator(".chosen-total").getByRole("button", { name: "Check" }).click();
+    await page.waitForTimeout(250);
+  }
+  await page.getByRole("button", { name: "Show me one step" }).click();
+  await page.waitForTimeout(200);
+  await field.fill(String(N.setupCosts["cousin-room"]));
+  await page.locator(".chosen-total").getByRole("button", { name: "Check" }).click();
+  await page.waitForTimeout(300);
+  await page.getByRole("button", { name: "Build the plan" }).click();
+  const plan: PlanContext = { setupId: "cousin-room" };
+  await F.completeWorkingCalcs(page);
+  await savePlan(page, "working", plan);
+  await F.playSeasonWeeks(page, { claim: 0, reason: 0, deposit: false });
+  await F.passWeek5Calculation(page, String(week5TotalFor(plan)));
+  await savePlan(page, "week5-first-response", plan);
+  await F.decideOpportunity(page, { clinics: false, countBonus: false });
+  await savePlan(page, "final", { ...plan, clinics: false, countCompletionFinal: false });
+  await F.readWeek8Resolution(page);
+  await F.submitDefense(page, "I kept the course whole and cut the rides money to do it.");
+  await F.waitForDelivery(page);
+  await page.goto(`/educator/class/${cls.code}/students/1?key=${cls.teacherKey}`);
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: "/tmp/judge-3/judge-shots/hint-student.png", fullPage: true });
+  console.log("\n===== TEACHER PAGE =====\n" + (await page.locator("body").innerText()).replace(/\n{3,}/g, "\n\n"));
+});

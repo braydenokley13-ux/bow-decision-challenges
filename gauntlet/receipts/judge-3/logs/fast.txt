@@ -1,0 +1,152 @@
+
+Running 1 test using 1 worker
+
+CLASSCODE MNYFC TEACHERKEY UDYP4VU4QCJU9PKD4YK7YDQX
+SEAT {"seatCode":"1","displayName":"Test Student 1","joinCode":"6RVDE"}
+  RANKING answer offered after 5 wrong checks
+
+### ranking after wrong checks :: [WHICH PLACE COSTS THE LEAST?]
+    ["Move Gym District Sublet earlier","Move Gym District Sublet later","Move Teammate Share earlier","Move Teammate Share later","Move Cousin’s Spare Room earlier","Move Cousin’s Spare Room later","Check it again","Show me one step","Show the answer and keep going"]
+  ANSWER SUPPLIED after 3 wrong tries (.chosen-total)
+
+### after setup total :: [NOW PICK WHERE AVERY LIVES.]
+    ["Selected: Gym District Sublet","Choose this setup: Teammate Share","Choose this setup: Cousin’s Spare Room","Check","Build the plan"]
+  ANSWER SUPPLIED after 3 wrong tries (.calculation)
+  ANSWER SUPPLIED after 3 wrong tries (.calculation)
+
+### board :: [WHAT DOES AVERY DO WITH THE REST?]
+    ["See where the money goes","Where Avery lives, Gym District Sublet · 8 weeks. $1,800. Already promised — this cannot move.","Food, phone and laundry, $200 a week · 8 weeks. $1,600. Already promised — this cannot move.","1Money coming in","2The two bonuses","3Money already owed","Decrease Sports-media course by $100","Increase Sports-media course by $100","Decrease Backup money by $100","Increase Backup money by $100","Decrease Rides and rest by $100","Increase Rides and rest by $100","Backup money — put $3,400 in","Rides and rest — put $3,400 in","Check this plan","Back"]
+
+### board ready :: [WHAT DOES AVERY DO WITH THE REST?]
+    ["See where the money goes","Where Avery lives, Gym District Sublet · 8 weeks. $1,800. Already promised — this cannot move.","Food, phone and laundry, $200 a week · 8 weeks. $1,600. Already promised — this cannot move.","1Money coming in","2The two bonuses","3Money already owed","Decrease Sports-media course by $100","Increase Sports-media course by $100","Decrease Backup money by $100","Increase Backup money by $100","Decrease Rides and rest by $100","Increase Rides and rest by $100","Save this version","Back"]
+  0 [WHAT DOES AVERY DO WITH THE REST?] -> "Save this version"
+  1 [WHAT IF THEY NEVER ARRIVE?] -> "Check this plan"
+  2 [WHAT IF THEY NEVER ARRIVE?] -> "Save it, $1,800 still missing"
+  3 [WEEK 3 PAYS AVERY IN CASH.] -> "Team shoes$120The pair Avery plays in are splittin"
+  4 [WEEK 3 PAYS AVERY IN CASH.] -> "Team shoes$120The pair Avery plays in are splittin"
+  5 [WEEK 3 PAYS AVERY IN CASH.] -> "Team shoes$120The pair Avery plays in are splittin"
+  6 [WEEK 3 PAYS AVERY IN CASH.] -> "Away-game travel share$60Everyone on the bus pays "
+   click failed TimeoutError: locator.click: Timeout 8000ms exceeded.
+Call log:
+  
+  7 [WEEK 3 PAYS AVERY IN CASH.] -> "Away-game travel share$60Everyone on the bus pays "
+   click failed TimeoutError: locator.click: Timeout 8000ms exceeded.
+Call log:
+  
+  8 [WEEK 3 PAYS AVERY IN CASH.] -> "Away-game travel share$60Everyone on the bus pays "
+   click failed TimeoutError: locator.click: Timeout 8000ms exceeded.
+Call log:
+  
+  9 [WEEK 3 PAYS AVERY IN CASH.] -> "A present for Avery's sister$45She turns eleven on"
+   click failed TimeoutError: locator.click: Timeout 8000ms exceeded.
+Call log:
+  
+  10 [WEEK 3 PAYS AVERY IN CASH.] -> "A present for Avery's sister$45She turns eleven on"
+   click failed TimeoutError: locator.click: Timeout 8000ms exceeded.
+Call log:
+  
+  11 [WEEK 3 PAYS AVERY IN CASH.] -> "A present for Avery's sister$45She turns eleven on"
+   click failed TimeoutError: locator.click: Timeout 8000ms exceeded.
+Call log:
+  
+  12 [WEEK 3 PAYS AVERY IN CASH.] -> "It was the one I only wanted."
+  13 [WEEK 3 PAYS AVERY IN CASH.] -> "It was the one I only wanted."
+  14 [WEEK 3 PAYS AVERY IN CASH.] -> "It was the one I only wanted."
+  15 [WEEK 3 PAYS AVERY IN CASH.] -> "Nobody else was counting on it."
+  16 [WEEK 3 PAYS AVERY IN CASH.] -> "Nobody else was counting on it."
+  17 [WEEK 3 PAYS AVERY IN CASH.] -> "Nobody else was counting on it."
+  18 [WEEK 3 PAYS AVERY IN CASH.] -> "It can wait, even if it costs more."
+  19 [WEEK 3 PAYS AVERY IN CASH.] -> "It can wait, even if it costs more."
+  20 [WEEK 3 PAYS AVERY IN CASH.] -> "It can wait, even if it costs more."
+  21 [WEEK 3 PAYS AVERY IN CASH.] -> "It was the cheapest one to drop."
+  22 [WEEK 3 PAYS AVERY IN CASH.] -> "It was the cheapest one to drop."
+  23 [WEEK 3 PAYS AVERY IN CASH.] -> "It was the cheapest one to drop."
+  24 [WEEK 3 PAYS AVERY IN CASH.] -> "Week 4 · the course office is calling"
+  25 [HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?] -> "Reserve it now$1,000$200 cheaper. The money stops "
+  26 [HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?] -> "Reserve it now$1,000$200 cheaper. The money stops "
+  27 [HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?] -> "Reserve it now$1,000$200 cheaper. The money stops "
+  28 [HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?] -> "Wait and decide later$1,200Costs more. Every dolla"
+  29 [HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?] -> "Wait and decide later$1,200Costs more. Every dolla"
+  30 [HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?] -> "Wait and decide later$1,200Costs more. Every dolla"
+  31 [HOLD THE SEAT NOW, OR PAY FULL PRICE LATER?] -> "Lock it in and play Week 5"
+  32 [THE SHOWCASE IS OFF.] typed 844 -> Check
+  33 [THE SHOWCASE IS OFF.] -> "BillWhere Avery lives8 weeks at the Gym District S"
+  34 [THE SHOWCASE IS OFF.] -> "BillWhere Avery lives8 weeks at the Gym District S"
+  35 [THE SHOWCASE IS OFF.] -> "BillWhere Avery lives8 weeks at the Gym District S"
+  36 [THE SHOWCASE IS OFF.] -> "BonusMaking the cut bonusPaid only if the Flight q"
+  37 [THE SHOWCASE IS OFF.] -> "BonusMaking the cut bonusPaid only if the Flight q"
+  38 [THE SHOWCASE IS OFF.] -> "BonusMaking the cut bonusPaid only if the Flight q"
+  39 [THE SHOWCASE IS OFF.] -> "BillRequired brace and off-site rehabWhat the clin"
+  40 [THE SHOWCASE IS OFF.] -> "BillRequired brace and off-site rehabWhat the clin"
+  41 [THE SHOWCASE IS OFF.] -> "BillRequired brace and off-site rehabWhat the clin"
+  42 [THE SHOWCASE IS OFF.] -> "BillFood, phone and laundry$200 a week, all 8 week"
+  43 [THE SHOWCASE IS OFF.] -> "BillFood, phone and laundry$200 a week, all 8 week"
+  44 [THE SHOWCASE IS OFF.] -> "BillFood, phone and laundry$200 a week, all 8 week"
+  45 [THE SHOWCASE IS OFF.] -> "Check"
+  46 [THE SHOWCASE IS OFF.] -> "Check"
+  47 [THE SHOWCASE IS OFF.] -> "Check"
+  48 [THE SHOWCASE IS OFF.] ANSWER SUPPLIED
+  49 [THE SHOWCASE IS OFF.] -> "Keep going"
+  50 [SOMETHING HAS TO GIVE.] -> "Check this plan"
+  51 [SOMETHING HAS TO GIVE.] -> "Save it, $1,700 still missing"
+  52 [TWO MORE CALLS TO MAKE.] -> "Take the clinics"
+  53 [TWO MORE CALLS TO MAKE.] -> "Take the clinics"
+  54 [TWO MORE CALLS TO MAKE.] -> "Take the clinics"
+  55 [TWO MORE CALLS TO MAKE.] -> "Keep the Saturdays"
+  56 [TWO MORE CALLS TO MAKE.] -> "Keep the Saturdays"
+  57 [TWO MORE CALLS TO MAKE.] -> "Keep the Saturdays"
+  58 [TWO MORE CALLS TO MAKE.] -> "Yes — count on it"
+  59 [TWO MORE CALLS TO MAKE.] -> "Yes — count on it"
+  60 [TWO MORE CALLS TO MAKE.] -> "Yes — count on it"
+  61 [TWO MORE CALLS TO MAKE.] -> "No — plan without it"
+  62 [TWO MORE CALLS TO MAKE.] -> "No — plan without it"
+  63 [TWO MORE CALLS TO MAKE.] -> "No — plan without it"
+  64 [TWO MORE CALLS TO MAKE.] -> "Check this plan"
+  65 [TWO MORE CALLS TO MAKE.] -> "Save it, $2,500 still missing"
+  66 [THE SEASON ENDS.] -> "Explain my plan"
+WRITING junk: "asdf asdf $5,000 asdf. qwer qwer $700 qwer." | turn-in disabled? false
+SUBMITTED at step 68
+FINAL: TURNED IN
+
+YOUR PLAN IS WITH YOUR TEACHER.
+
+HARBOR CITY FLIGHT
+
+07
+Avery
+Reyes
+POS
+Guard
+AGE
+18
+TERM
+8 weeks
+
+Eight weeks at the Gym District Sublet
+
+CLASS
+MNYFC
+
+Your work goes to your teacher’s class when you turn it in.
+
+WHAT YOU TURNED IN
+
+Where Avery lived
+Gym District Sublet
+Sports-media course
+$0
+Backup money
+$3,400
+Rides and rest
+$0
+
+Your 2 numbers, and what you said about them:
+
+asdf asdf $5,000 asdf. qwer qwer $700 qwer.
+
+A person reads the writing, not software. Nothing here has been read yet.
+
+Try a different plan
+  ✓  1 [chromium-1366] › e2e/judge3-fast.spec.ts:25:1 › fast clicker (1.3m)
+
+  1 passed (1.3m)

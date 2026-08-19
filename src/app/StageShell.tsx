@@ -1,4 +1,5 @@
 import { useEffect, useRef, type PropsWithChildren, type ReactNode } from "react";
+import { usePinnedTopBar, useStageArrival } from "./useStageArrival";
 import { CourtBackdrop } from "../components/story/CourtBackdrop";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { CONDITIONAL_INCOME_KEYS, incomeAmount, RELIABLE_INCOME_KEYS } from "../domain/scenario/expectations";
@@ -6,8 +7,11 @@ import { formatDollars } from "../domain/core/money";
 import { chapterFor, PROGRESS_STEPS, progressIndexFor, seasonPositionFor, type SeasonPosition } from "../domain/machine/stages";
 import type { StageId } from "../domain/evidence/types";
 import { AppMark } from "../components/primitives/AppMark";
+import { RunMenu } from "../components/primitives/RunMenu";
+import { disclosureEscape } from "../components/primitives/disclosureEscape";
 import { useChallenge } from "./ChallengeContext";
 import { SeasonStrip } from "../components/story/SeasonStrip";
+import { ReadingTools } from "../student/reading";
 
 const { numbers, incomeCopy, goalLabel } = BASKETBALL_SCENARIO;
 
@@ -32,7 +36,7 @@ const MONEY_SHEET = [...RELIABLE_INCOME_KEYS, ...CONDITIONAL_INCOME_KEYS].map((k
  * student is unmistakably somewhere else, which is the point of a peak. `banner` is what
  * sits inside it: the news, or the result.
  */
-export function StageShell({ stage, title, kicker, position: override, tone = "standard", banner, focusKey, children }: PropsWithChildren<{
+export function StageShell({ stage, title, kicker, position: override, tone = "standard", banner, focusKey, focusOnArrival = false, children }: PropsWithChildren<{
   stage: StageId;
   title: string;
   kicker?: string;
@@ -41,31 +45,72 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
   banner?: ReactNode;
   /**
    * A stage that asks several questions under one stage id changes its own headline. When
-   * this value changes the heading takes focus, so a keyboard or screen-reader user is
-   * moved to the new question rather than left at the bottom of the answered one.
+   * this value changes the screen opens at the top and the heading takes focus, so a keyboard
+   * or screen-reader user is moved to the new question rather than left at the bottom of the
+   * answered one — and a sighted student can read the question they are being asked.
    */
   focusKey?: string | number;
+  /**
+   * A screen that arrives because the last one asked for it, rather than because the student
+   * chose to go there. The deposit deadline is the case: the control the student just pressed
+   * is gone and a decision has taken its place, so a keyboard or screen-reader user is put on
+   * the new heading instead of being left at a button that no longer exists.
+   */
+  focusOnArrival?: boolean;
 }>) {
   const chapter = progressIndexFor(stage);
   const position = override ?? seasonPositionFor(stage);
   const announcement = `${position.caption}. Part ${chapter + 1} of ${PROGRESS_STEPS.length}: ${PROGRESS_STEPS[chapter]?.label}.`;
   // The art direction comes from the world the attempt says it is in, so a second world
   // themes the same components by adding a block to `worlds.css` and nothing else.
-  const { state } = useChallenge();
+  const { state, delivery, handOver } = useChallenge();
   const world = state.meta.worldId;
   const heading = useRef<HTMLElement>(null);
-  const first = useRef(true);
+  const topbar = useRef<HTMLElement>(null);
+  usePinnedTopBar(topbar);
   useEffect(() => {
-    if (focusKey === undefined) return;
-    if (first.current) { first.current = false; return; }
-    heading.current?.focus();
-  }, [focusKey]);
+    if (focusOnArrival) heading.current?.focus();
+  }, [focusOnArrival]);
+  /*
+   * Every new stage — and every new question inside one — opens at the top, with its own
+   * heading announced.
+   *
+   * The question used to only take focus, and taking focus does not move a page that is
+   * already scrolled: answering *Which place costs the least?* revealed the housing cards,
+   * the stage scrolled them into view, and the new headline *Now pick where Avery lives.*
+   * arrived at `top: -11px` behind a 72px pinned bar with eighteen pixels of itself showing.
+   * Measured at 1366×768, in both worlds, on the screen where the question is asked.
+   *
+   * The stage id and the question are one key here because they are one event to the student:
+   * the words in the `<h1>` changed, so the screen changed, so the screen starts at its top.
+   * A reveal below the fold still happens — it is simply no longer allowed to be the last
+   * scroll of the transition, which is what left the question above the window.
+   */
+  useStageArrival(heading, focusKey === undefined ? stage : `${stage}:${focusKey}`);
   return (
     <div className="challenge-shell" data-world={world} data-chapter={chapterFor(stage)}>
-      <header className="challenge-topbar">
+      <header ref={topbar} className="challenge-topbar">
         <AppMark />
         <SeasonStrip position={position} announcement={announcement} />
-        <details className="contract-drawer">
+        <div className="challenge-topbar__end">
+        {/* The screen read out loud, and the words on it defined, for whoever wants either.
+            It is in the bar because the bar is the one band of this screen the layout keeps for
+            chrome: closed, it was a fixed pill in the bottom-left corner and `elementFromPoint`
+            at the first readable pixel of *"$4,900 still has no job."* answered the pill, at
+            every width measured. `screenKey` carries the question as well as the stage id, so a
+            stage that asks four of them under one id stops the voice at each one rather than
+            reading over the next. Opened, it portals itself to the end of the document and docks
+            to the bottom edge, which is the height `--bow-reading-tools` reserves. */}
+        <ReadingTools screenKey={focusKey === undefined ? stage : `${stage}:${focusKey}`} />
+        {/* The four payments, and the way back out of them.
+
+            `Escape` closed the run menu beside this and left this one standing: measured on the
+            ranking screen, `document.querySelectorAll("details[open]").length` was still 1
+            after the key, with the drawer over the stage and no way to shut it except finding
+            its own summary again. Two `<details>` in one bar doing the same job, and the
+            behaviour written into one of them — so it is a shared function now rather than a
+            paragraph either one could be missing. */}
+        <details className="contract-drawer" onKeyDown={disclosureEscape()}>
           <summary>The four payments<span aria-hidden="true">▾</span></summary>
           <div>
             <h2>Where Avery’s money comes from</h2>
@@ -81,6 +126,11 @@ export function StageShell({ stage, title, kicker, position: override, tone = "s
             <p className="contract-drawer__goal">{goalLabel} · up to {formatDollars(numbers.goalCap)}</p>
           </div>
         </details>
+        {/* Whose run this is, on every screen, with the way out of it. A restored attempt that
+            cannot say who it belongs to is how the second student of the day ends up filing
+            their work under the first student's seat. */}
+        <RunMenu classCode={state.meta.classCode} seatCode={state.meta.seatCode} handIn={delivery.status} onLeave={handOver} />
+        </div>
       </header>
       <main className="stage-main" data-tone={tone}>
         <header ref={heading} className={`stage-heading${tone === "dark" ? " stage-heading--dark scene" : ""}`} tabIndex={-1}>

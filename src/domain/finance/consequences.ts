@@ -1,5 +1,6 @@
 import type { CategoryId } from "../core/ids";
 import { formatDollars } from "../core/money";
+import { hours, hoursPerWeek } from "../core/units";
 import type { ScenarioNumbers } from "../scenario/types";
 import { conditionalIn, courseCostFor } from "./formulas";
 import { loadFor } from "./load";
@@ -56,11 +57,17 @@ export function planConsequences(input: SnapshotInputs, n: ScenarioNumbers): Rec
           : `Covers the whole ${formatDollars(conditional)} this plan is counting on.`
         : `${formatDollars(input.amounts.reserve)} kept aside in case something goes wrong.`,
     flexibleCash: load.bought === 0
-      ? `Nothing paid for rides or the physio a tired body needs. Getting everywhere still takes Avery ${load.net} hours a week.`
-      // Hours come in whole blocks, so money that does not reach the next one buys nothing.
-      // Saying so is the difference between a plan that balances and a plan that works.
-      : `Pays for rides. Avery gets ${load.bought} hour${load.bought === 1 ? "" : "s"} a week back, and still spends ${load.net} hours.${
-          idleTimeMoney > 0 ? ` ${formatDollars(idleTimeMoney)} of that is not enough to buy another hour.` : ""
+      ? `Nothing paid for rides or the physio a tired body needs. Getting everywhere still takes Avery ${hoursPerWeek(load.net)}.`
+      // Hours come in whole blocks, so money can stop buying them two different ways: it can
+      // fall short of the next block, or there can be no block left to buy. The line used to
+      // report both as "not enough to buy another hour", which on a row holding seven times
+      // the hourly rate read as arithmetic nobody could follow.
+      : `Pays for rides. Avery gets ${hoursPerWeek(load.bought)} back, and still spends ${hours(load.net)}.${
+          idleTimeMoney > 0
+            ? load.net === 0
+              ? ` Every hour is bought already, so the last ${formatDollars(idleTimeMoney)} in this row buys no more time.`
+              : ` The last ${formatDollars(idleTimeMoney)} in this row is short of the ${formatDollars(n.load.blockBuybackCost)} another hour costs.`
+            : ""
         }`,
   };
 }

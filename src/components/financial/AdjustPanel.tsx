@@ -82,9 +82,11 @@ export function AdjustPanel({
     const value = input.amounts[category];
     if (residual > 0) {
       const take = Math.min(value, residual);
+      // Named for the row it moves, like the board's. Two or three buttons carrying the same
+      // amount and the same verb are a choice nobody can make from the labels alone.
       return take > 0
         ? {
-            label: `Take ${formatDollars(take)}`,
+            label: `Take ${formatDollars(take)} from ${CHOICE_LABELS[category]}`,
             spoken: `Take ${formatDollars(take)} out of ${CHOICE_LABELS[category]}`,
             onPress: () => onAmountChange(category, dollars(value - take)),
           }
@@ -95,7 +97,7 @@ export function AdjustPanel({
       const put = Math.min(toPlace, Math.max(0, cap - value));
       return put > 0
         ? {
-            label: `Add ${formatDollars(put)}`,
+            label: `Add ${formatDollars(put)} to ${CHOICE_LABELS[category]}`,
             spoken: `Add ${formatDollars(put)} to ${CHOICE_LABELS[category]}`,
             onPress: () => onAmountChange(category, dollars(value + put)),
           }
@@ -164,7 +166,13 @@ export function AdjustPanel({
       </div>
 
       {showMeter && (
-        <WeekMeter load={load} parts={loadParts} rate={SCENARIO_NUMBERS.load.blockBuybackCost} atStake={`the ${formatDollars(SCENARIO_NUMBERS.completionIncome)} attendance bonus`} />
+        <WeekMeter
+          load={load}
+          parts={loadParts}
+          rate={SCENARIO_NUMBERS.load.blockBuybackCost}
+          headroom={Math.max(0, balance)}
+          atStake={input.includeCompletion ? `the ${formatDollars(SCENARIO_NUMBERS.completionIncome)} attendance bonus` : null}
+        />
       )}
 
       {attempts >= 2 && balance !== 0 && (

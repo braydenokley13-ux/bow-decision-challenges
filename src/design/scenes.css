@@ -40,8 +40,11 @@
 /* --- Public entry --------------------------------------------------------- */
 .home { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
 .home__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-5); padding: var(--s-4) clamp(20px, 4vw, 56px); border-bottom: 1px solid var(--world-hero-line); }
-.home__bar .app-mark { color: var(--world-hero-ink); }
-.home__bar .app-mark small { color: var(--world-hero-muted); }
+
+/* The mark is not repainted here. The front door used to give it `--world-hero-ink` and
+   `--world-hero-muted` and, through `.scene`, a cream plate with a navy letter — so the one
+   page a district administrator opens first carried a mark nothing else in the product
+   carried, on the same cream ground everything else sits on. */
 .home__bar > a { color: var(--world-hero-ink); font: var(--t-ui); text-underline-offset: 5px; }
 .home__grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr); align-items: center; gap: clamp(28px, 5vw, 80px); width: min(1440px, 100%); margin: auto; padding: clamp(28px, 5vw, 72px) clamp(20px, 4vw, 56px); }
 .home h1 { max-width: 13ch; margin: var(--s-3) 0 var(--s-5); font: 700 clamp(3rem, 6.4vw, 5.6rem)/0.92 var(--font-display); letter-spacing: var(--display-tracking-tight); }
@@ -82,16 +85,38 @@
 .goal-strip b { display: block; color: var(--world-hero-ink); font: var(--t-title3); }
 .goal-strip span { display: block; margin-top: var(--s-1); color: var(--world-hero-body); font: var(--t-micro); }
 
-/* The pass a student is handed at the door: cream card, torn edge, two codes. It is the
-   one place the ticket geometry is literal, because this genuinely is admission. */
+/* The pass a student is handed at the door: cream card, torn edge, and — since accounts —
+   their own name on it rather than two boxes to type into. It is the one place the ticket
+   geometry is literal, because this genuinely is admission. */
 .opening__job { position: relative; margin-top: var(--s-3); padding: var(--s-6); background: var(--surface-raised); border: 1px solid var(--border-ink); box-shadow: var(--shadow-card); }
 .opening__job .perf-rule { margin: var(--s-5) 0 var(--s-4); }
 .opening__job > .stamp { margin: 0 0 var(--s-4); }
-.opening__codes { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: var(--s-4); margin: 0 0 var(--s-5); }
-.opening__job label { display: grid; gap: var(--s-2); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.1em; text-transform: uppercase; }
-.opening__job input { min-height: 52px; padding: 0 var(--s-4); color: var(--ink-1); background: var(--surface); border: 1.5px solid var(--border-ink); border-radius: var(--r-sm); font: var(--m-md); font-feature-settings: var(--num); letter-spacing: 0.14em; text-transform: uppercase; }
-.opening__job input:focus-visible { border-color: var(--bow-brand); }
 .opening__job .button { width: 100%; }
+.opening__job .button + .button { margin-top: var(--s-3); }
+.opening__whose { display: grid; gap: var(--s-1); margin: 0 0 var(--s-5); }
+.opening__whose .stamp { margin: 0; }
+.opening__whose strong { color: var(--ink-1); font: var(--t-title2); }
+.opening__class { color: var(--ink-3); font: var(--t-micro); }
+.opening--waiting { align-content: start; gap: var(--s-5); }
+.opening--waiting > .join-status { padding: 0 clamp(20px, 4vw, 56px); }
+
+/*
+ * The shape of the run that is arriving, under the sentence that says it is arriving.
+ *
+ * `:not(:has(> .button))` is the whole guard: when the class cannot be reached this same line
+ * carries the problem and a *Try again* beside it, and a skeleton of a run that is not coming
+ * would be the screen promising something it has just said it cannot do.
+ */
+.opening--waiting:not(:has(> .button)) > .join-status::after {
+  content: "";
+  display: block;
+  block-size: 216px;
+  margin-block-start: var(--s-5);
+  background:
+    linear-gradient(var(--surface-sunken) 0 0) 0 0 / 52% 40px no-repeat,
+    repeating-linear-gradient(var(--surface-sunken) 0 52px, transparent 52px 72px) 0 64px / min(520px, 100%) 152px no-repeat;
+}
+.opening--waiting > .button { justify-self: start; margin-left: clamp(20px, 4vw, 56px); }
 .privacy-note { margin: var(--s-3) 0 0; color: var(--ink-3); font: var(--t-micro); }
 
 /* --- Scene 2: the deal ---------------------------------------------------- */
@@ -112,11 +137,12 @@
 .contract__rule { grid-column: 1 / -1; display: inline-flex; align-items: baseline; gap: var(--s-2); margin-top: var(--s-2); color: var(--ink-2); font: var(--t-micro); }
 .contract__rule em { color: var(--fin-conditional-ink); font: var(--t-label); font-style: normal; letter-spacing: 0.1em; }
 .contract__column[data-tone="safe"] .contract__rule em { color: var(--fin-reliable-ink); }
-.contract__foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-6); padding: var(--s-4) var(--s-5); background: var(--surface-sunken); border-top: 1px solid var(--border-default); }
-.contract__foot p { margin: 0; font: var(--t-ui); }
-.contract__foot i { width: 22px; height: 10px; display: inline-block; margin-right: var(--s-2); vertical-align: -1px; }
-.contract__foot i[data-tone="safe"] { background: var(--fin-reliable); }
-.contract__foot i[data-tone="maybe"] { background: var(--pat-conditional); }
+
+/* What it costs the season when the rule is not met. The legend that used to close this
+   card — "solid means the money arrives, striped means it might not" — explained a texture
+   the eye can barely see, for a distinction the two column headings already state in words. */
+.contract__ifnot { grid-column: 1 / -1; display: inline-flex; align-items: baseline; gap: var(--s-2); margin-top: var(--s-2); color: var(--ink-2); font: var(--t-sm); }
+.contract__ifnot em { flex: none; color: var(--fin-over-ink); font: var(--t-label); font-style: normal; letter-spacing: 0.1em; text-transform: uppercase; }
 
 /* --- Scene 3: housing ----------------------------------------------------- */
 .setup-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4); margin-top: var(--s-6); }
@@ -149,10 +175,7 @@
 .bet__head strong { color: var(--fin-conditional-ink); font: var(--m-lg); font-feature-settings: var(--num); }
 .bet__rule { margin: 0; max-width: 42ch; color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
 
-/* Which answer is standing, said rather than implied by which button went dark. */
-.bet__state { display: inline-flex; align-self: flex-start; margin: 0 0 auto; padding: var(--s-2) var(--s-3); color: var(--ink-3); background: var(--surface-sunken); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
-.bet__state[data-counted="true"] { color: var(--ink-invert); background: var(--fin-adjustable); }
-.bet__ask { margin: var(--s-2) 0 0; color: var(--ink-1); font: var(--t-title3); }
+.bet .binary-choice { margin-top: auto; }
 .bet[data-counted="true"] { background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); border-left-color: var(--fin-adjustable); }
 
 /* The same two cards the student pressed, after the money did not come. Nothing is
@@ -200,7 +223,11 @@
 .ledger__lines li[data-known="false"] .ledger__label { color: var(--ink-3); }
 
 /* A promised cost answers when a student presses it rather than sitting there inert. */
-.ledger__label--locked { padding: 0; text-align: left; background: none; border: 0; color: inherit; font: inherit; cursor: help; text-decoration: underline dotted var(--border-strong); text-underline-offset: 3px; }
+
+/* A button 19px tall. 2.5.8 asks for 24 in both directions, and this one is the control that
+   explains why a locked row cannot move — the row a student presses when they are stuck.
+   `inline-flex` rather than a padding block, so the two-line variant keeps its own height. */
+.ledger__label--locked { min-height: 24px; display: inline-flex; align-items: center; padding: 0; text-align: left; background: none; border: 0; color: inherit; font: inherit; cursor: help; text-decoration: underline dotted var(--border-strong); text-underline-offset: 3px; }
 .ledger__lines li[data-tone="conditional"] .ledger__label--locked { padding-left: var(--s-3); }
 
 /* The one figure on the rail set large: what the whole plan is built against. */
@@ -274,23 +301,20 @@
 
 /* The one statement this world records about savings, asked as a question with three
    answers rather than tucked into a row as a shortcut. */
-.closer { display: grid; gap: var(--s-3); padding: var(--s-5); background: var(--surface-raised); border-left: 4px solid var(--fin-adjustable); }
-.closer h3 { margin: 0; font: var(--t-title2); }
-.closer p { margin: 0; color: var(--ink-2); font: var(--t-sm); }
-.closer-choice { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
-.closer-choice button { display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: start; gap: var(--s-2) var(--s-3); min-height: var(--tap); padding: var(--s-4) var(--s-5); text-align: left; color: var(--ink-1); background: var(--surface-raised); border: 1.5px solid var(--border-ink); border-left-width: 6px; box-shadow: var(--shadow-card); cursor: pointer; transition: background var(--dur-micro) var(--ease-standard), color var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard); }
+.closer { display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-5); background: var(--surface-raised); border-left: 4px solid var(--fin-adjustable); }
 
-/* A card with no mark on it is a card nobody knows they can press — the same finding the
-   Week 5 tiles were given a mark for. */
-.closer-choice__mark { grid-row: 1 / span 2; align-self: center; color: var(--bow-brand); font: var(--m-md); }
+/* The level moved from h3 to h2 to close a skipped heading level; the type does not, because
+   the size here was never a statement about rank. */
+.closer h2, .closer h3 { margin: 0; color: var(--ink-2); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.closer p { margin: 0; color: var(--ink-3); font: var(--t-micro); }
+.closer-choice { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.closer-choice button { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-2); min-height: var(--tap); padding: var(--s-2) var(--s-4); text-align: left; color: var(--ink-1); background: var(--surface); border: 1.5px solid var(--border-ink); border-left-width: 5px; border-radius: var(--r-sm); cursor: pointer; font: var(--t-ui); transition: background var(--dur-micro) var(--ease-standard), color var(--dur-micro) var(--ease-standard); }
+.closer-choice button small { color: var(--ink-3); font: var(--t-micro); font-feature-settings: var(--num); }
 .closer-choice button[data-category="goal"] { border-left-color: var(--choice-1); }
 .closer-choice button[data-category="reserve"] { border-left-color: var(--choice-2); }
 .closer-choice button[data-category="flexibleCash"] { border-left-color: var(--choice-3); }
-.closer-choice button:hover { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); transform: translateY(-1px); }
-.closer-choice button:hover .closer-choice__mark { color: inherit; }
-.closer-choice__row { grid-column: 2; font: var(--t-title2); }
-.closer-choice span.money { grid-column: 2; color: var(--ink-2); font: var(--t-sm); font-feature-settings: var(--num); }
-.closer-choice button:hover span.money { color: inherit; }
+.closer-choice button:hover { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); }
+.closer-choice button:hover small { color: inherit; }
 
 /* -------------------------------------------------------------------------
    The adjust panel: the plan being corrected rather than rebuilt.
@@ -351,12 +375,14 @@
 .choice-row__description { display: block; margin-top: 2px; color: var(--ink-3); font: var(--t-micro); }
 .choice-row small { display: block; margin-top: 2px; color: var(--ink-3); font: var(--t-micro); }
 .choice-row__value { font: var(--m-md); font-feature-settings: var(--num); }
-.choice-row__controls { display: grid; grid-template-columns: var(--tap) 74px var(--tap); }
+
+/* 74px held "1500"; it has to hold "$1,500", which is what the row beside it says. */
+.choice-row__controls { display: grid; grid-template-columns: var(--tap) 92px var(--tap); }
 .choice-row__controls button, .choice-row__controls input { min-height: var(--tap); min-width: var(--tap); border: 1px solid var(--border-strong); background: var(--surface); }
 .choice-row__controls button { cursor: pointer; font: var(--t-title2); }
 .choice-row__controls button:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
 .choice-row__controls button:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
-.choice-row__controls input { width: 100%; padding: 0 var(--s-2); text-align: center; border-right: 0; border-left: 0; font: var(--m-sm); }
+.choice-row__controls input { width: 100%; padding: 0 var(--s-2); text-align: center; border-right: 0; border-left: 0; font: var(--m-sm); font-feature-settings: var(--num); }
 
 /* --- Scene 5: the season feed --------------------------------------------- */
 .feed { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s-3); }
@@ -525,7 +551,7 @@
   .reel article:last-child { grid-column: 1 / -1; }
   .feed { grid-template-columns: 1fr; }
   .change-banner { grid-template-columns: 1fr; }
-  .bets, .closer-choice { grid-template-columns: 1fr; }
+  .bets { grid-template-columns: 1fr; }
   .setup-grid { grid-template-columns: 1fr; }
   .scale { grid-template-columns: 1fr; }
   .ledger { padding: var(--s-4); }
@@ -533,11 +559,29 @@
   .bulletin { grid-template-columns: 1fr; gap: var(--s-3); }
   .settled-calls { grid-template-columns: 1fr; }
   .choice-row { grid-template-columns: 6px minmax(0, 1fr) auto; row-gap: var(--s-3); }
-  .choice-row__action { grid-column: 2; grid-row: 2; justify-self: start; }
+
+  /* The shortcut's label is a whole sentence — "Take $1,000 out of Sports-media course" —
+     and it was `nowrap` at every width. Measured at 320: the button drew itself 297px wide
+     starting 43px in, so its right edge stood 20px past the window and the Week 5 board, the
+     one screen in the run where a student cannot skip the decision, scrolled sideways. It
+     wraps below this breakpoint, and it is bounded by its own column so it cannot do this
+     again at a width nobody has measured yet. */
+  .choice-row__action { grid-column: 2; grid-row: 2; justify-self: start; max-width: 100%; white-space: normal; text-align: left; }
   .choice-row__controls { grid-column: 3; grid-row: 2; justify-self: end; }
   .adjust__head, .adjust__rows, .supply-change { padding-left: var(--s-4); padding-right: var(--s-4); }
   .adjust .plan-help { margin-left: var(--s-4); margin-right: var(--s-4); }
   .closer { padding: var(--s-4); }
+}
+
+/* A phone, where a row's three controls and its name cannot share two columns.
+   Grid columns are shared down the whole row, so the steppers — the widest thing in the
+   second column — set the width for the name above them as well: measured at 320, "Sports-
+   media course" and its sentence of explanation were living in 60 pixels, two words to a
+   line. The steppers and the shortcut take a line each of their own, and the name gets the
+   width back. */
+@media (max-width: 480px) {
+  .choice-row__controls { grid-column: 2 / -1; grid-row: 2; justify-self: start; }
+  .choice-row__action { grid-column: 2 / -1; grid-row: 3; }
 }
 
 /*
@@ -550,24 +594,65 @@
  */
 @media (max-width: 980px) {
   .plan-scene { grid-template-columns: minmax(0, 1fr); gap: 0; }
-  .plan-scene__work { grid-column: 1; grid-row: 1; padding-bottom: var(--s-8); }
-  .plan-rail { grid-column: 1; grid-row: 2; position: sticky; bottom: 0; z-index: 15; }
+
+  /* Room for the pinned strip, measured rather than guessed. It used to be a fixed step that
+     the strip outgrew, so the bottom row's own description — "Getting everywhere still takes
+     Avery 14 hours a week" — was cut through the middle by the thing sitting on top of it. The
+     step then went on being wrong by a different amount at every width: at 390 the idle strip
+     is 94px against a 68px reserve, so the last row of the board had nowhere left to scroll to,
+     and opened it took half the screen and left the commit button stranded behind the top bar.
+     `--rail-height` is the strip's own height, set by the component that draws it, and
+     `--rail-idle` stays as what to reserve before the first measurement lands.
+     `--bow-reading-tools` is in the same sum because `reading.css` lifts this rail by that
+     much when the reading help is open, and a reserve that ignored the lift left the rail
+     standing on the last control in the column — measured at 320, the *Check this plan*
+     button, entirely hidden. It is `0px` whenever the tools are closed. */
+  .plan-scene__work { grid-column: 1; grid-row: 1; padding-bottom: calc(var(--rail-height, var(--rail-idle)) + var(--bow-reading-tools, 0px) + var(--s-6)); }
+
+  /* `top: auto` is the whole of the rail's reflow bug, and it is a one-word omission.
+     The two-column rule above sets `top: calc(72px + var(--s-5))` so the rail can ride the
+     sticky top bar on a laptop. Down here the rail is a bottom bar — but `top` was never
+     released, so the box carried both offsets, and CSS resolves a sticky box that cannot
+     satisfy both by honouring `top`. Whenever the rail grew taller than the window minus
+     88px — which is every time a student opens "See where the money goes" at 200 % zoom, and
+     every time on a phone — the bottom bar silently became a panel anchored 88px below the
+     top of the window. Measured at 640 x 512 with the ledger open: the rail sat at y=186.8
+     and ran to the bottom of the screen, 325px of it, 63.5 % of the viewport, covering the
+     question, the money field and both steppers at every scroll position between 15 % and
+     50 % of the page. The reserve on `.plan-scene__work` could not help, because the reserve
+     is at the end of the column and the rail was over the middle of it. */
+  .plan-rail { grid-column: 1; grid-row: 2; position: sticky; top: auto; bottom: 0; z-index: 15; }
   .plan-progress { font-size: 0.95em; }
 
   /* Stacked, the receipt would sit two thousand pixels under the question it belongs to.
      So it does not stack: it pins itself to the bottom of the decision as one line the
-     student can read without moving, and opens when they want the whole thing. */
-  .ledger { gap: var(--s-3); padding: var(--s-4); border: 0; border-top: 3px solid var(--ink-1); box-shadow: 0 -10px 24px -18px rgb(12 21 40 / 55%); }
-  .ledger__head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--s-2) var(--s-4); }
-  .ledger__head > .stamp { grid-column: 1; }
-  .ledger__glance { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); grid-column: 1; grid-row: 2; margin: 0; }
-  .ledger__glance span { color: var(--ink-2); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
-  .ledger__glance strong { color: var(--ink-1); font: var(--m-md); font-feature-settings: var(--num); }
-  .ledger[data-state="over"] .ledger__glance strong { color: var(--fin-over-ink); }
-  .ledger__toggle { display: inline-flex; align-items: center; grid-column: 2; grid-row: 1 / span 2; min-height: var(--tap); padding: 0 var(--s-4); color: var(--ink-1); background: var(--surface-raised); border: 1.5px solid var(--border-ink); border-radius: var(--r-sm); cursor: pointer; font: var(--t-sm); font-weight: 700; }
-  .ledger__body { display: none; }
-  .ledger[data-open="true"] .ledger__body { display: grid; max-height: 52vh; overflow-y: auto; }
+     student can read without moving, and opens when they want the whole thing.
+     Idle, it used to spend about 90px saying "Avery's money / not worked out yet" — with the
+     top chrome, close to a quarter of a 640-wide screen given over to furniture. The title,
+     the figure and the control now share one line, and the padding is the tighter step. */
+  :root { --rail-idle: 68px; }
 
+  .ledger { gap: var(--s-2); padding: var(--s-2) var(--s-4); border: 0; border-top: 3px solid var(--ink-1); box-shadow: 0 -10px 24px -18px rgb(12 21 40 / 55%); }
+  .ledger__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-4); min-height: var(--tap); }
+  .ledger__head > .stamp { flex: none; margin: 0; }
+  .ledger__glance { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); flex: 1 1 auto; min-width: 0; margin: 0; }
+  .ledger__glance span { color: var(--ink-2); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+  .ledger__glance strong { color: var(--ink-1); font: var(--m-sm); font-feature-settings: var(--num); }
+  .ledger[data-state="over"] .ledger__glance strong { color: var(--fin-over-ink); }
+  .ledger__toggle { display: inline-flex; align-items: center; flex: none; margin-left: auto; min-height: var(--tap); padding: 0 var(--s-3); color: var(--ink-1); background: var(--surface-raised); border: 1.5px solid var(--border-ink); border-radius: var(--r-sm); cursor: pointer; font: var(--t-sm); font-weight: 700; }
+  .ledger__body { display: none; }
+
+  /* The cap belongs to the whole rail, not to the list inside it.
+     `max-height: 52vh` bounded the body and left the head unbounded, so the opened rail was
+     52vh *plus* whatever the head needed: measured 63.5 % of a 640 x 512 window and 90.4 % of
+     a 320 x 256 one (400 % zoom), which is a money summary that has eaten the decision it
+     belongs to. Bounding the rail and letting the body take what is left keeps the same
+     scrollable list and gives the question back the rest of the screen. Nothing is hidden —
+     the body still scrolls to all of itself. 56vh is chosen so that no viewport loses room it
+     had before: the old effective heights were 456.6px at 360 x 780, 325.2px at 640 x 512 and
+     231.3px at 320 x 256, and 56vh is 436.8, 286.7 and 143.4. */
+  .ledger[data-open="true"] { max-height: 56vh; grid-template-rows: auto minmax(0, 1fr); }
+  .ledger[data-open="true"] .ledger__body { display: grid; align-content: start; min-height: 0; max-height: none; overflow-y: auto; }
 }
 
 /* ---------------------------------------------------------------------------
@@ -624,6 +709,15 @@
 .rank-list__controls button[aria-disabled="true"] { color: var(--ink-4); cursor: default; }
 .rank-list__controls button:not([aria-disabled="true"]):hover { background: var(--surface-sunken); }
 
+/* An order that did not hold up says so by changing, not by swapping one grey sentence for
+   another in the same bar. The list is marked as the thing to look at again, and the panel
+   under it takes the state — which is the difference between feedback and a paragraph. */
+.rank-list[data-checked="wrong"] li { border-left-color: var(--fin-over); background: var(--fin-over-soft); }
+.rank-list[data-checked="wrong"] .rank-list__place { color: var(--fin-over-ink); background: var(--surface); box-shadow: inset 0 0 0 2px var(--fin-over); }
+.stage-action[data-state="wrong"] { background: var(--fin-over-soft); border-color: var(--fin-over); border-left-color: var(--fin-over); }
+.stage-action[data-state="wrong"] p { color: var(--fin-over-ink); }
+.stage-action[data-state="wrong"] b { display: block; font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
+
 .chosen-total { margin-top: var(--s-5); max-width: 34rem; }
 
 /* ---------------------------------------------------------------------------
@@ -658,7 +752,15 @@
 .week-meter__part { display: grid; align-items: center; overflow: hidden; min-width: 0; padding-inline: 6px; color: var(--ink-invert); }
 .week-meter__part[data-part="commute"] { background: var(--time-commute); }
 .week-meter__part[data-part="rehab"] { background: var(--time-rehab); }
-.week-meter__part[data-part="clinics"] { background: var(--time-clinics); }
+
+/* The amber band takes dark ink, and it is the only one of the three that does.
+   White on `--time-clinics` (#b8801b) measures 3.42:1 at 11.5px/600 — below the 4.5:1 that
+   1.4.3 asks of body text, and the two bands beside it pass comfortably (commute 5.87:1,
+   rehab 6.69:1) because they are dark grounds. Amber is a light ground, so it reads with
+   light-ground ink: `--ink-1` on the same amber measures 5.35:1. The alternative was to
+   darken the token, which lives in `tokens.css` and is used elsewhere; this changes only the
+   band that fails. */
+.week-meter__part[data-part="clinics"] { color: var(--ink-1); background: var(--time-clinics); }
 .week-meter__part i { font-style: normal; font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
 
 .week-meter__paid { margin: -1em 0 0; }
@@ -764,6 +866,10 @@
 .resolve-weeks__list span { color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.08em; text-transform: uppercase; }
 .resolve-weeks__list b { color: var(--world-hero-ink); font: var(--t-ui); }
 
+/* Under the week strip, and quieter than it: the strip is the fact and this is the reading of
+   it, so it must not compete with the weeks for the first look. */
+.resolve-weeks__cause { max-width: 62ch; margin: var(--s-3) 0 0; color: var(--world-hero-body); font: var(--t-sm); font-weight: 400; }
+
 .resolve-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4); margin-top: var(--s-5); }
 .resolve-card { display: grid; align-content: start; gap: var(--s-2); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--border-strong); }
 .resolve-card[data-tone="balanced"] { border-top-color: var(--fin-balanced); }
@@ -777,6 +883,10 @@
 .resolve-card__lines dt { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
 .resolve-card__lines dd { margin: 0; font: var(--m-xs); font-feature-settings: var(--num); }
 .resolve-card__lines > div[data-alert="true"] dd { color: var(--fin-over-ink); }
+
+/* The sentence that makes the course card and the cash card add up. Ruled off from the verdict
+   above it because it is about the card standing next to this one, not about this one. */
+.resolve-card__reconcile { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--border-subtle); }
 
 .resolve-risks { margin-top: var(--s-7); }
 .resolve-risks .section-heading { margin-bottom: var(--s-5); }
@@ -843,7 +953,9 @@
 
 /* The receipt on the way out: what was written, and what the plan finally said. */
 .handed-in__record { margin-top: var(--s-6); padding: var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-left: 4px solid var(--bow-brand); }
-.handed-in__record blockquote { max-width: 70ch; margin: var(--s-4) 0; color: var(--ink-1); font: var(--t-body-lg); font-style: italic; }
+.handed-in__record blockquote { max-width: 70ch; margin: var(--s-3) 0 var(--s-5); color: var(--ink-1); font: var(--t-body-lg); font-style: italic; }
+.handed-in__said { margin: var(--s-5) 0 0; color: var(--ink-2); font: var(--t-ui); }
+.handed-in__reader { max-width: 66ch; margin: 0; padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
 .handed-in__numbers { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-7); margin: 0; padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); list-style: none; }
 .handed-in__numbers li { display: flex; align-items: baseline; gap: var(--s-3); }
 .handed-in__numbers span { color: var(--ink-2); font: var(--t-ui); }
@@ -864,3 +976,121 @@
 .opening__job .join-status { color: var(--ink-2); }
 .opening__job .join-status--problem { color: var(--fin-over-ink); }
 .opening__job .privacy-note { color: var(--ink-3); }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Week 3 — three claims on one week's cash, and the reason one was left out.
+   Added with the Week 3 decision that replaced the four-card season feed. Owned
+   by src/stages/SeasonWeeks.tsx; nothing else uses these class names.
+   Built single-column first so it holds at 360px without sideways scroll — every
+   grid below only gains columns above a width where they fit.
+   ───────────────────────────────────────────────────────────────────────────── */
+.claims { display: grid; gap: var(--s-4); }
+.claims__list { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.claims__list > li { display: grid; }
+.claims__list button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-3);
+  width: 100%;
+  padding: var(--s-3) var(--s-4);
+  text-align: left;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
+
+  /* The same 4px edge every pressable card in this product carries. Without it the three
+     claims sit on the page as information and the reason pills below are the only things
+     that read as controls. */
+  border-left: 4px solid var(--border-strong);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: border-color var(--dur-micro) var(--ease-standard), background var(--dur-micro) var(--ease-standard);
+}
+.claims__list button b { font: var(--t-ui); }
+.claims__list button strong { justify-self: end; font: var(--m-sm); font-feature-settings: var(--num); }
+
+/* Named rather than matched as "the spans in here": the mark is a span too, and the rule
+   below was placing it in the second column and stretching it across the price, which put
+   the affordance in the middle of the card instead of in front of the title. */
+.claims__detail,
+.claims__list button em { grid-column: 2 / -1; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.claims__list button em { color: var(--ink-3); font-style: normal; }
+.claims__list button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); border-color: var(--ink-1); }
+.claims__list button[aria-pressed="true"] .claims__detail { color: var(--surface-sunken); }
+.claims__list button[aria-disabled="true"] { cursor: default; opacity: 0.55; }
+
+/* Deliberately the same square as `.gap-tiles__mark` and `.interview__mark`, which is the
+   mark this product already uses to say "you can press this". It is restated rather than
+   added to that rule because `app.css` belongs to another change in flight; the two should
+   be merged into one selector list the moment it is free. */
+.claims__mark {
+  align-self: center;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  border: 2px solid var(--border-strong);
+  border-radius: var(--r-xs);
+}
+.claims__list button[aria-pressed="true"] .claims__mark { background: var(--fin-adjustable); border-color: var(--fin-adjustable); }
+.claims__list button[aria-pressed="true"] .claims__mark::after { content: "✓"; color: var(--ink-invert); font: 700 0.85rem/1 var(--font-ui); }
+
+.claims__refusal { margin: 0 0 var(--s-3); color: inherit; font: var(--t-ui); }
+.claims__refusal b { font-weight: 700; }
+
+.claims__left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-1) var(--s-3);
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-sunken);
+  border-radius: var(--r-md);
+}
+.claims__left strong { font: var(--m-lg); font-feature-settings: var(--num); }
+.claims__left span { flex: 1 1 20ch; min-width: 0; color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+
+.claims__why { display: grid; gap: var(--s-2); }
+.claims__why ul { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.claims__why button {
+  width: 100%;
+  padding: var(--s-2) var(--s-4);
+  text-align: left;
+  color: inherit;
+  font: var(--t-sm);
+  font-weight: 400;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-pill);
+  cursor: pointer;
+}
+.claims__why button[aria-pressed="true"] { color: var(--ink-invert); background: var(--ink-1); border-color: var(--ink-1); }
+
+/* Its own band, not a fourth row of the decision above it: the reason buttons end the
+   choice, and the four weeks are context standing apart from it. */
+.season-run { display: grid; gap: var(--s-2); margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); }
+.season-run > .field-label { margin: 0; }
+.season-run ol { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.season-run li {
+  display: grid;
+  grid-template-columns: 7ch minmax(0, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--s-3);
+}
+.season-run li > span { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.08em; text-transform: uppercase; }
+.season-run li > strong { font: var(--m-xs); font-feature-settings: var(--num); }
+.season-run li > i {
+  height: 6px;
+  display: block;
+  max-width: 100%;
+  background: var(--fin-reliable);
+  border-radius: var(--r-pill);
+}
+.season-run li[data-now="true"] > span { color: var(--world-accent); }
+
+@media (min-width: 640px) {
+  .claims__list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
+  .claims__why ul { grid-template-columns: 1fr 1fr; }
+}

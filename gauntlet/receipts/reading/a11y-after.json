@@ -1,0 +1,69 @@
+{
+  "when": "after",
+  "at": "2026-08-19T03:17:47.238Z",
+  "findings": {
+    "myClassesAxe": {
+      "url": "http://127.0.0.1:4311/educator/classes",
+      "violations": [],
+      "headingWalk": [
+        "H1 Your 2 classes.",
+        "H2 Period 5 · Grade 7",
+        "H2 Period 3 · Grade 7",
+        "H2 Start another class"
+      ]
+    },
+    "routeFocus": {
+      "classesToGuide": "H1 · Plan Under Pressure",
+      "guideToObjectives": "H1 · What do you want to assess?"
+    },
+    "eraseConfirm": {
+      "focused": "BUTTON · Keep it",
+      "focusedIsKeepIt": true,
+      "warn": {
+        "id": "roster-erase-1",
+        "role": null,
+        "ariaLive": null
+      },
+      "describedBy": [
+        {
+          "label": "Erase everything",
+          "describedBy": "roster-erase-1"
+        },
+        {
+          "label": "Keep it",
+          "describedBy": "roster-erase-1"
+        },
+        {
+          "label": "Print a new card",
+          "describedBy": null
+        },
+        {
+          "label": "Take off the list",
+          "describedBy": null
+        },
+        {
+          "label": "Erase",
+          "describedBy": null
+        },
+        {
+          "label": "Print a new card",
+          "describedBy": null
+        },
+        {
+          "label": "Take off the list",
+          "describedBy": null
+        },
+        {
+          "label": "Erase",
+          "describedBy": null
+        }
+      ],
+      "announced": "Keep it, button — Erase Nadia Haddad? Their name, everything they turned in and everything you wrote back are deleted from BOW. It cannot be undone, and the rest of the class is not affected."
+    },
+    "eraseOrder": [
+      "0: P Erase Nadia Haddad? Their name",
+      "1: BUTTON Erase everything",
+      "2: BUTTON Keep it"
+    ]
+  }
+}

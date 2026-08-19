@@ -1,0 +1,32 @@
+# SHA de6207c.  FINDING: the managed (Upstash/Vercel KV) keyCheck reports a FALSE "mismatch"
+# on a correct, healthy deployment — and still fails open in two other states.
+#
+# Cause: keyCheck() falls back to `DBSIZE > 0 ? "mismatch" : "fresh"` when the canary is absent.
+# DBSIZE counts the WHOLE database, and the canary is planted only by putClass().
+
+## keyCheck() across states, CORRECT key throughout (mock KV, spec-correct command protocol):
+  empty KV, normal DBSIZE                                 -> fresh      (right)
+  class written (canary planted), normal DBSIZE           -> ok         (right)
+  TEACHER only, no class -> canary never planted          -> mismatch   <== FALSE ALARM
+  empty BOW data but KV SHARED with another app (10 keys) -> mismatch   <== FALSE ALARM
+  teacher only + DBSIZE returns null (unsupported/denied) -> fresh      <== FAILS OPEN
+  teacher only + DBSIZE returns HTTP 403 (token lacks perm)-> THREW: Class store rejected DBSIZE: 403
+
+## End-to-end against the REAL server + a mock KV, correct key, brand-new deployment:
+  BOW class service on 127.0.0.1:4491 (redis store)
+  brand-new, nothing written:        health HTTP 200   storeKey=fresh ok=true
+  a teacher signs up (the normal first action):  signup HTTP 201
+  immediately after:                 health HTTP 503   storeKey=mismatch ok=false classroomReady=false
+  reason: "The redis store holds records this key cannot open. BOW_STORE_KEY has changed, or is
+           not the one these classes were written with. Nothing has been deleted — put the
+           original key back."
+
+# The key has NOT changed. Nothing is wrong. But health is 503 and the reason instructs the
+# operator to restore a key that is already correct. handler.ts calls health "the first thing to
+# check after a deploy" and notes "a smoke test that only checks for 200 still catches it" — so a
+# deploy gate or load-balancer probe on health will fail every managed deployment from the moment
+# the first teacher signs up until someone happens to create a class.
+#
+# Separately: a KV shared with any other application (a common Vercel KV setup) reports mismatch
+# on day one with zero BOW data; and a token/proxy that cannot answer DBSIZE silently fails open,
+# which is the exact property the fix was meant to remove.

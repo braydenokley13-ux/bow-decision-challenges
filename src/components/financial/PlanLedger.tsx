@@ -99,7 +99,10 @@ export function PlanLedger({ input, setupTitle, onLockedMoveAttempt, known = ALL
       : []),
     ...(!known.bonuses ? [{ key: "conditional", tone: "conditional", sign: "+", label: ledger.maybePending, note: null, amount: 0, locked: false, known: false }] : []),
     { key: "setup", tone: "locked", sign: "−", label: "Where Avery lives", note: `${setupTitle} · ${n.weeks} weeks`, amount: Number(n.setupCosts[input.setupId]), locked: true, known: true },
-    { key: "essentials", tone: "locked", sign: "−", label: "Food, phone and laundry", note: `${n.weeks} weeks`, amount: Number(n.essentialsTotal), locked: true, known: known.essentials },
+    // The weekly rate is a term of the plan, not the answer to the question about it. It is
+    // named here because the question that asks for the eight-week total stopped printing the
+    // multiplication above the box: the rate has to be findable, and this is where it lives.
+    { key: "essentials", tone: "locked", sign: "−", label: "Food, phone and laundry", note: `${formatDollars(n.essentialsPerWeek)} a week · ${n.weeks} weeks`, amount: Number(n.essentialsTotal), locked: true, known: known.essentials },
     ...(input.depositTaken ? [{ key: "deposit", tone: "locked", sign: "−", label: "Course seat", note: "reserved and paid", amount: Number(n.course.depositPrice), locked: true, known: true }] : []),
     ...(input.includeOptionalWork ? [{ key: "clinic-cost", tone: "locked", sign: "−", label: "Getting to the Saturday clinics", note: null, amount: Number(n.optionalWorkCost), locked: true, known: true }] : []),
     ...(input.week5Applied
@@ -111,7 +114,10 @@ export function PlanLedger({ input, setupTitle, onLockedMoveAttempt, known = ALL
     .map((category: CategoryId) => ({ category, amount: input.amounts[category] }))
     .filter((row) => row.amount > 0);
   const state = balance === 0 ? "settled" : balance < 0 ? "over" : "unplaced";
-  const liveLabel = balance === 0 ? ledger.settled : balance < 0 ? ledger.overspent : ledger.unplaced;
+  // On the boards where a bill has landed, the plan is not "over by" anything — it is short,
+  // and the commit bar beside it says so in those words. One state, one name for it.
+  const shortLabel = input.week5Applied ? ledger.stillToFind : ledger.overspent;
+  const liveLabel = balance === 0 ? ledger.settled : balance < 0 ? shortLabel : ledger.unplaced;
   const showLive = placing && complete;
 
   return (
@@ -162,9 +168,10 @@ export function PlanLedger({ input, setupTitle, onLockedMoveAttempt, known = ALL
           <span>{ledger.left}</span>
           {complete
             ? <strong className="money">{formatDollars(Math.max(0, toDecide))}</strong>
-            /* A dash, not a third copy of "not worked out yet" — the two lines it is waiting
-               on already say so, directly above it. */
-            : <em className="ledger__waiting" aria-label={ledger.leftPending}>—</em>}
+            /* An em dash is not a value. It read as a figure the rail had failed to work out
+               rather than as one the student has not established yet, which is the whole
+               difference the greyed lines above are drawing. */
+            : <em className="ledger__waiting">{ledger.pending}</em>}
         </p>
 
         {complete && conditional > 0 && (
@@ -194,8 +201,15 @@ export function PlanLedger({ input, setupTitle, onLockedMoveAttempt, known = ALL
             {/* Withheld while it would say nothing new. Before a dollar is placed the money
                 still looking for a job *is* the money left to decide, and printing it a
                 second inch below the figure it equals reads as two different facts. */}
+            {/* The live region is permanent and the row it describes is not. A region that
+                arrives with its text already in it announces nothing — the region has to
+                exist, empty, before the words do — so this one is always here and the row is
+                hidden from assistive technology rather than read a second time. */}
+            <p className="visually-hidden" aria-live="polite">
+              {placedRows.length > 0 || balance !== 0 ? `${liveLabel}${balance !== 0 ? ` ${formatDollars(Math.abs(balance))}` : ""}.` : ""}
+            </p>
             {(placedRows.length > 0 || balance !== 0) && (
-              <p className="ledger__live" data-state={state} aria-live="polite">
+              <p className="ledger__live" data-state={state} aria-hidden="true">
                 <span>{liveLabel}</span>
                 {balance !== 0 && <strong className="money">{formatDollars(Math.abs(balance))}</strong>}
               </p>

@@ -1,0 +1,81 @@
+=== TEXT ===
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+BEFORE THE SEASON
+1
+2
+3
+4
+5
+6
+7
+8
+
+Before the season. Part 2 of 5: The plan.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+BUILD AVERY’S PLAN · QUESTION 3 OF 4
+
+WHAT DOES AVERY ALREADY OWE?
+
+AVERY’S MONEY
+
++
+Arrives no matter what
+$5,000
++
+Only if a bonus rule is met
+$1,800
+−
+Where Avery lives
+−$300
+Cousin’s Spare Room · 8 weeks
+−
+Food, phone and laundry
+−$1,600
+$200 a week · 8 weeks
+
+LEFT FOR AVERY TO DECIDE
+$4,900
+
+$1,800 of this might not arrive. If neither bonus comes, Avery has $3,100 to decide.
+
+1
+Money coming in
+2
+The two bonuses
+3
+Money already owed
+4
+What Avery does with the rest
+
+How much is gone before Avery chooses anything?
+
+You worked this out. $1,600 of Avery’s money is gone on food, phone and laundry before Avery chooses anything. Rent is on top of it, and both are on the right.
+
+Back
+Now decide what Avery protects
+Reading help
+
+=== CONTROLS ===
+A "Back to the educator guide"
+A "B / BOW / DECISION CHALLENGES"
+BUTTON[button] ""
+BUTTON[button] "See where the money goes"
+BUTTON[button] "Where Avery lives"
+BUTTON[button] "Food, phone and laundry"
+BUTTON[button] "1 / Money coming in"
+BUTTON[button] "2 / The two bonuses"
+BUTTON[button] "4 / What Avery does with the rest"
+BUTTON[button] "Back"
+BUTTON[button] "Now decide what Avery protects"
+BUTTON[button] "Reading help"

@@ -1,0 +1,1 @@
+{"ok":true,"store":"file","durable":true,"classroomReady":true,"storeKey":"fresh","reason":"Classes are kept in the file store for 120 days.","challenges":["plan-under-pressure"],"retention":{"days":120,"lastSweepAt":null,"lastSweepDeleted":null},"at":1787109302767}

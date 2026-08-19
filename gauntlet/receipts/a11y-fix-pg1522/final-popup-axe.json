@@ -1,0 +1,10 @@
+{
+  "screen": "popup-owed-settled",
+  "url": "http://127.0.0.1:5610/challenges/plan-under-pressure?class=NCNMX",
+  "violations": []
+}
+{
+  "screen": "popup-toplan-settled",
+  "url": "http://127.0.0.1:5610/challenges/plan-under-pressure?class=NCNMX",
+  "violations": []
+}

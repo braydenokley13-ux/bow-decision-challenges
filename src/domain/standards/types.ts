@@ -13,6 +13,15 @@ import type { CompetencyId } from "../competency/types";
  * way nothing catches: New Jersey will have a 1.3 too. The type below makes the ambiguity
  * unrepresentable rather than merely discouraged.
  *
+ * **`code` is only unique inside one grade band, and nothing about the type says so.**
+ * NYSED's own document publishes three 1.1s — one in K–4, one in 5–8, one in 9–12 — all
+ * under the one `frameworkId` this layer would give a K–4 or a 9–12 ingestion. Only 5–8 is
+ * carried today, so `code` happens to be unique per framework and every lookup in this file
+ * gets away with pretending it always will be. `mappingIntegrity.test.ts` fails the build
+ * the day that stops being true — a second band added to `NYSED_2026_STANDARDS` without a
+ * code disjoint from the first — and `standardByRef` below refuses to guess rather than
+ * silently returning whichever one of two objectives happened to be first in the array.
+ *
  * Nothing here references a world. A world never references an objective. The mapping
  * table is the only join, and it is the only file that changes when a state is added.
  */
@@ -48,6 +57,26 @@ export interface FrameworkLabels {
    * BOW may never say a state has reviewed, approved or endorsed it.
    */
   attribution: string;
+  /**
+   * What the state's own requirement covers, against what this product reaches.
+   *
+   * A standards verifier reading NYSED's regulation before reading anything here made the
+   * point that `attribution` is necessary and not sufficient: "NYSED has not reviewed or
+   * endorsed BOW" is true and says nothing about scope. A district administrator reading
+   * "Matched to NYSED objectives · Ready to assign" beside a requirement they are being
+   * attested against can reasonably infer more than is true, and the product should close
+   * that inference itself rather than wait to be asked.
+   */
+  scope: string;
+  /**
+   * Whether the state assesses this subject at all.
+   *
+   * The likeliest place for a district to form a wrong belief about an assessment product,
+   * precisely because the product is good at what it does: there is no state assessment of
+   * personal finance, none is required, and nothing BOW produces is needed for the
+   * attestation a district actually makes.
+   */
+  stateAssessment: string;
 }
 
 /** One framework's grouping level — NYSED calls these topics; another state may not. */
@@ -55,6 +84,8 @@ export interface FrameworkTopic {
   code: string;
   /** The state's own name for it, in the state's own order. Not re-sorted, not renamed. */
   name: string;
+  /** The state's own one-line definition of the topic — not BOW's paraphrase of it. */
+  description: string;
 }
 
 /** One state's (or one organisation's) published set of objectives. */
@@ -68,6 +99,21 @@ export interface Framework {
   sourcePdfUrl: string;
   /** The date a human checked the wording character by character. */
   verifiedOn: string;
+  /**
+   * The PDF's own fingerprint at `sourcePdfUrl`, checked on `verifiedOn`.
+   *
+   * A state can re-issue a document under the exact same version label — this one already
+   * did, on 2026-07-16, a month before `verifiedOn` — and a `version` string alone cannot
+   * tell a stale verification from a current one, or say which copy a given `verifiedOn`
+   * date actually checked. These three are what was actually downloaded and checked on
+   * `verifiedOn`, so the next re-download has something to diff against: a hash match proves
+   * nothing changed since; a mismatch on any of the three is the signal to re-verify every
+   * objective's wording before trusting the new file, rather than assuming the label alone
+   * means it agrees with what is written below.
+   */
+  sourcePdfSha256: string;
+  sourcePdfBytes: number;
+  sourcePdfPages: number;
   topics: readonly FrameworkTopic[];
   labels: FrameworkLabels;
 }

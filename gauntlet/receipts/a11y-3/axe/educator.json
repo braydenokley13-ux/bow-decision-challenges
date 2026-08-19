@@ -1,0 +1,95 @@
+{
+  "screen": "01-new-class",
+  "url": "http://127.0.0.1:5410/educator/classes/new",
+  "violations": []
+}
+{
+  "screen": "02-class-created",
+  "url": "http://127.0.0.1:5410/educator/classes/new",
+  "violations": []
+}
+{
+  "screen": "03-roster-empty",
+  "url": "http://127.0.0.1:5410/educator/class/VPXH4/roster?key=QRVCRPRCFVNQF4NDECMWGXUG",
+  "violations": []
+}
+{
+  "screen": "04-roster-cards",
+  "url": "http://127.0.0.1:5410/educator/class/VPXH4/roster?key=QRVCRPRCFVNQF4NDECMWGXUG",
+  "violations": []
+}
+{
+  "screen": "04b-guide-after-route-change",
+  "url": "http://127.0.0.1:5410/educator/guide",
+  "violations": []
+}
+{
+  "screen": "05-class-overview",
+  "url": "http://127.0.0.1:5410/educator/class/WXDFF?key=TRTTXVKMAYY4AUD4WV3H47YM",
+  "violations": []
+}
+{
+  "screen": "06-reading-queue",
+  "url": "http://127.0.0.1:5410/educator/class/WXDFF/reading?key=TRTTXVKMAYY4AUD4WV3H47YM",
+  "violations": []
+}
+{
+  "screen": "07-reading-saved",
+  "url": "http://127.0.0.1:5410/educator/class/WXDFF/reading?key=TRTTXVKMAYY4AUD4WV3H47YM",
+  "violations": []
+}
+{
+  "screen": "08-student-evidence",
+  "url": "http://127.0.0.1:5410/educator/class/WXDFF/students/1?key=TRTTXVKMAYY4AUD4WV3H47YM",
+  "violations": []
+}
+{
+  "screen": "09-student-tab",
+  "url": "http://127.0.0.1:5410/educator/class/WXDFF/students/1?key=TRTTXVKMAYY4AUD4WV3H47YM",
+  "violations": []
+}
+{
+  "screen": "10-debrief",
+  "url": "http://127.0.0.1:5410/educator/class/WXDFF/debrief?key=TRTTXVKMAYY4AUD4WV3H47YM",
+  "violations": []
+}
+{
+  "screen": "11-shareout",
+  "url": "http://127.0.0.1:5410/educator/class/WXDFF/share-out?key=TRTTXVKMAYY4AUD4WV3H47YM",
+  "violations": []
+}
+{
+  "screen": "20-classes-list",
+  "url": "http://127.0.0.1:5410/educator/classes",
+  "violations": []
+}
+{
+  "screen": "20-sign-in",
+  "url": "http://127.0.0.1:5410/educator/sign-in",
+  "violations": []
+}
+{
+  "screen": "20-guide",
+  "url": "http://127.0.0.1:5410/educator/guide",
+  "violations": []
+}
+{
+  "screen": "20-objectives",
+  "url": "http://127.0.0.1:5410/educator/objectives",
+  "violations": []
+}
+{
+  "screen": "20-try-it-as-a-student",
+  "url": "http://127.0.0.1:5410/educator/try",
+  "violations": []
+}
+{
+  "screen": "20-assign",
+  "url": "http://127.0.0.1:5410/educator/classes",
+  "violations": []
+}
+{
+  "screen": "20-the-sample-class",
+  "url": "http://127.0.0.1:5410/educator/class/DEMO",
+  "violations": []
+}

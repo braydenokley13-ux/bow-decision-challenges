@@ -1,0 +1,1222 @@
+RUN runA-optimistic-frugal
+
+
+########## 01-setup-cards ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+BEFORE THE SEASON
+1
+2
+3
+4
+5
+6
+7
+8
+
+Before the season. Part 1 of 5: The offer.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+WHERE AVERY STAYS
+
+NOW PICK WHERE AVERY LIVES.
+
+That is the order. Pick one, then add up what it costs Avery over the eight weeks.
+
+OPTION A
+Gym District Sublet
+Eight weeks
+$1,800
+
+5 min to the gym
+1 hour a week
+
+Walk to practice, walk home. Costs the most, asks the least of Avery’s week.
+
+Choose this setup
+OPTION B
+Teammate Share
+Eight weeks
+$1,000
+
+30 min by bus
+6 hours a week
+
+A room split with a teammate on the same schedule, half an hour out on the bus.
+
+Choose this setup
+OPTION C
+Cousin’s Spare Room
+Eight weeks
+$300
+
+70 min each way
+14 hours a week
+
+Avery’s cousin won’t take rent. The room is across the city, and the trip is Avery’s to pay in time.
+
+Selected
+WHAT THE COUSIN’S SPARE ROOM COSTS AVERY
+
+No rent. $300 for groceries and gas across the 8 weeks.
+
+All eight weeks, before anything else is paid for.
+
+TOTAL
+$
+Check
+
+That's the full amount.
+
+Cousin’s Spare Room. $300 of Avery’s money is spoken for, and 14 hours of every week belong to the trip.
+
+Build the plan
+Reading help
+
+
+########## 02-opening-board ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+BEFORE THE SEASON
+1
+2
+3
+4
+5
+6
+7
+8
+
+Before the season. Part 2 of 5: The plan.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+BUILD AVERY’S PLAN · QUESTION 4 OF 4
+
+WHAT DOES AVERY DO WITH THE REST?
+
+AVERY’S MONEY
+
++
+Arrives no matter what
+$5,000
++
+Only if a bonus rule is met
+$1,800
+−
+Where Avery lives
+−$300
+Cousin’s Spare Room · 8 weeks
+−
+Food, phone and laundry
+−$1,600
+$200 a week · 8 weeks
+
+LEFT FOR AVERY TO DECIDE
+$4,900
+
+$1,800 of this might not arrive. If neither bonus comes, Avery has $3,100 to decide.
+
+WHERE YOU HAVE PUT IT
+
+Nothing yet.
+
+Still to give a job $4,900.
+
+STILL TO GIVE A JOB
+$4,900
+
+1
+Money coming in
+2
+The two bonuses
+3
+Money already owed
+4
+What Avery does with the rest
+
+Give each part of the plan an amount.
+
+There is no right split. There is only what Avery will be glad of in eight weeks.
+
+Sports-media course
+Nothing put toward the $1,200 the course costs.
+$0
+−
++
+Backup money
+Nothing kept back. If anything goes wrong, it comes out of the rest of the plan.
+$0
+−
++
+Rides and rest
+Nothing paid for rides or the physio a tired body needs. Getting everywhere still takes Avery 14 hours a week.
+$0
+−
++
+
+AVERY’S WEEK
+
+14 hours
+a week of getting places, outside practice, games and school
+
+Travel to practice
+
+This is what the trip alone takes. Rehab and anything else Avery takes on would come out of the same week.
+
+Every $150 spent on rides buys back 1 hour a week. There are only 14 hours to buy, so past $2,100 more money buys nothing.
+
+SEND THE LAST $4,900 TO ONE ROW
+Backup money
+Rides and rest
+
+A shortcut. Or use − and + above.
+
+$4,900 still has no job.
+
+Check this plan
+Back
+Reading help
+
+
+########## 03-fallback-check ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+BEFORE THE SEASON
+1
+2
+3
+4
+5
+6
+7
+8
+
+Before the season. Part 2 of 5: The plan.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+A CHECK · THE SAME PLAN WITHOUT THE BONUSES
+
+WHAT IF THEY NEVER ARRIVE?
+
+AVERY’S MONEY
+
++
+Arrives no matter what
+$5,000
+−
+Where Avery lives
+−$300
+Cousin’s Spare Room · 8 weeks
+−
+Food, phone and laundry
+−$1,600
+$200 a week · 8 weeks
+
+LEFT FOR AVERY TO DECIDE
+$3,100
+
+WHERE YOU HAVE PUT IT
+
+Sports-media course
+$1,200
+Backup money
+$1,800
+Rides and rest
+$1,900
+
+Over by $1,800.
+
+OVER BY
+$1,800
+
+Take out the $1,800 you were counting on and see whether the plan still holds. Everything Avery owes is exactly where it was. Only your three amounts can move.
+
+Perfect attendance bonus
+$800
+
+Avery only gets this if Avery makes every practice and every game.
+
+You counted on it. Take it back out and see.
+
+Making the cut bonus
+$1,000
+
+Avery only gets this if The Flight qualifies for the showcase.
+
+You counted on it. Take it back out and see.
+
+SAFETY CHECK
+
+Show it still works without them.
+
+Rent, the weekly basics and where Avery lives do not change. This is a check, not a new plan — the season runs on the plan you saved.
+
+−
+Making the cut bonus
+$1,000
+−
+Perfect attendance bonus
+$800
+Sports-media course
+Enough to pay the $1,200 the course costs.
+$1,200
+Take $1,200 from Sports-media course
+−
++
+Backup money
+$1,800 kept aside in case something goes wrong.
+$1,800
+Take $1,800 from Backup money
+−
++
+Rides and rest
+Pays for rides. Avery gets 12 hours a week back, and still spends 2 hours. The last $100 in this row is short of the $150 another hour costs.
+$1,900
+Take $1,800 from Rides and rest
+−
++
+
+AVERY’S WEEK
+
+14 hours
+a week of getting places, outside practice, games and school — 12 paid for, 2 still on Avery
+
+Travel to practice
+
+Paid for · 12h
+
+This is what the trip alone takes. Rehab and anything else Avery takes on would come out of the same week.
+
+Every $150 spent on rides buys back 1 hour a week. There are only 14 hours to buy, so past $2,100 more money buys nothing.
+
+$1,800 more than Avery has.
+
+Check this plan
+Reading help
+
+
+########## 04-weeks-1-4 ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+WEEKS 1–4
+1
+2
+3
+4
+5
+6
+7
+8
+
+Weeks 1–4. Part 3 of 5: Weeks 1–4.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+WEEKS 1 TO 4
+
+WEEK 3 PAYS AVERY IN CASH.
+
+Rent and the basics leave the account on schedule. Then Avery covers a teammate’s shift and is handed $150. It is not in the plan and it cannot go in — and three things want it before Sunday.
+
+Team shoes
+$120
+The pair Avery plays in are splitting along the side. Avery can keep playing in them. It hurts.
+Away-game travel share
+$60
+Everyone on the bus pays their share. Avery already told the coach they were in.
+A present for Avery's sister
+$45
+She turns eleven on Saturday.
+
+$150
+left of $150. Cash Avery does not spend this week goes nowhere.
+
+IN HAND AT THE END OF EACH WEEK · 56 HOURS ON THE ROAD
+
+WEEK 1
+$825
+WEEK 2
+$1,150
+WEEK 3
+$1,475
+WEEK 4
+$1,800
+
+Week 4 · the course office is calling
+Reading help
+
+
+########## 05-week5-reveal ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+WEEK 5
+1
+2
+3
+4
+5
+6
+7
+8
+
+Week 5. Part 4 of 5: Week 5.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+WEEK 5
+
+THE SHOWCASE IS OFF.
+MON
+
+WEEK 5 · TEAM UPDATE
+
+Storm damage closed the arena. The regional showcase is cancelled, so the Flight never qualifies for it.
+
+THU
+
+WEEK 5 · SAME WEEK
+
+Avery lands hard on a loose ball. A wrist brace and off-site rehab, twice a week, until the season ends.
+
+#07
+AVERY
+
+Rehab runs to 8pm, twice a week. My cousin drives out to get me and I cover the gas.
+
+THE PLAN AVERY WALKED INTO THIS WEEK WITH
+
+Sports-media course
+$1,000 paid
+Backup money
+$1,800
+Rides and rest
+$1,900
+
+It was built for a season that still had a showcase in it.
+
+WHAT THIS COSTS AVERY
+
+WORK OUT WHAT WEEK 5 JUST DID TO THE PLAN.
+
+Some of these changed this week. Some of them did not. Tap the ones that changed, add them up, and type the total.
+
+BILL
+Where Avery lives
+8 weeks at the Cousin’s Spare Room.
+$300
+BONUS
+Making the cut bonus
+Paid only if the Flight qualifies for the showcase. Your plan counted on it.
+$1,000
+BILL
+Required brace and off-site rehab
+What the clinic charges for the brace and the sessions.
+$700
+BILL
+Course seat
+Reserved at the Week 4 deadline.
+$1,000
+BILL
+Extra travel to rehab
+Getting to rehab and back from the Cousin’s Spare Room.
+$300
+BILL
+Food, phone and laundry
+$200 a week, all 8 weeks.
+$1,600
+TOTAL CHANGE TO AVERY’S MONEY
+
+Everything Week 5 took away, plus every new bill it added.
+
+Type it as a plain amount — no minus sign.
+
+TOTAL
+$
+Check
+
+Reading help
+
+
+########## 06-first-response-triage ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+WEEK 5
+1
+2
+3
+4
+5
+6
+7
+8
+
+Week 5. Part 4 of 5: Week 5.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+WEEK 5 · FIRST RESPONSE
+
+SOMETHING HAS TO GIVE.
+
+AVERY’S MONEY
+
++
+Arrives no matter what
+$5,000
++
+Only if a bonus rule is met
+$800
+−
+Where Avery lives
+−$300
+Cousin’s Spare Room · 8 weeks
+−
+Food, phone and laundry
+−$1,600
+$200 a week · 8 weeks
+−
+Course seat
+−$1,000
+reserved and paid
+−
+New bills from Week 5
+−$1,000
+
+LEFT FOR AVERY TO DECIDE
+$1,900
+
+$800 of this might not arrive. If neither bonus comes, Avery has $1,100 to decide.
+
+WHERE YOU HAVE PUT IT
+
+Backup money
+$1,800
+Rides and rest
+$1,900
+
+Still to find $1,800.
+
+STILL TO FIND
+$1,800
+
+Week 5 landed on the plan you built.
+The $1,000 Making the cut bonus is gone
+Required brace and off-site rehab, and the travel it takes: $1,000, now locked in
+
+Every amount below is money you already promised somewhere else. The bar at the bottom says how much is missing. Take it out of whichever ones Avery can do without.
+
+Sports-media course
+
+Seat reserved for $1,000. That money is already committed.
+Paid
+Backup money
+Covers the whole $800 this plan is counting on.
+$1,800
+Take $1,800 from Backup money
+−
++
+Rides and rest
+Pays for rides. Avery gets 12 hours a week back, and still spends 7 hours. The last $100 in this row is short of the $150 another hour costs.
+$1,900
+Take $1,800 from Rides and rest
+−
++
+
+AVERY’S WEEK
+
+19 hours
+a week of getting places, outside practice, games and school — 12 paid for, 7 still on Avery
+
+Travel to practice
+Rehab
+8 hours is all Avery has
+
+Paid for · 12h
+
+Avery can fit it all in and makes every session, and the $800 attendance bonus still arrives.
+
+Every $150 spent on rides buys back 1 hour a week. There are only 19 hours to buy, so past $2,850 more money buys nothing.
+
+$1,800 still to find.
+
+Check this plan
+Reading help
+
+
+########## 07-opportunity ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+WEEK 5
+1
+2
+3
+4
+5
+6
+7
+8
+
+Week 5. Part 4 of 5: Week 5.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+WEEK 5 · TWO CALLS
+
+TWO MORE CALLS TO MAKE.
+
+AVERY’S MONEY
+
++
+Arrives no matter what
+$5,000
+−
+Where Avery lives
+−$300
+Cousin’s Spare Room · 8 weeks
+−
+Food, phone and laundry
+−$1,600
+$200 a week · 8 weeks
+−
+Course seat
+−$1,000
+reserved and paid
+−
+New bills from Week 5
+−$1,000
+
+LEFT FOR AVERY TO DECIDE
+$1,100
+
+MESSAGE · FLIGHT COMMUNITY OFFICE
+
+4 Saturday clinics. $500.
+
+The team runs skills clinics for younger players and is short a coach. 4 Saturdays, the last 4 of the season, and the money lands before the 8 weeks end.
+
+AVERY GAINS
++$500
+WHAT HAPPENS TO AVERY’S SATURDAYS
+Sat · wk 5
+Open
+Sat · wk 6
+Open
+Sat · wk 7
+Open
+Sat · wk 8
+Open
+Avery’s only open block for rest, rehab, and everything that is not basketball.
+Take the clinics
+Keep the Saturdays
+
+The money is real and so is the tiredness.
+
+YOUR CALL · THE PERFECT ATTENDANCE BONUS
+
+Is it still in the plan?
+
+Avery has made every session so far. The brace does not change the rule: miss one and the bonus is gone.
+
+Week 6
+Every session
+Week 7
+Every session
+Week 8
+Every session
+Yes — count on it
+No — plan without it
+
+Say yes and you will be asked to show the plan still works if it never comes.
+
+Two calls still to make. The plan moves once both are answered.
+
+Reading help
+
+
+########## 08-final-repair ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+WEEK 5
+1
+2
+3
+4
+5
+6
+7
+8
+
+Week 5. Part 4 of 5: Week 5.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+WEEK 5 · TWO CALLS
+
+TWO MORE CALLS TO MAKE.
+
+AVERY’S MONEY
+
++
+Arrives no matter what
+$5,500
++
+Only if a bonus rule is met
+$800
+−
+Where Avery lives
+−$300
+Cousin’s Spare Room · 8 weeks
+−
+Food, phone and laundry
+−$1,600
+$200 a week · 8 weeks
+−
+Course seat
+−$1,000
+reserved and paid
+−
+Getting to the Saturday clinics
+−$100
+−
+New bills from Week 5
+−$1,000
+
+LEFT FOR AVERY TO DECIDE
+$2,300
+
+$800 of this might not arrive. If neither bonus comes, Avery has $1,500 to decide.
+
+WHERE YOU HAVE PUT IT
+
+Backup money
+$950
+Rides and rest
+$950
+
+Still to give a job $400.
+
+STILL TO GIVE A JOB
+$400
+
+MESSAGE · FLIGHT COMMUNITY OFFICE
+
+4 Saturday clinics. $500.
+AVERY GAINS
++$500
+WHAT HAPPENS TO AVERY’S SATURDAYS
+Sat · wk 5
+Clinic
+Sat · wk 6
+Clinic
+Sat · wk 7
+Clinic
+Sat · wk 8
+Clinic
+Avery’s only open block for rest, rehab, and everything that is not basketball.
+Take the clinics
+Keep the Saturdays
+
+The money is real and so is the tiredness.
+
+YOUR CALL · THE PERFECT ATTENDANCE BONUS
+
+Is it still in the plan?
+Week 6
+Every session
+Week 7
+Every session
+Week 8
+Every session
+Yes — count on it
+No — plan without it
+
+Say yes and you will be asked to show the plan still works if it never comes.
+
+FINAL PLAN
+
+Your calls moved the money.
+
+Everything else is where you left it in Week 5. Decide where this lands.
+
++
+Saturday clinics
+$500
+−
+Getting there, and the physio a tired body needs
+$100
+
+Sports-media course
+
+Seat reserved for $1,000. That money is already committed.
+Paid
+Backup money
+Covers the whole $800 this plan is counting on.
+$950
+Add $400 to Backup money
+−
++
+Rides and rest
+Pays for rides. Avery gets 6 hours a week back, and still spends 19 hours. The last $50 in this row is short of the $150 another hour costs.
+$950
+Add $400 to Rides and rest
+−
++
+
+AVERY’S WEEK
+
+25 hours
+a week of getting places, outside practice, games and school — 6 paid for, 19 still on Avery
+
+Travel to practice
+Rehab
+Clinics
+8 hours is all Avery has
+
+Paid for · 6h
+
+11 hours more than Avery has. Leave the plan like this and something gets missed, and then the $800 attendance bonus does not arrive.
+
+Every $150 spent on rides buys back 1 hour a week. There are only 25 hours to buy, so past $3,750 more money buys nothing.
+
+$400 still has no job.
+
+Check this plan
+Reading help
+
+
+########## 09-remaining-risk ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+WEEK 5
+1
+2
+3
+4
+5
+6
+7
+8
+
+Week 5. Part 4 of 5: Week 5.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+WEEK 5 · LAST CHECK
+
+NOW SHOW IT WORKS WITHOUT THE $800.
+
+AVERY’S MONEY
+
++
+Arrives no matter what
+$5,500
+−
+Where Avery lives
+−$300
+Cousin’s Spare Room · 8 weeks
+−
+Food, phone and laundry
+−$1,600
+$200 a week · 8 weeks
+−
+Course seat
+−$1,000
+reserved and paid
+−
+Getting to the Saturday clinics
+−$100
+−
+New bills from Week 5
+−$1,000
+
+LEFT FOR AVERY TO DECIDE
+$1,500
+
+WHERE YOU HAVE PUT IT
+
+Backup money
+$1,150
+Rides and rest
+$1,150
+
+Still to find $800.
+
+STILL TO FIND
+$800
+
+THE SATURDAYS
+Coaching. +$500, and the rest block is gone.
+THE PERFECT ATTENDANCE BONUS
+Counted. Which means $800 of this plan depends on Avery making every session.
+
+LAST CHECK
+
+Take it out and see.
+
+Same plan, same bills, that money gone. If it never arrives, this is what Avery is living on.
+
+−
+Perfect attendance bonus — never arrives
+$800
+
+Sports-media course
+
+Seat reserved for $1,000. That money is already committed.
+Paid
+Backup money
+$1,150 kept aside in case something goes wrong.
+$1,150
+Take $800 from Backup money
+−
++
+Rides and rest
+Pays for rides. Avery gets 7 hours a week back, and still spends 18 hours. The last $100 in this row is short of the $150 another hour costs.
+$1,150
+Take $800 from Rides and rest
+−
++
+
+AVERY’S WEEK
+
+25 hours
+a week of getting places, outside practice, games and school — 7 paid for, 18 still on Avery
+
+Travel to practice
+Rehab
+Clinics
+8 hours is all Avery has
+
+Paid for · 7h
+
+10 hours more than Avery has. Leave the plan like this and something gets missed, and then the $800 attendance bonus does not arrive.
+
+Every $150 spent on rides buys back 1 hour a week. There are only 25 hours to buy, so past $3,750 more money buys nothing.
+
+$800 more than Avery has.
+
+Check this plan
+Reading help
+
+
+########## 10-week8-resolution ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+WEEK 8
+1
+2
+3
+4
+5
+6
+7
+8
+
+Week 8. Part 5 of 5: Week 8.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+WEEK 8
+
+THE SEASON ENDS.
+
+AVERY’S WEEK, WEEKS 6–8
+
+18 hours
+of getting places every week, and only 8 spare to do it in.
+
+WEEK 6
+Missed a session
+WEEK 7
+Missed a session
+WEEK 8
+Missed a session
+#07
+AVERY
+
+I missed a session in Week 6 and the bonus went with it. The backup money you kept covered it.
+
+THE PERFECT ATTENDANCE BONUS
+
+$0
+
+Your plan expected $800 that never came.
+
+Backup money you kept
+$1,150
+What it absorbed
+$800
+Left uncovered
+$0
+
+SPORTS-MEDIA COURSE
+
+$1,000
+
+The seat is held and paid. Avery starts the week the season ends.
+
+WHAT AVERY ENDS WITH
+
+$350
+Avery started the eight weeks with
+$500
+Backup money this plan kept
+$1,150
+
+$1,150 of the plan went into Avery’s week and bought 7 hours back.
+
+YOUR CALLS
+
+WHAT EACH DECISION ACTUALLY DID.
+COST YOU
+Building the plan around the Perfect attendance bonus
+
+Avery missed a session, and the money your plan was counting on never came. Putting $1,500 into rides — taken out of your other two amounts — would have kept it.
+
+COST YOU
+Missing the away game
+
+Avery had told the coach they were on the bus, and was not on it. $120 went on the team shoes instead. You said you only wanted it.
+
+COST YOU
+The birthday with nothing to open
+
+Avery's sister turned eleven with nothing from Avery to open.
+
+PAID OFF
+Coaching the Saturday clinics
+
+The clinics brought in $500 and took 6 hours a week. The week was already over the line without them, so they are not why the bonus went.
+
+PAID OFF
+Reserving the course seat early
+
+The seat was held from Week 4 for $1,000 instead of $1,200, so the course cost $200 less. Week 5 asked for $1,900, and the $3,700 still free to move covered it.
+
+FELL SHORT
+Paying for rides
+
+It bought 7 hours back, and Avery still did not have enough week left.
+
+Now say why you played it that way.
+
+Explain my plan
+Reading help
+
+
+########## 11-defense ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+SEASON OVER
+1
+2
+3
+4
+5
+6
+7
+8
+
+Season over. Part 5 of 5: Week 8.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+WEEK 8
+
+EXPLAIN YOUR PLAN.
+
+SEASON REVIEW
+
+Why does your plan hold up?
+
+Say how it worked after Week 5, what you protected, and what you gave up. And say what made the thing you left unpaid in Week 3 matter less than the ones you paid for — not what it cost, but what it was.
+
+TAP 2 OR 3 OF YOUR OWN NUMBERS
+
+Money your plan was built on
+$6,300
+New bills from Week 5
+$1,000
+Backup money kept
+$1,150
+Spent on rides and rest
+$1,150
+Perfect attendance bonus your plan was counting on
+$800
+Earned from the clinics
+$500
+
+START A SENTENCE
+
+My plan still works…
+I protected…
+I gave up…
+TWO TO FOUR SENTENCES
+
+◦ Tap 2 or 3 of Avery’s numbers. 2 more to go.
+
+◦ Then write each number you tapped into your answer.
+
+◦ Write 2 sentences or more, each with something in it. None yet.
+
+Turn in my plan
+Reading help
+
+
+########## 12-submitted ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+SEASON OVER
+1
+2
+3
+4
+5
+6
+7
+8
+
+Season over. Part 5 of 5: Week 8.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+TURNED IN
+
+YOUR PLAN IS WITH YOUR TEACHER.
+
+HARBOR CITY FLIGHT
+
+07
+Avery
+Reyes
+POS
+Guard
+AGE
+18
+TERM
+8 weeks
+
+Eight weeks at the Cousin’s Spare Room
+
+CLASS
+—
+
+Your work stays on this computer. Nothing is sent anywhere.
+
+WHAT YOU TURNED IN
+
+Where Avery lived
+Cousin’s Spare Room
+Sports-media course
+$1,000 paid
+Backup money
+$1,150
+Rides and rest
+$1,150
+
+Your 2 numbers, and what you said about them:
+
+I put Avery in the cousin's room because it was the cheapest and counted both bonuses. The numbers I stood on are $6,300 and $1,150.
+
+A person reads the writing, not software. Nothing here has been read yet.
+
+Try a different plan
+Reading help

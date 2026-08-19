@@ -1,0 +1,9 @@
+Reviewed commit : 074ec2f3b6350d30c170577a193a6b95cef18879
+Branch          : claude/bow-decision-challenges-gauntlet-pg1522
+Method          : git archive HEAD | tar -x  into a clean directory outside the repo,
+                  node_modules symlinked from the working tree (same technique as
+                  scripts/verify-head.sh). Nothing was run against the dirty worktree
+                  except the two lint reproductions explicitly labelled as such.
+Worktree at review: 6 files modified by other agents, 1 untracked test file
+                  (src/rangeprobe.test.ts) which does NOT typecheck. Not counted against HEAD.
+Parallelism     : vitest --pool=forks --maxWorkers=2 (shared box, low load)

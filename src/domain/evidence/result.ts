@@ -19,5 +19,5 @@ export function deriveResult(
   const facts = deriveFacts(log, n);
   const observations = observeStructured(facts, n);
   const concepts = summarizeConcepts(observations, facts);
-  return { observations, concepts, grade: deriveGrade(observations, concepts, reasoningPoints, { submitted: facts.defenseSubmitted }) };
+  return { observations, concepts, grade: deriveGrade(observations, reasoningPoints, { submitted: facts.defenseSubmitted }) };
 }

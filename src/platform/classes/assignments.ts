@@ -84,12 +84,43 @@ export function assignmentsForClass(record: ClassRecord, stored: readonly Assign
  * month's evidence under it.
  */
 export function assignmentIdFor(
-  submission: { assignmentId?: string },
+  submission: { classCode?: string; assignmentId?: string },
   assignments: readonly Assignment[],
 ): string | null {
   const named = submission.assignmentId;
   if (named && assignments.some((assignment) => assignment.id === named)) return named;
+  // A submission that names the synthesised assignment keeps naming it, even after the class
+  // has been set something and the synthesised one has stopped being offered. Falling back to
+  // `assignments[0]` here is what re-filed a term's finished work under an objective its
+  // students were never holding — six students went from "100% demonstrated" to "not
+  // assessed" overnight, with nothing written to disk and no action by any of them. What a
+  // run was for is a fact about the moment it happened, and the only record of it is the id
+  // the student's own browser sent.
+  if (named && submission.classCode && named === legacyAssignmentId(submission.classCode)) return named;
   return assignments[0]?.id ?? null;
+}
+
+/**
+ * The assignment a submission names, for a class that no longer offers it.
+ *
+ * A teacher who sets an objective on a class that has already run has not changed what those
+ * students did; they have added something new. Reporting needs to be able to say so, which
+ * takes an assignment record for the work that came before — so the synthesised one is
+ * rebuilt on demand rather than resurrected into the list a student is offered.
+ */
+export function retiredAssignmentFor(record: ClassRecord, assignmentId: string): Assignment | null {
+  return assignmentId === legacyAssignmentId(record.code) ? legacyAssignmentFor(record) : null;
+}
+
+/**
+ * Whether an assignment id is one this class could ever have handed out.
+ *
+ * Every id this class mints carries its code, and so does the synthesised one, so the shape
+ * is the membership test — and it stays true for an id the class has stopped offering, which
+ * is the case that used to destroy a student's finished run.
+ */
+export function assignmentBelongsToClass(assignmentId: string, classCode: string): boolean {
+  return assignmentId.startsWith(`assignment-${classCode}-`);
 }
 
 /** A fresh assignment id, from the caller's own randomness. */

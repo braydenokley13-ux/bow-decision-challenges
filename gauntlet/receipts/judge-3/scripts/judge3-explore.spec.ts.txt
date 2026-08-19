@@ -1,0 +1,48 @@
+import { test, expect } from "@playwright/test";
+import * as F from "./flow";
+import { NUMBERS as N } from "./plan";
+
+const OUT = process.env.JUDGE_OUT ?? "/tmp/judge-3/judge-shots";
+
+test("explore: one competent run, screenshot every screen", async ({ page, request }) => {
+  test.setTimeout(300_000);
+  let n = 0;
+  const shot = async (name: string) => {
+    n += 1;
+    await page.screenshot({ path: `${OUT}/${String(n).padStart(2, "0")}-${name}.png`, fullPage: true });
+  };
+  const cls = await F.createClass(request, "Judge 3 explore");
+  console.log("CLASS", JSON.stringify(cls));
+  await F.gotoFreshChallenge(page);
+  await F.enterChallenge(page, { classCode: cls.code, seatCode: "1" });
+  await shot("after-enter");
+  await F.completeSetupStage(page, 2, async () => { await shot("setup-cards"); });
+  await shot("plan-calcs");
+  await F.completeWorkingCalcs(page, { attendance: true, showcase: false });
+  await shot("plan-board");
+  // dump the board's controls
+  const html = await page.locator("main").innerText();
+  console.log("BOARD TEXT >>>", html.slice(0, 4000));
+});
+
+test("explore 2: from plan board to the end, dumping every screen", async ({ page, request }) => {
+  test.setTimeout(300_000);
+  const OUT2 = `${OUT}/b`;
+  let n = 0;
+  const shot = async (name: string) => {
+    n += 1;
+    await page.screenshot({ path: `${OUT2}/${String(n).padStart(2, "0")}-${name}.png`, fullPage: true });
+    console.log(`\n===== ${name} =====\n` + (await page.locator("main").innerText()).slice(0, 3500));
+  };
+  const cls = await F.createClass(request, "Judge 3 explore 2");
+  console.log("CLASS", JSON.stringify(cls));
+  await F.gotoFreshChallenge(page);
+  await F.enterChallenge(page, { classCode: cls.code, seatCode: "1" });
+  await F.completeSetupStage(page, 2);
+  await F.completeWorkingCalcs(page, { attendance: false, showcase: false });
+  // Use the shortcut: send everything to one row
+  await page.getByRole("button", { name: /Backup money/ }).last().click();
+  await shot("board-after-shortcut");
+  await page.getByRole("button", { name: "Check this plan" }).click();
+  await shot("after-check-plan");
+});

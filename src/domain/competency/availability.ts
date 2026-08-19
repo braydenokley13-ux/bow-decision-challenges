@@ -75,8 +75,83 @@ export const BUILT_WORLD_COVERAGE: readonly WorldEvidenceCoverage[] = [
       "adapt-a-plan.er5",
     ],
   },
+  /**
+   * `sort-by-need-want-goal` — declared for as long as this product has existed, and
+   * unassessable by any world in it until Week 3 had a decision in it.
+   *
+   * The competency's evidence requirements were an empty array, so nothing could produce
+   * them and `isCompetencyAvailable` correctly reported it unavailable. What changed is not
+   * a new reading of an old log: it is a week where three claims want the same money, the
+   * student says which ones get it, and says what made them leave the rest out. A log
+   * written before that week existed carries none of it and scores `null` on all four —
+   * which is what "the world never presented the opportunity" has always meant here.
+   *
+   * The fourth is the written one, and it is required. The objective this competency covers
+   * in full asks the student to *explain*; a world that offered only the closed-set tap and
+   * still claimed full coverage would be over-claiming, and `coverageClaims.test.ts` is
+   * where that stops being a matter of anybody's care.
+   */
   {
     worldId: "basketball",
+    competencyId: "sort-by-need-want-goal",
+    producedEvidenceRequirementIds: [
+      "sort-by-need-want-goal.er1",
+      "sort-by-need-want-goal.er2",
+      "sort-by-need-want-goal.er3",
+      "sort-by-need-want-goal.er4",
+    ],
+  },
+  /**
+   * The same competency, produced by the market, from the same event.
+   *
+   * §9.1 is the claim that which story a student picks does not change what is measured. It
+   * held only while both worlds covered the same list, and it stopped holding the moment
+   * Basketball gained a week where three claims want one pot. The market's answer is the
+   * tips jar after the first Saturday: same `COMPETING_CLAIMS_SETTLED` event, same four
+   * reason ids, same three reads, its own three claims and its own words. A class that lets
+   * students choose now measures both halves of the room on this.
+   */
+  {
+    worldId: "food-truck",
+    competencyId: "sort-by-need-want-goal",
+    producedEvidenceRequirementIds: [
+      "sort-by-need-want-goal.er1",
+      "sort-by-need-want-goal.er2",
+      "sort-by-need-want-goal.er3",
+      "sort-by-need-want-goal.er4",
+    ],
+  },
+  {
+    worldId: "basketball",
+    competencyId: "plan-within-income",
+    producedEvidenceRequirementIds: [
+      "plan-within-income.er1",
+      "plan-within-income.er2",
+      "plan-within-income.er3",
+      "plan-within-income.er4",
+      "plan-within-income.er5",
+    ],
+  },
+  // Run the Pop-Up produces the same two competencies from a completely different world: a
+  // night market, four Saturdays, trays of food that spoil, and a rented generator that dies
+  // with the biggest Saturday still ahead. The rows below match Basketball's exactly, and that
+  // is the point of §9.1 — the story changes and what is measured does not.
+  //
+  // `save-toward-a-goal` is absent from both, for the same reason in both. See the note in
+  // `worlds/food-truck/coverage.ts`.
+  {
+    worldId: "food-truck",
+    competencyId: "adapt-a-plan",
+    producedEvidenceRequirementIds: [
+      "adapt-a-plan.er1",
+      "adapt-a-plan.er2",
+      "adapt-a-plan.er3",
+      "adapt-a-plan.er4",
+      "adapt-a-plan.er5",
+    ],
+  },
+  {
+    worldId: "food-truck",
     competencyId: "plan-within-income",
     producedEvidenceRequirementIds: [
       "plan-within-income.er1",

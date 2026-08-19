@@ -59,26 +59,46 @@ describe("the season ledger", () => {
 });
 
 describe("the course deposit preview", () => {
+  /** A plan, as the three rows the student actually set. */
+  const held = (goal: number, reserve = 0, flexibleCash = 0) => ({
+    goal: dollars(goal),
+    reserve: dollars(reserve),
+    flexibleCash: dollars(flexibleCash),
+  });
+
   it("reports the discount the early price actually buys", () => {
-    const preview = depositPreview(dollars(0), N);
+    const preview = depositPreview(held(0), N);
     expect(preview.saving).toBe(dollars(N.course.fullPrice - N.course.depositPrice));
     expect(preview.price).toBeLessThan(preview.laterPrice);
   });
 
   it("says how far under a plan that set nothing aside would be", () => {
-    expect(depositPreview(dollars(0), N).shortBy).toBe(N.course.depositPrice);
-    expect(depositPreview(dollars(0), N).freed).toBe(dollars(0));
+    expect(depositPreview(held(0), N).shortBy).toBe(N.course.depositPrice);
+    expect(depositPreview(held(0), N).freed).toBe(dollars(0));
   });
 
   it("says how much comes back when more was set aside than the seat costs", () => {
-    const over = dollars(N.course.depositPrice + 200);
-    expect(depositPreview(over, N).shortBy).toBe(dollars(0));
-    expect(depositPreview(over, N).freed).toBe(dollars(200));
+    const over = N.course.depositPrice + 200;
+    expect(depositPreview(held(over), N).shortBy).toBe(dollars(0));
+    expect(depositPreview(held(over), N).freed).toBe(dollars(200));
   });
 
   it("is neither short nor spare when the course row holds exactly the seat price", () => {
-    const exact = depositPreview(N.course.depositPrice, N);
+    const exact = depositPreview(held(N.course.depositPrice), N);
     expect(exact.shortBy).toBe(dollars(0));
     expect(exact.freed).toBe(dollars(0));
+  });
+
+  /**
+   * The other half of the trade, and the half the deadline screen used not to say: reserving
+   * takes the course line out of the money that can still move, and what is left is what has
+   * to meet whatever the rest of the season brings.
+   */
+  it("says what stays movable before the seat is held and what would stay movable after", () => {
+    const plan = held(600, 900, 400);
+    const preview = depositPreview(plan, N);
+    expect(preview.movableNow).toBe(dollars(600 + 900 + 400));
+    expect(preview.movableAfter).toBe(dollars(900 + 400));
+    expect(preview.movableNow - preview.movableAfter).toBe(plan.goal);
   });
 });

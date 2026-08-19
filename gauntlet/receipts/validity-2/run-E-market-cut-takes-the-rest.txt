@@ -1,0 +1,513 @@
+# run-E-market-cut-takes-the-rest
+# recorded 2026-08-19T05:29:24.435Z against http://127.0.0.1:5011
+
+--- class PG7UE seat 9 — Eli — fills the other two first
+
+
+===== [01] the booths  (0 words on screen)
+
+
+
+===== [02] the money that might arrive  (201 words on screen)
+B
+BOW
+DECISION CHALLENGES
+
+BEFORE THE MARKET
+
+Saturday 1
+—
+Saturday 2
+—
+Saturday 3
+—
+Saturday 4
+—
+PG7UE · SEAT 9
+
+MONEY WITH A RULE ON IT
+
+TWO AMOUNTS MIGHT TURN UP.
+
+Neither one is promised. Say whether your plan counts on it.
+
+In the account
+$1,900
+
+What you owe before you open
+$390
+
+Sunrise Yoga
+$260
+
+The studio down the road wants 40 plates for a Sunday class, and they are offering $260 for them.
+
+They only pay if they confirm the booking, and they have told you they will not decide until the second Saturday.
+
+Plan as if this money arrives?
+
+Yes — count it in
+No — leave it out
+Sell-out rebate
+$150
+
+The organiser gives $150 back off your booth to any stall that clears everything on opening night.
+
+You only get it if you sell out on the first Saturday. That means every plate you brought is gone, and there were at least 20 of them.
+
+Plan as if this money arrives?
+
+Yes — count it in
+No — leave it out
+
+Ramos Foods delivers on the Saturday morning. What you order is what you have.
+
+Answer both before you carry on
+Reading help
+
+
+===== [03] the opening plan board  (281 words on screen)
+B
+BOW
+DECISION CHALLENGES
+
+BEFORE THE MARKET
+
+Saturday 1
+—
+Saturday 2
+—
+Saturday 3
+—
+Saturday 4
+—
+PG7UE · SEAT 9
+
+THE OPENING PLAN
+
+GIVE EVERY DOLLAR A JOB.
+
+Three lines. All of the money has to land on them, and the market starts the moment it does.
+
+TO PLAN WITH
+$1,510
+ON THE THREE LINES
+$0
+STILL TO PLACE
+$1,510
+Stock
+This is the food you buy to sell. Ramos Foods sells to the market by the tray, and a tray is 10 plates. Every tray costs you $60, and every plate you hand over the counter sells for $12. Trays do not come in halves, so you will almost never match the crowd exactly.
+Cushion
+This is cash you keep in the box instead of spending it. The generator on the truck is rented, and Ramos Rentals is holding $150 against it. Trucks break, and a truck that is not running does not sell anything.
+Your cut
+This is the money you bank for yourself at the end of the run. It is the whole reason you took the job, and nobody is going to set it for you.
+Stock
+0 trays of food to cook and sell.
+$0
+−
++
+Cushion
+Cash in the box, and not spent yet.
+$0
+−
++
+Your cut
+Yours at the end of the run, if nothing eats it.
+$0
+−
++
+Send the rest to one line
+
+The line you name takes whatever is left over.
+
+→
+Stock
+$1,510
+Leaves 25 trays to cook.
+→
+Cushion
+$1,510
+Leaves nothing to cook.
+→
+Your cut
+$1,510
+Leaves nothing to cook.
+
+$1,510 still has no job.
+
+Check this plan
+Reading help
+
+--- money to plan: $1510 — plan increment $50; NOT divisible, so the board cannot be closed by typing
+
+
+===== [04] stock and cushion set, the cut still at $0, money unassigned  (283 words on screen)
+B
+BOW
+DECISION CHALLENGES
+
+BEFORE THE MARKET
+
+Saturday 1
+—
+Saturday 2
+—
+Saturday 3
+—
+Saturday 4
+—
+PG7UE · SEAT 9
+
+THE OPENING PLAN
+
+GIVE EVERY DOLLAR A JOB.
+
+Three lines. All of the money has to land on them, and the market starts the moment it does.
+
+TO PLAN WITH
+$1,510
+ON THE THREE LINES
+$1,000
+STILL TO PLACE
+$510
+Stock
+This is the food you buy to sell. Ramos Foods sells to the market by the tray, and a tray is 10 plates. Every tray costs you $60, and every plate you hand over the counter sells for $12. Trays do not come in halves, so you will almost never match the crowd exactly.
+Cushion
+This is cash you keep in the box instead of spending it. The generator on the truck is rented, and Ramos Rentals is holding $150 against it. Trucks break, and a truck that is not running does not sell anything.
+Your cut
+This is the money you bank for yourself at the end of the run. It is the whole reason you took the job, and nobody is going to set it for you.
+Stock
+10 trays of food to cook and sell.
+$600
+−
++
+Cushion
+Cash in the box, and not spent yet.
+$400
+−
++
+Your cut
+Yours at the end of the run, if nothing eats it.
+$0
+−
++
+Send the rest to one line
+
+The line you name takes whatever is left over.
+
+→
+Stock
+$510
+Leaves 18 trays to cook.
+→
+Cushion
+$510
+Leaves 10 trays to cook.
+→
+Your cut
+$510
+Leaves 10 trays to cook.
+
+$510 still has no job.
+
+Check this plan
+Reading help
+
+
+===== [05] the cut named as the line that takes the rest  (244 words on screen)
+B
+BOW
+DECISION CHALLENGES
+
+BEFORE THE MARKET
+
+Saturday 1
+—
+Saturday 2
+—
+Saturday 3
+—
+Saturday 4
+—
+PG7UE · SEAT 9
+
+THE OPENING PLAN
+
+GIVE EVERY DOLLAR A JOB.
+
+Three lines. All of the money has to land on them, and the market starts the moment it does.
+
+TO PLAN WITH
+$1,510
+ON THE THREE LINES
+$1,510
+STILL TO PLACE
+$0
+Stock
+This is the food you buy to sell. Ramos Foods sells to the market by the tray, and a tray is 10 plates. Every tray costs you $60, and every plate you hand over the counter sells for $12. Trays do not come in halves, so you will almost never match the crowd exactly.
+Cushion
+This is cash you keep in the box instead of spending it. The generator on the truck is rented, and Ramos Rentals is holding $150 against it. Trucks break, and a truck that is not running does not sell anything.
+Your cut
+This is the money you bank for yourself at the end of the run. It is the whole reason you took the job, and nobody is going to set it for you.
+Stock
+10 trays of food to cook and sell.
+$600
+−
++
+Cushion
+Cash in the box, and not spent yet.
+$400
+−
++
+Your cut
+Yours at the end of the run, if nothing eats it.
+$510
+−
++
+
+Every dollar has a job.
+
+Lock the plan in
+Reading help
+
+
+===== [06] the tips jar — three claims on money that is not the truck's  (523 words on screen)
+B
+BOW
+DECISION CHALLENGES
+
+SATURDAYS 2 AND 3
+
+Saturday 1
+30 sold
+Saturday 2
+—
+Saturday 3
+—
+Saturday 4
+—
+PG7UE · SEAT 9
+
+SATURDAY 1 IS DONE
+
+THE FIRST NIGHT IS IN.
+
+SATURDAY 1
+
+COOKED
+30
+SOLD
+30
+IN THE BIN
+0
+TAKINGS
+$360
+
+You sold every plate you cooked. Nothing went in the bin.
+
+You sold out, so the rebate is yours. Your plan never counted on it, and it goes in the cushion.
+
+THE TIPS JAR
+
+Three things want the tips.
+
+You emptied the jar on the way home from the first Saturday: $100, and it is yours. Three things want it and it does not stretch to all three.
+
+This money is not the truck's. It cannot go on the three lines and it cannot be banked, so a dollar you do not spend here is a dollar spent on nothing.
+
+IN THE JAR
+$100
+SPENT
+$0
+LEFT OVER
+$100
+A seal for the cool box
+$75
+
+The rubber round the lid has perished. The box still holds cold for a night. It holds less every week.
+
+Pay for this
+Your share of the night cleaner
+$45
+
+Every stall on the row chips in for the man who sweeps the lane at midnight. You already said you were in.
+
+Pay for this
+A painted sign for the truck
+$35
+
+Salt and Smoke, in proper letters, instead of the chalkboard leaning against the wheel.
+
+Pay for this
+
+WHAT MADE THE ONE YOU LEFT OUT MATTER LESS?
+
+It was the one I only wanted.
+Nobody else was counting on it.
+It can wait, even if it costs more.
+It was the cheapest one to drop.
+
+Say what the jar pays for
+
+Three things want the tips.
+
+MARISOL ON THE WINDOW
+
+Marisol will work the last Saturday with you for $70.
+
+Two people can hand over 80 plates in an evening instead of 45. She is turning down another shift to do it, so the moment you book her the money is spent.
+
+Book her for the last Saturday?
+
+Book Marisol
+Work it alone
+The next two Saturdays
+
+One order covers both nights, and the two nights are not the same size. Whatever you cook for Saturday 2 you cook again on Saturday 3.
+
+Saturday 2
+It rains until four and then it clears up properly. The market fills late and stays busy to closing, with a fifth more people out than an ordinary Saturday.
+Saturday 3
+A cold evening, and everybody stands around with their hands in their pockets. The band plays anyway, but a third of the usual crowd stays home.
+
+ON THE THREE LINES
+
+STOCK
+$420
+CUSHION
+$550
+YOUR CUT
+$510
+
+TRAYS TO COOK
+
+−
+3
++
+
+One tray is 10 plates and costs $60.
+
+$360 for both nights
+3 is all your stock line pays for.
+
+PLATES YOU ARE COOKING
+30
+SATURDAY 2 WILL BUY
+45
+SATURDAY 3 WILL BUY
+25
+LEFT ON THE STOCK LINE
+$60 · 1 tray
+
+45 plates is all one pair of hands can hand over in an evening, however many people are waiting.
+
+Say what the jar pays for
+Reading help
+
+
+===== [07] the write-up  (178 words on screen)
+B
+BOW
+DECISION CHALLENGES
+
+MARKET OVER
+
+Saturday 1
+30 sold
+Saturday 2
+30 sold
+Saturday 3
+25 sold
+Saturday 4
+10 sold
+PG7UE · SEAT 9
+
+NADIA OKAFOR, MARKET ORGANISER
+
+WHAT DID THE MONEY DO?
+
+NADIA OKAFOR, MARKET ORGANISER
+
+Tell me how the money went. What did you protect when the generator died, and what did you give up to do it? And say what made the thing the tips jar did not pay for matter less than the things it did — not what it cost, but what it was.
+
+A person reads this and writes back, so use your own numbers and say what you were thinking.
+
+PICK TWO OR THREE OF YOUR OWN NUMBERS
+
+What the market paid you
+$1,140
+Money you threw away
+$30
+Your cut, banked
+$510
+Cash left in the box
+$280
+What the new generator cost you
+$270
+Plates you sold
+95
+I protected…
+I gave up…
+The money went…
+TWO TO FOUR SENTENCES
+
+2 more numbers to pick. Now write two to four sentences.
+
+Turn in my answer
+Reading help
+
+
+===== [08] turned in  (143 words on screen)
+B
+BOW
+DECISION CHALLENGES
+
+MARKET OVER
+
+Saturday 1
+30 sold
+Saturday 2
+30 sold
+Saturday 3
+25 sold
+Saturday 4
+10 sold
+PG7UE · SEAT 9
+
+THE MARKET IS OVER
+
+YOUR ANSWER IS WITH YOUR TEACHER.
+YOUR BOOTH
+Middle Row
+CLASS
+PG7UE
+SATURDAYS RUN
+4
+PLATES SOLD
+95
+
+Your work goes to your teacher’s class when you turn it in.
+
+WHAT YOU TURNED IN
+
+The booth you took
+Middle Row
+Stock
+$60
+Cushion
+$280
+Your cut
+$510
+
+Your 2 numbers, and what you said about them:
+
+My plan still works because the money adds up. I kept $1,140 and I gave up $30.
+
+A person reads the writing, not software. Nothing here has been read yet.
+
+The same four Saturdays come out differently if you order differently. What you turned in stays with your teacher either way.
+
+Run the market again
+Reading help
+
+--- PARAGRAPH: My plan still works because the money adds up. I kept $1,140 and I gave up $30.

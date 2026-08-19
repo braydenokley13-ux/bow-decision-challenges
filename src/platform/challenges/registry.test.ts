@@ -31,7 +31,11 @@ describe("the challenge registry", () => {
       expect(challenge.duration.min).toBeGreaterThan(0);
       expect(challenge.duration.max).toBeGreaterThan(challenge.duration.min);
     }
-    expect(durationLabel(PLAN_UNDER_PRESSURE)).toBe("20–25 minutes");
+    // The two ends are not decoration and they are not a guess: `stages/readingLoad.test.tsx`
+    // holds this label to what the two worlds actually render — the low end to the faster of
+    // their pacing budgets, the high end to the slower world's reading at a realistic Grade
+    // 5–8 rate plus the interaction time its own budget declares.
+    expect(durationLabel(PLAN_UNDER_PRESSURE)).toBe("20–28 minutes");
   });
 });
 

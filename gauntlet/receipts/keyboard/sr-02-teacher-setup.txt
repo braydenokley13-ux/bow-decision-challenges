@@ -1,0 +1,76 @@
+# TEACHER SETUP, KEYBOARD ONLY. Snapshot 074ec2f. App :6473, service :6480.
+# Nothing was clicked. Every navigation below is Tab / Shift+Tab / Enter / Space / arrows / Escape.
+# ANNOUNCED = change inside a live region that already existed (a real SR speaks it).
+
+==================== MAKE A TEACHER ACCOUNT ====================
+  FOCUS ON ARRIVAL → "Sign in", heading, level 1
+  Is there a skip link? Shift+Tab back from the h1 to the very top:
+     Shift+Tab 1 → "SIGN IN", link
+     Shift+Tab 2 → "Guide", link
+     Shift+Tab 3 → "Objectives", link
+     Shift+Tab 4 → "My classes", link
+     Shift+Tab 5 → "BOW Decision Challenges home", link
+     Shift+Tab 6 → "*** FOCUS ON DOCUMENT BODY — nothing is spoken ***", BODY
+
+  --- the DISABLED submit button: what does a blind teacher get told? ---
+  Tab ×3 from the h1 → "Sign in", button, disabled=true
+  PRESS Enter — press the disabled "Sign in" button with an empty form
+     ANNOUNCED [assertive]: "That did not match. Check it and try again."
+     FOCUS NOW → "Sign in", button, disabled=true
+
+  Tab ×4 from the h1 to reach → "Make an account", button
+  PRESS Enter — choose "Make an account" — the form is swapped in place
+     FOCUS LOST TO BODY from div.educator-shell > main.educator-main > section.dashboard-section.sign-in > div.sign-in__switch > button.button.button--quiet
+     FOCUS NOW → "Make an account", heading, level 1
+  Tab ×1 to the email field → "YOUR WORK EMAIL", textbox
+  TYPING the email…
+     while typing, ANNOUNCED: (nothing)
+  Tab ×1 → "A NEW PASSWORD — TEN CHARACTERS OR MORE", textbox
+     while typing, ANNOUNCED: (nothing)
+  Tab ×1 → "Make the account", button   (it was disabled=true a moment ago; nothing said that it became available)
+  PRESS Enter — submit the new account
+     FOCUS LOST TO BODY from div#root > div.educator-shell > main.educator-main > section.dashboard-section.sign-in > button.button.button--primary
+     FOCUS NOW → "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+
+######## SCREEN — landed after making the account
+  url             http://127.0.0.1:6473/educator/sign-in
+  document.title  Plan Under Pressure — BOW Decision Challenges
+  landmarks       banner (unnamed) | navigation "Educator navigation" | main (unnamed)
+  headings        h1"Your recovery code. It is not shown again." h2"JWDVGZ4H8ZPSV1WRP0R"
+  --- what a blind student hears reading this screen top to bottom ---
+   "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+  ····· banner
+  ······ "BOW Decision Challenges home", link
+  ········· "BOW", StaticText
+  ········· "DECISION CHALLENGES", StaticText
+  ······ "Educator navigation", navigation
+  ······· "My classes", link
+  ········ "My classes", StaticText
+  ······· "Objectives", link
+  ········ "Objectives", StaticText
+  ······· "Guide", link
+  ········ "Guide", StaticText
+  ······ "SIGN OUT", button
+  ······· "SIGN OUT", StaticText
+  ····· main
+  ······ sectionheader
+  ······· paragraph
+  ········ "KEEP THIS", StaticText
+  ······· "Your recovery code. It is not shown again.", heading, level 1
+  ········ "Your recovery code. It is not shown again.", StaticText
+  ······· paragraph
+  ········ "It is the only way back into this account without your password. Write it down or put it wherever you keep passwords — BOW cannot send it to you and cannot look it up.", StaticText
+  ········· paragraph
+  ·········· "RECOVERY CODE", StaticText
+  ········· "JWDVGZ4H8ZPSV1WRP0R", heading, level 2
+  ·········· "JWDVGZ4H8ZPSV1WRP0R", StaticText
+  ········· "I have written it down", button
+  ·········· "I have written it down", StaticText
+  --- every Tab stop on this screen ---
+  Tab  1 → "I have written it down", button
+  Tab  2 → "BOW Decision Challenges home", link
+  Tab  3 → "My classes", link
+  Tab  4 → "Objectives", link
+  Tab  5 → "Guide", link
+  Tab  6 → "SIGN OUT", button
+  Tab  7 → "I have written it down", button   (ring closed here)

@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { Button } from "../components/primitives/Button";
 import { competencyById } from "../domain/competency/competencies";
-import { capFor, evidenceTrail, judgementsOf, type TrailJudgement } from "../domain/competency/trail";
+import { evidenceTrail, judgementsOf, type TrailJudgement } from "../domain/competency/trail";
 import { reteachFor } from "../domain/competency/reteach";
 import type { RubricLevel } from "../domain/competency/types";
 import type { SubmissionRecord, TeacherOverride } from "../platform/classes/types";
-import { competencyObservationsFor } from "./objectiveResults";
-import { LEVEL_LABELS, SUPPORT_LABELS, MOMENT_LABELS } from "./labels";
+import { machineObservationsFor, worldOfSubmission } from "./objectiveResults";
+import { eventLabel, stageLabel } from "../domain/scenario/registry";
+import { levelDescription, levelKey, levelLabel, LEVEL_ORDER, SUPPORT_LABELS } from "./labels";
+import { StateKey } from "./EducatorShell";
 import type { OverrideRequest } from "./useClassEvidence";
 
 /**
@@ -23,14 +25,15 @@ import type { OverrideRequest } from "./useClassEvidence";
  * teacher who records it from memory.
  */
 
-/** The five levels the shared rubric allows. There is deliberately no 1. */
-const LEVELS: readonly (RubricLevel | null)[] = [5, 4, 3, 2, 0, null];
+/**
+ * The five levels the shared rubric allows, strongest first. There is deliberately no 1.
+ *
+ * The order is Ladder 2's own, read from `labels.ts` rather than restated, so the control a
+ * teacher picks from and the trail they read cannot offer the levels in different orders.
+ */
+const LEVELS: readonly (RubricLevel | null)[] = LEVEL_ORDER.map((level) => (level === "null" ? null : level));
 
-function levelText(level: RubricLevel | null): string {
-  return level === null ? LEVEL_LABELS.null : LEVEL_LABELS[level];
-}
-
-/** One requirement's standing judgement, what a teacher said about it, and the two together. */
+/** One thing the work had to show, what a teacher said about it, and the two together. */
 function JudgementRow({ judgement, overrides, onOverride }: {
   judgement: TrailJudgement;
   overrides: readonly TeacherOverride[];
@@ -50,11 +53,22 @@ function JudgementRow({ judgement, overrides, onOverride }: {
         <span className="judgement__rule">{judgement.observableRule}</span>
         <p className="judgement__reason">{judgement.reason}</p>
         {/* The cap is the rubric's doing, not the student's, and saying which is which is the
-            difference between "they needed a hint" and "they could not do it". */}
+            difference between "they needed a hint" and "they could not do it".
+
+            It used to name the cap twice — "BOW saw Independently, held to After a hint: a
+            hint that named the problem caps this at After a hint" — which it could not help
+            doing, because a capped level *is* the cap: `levelUnderRubric` is `min(claimed,
+            cap)`, so whenever `cappedBySupport` is true the held level and the cap are the
+            same value. Four level words in eighteen, two of them the same word twice. Said
+            once, it is two clauses: what BOW read, and what holds it there.
+
+            No emphasis on the two level words, deliberately: `.judgement__say b` is a display
+            block one level up, so a `<b>` here breaks the sentence into four lines with the
+            comma and the full stop orphaned on their own. */}
         {judgement.cappedBySupport && (
           <p className="judgement__cap">
-            BOW saw {levelText(judgement.claimed)}, held to {levelText(judgement.level)}: {SUPPORT_LABELS[judgement.supportLevel]} caps
-            this at {judgement.claimed === null ? "nothing" : levelText(capFor(judgement.supportLevel))}.
+            BOW read this as {levelLabel(judgement.claimed)}, and {SUPPORT_LABELS[judgement.supportLevel]} holds
+            it at {levelLabel(judgement.level)}.
           </p>
         )}
       </div>
@@ -62,14 +76,14 @@ function JudgementRow({ judgement, overrides, onOverride }: {
       <div className="judgement__verdicts">
         <p className="judgement__machine">
           <span>BOW</span>
-          <strong>{levelText(judgement.level)}</strong>
+          <strong>{levelLabel(judgement.level)}</strong>
         </p>
         {/* Both, always. An override that hid the machine judgement would remove the only
             thing a second teacher could check the first one against. */}
         {standing && (
           <p className="judgement__override">
             <span>You</span>
-            <strong>{levelText(standing.level)}</strong>
+            <strong>{levelLabel(standing.level)}</strong>
           </p>
         )}
       </div>
@@ -78,7 +92,7 @@ function JudgementRow({ judgement, overrides, onOverride }: {
         <ol className="judgement__history">
           {mine.map((entry) => (
             <li key={`${entry.at}-${entry.note}`}>
-              <b>{levelText(entry.level)}</b>
+              <b>{levelLabel(entry.level)}</b>
               <q>{entry.note}</q>
               <time dateTime={new Date(entry.at).toISOString()}>{new Date(entry.at).toLocaleDateString()}</time>
             </li>
@@ -107,34 +121,39 @@ function JudgementRow({ judgement, overrides, onOverride }: {
             >
               <fieldset>
                 <legend>What you read it as</legend>
-                {/* Named, not numbered. Six bare digits are not a rubric anybody listening
-                    to the page can fill in — the same reason the reasoning rubric names its
-                    own criteria beside every mark. */}
-                <div className="segmented segmented--wide">
+                {/* Named, described, and not numbered. Six labels are BOW's own distinctions
+                    and nobody outside this codebase has agreed to them, so each one says what
+                    it means beside the control that records it. This is where the glossary
+                    rule started, and `StateKey` is the same rule applied to pages that only
+                    read the words rather than asking a person to pick one. */}
+                <ul className="override-levels">
                   {LEVELS.map((option) => (
-                    <button
-                      type="button"
-                      key={String(option)}
-                      aria-pressed={level === option}
-                      onClick={() => setLevel(option)}
-                    >
-                      {levelText(option)}
-                    </button>
+                    <li key={String(option)}>
+                      <button
+                        type="button"
+                        aria-pressed={level === option}
+                        onClick={() => setLevel(option)}
+                      >
+                        {levelLabel(option)}
+                      </button>
+                      <span>{levelDescription(option)}</span>
+                    </li>
                   ))}
-                </div>
+                </ul>
               </fieldset>
               <label>
                 Why — this is kept with the judgement
                 <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} maxLength={600} required />
               </label>
+              {/* Above the actions, because a rule explained under a disabled button is a
+                  rule a teacher meets after it has already refused them. */}
+              <p className="override-form__note" aria-live="polite">
+                {note.trim().length === 0 ? "A judgement with no reason is a number nobody can check later." : "BOW keeps both readings."}
+              </p>
               <div className="override-form__act">
                 <Button type="button" variant="quiet" onClick={() => { setOpen(false); setNote(""); }}>Cancel</Button>
                 <Button type="submit" aria-disabled={note.trim().length === 0}>Record it</Button>
               </div>
-              {/* Nothing is stored without a reason, and the form says so before it refuses. */}
-              <p className="override-form__note" aria-live="polite">
-                {note.trim().length === 0 ? "A judgement with no reason is a number nobody can check later." : "BOW keeps both readings."}
-              </p>
             </form>
           )}
           <span aria-live="polite" className="judgement__saved">{saved}</span>
@@ -149,7 +168,8 @@ export function EvidenceTrailPanel({ submission, onOverride }: {
   /** Absent where this teacher cannot write to the class. Reading never requires it. */
   onOverride: ((override: OverrideRequest) => Promise<boolean>) | null;
 }) {
-  const trail = evidenceTrail(submission.log, competencyObservationsFor(submission));
+  const trail = evidenceTrail(submission.log, machineObservationsFor(submission));
+  const worldId = worldOfSubmission(submission);
   const overrides = submission.overrides ?? [];
   const standing = judgementsOf(trail).filter((judgement) => !judgement.superseded);
   const byCompetency = [...new Set(standing.map((judgement) => judgement.competencyId))];
@@ -161,6 +181,9 @@ export function EvidenceTrailPanel({ submission, onOverride }: {
           <p className="eyebrow">What BOW concluded, and why</p>
           <h2>Every judgement on this attempt</h2>
         </div>
+        {/* Once, at the top, for the words actually on this page — not once per row, and
+            never for a word this attempt did not produce. */}
+        <StateKey title="What these words mean" entries={levelKey(standing.map((judgement) => judgement.level))} />
         {byCompetency.map((competencyId) => (
           <section className="judgement-group" key={competencyId}>
             <h3>{competencyById(competencyId)?.statement ?? competencyId}</h3>
@@ -187,19 +210,29 @@ export function EvidenceTrailPanel({ submission, onOverride }: {
         </div>
         {/* The timeline is the audit trail: each row is one moment from the log, and the
             judgements under it are the ones that moment settled. */}
+        {/* Named by the world the student was actually in. The stage ids and the event types
+            are BOW's internal vocabulary, and a trail printed in that vocabulary is a log file
+            with a heading on it — which is what the market's students arrived as, screen after
+            screen of `popup-spot / POPUP_SUM_SUBMITTED`, on the page whose only job is letting
+            a teacher check what BOW saw about a child they can name.
+
+            The `<code>event-5</code>` that used to close each row went with it. It was the
+            anchor, and an anchor nobody can read is decoration: the moments are already in the
+            order they happened, so the position in that order is the reference, and it is
+            written in words. */}
         <ol className="trail">
-          {trail.moments.map((moment) => (
+          {trail.moments.map((moment, index) => (
             <li key={moment.eventId}>
               <div className="trail__when">
-                <b>{MOMENT_LABELS.stage[moment.stage] ?? moment.stage}</b>
-                <span>{MOMENT_LABELS.event[moment.type] ?? moment.type}</span>
-                <code>{moment.eventId}</code>
+                <b>{stageLabel(worldId, moment.stage)}</b>
+                <span>{eventLabel(worldId, moment.type)}</span>
+                <span className="trail__step">Step {index + 1} of {trail.moments.length}</span>
               </div>
               <ul className="trail__judgements">
                 {moment.judgements.map((judgement) => (
                   <li key={`${judgement.evidenceRequirementId}-${judgement.reason}`} data-superseded={judgement.superseded}>
                     <b>{judgement.label}</b>
-                    <span className="trail__level">{levelText(judgement.level)}</span>
+                    <span className="trail__level">{levelLabel(judgement.level)}</span>
                     <span>{judgement.reason}</span>
                     {judgement.superseded && <em>Revisited later. The reading below stands.</em>}
                   </li>
@@ -210,7 +243,7 @@ export function EvidenceTrailPanel({ submission, onOverride }: {
         </ol>
         {trail.notObserved.length > 0 && (
           <div className="trail__absent">
-            <p className="field-label">Never came up in this run</p>
+            <p className="field-label">{levelLabel(null)}</p>
             <ul>
               {trail.notObserved.map((judgement) => (
                 <li key={judgement.evidenceRequirementId}>
@@ -229,15 +262,19 @@ export function EvidenceTrailPanel({ submission, onOverride }: {
 
 /** §19.3 — the summary block, and the one thing to do about it. */
 export function StudentSummary({ submission }: { submission: SubmissionRecord }) {
-  const trail = evidenceTrail(submission.log, competencyObservationsFor(submission));
+  const trail = evidenceTrail(submission.log, machineObservationsFor(submission));
   const standing = judgementsOf(trail).filter((judgement) => !judgement.superseded);
   const overrides = submission.overrides ?? [];
-  const readAs = (judgement: TrailJudgement) =>
-    overrides.filter((entry) => entry.evidenceRequirementId === judgement.evidenceRequirementId).at(-1)?.level ?? judgement.level;
+  // A standing override replaces the machine level even when it says `null` — a teacher
+  // recording "the run never really showed this" has withdrawn the judgement, and folding
+  // that back to BOW's number would put the summary at odds with the trail one tab over.
+  const readAs = (judgement: TrailJudgement) => {
+    const standing = overrides.filter((entry) => entry.evidenceRequirementId === judgement.evidenceRequirementId).at(-1);
+    return standing ? standing.level : judgement.level;
+  };
 
-  const strengths = standing.filter((judgement) => { const level = readAs(judgement); return level !== null && level >= 4; });
+  const did = standing.filter((judgement) => { const level = readAs(judgement); return level !== null && level >= 3; });
   const needs = standing.filter((judgement) => { const level = readAs(judgement); return level === 0 || level === 2; });
-  const supported = standing.filter((judgement) => readAs(judgement) === 3);
   // The same table the class-level card uses. One student's gap and a class's gap are the
   // same wrong idea, so they get the same lesson rather than two different ones.
   const next = needs.map((judgement) => ({ judgement, reteach: reteachFor(judgement.misconception) })).find((entry) => entry.reteach);
@@ -248,29 +285,49 @@ export function StudentSummary({ submission }: { submission: SubmissionRecord })
         <p className="eyebrow">Where this student is</p>
         <h2>What to do next</h2>
       </div>
+      {/* What to work on leads and owns the width. Nine green ticks under "Could do" used to
+          fill this tab while the one line that is the reason to open it sat in a column on
+          the right.
+
+          The two headings used to be "Needs support" and "Could do" — a seventh and eighth
+          wording for a fact the trail one tab away already had three words for, and "support"
+          in a sense the rubric uses for something else. Every row now carries its own Ladder
+          2 word, so the headings say what the lists are for and nothing about a level. */}
       <div className="student-summary">
-        <div>
-          <p className="field-label">Could do</p>
-          {strengths.length > 0 ? (
-            <ul className="student-summary__list" data-tone="good">
-              {strengths.map((judgement) => <li key={judgement.evidenceRequirementId}>{judgement.label}</li>)}
-            </ul>
-          ) : <p className="class-state">Nothing reached this bar on this attempt.</p>}
-          {supported.length > 0 && (
-            <ul className="student-summary__list" data-tone="supported">
-              {supported.map((judgement) => <li key={judgement.evidenceRequirementId}>{judgement.label} — after a hint</li>)}
-            </ul>
-          )}
-        </div>
-        <div>
-          <p className="field-label">Needs support</p>
+        <div className="student-summary__needs">
+          <p className="field-label">What to work on</p>
           {needs.length > 0 ? (
             <ul className="student-summary__list" data-tone="gap">
-              {needs.map((judgement) => <li key={judgement.evidenceRequirementId}>{judgement.label}</li>)}
+              {needs.map((judgement) => (
+                <li key={judgement.evidenceRequirementId}>
+                  {judgement.label} — {levelLabel(readAs(judgement))}
+                  <span>{judgement.reason}</span>
+                </li>
+              ))}
             </ul>
           ) : <p className="class-state">Nothing on this attempt came out short.</p>}
         </div>
+        {/* Grouped by level rather than labelled row by row. Ten chips each ending "— Right
+            first time" is the same word ten times and the eye stops reading it; the level is
+            the heading, the count is beside it, and the chips are the work. */}
+        <div className="student-summary__could">
+          <p className="field-label">What they did</p>
+          {did.length > 0 ? LEVEL_ORDER.flatMap((level) => {
+            const group = did.filter((judgement) => (readAs(judgement) ?? "null") === level);
+            if (group.length === 0) return [];
+            return [(
+              <div key={String(level)}>
+                <p className="field-label">{levelLabel(level === "null" ? null : level)} · {group.length}</p>
+                <ul className="student-summary__chips" data-tone="good">
+                  {group.map((judgement) => <li key={judgement.evidenceRequirementId}>{judgement.label}</li>)}
+                </ul>
+              </div>
+            )];
+          }) : <p className="class-state">Nothing reached this bar on this attempt.</p>}
+        </div>
       </div>
+      {/* The same rule as the trail: the words on this page, each with its sentence, once. */}
+      <StateKey title="What these words mean" entries={levelKey([...needs, ...did].map(readAs))} />
       {next?.reteach && (
         <div className="next-lesson__action">
           <p className="eyebrow">Reinforce</p>

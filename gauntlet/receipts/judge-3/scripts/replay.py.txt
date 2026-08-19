@@ -1,0 +1,45 @@
+import json, urllib.request, uuid, sys
+
+API = "http://127.0.0.1:4383/api"
+def req(method, path, data=None, headers=None):
+    body = json.dumps(data).encode() if data is not None else None
+    r = urllib.request.Request(API + path, data=body, method=method,
+        headers={"Content-Type": "application/json", **(headers or {})})
+    try:
+        with urllib.request.urlopen(r) as resp:
+            return resp.status, json.loads(resp.read().decode() or "{}")
+    except urllib.error.HTTPError as e:
+        return e.code, e.read().decode()[:400]
+
+logs = {s["seatCode"]: s for s in json.load(open("/tmp/judge-3/logs.json"))}
+FAST, GOOD = logs["1"], logs["3"]
+
+st, cls = req("POST", "/classes", {"label": "Judge 3 denominator", "challengeId": "plan-under-pressure"})
+print("class", st, cls.get("code"), cls.get("teacherKey"))
+code, key = cls["code"], cls["teacherKey"]
+st, made = req("POST", f"/classes/{code}/roster", {"names": [f"Student {i}" for i in range(1, 9)]}, {"X-BOW-Teacher-Key": key})
+print("roster", st)
+cards = made["cards"]
+
+def post(card, source):
+    st, joined = req("POST", "/classes/%s/join" % code, {"classCode": code, "seatCode": card["seatCode"], "joinCode": card["joinCode"], "device": "shared"})
+    token = joined["token"]
+    session = str(uuid.uuid4())
+    log = json.loads(json.dumps(source["log"]))
+    for ev in log:
+        ev["sessionId"] = session
+        if isinstance(ev.get("payload"), dict):
+            if "sessionId" in ev["payload"]: ev["payload"]["sessionId"] = session
+            if "seatCode" in ev["payload"]: ev["payload"]["seatCode"] = card["seatCode"]
+            if "classCode" in ev["payload"]: ev["payload"]["classCode"] = code
+    st, body = req("POST", f"/classes/{code}/submissions", {
+        "classCode": code, "seatCode": card["seatCode"], "sessionId": session,
+        "challengeId": source["challengeId"], "challengeVersion": source["challengeVersion"], "log": log,
+    }, {"Authorization": "Bearer " + token})
+    return st, body
+
+for i, card in enumerate(cards):
+    src = FAST if i < 5 else GOOD
+    st, body = post(card, src)
+    print("seat", card["seatCode"], "->", "fast" if i < 5 else "good", st, str(body)[:120])
+print("CLASS", code, key)

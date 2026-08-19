@@ -1,0 +1,9 @@
+# Authorization matrix (private instance :4188). Each line: what caller / route -> HTTP status
+unauth  GET /classes/QRRX9/roster           -> 200 (label+joinMode only, NO names)
+student GET /classes/QRRX9/submissions       -> 403 (403 expected)
+otherT  GET /classes/QRRX9/submissions       -> 403 (403 expected)
+otherT  DELETE /classes/QRRX9                 -> 403 (403 expected)
+student POST /classes/QRRX9/signout          -> 403 (403 expected)
+valid student token GET /me -> 200 ; edited-payload(kind=teacher)+old sig -> 401 ; stripped-sig -> 401
+stripped signature payload.               -> 401 (401 expected)
+teacher-key GET roster (full, WITH names)  -> 200 (200, names visible to key holder)

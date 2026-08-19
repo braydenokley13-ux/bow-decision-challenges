@@ -21,7 +21,7 @@ const levelsOf = (result: CompetencyResult | undefined) =>
 describe("Seat 14, read as competencies", () => {
   const log = seat14Log();
   const observations = observeBasketballFromLog(log);
-  const results = observeCompetencies(observations, { submitted: false });
+  const results = observeCompetencies(observations);
   const byId = new Map(results.map((result) => [result.competencyId, result]));
 
   it("leaves the concept-level judgement exactly where it was", () => {
@@ -61,12 +61,24 @@ describe("Seat 14, read as competencies", () => {
     expect(corrected?.map((observation) => observation.microSkillId)).toEqual(["C5.1"]);
   });
 
-  it("refuses to call the budget competency anything, because one requirement was never observed", () => {
-    // Four of the five things `plan-within-income` asks for are there and strong. The
-    // fifth — savings set on purpose rather than as the remainder — is not something this
-    // world can see, so it is `null`, and `null` is not a zero and not a pass. Incomplete
-    // is the only honest word: no competency result, no objective state, and nothing said
-    // about this student that the evidence does not support.
+  it("reads three of the budget competency's five, and will not guess at the savings row", () => {
+    // Seat 14 typed a figure into every row of the opening plan, including the course line,
+    // and saved a plan that balanced. Three of the five things `plan-within-income` asks for
+    // are there and strong. The fifth is the written explanation, which BOW never scores.
+    //
+    // And ER3 is `null`, which is this file's least comfortable line and the right one.
+    // Seat 14 never named a row as taking the last of the money, and on a board where every
+    // dollar must be placed the row a student fills last is arithmetically the leftovers —
+    // so three typed figures that balance are equally consistent with a course figure chosen
+    // first and one worked out at the end. A rule that read the typing as intention scored
+    // **5** here and scored **5** for a student who performed the misconception with the
+    // keyboard, on rendered pages, in a real class. The honest answer is silence, and the
+    // sentence beside it tells the teacher to go and ask.
+    //
+    // What that costs is on the board rather than on this student: the golden run cannot
+    // demonstrate the requirement this product is built around, because the board never asks
+    // the question of a student who types. `plannedSavings.test.ts` says the same thing at
+    // more length.
     expect(byId.get("plan-within-income")?.state).toBe("incomplete");
     expect(levelsOf(byId.get("plan-within-income"))).toEqual({
       "plan-within-income.er1": 5,
@@ -77,14 +89,13 @@ describe("Seat 14, read as competencies", () => {
     });
   });
 
-  it("stays incomplete even once a person scores the writing", () => {
-    // The missing requirement is a fact about the world, not about the paperwork. Scoring
-    // the defense fills ER5 and changes nothing else, which is the proof that ER3 is what
-    // is holding this competency back.
+  it("still waits on the budget competency once a person has read the writing", () => {
+    // Marking the paragraph finishes the one row a person owns and does not finish the
+    // competency, because the savings row was never observed. *Incomplete* is not a low
+    // score: nothing here says Seat 14 failed at anything, and nothing here claims they
+    // demonstrated something the run cannot show.
     const scored = observeCompetencies(
-      observeBasketballFromLog(log, { scoredExplanations: { "plan-within-income.er5": 5 } }),
-      { submitted: true },
-    );
+      observeBasketballFromLog(log, { scoredExplanations: { "plan-within-income.er5": 5 } }));
     const planning = scored.find((result) => result.competencyId === "plan-within-income");
     expect(planning?.state).toBe("incomplete");
     expect(levelsOf(planning)["plan-within-income.er5"]).toBe(5);
@@ -97,7 +108,7 @@ describe("Seat 14, read as competencies", () => {
     // a page about a child would make it look like a fact about the child.
     expect(byId.has("save-toward-a-goal")).toBe(false);
     expect(byId.has("plan-for-the-unexpected")).toBe(false);
-    expect([...byId.keys()].sort()).toEqual(["adapt-a-plan", "plan-within-income"]);
+    expect([...byId.keys()].sort()).toEqual(["adapt-a-plan", "plan-within-income", "sort-by-need-want-goal"]);
   });
 
   it("stamps every result with the model and rubric it was computed under", () => {

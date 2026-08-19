@@ -1,0 +1,380 @@
+# Roster and printed cards, keyboard only. Snapshot d336f9d. Class QAAA3.
+
+######## ARRIVAL — Roster (empty)
+  url            http://127.0.0.1:6173/educator/class/QAAA3/roster?key=UMMEE4UNAAJQYXMJXFFGNQNQ
+  document.title Plan Under Pressure — BOW Decision Challenges
+  landmarks      banner, main, navigation "Educator navigation"
+  headings       h1 "Who is in this class." | h2 "ADD STUDENTS" | h2 "THE LIST" | h2 "SIGN EVERYBODY OUT"
+  FOCUS ON ARRIVAL: *** FOCUS IS ON THE DOCUMENT BODY — nothing is spoken ***
+  LIVE(title/-): "Plan Under Pressure — BOW Decision Challenges"
+  LIVE(live-born-with-content/polite): "Opening the class…"  @div#root > div.educator-shell > main.educator-main > p.class-state
+
+######## VIRTUAL CURSOR — Roster (empty)
+  ·· (no accessible name), banner
+  ··· "BOW Decision Challenges home", link
+  ····· "BOW", StaticText
+  ····· "DECISION CHALLENGES", StaticText
+  ··· "Educator navigation", navigation
+  ···· "My classes", link
+  ····· "My classes", StaticText
+  ···· "Objectives", link
+  ····· "Objectives", StaticText
+  ···· "Guide", link
+  ····· "Guide", StaticText
+  ··· "SIGN IN", link
+  ···· "SIGN IN", StaticText
+  ·· (no accessible name), main
+  ··· (no accessible name), sectionheader
+  ···· "← Class evidence", link
+  ····· "← Class evidence", StaticText
+  ···· (no accessible name), paragraph
+  ····· "CLASS LIST", StaticText
+  ···· "Who is in this class.", heading, level 1
+  ····· "Who is in this class.", StaticText
+  ···· (no accessible name), paragraph
+  ····· "Paste your class list and BOW gives you one card per student to hand out. A student signs in by typing the class code and the code on their card — nothing else, and never a name they type themselves.", StaticText
+  ···· (no accessible name), paragraph
+  ····· "6", StaticText
+  ····· " ON THE LIST · ROOM FOR ", StaticText
+  ····· "54", StaticText
+  ····· " MORE", StaticText
+  ···· "ADD STUDENTS", heading, level 2
+  ····· "ADD STUDENTS", StaticText
+  ···· (no accessible name), LabelText
+  ····· "ONE NAME PER LINE", StaticText
+  ····· "ONE NAME PER LINE", textbox, multi line
+  ···· (no accessible name), paragraph
+  ····· "Write what you want to see on your own screens. First names, initials, table numbers — BOW never checks it against anything and never asks a student for a name of their own.", StaticText
+  ···· "Add them and make the cards", button, unavailable
+  ····· "Add them and make the cards", StaticText
+  ···· (no accessible name), paragraph
+  ····· "0", StaticText
+  ····· " OF ", StaticText
+  ····· "6", StaticText
+  ····· " HAVE SIGNED IN", StaticText
+  ···· "THE LIST", heading, level 2
+  ····· "THE LIST", StaticText
+  ···· (no accessible name), list
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), strong
+  ······· "Alex Rivera", StaticText
+  ······ "Seat ", StaticText
+  ······ "1", StaticText
+  ······ "Has not signed in", StaticText
+  ······ "Print a new card", button
+  ······· "Print a new card", StaticText
+  ······ "Take off the list", button
+  ······· "Take off the list", StaticText
+  ······ "Erase", button
+  ······· "Erase", StaticText
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), strong
+  ······· "Brit Osei", StaticText
+  ······ "Seat ", StaticText
+  ······ "2", StaticText
+  ······ "Has not signed in", StaticText
+  ······ "Print a new card", button
+  ······· "Print a new card", StaticText
+  ······ "Take off the list", button
+  ······· "Take off the list", StaticText
+  ······ "Erase", button
+  ······· "Erase", StaticText
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), strong
+  ······· "Cam Lin", StaticText
+  ······ "Seat ", StaticText
+  ······ "3", StaticText
+  ······ "Has not signed in", StaticText
+  ······ "Print a new card", button
+  ······· "Print a new card", StaticText
+  ······ "Take off the list", button
+  ······· "Take off the list", StaticText
+  ······ "Erase", button
+  ······· "Erase", StaticText
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), strong
+  ······· "Dee Marsh", StaticText
+  ······ "Seat ", StaticText
+  ······ "4", StaticText
+  ······ "Has not signed in", StaticText
+  ······ "Print a new card", button
+  ······· "Print a new card", StaticText
+  ······ "Take off the list", button
+  ······· "Take off the list", StaticText
+  ······ "Erase", button
+  ······· "Erase", StaticText
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), strong
+  ······· "Eli Novak", StaticText
+  ······ "Seat ", StaticText
+  ······ "5", StaticText
+  ······ "Has not signed in", StaticText
+  ······ "Print a new card", button
+  ······· "Print a new card", StaticText
+  ······ "Take off the list", button
+  ······· "Take off the list", StaticText
+  ······ "Erase", button
+  ······· "Erase", StaticText
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), strong
+  ······· "Fay Quinn", StaticText
+  ······ "Seat ", StaticText
+  ······ "6", StaticText
+  ······ "Has not signed in", StaticText
+  ······ "Print a new card", button
+  ······· "Print a new card", StaticText
+  ······ "Take off the list", button
+  ······· "Take off the list", StaticText
+  ······ "Erase", button
+  ······· "Erase", StaticText
+  ···· (no accessible name), paragraph
+  ····· "A new card stops the old one working. Taking a student off the list keeps everything they turned in — it stops them signing in, and their work stays in the evidence. ", StaticText
+  ····· (no accessible name), strong
+  ······ "Erase", StaticText
+  ····· " ", StaticText
+  ····· "is the other one: it deletes the name and everything that student did, for a family who has asked you to. Nobody else in the class is affected, and it cannot be undone.", StaticText
+  ···· (no accessible name), paragraph
+  ····· "END OF THE DAY", StaticText
+  ···· "SIGN EVERYBODY OUT", heading, level 2
+  ····· "SIGN EVERYBODY OUT", StaticText
+  ···· (no accessible name), paragraph
+  ····· "One press ends every student session in this class, on every device. Nothing they did is lost. Use it when the Chromebooks go back on the trolley.", StaticText
+  ···· "Sign the whole class out", button
+  ····· "Sign the whole class out", StaticText
+  ··· (no accessible name), alert
+
+######## KEYBOARD: find the paste box
+  Tab  1 → [banner] "BOW Decision Challenges home", link
+  Tab  2 → [navigation "Educator navigation"] "My classes", link
+  Tab  3 → "Objectives", link
+  Tab  4 → "Guide", link
+  Tab  5 → "SIGN IN", link
+  Tab  6 → [main] "← Class evidence", link
+  Tab  7 → "ONE NAME PER LINE", textbox, multi line
+  >>> reached the roster paste box in 7 Tab press(es)
+
+######## KEYBOARD: paste six names
+  TYPE "Alex Rivera
+Brit Osei
+Cam Lin
+Dee Marsh
+Eli Novak
+Fay Quinn"
+  FOCUS still: "ONE NAME PER LINE", textbox, Alex Rivera
+Brit Osei
+Cam Lin
+Dee Marsh
+Eli Novak
+Fay Quinn, multi line
+
+######## KEYBOARD: reach and press the add button
+  Tab  1 → "Add them and make the cards", button
+  >>> reached a live button after the paste box in 1 Tab press(es)
+  Enter (add the names) → FOCUS: "Add them and make the cards", button
+
+######## ARRIVAL — Roster after adding six names
+  url            http://127.0.0.1:6173/educator/class/QAAA3/roster?key=UMMEE4UNAAJQYXMJXFFGNQNQ
+  document.title Plan Under Pressure — BOW Decision Challenges
+  landmarks      banner, main, navigation "Educator navigation"
+  headings       h1 "Who is in this class." | h2 "ADD STUDENTS" | h2 "THE LIST" | h2 "SIGN EVERYBODY OUT"
+  FOCUS ON ARRIVAL: "Add them and make the cards", button
+
+######## VIRTUAL CURSOR — Roster with six seats
+  ·· (no accessible name), banner
+  ··· "BOW Decision Challenges home", link
+  ····· "BOW", StaticText
+  ····· "DECISION CHALLENGES", StaticText
+  ··· "Educator navigation", navigation
+  ···· "My classes", link
+  ····· "My classes", StaticText
+  ···· "Objectives", link
+  ····· "Objectives", StaticText
+  ···· "Guide", link
+  ····· "Guide", StaticText
+  ··· "SIGN IN", link
+  ···· "SIGN IN", StaticText
+  ·· (no accessible name), main
+  ··· (no accessible name), sectionheader
+  ···· "← Class evidence", link
+  ····· "← Class evidence", StaticText
+  ···· (no accessible name), paragraph
+  ····· "CLASS LIST", StaticText
+  ···· "Who is in this class.", heading, level 1
+  ····· "Who is in this class.", StaticText
+  ···· (no accessible name), paragraph
+  ····· "Paste your class list and BOW gives you one card per student to hand out. A student signs in by typing the class code and the code on their card — nothing else, and never a name they type themselves.", StaticText
+  ···· (no accessible name), paragraph
+  ····· "6", StaticText
+  ····· " ON THE LIST · ROOM FOR ", StaticText
+  ····· "54", StaticText
+  ····· " MORE", StaticText
+  ···· "ADD STUDENTS", heading, level 2
+  ····· "ADD STUDENTS", StaticText
+  ···· (no accessible name), LabelText
+  ····· "ONE NAME PER LINE", StaticText
+  ····· "ONE NAME PER LINE", textbox, Alex Rivera
+Brit Osei
+Cam Lin
+Dee Marsh
+Eli Novak
+Fay Quinn, multi line
+  ······· "Alex Rivera", StaticText
+  ······· "
+", LineBreak
+  ······· "Brit Osei", StaticText
+  ······· "
+", LineBreak
+  ······· "Cam Lin", StaticText
+  ······· "
+", LineBreak
+  ······· "Dee Marsh", StaticText
+  ······· "
+", LineBreak
+  ······· "Eli Novak", StaticText
+  ······· "
+", LineBreak
+  ······· "Fay Quinn", StaticText
+  ···· (no accessible name), paragraph
+  ····· "Write what you want to see on your own screens. First names, initials, table numbers — BOW never checks it against anything and never asks a student for a name of their own.", StaticText
+  ···· "Add them and make the cards", button
+  ····· "Add them and make the cards", StaticText
+  ···· "Names already on the list", group
+  ····· (no accessible name), paragraph
+  ······ (no accessible name), strong
+  ······· "6", StaticText
+  ······· " of these ", StaticText
+  ······· "6", StaticText
+  ······· " ", StaticText
+  ······· "names are", StaticText
+  ······· " already on the list.", StaticText
+  ······ " ", StaticText
+  ······ "Alex Rivera, Brit Osei, Cam Lin, Dee Marsh, Eli Novak, Fay Quinn", StaticText
+  ······ ".", StaticText
+  ····· "Add all 6 anyway", button
+  ······ "Add all ", StaticText
+  ······ "6", StaticText
+  ······ " anyway", StaticText
+  ····· "Cancel", button
+  ······ "Cancel", StaticText
+  ···· (no accessible name), paragraph
+  ····· "0", StaticText
+  ····· " OF ", StaticText
+  ····· "6", StaticText
+  ····· " HAVE SIGNED IN", StaticText
+  ···· "THE LIST", heading, level 2
+  ····· "THE LIST", StaticText
+  ···· (no accessible name), list
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), strong
+  ······· "Alex Rivera", StaticText
+  ······ "Seat ", StaticText
+  ······ "1", StaticText
+  ······ "Has not signed in", StaticText
+  ······ "Print a new card", button
+  ······· "Print a new card", StaticText
+  ······ "Take off the list", button
+  ······· "Take off the list", StaticText
+  ······ "Erase", button
+  ······· "Erase", StaticText
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), strong
+  ······· "Brit Osei", StaticText
+  ······ "Seat ", StaticText
+  ······ "2", StaticText
+  ······ "Has not signed in", StaticText
+  ······ "Print a new card", button
+  ······· "Print a new card", StaticText
+  ······ "Take off the list", button
+  ······· "Take off the list", StaticText
+  ······ "Erase", button
+  ······· "Erase", StaticText
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), strong
+  ······· "Cam Lin", StaticText
+  ······ "Seat ", StaticText
+  ······ "3", StaticText
+  ······ "Has not signed in", StaticText
+  ······ "Print a new card", button
+  ······· "Print a new card", StaticText
+  ······ "Take off the list", button
+  ······· "Take off the list", StaticText
+  ······ "Erase", button
+  ······· "Erase", StaticText
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), strong
+  ······· "Dee Marsh", StaticText
+  ······ "Seat ", StaticText
+  ······ "4", StaticText
+  ······ "Has not signed in", StaticText
+  ······ "Print a new card", button
+  ······· "Print a new card", StaticText
+  ······ "Take off the list", button
+  ······· "Take off the list", StaticText
+  ······ "Erase", button
+  ······· "Erase", StaticText
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), strong
+  ······· "Eli Novak", StaticText
+  ······ "Seat ", StaticText
+  ······ "5", StaticText
+  ······ "Has not signed in", StaticText
+  ······ "Print a new card", button
+  ······· "Print a new card", StaticText
+  ······ "Take off the list", button
+  ······· "Take off the list", StaticText
+  ······ "Erase", button
+  ······· "Erase", StaticText
+  ····· (no accessible name), listitem, level 1
+  ······ (no accessible name), strong
+  ······· "Fay Quinn", StaticText
+  ······ "Seat ", StaticText
+  ······ "6", StaticText
+  ······ "Has not signed in", StaticText
+  ······ "Print a new card", button
+  ······· "Print a new card", StaticText
+  ······ "Take off the list", button
+  ······· "Take off the list", StaticText
+  ······ "Erase", button
+  ······· "Erase", StaticText
+  ···· (no accessible name), paragraph
+  ····· "A new card stops the old one working. Taking a student off the list keeps everything they turned in — it stops them signing in, and their work stays in the evidence. ", StaticText
+  ····· (no accessible name), strong
+  ······ "Erase", StaticText
+  ····· " ", StaticText
+  ····· "is the other one: it deletes the name and everything that student did, for a family who has asked you to. Nobody else in the class is affected, and it cannot be undone.", StaticText
+  ···· (no accessible name), paragraph
+  ····· "END OF THE DAY", StaticText
+  ···· "SIGN EVERYBODY OUT", heading, level 2
+  ····· "SIGN EVERYBODY OUT", StaticText
+  ···· (no accessible name), paragraph
+  ····· "One press ends every student session in this class, on every device. Nothing they did is lost. Use it when the Chromebooks go back on the trolley.", StaticText
+  ···· "Sign the whole class out", button
+  ····· "Sign the whole class out", StaticText
+  ··· (no accessible name), alert
+
+######## KEYBOARD: the printed cards
+  Tab  1 → [group "Names already on the list"] "Add all 6 anyway", button
+  Tab  2 → "Cancel", button
+  Tab  3 → [list] "Print a new card", button
+  Tab  4 → "Take off the list", button
+  Tab  5 → "Erase", button
+  Tab  6 → "Print a new card", button
+  Tab  7 → "Take off the list", button
+  Tab  8 → "Erase", button
+  Tab  9 → "Print a new card", button
+  Tab 10 → "Take off the list", button
+  Tab 11 → "Erase", button
+  Tab 12 → "Print a new card", button
+  Tab 13 → "Take off the list", button
+  Tab 14 → "Erase", button
+  Tab 15 → "Print a new card", button
+  Tab 16 → "Take off the list", button
+  Tab 17 → "Erase", button
+  Tab 18 → "Print a new card", button
+  Tab 19 → "Take off the list", button
+  Tab 20 → "Erase", button
+  Tab 21 → "Sign the whole class out", button
+  Tab 22 → *** FOCUS IS ON THE DOCUMENT BODY — nothing is spoken ***
+         LIVE(focus-lost-to-body): "div.educator-shell > main.educator-main > section.dashboard-section > button.button.button--secondary"
+  Tab 23 → [banner] "BOW Decision Challenges home", link
+  >>> tab order cycled after 22 stops

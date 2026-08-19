@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { dollars } from "../core/money";
 import { SCENARIO_NUMBERS } from "../scenario/numbers";
-import { availableFor, balanceOf, fallbackMetrics, lockedFor, week5Change } from "./formulas";
+import { availableFor, balanceOf, fallbackMetrics, lockedFor, planMovements, week5Change } from "./formulas";
 import type { PlanAmounts, SnapshotInputs } from "./types";
 
 const zero: PlanAmounts = { goal: dollars(0), reserve: dollars(0), flexibleCash: dollars(0) };
@@ -90,6 +90,51 @@ describe("increment reachability and feasibility", () => {
       const room = availableFor(candidate, SCENARIO_NUMBERS) - lockedFor(candidate, SCENARIO_NUMBERS);
       expect(room).toBeGreaterThanOrEqual(900);
       expect(room % 50).toBe(0);
+    }
+  });
+});
+
+/**
+ * The rule that keeps the product's own edits out of the record of a child's decisions.
+ *
+ * There is exactly one row the product edits behind the student: reserving the seat at
+ * Week 4 commits the course money to the locked costs, `courseRowCapFor` drops the row's
+ * ceiling to zero and the reducer empties it in every draft. Anything reading a plan as a
+ * record of choices has to measure against that ceiling — a delta cannot tell the two
+ * apart, and reading one as the other put five children on a class board under the exact
+ * opposite of what they had done.
+ */
+describe("a plan reads as what the student moved, not as what the product moved", () => {
+  const opening: PlanAmounts = { goal: dollars(1200), reserve: dollars(900), flexibleCash: dollars(500) };
+  const byCategory = (movements: ReturnType<typeof planMovements>) =>
+    Object.fromEntries(movements.map((entry) => [entry.category, entry]));
+
+  it("credits a reserved seat's emptied course row to the product, not to the student", () => {
+    const final: PlanAmounts = { goal: dollars(0), reserve: dollars(550), flexibleCash: dollars(550) };
+    const rows = byCategory(planMovements(opening, final, { depositTaken: true }, SCENARIO_NUMBERS));
+    expect(rows.goal).toEqual({ category: "goal", reachable: 0, chosenReduction: 0, forcedReduction: 1200, moved: false });
+    // The cuts they did make are still theirs, and still the deepest one is the answer.
+    expect(rows.reserve!.chosenReduction).toBe(350);
+    expect(rows.flexibleCash!.chosenReduction).toBe(0);
+    expect(rows.flexibleCash!.moved).toBe(true);
+  });
+
+  it("reads the same course row as a real cut when the product never capped it", () => {
+    const final: PlanAmounts = { goal: dollars(400), reserve: dollars(900), flexibleCash: dollars(500) };
+    const rows = byCategory(planMovements(opening, final, { depositTaken: false }, SCENARIO_NUMBERS));
+    expect(rows.goal).toEqual({ category: "goal", reachable: 1200, chosenReduction: 800, forcedReduction: 0, moved: true });
+    expect(rows.reserve!.moved).toBe(false);
+  });
+
+  it("counts every dollar off a row once, as the student's or as the product's", () => {
+    for (const depositTaken of [false, true]) {
+      const final: PlanAmounts = depositTaken
+        ? { goal: dollars(0), reserve: dollars(400), flexibleCash: dollars(500) }
+        : { goal: dollars(300), reserve: dollars(400), flexibleCash: dollars(700) };
+      for (const row of planMovements(opening, final, { depositTaken }, SCENARIO_NUMBERS)) {
+        const off = Math.max(0, opening[row.category] - final[row.category]);
+        expect(row.chosenReduction + row.forcedReduction, `${row.category} depositTaken=${String(depositTaken)}`).toBe(off);
+      }
     }
   });
 });

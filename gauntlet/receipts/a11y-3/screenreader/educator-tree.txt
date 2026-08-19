@@ -1,0 +1,1419 @@
+
+===== 01-new-class =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      paragraph
+      heading "Create your first class." [focusable=true focused=true level=1]
+      paragraph
+    LabelText
+    textbox "NAME THIS CLASS" desc="Students need the class code and the card you print for them. They never type an email address or a password. Classes and their evidence are kept for 120 days, then deleted." [invalid="false" focusable=true required=false describedby="class-form-status"]
+    LabelText
+    combobox "OBJECTIVE" desc="NYSED has not reviewed or endorsed BOW." [invalid="false" focusable=true expanded=false describedby="class-objective-note"]
+      MenuListPopup
+        option "1.3 · Create a budget" [focusable=true]
+        option "Run the challenge without one" [focusable=true]
+    paragraph
+    group "WHICH STORY" [invalid="false"]
+      Legend
+      LabelText
+        radio "Students pick Eight Weeks to the Showcase or Run the Pop-Up. Both stories collect the same" [invalid="false" focusable=true checked="true"]
+      LabelText
+        radio "One for everyone Eight Weeks to the Showcase." [invalid="false" focusable=true checked="false"]
+    button "Create the class" [disabled=true invalid="false" focusable=true]
+    paragraph [live="polite"]
+    paragraph
+      link "See a sample class" [focusable=true]
+
+===== 02-class-created =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      paragraph
+      heading "Here is the code." [focusable=true level=1]
+    paragraph
+    strong
+    paragraph
+    heading "A11y-3 · Period 2" [level=2]
+    list
+      listitem [level=1]
+        ListMarker "1. "
+        link "Paste your class list" [focusable=true]
+      listitem [level=1]
+        ListMarker "2. "
+        code
+      listitem [level=1]
+        ListMarker "3. "
+      listitem [level=1]
+        ListMarker "4. "
+    paragraph
+    paragraph
+    code
+    paragraph
+    link "Open this class" [focusable=true]
+
+===== 03-roster-empty =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true focused=true]
+    sectionheader
+      link "← Class evidence" [focusable=true]
+      paragraph
+      heading "Who is in this class." [level=1]
+      paragraph
+    paragraph
+    heading "ADD STUDENTS" [level=2]
+    LabelText
+      textbox "ONE NAME PER LINE" [invalid="false" focusable=true required=false]
+    paragraph
+    button "Add them and make the cards" [disabled=true invalid="false" focusable=true]
+    paragraph
+    heading "THE LIST" [level=2]
+    paragraph
+    paragraph
+      strong
+    paragraph
+    heading "SIGN EVERYBODY OUT" [level=2]
+    paragraph
+    button "Sign the whole class out" [invalid="false" focusable=true]
+    alert [live="assertive"]
+
+===== 04-roster-cards =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      link "← Class evidence" [focusable=true]
+      paragraph
+      heading "Who is in this class." [level=1]
+      paragraph
+    paragraph
+    heading "Print these now. They are not shown again." [level=2]
+    paragraph
+    button "Print" [invalid="false" focusable=true]
+    button "I have them" [invalid="false" focusable=true]
+    list
+      listitem [level=1]
+        paragraph
+        DescriptionList
+          term "CLASS CODE"
+          definition
+          term "YOUR CODE"
+          definition
+        paragraph
+      listitem [level=1]
+        paragraph
+        DescriptionList
+          term "CLASS CODE"
+          definition
+          term "YOUR CODE"
+          definition
+        paragraph
+      listitem [level=1]
+        paragraph
+        DescriptionList
+          term "CLASS CODE"
+          definition
+          term "YOUR CODE"
+          definition
+        paragraph
+      listitem [level=1]
+        paragraph
+        DescriptionList
+          term "CLASS CODE"
+          definition
+          term "YOUR CODE"
+          definition
+        paragraph
+      listitem [level=1]
+        paragraph
+        DescriptionList
+          term "CLASS CODE"
+          definition
+          term "YOUR CODE"
+          definition
+        paragraph
+      listitem [level=1]
+        paragraph
+        DescriptionList
+          term "CLASS CODE"
+          definition
+          term "YOUR CODE"
+          definition
+        paragraph
+    paragraph
+    heading "ADD STUDENTS" [level=2]
+    LabelText
+      textbox "ONE NAME PER LINE" [invalid="false" focusable=true required=false]
+    paragraph
+    button "Add them and make the cards" [disabled=true invalid="false" focusable=true focused=true]
+    paragraph
+      button "Undo — take those 6 back off the list" [invalid="false" focusable=true]
+    paragraph
+    heading "THE LIST" [level=2]
+    list
+      listitem [level=1]
+        strong
+        button "Print a new card" [invalid="false" focusable=true]
+        button "Take off the list" [invalid="false" focusable=true]
+        button "Erase" [invalid="false" focusable=true]
+      listitem [level=1]
+        strong
+        button "Print a new card" [invalid="false" focusable=true]
+        button "Take off the list" [invalid="false" focusable=true]
+        button "Erase" [invalid="false" focusable=true]
+      listitem [level=1]
+        strong
+        button "Print a new card" [invalid="false" focusable=true]
+        button "Take off the list" [invalid="false" focusable=true]
+        button "Erase" [invalid="false" focusable=true]
+      listitem [level=1]
+        strong
+        button "Print a new card" [invalid="false" focusable=true]
+        button "Take off the list" [invalid="false" focusable=true]
+        button "Erase" [invalid="false" focusable=true]
+      listitem [level=1]
+        strong
+        button "Print a new card" [invalid="false" focusable=true]
+        button "Take off the list" [invalid="false" focusable=true]
+        button "Erase" [invalid="false" focusable=true]
+      listitem [level=1]
+        strong
+        button "Print a new card" [invalid="false" focusable=true]
+        button "Take off the list" [invalid="false" focusable=true]
+        button "Erase" [invalid="false" focusable=true]
+    paragraph
+      strong
+    paragraph
+    heading "SIGN EVERYBODY OUT" [level=2]
+    paragraph
+    button "Sign the whole class out" [invalid="false" focusable=true]
+    alert [live="assertive"]
+
+===== 04b-guide-after-route-change =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      paragraph
+      heading "Plan Under Pressure" [focusable=true focused=true level=1]
+      paragraph
+      link "Create a class" [focusable=true]
+      link "Try it as a student" [focusable=true]
+      link "See a sample class" [focusable=true]
+    paragraph
+    heading "THE WHOLE RESOURCE IN ONE MINUTE." [level=2]
+    DescriptionList
+      term "What does it assess?"
+      definition
+      term "When do I use it?"
+      definition
+      term "How long?"
+      definition
+      term "What do students do?"
+      definition
+      term "Do the two give me the same thing back?"
+      definition
+      term "What do I get back?"
+      definition
+      term "How do I launch it?"
+      definition
+    link "Run this with my class →" [focusable=true]
+    link "See a sample class →" [focusable=true]
+    link "What it assesses →" [focusable=true]
+    heading "BEFORE STUDENTS BEGIN" [level=2]
+    paragraph
+    list
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    paragraph
+    group
+      DisclosureTriangle "A two-day sample mini-unit, if you want one" [focusable=true expanded=false]
+    heading "RUNNING IT" [level=2]
+    list
+      listitem [level=1]
+        link "Create a class" [focusable=true]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    paragraph
+    paragraph
+    heading "MATCHED TO NYSED OBJECTIVES, NOT SCORED AGAINST THEM." [level=2]
+    article
+      heading "1.1 · Needs, wants, values, and goals" [level=3]
+      paragraph
+      link "What BOW measures for this ↗" [focusable=true]
+    article
+      heading "1.2 · Different financial outcomes" [level=3]
+      paragraph
+      link "What BOW measures for this ↗" [focusable=true]
+    article
+      heading "1.3 · Create a budget" [level=3]
+      paragraph
+      link "What BOW measures for this ↗" [focusable=true]
+    article
+      heading "4.1 · Advance planning for unexpected events" [level=3]
+      paragraph
+      link "What BOW measures for this ↗" [focusable=true]
+    article
+      heading "5.1 · Short-term saving plans" [level=3]
+      paragraph
+      link "What BOW measures for this ↗" [focusable=true]
+    paragraph
+      link "Official NYSED source ↗" [focusable=true]
+    paragraph
+    paragraph
+
+===== 05-class-overview =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true focused=true]
+    sectionheader
+      paragraph
+        button "Rename" [invalid="false" focusable=true]
+      heading "5 of 5 turned in. 5 of 5 still to read." [level=1]
+      paragraph
+      paragraph
+        link "Read the 5 explanations →" [focusable=true]
+      link "5 awaiting your reading" [focusable=true]
+    paragraph
+    heading "WHERE THE ROOM IS" [level=2]
+    DescriptionList
+      term "TURNED IN"
+      definition
+      term "WORKING RIGHT NOW"
+      definition
+      term "NOT STARTED"
+      definition
+    paragraph
+    heading "WHERE THE CLASS IS ON EACH SKILL" [level=2]
+    table "Counts across the 0 of 5 with a usable result — one whose written explanation somebody has"
+      caption
+      rowgroup
+        row
+          columnheader "SKILL" [required=false]
+          columnheader "WHERE THE CLASS IS" [required=false]
+      row
+        rowheader "Repair a plan after income or costs change, using only the money that can still move, and " [required=false]
+        cell "5 showed it"
+      row
+        rowheader "Separate what a person needs, wants, values and is saving toward, and use that separation " [required=false]
+        cell "5 evidence not all in"
+      row
+        rowheader "Build a plan that fits the money actually available, covers required costs, and gives savi" [required=false]
+        cell "5 not yet"
+    paragraph
+    paragraph
+    paragraph
+    paragraph
+    paragraph
+    heading "WHAT THEY DECIDED" [level=2]
+    article
+      heading "Where did they put Avery?" [level=3]
+      list
+        listitem [level=1]
+        listitem [level=1]
+        listitem [level=1]
+    article
+      heading "Which income did they plan around?" [level=3]
+      list
+        listitem [level=1]
+        listitem [level=1]
+    article
+      heading "When did they commit to the course?" [level=3]
+      list
+        listitem [level=1]
+        listitem [level=1]
+    article
+      heading "Did they take the paid Saturdays?" [level=3]
+      list
+        listitem [level=1]
+        listitem [level=1]
+    article
+      heading "Did the final plan still count the attendance bonus?" [level=3]
+      list
+        listitem [level=1]
+        listitem [level=1]
+    paragraph
+    heading "What moved" [level=3]
+    list
+      listitem [level=1]
+        strong
+    DescriptionList
+      term "Backup money absorbed a loss"
+      definition
+      term "Finished with something uncovered"
+      definition
+      term "Landed a plan they never changed"
+      definition
+    paragraph
+    heading "EVERY STUDENT WHO TURNED IN" [level=2]
+    link "Seeded Student 1 Not yet Savings is a planned amount — Did not do it →" [focusable=true]
+      heading "Not yet" [level=3]
+    link "Seeded Student 2 Not yet Savings is a planned amount — Did not do it →" [focusable=true]
+      heading "Not yet" [level=3]
+    link "Seeded Student 3 Not yet Savings is a planned amount — Did not do it →" [focusable=true]
+      heading "Not yet" [level=3]
+    link "Seeded Student 4 Not yet Savings is a planned amount — Did not do it →" [focusable=true]
+      heading "Not yet" [level=3]
+    link "Seeded Student 5 Not yet Savings is a planned amount — Did not do it →" [focusable=true]
+      heading "Not yet" [level=3]
+    button "Copy A11y-3 · seeded evidence for a gradebook" [invalid="false" focusable=true]
+    paragraph [live="polite"]
+    strong
+    paragraph
+    link "Open the debrief" [focusable=true]
+    link "Pick what the room sees" [focusable=true]
+    strong
+    paragraph
+    link "Class list" [focusable=true]
+
+===== 06-reading-queue =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true focused=true]
+    sectionheader
+      link "← Class evidence" [focusable=true]
+      paragraph
+      heading "Read and score the explanations." [level=1]
+      paragraph
+    button "← Previous" [disabled=true invalid="false" focusable=true]
+    paragraph [live="polite"]
+    button "Next →" [invalid="false" focusable=true]
+    heading "Seeded Student 1" [focusable=true level=2]
+    blockquote
+    paragraph
+      link "Open this student’s evidence →" [focusable=true]
+    paragraph
+    button "Workability: 0 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Workability: 1 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Workability: 2 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Protected priority: 0 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Protected priority: 1 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Protected priority: 2 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Trade-off: 0 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Trade-off: 1 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Trade-off: 2 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Numerical evidence: 0 of 4" [invalid="false" focusable=true pressed="false"]
+    button "Numerical evidence: 1 of 4" [invalid="false" focusable=true pressed="false"]
+    button "Numerical evidence: 2 of 4" [invalid="false" focusable=true pressed="false"]
+    button "Numerical evidence: 3 of 4" [invalid="false" focusable=true pressed="false"]
+    button "Numerical evidence: 4 of 4" [invalid="false" focusable=true pressed="false"]
+    sectionfooter
+      strong
+      button "Save and read the next" [disabled=true invalid="false" focusable=true]
+
+===== 07-reading-saved =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      link "← Class evidence" [focusable=true]
+      paragraph
+      heading "Read and score the explanations." [level=1]
+      paragraph
+    button "← Previous" [invalid="false" focusable=true]
+    paragraph [live="polite"]
+    button "Next →" [invalid="false" focusable=true]
+    heading "Seeded Student 2" [focusable=true focused=true level=2]
+    blockquote
+    paragraph
+      link "Open this student’s evidence →" [focusable=true]
+    paragraph
+    button "Workability: 0 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Workability: 1 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Workability: 2 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Protected priority: 0 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Protected priority: 1 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Protected priority: 2 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Trade-off: 0 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Trade-off: 1 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Trade-off: 2 of 2" [invalid="false" focusable=true pressed="false"]
+    button "Numerical evidence: 0 of 4" [invalid="false" focusable=true pressed="false"]
+    button "Numerical evidence: 1 of 4" [invalid="false" focusable=true pressed="false"]
+    button "Numerical evidence: 2 of 4" [invalid="false" focusable=true pressed="false"]
+    button "Numerical evidence: 3 of 4" [invalid="false" focusable=true pressed="false"]
+    button "Numerical evidence: 4 of 4" [invalid="false" focusable=true pressed="false"]
+    sectionfooter
+      strong
+      button "Save and read the next" [disabled=true invalid="false" focusable=true]
+
+===== 08-student-evidence =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true focused=true]
+    sectionheader
+      link "← Class evidence" [focusable=true]
+      paragraph
+      heading "Seeded Student 1" [level=1]
+      paragraph
+      paragraph
+      strong
+      list
+        listitem [level=1]
+        listitem [level=1]
+        listitem [level=1]
+      list
+        listitem [level=1]
+    paragraph
+    paragraph
+    paragraph
+    tablist "This student's work"
+      tab "Evidence trail" [invalid="false" focusable=true]
+      tab "The plan" [invalid="false" focusable=true]
+      tab "The explanation" [invalid="false" focusable=true]
+      tab "What next" [invalid="false" focusable=true]
+    tabpanel "Evidence trail"
+      paragraph
+      heading "EVERY JUDGEMENT ON THIS ATTEMPT" [level=2]
+      paragraph
+      paragraph
+      paragraph
+      heading "Build a plan that fits the money actually available, covers required costs, and gives savi" [level=3]
+      list
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+      heading "Separate what a person needs, wants, values and is saving toward, and use that separation " [level=3]
+      list
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+      heading "Repair a plan after income or costs change, using only the money that can still move, and " [level=3]
+      list
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+      paragraph
+      heading "WHAT THIS STUDENT DID" [level=2]
+      list
+        listitem [level=1]
+          list
+            listitem [level=2]
+        listitem [level=1]
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+        listitem [level=1]
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+        listitem [level=1]
+          list
+            listitem [level=2]
+        listitem [level=1]
+          list
+            listitem [level=2]
+        listitem [level=1]
+          list
+            listitem [level=2]
+            listitem [level=2]
+        listitem [level=1]
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+    paragraph
+    DescriptionList
+      term "DID IT"
+      definition
+      term "PART OF IT, OR NONE OF IT"
+      definition
+      term "NEVER CAME UP"
+      definition
+      term "ASKED OF THIS RUN"
+      definition
+    paragraph
+    paragraph
+    paragraph
+    paragraph
+    paragraph
+    strong
+    DescriptionList
+      term "Workability"
+      definition
+      term "Protected priority"
+      definition
+      term "Trade-off"
+      definition
+      term "Numerical evidence"
+      definition
+    paragraph
+    heading "What they hear from you" [level=3]
+    LabelText
+      textbox "ONE OR TWO SENTENCES" [invalid="false" focusable=true required=false]
+    LabelText
+      checkbox "Worth talking about in person — for your list, not theirs." [invalid="false" focusable=true checked="false"]
+    button "Send it" [disabled=true invalid="false" focusable=true]
+    paragraph [live="polite"]
+
+===== 09-student-tab =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      link "← Class evidence" [focusable=true]
+      paragraph
+      heading "Seeded Student 1" [level=1]
+      paragraph
+      paragraph
+      strong
+      list
+        listitem [level=1]
+        listitem [level=1]
+        listitem [level=1]
+      list
+        listitem [level=1]
+    paragraph
+    paragraph
+    paragraph
+    tablist "This student's work"
+      tab "Evidence trail" [invalid="false" focusable=true focused=true]
+      tab "The plan" [invalid="false" focusable=true]
+      tab "The explanation" [invalid="false" focusable=true]
+      tab "What next" [invalid="false" focusable=true]
+    tabpanel "Evidence trail"
+      paragraph
+      heading "EVERY JUDGEMENT ON THIS ATTEMPT" [level=2]
+      paragraph
+      paragraph
+      paragraph
+      heading "Build a plan that fits the money actually available, covers required costs, and gives savi" [level=3]
+      list
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+      heading "Separate what a person needs, wants, values and is saving toward, and use that separation " [level=3]
+      list
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+      heading "Repair a plan after income or costs change, using only the money that can still move, and " [level=3]
+      list
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+        listitem [level=1]
+          paragraph
+          strong
+          button "I read this differently" [invalid="false" focusable=true]
+      paragraph
+      heading "WHAT THIS STUDENT DID" [level=2]
+      list
+        listitem [level=1]
+          list
+            listitem [level=2]
+        listitem [level=1]
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+        listitem [level=1]
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+        listitem [level=1]
+          list
+            listitem [level=2]
+        listitem [level=1]
+          list
+            listitem [level=2]
+        listitem [level=1]
+          list
+            listitem [level=2]
+            listitem [level=2]
+        listitem [level=1]
+          list
+            listitem [level=2]
+            listitem [level=2]
+            listitem [level=2]
+    paragraph
+    DescriptionList
+      term "DID IT"
+      definition
+      term "PART OF IT, OR NONE OF IT"
+      definition
+      term "NEVER CAME UP"
+      definition
+      term "ASKED OF THIS RUN"
+      definition
+    paragraph
+    paragraph
+    paragraph
+    paragraph
+    paragraph
+    strong
+    DescriptionList
+      term "Workability"
+      definition
+      term "Protected priority"
+      definition
+      term "Trade-off"
+      definition
+      term "Numerical evidence"
+      definition
+    paragraph
+    heading "What they hear from you" [level=3]
+    LabelText
+      textbox "ONE OR TWO SENTENCES" [invalid="false" focusable=true required=false]
+    LabelText
+      checkbox "Worth talking about in person — for your list, not theirs." [invalid="false" focusable=true checked="false"]
+    button "Send it" [disabled=true invalid="false" focusable=true]
+    paragraph [live="polite"]
+
+===== 10-debrief =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true focused=true]
+    sectionheader
+      paragraph
+      heading "Debrief" [level=1]
+      paragraph
+      link "Back to the class" [focusable=true]
+      button "Print this debrief" [invalid="false" focusable=true]
+    article
+      heading "1 · OPEN WITH THE DISAGREEMENT" [level=2]
+      list
+        listitem [level=1]
+          paragraph
+          paragraph
+      heading "2 · PUT TWO REAL PLANS SIDE BY SIDE" [level=2]
+      paragraph
+      heading "3 · WHAT CHANGED WHEN IT WENT WRONG" [level=2]
+      paragraph
+      list
+        listitem [level=1]
+          ListMarker "• "
+          strong
+      list
+        listitem [level=1]
+          ListMarker "• "
+        listitem [level=1]
+          ListMarker "• "
+        listitem [level=1]
+          ListMarker "• "
+      heading "4 · WHAT TO REVIEW" [level=2]
+      paragraph
+        link "The counts are on the class page." [focusable=true]
+      heading "5 · READ THESE EXPLANATIONS ALOUD" [level=2]
+      list
+        listitem [level=1]
+          blockquote
+        listitem [level=1]
+          blockquote
+        listitem [level=1]
+          blockquote
+        listitem [level=1]
+          blockquote
+
+===== 11-shareout =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true focused=true]
+    sectionheader
+      link "← Class evidence" [focusable=true]
+      paragraph
+      heading "Pick what the room sees." [level=1]
+      paragraph
+    paragraph
+    heading "WHAT YOU WILL SHOW, IN ORDER" [level=2]
+    paragraph
+    LabelText
+      checkbox "Show names on the screen. Off means the room sees Plan A and Plan B." [invalid="false" focusable=true checked="false"]
+    paragraph
+    heading "WORTH SHOWING" [level=2]
+    list
+      listitem [level=1]
+        paragraph
+        paragraph
+        blockquote
+        button "Show this" [invalid="false" focusable=true]
+      listitem [level=1]
+        paragraph
+        paragraph
+        blockquote
+        button "Show this" [invalid="false" focusable=true]
+      listitem [level=1]
+        paragraph
+        paragraph
+        blockquote
+        button "Show this" [invalid="false" focusable=true]
+    paragraph
+    list
+      listitem [level=1]
+        ListMarker "• "
+
+===== 20-classes-list =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      paragraph
+      heading "Your 2 classes." [focusable=true focused=true level=1]
+      paragraph
+        link "Make an account" [focusable=true]
+    link "WXDFF · created 8/19/2026 A11y-3 · seeded evidence →" [focusable=true]
+      heading "A11y-3 · seeded evidence" [level=2]
+    link "VPXH4 · created 8/19/2026 A11y-3 · Period 2 →" [focusable=true]
+      heading "A11y-3 · Period 2" [level=2]
+    heading "START ANOTHER CLASS" [level=2]
+    LabelText
+    textbox "NAME THIS CLASS" desc="Students need the class code and the card you print for them. They never type an email address or a password. Classes and their evidence are kept for 120 days, then deleted." [invalid="false" focusable=true required=false describedby="class-form-status"]
+    LabelText
+    combobox "OBJECTIVE" desc="NYSED has not reviewed or endorsed BOW." [invalid="false" focusable=true expanded=false describedby="class-objective-note"]
+      MenuListPopup
+        option "1.3 · Create a budget" [focusable=true]
+        option "Run the challenge without one" [focusable=true]
+    paragraph
+    group "WHICH STORY" [invalid="false"]
+      Legend
+      LabelText
+        radio "Students pick Eight Weeks to the Showcase or Run the Pop-Up. Both stories collect the same" [invalid="false" focusable=true checked="true"]
+      LabelText
+        radio "One for everyone Eight Weeks to the Showcase." [invalid="false" focusable=true checked="false"]
+    button "Create the class" [disabled=true invalid="false" focusable=true]
+    paragraph [live="polite"]
+    button "Forget these classes on this computer" [invalid="false" focusable=true]
+
+===== 20-sign-in =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      paragraph
+      heading "Sign in" [focusable=true focused=true level=1]
+      paragraph
+    LabelText
+      textbox "YOUR WORK EMAIL" [invalid="false" focusable=true required=false]
+    LabelText
+      textbox "PASSWORD" [invalid="false" focusable=true required=false]
+    button "Sign in" [disabled=true invalid="false" focusable=true]
+    paragraph
+    button "Make an account" [invalid="false" focusable=true]
+    button "I have my recovery code" [invalid="false" focusable=true]
+    alert [live="assertive"]
+
+===== 20-guide =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      paragraph
+      heading "Plan Under Pressure" [focusable=true focused=true level=1]
+      paragraph
+      link "Create a class" [focusable=true]
+      link "Try it as a student" [focusable=true]
+      link "See a sample class" [focusable=true]
+    paragraph
+    heading "THE WHOLE RESOURCE IN ONE MINUTE." [level=2]
+    DescriptionList
+      term "What does it assess?"
+      definition
+      term "When do I use it?"
+      definition
+      term "How long?"
+      definition
+      term "What do students do?"
+      definition
+      term "Do the two give me the same thing back?"
+      definition
+      term "What do I get back?"
+      definition
+      term "How do I launch it?"
+      definition
+    link "Run this with my class →" [focusable=true]
+    link "See a sample class →" [focusable=true]
+    link "What it assesses →" [focusable=true]
+    heading "BEFORE STUDENTS BEGIN" [level=2]
+    paragraph
+    list
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    paragraph
+    group
+      DisclosureTriangle "A two-day sample mini-unit, if you want one" [focusable=true expanded=false]
+    heading "RUNNING IT" [level=2]
+    list
+      listitem [level=1]
+        link "Create a class" [focusable=true]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+      listitem [level=1]
+    paragraph
+    paragraph
+    heading "MATCHED TO NYSED OBJECTIVES, NOT SCORED AGAINST THEM." [level=2]
+    article
+      heading "1.1 · Needs, wants, values, and goals" [level=3]
+      paragraph
+      link "What BOW measures for this ↗" [focusable=true]
+    article
+      heading "1.2 · Different financial outcomes" [level=3]
+      paragraph
+      link "What BOW measures for this ↗" [focusable=true]
+    article
+      heading "1.3 · Create a budget" [level=3]
+      paragraph
+      link "What BOW measures for this ↗" [focusable=true]
+    article
+      heading "4.1 · Advance planning for unexpected events" [level=3]
+      paragraph
+      link "What BOW measures for this ↗" [focusable=true]
+    article
+      heading "5.1 · Short-term saving plans" [level=3]
+      paragraph
+      link "What BOW measures for this ↗" [focusable=true]
+    paragraph
+      link "Official NYSED source ↗" [focusable=true]
+    paragraph
+    paragraph
+
+===== 20-objectives =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      paragraph
+      heading "What do you want to assess?" [focusable=true focused=true level=1]
+      paragraph
+    LabelText
+    searchbox "SEARCH OBJECTIVES" desc="23 of 23 shown · 1 BOW can assess" [invalid="false" focusable=true describedby="objective-search-count"]
+    paragraph [live="polite"]
+    link "1.3 · Budgeting and Money Management Create a budget BOW CAN ASSESS THIS Create a budget f" [focusable=true]
+      heading "Create a budget" [level=3]
+    link "1.1 · Budgeting and Money Management Needs, wants, values, and goals COMING Distinguish be" [focusable=true]
+      heading "Needs, wants, values, and goals" [level=3]
+    link "1.2 · Budgeting and Money Management Different financial outcomes COMING Analyze why peopl" [focusable=true]
+      heading "Different financial outcomes" [level=3]
+    link "1.4 · Budgeting and Money Management Evaluate information about goods and services COMING " [focusable=true]
+      heading "Evaluate information about goods and services" [level=3]
+    link "1.5 · Budgeting and Money Management External influences on consumer choices COMING Explai" [focusable=true]
+      heading "External influences on consumer choices" [level=3]
+    link "1.6 · Budgeting and Money Management Compare payment methods COMING Compare common payment" [focusable=true]
+      heading "Compare payment methods" [level=3]
+    link "2.1 · Credit and Debt Management Factors in the decision to use credit COMING Examine fact" [focusable=true]
+      heading "Factors in the decision to use credit" [level=3]
+    link "2.2 · Credit and Debt Management Costs and benefits of using credit COMING Explain the cos" [focusable=true]
+      heading "Costs and benefits of using credit" [level=3]
+    link "2.3 · Credit and Debt Management Minimizing interest charges COMING Explain strategies cre" [focusable=true]
+      heading "Minimizing interest charges" [level=3]
+    link "2.4 · Credit and Debt Management Effects of missed or late payments COMING Describe how mi" [focusable=true]
+      heading "Effects of missed or late payments" [level=3]
+    link "3.1 · Earning Income Careers, preparation and earning potential COMING Compare the educati" [focusable=true]
+      heading "Careers, preparation and earning potential" [level=3]
+    link "3.2 · Earning Income Gross vs net income COMING Analyze the difference between gross incom" [focusable=true]
+      heading "Gross vs net income" [level=3]
+    link "3.3 · Earning Income How taxes reduce take-home pay and what they fund COMING Explain how " [focusable=true]
+      heading "How taxes reduce take-home pay and what they fund" [level=3]
+    link "4.1 · Risk Management Advance planning for unexpected events COMING Explain how advance pl" [focusable=true]
+      heading "Advance planning for unexpected events" [level=3]
+    link "4.2 · Risk Management Purpose of insurance, premiums, coverage, shared risk COMING Describ" [focusable=true]
+      heading "Purpose of insurance, premiums, coverage, shared risk" [level=3]
+    link "4.3 · Risk Management Extended warranties COMING Analyze the costs and benefits of purchas" [focusable=true]
+      heading "Extended warranties" [level=3]
+    link "4.4 · Risk Management Identity theft and protecting information COMING Identify common met" [focusable=true]
+      heading "Identity theft and protecting information" [level=3]
+    link "5.1 · Saving and Investing Short-term saving plans COMING Identify common reasons that peo" [focusable=true]
+      heading "Short-term saving plans" [level=3]
+    link "5.2 · Saving and Investing Principal, interest and growth COMING Define and differentiate " [focusable=true]
+      heading "Principal, interest and growth" [level=3]
+    link "5.3 · Saving and Investing Compare savings rates COMING Compare savings account interest r" [focusable=true]
+      heading "Compare savings rates" [level=3]
+    link "5.4 · Saving and Investing Benefits and risks of investment assets COMING Describe the pot" [focusable=true]
+      heading "Benefits and risks of investment assets" [level=3]
+    link "5.5 · Saving and Investing Why starting earlier produces more COMING Explain why starting " [focusable=true]
+      heading "Why starting earlier produces more" [level=3]
+    link "5.6 · Saving and Investing Diversification COMING Explain how diversification helps reduce" [focusable=true]
+      heading "Diversification" [level=3]
+    paragraph
+      link "NYSED Personal Finance Education Learning Objectives" [focusable=true]
+
+===== 20-try-it-as-a-student =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    paragraph
+    link "Back to the educator guide" [focusable=true]
+  link "BOW Decision Challenges home" [focusable=true]
+  complementary
+    paragraph
+    button "Go in" [invalid="false" focusable=true]
+    paragraph [live="polite"]
+  paragraph
+  heading "TWO WAYS IN. YOU PICK ONE." [level=1]
+  paragraph
+
+===== 20-assign =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      paragraph
+      heading "Your 2 classes." [focusable=true focused=true level=1]
+      paragraph
+        link "Make an account" [focusable=true]
+    link "WXDFF · created 8/19/2026 A11y-3 · seeded evidence →" [focusable=true]
+      heading "A11y-3 · seeded evidence" [level=2]
+    link "VPXH4 · created 8/19/2026 A11y-3 · Period 2 →" [focusable=true]
+      heading "A11y-3 · Period 2" [level=2]
+    heading "START ANOTHER CLASS" [level=2]
+    LabelText
+    textbox "NAME THIS CLASS" desc="Students need the class code and the card you print for them. They never type an email address or a password. Classes and their evidence are kept for 120 days, then deleted." [invalid="false" focusable=true required=false describedby="class-form-status"]
+    LabelText
+    combobox "OBJECTIVE" desc="NYSED has not reviewed or endorsed BOW." [invalid="false" focusable=true expanded=false describedby="class-objective-note"]
+      MenuListPopup
+        option "1.3 · Create a budget" [focusable=true]
+        option "Run the challenge without one" [focusable=true]
+    paragraph
+    group "WHICH STORY" [invalid="false"]
+      Legend
+      LabelText
+        radio "Students pick Eight Weeks to the Showcase or Run the Pop-Up. Both stories collect the same" [invalid="false" focusable=true checked="true"]
+      LabelText
+        radio "One for everyone Eight Weeks to the Showcase." [invalid="false" focusable=true checked="false"]
+    button "Create the class" [disabled=true invalid="false" focusable=true]
+    paragraph [live="polite"]
+    button "Forget these classes on this computer" [invalid="false" focusable=true]
+
+===== 20-the-sample-class =====
+RootWebArea "Plan Under Pressure — BOW Decision Challenges" [focusable=true focused=true]
+  banner
+    link "BOW Decision Challenges home" [focusable=true]
+    navigation "Educator navigation"
+      link "My classes" [focusable=true]
+      link "Objectives" [focusable=true]
+      link "Guide" [focusable=true]
+    link "SIGN IN" [focusable=true]
+  main [focusable=true]
+    sectionheader
+      paragraph
+        button "Rename" [invalid="false" focusable=true]
+      heading "18 of the 18 students BOW has seen turned in. 5 of 18 still to read." [focusable=true focused=true level=1]
+      paragraph
+      paragraph
+        link "Read the 5 explanations →" [focusable=true]
+      link "5 awaiting your reading" [focusable=true]
+    paragraph
+    heading "WHERE THE ROOM IS" [level=2]
+    DescriptionList
+      term "TURNED IN"
+      definition
+      term "WORKING RIGHT NOW"
+      definition
+      term "NOT STARTED"
+      definition
+    paragraph
+      link "Add one" [focusable=true]
+    paragraph
+    paragraph
+      strong
+    table
+      rowgroup
+        row
+          columnheader "WHAT THE WORK HAD TO SHOW" [required=false]
+          columnheader "PART OF IT, OR NONE OF IT" [required=false]
+          columnheader "NEVER CAME UP" [required=false]
+      row
+        rowheader "Savings is a planned amount Savings is set to a deliberate figure before discretionary cat" [required=false]
+        cell "2 of 12 17%"
+        cell "—"
+      row
+        rowheader "Works out the size of the change Correctly totals what was lost and what is newly required" [required=false]
+        cell "1 of 12 8%"
+        cell "—"
+      row
+        rowheader "Explains the trade-off made Names something given up, says what it was given up for, and r" [required=false]
+        cell "1 of 12 8%"
+        cell "—"
+      row
+        rowheader "Uses only money that can still move Repairs from categories that are still adjustable; doe" [required=false]
+        cell "0 of 12 0%"
+        cell "—"
+      row
+        rowheader "Frees enough to cover it Frees at least the shortfall, or as much as was actually availabl" [required=false]
+        cell "0 of 12 0%"
+        cell "—"
+      row
+        rowheader "Ends with a plan that works, or says what is still short Final plan balances, or the remai" [required=false]
+        cell "0 of 12 0%"
+        cell "—"
+      row
+        rowheader "Knows what money is actually available Totals available money correctly before allocating," [required=false]
+        cell "0 of 12 0%"
+        cell "—"
+      row
+        rowheader "Covers what is required first Every required cost is included in the plan exactly once, at" [required=false]
+        cell "0 of 12 0%"
+        cell "—"
+      row
+        rowheader "The plan actually balances The saved plan does not exceed available money and leaves nothi" [required=false]
+        cell "0 of 12 0%"
+        cell "—"
+      row
+        rowheader "Fits the choice to the money there is Pays for as much as the money in hand can actually r" [required=false]
+        cell "0 of 12 0%"
+        cell "—"
+      row
+        rowheader "Chooses on what the claim is, not what it costs Says what the unpaid claim was to them — s" [required=false]
+        cell "0 of 12 0%"
+        cell "—"
+      row
+        rowheader "The reason holds up against what they did The reason given is true of something they left " [required=false]
+        cell "0 of 12 0%"
+        cell "—"
+      row
+        rowheader "Says what made one claim matter more Names what made one claim matter more than another — " [required=false]
+        cell "0 of 12 0%"
+        cell "—"
+    paragraph
+    heading "WHERE THE CLASS IS ON EACH SKILL" [level=2]
+    table "Counts across the 12 of 18 with a usable result — one whose written explanation somebody h"
+      caption
+      rowgroup
+        row
+          columnheader "SKILL" [required=false]
+          columnheader "WHERE THE CLASS IS" [required=false]
+      row
+        rowheader "Repair a plan after income or costs change, using only the money that can still move, and " [required=false]
+        cell "15 showed it · 1 showed it after a hint · 1 not yet · 1 evidence not all in"
+      row
+        rowheader "Separate what a person needs, wants, values and is saving toward, and use that separation " [required=false]
+        cell "13 showed it · 5 evidence not all in"
+      row
+        rowheader "Build a plan that fits the money actually available, covers required costs, and gives savi" [required=false]
+        cell "9 showed it · 1 part way · 5 not yet · 3 evidence not all in"
+    paragraph
+    paragraph
+    paragraph
+    paragraph
+    paragraph
+    paragraph
+    paragraph
+    heading "WHAT THEY DECIDED" [level=2]
+    article
+      heading "Where did they put Avery?" [level=3]
+      list
+        listitem [level=1]
+        listitem [level=1]
+        listitem [level=1]
+    article
+      heading "Which income did they plan around?" [level=3]
+      list
+        listitem [level=1]
+        listitem [level=1]
+    article
+      heading "When did they commit to the course?" [level=3]
+      list
+        listitem [level=1]
+        listitem [level=1]
+    article
+      heading "Did they take the paid Saturdays?" [level=3]
+      list
+        listitem [level=1]
+        listitem [level=1]
+    article
+      heading "Did the final plan still count the attendance bonus?" [level=3]
+      list
+        listitem [level=1]
+        listitem [level=1]
+    paragraph
+    heading "What moved" [level=3]
+    list
+      listitem [level=1]
+        strong
+      listitem [level=1]
+        strong
+    DescriptionList
+      term "Backup money absorbed a loss"
+      definition
+      term "Finished with something uncovered"
+      definition
+      term "Landed a plan they never changed"
+      definition
+    paragraph
+    heading "WHAT THEY DECIDED" [level=2]
+    article
+      heading "Which booth did they take?" [level=3]
+      list
+        listitem [level=1]
+        listitem [level=1]
+        listitem [level=1]
+    article
+      heading "Did they plan around the catering job?" [level=3]
+      list
+        listitem [level=1]
+        listitem [level=1]
+    article
+      heading "Did they plan around the sell-out rebate?" [level=3]
+      list
+        listitem [level=1]
+        listitem [level=1]
+    article
+      heading "How did the generator end?" [level=3]
+      list
+        listitem [level=1]
+        listitem [level=1]
+        listitem [level=1]
+    paragraph
+    heading "What moved" [level=3]
+    DescriptionList
+      term "Covered the replacement in full"
+      definition
+      term "Finished still short, and said so"
+      definition
+      term "Reached for money already spent"
+      definition
+      term "Never settled the repair"
+      definition
+    paragraph
+    heading "EVERY STUDENT WHO TURNED IN" [level=2]
+    link "Seat 1 Showed it Did it — everything the work had to show. →" [focusable=true]
+      heading "Showed it" [level=3]
+    link "Seat 2 Showed it Did it — everything the work had to show. →" [focusable=true]
+      heading "Showed it" [level=3]
+    link "Seat 3 Not yet Savings is a planned amount — Did not do it →" [focusable=true]
+      heading "Not yet" [level=3]
+    link "Seat 4 Evidence not all in Written explanation still to read. →" [focusable=true]
+      heading "Evidence not all in" [level=3]
+    link "Seat 5 Showed it Did it — everything the work had to show. →" [focusable=true]
+      heading "Showed it" [level=3]
+    link "Seat 6 Not yet Savings is a planned amount — Did not do it →" [focusable=true]
+      heading "Not yet" [level=3]
+    link "Seat 7 Showed it Did it — everything the work had to show. →" [focusable=true]
+      heading "Showed it" [level=3]
+    link "Seat 8 Showed it Did it — everything the work had to show. →" [focusable=true]
+      heading "Showed it" [level=3]
+    link "Seat 9 Not yet Savings is a planned amount — Did not do it →" [focusable=true]
+      heading "Not yet" [level=3]
+    link "Seat 10 Showed it Did it — everything the work had to show. →" [focusable=true]
+      heading "Showed it" [level=3]
+    link "Seat 11 Showed it Did it — everything the work had to show. →" [focusable=true]
+      heading "Showed it" [level=3]
+    link "Seat 12 Not yet Savings is a planned amount — Did not do it →" [focusable=true]
+      heading "Not yet" [level=3]
+    link "Seat 13 Evidence not all in Written explanation still to read. →" [focusable=true]
+      heading "Evidence not all in" [level=3]
+    link "Seat 14 Not yet Explains the trade-off made — Part of it · 1 more →" [focusable=true]
+      heading "Not yet" [level=3]
+    link "Seat 15 Showed it after a hint Did it — everything the work had to show. →" [focusable=true]
+      heading "Showed it after a hint" [level=3]
+    link "Seat 16 Not yet Savings is a planned amount — Did not do it →" [focusable=true]
+      heading "Not yet" [level=3]
+    link "Seat 17 Showed it Did it — everything the work had to show. →" [focusable=true]
+      heading "Showed it" [level=3]
+    link "Seat 18 Evidence not all in Written explanation still to read. →" [focusable=true]
+      heading "Evidence not all in" [level=3]
+    button "Copy Sample class for a gradebook" [invalid="false" focusable=true]
+    paragraph [live="polite"]
+    strong
+    paragraph
+    link "Open the debrief" [focusable=true]
+    link "Pick what the room sees" [focusable=true]
+    strong
+    paragraph
+    link "Class list" [focusable=true]

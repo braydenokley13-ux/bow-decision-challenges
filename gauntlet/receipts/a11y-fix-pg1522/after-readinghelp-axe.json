@@ -1,0 +1,15 @@
+{
+  "screen": "student home",
+  "url": "http://127.0.0.1:5610/home",
+  "violations": []
+}
+{
+  "screen": "student home — tools open",
+  "url": "http://127.0.0.1:5610/home",
+  "violations": []
+}
+{
+  "screen": "world picker — tools open",
+  "url": "http://127.0.0.1:5610/challenges/plan-under-pressure?class=YV9JT",
+  "violations": []
+}

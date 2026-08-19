@@ -1,0 +1,105 @@
+{
+  "screen": "01-booths",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=P3DM3",
+  "violations": []
+}
+{
+  "screen": "02-booth-taken",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=P3DM3",
+  "violations": []
+}
+{
+  "screen": "03-owed-checked",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=P3DM3",
+  "violations": []
+}
+{
+  "screen": "04-money",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=P3DM3",
+  "violations": []
+}
+{
+  "screen": "05-board",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=P3DM3",
+  "violations": []
+}
+{
+  "screen": "01-booths",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "02-booth-taken",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "03-owed-checked",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "04-money",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "05-board",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "06-board-closed",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "07-saturday-1",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "08-tips",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "09-standing",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "10-generator",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "11-repair",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "12-saturday-4",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "13-settle",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "14-writeup",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "15-writeup-filled",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}
+{
+  "screen": "16-submitted",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=69D3F",
+  "violations": []
+}

@@ -1,0 +1,26 @@
+[polite] 5 letters and numbers.
+[polite] That is 1 — a class code is 5.
+[polite] That is 2 — a class code is 5.
+[polite] That is 3 — a class code is 5.
+[polite] That is 4 — a class code is 5.
+[polite] Getting your classes…
+[polite] Finding where you got to…
+[polite] Getting your class…
+[polite] Opening your run…
+[polite] Left out. Your plan does not need it.
+[polite] $1,510 still has no job.
+[polite] $910 still has no job.
+[polite] $510 still has no job.
+[polite] Every dollar has a job.
+[polite] 3
+[polite] That is the jar spent, and you said why.
+[polite] You work the window on your own.
+[polite] $270 still to find
+[polite] The shop takes the money and the generator goes in the truck.
+[polite] 1
+[polite] 2 more numbers to pick. Now write two to four sentences.
+[polite] 1 more number to pick. Now write two to four sentences.
+[polite] Numbers ready. Now write two to four sentences.
+[polite] Numbers ready. Long enough to turn in.
+[polite] Sending your answer…
+[polite] Your work goes to your teacher’s class when you turn it in.

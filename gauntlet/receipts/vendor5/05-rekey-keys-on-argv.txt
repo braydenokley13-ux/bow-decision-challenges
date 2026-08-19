@@ -1,0 +1,9 @@
+# 05 — FINDING: rekey exposes BOTH store keys on argv (ps / /proc/PID/cmdline)
+# The service takes its key from the ENVIRONMENT (BOW_STORE_KEY); rekey takes both keys on the command line.
+# On Linux /proc/PID/cmdline is world-readable; /proc/PID/environ is owner/root-only.
+
+Observed by 'ps -eo pid,args' (any local user, no privilege):
+30467 node dist-server/rekey.js --from /home/user/bow-decision-challenges/.scratch/vendor5/r6/big_src --to /home/user/bow-decision-challenges/.scratch/vendor5/r6/argv_dst --old-key eUG/vf3T/QG02KKELlL0fqnOZqlNZWjrONY4zZL9sds= --new-key 1ssB67ZG55CqPOHVWPdxaJ506pbnuhyDuY2Lrarae1k=
+
+# Both --old-key (opens the entire existing store) and --new-key (the store going forward)
+# are visible. Either key also derives the token-signing secret => forge any session.

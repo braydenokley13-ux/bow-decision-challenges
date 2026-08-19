@@ -1,0 +1,14 @@
+# Reverting each fix and watching the scan name it
+# 2026-08-19T06:50:27Z — HEAD 254bd39
+# python3 gauntlet/receipts/dataclaims-pg1522/prove.py
+
+→ the sentence on the student's own screen (src/content/studentCopy.ts)
+  ok   src/educator/dataClaims.test.ts fails on the revert and names it; passes once restored
+→ the class-service contract's file head (src/platform/classes/types.ts)
+  ok   src/platform/dataClaims.sweep.test.ts fails on the revert and names it; passes once restored
+→ the identity contract's file head (src/platform/identity/types.ts)
+  ok   src/platform/dataClaims.sweep.test.ts fails on the revert and names it; passes once restored
+→ the App.tsx row in the sweep's own register (src/platform/dataClaims.sweep.test.ts)
+  ok   src/platform/dataClaims.sweep.test.ts fails on the revert and names it; passes once restored
+
+All 4 cases proved: every fixed sentence is one a scan would fail on.

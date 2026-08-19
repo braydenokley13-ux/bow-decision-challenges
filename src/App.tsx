@@ -1,36 +1,86 @@
-import { Link, Navigate, Route, Routes } from "react-router-dom";
-import { ChallengeProvider } from "./app/ChallengeContext";
+import { Link, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { DocumentTitle } from "./app/DocumentTitle";
+import { NotFound } from "./app/NotFound";
 import { AppMark } from "./components/primitives/AppMark";
-import { CourtBackdrop } from "./components/story/CourtBackdrop";
-import { RosterCard } from "./components/story/RosterCard";
 import { StudentChallenge } from "./stages/StudentChallenge";
-import { ClassOverview, ConceptDrilldown, EducatorGuide, ReasoningReview, StandardsView, StudentEvidence, TeachingCompanion } from "./educator/EducatorPages";
-import { ClassSetup } from "./educator/ClassSetup";
+import { EducatorGuide } from "./educator/EducatorPages";
+import { SampleRun } from "./educator/SampleRun";
+import { MyClasses } from "./educator/MyClasses";
+import { TeacherSignIn } from "./educator/SignIn";
 import { AssignFlow, ObjectiveDetail, ObjectiveList } from "./educator/ObjectivePages";
-import { ObjectiveMap } from "./educator/ObjectiveMap";
 import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPages";
+import { ReadingQueue } from "./educator/ReadingQueue";
 import { Debrief } from "./educator/Debrief";
+import { Roster } from "./educator/Roster";
+import { ShareOut } from "./educator/ShareOut";
+import { DataProtection } from "./legal/DataProtection";
 import { PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
+import { StudentJoin } from "./student/Join";
+import { studentToken } from "./student/session";
+import { StudentHome } from "./student/Home";
+import { RunReport } from "./student/RunReport";
+import { ResumeGate } from "./student/ResumeGate";
+import { PLAYABLE_WORLDS } from "./domain/scenario/registry";
+import { DEMO_CLASS_CODE } from "./fixtures/demoClass";
 
+/** A seat-scoped demo route redirected to its real-class equivalent, param and all. */
+function DemoStudentRedirect() {
+  const { seatCode } = useParams();
+  return <Navigate to={`/educator/class/${DEMO_CLASS_CODE}/students/${seatCode}`} replace />;
+}
+
+/**
+ * The front door, and the one screen that has to be true of the whole product.
+ *
+ * It used to be Basketball's: the navy court, Avery's roster card, "Eight weeks to the
+ * showcase", and one button that started that world. The very next screen then said "Two ways
+ * in. You pick one." — so a student who chose the night market had pressed a button promising
+ * eight weeks of basketball, and a teacher arriving to evaluate a two-world product met a
+ * one-world advertisement.
+ *
+ * So the door names the challenge rather than a story inside it, and sends a student to the
+ * place they can actually get in from: a class code. Nothing here starts a run, because a run
+ * that is not attached to a class produces evidence nobody can read.
+ */
 function Home() {
   return (
-    <main className="home scene" data-world="basketball">
-      <CourtBackdrop />
+    <main className="home scene">
       <header className="home__bar">
         <AppMark />
         <Link to="/educator/guide">For educators</Link>
       </header>
       <section className="home__grid">
         <div className="home__copy">
-          <p className="eyebrow">Plan Under Pressure · Basketball</p>
-          <h1>Eight weeks to the showcase.</h1>
-          <p className="home__deck">Avery Reyes just got the last roster spot. Avery plays. You handle the money.</p>
+          <p className="eyebrow">{PLAN_UNDER_PRESSURE.pillar} · {PLAN_UNDER_PRESSURE.grades}</p>
+          <h1>Somebody has to decide where the money goes.</h1>
+          <p className="home__deck">
+            {/* "Story", not "world". The educator surface has just been moved onto one set of
+                words and this is the first sentence anybody reads; a front door speaking the
+                schema is where a vocabulary starts coming back. */}
+            Two stories, one job. {PLAYABLE_WORLDS.map((world) => world.title).join(" or ")} — you handle the money,
+            and you find out what your decisions cost.
+          </p>
+          {/* Two buttons that were the same door. "Come back to my class" led to `/home`, which
+              sends a student with no session straight to `/join` — so on a new tab, a cleared
+              browser or a school-managed machine the returning student was offered a door that
+              was the door they had just declined, and the two screens were byte-identical. The
+              second one is offered only when this browser actually holds a session for it to
+              open, which is the only case where it goes anywhere the first one does not. */}
           <div className="home__actions">
-            <Link className="button button--primary" to={PLAN_UNDER_PRESSURE.route}>Start the challenge</Link>
+            <Link className="button button--primary" to="/join">I have a class code</Link>
+            {studentToken() && <Link className="button button--secondary" to="/home">Come back to my class</Link>}
           </div>
         </div>
         <aside className="home__side">
-          <RosterCard note="Eight weeks. One shot at the sports-media course." />
+          <ul className="home__worlds">
+            {PLAYABLE_WORLDS.map((world) => (
+              <li key={world.id} data-world={world.id}>
+                <strong>{world.title}</strong>
+                <span>{world.subtitle}</span>
+                <span className="home__worlds-length">{world.durationMinutes.min}–{world.durationMinutes.max} minutes</span>
+              </li>
+            ))}
+          </ul>
         </aside>
       </section>
     </main>
@@ -39,37 +89,116 @@ function Home() {
 
 export function App() {
   return (
+    <>
+    {/* What the tab says. One element, because a title set page by page is a title the next
+        page forgets — and every route in this product answered to the same string until this
+        landed, including the address that is not a page. `src/app/pageTitles.ts` is the table,
+        and a test walks the route list below against it. */}
+    <DocumentTitle />
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path={PLAN_UNDER_PRESSURE.route} element={<ChallengeProvider><StudentChallenge /></ChallengeProvider>} />
+      {/* A student signs in once and comes back to a screen that is theirs. What the door asks
+          for depends on whether the teacher pasted a class list: with one, the class code and
+          then the code on their own card; without one, the class code and then their own first
+          name, which BOW files the run under. The "tap your name" step this used to describe
+          went when the door stopped publishing the roster to anyone holding the class code —
+          a list of children's names is not something a five-letter code should open.
+
+          No student is asked for an email address, a password or a birthday, on either path.
+          That is the claim this comment can make; the one it used to make — that nothing here
+          asks for a name — was false of every class without a list. */}
+      <Route path="/join" element={<StudentJoin />} />
+      <Route path="/home" element={<StudentHome />} />
+      {/* What a student gets back: their own run, read out of their own log, in their own
+          world's words. Reached from the finished card on /home and from nowhere else. */}
+      <Route path="/run/:classCode/:sessionId" element={<RunReport />} />
+      <Route path={PLAN_UNDER_PRESSURE.route} element={<ResumeGate><StudentChallenge /></ResumeGate>} />
       {/* The route this shipped on. Class codes and bookmarks already point at it, so it
           redirects rather than 404s — and keeps redirecting after Challenge #2 lands. */}
       <Route path="/challenge" element={<Navigate to={PLAN_UNDER_PRESSURE.route} replace />} />
+      {/* An educator lands on their own classes. The map is a click away in the nav; it is
+          a year-planning surface, not the thing a teacher opens mid-week. */}
+      <Route path="/educator" element={<Navigate to="/educator/classes" replace />} />
+      <Route path="/educator/classes" element={<MyClasses />} />
+      {/* The door a teacher did not have. A class used to be a code and a key in one browser,
+          so a reimaged laptop destroyed a term of assessed work — and every endpoint behind
+          this screen had been answering correctly for hours with nothing calling them. */}
+      <Route path="/educator/sign-in" element={<TeacherSignIn />} />
+      <Route path="/educator/classes/new" element={<MyClasses />} />
       <Route path="/educator/guide" element={<EducatorGuide />} />
-      <Route path="/educator/classes/new" element={<ClassSetup />} />
-      {/* The objective a teacher assigns, the list they find it in, and the flow that
-          turns it into a code. Real classes only; there is no demo objective. */}
-      <Route path="/educator/map" element={<ObjectiveMap />} />
+      {/* The guide's own "Try it as a student", which used to land on a class-code prompt for
+          a code the person evaluating the product does not have. A real run of the real
+          screens with nothing behind it: no class, no seat, nothing saved and nothing sent. */}
+      <Route path="/educator/try" element={<SampleRun />} />
       <Route path="/educator/objectives" element={<ObjectiveList />} />
+      {/* The Objective Map's URL. The surface is gone — a nine-value status filter over a
+          teacher-maintained "taught" flag is a planbook — but the question it answered is a
+          column on the objectives page now, and a teacher's bookmark should land on the answer
+          rather than silently on the front door. */}
+      <Route path="/educator/map" element={<Navigate to="/educator/objectives" replace />} />
       <Route path="/educator/objectives/:frameworkId/:code" element={<ObjectiveDetail />} />
+      {/* One path to assigning work, and it is the classes page. This is the URL the old
+          second path shipped on. */}
       <Route path="/educator/assign" element={<AssignFlow />} />
-      <Route path="/educator/teaching-companion" element={<TeachingCompanion />} />
+      {/* The two-day sample mini-unit used to be a page. It is a disclosure inside the
+          guide's "Before students begin" now, directly under the six prerequisites it is a
+          worked answer to — so the bookmark lands on the content rather than on nothing. */}
+      <Route path="/educator/teaching-companion" element={<Navigate to="/educator/guide" replace />} />
       {/* A real class. Everything under here reads submitted evidence and nothing else. */}
       <Route path="/educator/class/:code" element={<RealClassOverview />} />
       <Route path="/educator/class/:code/students/:seatCode" element={<RealStudentEvidence />} />
+      <Route path="/educator/class/:code/reading" element={<ReadingQueue />} />
       <Route path="/educator/class/:code/debrief" element={<Debrief />} />
-      {/* The fixture class, behind a route that says so. It exists to show an educator the
-          shape of the evidence before they run one, and it can never be reached from a
-          real class's URL. */}
-      <Route path="/educator/demo" element={<ClassOverview />} />
-      <Route path="/educator/demo/concepts/:conceptId" element={<ConceptDrilldown />} />
-      <Route path="/educator/demo/students/:seatCode" element={<StudentEvidence />} />
-      <Route path="/educator/demo/students/:seatCode/reasoning" element={<ReasoningReview />} />
-      <Route path="/educator/demo/standards" element={<StandardsView />} />
-      {/* The routes the demo shipped on. */}
+      {/* Select, sequence, project. Nothing is shown to a room unless a teacher chose it. */}
+      <Route path="/educator/class/:code/share-out" element={<ShareOut />} />
+      {/* The class list and the cards that come off it. Every route behind this screen has
+          existed since accounts shipped; until this screen there was no way for a teacher to
+          reach any of them, which made the whole account system reachable only by curl. */}
+      <Route path="/educator/class/:code/roster" element={<Roster />} />
+      {/* The sample class. `DEMO_CLASS_CODE` cannot be a real class's code — real codes are
+          five characters from `CODE_ALPHABET`, this one is four — so this is the exact same
+          `RealClassOverview` a real class opens, fed evidence `useClassEvidence` builds from
+          `src/fixtures/demoClass.ts` instead of the service. There is no separate demo
+          component any more: a teacher who learns this screen has learned the one a real
+          class actually shows them. */}
+      <Route path="/educator/demo" element={<Navigate to={`/educator/class/${DEMO_CLASS_CODE}`} replace />} />
+      {/* Four routes the old bespoke demo shipped on, none of which has a real-class
+          equivalent at that exact address — a real class has no per-concept drilldown, no
+          sub-route for scoring reasoning, and no standards page scoped to one class. Rather
+          than 404 a bookmark or a link in a PD deck, each redirects to the real surface that
+          actually answers the question it was asking. */}
+      <Route path="/educator/demo/concepts/:conceptId" element={<Navigate to={`/educator/class/${DEMO_CLASS_CODE}`} replace />} />
+      <Route path="/educator/demo/students/:seatCode" element={<DemoStudentRedirect />} />
+      {/* Reasoning is a tab on the student page now, not a page of its own, so this lands on
+          the same seat the old reasoning screen was scoped to. */}
+      <Route path="/educator/demo/students/:seatCode/reasoning" element={<DemoStudentRedirect />} />
+      <Route path="/educator/demo/standards" element={<Navigate to="/educator/objectives" replace />} />
+      {/* The routes the demo shipped on before that. */}
       <Route path="/educator/class" element={<Navigate to="/educator/demo" replace />} />
-      <Route path="/educator/class/standards" element={<Navigate to="/educator/demo/standards" replace />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/educator/class/standards" element={<Navigate to="/educator/objectives" replace />} />
+      {/* The five addresses a vendor review types before it reads anything else. All five used
+          to render the front door, because the fallback below sent every unknown address there
+          — so a district looking for a privacy notice, a data inventory, a subprocessor list or
+          a security overview found the marketing headline five times and concluded, correctly,
+          that there was nothing to open.
+
+          One document answers all five, and `/privacy` is where it lives: `/security` and
+          `/legal` are the same disclosure under the names a reviewer reaches for, and `/terms`
+          and `/dpa` are addresses for documents that do not exist — which the page says, under
+          "What a district asks for that this product does not have", rather than leaving the
+          reviewer to find the silence themselves. Redirects rather than five copies, so there
+          is one URL to cite and one page to keep true. */}
+      <Route path="/privacy" element={<DataProtection />} />
+      <Route path="/security" element={<Navigate to="/privacy" replace />} />
+      <Route path="/legal" element={<Navigate to="/privacy" replace />} />
+      <Route path="/terms" element={<Navigate to="/privacy" replace />} />
+      <Route path="/dpa" element={<Navigate to="/privacy" replace />} />
+      {/* Everything above this line is a route or a redirect somebody can name. What falls
+          through is an address this product does not serve, and it says so rather than landing
+          quietly on the front door — a teacher who has lost a character out of a class link
+          needs to be told that, not shown a page that looks entirely correct. */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
+    </>
   );
 }

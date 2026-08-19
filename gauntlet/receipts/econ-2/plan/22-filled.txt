@@ -1,0 +1,135 @@
+=== TEXT ===
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+BEFORE THE SEASON
+1
+2
+3
+4
+5
+6
+7
+8
+
+Before the season. Part 2 of 5: The plan.
+
+THE FOUR PAYMENTS
+▾
+NO SEAT YET
+
+BUILD AVERY’S PLAN · QUESTION 4 OF 4
+
+WHAT DOES AVERY DO WITH THE REST?
+
+AVERY’S MONEY
+
++
+Arrives no matter what
+$5,000
++
+Only if a bonus rule is met
+$1,800
+−
+Where Avery lives
+−$300
+Cousin’s Spare Room · 8 weeks
+−
+Food, phone and laundry
+−$1,600
+$200 a week · 8 weeks
+
+LEFT FOR AVERY TO DECIDE
+$4,900
+
+$1,800 of this might not arrive. If neither bonus comes, Avery has $3,100 to decide.
+
+WHERE YOU HAVE PUT IT
+
+Sports-media course
+$1,200
+Backup money
+$2,100
+Rides and rest
+$1,700
+
+Over by $100.
+
+OVER BY
+$100
+
+1
+Money coming in
+2
+The two bonuses
+3
+Money already owed
+4
+What Avery does with the rest
+
+Give each part of the plan an amount.
+
+There is no right split. There is only what Avery will be glad of in eight weeks.
+
+Sports-media course
+Enough to pay the $1,200 the course costs.
+$1,200
+−
++
+Backup money
+Covers the whole $1,800 this plan is counting on.
+$2,100
+−
++
+Rides and rest
+Pays for rides. Avery gets 11 hours a week back, and still spends 3 hours. The last $50 in this row is short of the $150 another hour costs.
+$1,700
+−
++
+
+AVERY’S WEEK
+
+14 hours
+a week of getting places, outside practice, games and school — 11 paid for, 3 still on Avery
+
+Travel to practice
+
+Paid for · 11h
+
+This is what the trip alone takes. Rehab and anything else Avery takes on would come out of the same week.
+
+Every $150 spent on rides buys back 1 hour a week. There are only 14 hours to buy, so past $2,100 more money buys nothing.
+
+$100 more than Avery has.
+
+Check this plan
+Back
+Reading help
+
+=== CONTROLS ===
+A "Back to the educator guide"
+A "B / BOW / DECISION CHALLENGES"
+BUTTON[button] ""
+BUTTON[button] "See where the money goes"
+BUTTON[button] "Where Avery lives"
+BUTTON[button] "Food, phone and laundry"
+BUTTON[button] "1 / Money coming in"
+BUTTON[button] "2 / The two bonuses"
+BUTTON[button] "3 / Money already owed"
+BUTTON[button] "−"
+INPUT[text] "$1,200"
+BUTTON[button] "+"
+BUTTON[button] "−"
+INPUT[text] "$2,100"
+BUTTON[button] "+"
+BUTTON[button] "−"
+INPUT[text] "$1,700"
+BUTTON[button] "+"
+BUTTON[button] "Check this plan"
+BUTTON[button] "Back"
+BUTTON[button] "Reading help"

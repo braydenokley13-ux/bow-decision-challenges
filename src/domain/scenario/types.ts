@@ -1,5 +1,6 @@
 import type { Dollars } from "../core/money";
 import type { SetupId, WorldId } from "../core/ids";
+import type { StageId } from "../evidence/types";
 
 /**
  * Avery's week, in blocks.
@@ -38,6 +39,29 @@ export interface CourseNumbers {
   depositDeadlineWeek: number;
 }
 
+/**
+ * The one week Avery is handed money the plan never sees.
+ *
+ * A teammate's shift, covered on a Tuesday, paid in cash. It is deliberately not income:
+ * it never reaches the planning board, never touches the season ledger, and cannot be
+ * banked. That is what makes it usable as a values decision rather than as a fourth axis
+ * of the budget — `balance.ts` sweeps the strategy space of the plan, and money that can
+ * be moved into the plan would multiply that space for a beat whose whole subject is which
+ * of three claims matters most.
+ *
+ * The three claims add up to more than the cash on purpose, and to more than any two of
+ * them can be paid for from what one of them leaves behind. There is no combination that
+ * funds all three and there is no combination that is obviously right, which is the same
+ * standard every other decision in this world is held to.
+ */
+export interface Week3Numbers {
+  /** The week the shift is covered and the money arrives. */
+  week: number;
+  cash: Dollars;
+  /** What each claim costs. Keyed by the world's own claim ids. */
+  claimCosts: Record<string, Dollars>;
+}
+
 export interface ScenarioNumbers {
   version: string;
   weeks: 8;
@@ -55,6 +79,8 @@ export interface ScenarioNumbers {
   load: LoadNumbers;
   setupCosts: Record<SetupId, Dollars>;
   setupEventCosts: Record<SetupId, Dollars>;
+  /** The Week 3 cash and the three things that want it. Outside the plan, on purpose. */
+  week3: Week3Numbers;
   requiredWeek5Cost: Dollars;
   optionalWorkIncome: Dollars;
   /** What coaching the clinics costs Avery out of pocket — travel, and the extra physio. */
@@ -94,6 +120,12 @@ export interface IncomeLineCopy {
   note: string;
   /** The condition attached, for the payments that carry one. */
   rule?: string;
+  /**
+   * What it means for the season if the condition is not met, for the payments that carry
+   * one. It is the half of a conditional payment the always-open money sheet in the top bar
+   * cannot show, and the reason the terms screen is a screen rather than a slide repeating it.
+   */
+  ifNot?: string;
 }
 
 export interface WorldScenario {
@@ -138,7 +170,17 @@ export interface WorldScenario {
    * `voice` is Avery's own line for that week, and it differs by where the student put
    * Avery — the housing choice is felt every week, not only when it bills.
    */
-  season: readonly { week: string; note: string; voice: Record<SetupId, string> }[];
+  /*
+   * `season` used to live here: four weeks of match reports and, per week, one line of Avery's
+   * own voice for each housing choice — the one place in Weeks 1–4 where the room a student
+   * picked in minute four came back and said something. The rebuilt Week 3 has no screen for
+   * any of it, so from the day that shipped it was two hundred and twenty-seven words rendered
+   * nowhere and still being measured for a declared reading grade. A grade computed partly
+   * from text no student sees is a number about nothing, so the field is gone and the grade is
+   * re-declared from what is left. The voice lines were the best thing about that beat; if the
+   * housing choice is to bite during the weeks again it has to come back as a line something
+   * renders, not as an array nobody reads.
+   */
   /** Week 5 arrives as two separate pieces of news, so the turn lands as two hits. */
   disruption: {
     source: string;
@@ -151,10 +193,48 @@ export interface WorldScenario {
   opportunity: { from: string; title: string; body: string; timeCost: string };
 }
 
-export interface WorldRegistryEntry {
+/**
+ * What every world's story declares, whatever else it carries.
+ *
+ * §7.1 — a world has a contract and an interior, and the interior is its own. Basketball's
+ * `WorldScenario` above is Basketball's shape: eight weeks, three places to live, a course
+ * seat and a set of bonuses. Run the Pop-Up's is four Saturdays, three booths, trays of food
+ * and a rented generator, and forcing one of those two shapes over both would produce two
+ * worlds with the same interior wearing different pictures.
+ *
+ * So the registry knows three things about a story — which world it is, what it is called and
+ * the line that goes on its card — and a world's own module is what knows the rest.
+ */
+export interface WorldStory {
   id: WorldId;
   title: string;
   subtitle: string;
+}
+
+export interface WorldRegistryEntry {
+  id: WorldId;
+  title: string;
+  /** The card blurb, in the world's own voice (§13.3). */
+  subtitle: string;
+  /**
+   * Who the student is in this world, in one line (§7.2, §13.3).
+   *
+   * It sits on the registry rather than inside a world's own scenario shape because the world
+   * choice screen draws two cards side by side and has to ask both worlds the same question.
+   * The line itself is the world's — read off its own copy, never written here.
+   */
+  role: string;
+  /** What a teacher is told to allow for, in minutes. */
+  durationMinutes: { min: number; max: number };
   availability: "available";
-  scenario: WorldScenario;
+  /**
+   * Every stage this world's own machine can be in.
+   *
+   * Persistence reads it. A restored attempt used to be checked against Basketball's stage
+   * list, which was the only list there was; checking a second world's attempt against it
+   * would have quarantined real work as unreadable for the crime of being in a different
+   * story.
+   */
+  stages: readonly StageId[];
+  scenario: WorldStory;
 }

@@ -1,0 +1,29 @@
+import { test, expect } from "@playwright/test";
+const CODE = process.env.J3_CODE!, KEY = process.env.J3_KEY!;
+
+test("override and gradebook", async ({ page, context }) => {
+  test.setTimeout(200_000);
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto(`/educator/class/${CODE}/students/1?key=${KEY}`);
+  await page.waitForTimeout(1500);
+  const buttons = page.getByRole("button", { name: /I read this differently/ });
+  console.log("override buttons:", await buttons.count());
+  await buttons.first().click();
+  await page.waitForTimeout(600);
+  const panel = (await page.locator("main").innerText());
+  const idx = panel.indexOf("I read this differently");
+  console.log("PANEL AROUND OVERRIDE:\n", panel.slice(Math.max(0, idx - 1200), idx + 2200));
+  const ctrls = await page.locator("main button:not([disabled]), main input, main textarea, main select").evaluateAll((els) =>
+    els.map((e) => `${e.tagName}[${(e as HTMLInputElement).type ?? ""}] "${((e as HTMLElement).getAttribute("aria-label") || (e as HTMLElement).textContent || (e as HTMLInputElement).placeholder || "").replace(/\s+/g, " ").trim().slice(0, 60)}"`));
+  console.log("CONTROLS:", JSON.stringify(ctrls.slice(0, 60), null, 0));
+  await page.screenshot({ path: "/tmp/judge-3/judge-shots/override.png", fullPage: true });
+
+  await page.goto(`/educator/class/${CODE}?key=${KEY}`);
+  await page.waitForTimeout(1500);
+  const copy = page.getByRole("button", { name: /gradebook/i });
+  console.log("copy button:", await copy.count(), await copy.first().innerText().catch(() => ""));
+  await copy.first().click();
+  await page.waitForTimeout(800);
+  const clip = await page.evaluate(() => navigator.clipboard.readText().catch((e) => "ERR " + String(e)));
+  console.log("CLIPBOARD >>>\n" + clip);
+});

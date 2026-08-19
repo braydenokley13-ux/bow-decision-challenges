@@ -6,6 +6,31 @@ import { handleApiRequest } from "../../../server/handler";
 import { fileStore, memoryStore, redisRestStore, storeFromEnvironment, unconfiguredStore, type ClassStore } from "../../../server/store";
 import { PLAN_UNDER_PRESSURE } from "../challenges/registry";
 import type { Assignment, ClassCreation } from "./types";
+import { vault } from "../../../server/vault";
+import { randomBytes } from "node:crypto";
+
+/**
+ * A real vault, with a throwaway key.
+ *
+ * The file store will not write without one — a durable store that could be started with no
+ * key would be a durable store somebody starts with no key — so a test that reaches for the
+ * disk makes one, which also means these tests exercise the sealed path rather than a
+ * plaintext path nothing ships.
+ */
+function sealed() {
+  return vault(randomBytes(32));
+}
+
+/**
+ * A key, as an operator supplies one.
+ *
+ * Every environment in this file now carries it, because a disk store without one is refused
+ * outright — see the test that proves it. That refusal is the point rather than an obstacle:
+ * self-hosted, this store writes children's names, their written explanations and every
+ * teacher key, and a vendor review found all of it as plain JSON beside the HMAC secret that
+ * signs every session token.
+ */
+const KEYED = { BOW_STORE_KEY: randomBytes(32).toString("base64") };
 
 const NOW = 1_770_000_000_000;
 
@@ -23,7 +48,7 @@ function api(store: ClassStore) {
 describe("a deployment cannot silently run a class it will lose", () => {
   it("refuses to hand back a disk store on a host whose disk does not survive the request", () => {
     for (const env of [{ VERCEL: "1" }, { VERCEL_ENV: "production" }, { AWS_LAMBDA_FUNCTION_NAME: "api" }, { BOW_EPHEMERAL_DISK: "1" }]) {
-      const store = storeFromEnvironment(env);
+      const store = storeFromEnvironment({ ...KEYED, ...env });
       expect(store.id, JSON.stringify(env)).toBe("unconfigured");
       expect(store.durable).toBe(false);
       expect(store.blockedReason).toContain("KV_REST_API_URL");
@@ -31,19 +56,19 @@ describe("a deployment cannot silently run a class it will lose", () => {
   });
 
   it("takes the managed store the moment it is configured, under either vendor's variable names", () => {
-    expect(storeFromEnvironment({ VERCEL: "1", KV_REST_API_URL: "https://kv", KV_REST_API_TOKEN: "t" }).id).toBe("redis");
-    expect(storeFromEnvironment({ VERCEL: "1", UPSTASH_REDIS_REST_URL: "https://kv", UPSTASH_REDIS_REST_TOKEN: "t" }).id).toBe("redis");
-    expect(storeFromEnvironment({ VERCEL: "1", KV_REST_API_URL: "https://kv", KV_REST_API_TOKEN: "t" }).durable).toBe(true);
+    expect(storeFromEnvironment({ ...KEYED, VERCEL: "1", KV_REST_API_URL: "https://kv", KV_REST_API_TOKEN: "t" }).id).toBe("redis");
+    expect(storeFromEnvironment({ ...KEYED, VERCEL: "1", UPSTASH_REDIS_REST_URL: "https://kv", UPSTASH_REDIS_REST_TOKEN: "t" }).id).toBe("redis");
+    expect(storeFromEnvironment({ ...KEYED, VERCEL: "1", KV_REST_API_URL: "https://kv", KV_REST_API_TOKEN: "t" }).durable).toBe(true);
   });
 
   it("still keeps a disk where a disk is real, and memory only when asked by name", () => {
-    const disk = storeFromEnvironment({ BOW_CLASS_DIR: "/tmp/bow" });
+    const disk = storeFromEnvironment({ ...KEYED, BOW_CLASS_DIR: "/tmp/bow" });
     expect([disk.id, disk.durable]).toEqual(["file", true]);
     expect(storeFromEnvironment({ BOW_CLASS_STORE: "memory" }).id).toBe("memory");
   });
 
   it("lets a throwaway demo opt in explicitly, and still refuses to call itself durable", () => {
-    const store = storeFromEnvironment({ VERCEL: "1", BOW_ALLOW_EPHEMERAL_STORE: "1", BOW_CLASS_DIR: "/tmp/bow" });
+    const store = storeFromEnvironment({ ...KEYED, VERCEL: "1", BOW_ALLOW_EPHEMERAL_STORE: "1", BOW_CLASS_DIR: "/tmp/bow" });
     expect(store.id).toBe("file");
     expect(store.durable).toBe(false);
     expect(store.blockedReason).toBeUndefined();
@@ -63,7 +88,7 @@ describe("a deployment cannot silently run a class it will lose", () => {
 
 describe("health says what a person about to run a class needs to know", () => {
   it("reports the driver, whether it is durable, and whether a class can be run on it", async () => {
-    const healthy = await api(storeFromEnvironment({ BOW_CLASS_DIR: "/tmp/bow" }))("GET", "/health");
+    const healthy = await api(storeFromEnvironment({ ...KEYED, BOW_CLASS_DIR: "/tmp/bow" }))("GET", "/health");
     expect(healthy.status).toBe(200);
     expect(healthy.body).toMatchObject({ ok: true, store: "file", durable: true, classroomReady: true });
 
@@ -73,7 +98,7 @@ describe("health says what a person about to run a class needs to know", () => {
   });
 
   it("answers 503 with the fix when there is nowhere durable to write", async () => {
-    const blocked = await api(storeFromEnvironment({ VERCEL: "1" }))("GET", "/health");
+    const blocked = await api(storeFromEnvironment({ ...KEYED, VERCEL: "1" }))("GET", "/health");
     expect(blocked.status).toBe(503);
     expect(blocked.body).toMatchObject({ ok: false, store: "unconfigured", durable: false, classroomReady: false });
     expect((blocked.body as { reason: string }).reason).toContain("KV_REST_API_TOKEN");
@@ -125,11 +150,17 @@ describe("assignments survive the stores that claim to keep things", () => {
   /** The driver under test, and whatever has to be put back afterwards. */
   async function driver(name: "file" | "redis"): Promise<{ store: ClassStore; done: () => void }> {
     if (name === "file") {
-      return { store: fileStore(await mkdtemp(join(tmpdir(), "bow-assignments-"))), done: () => undefined };
+      return { store: fileStore(await mkdtemp(join(tmpdir(), "bow-assignments-")), sealed()), done: () => undefined };
     }
     const original = globalThis.fetch;
     globalThis.fetch = fakeRedis();
-    return { store: redisRestStore("https://kv.test", "token"), done: () => { globalThis.fetch = original; } };
+    // Keyed, like every managed deployment now is. This argument was absent, and its absence
+    // is what let a release ship in which the driver sealed the whole Upstash command envelope
+    // rather than the value inside it: with no key there was nothing to seal, so the fake KV
+    // below — which parses the request body as the command array, exactly as Upstash does —
+    // never saw the shape a real deployment would have sent it. A driver test that does not
+    // exercise the configuration the product ships is a test of a configuration nobody runs.
+    return { store: redisRestStore("https://kv.test", "token", sealed()), done: () => { globalThis.fetch = original; } };
   }
 
   it.each(["file", "redis"] as const)("round-trips an assignment through the %s store", async (name) => {
@@ -161,26 +192,40 @@ describe("assignments survive the stores that claim to keep things", () => {
 
   it("keeps a submission's assignment id through a durable round trip", async () => {
     const root = await mkdtemp(join(tmpdir(), "bow-assignments-"));
-    const store = fileStore(root);
+    // One key for both store objects, because that is what an operator has: the key lives in
+    // their secret manager and every process that opens this directory is given the same one.
+    // A second key here reads the directory as empty — which is the encryption working, and is
+    // worth knowing costs exactly what it should.
+    const keeper = sealed();
+    const store = fileStore(root, keeper);
     const created = (await api(store)("POST", "/classes", { label: "Period 3", challengeId: PLAN_UNDER_PRESSURE.id })).body as ClassCreation;
     const set = (await handleApiRequest(
       { method: "POST", path: `/classes/${created.code}/assignments`, headers: { "x-bow-teacher-key": created.teacherKey }, body: { objectiveRef: { frameworkId: "nysed-pf-2026", code: "1.3" } } },
       { store, now: () => NOW },
     )).body as Assignment;
 
-    await api(store)("POST", `/classes/${created.code}/submissions`, {
+    // Signed in as a real seat, because the service refuses work that cannot say who sent it.
+    const cards = ((await handleApiRequest(
+      { method: "POST", path: `/classes/${created.code}/roster`, headers: { "x-bow-teacher-key": created.teacherKey }, body: { names: ["Test Student"] } },
+      { store, now: () => NOW },
+    )).body as { cards: { joinCode: string; seatCode: string }[] }).cards;
+    const token = ((await handleApiRequest(
+      { method: "POST", path: `/classes/${created.code}/join`, headers: {}, body: { joinCode: cards[0]!.joinCode, device: "shared" } },
+      { store, now: () => NOW },
+    )).body as { token: string }).token;
+    await handleApiRequest({ method: "POST", path: `/classes/${created.code}/submissions`, headers: { authorization: `Bearer ${token}` }, body: {
       classCode: created.code,
-      seatCode: "7",
+      seatCode: cards[0]!.seatCode,
       sessionId: "session-aaaaaaaa",
       challengeId: PLAN_UNDER_PRESSURE.id,
       challengeVersion: PLAN_UNDER_PRESSURE.version,
       assignmentId: set.id,
       log: [{ id: "event-1", sequence: 1, timestamp: NOW, type: "SESSION_STARTED", stage: "entry", challengeId: PLAN_UNDER_PRESSURE.id, challengeVersion: PLAN_UNDER_PRESSURE.version, sessionId: "session-aaaaaaaa", worldId: "basketball", conceptIds: [], competencyIds: [], evidenceRequirementIds: [], payload: {}, supportLevel: "standard_access" }],
-    });
+    } }, { store, now: () => NOW });
 
     // Read back through a second store object over the same directory: nothing is being
     // remembered in the process that wrote it.
-    const reopened = fileStore(root);
+    const reopened = fileStore(root, keeper);
     expect((await reopened.listAssignments(created.code)).map((entry) => entry.id)).toEqual([set.id]);
     expect((await reopened.listSubmissions(created.code))[0]!.assignmentId).toBe(set.id);
   });

@@ -1,0 +1,9 @@
+# SHA 52a03b9. Account-enumeration timing oracle on /auth/teacher/session (and /recovery).
+# Setup: signup HTTP 201, correct-password login HTTP 200 (account provably exists).
+# server/identity.ts returns identical body+status for no-account and wrong-password,
+# but verifySecret (scrypt) runs ONLY on the existing-account branch.
+# server alive: health 200/ok (so slow responses are scrypt, not a hang).
+EXISTING account + wrong password: median 385 ms  (both returned HTTP 401)
+NONEXISTENT account              : median 5 ms  (both returned HTTP 401)
+Separation: 83x. The response shape is identical; the timing is not.
+# A district staff-email list is enumerable for which addresses have BOW accounts.

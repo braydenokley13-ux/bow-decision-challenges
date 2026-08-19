@@ -1,17 +1,24 @@
-import type { CategoryId, SetupId } from "../domain/core/ids";
-import { dollars, type Dollars } from "../domain/core/money";
+import type { CategoryId, SetupId, WorldId } from "../domain/core/ids";
+import { planMovements } from "../domain/finance/formulas";
+import { dollars, formatDollars, type Dollars } from "../domain/core/money";
 import { deriveFacts } from "../domain/evidence/facts";
+import { writtenAnswerFrom } from "../domain/evidence/writtenAnswer";
 import { deriveResult } from "../domain/evidence/result";
-import type { AssessmentFacts, AssessmentResult, EvidenceEvent, MasteryStatus } from "../domain/evidence/types";
+import type { AssessmentFacts, AssessmentResult, EvidenceEvent } from "../domain/evidence/types";
 import { resolveSeason, type SeasonResolution } from "../domain/finance/resolution";
 import type { PlanAmounts } from "../domain/finance/types";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
-import { CONCEPTS } from "../domain/blueprint/concepts";
+import { POP_UP_SCENARIO } from "../domain/scenario/worlds/food-truck";
+import { WORLD_REGISTRY } from "../domain/scenario/registry";
+import { derivePopUpFacts } from "../domain/scenario/worlds/food-truck/facts";
+import { repairSplitFromLog } from "../domain/scenario/worlds/food-truck/fromLog";
+import type { PopUpLineId } from "../domain/scenario/worlds/food-truck/types";
 import type { ReasoningScores } from "../domain/blueprint/reasoning";
-import type { ConceptId } from "../domain/blueprint/types";
+import { worldOfSubmission } from "./objectiveResults";
 import type { SubmissionRecord } from "../platform/classes/types";
 import { CHOICE_LABELS } from "../components/financial/choices";
+import { MINIMUM_RESULTS_FOR_CLASS_NARRATION } from "../domain/competency/objectiveState";
 
 /**
  * What a class actually did, derived from what its students actually submitted.
@@ -31,6 +38,10 @@ import { CHOICE_LABELS } from "../components/financial/choices";
 export interface StudentRow {
   seatCode: string;
   sessionId: string;
+  /** Which world this attempt was actually played in, read off the student's own events. */
+  worldId: WorldId;
+  /** The student's own events, so a world that is not Basketball can read its own facts. */
+  log: readonly EvidenceEvent[];
   submittedAt: number;
   reasoningPoints: number | null;
   /** The same reading, criterion by criterion. Absent until a person has recorded one. */
@@ -42,22 +53,36 @@ export interface StudentRow {
   opening: PlanAmounts | null;
   final: PlanAmounts | null;
   setupId: SetupId | null;
-  countedBonusInPlan: boolean;
-  countedShowcase: boolean;
-  tookClinics: boolean;
-  reservedSeat: boolean;
+  /**
+   * The four Basketball calls, and **null when the student never made them.**
+   *
+   * These were `boolean`, built with `?? false`, which is the same defect
+   * `choiceDistributions` already argues against one function below: a student who was never
+   * asked was reported as having answered. `!row.reservedSeat` put them under "Waited and paid
+   * the full price", and `!row.tookClinics` under "Kept the Saturdays" — by seat number, on the
+   * surface whose whole job is to be checkable. The machine distinguishes "chose not to" from
+   * "never decided"; this row is where that distinction was being thrown away.
+   */
+  countedBonusInPlan: boolean | null;
+  countedShowcase: boolean | null;
+  tookClinics: boolean | null;
+  reservedSeat: boolean | null;
   /** The written explanation, and which of their own numbers they chose to stand on. */
   defense: { text: string; tileIds: string[] } | null;
 }
 
+/**
+ * The written answer, whichever world asked for it.
+ *
+ * Both worlds ask the same question in their own voice and record the same two things: what
+ * the student wrote, and which of their own numbers they chose to stand on. Reading only
+ * Basketball's event told a teacher that a market student "turned in no written explanation"
+ * while their paragraph sat in the log — so the one promise BOW makes to a student in their
+ * own words, that a person reads it, was false for half the product.
+ */
 function defenseFrom(log: EvidenceEvent[]): StudentRow["defense"] {
-  const event = log.filter((item) => item.type === "DEFENSE_SUBMITTED").at(-1);
-  if (!event) return null;
-  const payload = event.payload as { text?: unknown; tileIds?: unknown };
-  return {
-    text: typeof payload.text === "string" ? payload.text : "",
-    tileIds: Array.isArray(payload.tileIds) ? payload.tileIds.filter((id): id is string => typeof id === "string") : [],
-  };
+  const answer = writtenAnswerFrom(log);
+  return answer ? { text: answer.text, tileIds: [...answer.tileIds] } : null;
 }
 
 export function readSubmission(record: SubmissionRecord): StudentRow {
@@ -66,6 +91,8 @@ export function readSubmission(record: SubmissionRecord): StudentRow {
   return {
     seatCode: record.seatCode,
     sessionId: record.sessionId,
+    worldId: worldOfSubmission(record),
+    log: record.log,
     submittedAt: record.submittedAt,
     reasoningPoints: record.reasoningPoints,
     reasoningCriteria: record.reasoningCriteria,
@@ -77,10 +104,12 @@ export function readSubmission(record: SubmissionRecord): StudentRow {
     opening: facts.opening?.snapshot.inputs.amounts ?? null,
     final: finalInputs?.amounts ?? null,
     setupId: facts.selectedSetupId ?? null,
-    countedBonusInPlan: finalInputs?.includeCompletion ?? false,
-    countedShowcase: facts.opening?.snapshot.inputs.includeOutcome ?? false,
-    tookClinics: finalInputs?.includeOptionalWork ?? false,
-    reservedSeat: finalInputs?.depositTaken ?? false,
+    // `?? null`, never `?? false`. A run with no final board has not answered these, and a
+    // machine value of `null` means the student reached the question and left it open.
+    countedBonusInPlan: finalInputs?.includeCompletion ?? null,
+    countedShowcase: facts.opening?.snapshot.inputs.includeOutcome ?? null,
+    tookClinics: finalInputs?.includeOptionalWork ?? null,
+    reservedSeat: finalInputs?.depositTaken ?? null,
     defense: defenseFrom(record.log),
   };
 }
@@ -92,11 +121,17 @@ export interface ChoiceShare {
   seats: string[];
 }
 
+/**
+ * One decision, and who made each call.
+ *
+ * There is deliberately no authored line under a distribution any more. "The class split on
+ * the one decision that costs in both currencies" is the product admiring its own design,
+ * and it was printed above counts that already said it — including above a single
+ * submission, where it was also untrue.
+ */
 export interface ChoiceDistribution {
   id: string;
   question: string;
-  /** What makes this worth discussing, stated only when the class actually split. */
-  note: string;
   shares: ChoiceShare[];
 }
 
@@ -105,75 +140,478 @@ function share(rows: StudentRow[], id: string, label: string, matches: (row: Stu
 }
 
 /**
- * A split is worth a discussion; a consensus is worth a different one. Both are stated,
- * because "everybody did the same thing" is itself a finding a teacher can use.
+ * What the room decided, asked only of the students who were actually asked.
+ *
+ * Every share below is a Basketball decision. Counting a market run under "waited and paid
+ * the full price" is not a rounding error — it is BOW telling a teacher, by seat number,
+ * that a child made a choice they were never offered, on the surface whose entire job is to
+ * be checkable. So the rows are filtered to the world that asked the question, and the
+ * denominator the page prints is that world's.
  */
-function splitNote(shares: ChoiceShare[], total: number, agreed: string, split: string): string {
-  const largest = Math.max(0, ...shares.map((item) => item.seats.length));
-  if (total === 0) return "No submissions yet.";
-  return largest === total ? agreed : split;
-}
-
-export function choiceDistributions(rows: StudentRow[]): ChoiceDistribution[] {
-  const total = rows.length;
+export function choiceDistributions(everyRow: StudentRow[]): ChoiceDistribution[] {
+  const rows = everyRow.filter((row) => row.worldId === "basketball");
   const housing = BASKETBALL_SCENARIO.setups.map((setup) =>
     share(rows, setup.id, setup.title, (row) => row.setupId === setup.id));
   const deposit = [
-    share(rows, "reserved", `Reserved the seat at Week ${SCENARIO_NUMBERS.course.depositDeadlineWeek}`, (row) => row.reservedSeat),
-    share(rows, "waited", "Waited and paid the full price", (row) => !row.reservedSeat),
+    share(rows, "reserved", `Reserved the seat at Week ${SCENARIO_NUMBERS.course.depositDeadlineWeek}`, (row) => row.reservedSeat === true),
+    share(rows, "waited", "Waited and paid the full price", (row) => row.reservedSeat === false),
   ];
   const clinics = [
-    share(rows, "took", "Took the Saturday clinics", (row) => row.tookClinics),
-    share(rows, "kept", "Kept the Saturdays", (row) => !row.tookClinics),
+    share(rows, "took", "Took the Saturday clinics", (row) => row.tookClinics === true),
+    share(rows, "kept", "Kept the Saturdays", (row) => row.tookClinics === false),
   ];
   const bonus = [
-    share(rows, "counted", `Built the final plan around the ${BASKETBALL_SCENARIO.incomeCopy.completion.label}`, (row) => row.countedBonusInPlan),
-    share(rows, "excluded", "Planned without it", (row) => !row.countedBonusInPlan),
+    share(rows, "counted", `Built the final plan around the ${BASKETBALL_SCENARIO.incomeCopy.completion.label}`, (row) => row.countedBonusInPlan === true),
+    share(rows, "excluded", "Planned without it", (row) => row.countedBonusInPlan === false),
   ];
   const showcase = [
-    share(rows, "counted", `Counted the ${BASKETBALL_SCENARIO.incomeCopy.outcome.label} in the opening plan`, (row) => row.countedShowcase),
-    share(rows, "excluded", "Left it out from the start", (row) => !row.countedShowcase),
+    share(rows, "counted", `Counted the ${BASKETBALL_SCENARIO.incomeCopy.outcome.label} in the opening plan`, (row) => row.countedShowcase === true),
+    share(rows, "excluded", "Left it out from the start", (row) => row.countedShowcase === false),
   ];
 
   return [
-    {
-      id: "housing",
-      question: "Where did they put Avery?",
-      note: splitNote(housing, total, "The whole class chose the same place, so the money-against-time trade never got argued.", "The class split on the one decision that costs in both currencies."),
-      shares: housing,
-    },
-    {
-      id: "showcase",
-      question: "Which income did they plan around?",
-      note: splitNote(showcase, total, "Nobody disagreed about the conditional money in the opening plan.", "Some students spent money that depended on a condition; some would not."),
-      shares: showcase,
-    },
-    {
-      id: "deposit",
-      question: "When did they commit to the course?",
-      note: splitNote(deposit, total, "The class agreed on when to commit.", "Committing early was cheaper and cost flexibility. The class did not agree on that trade."),
-      shares: deposit,
-    },
-    {
-      id: "clinics",
-      question: "Did they take the paid Saturdays?",
-      note: splitNote(clinics, total, "The class agreed about the clinics.", "Money against Avery's remaining time, and the class went both ways."),
-      shares: clinics,
-    },
-    {
-      id: "bonus",
-      question: "Did the final plan still count the attendance bonus?",
-      note: splitNote(bonus, total, "The class agreed about the risk that was still open.", "The class disagreed about whether to keep depending on money that might not arrive."),
-      shares: bonus,
-    },
+    { id: "housing", question: "Where did they put Avery?", shares: housing },
+    { id: "showcase", question: "Which income did they plan around?", shares: showcase },
+    { id: "deposit", question: "When did they commit to the course?", shares: deposit },
+    { id: "clinics", question: "Did they take the paid Saturdays?", shares: clinics },
+    { id: "bonus", question: "Did the final plan still count the attendance bonus?", shares: bonus },
   ];
 }
 
+/** The same question of a market class, in the decisions that market actually offered. */
+export function popUpDistributions(everyRow: StudentRow[]): ChoiceDistribution[] {
+  const rows = everyRow.filter((row) => row.worldId === "food-truck");
+  const facts = new Map(rows.map((row) => [row.seatCode, derivePopUpFacts(row.log)]));
+  const of = (row: StudentRow) => facts.get(row.seatCode)!;
+  const booths = POP_UP_SCENARIO.spots.map((spot) =>
+    share(rows, spot.id, spot.title, (row) => of(row).spotId === spot.id));
+  const catering = [
+    share(rows, "counted", "Counted the catering job", (row) => of(row).counted.catering),
+    share(rows, "excluded", "Left it out", (row) => !of(row).counted.catering),
+  ];
+  const rebate = [
+    share(rows, "counted", "Counted the sell-out rebate", (row) => of(row).counted.rebate),
+    share(rows, "excluded", "Left it out", (row) => !of(row).counted.rebate),
+  ];
+  const swap = [
+    share(rows, "covered", "Covered the generator in full", (row) => of(row).repair.saved && of(row).repair.residual === 0),
+    share(rows, "short", "Finished still short, and said so", (row) => of(row).repair.saved && of(row).repair.residual > 0),
+    share(rows, "unfinished", "Never settled the repair", (row) => !of(row).repair.saved),
+  ];
+  return [
+    { id: "booth", question: "Which booth did they take?", shares: booths },
+    { id: "catering", question: "Did they plan around the catering job?", shares: catering },
+    { id: "rebate", question: "Did they plan around the sell-out rebate?", shares: rebate },
+    { id: "swap", question: "How did the generator end?", shares: swap },
+  ];
+}
+
+/**
+ * One world's account of what its own students did.
+ *
+ * Everything a teacher reads about a class used to be computed over every row and printed
+ * with the whole class as its denominator, while only the distributions had been split by
+ * world. The result was not a rounding error. A mixed class read
+ * *"6 of 15 cut sports-media course first"* when eight students had ever seen Week 5, and
+ * *"Backup money absorbed a loss — 0 of 15"* rendered seven absences as measured zeros. A
+ * market-only class was told, in print, on the page designed to be read aloud to the room,
+ * *"You all played it the same way — all 7 made the same call on every major decision"* two
+ * sections below a table showing they had taken three different booths.
+ *
+ * So every claim about a room is now made about the room that was asked the question, and
+ * carries that room's own count. A world with nothing to say about a section renders no
+ * section rather than a section full of zeros.
+ */
+export interface WorldSection {
+  worldId: WorldId;
+  title: string;
+  seats: number;
+  rows: StudentRow[];
+  distributions: ChoiceDistribution[];
+  /** What moved when this world's shock landed, in this world's own words. */
+  adaptation: { heading: string; cuts: { label: string; seats: string[] }[]; lines: { label: string; count: number }[] } | null;
+  contrast: [StudentRow, StudentRow] | null;
+  prompts: DiscussionPrompt[];
+  /** Students who wrote something, for a teacher to read out. Seat order. */
+  quotes: { seatCode: string; text: string }[];
+}
+
+function quotesOf(rows: StudentRow[]): { seatCode: string; text: string }[] {
+  return rows
+    .flatMap((row) => (row.defense && row.defense.text.trim().length > 0 ? [{ seatCode: row.seatCode, text: row.defense.text.trim() }] : []))
+    .sort((a, b) => Number(a.seatCode) - Number(b.seatCode));
+}
+
+/** Basketball's shock, over Basketball's students. */
+function basketballAdaptation(rows: StudentRow[]): WorldSection["adaptation"] {
+  const summary = adaptationSummary(rows);
+  return {
+    heading: `After Week ${SCENARIO_NUMBERS.disruptionWeek}`,
+    cuts: summary.cutFirst.map((entry) => ({ label: entry.label.toLowerCase(), seats: entry.seats })),
+    lines: [
+      { label: "Backup money absorbed a loss", count: summary.buffered.length },
+      { label: "Finished with something uncovered", count: summary.leftUncovered.length },
+      { label: "Landed a plan they never changed", count: summary.unchanged.length },
+    ],
+  };
+}
+
+/** The market's shock, over the market's students. */
+function popUpAdaptation(rows: StudentRow[]): WorldSection["adaptation"] {
+  const facts = rows.map((row) => ({ row, facts: derivePopUpFacts(row.log) }));
+  const settled = facts.filter((entry) => entry.facts.repair.saved);
+  return {
+    heading: "After the generator broke",
+    cuts: [],
+    lines: [
+      { label: "Covered the replacement in full", count: settled.filter((entry) => entry.facts.repair.residual === 0).length },
+      { label: "Finished still short, and said so", count: settled.filter((entry) => entry.facts.repair.residual > 0).length },
+      { label: "Reached for money already spent", count: facts.filter((entry) => entry.facts.repair.lockedMoveAttempts > 0).length },
+      { label: "Never settled the repair", count: facts.length - settled.length },
+    ],
+  };
+}
+
+/**
+ * How one run ended, asked of the world the student actually played.
+ *
+ * There is one of these per world and they answer the same question — did the plan take the
+ * hit it had planned for, or did it finish short — because that is the question every
+ * educator surface wants to ask about a single student, and until this existed only
+ * Basketball could answer it. `resolution` is `resolveSeason` over Basketball's numbers, so
+ * it is `null` for every market run ever submitted; anything that branched on it was
+ * silently Basketball-only, and the share-out was, which is how a class that chose the
+ * market could not put a market plan in front of the room.
+ *
+ * A run that never reached its shock returns `null`. That is an absence rather than an
+ * outcome, and it is not something to offer a teacher as a thing to show.
+ *
+ * **Every sentence here is derived, and none of them is a shape somebody had in mind.** The
+ * market branch used to read `residual === 0` and print *"Their cushion covered the generator
+ * in full."* — a sentence equally true of a student who emptied the cushion, one who took two
+ * dollars off it, and one who never touched it. It was projected to a room above the words of
+ * a student who had taken the $270 off all three lines and written that they would keep the
+ * cushion bigger. So a line is named only where `repairSplitFromLog` says that line covered
+ * the whole bill on its own, and where it did not, the sentence itemises what each line
+ * actually gave. Basketball's two sentences were true but vague for the same reason — "the
+ * loss they had planned for" without saying how much — and now carry their own figures.
+ */
+export interface RunOutcome {
+  kind: "absorbed" | "came-up-short";
+  /** What happened, in the world's own words, for a teacher to read. */
+  label: string;
+}
+
+export function runOutcome(row: StudentRow): RunOutcome | null {
+  if (row.worldId === "food-truck") {
+    const facts = derivePopUpFacts(row.log);
+    if (!facts.repair.saved) return null;
+    const split = repairSplitFromLog(row.log);
+    if (split.residual > 0) {
+      return {
+        kind: "came-up-short",
+        label: `Found ${formatDollars(dollars(split.freed))} of the ${formatDollars(dollars(split.bill))} the generator cost and said out loud what was still short.`,
+      };
+    }
+    // One line, the whole bill, nothing off the other two is the only shape under which a
+    // sentence with a line's name in it is true. Everything else says how many lines it took,
+    // because that is the fact the log carries and it is the more interesting one anyway.
+    if (split.soleLine) {
+      return {
+        kind: "absorbed",
+        label: `Took the whole ${formatDollars(dollars(split.bill))} off ${POP_UP_LINE_LABELS[split.soleLine]} and left the other two alone.`,
+      };
+    }
+    return {
+      kind: "absorbed",
+      label: `Found the whole ${formatDollars(dollars(split.bill))} the generator cost, off ${listedLines(split.lines)}.`,
+    };
+  }
+  if (!row.resolution) return null;
+  if (row.resolution.uncovered > 0) {
+    return {
+      kind: "came-up-short",
+      label: `Finished with ${formatDollars(dollars(row.resolution.uncovered))} still uncovered — worth asking what they would move first.`,
+    };
+  }
+  if (row.resolution.absorbed > 0) {
+    return {
+      kind: "absorbed",
+      label: `Their backup money absorbed ${formatDollars(dollars(row.resolution.absorbed))} of the loss they had planned for.`,
+    };
+  }
+  return null;
+}
+
+const POP_UP_LINE_LABELS: Record<PopUpLineId, string> = {
+  stock: POP_UP_SCENARIO.lines.stock.label,
+  cushion: POP_UP_SCENARIO.lines.cushion.label,
+  cut: POP_UP_SCENARIO.lines.cut.label,
+};
+
+/** "the cushion ($130), stock ($90) and your cut ($50)", in the world's own words. */
+function listedLines(lines: readonly { line: PopUpLineId; amount: number }[]): string {
+  const parts = lines.map((entry) => `${POP_UP_LINE_LABELS[entry.line]} (${formatDollars(dollars(entry.amount))})`);
+  if (parts.length === 0) return "no line that could still move";
+  if (parts.length === 1) return parts[0]!;
+  return `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
+}
+
+/**
+ * The class, defined once.
+ *
+ * Three surfaces on one screen used to count three different things and call all of them the
+ * class: the headline counted submission **records**, the live panel counted distinct
+ * **seats** without checking them against the roster, and the student list printed a row per
+ * record. A class whose teacher had removed one student and one of whose students had two
+ * attempts therefore reported *5 turned in* above *turned in 4 · not started 1* on a roll of
+ * four, and listed one child twice beside a seat that was no longer in the room.
+ *
+ * So there is one answer here to each of the three questions, and every count a teacher reads
+ * is taken from it rather than recomputed:
+ *
+ * **What the class is.** The seats on the roster the teacher has not removed. A class with no
+ * roster has never told BOW who is in it, so its class is the seats that have shown up in
+ * evidence — and the surfaces say so rather than pretending to know who is missing.
+ *
+ * **What a student is.** One seat. Two attempts from one seat are one student, and the
+ * attempt that stands for them anywhere a page shows one row per student is their **latest**.
+ *
+ * **What an attempt is.** One submitted run. They are all kept, in order, because the export
+ * has to be able to show both and say which is which — but they are never counted as people.
+ */
+export interface RosterSeat {
+  seatCode: string;
+  removedAt?: number | null;
+}
+
+export interface ClassSeat {
+  seatCode: string;
+  /** Every attempt this seat turned in, oldest first. Empty for a seat that has not. */
+  attempts: StudentRow[];
+  /** The attempt that stands for this student, or `null` when they have not turned in. */
+  latest: StudentRow | null;
+  state: "turned-in" | "still-working" | "started-quiet" | "not-started";
+  /** When this seat's browser last said anything, for a seat that has one. */
+  lastSeenAt: number | null;
+}
+
+/**
+ * How long a checkpoint means "right now".
+ *
+ * A tile that counts a child as *still working* counts them until somebody re-reads the page,
+ * and the heading over it says **Right now** — so on Wednesday morning it said three children
+ * were working in a room with nobody in it. The number was a fact about Tuesday under a
+ * heading that promised the present tense.
+ *
+ * Ninety minutes is deliberately longer than any lesson this runs in: inside a lesson nothing
+ * moves, so a child who sits on one screen for half an hour is never quietly written off, and
+ * by the next morning nobody is "working" who is not. A checkpoint past it is not discarded —
+ * it becomes *started, not turned in*, which is the other true thing about that child and the
+ * one a teacher acts on the following day.
+ */
+export const LESSON_QUIET_MS = 90 * 60_000;
+
+export interface ClassRoll {
+  /** Whether the teacher has told BOW who is in this class. Without it "not started" is unknowable. */
+  hasRoster: boolean;
+  /** Every seat in the class, in seat order. Removed seats are not in it. */
+  seats: ClassSeat[];
+  /** One row per student who turned in — their latest attempt. The class, for anything counted per student. */
+  rows: StudentRow[];
+  /** Every attempt from a seat still in the class, seat order then oldest first. */
+  attempts: StudentRow[];
+  /** Attempts from seats that are no longer in the class. Counted nowhere, shown nowhere. */
+  excluded: StudentRow[];
+  turnedIn: number;
+  /** Seats whose browser has said something inside `LESSON_QUIET_MS`. True in the present tense. */
+  stillWorking: number;
+  /** Seats that started, went quiet for longer than a lesson, and never turned in. */
+  startedQuiet: number;
+  /** `null` where there is no roster, because a class that never said who is in it cannot say who is missing. */
+  notStarted: number | null;
+  /** Students whose writing nobody has read yet. Students, not records. */
+  awaitingReading: string[];
+}
+
+function bySeatCode(a: string, b: string): number {
+  const left = Number(a);
+  const right = Number(b);
+  return Number.isNaN(left) || Number.isNaN(right) ? a.localeCompare(b) : left - right;
+}
+
+/** Newest last, and a stable tie-break so two attempts saved in the same millisecond keep an order. */
+function byAttemptOrder(a: StudentRow, b: StudentRow): number {
+  return a.submittedAt - b.submittedAt || a.sessionId.localeCompare(b.sessionId);
+}
+
+/**
+ * The one attempt that stands for a seat, wherever a surface shows a student once.
+ *
+ * The rule is "their latest", and it is written here rather than at each call site because
+ * the class list, the student page and the roll all have to pick the same one — a list whose
+ * row described a different run from the page it opened is a teacher checking a conclusion
+ * against the wrong evidence.
+ */
+export function latestAttemptFor(rows: readonly StudentRow[], seatCode: string): StudentRow | null {
+  return attemptsFor(rows, seatCode).at(-1) ?? null;
+}
+
+/**
+ * Every attempt one seat turned in, oldest first.
+ *
+ * A student who had a second go is one student everywhere they are counted and two attempts
+ * everywhere they are read, and only the export used to know the difference: the queue put
+ * their name in twice with nothing to tell the two apart, the class row said nothing, and
+ * their own page silently showed the later one. Any surface that wants to say which attempt
+ * it is showing reads it from here, so none of them can count them differently.
+ */
+export function attemptsFor(rows: readonly StudentRow[], seatCode: string): StudentRow[] {
+  return rows.filter((row) => row.seatCode === seatCode).sort(byAttemptOrder);
+}
+
+export function classRoll(input: {
+  rows: readonly StudentRow[];
+  roster: readonly RosterSeat[];
+  progress?: readonly { seatCode: string; updatedAt?: number }[];
+  /** When the page was read. Elapsed time is measured from it, so a render is a function of its input. */
+  at?: number;
+}): ClassRoll {
+  const live = input.roster.filter((seat) => !seat.removedAt).map((seat) => seat.seatCode);
+  const hasRoster = live.length > 0;
+  const at = input.at ?? Date.now();
+  const working = new Set((input.progress ?? []).map((entry) => entry.seatCode));
+  const lastSeen = new Map((input.progress ?? []).map((entry) => [entry.seatCode, entry.updatedAt ?? at]));
+  // Without a roster the only students BOW knows about are the ones who have shown up. With
+  // one, the roster is the class and nothing else is — which is what keeps a removed seat out
+  // of every count on the page rather than out of some of them.
+  const seatCodes = hasRoster
+    ? [...live].sort(bySeatCode)
+    : [...new Set([...input.rows.map((row) => row.seatCode), ...working])].sort(bySeatCode);
+  const inClass = new Set(seatCodes);
+
+  const seats: ClassSeat[] = seatCodes.map((seatCode) => {
+    const attempts = input.rows.filter((row) => row.seatCode === seatCode).sort(byAttemptOrder);
+    const latest = latestAttemptFor(attempts, seatCode);
+    const seen = lastSeen.get(seatCode) ?? null;
+    const quiet = seen !== null && at - seen > LESSON_QUIET_MS;
+    return {
+      seatCode,
+      attempts,
+      latest,
+      state: latest ? "turned-in" : working.has(seatCode) ? (quiet ? "started-quiet" : "still-working") : "not-started",
+      lastSeenAt: seen,
+    };
+  });
+
+  const rows = seats.flatMap((seat) => (seat.latest ? [seat.latest] : []));
+  return {
+    hasRoster,
+    seats,
+    rows,
+    attempts: seats.flatMap((seat) => seat.attempts),
+    excluded: input.rows.filter((row) => !inClass.has(row.seatCode)),
+    turnedIn: seats.filter((seat) => seat.state === "turned-in").length,
+    stillWorking: seats.filter((seat) => seat.state === "still-working").length,
+    startedQuiet: seats.filter((seat) => seat.state === "started-quiet").length,
+    notStarted: hasRoster ? seats.filter((seat) => seat.state === "not-started").length : null,
+    awaitingReading: rows.filter((row) => row.reasoningPoints === null).map((row) => row.seatCode),
+  };
+}
+
+export function worldSections(everyRow: StudentRow[]): WorldSection[] {
+  return [...new Set(everyRow.map((row) => row.worldId))].map((worldId) => {
+    const rows = everyRow.filter((row) => row.worldId === worldId);
+    const market = worldId === "food-truck";
+    return {
+      worldId,
+      title: WORLD_REGISTRY[worldId]?.title ?? worldId,
+      seats: rows.length,
+      rows,
+      distributions: market ? popUpDistributions(rows) : choiceDistributions(rows),
+      adaptation: market ? popUpAdaptation(rows) : basketballAdaptation(rows),
+      contrast: market ? null : contrastingPair(rows),
+      prompts: market ? popUpPrompts(rows) : discussionPrompts(rows),
+      quotes: quotesOf(rows),
+    };
+  });
+}
+
+/**
+ * Prompts the market's own disagreements earn.
+ *
+ * Written rather than derived from Basketball's, because the questions are not the same
+ * questions. Before this existed the market fell through `discussionPrompts`, found none of
+ * Basketball's decisions, and emitted the consensus fallback — which is how a room that had
+ * taken three different booths was told it had done the same thing.
+ */
+export function popUpPrompts(rows: StudentRow[]): DiscussionPrompt[] {
+  if (rows.length === 0) return [];
+  const prompts: DiscussionPrompt[] = [];
+  const distributions = popUpDistributions(rows);
+  const used = (id: string) => distributions.find((entry) => entry.id === id)?.shares.filter((share) => share.seats.length > 0) ?? [];
+
+  const booths = used("booth");
+  if (booths.length > 1) {
+    prompts.push({
+      id: "booth-split",
+      prompt: `You took ${booths.length} different booths and every one of them could work. What was each one buying?`,
+      because: booths.map((entry) => `${entry.seats.length} took ${entry.label}`).join(", ") + ".",
+    });
+  }
+
+  for (const [id, question] of [["catering", "the catering job"], ["rebate", "the sell-out rebate"]] as const) {
+    const shares = used(id);
+    if (shares.length > 1) {
+      prompts.push({
+        id: `${id}-split`,
+        prompt: `Some of you planned around ${question} and some of you did not. What did counting it buy, and what did it cost?`,
+        because: shares.map((entry) => `${entry.seats.length} ${entry.label.toLowerCase()}`).join(", ") + ".",
+      });
+    }
+  }
+
+  const swap = used("swap");
+  if (swap.length > 1) {
+    prompts.push({
+      id: "swap-split",
+      prompt: "The generator broke for all of you and it did not cost you all the same. What was different about the plans that absorbed it?",
+      because: swap.map((entry) => `${entry.seats.length} ${entry.label.toLowerCase()}`).join(", ") + ".",
+    });
+  }
+
+  if (prompts.length === 0 && rows.length >= MINIMUM_RESULTS_FOR_CLASS_NARRATION) {
+    prompts.push({
+      id: "consensus",
+      prompt: "You all ran it the same way. What would have had to be different for another plan to be the better one?",
+      because: `All ${rows.length} made the same call on every major decision.`,
+    });
+  }
+  return prompts;
+}
+
+/** Each world that actually appears in this class, with the decisions it put to students. */
+export function decisionsByWorld(rows: StudentRow[]): { worldId: WorldId; seats: number; distributions: ChoiceDistribution[] }[] {
+  const groups: { worldId: WorldId; seats: number; distributions: ChoiceDistribution[] }[] = [];
+  for (const worldId of [...new Set(rows.map((row) => row.worldId))]) {
+    const seats = rows.filter((row) => row.worldId === worldId).length;
+    const distributions = worldId === "food-truck" ? popUpDistributions(rows) : choiceDistributions(rows);
+    groups.push({ worldId, seats, distributions });
+  }
+  return groups;
+}
+
 export interface AdaptationSummary {
-  /** Students whose plan actually moved between the opening version and the final one. */
+  /** Students who moved their own plan between the opening version and the final one. */
   changed: string[];
   unchanged: string[];
-  /** Which row students reduced first when Week 5 landed, by seat. */
+  /**
+   * Which row students reduced first when Week 5 landed, by seat.
+   *
+   * The student's own reductions only. A row the product emptied — the course row, once the
+   * seat is reserved — is not a row anybody chose to give up, and naming its owner here put
+   * five children on the board under the exact opposite of what they did.
+   */
   cutFirst: { category: CategoryId; label: string; seats: string[] }[];
   /** Students who ended with an uncovered shortfall. */
   leftUncovered: string[];
@@ -188,17 +626,30 @@ export function adaptationSummary(rows: StudentRow[]): AdaptationSummary {
 
   for (const row of rows) {
     if (!row.opening || !row.final) continue;
-    const deltas = (["goal", "reserve", "flexibleCash"] as const).map((category) => ({
-      category,
-      delta: row.final![category] - row.opening![category],
-    }));
-    const reductions = deltas.filter((entry) => entry.delta < 0).sort((a, b) => a.delta - b.delta);
-    if (reductions.length === 0) {
-      unchanged.push(row.seatCode);
-      continue;
-    }
-    changed.push(row.seatCode);
-    // The deepest cut is the one that says what they were willing to give up first.
+    // Against the plan the product left them able to reach, not against their opening
+    // figures. Reserving the seat at Week 4 empties the course row — the money commits to
+    // the locked costs and `courseRowCapFor` drops the row's ceiling to zero — so a plain
+    // `final − opening` read that forced zero as the deepest cut on the board and filed
+    // every student who paid to protect the course under *cut the course first*, on the
+    // page that named the same students, four inches higher, as the ones who reserved it.
+    // `planMovements` is where that distinction lives; nothing here re-derives it.
+    // `=== true` rather than truthiness, now that `reservedSeat` can be null. The question
+    // `planMovements` is asking is factual — did `courseRowCapFor` drop this row's ceiling —
+    // and it drops only on an actual `taken: true`. A student who never reached the decision
+    // did not take the deposit, so their course row kept its ceiling and any fall in it is
+    // theirs. That is the opposite of how the same null is read one screen away, where it
+    // must not be reported as "waited": there the null means *we do not know*, here it means
+    // *the product did nothing to this row*, and both readings are true of the same absence.
+    const movements = planMovements(row.opening, row.final, { depositTaken: row.reservedSeat === true }, SCENARIO_NUMBERS);
+    if (movements.some((entry) => entry.moved)) changed.push(row.seatCode);
+    else unchanged.push(row.seatCode);
+
+    const reductions = movements
+      .filter((entry) => entry.chosenReduction > 0)
+      .sort((a, b) => b.chosenReduction - a.chosenReduction);
+    if (reductions.length === 0) continue;
+    // The deepest cut is the one that says what they were willing to give up first. Ties
+    // keep `CATEGORY_ORDER`, which is why that order is written down once.
     const deepest = reductions[0]!.category;
     cuts.set(deepest, [...(cuts.get(deepest) ?? []), row.seatCode]);
   }
@@ -212,32 +663,6 @@ export function adaptationSummary(rows: StudentRow[]): AdaptationSummary {
     leftUncovered: rows.filter((row) => (row.resolution?.uncovered ?? 0) > 0).map((row) => row.seatCode),
     buffered: rows.filter((row) => (row.resolution?.absorbed ?? 0) > 0 && (row.resolution?.uncovered ?? 0) === 0).map((row) => row.seatCode),
   };
-}
-
-export interface ConceptSummary {
-  conceptId: ConceptId;
-  code: string;
-  label: string;
-  reteachId: string;
-  counts: Record<MasteryStatus, number>;
-  /** Students not yet showing the concept, so a small group can be pulled for it. */
-  needsFollowUp: string[];
-}
-
-export function conceptSummaries(rows: StudentRow[]): ConceptSummary[] {
-  return CONCEPTS.filter((concept) => concept.id !== "financial-defense").map((concept) => {
-    const counts: Record<MasteryStatus, number> = {
-      demonstrated_independently: 0, demonstrated_with_support: 0, developing: 0, not_demonstrated: 0, not_observed: 0,
-    };
-    const needsFollowUp: string[] = [];
-    for (const row of rows) {
-      const result = row.result.concepts.find((item) => item.conceptId === concept.id);
-      if (!result) continue;
-      counts[result.status] += 1;
-      if (result.status === "developing" || result.status === "not_demonstrated") needsFollowUp.push(row.seatCode);
-    }
-    return { conceptId: concept.id, code: concept.code, label: concept.label, reteachId: concept.reteachId, counts, needsFollowUp };
-  });
 }
 
 /**
@@ -338,11 +763,13 @@ export function discussionPrompts(rows: StudentRow[]): DiscussionPrompt[] {
     });
   }
 
-  if (prompts.length === 0) {
+  // "You all played it the same way" is a claim about a class, and a claim about a class
+  // needs a class. From three runs it is a sentence about three children.
+  if (prompts.length === 0 && rows.length >= MINIMUM_RESULTS_FOR_CLASS_NARRATION) {
     prompts.push({
       id: "consensus",
       prompt: "You all played it the same way. What would have had to be different for another plan to be the better one?",
-      because: "This class made the same call on every major decision, which is itself worth asking about.",
+      because: `All ${rows.length} made the same call on every major decision.`,
     });
   }
   return prompts;
@@ -350,31 +777,45 @@ export function discussionPrompts(rows: StudentRow[]): DiscussionPrompt[] {
 
 export interface ClassAnalysis {
   rows: StudentRow[];
+  /**
+   * One block per world this class actually played, each carrying its own denominator.
+   *
+   * Every surface reads this rather than the whole-class fields below it. `distributions`,
+   * `adaptation`, `contrast` and `prompts` are kept only because the fixture pages and the
+   * older tests still read them; nothing a teacher sees about a real class does.
+   */
+  worlds: WorldSection[];
   distributions: ChoiceDistribution[];
   adaptation: AdaptationSummary;
-  concepts: ConceptSummary[];
   contrast: [StudentRow, StudentRow] | null;
   prompts: DiscussionPrompt[];
   /** Reasoning still waiting for a person. */
   awaitingReview: string[];
-  /** The concept the most students are still short of, or null when nothing stands out. */
-  reviewFirst: ConceptSummary | null;
   totalMoneyCommittedToCourse: Dollars;
 }
 
+/**
+ * `concepts` and `reviewFirst` used to be two more fields here, and they are gone.
+ *
+ * They carried the *concept* taxonomy — `C1`–`C6`, and teacher-register labels like "Build an
+ * executable contingency" — computed for every class and rendered on no screen since the
+ * bespoke demo pages were deleted. `classSpine.test.ts` already asserted that neither the
+ * class page nor the debrief may read them, which is the whole argument: a derivation nothing
+ * renders, whose labels are in a vocabulary the product retired, is not dead weight so much as
+ * a loaded gun. The next person adding a section reads `ClassAnalysis`, finds a ready-made
+ * per-concept summary with labels on it, and a fifth vocabulary is back on a teacher's screen.
+ * Deleted rather than fenced, for the same reason `STATUS_LABELS` was.
+ */
 export function analyseClass(records: SubmissionRecord[]): ClassAnalysis {
   const rows = records.map(readSubmission);
-  const concepts = conceptSummaries(rows);
-  const ranked = [...concepts].sort((a, b) => b.needsFollowUp.length - a.needsFollowUp.length);
   return {
     rows,
     distributions: choiceDistributions(rows),
+    worlds: worldSections(rows),
     adaptation: adaptationSummary(rows),
-    concepts,
     contrast: contrastingPair(rows),
     prompts: discussionPrompts(rows),
     awaitingReview: rows.filter((row) => row.reasoningPoints === null).map((row) => row.seatCode),
-    reviewFirst: ranked[0] && ranked[0].needsFollowUp.length > 0 ? ranked[0] : null,
     totalMoneyCommittedToCourse: dollars(rows.reduce((sum, row) => sum + (row.resolution?.courseSaved ?? 0), 0)),
   };
 }

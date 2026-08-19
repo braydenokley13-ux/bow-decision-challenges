@@ -1,9 +1,11 @@
+import type { CalcId, CategoryId } from "../core/ids";
 import { dollars } from "../core/money";
 import { DEFAULT_WORLD_ID, numbersFor, PLAN_UNDER_PRESSURE_LAUNCH } from "../scenario/registry";
 import { balanceOf, readoutFor, residualOf, unassignedOf } from "../finance/formulas";
 import type { PlanMode, SnapshotInputs } from "../finance/types";
-import type { EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../evidence/types";
+import type { AmountSource, CompetingClaimsSettlement, EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../evidence/types";
 import { competenciesForEvent, conceptsForEvent, evidenceRequirementsForEvent } from "../evidence/eventConcepts";
+import { carriedAmountsFor } from "./selectors";
 import type { ChallengeAction } from "./actions";
 import { EMPTY_AMOUNTS, type ChallengeState } from "./state";
 
@@ -55,16 +57,49 @@ function goTo(state: ChallengeState, stage: StageId, at?: number): ChallengeStat
   return append(moved, "STAGE_ENTERED", { stage, from: state.stage }, "standard_access", `stage:${stage}`, at);
 }
 
+/**
+ * One row's provenance, after an act on it.
+ *
+ * The rule is the whole of what `AmountProvenance` promises, and it is short on purpose:
+ *
+ * - `source` is the act that produced the figure now standing in the row. A fresh fill
+ *   replaces whatever was there, because the number in the row is BOW's again.
+ * - `revised` says the row has held a figure BOW produced and the student changed it. It is
+ *   what lets the sentence a teacher reads tell "they set it" from "they took BOW's number
+ *   and then moved it", and it is why an accepted suggestion is earnable back rather than a
+ *   mark against the run.
+ *
+ * Nothing here records when, in what order, or how many times. A row's history is one word
+ * and one flag.
+ */
+function withSource(
+  sources: ChallengeState["amountSources"],
+  mode: PlanMode,
+  category: CategoryId,
+  source: AmountSource,
+): ChallengeState["amountSources"] {
+  const before = sources[mode]?.[category];
+  const revised = source === "typed" ? before !== undefined && (before.source !== "typed" || before.revised) : false;
+  return { ...sources, [mode]: { ...(sources[mode] ?? {}), [category]: { source, revised } } };
+}
+
 function supportFor(state: ChallengeState, interactionId: string): SupportLevel {
   return state.support[interactionId] ?? "standard_access";
 }
 
+/**
+ * The plan a first edit on an untouched board is an edit *to*.
+ *
+ * A row the student moves does not only move that row: it writes the whole draft, so the two
+ * rows they have not reached yet are written too, from whatever this returns. So this has to
+ * be the same plan the board was drawing before they pressed anything, and there is exactly
+ * one statement of which plan that is — `carriedAmountsFor`, which the screen reads as well.
+ * This used to hold its own copy of the rule, the copy said `drafts.fallback` for Week 5, and
+ * the answer is written out in full over there because it cost a student $800 of somebody
+ * else's plan on the screen a teacher grades.
+ */
 function defaultAmountsFor(state: ChallengeState, mode: PlanMode) {
-  if (mode === "fallback") return state.drafts.working ?? EMPTY_AMOUNTS;
-  if (mode === "week5-first-response") return state.drafts.fallback ?? state.drafts.working ?? EMPTY_AMOUNTS;
-  if (mode === "final") return state.drafts["week5-first-response"] ?? state.drafts.working ?? EMPTY_AMOUNTS;
-  if (mode === "remaining-risk") return state.drafts.final ?? EMPTY_AMOUNTS;
-  return EMPTY_AMOUNTS;
+  return carriedAmountsFor(state, mode) ?? EMPTY_AMOUNTS;
 }
 
 /**
@@ -104,15 +139,22 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
     case "SESSION_STARTED": {
       // With one finished world there is no choice to present, so the session opens
       // straight into it. Restoring the picker means routing to "choose-world" here.
-      // The opening screen already told the story, so checking in lands on the deal
-      // rather than on a second orientation screen.
+      //
+      // Both routes now land on the setup comparison rather than on "role-contract". That
+      // screen was 165 rendered words restating four payments the header disclosure carries
+      // on every screen of the run, and it took no input at all — the second of three
+      // no-input screens a density critic found in a run already over its reading budget.
+      // The half of it the disclosure could not carry, what a conditional payment costs when
+      // its rule is not met, moved onto the bonus cards in `WorkingStage`, which is where the
+      // student is asked to take a position on exactly that. The stage id stays in `StageId`
+      // and in `STAGE_ORDER` because stored evidence logs and saved attempts still name it.
       const next = { ...state, meta: { ...state.meta, sessionId: action.sessionId, classCode: action.classCode, seatCode: action.seatCode, assignmentId: action.assignmentId ?? "", worldId: DEFAULT_WORLD_ID } };
       const started = append(next, action.type, action, "standard_access", undefined, at);
-      return goTo(PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? started : append(started, "WORLD_CONFIRMED", { worldId: DEFAULT_WORLD_ID }, "standard_access", undefined, at), PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? "choose-world" : "role-contract", at);
+      return goTo(PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? started : append(started, "WORLD_CONFIRMED", { worldId: DEFAULT_WORLD_ID }, "standard_access", undefined, at), PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? "choose-world" : "setup-comparison", at);
     }
     case "WORLD_CONFIRMED": {
       const next = { ...state, meta: { ...state.meta, worldId: action.worldId } };
-      return goTo(append(next, action.type, action, "standard_access", undefined, at), "role-contract", at);
+      return goTo(append(next, action.type, action, "standard_access", undefined, at), "setup-comparison", at);
     }
     case "CALCULATION_SUBMITTED": {
       const previous = state.calculations[action.calcId];
@@ -146,13 +188,40 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
       };
       return append(next, action.type, action, "standard_access", undefined, at);
     }
+    case "COMPETING_CLAIMS_SETTLED": {
+      // The one beat whose money never reaches the board. Nothing in `drafts`, `snapshots`
+      // or `saved` moves here, and nothing downstream re-prices a plan because of it — the
+      // whole point of the week is that it asks which of three claims matters most without
+      // adding a fourth axis to the strategy space the balance sweep proves is undominated.
+      const week3 = numbersOf(state).week3;
+      const claimIds = Object.keys(week3.claimCosts);
+      // Filtered against the world's own list rather than trusted from the caller, so a
+      // stale screen cannot record a claim this world does not offer.
+      const fundedIds = claimIds.filter((id) => action.fundedIds.includes(id));
+      const unfundedIds = claimIds.filter((id) => !fundedIds.includes(id));
+      const spent = fundedIds.reduce((total, id) => total + (week3.claimCosts[id] ?? 0), 0);
+      const settlement: CompetingClaimsSettlement = {
+        cash: week3.cash,
+        fundedIds,
+        unfundedIds,
+        spent: dollars(spent),
+        leftOver: dollars(week3.cash - spent),
+        reason: action.reason,
+      };
+      const next = { ...state, week3: { fundedIds, reason: action.reason } };
+      return goTo(append(next, action.type, settlement, "standard_access", undefined, at), "week5-transition", at);
+    }
     case "INCOME_SOURCE_TOGGLED": {
       const key = action.sourceId === "completion-800" ? "includeCompletion" : "includeOutcome";
       const next = { ...state, income: { ...state.income, [key]: action.included } };
       return append(next, action.type, action, "standard_access", undefined, at);
     }
     case "PLAN_AMOUNT_CHANGED":
-      return { ...state, drafts: { ...state.drafts, [action.mode]: { ...(state.drafts[action.mode] ?? defaultAmountsFor(state, action.mode)), [action.category]: action.amount } } };
+      return {
+        ...state,
+        drafts: { ...state.drafts, [action.mode]: { ...(state.drafts[action.mode] ?? defaultAmountsFor(state, action.mode)), [action.category]: action.amount } },
+        amountSources: withSource(state.amountSources, action.mode, action.category, action.via ?? "typed"),
+      };
     case "PLAN_REMAINDER_ASSIGNED": {
       // The one move on this board that is a statement rather than an adjustment: the
       // student names the row that absorbs whatever the rest of their plan left over. It
@@ -160,31 +229,44 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
       // and not the other — what it adds is a record of which line they let the arithmetic
       // decide, which is the only difference between planned savings and leftover savings.
       const current = state.drafts[action.mode] ?? defaultAmountsFor(state, action.mode);
-      const moved = {
+      const placed = {
         ...state,
         drafts: { ...state.drafts, [action.mode]: { ...current, [action.category]: dollars(current[action.category] + action.amount) } },
       };
-      const after = snapshotInputs(moved, action.mode);
+      const after = snapshotInputs(placed, action.mode);
       if (!after) return state;
       // What is still looking for a job once this row has taken its share. Recorded because
       // it is the difference between the two things this move can mean: a row that took the
       // last of the money closed the plan, and a row that hit its own cap on the way past
       // did not. Only the first is a statement about where the leftovers went.
-      const remaining = unassignedOf(balanceOf(after, numbersOf(moved)));
-      return append(moved, action.type, { ...action, remaining }, supportFor(state, action.mode), undefined, at);
+      const remaining = unassignedOf(balanceOf(after, numbersOf(placed)));
+      // What the press meant, from what it left behind. A row that took the last of the
+      // money is the leftovers landing somewhere — nobody picked that number. A row that
+      // filled up on the way past hit a cap this world set, which is a figure BOW produced
+      // and the student accepted. The board only offers the first of those now, and the
+      // second is kept because a log written when it did offer both has to still read.
+      const moved = {
+        ...placed,
+        amountSources: withSource(state.amountSources, action.mode, action.category, remaining === 0 ? "remainder" : "suggested"),
+      };
+      // The whole plan's provenance rides along, not only this row's. What the requirement
+      // about planned savings has to read is where the *savings* figure came from at the
+      // moment the plan was closed, and that is a fact about a row this event does not name.
+      return append(moved, action.type, { ...action, remaining, sources: moved.amountSources[action.mode] ?? {} }, supportFor(state, action.mode), undefined, at);
     }
     case "PLAN_SAVE_REQUESTED": {
       const inputs = snapshotInputs(state, action.mode);
       if (!inputs) return state;
       const balance = balanceOf(inputs, numbersOf(state));
-      let next = append(state, action.type, { mode: action.mode, inputs, balance, residual: residualOf(balance), unassigned: unassignedOf(balance), acknowledgedResidual: action.acknowledgedResidual }, supportFor(state, action.mode), undefined, at);
+      const sources = state.amountSources[action.mode] ?? {};
+      let next = append(state, action.type, { mode: action.mode, inputs, balance, residual: residualOf(balance), unassigned: unassignedOf(balance), acknowledgedResidual: action.acknowledgedResidual, sources }, supportFor(state, action.mode), undefined, at);
       if (balance !== 0 && action.acknowledgedResidual === undefined) return next;
       const sequence = next.log.length + 1;
       // The readout is frozen onto the snapshot here, priced with the numbers in force at
       // save time, so a later re-balancing of the scenario cannot rewrite this result.
       const snapshot = { id: `snapshot-${sequence}`, sequence, inputs, readout: readoutFor(inputs, numbersOf(state)), ...(action.acknowledgedResidual !== undefined ? { acknowledgedResidual: action.acknowledgedResidual } : {}) };
       next = { ...next, snapshots: [...next.snapshots, snapshot], saved: { ...next.saved, [action.mode]: snapshot.id } };
-      next = append(next, "PLAN_SAVED", { mode: action.mode, snapshot, balance }, supportFor(state, action.mode), undefined, at);
+      next = append(next, "PLAN_SAVED", { mode: action.mode, snapshot, balance, sources }, supportFor(state, action.mode), undefined, at);
       // A plan built on no conditional income has no lower-resource version to build,
       // so the season starts instead of a screen that only says there is nothing to do.
       if (action.mode === "working") return goTo(next, state.income.includeCompletion || state.income.includeOutcome ? "fallback-version" : "season-weeks", at);
@@ -216,7 +298,25 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
       return append(next, action.type, action, "direct_scaffold", undefined, at);
     }
     case "SHOW_AND_CONTINUE_USED": {
-      const next = { ...state, support: { ...state.support, [action.interactionId]: "answer_supplied" as const } };
+      /**
+       * The answer was handed over, and both places that could say so now do.
+       *
+       * `support` is the field the grader prices this answer at and the field the screens
+       * read. `calculations[id].supplied` is the older one, and nothing has ever set it to
+       * true — so a screen that asked it whether the student had worked a figure out was
+       * told yes, always, and told a child who had just pressed "Show the answer" that they
+       * had done it themselves. That screen reads `support` now; this stops the other field
+       * being a trap for the next one. A hand-over on something that is not a calculation —
+       * a plan mode, the opening ranking — writes nothing here, because there is no
+       * calculation to mark.
+       */
+      const calcId = action.interactionId as CalcId;
+      const answered = state.calculations[calcId];
+      const next = {
+        ...state,
+        support: { ...state.support, [action.interactionId]: "answer_supplied" as const },
+        ...(answered ? { calculations: { ...state.calculations, [calcId]: { ...answered, supplied: true } } } : {}),
+      };
       return append(next, action.type, action, "answer_supplied", undefined, at);
     }
     case "DEFENSE_SUBMITTED": {

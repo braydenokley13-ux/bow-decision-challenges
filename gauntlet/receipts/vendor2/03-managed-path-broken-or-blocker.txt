@@ -1,0 +1,21 @@
+# Pinned SHA 300ce62.  Managed (Upstash/Vercel KV) driver selection + behaviour.
+# server/store.ts storeFromEnvironment + api/[[...route]].ts both call this.
+
+KV + BOW_STORE_KEY set -> redis (keyed)
+KV, no BOW_STORE_KEY   -> redis (keyless)
+
+## A) Managed WITH BOW_STORE_KEY, against a spec-correct Upstash:
+##    (the driver sends body:put(args) -> the whole command is AES-GCM-sealed)
+   putClass THREW: Class store rejected SET: 400
+   getClass THREW: Class store rejected GET: 400
+   => keyed managed path is a TOTAL OUTAGE (every request 503).
+
+## B) Managed WITHOUT BOW_STORE_KEY (the config that actually runs):
+   SET  teacher:t_abc = {"id":"t_abc","email":"jane.doe@district.edu","createdAt":1,"pas
+   SET  teacher-email:be36f34df93970c72484af4140b40c91 = t_abc
+   SET  bow:session-secret = h5aSGnSdTE1gnXeIYH032VnLVHiu4xu7-Mg3CW6ESi8
+   HSET roster:AB12C [1] = {"id":"r1","classCode":"AB12C","seatCode":"1","displayName":"Jan
+   -> child name + evidence stored as PLAINTEXT JSON in the KV, AND the session-signing
+      secret persisted at bow:session-secret = h5aSGnSdTE1gnXeIYH032VnLVHiu4xu7-Mg3CW6ESi8
+   => the ORIGINAL BLOCKER (signing secret beside the data; one KV read = mint any token)
+      is reproduced verbatim on the managed path.

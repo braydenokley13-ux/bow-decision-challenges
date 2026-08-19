@@ -1,0 +1,689 @@
+RUN runC-popup-closed-truck
+
+
+########## 01-booths ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+
+BEFORE THE MARKET
+
+Saturday 1
+—
+Saturday 2
+—
+Saturday 3
+—
+Saturday 4
+—
+NO SEAT YET
+
+RIVERSIDE NIGHT MARKET
+
+FOUR SATURDAYS. ONE TRUCK.
+IN THE ACCOUNT
+$1,900
+THE MARKET
+4 Saturdays
+PAID BEFORE YOU OPEN
+City permit and booth
+
+Mo has cooked at Salt and Smoke for two summers and never had a booth of his own. The market runs for four Saturdays. There is $1,900 in the truck's account, and the permit and the booth are paid before anybody sells a plate.
+
+Mo does the cooking. You handle the money, and you have four Saturdays to get it right.
+
+Where do you set up?
+
+The organiser prices a booth by the crowd that walks past it. Take one. The same four Saturdays at every booth: an opening night, a wet one that clears, a cold one, and the fireworks. What changes is how many walk past yours.
+
+CITY PERMIT
+
+$150 for the four Saturdays. Every stall pays it.
+
+$150
+BACK LANE
+
+$90 for the four Saturdays
+
+PLATES THE CROWD HERE WILL BUY
+
+SAT 1
+22
+SAT 2
+26
+SAT 3
+14
+SAT 4
+32
+
+The cheapest booth going, and quiet for a reason. Most of the crowd turns at the top of the lane.
+
+Take this booth
+MIDDLE ROW
+
+$240 for the four Saturdays
+
+PLATES THE CROWD HERE WILL BUY
+
+SAT 1
+38
+SAT 2
+46
+SAT 3
+25
+SAT 4
+55
+
+Halfway down the main run, across from the band. People come past all evening and you are charged for every one.
+
+Take this booth
+BRIDGE GATE
+
+$480 for the four Saturdays
+
+PLATES THE CROWD HERE WILL BUY
+
+SAT 1
+54
+SAT 2
+65
+SAT 3
+35
+SAT 4
+78
+
+Everybody walks in past this booth. It is the dearest going, and on your own you cannot hand over more than 45 plates in an evening.
+
+Take this booth
+
+The organiser prices a booth by the crowd that walks past it. Take one.
+
+Take a booth to carry on
+Reading help
+
+
+########## 02-opening-board ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+
+BEFORE THE MARKET
+
+Saturday 1
+—
+Saturday 2
+—
+Saturday 3
+—
+Saturday 4
+—
+NO SEAT YET
+
+THE OPENING PLAN
+
+GIVE EVERY DOLLAR A JOB.
+
+Three lines. All of the money has to land on them, and the market starts the moment it does.
+
+TO PLAN WITH
+$1,510
+ON THE THREE LINES
+$0
+STILL TO PLACE
+$1,510
+Stock
+This is the food you buy to sell. Ramos Foods sells to the market by the tray, and a tray is 10 plates. Every tray costs you $60, and every plate you hand over the counter sells for $12. Trays do not come in halves, so you will almost never match the crowd exactly.
+Cushion
+This is cash you keep in the box instead of spending it. The generator on the truck is rented, and Ramos Rentals is holding $150 against it. Trucks break, and a truck that is not running does not sell anything.
+Your cut
+This is the money you bank for yourself at the end of the run. It is the whole reason you took the job, and nobody is going to set it for you.
+Stock
+0 trays of food to cook and sell.
+$0
+−
++
+Cushion
+Cash in the box, and not spent yet.
+$0
+−
++
+Your cut
+Yours at the end of the run, if nothing eats it.
+$0
+−
++
+Send the rest to one line
+
+The line you name takes whatever is left over.
+
+→
+Stock
+$1,510
+Leaves 25 trays to cook.
+→
+Cushion
+$1,510
+Leaves nothing to cook.
+→
+Your cut
+$1,510
+Leaves nothing to cook.
+
+$1,510 still has no job.
+
+Check this plan
+Reading help
+
+
+########## 03-board-all-in-stock ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+
+BEFORE THE MARKET
+
+Saturday 1
+—
+Saturday 2
+—
+Saturday 3
+—
+Saturday 4
+—
+NO SEAT YET
+
+THE OPENING PLAN
+
+GIVE EVERY DOLLAR A JOB.
+
+Three lines. All of the money has to land on them, and the market starts the moment it does.
+
+TO PLAN WITH
+$1,510
+ON THE THREE LINES
+$1,510
+STILL TO PLACE
+$0
+Stock
+This is the food you buy to sell. Ramos Foods sells to the market by the tray, and a tray is 10 plates. Every tray costs you $60, and every plate you hand over the counter sells for $12. Trays do not come in halves, so you will almost never match the crowd exactly.
+Cushion
+This is cash you keep in the box instead of spending it. The generator on the truck is rented, and Ramos Rentals is holding $150 against it. Trucks break, and a truck that is not running does not sell anything.
+Your cut
+This is the money you bank for yourself at the end of the run. It is the whole reason you took the job, and nobody is going to set it for you.
+Stock
+25 trays of food to cook and sell.
+$1,500
+−
++
+Cushion
+Cash in the box, and not spent yet.
+$10
+−
++
+Your cut
+Yours at the end of the run, if nothing eats it.
+$0
+−
++
+
+Every dollar has a job.
+
+Lock the plan in
+Reading help
+
+
+########## 04-saturday-1 ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+
+SATURDAYS 2 AND 3
+
+Saturday 1
+38 sold
+Saturday 2
+—
+Saturday 3
+—
+Saturday 4
+—
+NO SEAT YET
+
+SATURDAY 1 IS DONE
+
+THE FIRST NIGHT IS IN.
+
+SATURDAY 1
+
+COOKED
+50
+SOLD
+38
+IN THE BIN
+12
+TAKINGS
+$456
+
+You cooked more than the crowd bought. $72 of food went in the bin.
+
+You did not sell out, so there is no rebate. Your plan never counted on it.
+
+THE TIPS JAR
+
+Three things want the tips.
+
+You emptied the jar on the way home from the first Saturday: $100, and it is yours. Three things want it and it does not stretch to all three.
+
+This money is not the truck's. It cannot go on the three lines and it cannot be banked, so a dollar you do not spend here is a dollar spent on nothing.
+
+IN THE JAR
+$100
+SPENT
+$0
+LEFT OVER
+$100
+A seal for the cool box
+$75
+
+The rubber round the lid has perished. The box still holds cold for a night. It holds less every week.
+
+Pay for this
+Your share of the night cleaner
+$45
+
+Every stall on the row chips in for the man who sweeps the lane at midnight. You already said you were in.
+
+Pay for this
+A painted sign for the truck
+$35
+
+Salt and Smoke, in proper letters, instead of the chalkboard leaning against the wheel.
+
+Pay for this
+
+WHAT MADE THE ONE YOU LEFT OUT MATTER LESS?
+
+It was the one I only wanted.
+Nobody else was counting on it.
+It can wait, even if it costs more.
+It was the cheapest one to drop.
+
+Say what the jar pays for
+
+Three things want the tips.
+
+MARISOL ON THE WINDOW
+
+Marisol will work the last Saturday with you for $70.
+
+Two people can hand over 80 plates in an evening instead of 45. She is turning down another shift to do it, so the moment you book her the money is spent.
+
+Book her for the last Saturday?
+
+Book Marisol
+Work it alone
+The next two Saturdays
+
+One order covers both nights, and the two nights are not the same size. Whatever you cook for Saturday 2 you cook again on Saturday 3.
+
+Saturday 2
+It rains until four and then it clears up properly. The market fills late and stays busy to closing, with a fifth more people out than an ordinary Saturday.
+Saturday 3
+A cold evening, and everybody stands around with their hands in their pockets. The band plays anyway, but a third of the usual crowd stays home.
+
+ON THE THREE LINES
+
+STOCK
+$1,200
+CUSHION
+$10
+YOUR CUT
+$0
+
+TRAYS TO COOK
+
+−
+3
++
+
+One tray is 10 plates and costs $60.
+
+$360 for both nights
+10 is all your stock line pays for.
+
+PLATES YOU ARE COOKING
+30
+SATURDAY 2 WILL BUY
+45
+SATURDAY 3 WILL BUY
+25
+LEFT ON THE STOCK LINE
+$840 · 14 trays
+
+45 plates is all one pair of hands can hand over in an evening, however many people are waiting.
+
+Say what the jar pays for
+Reading help
+
+
+########## 05-standing-order ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+
+SATURDAYS 2 AND 3
+
+Saturday 1
+38 sold
+Saturday 2
+—
+Saturday 3
+—
+Saturday 4
+—
+NO SEAT YET
+
+SATURDAY 1 IS DONE
+
+THE FIRST NIGHT IS IN.
+
+SATURDAY 1
+
+COOKED
+50
+SOLD
+38
+IN THE BIN
+12
+TAKINGS
+$456
+
+You cooked more than the crowd bought. $72 of food went in the bin.
+
+You did not sell out, so there is no rebate. Your plan never counted on it.
+
+THE TIPS JAR
+
+Three things want the tips.
+
+You emptied the jar on the way home from the first Saturday: $100, and it is yours. Three things want it and it does not stretch to all three.
+
+This money is not the truck's. It cannot go on the three lines and it cannot be banked, so a dollar you do not spend here is a dollar spent on nothing.
+
+IN THE JAR
+$100
+SPENT
+$75
+LEFT OVER
+$25
+A seal for the cool box
+$75
+
+The rubber round the lid has perished. The box still holds cold for a night. It holds less every week.
+
+Paying for it
+Your share of the night cleaner
+$45
+
+Every stall on the row chips in for the man who sweeps the lane at midnight. You already said you were in.
+
+Pay for this
+A painted sign for the truck
+$35
+
+Salt and Smoke, in proper letters, instead of the chalkboard leaning against the wheel.
+
+Pay for this
+
+WHAT MADE THE ONE YOU LEFT OUT MATTER LESS?
+
+It was the one I only wanted.
+Nobody else was counting on it.
+It can wait, even if it costs more.
+It was the cheapest one to drop.
+
+That is the jar spent, and you said why.
+
+MARISOL ON THE WINDOW
+
+Marisol will work the last Saturday with you for $70.
+
+Two people can hand over 80 plates in an evening instead of 45. She is turning down another shift to do it, so the moment you book her the money is spent.
+
+Book her for the last Saturday?
+
+Book Marisol
+Work it alone
+
+You work the window on your own.
+
+The next two Saturdays
+
+One order covers both nights, and the two nights are not the same size. Whatever you cook for Saturday 2 you cook again on Saturday 3.
+
+Saturday 2
+It rains until four and then it clears up properly. The market fills late and stays busy to closing, with a fifth more people out than an ordinary Saturday.
+Saturday 3
+A cold evening, and everybody stands around with their hands in their pockets. The band plays anyway, but a third of the usual crowd stays home.
+
+ON THE THREE LINES
+
+STOCK
+$1,200
+CUSHION
+$10
+YOUR CUT
+$0
+
+TRAYS TO COOK
+
+−
+10
++
+
+One tray is 10 plates and costs $60.
+
+$1,200 for both nights
+10 is all your stock line pays for.
+
+PLATES YOU ARE COOKING
+100
+SATURDAY 2 WILL BUY
+45
+SATURDAY 3 WILL BUY
+25
+LEFT ON THE STOCK LINE
+$0 · 0 trays
+
+45 plates is all one pair of hands can hand over in an evening, however many people are waiting.
+
+Cook both nights
+Reading help
+
+
+########## 06-generator-dies ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+
+AFTER SATURDAY 3
+
+Saturday 1
+38 sold
+Saturday 2
+45 sold
+Saturday 3
+25 sold
+Saturday 4
+—
+NO SEAT YET
+
+SATURDAY 3, CLOSING
+
+THE GENERATOR IS DEAD.
+SATURDAY 3, 11PM
+
+Ramos Rentals
+
+The generator packed up while you were closing the truck. Ramos came and looked at it and told you straight out that it is not worth fixing.
+
+THE BILL
+
+The swap
+
+A replacement generator for the last Saturday costs $420. Ramos will put the $150 deposit against it, and you have to find the difference.
+
+SATURDAY 4
+
+Fireworks
+
+No generator means no cooking, and no cooking means no last Saturday. The last Saturday is the one everybody comes to.
+
+The last two Saturdays
+
+SATURDAY 2
+
+COOKED
+100
+SOLD
+45
+IN THE BIN
+55
+TAKINGS
+$540
+
+You cooked more than the crowd bought. $330 of food went in the bin.
+
+SATURDAY 3
+
+COOKED
+100
+SOLD
+25
+IN THE BIN
+75
+TAKINGS
+$300
+
+You cooked more than the crowd bought. $450 of food went in the bin.
+
+Sunrise Yoga never confirmed. Your plan never counted on it.
+
+WHAT YOU STILL OWE ON THE SWAP
+
+The replacement generator, once Ramos puts your deposit against it.
+
+Both amounts are in the message above.
+
+TOTAL
+$
+Check
+
+ON THE THREE LINES
+
+STOCK
+$0
+CUSHION
+$10
+YOUR CUT
+$0
+
+Stock money you have not spent yet, the cushion, and your own cut can all still be moved around.
+
+Find the money
+Reading help
+
+
+########## 07-repair-board ##########
+Sample run — nothing here reaches a teacher
+
+These are the screens your students see. Nothing is saved, nothing is sent, and no class is made. Turning in at the end goes nowhere.
+
+Back to the educator guide
+B
+BOW
+DECISION CHALLENGES
+
+AFTER SATURDAY 3
+
+Saturday 1
+38 sold
+Saturday 2
+45 sold
+Saturday 3
+25 sold
+Saturday 4
+—
+NO SEAT YET
+
+THE SWAP
+
+WHERE DOES THE MONEY COME FROM?
+THE SHOP WANTS
+$270
+FREED SO FAR
+$0
+STILL TO FIND
+$270
+
+The permit, the booth, the food you already cooked and Marisol's shift are paid for. None of that money is coming back.
+
+Stock
+0 trays of food to cook and sell.
+$0
+−
++
+Cushion
+Cash in the box, and not spent yet.
+$10
+−
++
+Your cut
+Yours at the end of the run, if nothing eats it.
+$0
+−
++
+City permit
+ALREADY SPENT
+$150
+Middle Row
+ALREADY SPENT
+$240
+Ramos Foods
+ALREADY SPENT
+$1,500
+
+$270 still to find
+
+Check this plan
+Reading help

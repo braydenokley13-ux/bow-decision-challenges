@@ -7,6 +7,7 @@ import {
   ALL_MAPPINGS,
   competenciesFor,
   completionRuleFor,
+  FRAMEWORKS,
   frameworkById,
   labelsFor,
   mappingsForStandard,
@@ -68,6 +69,29 @@ describe("mapping integrity", () => {
     }
   });
 
+  /**
+   * `code` is only unique inside one grade band today, and NYSED's own document is proof it
+   * will not stay that way: the same PDF publishes a 1.1 in K–4, a different 1.1 in 5–8, and
+   * a third in 9–12, all under the one `frameworkId` this layer would give any of them. Only
+   * 5–8 is carried today, so every `standardByRef` and `mappingsForStandard` lookup in the
+   * product gets away with matching on a bare code — and would keep compiling, and keep
+   * returning an answer, the day a second band's objectives were appended to
+   * `NYSED_2026_STANDARDS` with the same codes as the first. The wrong answer is the
+   * dangerous part: two different objectives' mappings would merge under one code, silently,
+   * in every roll-up that reads it.
+   *
+   * This is the invariant that stands between that and the build going red instead. Adding a
+   * second grade band therefore forces a real decision — disjoint codes, or a second
+   * `frameworkId` — rather than an accident nothing catches.
+   */
+  it("never lets two standards in one framework share a code", () => {
+    for (const framework of Object.values(FRAMEWORKS)) {
+      const codes = standardsIn(framework.id).map((standard) => standard.code);
+      const duplicates = codes.filter((code, index) => codes.indexOf(code) !== index);
+      expect(duplicates, `${framework.id} reuses code(s): ${duplicates.join(", ")}`).toEqual([]);
+    }
+  });
+
   it("gives every mapping a coverage level, a rationale and a verification date", () => {
     for (const mapping of ALL_MAPPINGS) {
       const where = `${mapping.competencyId} → ${mapping.standardCode}`;
@@ -88,16 +112,59 @@ describe("mapping integrity", () => {
     }
   });
 
-  it("gives every objective with no full mapping a completion rule", () => {
-    // Without the rule, a bundled objective can never be reported demonstrated and nothing
-    // on screen explains why. That reads as a bug, not as honesty.
+  /**
+   * An all-partial objective is honest for two entirely different reasons, and this suite
+   * has to tell them apart or it cannot check either one.
+   *
+   * A **bundled** objective — NYSED wrote several skills under one number — can genuinely
+   * be demonstrated once every part is, and a completion rule says so. An objective BOW's
+   * competency model simply does not reach in full — no combination of BOW's competencies
+   * adds up to the whole of it — can never honestly get a completion rule, because a rule
+   * declares that some set of partials *is* jointly sufficient, and inventing one here would
+   * claim a "yes" the model cannot back with a "no" dressed as machinery.
+   */
+  const CAPPED_WITHOUT_A_COMPLETION_RULE = new Set([
+    // 1.1 names four categories — needs, wants, values **and goals** — and two kinds of
+    // decision, "spending **and savings** decisions". `sort-by-need-want-goal` reaches the
+    // first three inside a spending decision; nothing in the model reaches a savings goal
+    // under competition, and `save-toward-a-goal` is declared but produced by no world. A
+    // completion rule here would declare that some set of partials is jointly sufficient,
+    // which is exactly the claim that is false: this objective was mapped `full` until a
+    // verifier read NYSED's own sentence.
+    "1.1",
+    // NYSED 1.6 asks for a comparison across four payment methods; `choose-how-to-pay`
+    // reaches one, and no other competency covers the other three.
+    "1.6",
+    // 2.3 and 2.4 ask the student to explain and describe; `keep-credit-costs-down` runs
+    // the underlying decisions forward and has `explanationRequired: false`. No other
+    // competency supplies the missing explanation for either.
+    "2.3",
+    "2.4",
+    // 4.4's second clause asks the student to recommend an action; `protect-your-information`
+    // has `explanationRequired: false` and no other competency covers a recommendation.
+    "4.4",
+  ]);
+
+  it("gives every objective with no full mapping either a completion rule or a named reason none exists", () => {
+    // Without one or the other, a bundled objective can never be reported demonstrated and
+    // nothing on screen explains why — which reads as a bug, not as honesty. The named-reason
+    // set is pinned rather than open-ended so a new all-partial objective still fails this
+    // test until a person makes the same judgement call for it, in this file, on purpose.
     const ruled = new Set(NYSED_2026_COMPLETION_RULES.map((rule) => rule.standardCode));
     for (const standard of NYSED_2026_STANDARDS) {
       const mappings = NYSED_2026_MAPPINGS.filter((mapping) => mapping.standardCode === standard.code);
       const hasFull = mappings.some((mapping) => mapping.coverage === "full");
       if (!hasFull) {
-        expect(ruled.has(standard.code), `NYSED ${standard.code} is all-partial with no completion rule`).toBe(true);
+        const accountedFor = ruled.has(standard.code) || CAPPED_WITHOUT_A_COMPLETION_RULE.has(standard.code);
+        expect(accountedFor, `NYSED ${standard.code} is all-partial with no completion rule and no named reason`).toBe(true);
       }
+    }
+    // And the reverse: every named exception is actually all-partial today. A standard that
+    // regains a full mapping and stays on this list would be claiming a cap that no longer
+    // exists.
+    for (const code of CAPPED_WITHOUT_A_COMPLETION_RULE) {
+      const hasFull = NYSED_2026_MAPPINGS.some((mapping) => mapping.standardCode === code && mapping.coverage === "full");
+      expect(hasFull, `NYSED ${code} has a full mapping and no longer belongs on the capped list`).toBe(false);
     }
   });
 
@@ -142,12 +209,15 @@ describe("mapping integrity", () => {
   });
 
   it("lets one competency fully cover two objectives, and says which", () => {
-    // A teacher who assigns 2.4 gets evidence for 2.3 as well. That is a gift, and it has
+    // A teacher who assigns 5.5 gets evidence for 5.2 as well. That is a gift, and it has
     // to be labelled on screen or it looks like a mistake.
     const fullyCovers = (id: CompetencyId) =>
       standardsFor(id).filter((covered) => covered.coverage === "full").map((covered) => covered.standard.code);
-    expect(fullyCovers("keep-credit-costs-down")).toEqual(["2.3", "2.4"]);
     expect(fullyCovers("how-savings-grow")).toEqual(["5.2", "5.5"]);
+    // `keep-credit-costs-down` covers both 2.3 and 2.4, but only `partial` on each — it runs
+    // the strategies forward without the explanation either objective's verb asks for, so
+    // it is evidence toward both rather than a full account of either.
+    expect(fullyCovers("keep-credit-costs-down")).toEqual([]);
   });
 
   it("resolves an objective to the competencies BOW actually measures, full first", () => {

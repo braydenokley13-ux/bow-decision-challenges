@@ -1,6 +1,6 @@
 # BOW Decision Challenges
 
-**Plan Under Pressure** — an applied financial-literacy challenge for Grades 6–8.
+**Plan Under Pressure** — an applied financial-literacy challenge for Grades 5–8.
 
 Students step into an eight-week basketball season as the person handling the money. They
 build a plan that works, play four weeks as it drains, commit to something before knowing
@@ -33,7 +33,35 @@ npm run dev    # the app, on :4173 — proxies /api
 Then either create a class at `/educator/classes/new` and join it with the code, or run with
 `VITE_EVIDENCE_TRANSPORT=localOnly` to work on the student flow with nothing sent anywhere.
 
-No student accounts, no email addresses, no names. A class is a code; a seat is a number.
+## What BOW holds
+
+Every clause here is a claim a district will check, so every clause is held to the code that
+makes it true by `src/docsDataClaims.test.ts`.
+
+- **A teacher's account is an email address and a password.** There is no name field on it,
+  and the address is the sign-in identifier and nothing else.
+- **A student is asked for no email address, no password and no birthday.** They type the
+  class code from the board and the code on the card their teacher printed.
+- **BOW does hold student names.** They arrive by two doors and both are real: a teacher
+  pastes a class list, or a class with no list has the child type a first name at `/join`,
+  which is stored `selfNamed`. BOW checks neither against anything and has no way to know
+  whether either is a real name.
+- **A student's own written explanation is held too**, inside their evidence log, and free
+  text written by a twelve-year-old can contain anything. **None of it is ever sent to a
+  model.** There is no model client in this repository and no third-party call from the app;
+  the deployed policy in `vercel.json` is `connect-src 'self'`.
+- **Who can open any of it.** The class list and the evidence take the teacher key or the
+  account that owns the class (`opensClass` in `server/identity.ts`). The unauthenticated
+  door answers a class code with the class label and the join mode, and nothing about who is
+  in the class. A signed-in student reads back their own row.
+- **Where it sits.** Sealed per record with AES-256-GCM under `BOW_STORE_KEY`, which is also
+  what the session-signing secret is derived from. A durable store that has not been given
+  one refuses to open a class.
+- **How long.** `CLASS_RETENTION_DAYS` days from the day the class is made, then an hourly
+  sweep deletes the class and everything in it. One child can be erased sooner — the name,
+  the work, the checkpoints and their teacher's notes — from the class list.
+
+A class is a code and a seat is a number. The seat usually has a name on it.
 
 ## Check it
 
@@ -62,7 +90,20 @@ flow and screenshots every stage at 1366×768, 1024×600 and 640px wide, reporti
 horizontal overflow or console error it finds. It runs through the same helpers as the
 assertion suite, so the two cannot describe different products.
 
-On a machine whose Chromium was not installed by Playwright, set `CHROMIUM_PATH`.
+On a machine whose Chromium was not installed by this exact Playwright, set `CHROMIUM_PATH`, and
+check that you did before believing any result. Playwright pins a browser build to the library
+version — 1.62.1 asks for chromium 1234 — and refuses to launch a different one it finds, so an
+image carrying, say, build 1194 fails every test in about three milliseconds with
+`browserType.launch: Executable doesn't exist`. Nothing launched and nothing was asserted; a
+report of the suite that does not say which browser it started is not a report of the suite.
+
+```
+ls /opt/pw-browsers                                    # what this image actually has
+CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npx playwright test
+```
+
+`playwright install` does not close the gap on a sandboxed image; it downloads nothing and
+leaves the same error behind a longer wait.
 
 ## How long it takes
 
@@ -95,10 +136,35 @@ a source scan, because that drift is invisible to a behavioural test until someo
 
 ## How the assessment works
 
-90 structured points across 18 micro-skill observations, plus 10 points of written reasoning
-scored by a person. **No AI scoring, and no student writing is ever sent to a model** — the
-student is told a person will read it, and that is true. Support levels cap credit, and every
-point traces to a recorded event.
+**There is no score.** Not a percentage, not a band, not a letter, not a total — on any student
+surface, on any teacher surface, or in the export. An assessment judge went looking for one on
+the student page, the reading queue, the debrief, the share-out and the clipboard the *Copy for
+a gradebook* button actually writes, and reported that finding it would have been a `NO-GO`.
+
+This section used to open *"90 structured points across 18 micro-skill observations, plus 10
+points of written reasoning"*. That instrument is not what ships. A composite total is still
+computed in `domain/evidence/grade.ts` and **nothing renders it**; the sentence survived here
+because this file's own truth test (`src/docsDataClaims.test.ts`) checks what BOW says about a
+child's *data* and had never been pointed at what it says about their *assessment*. It is now.
+
+What ships instead: **21 competencies**, each declaring evidence requirements, every requirement
+read under one shared rubric of **5 / 4 / 3 / 2 / 0 — there is no level 1**, because two
+neighbouring levels a teacher cannot tell apart are not a rubric. Every judgement is anchored to
+the event that settled it and carries the observer's own sentence about why, so a teacher who
+disagrees can see what BOW saw and overrule it with a reason that is kept beside it.
+
+**A requirement nobody reached is absent, never a zero**, and the same is true of help: a
+student who pressed *Show the answer and keep going* has produced no evidence about that
+requirement, and the run records nothing rather than a failure. **Missing evidence settles
+nothing in either direction** — a competency with an unobserved requirement is *incomplete*
+whether the observed ones went well or badly, so the class denominator cannot be composed of
+the students the product learned least about.
+
+**No AI scoring, and no student writing is ever sent to a model** — the student is told a person
+will read it, and that is true. The written explanation is scored by a teacher on four criteria
+and by nothing else; there is no path in this product by which a machine scores a child's
+writing. The export carries *did it · part of it or none · never came up · asked*, with the
+denominator stated per student, because *never came up* is an absence and is not in it.
 
 The challenge is preference-neutral. Choosing a cheaper place, saving more, taking the extra
 work or declining it are never worth points on their own; only whether the resulting plan
@@ -113,10 +179,17 @@ real contrasting plans, prompts earned by something this class disagreed about, 
 own words — which prints.
 
 Once a real class is open, **nothing falls back to demo data**. Missing evidence renders as
-missing. `src/educator/noFixture.test.ts` enforces that structurally and behaviourally.
+missing. `src/educator/noFixture.test.tsx` enforces that behaviourally: no well-formed class
+code can ever reach the fixture, only the four-character `DEMO_CLASS_CODE` can — and that
+marker cannot be a real class's code, because every code the service allocates is five
+characters (`src/platform/classes/codes.ts`).
 
-The fixture class still exists at `/educator/demo`, clearly labelled, so an educator can see
-the shape of the evidence before running one.
+The sample class still exists at `/educator/demo`, and it is the same real class page a real
+class opens — `RealClassOverview`, `RealStudentEvidence`, the reading queue, the debrief —
+fed real submitted evidence built the way the product's own tests build it
+(`src/fixtures/demoClass.ts`), clearly labelled on every screen it appears on, so an educator
+can see the shape of the evidence before running one without learning a workflow that does
+not exist.
 
 ## Main areas
 
@@ -134,14 +207,32 @@ the shape of the evidence before running one.
 Evidence is mapped to the NYSED Grades 5–8 Personal Finance Education Learning Objectives.
 BOW publishes the mapping as its own claim: **NYSED has not reviewed or endorsed BOW.**
 
+## Checking that a commit builds
+
+`scripts/verify-head.sh` exports a commit to a clean directory and runs the real build
+against it. Use it before pushing anything, and always after a commit that **deletes** a file.
+
+```
+scripts/verify-head.sh          # HEAD
+scripts/verify-head.sh <ref>    # any commit
+```
+
+It exists because `tsc -b`, `eslint` and `vitest` all run against the working tree, which is
+not what gets pushed. A tree that holds both a deleted module and the edit removing its import
+type-checks and tests green while the commit — which took the deletion and left the import —
+will not load a single page. Adding a file and forgetting to stage it fails loudly for the next
+person; deleting one does not fail for anybody until they check out.
+
 ## Deployment
 
 A Vite SPA plus a small class service. `vercel.json` keeps `/api/*` off the SPA rewrite and
 routes it to `api/[[...route]].ts`.
 
-Before running a real class on serverless, set `KV_REST_API_URL` and `KV_REST_API_TOKEN`
-(Vercel KV or Upstash). Without them there is nowhere durable to write, and the service
-**refuses to open a class rather than accept one it is going to lose** — a serverless
+Before running a real class on serverless, set `KV_REST_API_URL`, `KV_REST_API_TOKEN`
+(Vercel KV or Upstash) **and `BOW_STORE_KEY`**. Without a durable store there is nowhere to
+write, and without a key the store holds children's names and the secret that signs every
+session token in the clear — so the service
+**refuses to open a class rather than accept one it is going to lose or leak** — a serverless
 deployment writing to a container disk answers every request successfully and then loses the
 class the first time the platform hands it a different container, which happens mid-lesson to
 work students have already turned in.
@@ -149,15 +240,106 @@ work students have already turned in.
 `GET /api/health` is the one thing to read after a deploy:
 
 ```json
-{ "ok": true, "store": "redis", "durable": true, "classroomReady": true, "reason": "…" }
+{ "ok": true, "store": "redis", "durable": true, "classroomReady": true, "storeKey": "ok", "reason": "…" }
 ```
+
+`storeKey` is `ok`, `fresh` (nothing written yet) or `mismatch`. It answers a
+question a deployment cannot otherwise be asked: does this key still open what this store
+already wrote? A rotated or mistyped `BOW_STORE_KEY` is indistinguishable from
+an empty store — every record fails to authenticate and every read answers "no such class" —
+so the store keeps one sealed record of its own and reports `mismatch` with a `503` rather than
+letting a health check go green over a term of classes nobody can open. Nothing is deleted when
+that happens. Put the original key back, or convert the store — see below. It fails **closed**: deleting the store's own sealed
+record does not turn a mismatch back into a clean bill of health, because a restore that skips
+dotfiles would otherwise disarm the check.
+
+**Changing the key: `npm run rekey`.** With the service stopped:
+
+```
+BOW_OLD_STORE_KEY="$OLD" BOW_NEW_STORE_KEY="$NEW" \
+  node dist-server/rekey.js --from .bow-classes --to .bow-classes.new
+```
+
+It takes both keys explicitly and never on the command line — the two environment variables
+above, or `--old-key-file` / `--new-key-file <path>`, where `-` reads standard input. A key on
+argv is readable by every process on the host (`ps`, `/proc/<pid>/cmdline`) while the
+environment is not, and either of these keys decrypts the whole store and derives the
+session-signing secret. It never mutates the source, reads back and verifies **every** record
+under the new key rather than a sample, refuses to finish if one fails, refuses a destination
+already holding records the source cannot account for (`--force` if you mean it), plants the
+canary last so a half-finished directory cannot look complete, and is resumable — a crash
+mid-run leaves a directory that is behind, never one that neither key opens. Point the service
+at the new directory and the new key when it finishes; if anything looks wrong, point it back
+at the old one. `--from-plaintext` converts a directory written before sealing existed, and
+`--help` prints all of it.
+
+This exists because "what do you do if that key is compromised?" had one honest answer before
+it, and the answer was that a term of children's work would be deleted.
+
+**There is no way to read an unsealed record.** A keyed store refuses one, because an attacker
+who can write a single file in the data directory would otherwise replace a teacher's sealed
+record with a plaintext one of their choosing and sign in. A flag to allow it existed for one
+commit and was removed on the advice of the reviewer who had asked for it: open, it is not a
+read affordance but a full authorization bypass. Converting a directory written before sealing
+existed is a job for an offline command that reads with one key and writes with another — the
+same command key rotation needs — rather than for a running service willing to be asked.
 
 `classroomReady` is false unless a class written now would still be there on Friday. A
 deployment with nowhere durable to write answers `503` with the environment variables to set.
 A throwaway demo can opt out with `BOW_ALLOW_EPHEMERAL_STORE=1`, and still reports
 `durable: false` so nothing can call it classroom-ready.
 
-Self-hosting instead: `npm run api` runs the same service on Node with a file store.
+Self-hosting instead: `npm run api` runs the same service on Node with a file store. Two
+things are required rather than recommended, and the service will not run a class without the
+first of them.
 
-Classes and their evidence are kept for 120 days, then deleted. A student's in-progress
-attempt stays in their own browser.
+**`BOW_STORE_KEY` — 32 random bytes, base64 or hex.** `openssl rand -base64 32`. Every record
+the durable store writes is sealed with it (AES-256-GCM), and the secret that signs every
+session token is derived from it rather than written anywhere. Without it the service refuses
+to open a class and says so, because the records this store holds are children's names, their
+written explanations and every teacher key — and a security review found all of it in plain
+JSON beside the token-signing secret, which made one disk image the whole deployment. Keep the
+key where your other secrets live, keep a copy, and do not put it in the data directory.
+Losing it loses every class; changing it makes every existing class unreadable.
+
+For local work there is `npm run api:dev`, which runs the same service on the memory store: no
+key, nothing on disk, and nothing kept past the process. It is what the browser suite uses. It
+is not a class — `GET /api/health` reports `classroomReady: false` and says why.
+
+**TLS in front of it.** `npm run api` is plain HTTP and now binds loopback by default. Set
+`BOW_BIND_HOST` to open it wider, and put a TLS terminator in front before any class uses it —
+otherwise children's names and their written work cross the school network in the clear.
+
+**`BOW_STORE_KEY` is required on the managed path too**, and for the same records — the only
+difference is whose hardware they sit on, and a subprocessor is one more party who can read
+them. It was optional for one release, on the reasoning that at-rest encryption in a KV is the
+subprocessor's control and belongs in a data processing agreement. A second security review
+showed that was the wrong frame: a keyless managed deployment also kept the HMAC that signs
+every session token in the same store as the names it protects, so one read of that key was the
+power to mint a valid session for any teacher or any child. Set it, and the subprocessor holds
+ciphertext as well — which is a materially different conversation to have with a privacy
+officer.
+
+**`BOW_TRUST_PROXY` — how many proxies are in front of this process.** Unset by default, which
+means the socket address is the truth. `X-Forwarded-For` is a list a caller can start and each
+proxy appends to, so the *rightmost* entries are the trustworthy ones; set this to the number of
+hops you actually run and the rate limiter counts the address that many places in from the
+right. Trusting the leftmost entry — which the product did — lets any caller rotate a header and
+walk straight through every per-address limit in the service.
+
+### What is kept, and what deletes it
+
+Classes and their evidence are kept for 120 days, then deleted. That is now executed rather
+than asserted: a sweep runs hourly on a long-running server, and opportunistically at most once
+an hour on a serverless one, and `GET /api/health` reports when it last ran and how many
+classes it removed. It used to be a sentence with no code behind it — expired classes were
+hidden from reads and kept on disk indefinitely.
+
+A district can also erase one child without touching the rest of the class:
+`DELETE /api/classes/:code/roster/:seat?erase=1`, or the **Erase** control on the class list.
+That takes the name, every submission, every checkpoint and every note their teacher wrote back.
+Taking a student *off the list* is the different, reversible thing: they stop being able to sign
+in and their work stays in the evidence.
+
+A student's in-progress attempt stays in their own browser, and is also checkpointed to their
+class so they can carry on from a different device.

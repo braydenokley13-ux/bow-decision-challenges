@@ -1,0 +1,39 @@
+[
+  {
+    "screen": "10-setup",
+    "size": "desk",
+    "wordsOnScreen": 68,
+    "termsOffered": 4,
+    "terms": [
+      "sublet",
+      "share",
+      "spare",
+      "rent"
+    ],
+    "otherTermsBehindDisclosure": 39,
+    "tokensTheGlossaryReaches": 4,
+    "shareOfScreenTheGlossaryReaches": "5.9%",
+    "panelCoversViewport": "22%",
+    "canSeeScreenBehind": true
+  },
+  {
+    "screen": "11-question",
+    "size": "desk",
+    "wordsOnScreen": 110,
+    "termsOffered": 7,
+    "terms": [
+      "count on",
+      "bonus",
+      "sublet",
+      "left to plan with",
+      "owe",
+      "savings",
+      "base pay"
+    ],
+    "otherTermsBehindDisclosure": 36,
+    "tokensTheGlossaryReaches": 10,
+    "shareOfScreenTheGlossaryReaches": "9.1%",
+    "panelCoversViewport": "24%",
+    "canSeeScreenBehind": true
+  }
+]

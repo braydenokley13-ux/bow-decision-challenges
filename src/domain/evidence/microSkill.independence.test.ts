@@ -114,6 +114,9 @@ describe("materially overlapping micro-skills remain independently observable", 
   it("does not credit C5.6 when the plan board built the response for the student", () => {
     const facts = baseFacts();
     facts.firstResponse = alternate({ amountFreed: dollars(1150), absorbTarget: dollars(1150), support: "answer_supplied" });
-    expect(points(facts, "C5.6")).toBe(0);
+    // `null`, not `0`, and the name of this test is still the whole of what it checks: no
+    // credit. A supplied answer says nothing about the student either way, so it is recorded
+    // as nothing rather than as a failure they can be reported for and counted under.
+    expect(points(facts, "C5.6")).toBeNull();
   });
 });

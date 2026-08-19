@@ -1,0 +1,10 @@
+ Test Files  4 passed (4)
+      Tests  50 passed (50)
+
+# Structural guarantees enforced by src/student/reading/nothingRecorded.test.ts:
+#  - reading dir imports only react / siblings / design/reading.css / domain readability
+#  - NO fetch, XMLHttpRequest, sendBeacon, WebSocket, EventSource anywhere in the dir
+#  - names no dispatch/evidence/submission/checkpoint/supportLevel/observe in code
+#  - writes exactly ONE localStorage key: bow.reading.v1 (device-local preference)
+# Voice is window.speechSynthesis (browser-local); glossary.ts is a static dictionary.
+# => nothing leaves the device; read-aloud usage never enters the evidence log or reaches a teacher.

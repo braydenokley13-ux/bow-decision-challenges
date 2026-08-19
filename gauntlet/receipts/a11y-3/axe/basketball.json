@@ -1,0 +1,130 @@
+{
+  "screen": "01-join-code",
+  "url": "http://127.0.0.1:5410/join",
+  "violations": []
+}
+{
+  "screen": "02-join-card",
+  "url": "http://127.0.0.1:5410/join",
+  "violations": []
+}
+{
+  "screen": "03-student-home",
+  "url": "http://127.0.0.1:5410/home",
+  "violations": []
+}
+{
+  "screen": "04-world-picker",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "05-setup-ranking",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "06-setup-checked",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "07-setup-total",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "08-setup-total-checked",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "09-plan-q1",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "10-plan-q2",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "11-plan-q3",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "12-plan-board",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "13-plan-board-filled",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "14-after-save",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "15-week3-claims",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "16-week3-answered",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "17-deposit",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "18-week5-event",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "19-week5-sum",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "20-triage",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "21-clinics",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "22-final-board",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "23-week8",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "24-defense",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "25-defense-filled",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}
+{
+  "screen": "26-submitted",
+  "url": "http://127.0.0.1:5410/challenges/plan-under-pressure?class=GYP6Y",
+  "violations": []
+}

@@ -25,3 +25,543 @@
   /* The one warm mark in the world. Jersey number, live week, nothing else. */
   --world-flare: #e8b33d;
 }
+
+/* ---------------------------------------------------------------------------
+   Run the Pop-Up: the Riverside Night Market.
+
+   Same bones as the arena — cream ground, near-black ink, one accent — and a
+   different temperature. The arena is lit from above by white light on a blue
+   floor; a night market is lit from a wire strung over a lane, so its darks are
+   warm brown rather than navy and its one bright mark is a paper-lantern amber.
+   Nothing here re-colours money: BOW blue still means money that arrives and
+   amber-with-a-stripe still means money with a rule on it, because a student
+   who learned that in one world must not have to relearn it in the next.
+   --------------------------------------------------------------------------- */
+[data-world="food-truck"] {
+  /* Burnt orange, checked at 5.6:1 on the cream canvas — the market's own ink for
+     eyebrows, rules and marks on light surfaces. */
+  --world-accent: #9a3d10;
+  --world-accent-soft: #f7e7d2;
+  --world-accent-ink: #6d2a09;
+
+  /* The lane at night: warm dark, layered, never flat black. */
+  --world-hero-bg: #241713;
+  --world-deep: #140d0b;
+  --world-panel: #33201a;
+  --world-panel-edge: #4d332a;
+  --world-hero-line: #4d332a;
+  --world-hero-edge: #6d4a3a;
+  --world-hero-ink: #fbf3e4;
+  --world-hero-body: #e4d5c4;
+  --world-hero-muted: #bda795;
+  --world-hero-second: #f0b352;
+
+  /* Canopies, poles and the string of lights, drawn behind the dark scenes. */
+  --world-canopy: #6d4a3a;
+
+  /* The one bright mark: a bulb on the wire. */
+  --world-flare: #f0b352;
+
+  /* Plates on the counter, and plates nobody bought. */
+  --plate-sold: #9a3d10;
+  --plate-binned: #cbbca4;
+}
+
+/* The market's four chapters, each on its own air. The grounds move a few percent —
+   enough that a student feels the lane change, not enough to put any text on a surface
+   its contrast was not checked against. */
+.popup-shell[data-chapter="plan"] { --chapter-ground: #f2e9d8; --chapter-accent: var(--world-accent); }
+.popup-shell[data-chapter="market"] { --chapter-ground: #f0e6d1; --chapter-accent: var(--world-accent); }
+.popup-shell[data-chapter="breakdown"] { --chapter-ground: #ece0cb; --chapter-accent: var(--fin-over); }
+.popup-shell[data-chapter="settle"] { --chapter-ground: #f4ecdd; --chapter-accent: var(--world-accent-ink); }
+
+.market-backdrop { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; color: var(--world-canopy); opacity: 0.5; pointer-events: none; }
+
+/* `scenes.css` puts every child of a scene in flow except the court, which is the one
+   backdrop that existed when it was written. The market's backdrop is the same kind of
+   thing and has to be taken out of flow the same way, or an establishing shot is twelve
+   hundred pixels of empty lane with the headline pushed off the bottom of it. */
+.scene > svg.market-backdrop { position: absolute; z-index: 0; }
+
+/* The lights go out when the generator does. Same drawing, no glow, and the one
+   difference a student can feel between the market working and the market stopped. */
+.popup-shell[data-chapter="breakdown"] .market-backdrop { opacity: 0.28; color: var(--world-hero-line); }
+
+/* ---------------------------------------------------------------------------
+   A primitive, fixed here rather than in `app.css`.
+
+   A primary action that is waiting on an input used to be pale blue with blue
+   text and a blue border — the exact recipe for a secondary button that works.
+   Students clicked it and nothing happened. It now carries a dashed edge and
+   muted ink, so "not yet" is legible without colour and without reading as
+   hardware that has broken.
+   --------------------------------------------------------------------------- */
+.button.button--primary[aria-disabled="true"],
+.button.button--primary[aria-disabled="true"]:hover {
+  color: var(--ink-3);
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
+  border-style: dashed;
+  box-shadow: none;
+}
+
+/* ---------------------------------------------------------------------------
+   The join screen at narrow widths (§13.2).
+
+   The card a student has to fill in leads the source order now, and the story
+   sits beside it on a laptop and under it on a phone. Both rules are written
+   here rather than in `scenes.css` so the grid can be re-ordered without
+   touching the screen that owns the rest of the layout.
+   --------------------------------------------------------------------------- */
+@media (min-width: 761px) {
+  .opening .opening__story { grid-column: 1; grid-row: 1; }
+  .opening .opening__side { grid-column: 2; grid-row: 1; }
+}
+
+/* A Chromebook is 1024 by 600. There the story column fits and the join card does not,
+   because it sits under a roster card and a goal strip — so on a short screen the card the
+   student has to fill in comes first inside its own column too. It holds the only focusable
+   controls on the screen, so reading order and focus order move together. */
+@media (max-height: 760px) {
+  .opening .opening__job { order: -1; }
+}
+
+.opening .no-code { margin: var(--s-4) 0 0; color: var(--ink-2); font: var(--t-sm); }
+
+/* ---------------------------------------------------------------------------
+   The world choice (§13.3). Equal cards, stable order, nothing that ranks them.
+   --------------------------------------------------------------------------- */
+.worldpick { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; background: var(--canvas); }
+.worldpick--waiting { place-items: center; padding: var(--s-8); color: var(--ink-3); }
+
+/* `flex-wrap` and a floor, for the same reason the two top bars needed them: the seat line
+   beside the mark is `nowrap`, and at 320 CSS px (400 % zoom of 1280) the pair has nowhere to
+   go. The audit measured 14px of residual overflow here. */
+.worldpick__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3) var(--s-5); min-width: 0; padding: var(--s-4) clamp(20px, 4vw, 56px); background: var(--surface-raised); border-bottom: 3px solid var(--bow-brand); }
+.worldpick__bar > * { min-width: 0; }
+.worldpick__bar > span { color: var(--ink-3); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; font-feature-settings: var(--num); }
+.worldpick__main { width: min(1100px, 100% - 2 * var(--gutter)); margin: 0 auto; padding: clamp(28px, 5vw, 64px) 0 var(--s-9); }
+.worldpick__say { max-width: 46ch; margin-bottom: var(--s-7); }
+.worldpick__say h1 { margin: 0 0 var(--s-4); font: var(--t-display1); letter-spacing: var(--display-tracking); text-transform: uppercase; }
+.worldpick__say p { margin: 0; font: var(--t-body-lg); }
+.worldpick__cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--s-5); margin: 0; padding: 0; list-style: none; }
+.worldpick__cards > li { display: grid; }
+
+.worldcard { display: flex; flex-direction: column; background: var(--surface-raised); border: 1px solid var(--border-default); box-shadow: var(--shadow-card); }
+.worldcard__scene { height: 170px; flex: none; display: flex; align-items: flex-end; padding: var(--s-5); }
+.worldcard__scene h2 { margin: 0; color: var(--world-hero-ink); font: var(--t-display3); letter-spacing: var(--display-tracking); text-transform: uppercase; }
+.worldcard__body { flex: 1; display: flex; flex-direction: column; gap: var(--s-4); padding: var(--s-5); }
+.worldcard__hook { margin: 0; color: var(--ink-1); font: var(--t-body-lg); }
+.worldcard__facts { display: grid; gap: var(--s-3); margin: 0; padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); }
+.worldcard__facts > div { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: var(--s-3); }
+.worldcard__facts dt { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.worldcard__facts dd { margin: 0; color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
+.worldcard .button { margin-top: auto; align-self: flex-start; }
+
+/* ---------------------------------------------------------------------------
+   The market shell: a topbar with the four Saturdays in it, and one column.
+   --------------------------------------------------------------------------- */
+.popup-shell { min-height: 100vh; background: var(--chapter-ground, var(--canvas)); transition: background var(--dur-stage) var(--ease-standard); }
+.popup-topbar { min-height: 68px; position: sticky; top: 0; z-index: 20; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-5); padding: var(--s-3) var(--gutter); background: var(--surface-raised); border-bottom: 3px solid var(--chapter-accent, var(--world-accent)); box-shadow: var(--shadow-rail); }
+
+/* The end of the bar: the way out of the run, and the offer to read the screen out loud. It is
+   a group rather than two grid children because the reading control is portalled in — the bar
+   nominates a box with `data-reading-anchor` and the component fills it, so this file does not
+   have to know how many controls end up here. */
+.popup-topbar__end { justify-self: end; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--s-3); min-width: 0; }
+.market-strip { display: flex; align-items: center; gap: var(--s-4); min-width: 0; }
+.market-strip__caption { flex: none; margin: 0; color: var(--ink-1); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
+.market-strip ol { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); flex: 1; min-width: 0; margin: 0; padding: 0; list-style: none; }
+.market-strip li { display: grid; justify-items: center; gap: 2px; padding-top: var(--s-2); color: var(--ink-4); font: var(--t-micro); font-feature-settings: var(--num); text-align: center; }
+
+/* The stall itself: a canopy over each Saturday, filled once the night is played. */
+.market-strip li i { width: 26px; height: 9px; display: block; background: var(--surface-inset); clip-path: polygon(0 100%, 15% 0, 85% 0, 100% 100%); }
+.market-strip li[data-state="played"] { color: var(--ink-2); }
+.market-strip li[data-state="played"] i { background: var(--world-accent); }
+.market-strip li[data-state="current"] { color: var(--ink-1); font-weight: 700; }
+.market-strip li[data-state="current"] i { height: 13px; background: var(--world-flare); box-shadow: 0 0 0 1px var(--world-accent); }
+.market-strip li b { font: var(--t-micro); font-weight: 700; }
+
+/* A column, not stacked margins: half the blocks on these screens are lists and tables that
+   zero their own margins, and a rhythm any child can silently opt out of is not one.
+
+   It was a grid until the action bar had to hold the bottom edge of the window. A sticky box
+   can only travel inside its containing block, and a grid item's containing block is its own
+   grid area — exactly its own height, so there was nowhere to travel to and the bar sat where
+   it had always sat. A flex column lays these blocks out identically and gives the last one
+   the whole column. */
+.popup-main { width: min(var(--w-board), calc(100% - 2 * var(--gutter))); margin: 0 auto; padding: var(--s-7) 0 var(--s-10); display: flex; flex-direction: column; gap: var(--s-6); }
+.popup-main > * { min-width: 0; }
+.popup-heading { position: relative; padding-bottom: var(--s-4); border-bottom: 2px solid var(--ink-1); }
+.popup-heading h1 { max-width: 22ch; margin: 0; font: var(--t-display1); letter-spacing: var(--display-tracking); text-transform: uppercase; }
+.popup-heading:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+
+/* A result under a headline is a second block, not a subtitle. The dark scenes are the
+   exception: there the news is inside the band and butts against the title on purpose. */
+.popup-heading:not(.popup-heading--dark) > *:not(:first-child) { margin-top: var(--s-4); }
+
+/* The two dark scenes: the lane before it opens, and the night it stops working. */
+.popup-heading--dark { padding: 0; color: var(--world-hero-ink); border: 1px solid var(--world-panel-edge); }
+.popup-heading--dark .popup-heading__say { min-height: 220px; display: flex; flex-direction: column; justify-content: flex-end; padding: clamp(28px, 4vw, 52px) clamp(24px, 4vw, 48px) clamp(20px, 3vw, 32px); }
+.popup-heading--dark .eyebrow { color: var(--world-hero-second); }
+.popup-heading--dark h1 { max-width: 16ch; color: var(--world-hero-ink); font: var(--t-scene); letter-spacing: var(--display-tracking-tight); }
+.popup-shell .eyebrow { color: var(--world-accent); }
+
+/* ---------------------------------------------------------------------------
+   Beat 1 — the pitch.
+   --------------------------------------------------------------------------- */
+.pitch-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; margin: 0; padding: 1px; background: var(--world-panel-edge); }
+.pitch-facts > div { padding: var(--s-4) clamp(16px, 3vw, 32px); background: var(--world-panel); }
+.pitch-facts dt { color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.12em; text-transform: uppercase; }
+.pitch-facts dd { margin: var(--s-2) 0 0; color: var(--world-hero-ink); font: var(--m-md); font-feature-settings: var(--num); }
+.pitch { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: clamp(20px, 4vw, 48px); align-items: start; }
+.pitch__role { max-width: 40ch; margin: var(--s-5) 0 0; padding-left: var(--s-5); border-left: 4px solid var(--world-accent); color: var(--ink-1); font: var(--t-title2); }
+.pitch__decisions { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.pitch__decisions li { display: grid; gap: 2px; padding: var(--s-4); background: var(--surface); border-left: 4px solid var(--world-accent-soft); }
+.pitch__decisions b { font: var(--t-title3); }
+.pitch__decisions span { color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
+
+/* Every screen's one forward action, with the sentence that earns it beside it. */
+.popup-action { display: flex; align-items: center; justify-content: space-between; gap: var(--s-6); padding: var(--s-5) var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-left: 4px solid var(--chapter-accent, var(--world-accent)); }
+
+/* And it stays in the window while there is page underneath it, on the same terms as the
+   arena's `.stage-action` in `app.css`. Measured at 1366x768, every screen of this world put
+   its own way on below the fold: *Take a booth to carry on* at `top: 1370` on a 1,503px page,
+   *Answer Marisol to carry on* at 1356, *Find the money* at 1422, *Open the doors* at 1167.
+   The offset is the reading panel's published height so the bar sits above it rather than
+   behind it.
+
+   Direct children of the board only. The screen's own forward action is a child of the board;
+   a `.popup-action` inside a card — the tips jar's — belongs to that card, has nowhere to
+   travel inside it, and pinning both would stack one bar on the other. */
+.popup-main > .popup-action, .popup-board > .popup-commit { position: sticky; bottom: var(--bow-reading-tools, 0); z-index: 5; }
+.popup-action p { max-width: 62ch; margin: 0; font: var(--t-body); }
+.popup-action .button { flex: none; }
+
+/* ---------------------------------------------------------------------------
+   Beat 2 — the booth, the money with a rule on it, the board.
+   --------------------------------------------------------------------------- */
+.permit-slip { display: flex; align-items: center; justify-content: space-between; gap: var(--s-5); padding: var(--s-4) var(--s-5); background: var(--surface-raised); border: 1px dashed var(--border-strong); }
+.permit-slip p { margin: 0; }
+.permit-slip p:last-child { color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
+.permit-slip .money { font: var(--m-md); font-feature-settings: var(--num); }
+.spot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
+.spot-grid > li { display: grid; }
+.spot-card { display: flex; flex-direction: column; gap: var(--s-3); padding-bottom: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); box-shadow: var(--shadow-card); }
+.spot-card[data-chosen="true"] { border-color: var(--world-accent); box-shadow: var(--shadow-lift); }
+.spot-card__scene { min-height: 132px; display: flex; align-items: flex-end; padding: var(--s-4); }
+.spot-card__scene b { color: var(--world-hero-ink); font: var(--t-title1); letter-spacing: var(--display-tracking); text-transform: uppercase; }
+.spot-card > p { margin: 0; padding: 0 var(--s-5); }
+.spot-card__terms { color: var(--ink-1); font: var(--m-sm); font-feature-settings: var(--num); }
+.spot-card__crowd { color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
+.spot-card__crowd span { display: block; color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* Four Saturdays, four crowds, on the card of the booth they belong to. */
+.spot-card__nights { padding: 0 var(--s-5); }
+.spot-card__nights .field-label { margin-bottom: var(--s-2); }
+.spot-card__nights ol { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: 0; padding: 1px; background: var(--border-subtle); list-style: none; }
+.spot-card__nights li { display: grid; gap: 2px; padding: var(--s-2); background: var(--surface); text-align: center; }
+.spot-card__nights span { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
+.spot-card__nights b { font: var(--m-md); font-feature-settings: var(--num); }
+.spot-card__tradeoff { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.spot-card .button { margin: auto var(--s-5) 0; }
+.popup-sum { display: grid; gap: var(--s-3); max-width: 640px; }
+.popup-settled { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); max-width: 640px; margin: 0; padding: var(--s-4) var(--s-5); background: var(--world-accent-soft); border-left: 4px solid var(--world-accent); }
+.popup-settled span { color: var(--world-accent-ink); font: var(--t-ui); }
+.popup-settled strong { font: var(--m-md); font-feature-settings: var(--num); }
+.popup-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s-3); }
+.maybe-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
+.maybe-card { display: flex; flex-direction: column; gap: var(--s-3); height: 100%; padding: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); border-top: 3px solid var(--fin-conditional); }
+.maybe-card[data-counted="true"] { border-top-color: var(--fin-adjustable); }
+.maybe-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
+.maybe-card__head b { font: var(--t-title2); }
+.maybe-card__head .money { font: var(--m-md); font-feature-settings: var(--num); }
+.maybe-card p { margin: 0; }
+.maybe-card__rule { padding: var(--s-3) var(--s-4); color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); font: var(--t-sm); }
+.maybe-card__ask { margin-top: auto; color: var(--ink-1); font: var(--t-title3); }
+.maybe-card__state { color: var(--ink-2); font: var(--t-sm); }
+
+/* What the plan is dividing, and what is still looking for a job. */
+.popup-read { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; padding: 1px; background: var(--border-default); }
+.popup-read > div { display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-5); background: var(--surface-raised); }
+.popup-read span { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.popup-read strong { font: var(--m-lg); font-feature-settings: var(--num); }
+.popup-read > div[data-alert="true"] { background: var(--fin-conditional-soft); }
+.popup-read > div[data-alert="true"] strong { color: var(--fin-conditional-ink); }
+.line-jobs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
+.line-jobs li { display: grid; gap: var(--s-2); padding: var(--s-4); background: var(--surface); border-top: 3px solid var(--border-strong); }
+.line-jobs li[data-line="stock"] { border-top-color: var(--choice-1); }
+.line-jobs li[data-line="cushion"] { border-top-color: var(--choice-2); }
+.line-jobs li[data-line="cut"] { border-top-color: var(--choice-3); }
+.line-jobs b { font: var(--t-title3); }
+.line-jobs span { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.cover-ask { display: grid; gap: var(--s-3); padding: var(--s-5); background: var(--fin-conditional-soft); border-left: 4px solid var(--fin-conditional-stripe); }
+.cover-ask > p { max-width: 62ch; margin: 0; color: var(--fin-conditional-ink); font: var(--t-body-lg); }
+.cover-ask__choice { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.cover-ask__choice button { min-height: var(--tap); padding: 0 var(--s-5); background: var(--surface-raised); border: 1.5px solid var(--border-ink); cursor: pointer; font: var(--t-ui); }
+.cover-ask__choice button[aria-pressed="true"] { color: var(--ink-invert); background: var(--ink-1); }
+.cover-ask__choice button[aria-pressed="true"]::before { content: "\2713"; margin-right: var(--s-2); font-weight: 700; }
+
+/* The board. Three lines, the money that has to land on them, and the bar that commits.
+
+   A flex column rather than a grid for the same reason `.plan-board` is one in `app.css`: the
+   bar that commits is the last block in it and it has to be able to hold the bottom edge of
+   the window, which a grid item cannot do inside its own grid area. */
+.popup-board { display: flex; flex-direction: column; gap: var(--s-5); }
+.popup-board__lines { display: grid; gap: var(--s-3); }
+.popup-board .choice-row[data-category="stock"] .choice-row__swatch { background: var(--choice-1); }
+.popup-board .choice-row[data-category="cushion"] .choice-row__swatch { background: var(--choice-2); }
+.popup-board .choice-row[data-category="cut"] .choice-row__swatch { background: var(--choice-3); }
+
+/*
+ * Money that is already gone. Its own component comment says it is "drawn as rows that look
+ * like the ones above and do not behave like them", and it was drawn as neither.
+ *
+ * It had a 14x18 box with a 2px border and an inset highlight — an unchecked checkbox, on a
+ * control that is not a checkbox and has no state to toggle — over a hatched `--pat-ghost`
+ * fill inside a dashed border, with `cursor: not-allowed` on a button whose entire job is to
+ * be pressed and say why the money is gone. Four signals, none of them used anywhere else in
+ * either world, on the four rows that sit directly under three live ones.
+ *
+ * The other world already had this row: `.choice-row--locked` — the same grid, the same 6px
+ * swatch, the same surface, the money in `--ink-2`. This is that row, with the strike-through
+ * kept because it is the one thing here that is true and specific: this amount was spent.
+ */
+.popup-locked { display: grid; gap: var(--s-2); }
+.popup-locked button { display: grid; grid-template-columns: 6px minmax(0, 1fr) auto; align-items: center; gap: var(--s-4); width: 100%; padding: var(--s-4); text-align: left; background: var(--surface-raised); border: 1px solid var(--border-subtle); border-radius: var(--r-md); opacity: 0.9; cursor: pointer; }
+.popup-locked button:hover { border-color: var(--border-strong); }
+.popup-locked__mark { width: 6px; height: 100%; min-height: 46px; background: var(--border-strong); border-radius: var(--r-pill); }
+.popup-locked__id b { display: block; color: var(--ink-1); font: var(--t-ui); }
+.popup-locked__id small { display: block; margin-top: 2px; color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
+.popup-locked .money { color: var(--ink-2); font: var(--m-md); font-feature-settings: var(--num); text-decoration: line-through; }
+.popup-locked__reason { margin: 0; padding: var(--s-3) var(--s-4); color: var(--fin-over-ink); background: var(--fin-over-soft); border-left: 4px solid var(--fin-over); font: var(--t-sm); }
+.popup-closer { display: grid; gap: var(--s-3); padding: var(--s-5); background: var(--surface-raised); border-left: 4px solid var(--world-accent); }
+.popup-closer h3 { margin: 0; font: var(--t-title2); }
+.popup-closer p { margin: 0; color: var(--ink-2); font: var(--t-sm); }
+.popup-closer__choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--s-3); }
+.popup-closer__choice button { display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: start; gap: var(--s-2) var(--s-3); min-height: var(--tap); padding: var(--s-4) var(--s-5); text-align: left; color: var(--ink-1); background: var(--surface-raised); border: 1.5px solid var(--border-ink); border-left-width: 6px; box-shadow: var(--shadow-card); cursor: pointer; }
+.popup-closer__choice button[data-line="stock"] { border-left-color: var(--choice-1); }
+.popup-closer__choice button[data-line="cushion"] { border-left-color: var(--choice-2); }
+.popup-closer__choice button[data-line="cut"] { border-left-color: var(--choice-3); }
+.popup-closer__choice button:hover { color: var(--ink-invert); background: var(--world-accent); border-color: var(--world-accent); }
+.popup-closer__choice strong { grid-column: 2; font: var(--t-title2); }
+.popup-closer__choice span.money { grid-column: 2; color: var(--ink-2); font: var(--t-sm); font-feature-settings: var(--num); }
+.popup-closer__choice button:hover span.money { color: inherit; }
+.popup-closer__choice button > span[aria-hidden="true"] { grid-row: 1 / span 2; align-self: center; color: var(--world-accent); font: var(--m-md); }
+
+/* What that card would leave the truck cooking with, said on the card. The one that would
+   leave it cooking nothing is marked, because a plan with an empty stock line opens four
+   Saturdays with an empty window and every figure after it reads zero. */
+.popup-closer__choice button small { grid-column: 2; color: var(--ink-3); font: var(--t-micro); }
+.popup-closer__choice button[data-warn="true"] { border-left-color: var(--fin-over); }
+.popup-closer__choice button[data-warn="true"] small { color: var(--fin-over-ink); font-weight: 600; }
+.popup-closer__choice button:hover > span[aria-hidden="true"] { color: inherit; }
+.popup-help { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); padding: var(--s-4); background: var(--world-accent-soft); border-left: 4px solid var(--world-accent); }
+.popup-help p { margin: 0; font: var(--t-ui); }
+.popup-help__supply { display: grid; gap: var(--s-2); }
+.popup-help__supply small { color: var(--ink-3); font: var(--t-micro); }
+.popup-commit { min-height: var(--actionbar-h); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4); padding: var(--s-5) var(--s-6); border-left: 4px solid; }
+.popup-commit--settled { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); border-color: var(--fin-balanced); }
+.popup-commit--open { color: var(--fin-adjustable-ink); background: var(--fin-adjustable-soft); border-color: var(--fin-adjustable); }
+.popup-commit--spare { color: var(--fin-over-ink); background: var(--fin-over-soft); border-color: var(--fin-over); }
+.popup-commit__read { margin: 0; color: inherit; font: var(--t-title2); }
+.popup-commit__read .money { font-feature-settings: var(--num); }
+.popup-commit__refusal { flex-basis: 100%; order: -1; margin: 0; color: inherit; font: var(--t-ui); }
+.popup-commit__refusal .money { font-feature-settings: var(--num); }
+.popup-commit__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); }
+
+/* ---------------------------------------------------------------------------
+   Beat 3 — the Saturdays. Plates are the interface: what you cooked, what
+   went over the counter, and what went in the bin.
+   --------------------------------------------------------------------------- */
+.lines-held { display: grid; gap: var(--s-3); padding: var(--s-4) var(--s-5); background: var(--surface); border: 1px solid var(--border-default); }
+.lines-held .field-label { margin: 0; }
+.lines-held dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--s-4); margin: 0; }
+.lines-held dl > div { display: grid; gap: 2px; padding-left: var(--s-3); border-left: 4px solid var(--border-strong); }
+.lines-held dl > div[data-line="stock"] { border-left-color: var(--choice-1); }
+.lines-held dl > div[data-line="cushion"] { border-left-color: var(--choice-2); }
+.lines-held dl > div[data-line="cut"] { border-left-color: var(--choice-3); }
+.lines-held dt { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.08em; text-transform: uppercase; }
+.lines-held dd { margin: 0; font: var(--m-sm); font-feature-settings: var(--num); }
+.tray-order { display: grid; grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.2fr); gap: var(--s-5); padding: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); box-shadow: var(--shadow-card); }
+.tray-order__set { display: grid; align-content: start; gap: var(--s-3); }
+.tray-order__keys { display: grid; grid-template-columns: var(--tap) minmax(64px, 1fr) var(--tap); align-items: stretch; }
+.tray-order__keys button { min-height: 56px; background: var(--surface); border: 1px solid var(--border-strong); cursor: pointer; font: var(--t-title1); }
+.tray-order__keys button:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
+.tray-order__keys button:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.tray-order__keys output { display: grid; place-items: center; border: 1px solid var(--border-strong); border-right: 0; border-left: 0; background: var(--surface); font: var(--m-lg); font-feature-settings: var(--num); }
+.tray-order__hint { margin: 0; color: var(--ink-3); font: var(--t-micro); }
+.tray-order__cost { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); margin: 0; padding-top: var(--s-3); border-top: 2px solid var(--border-ink); }
+.tray-order__cost span { font: var(--m-md); font-feature-settings: var(--num); }
+.tray-order__cost small { color: var(--ink-3); font: var(--t-micro); }
+.tray-order__read { display: grid; align-content: start; gap: var(--s-3); }
+.tray-order__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--s-3); margin: 0; }
+.tray-order__facts > div { display: grid; gap: 2px; padding: var(--s-3); background: var(--surface); }
+.tray-order__facts dt { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
+.tray-order__facts dd { margin: 0; font: var(--m-md); font-feature-settings: var(--num); }
+.tray-order__facts > div[data-alert="true"] { color: var(--fin-over-ink); background: var(--fin-over-soft); }
+.tray-order__crowd { margin: 0; color: var(--ink-2); font: var(--t-sm); }
+
+/* One square, one plate. Sold is filled; binned is hollow and hatched, so the
+   difference survives greyscale and a printout. */
+.tray-plates, .night__plates { display: flex; flex-wrap: wrap; gap: 3px; margin: 0; min-height: 14px; }
+.tray-plates i, .night__plates i { width: 11px; height: 11px; display: block; border-radius: 2px; }
+
+/* An order draws what is being cooked and nothing about how it lands. Colouring the plates
+   sold and binned before the night happened answered the question the screen is asking. */
+.tray-plates i[data-state="cooking"] { background: var(--border-strong); }
+.night__plates i[data-state="sold"] { background: var(--plate-sold); }
+.night__plates i[data-state="binned"] { background: var(--pat-over); border: 1px solid var(--fin-over); }
+.night { display: grid; gap: var(--s-3); padding: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); border-left: 4px solid var(--world-accent); }
+.night--compact { padding: var(--s-4); }
+.night__day { margin: 0; color: var(--world-accent); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
+.night__figures { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-3); margin: 0; }
+.night__figures > div { display: grid; gap: 2px; }
+.night__figures dt { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
+.night__figures dd { margin: 0; font: var(--m-md); font-feature-settings: var(--num); }
+.night__figures > div[data-alert="true"] dd { color: var(--fin-over-ink); }
+.night__say { max-width: 62ch; margin: 0; font: var(--t-body); }
+.popup-heading--dark .night { background: var(--world-panel); border-color: var(--world-panel-edge); border-left-color: var(--world-flare); }
+.popup-heading--dark .night__day { color: var(--world-hero-second); }
+.popup-heading--dark .night__figures dt { color: var(--world-hero-muted); }
+.popup-heading--dark .night__figures dd, .popup-heading--dark .night__say { color: var(--world-hero-ink); }
+
+/* One sentence about what just happened, at the weight of the thing that happened. */
+.popup-verdict { max-width: 68ch; margin: 0; padding: var(--s-4) var(--s-5); font: var(--t-body-lg); }
+.popup-verdict[data-tone="good"] { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); border-left: 4px solid var(--fin-balanced); }
+.popup-verdict[data-tone="hard"] { color: var(--fin-over-ink); background: var(--fin-over-soft); border-left: 4px solid var(--fin-over); }
+.popup-verdict[data-tone="plain"] { color: var(--ink-2); background: var(--surface); border-left: 4px solid var(--border-strong); }
+.popup-verdict--banner { max-width: none; margin: 0 clamp(24px, 4vw, 48px) clamp(24px, 4vw, 48px); }
+.helper-card { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(240px, 0.9fr); gap: var(--s-5); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--ink-1); }
+.helper-card p { margin: 0 0 var(--s-3); }
+.helper-card__rule { color: var(--ink-2); font: var(--t-sm); }
+.helper-card__ask { display: grid; align-content: start; gap: var(--s-3); }
+.helper-card__ask > p { margin: 0; color: var(--ink-1); font: var(--t-title3); }
+.helper-card__state { margin: 0; color: var(--ink-2); font: var(--t-sm); }
+.standing-next { display: grid; gap: var(--s-4); }
+.standing-next h2 { margin: 0; font: var(--t-section); letter-spacing: var(--display-tracking); }
+.standing-next > p { max-width: 62ch; margin: 0; font: var(--t-body); }
+
+/* The two nights one order has to answer to, said before the order is placed. */
+.standing-next__nights { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.standing-next__nights li { display: grid; gap: var(--s-2); padding: var(--s-4); background: var(--surface); border-left: 4px solid var(--world-accent-soft); }
+.standing-next__nights b { font: var(--t-title3); }
+.standing-next__nights span { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
+.popup-subhead { margin: var(--s-6) 0 0; font: var(--t-section); letter-spacing: var(--display-tracking); }
+
+/* ---------------------------------------------------------------------------
+   Beat 4 — the generator.
+   --------------------------------------------------------------------------- */
+.breakdown { display: grid; gap: 1px; margin: 0; padding: 1px; background: var(--world-panel-edge); list-style: none; }
+.breakdown li { display: grid; grid-template-columns: minmax(120px, 160px) minmax(0, 1fr); gap: var(--s-4); padding: var(--s-5) clamp(24px, 4vw, 48px); background: var(--world-panel); animation: bulletin-in var(--dur-stage) var(--ease-exit) both; }
+.breakdown li:nth-child(2) { animation-delay: 240ms; }
+.breakdown li:nth-child(3) { animation-delay: 480ms; }
+.breakdown__marker { color: var(--world-hero-second); font: var(--t-micro); letter-spacing: 0.12em; text-transform: uppercase; }
+.breakdown__tag { margin: 0 0 var(--s-2); color: var(--world-hero-ink); font: var(--t-title3); }
+.breakdown li p { margin: 0; color: var(--world-hero-body); font: var(--t-body); }
+
+@keyframes bulletin-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* Reduced motion: the beats arrive, they do not travel. */
+@media (prefers-reduced-motion: reduce) {
+  .breakdown li { animation: none; opacity: 1; transform: none; }
+}
+
+.recap { display: grid; gap: var(--s-4); }
+.recap h2 { margin: 0; font: var(--t-section); letter-spacing: var(--display-tracking); }
+.recap__nights { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s-4); }
+.cover-read { max-width: 62ch; margin: 0; padding: var(--s-4) var(--s-5); background: var(--surface); border-left: 4px solid var(--fin-conditional); font: var(--t-body); }
+.cover-read .money { font-feature-settings: var(--num); }
+
+/* ---------------------------------------------------------------------------
+   Beat 5 — the settle-up and the organiser's question.
+   --------------------------------------------------------------------------- */
+.season-table { width: 100%; border-collapse: collapse; background: var(--surface-raised); }
+.season-table caption { padding-bottom: var(--s-3); color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.08em; text-align: left; text-transform: uppercase; }
+.season-table th, .season-table td { padding: var(--s-3) var(--s-4); text-align: right; border-bottom: 1px solid var(--border-default); font: var(--t-ui); font-feature-settings: var(--num); }
+.season-table thead th { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
+.season-table th:first-child, .season-table thead th:first-child { text-align: left; }
+.season-table tbody th { color: var(--ink-1); font: var(--m-sm); }
+.season-table td[data-alert="true"] { color: var(--fin-over-ink); background: var(--fin-over-soft); }
+.settle-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--s-2); margin: 0; }
+
+/* Cells carry their own edge rather than the container painting one behind them: six figures
+   in a four-column row leaves two empty slots, and a painted container turns those into two
+   grey rectangles that look like numbers nobody filled in. */
+.settle-figures > div { display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); }
+.settle-figures dt { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.settle-figures dd { margin: 0; font: var(--m-md); font-feature-settings: var(--num); }
+.settle-figures > div[data-alert="true"] dd { color: var(--fin-over-ink); }
+.settle-figures > div[data-lead="true"] { background: var(--world-accent-soft); }
+.settle-figures > div[data-lead="true"] dd { color: var(--world-accent-ink); font: var(--m-lg); }
+.writeup { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-5); }
+.writeup__ask { display: grid; align-content: start; gap: var(--s-3); padding: var(--s-6); }
+.writeup__prompt { margin: 0; color: var(--world-hero-ink); font: var(--t-title1); }
+.writeup__note { margin: 0; color: var(--world-hero-body); font: var(--t-sm); }
+.writeup__tiles { display: grid; gap: var(--s-2); margin-top: var(--s-3); }
+.writeup__tiles .field-label { color: var(--world-hero-muted); }
+.writeup__tiles button { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-3); min-height: var(--tap); padding: var(--s-3) var(--s-4); text-align: left; color: var(--world-hero-ink); background: var(--world-panel); border: 1px solid var(--world-panel-edge); cursor: pointer; font: var(--t-ui); }
+.writeup__tiles button[aria-pressed="true"] { border-color: var(--world-flare); }
+.writeup__mark { width: 20px; height: 20px; display: grid; place-items: center; border: 2px solid var(--world-hero-edge); border-radius: var(--r-xs); }
+.writeup__tiles button[aria-pressed="true"] .writeup__mark { background: var(--world-flare); border-color: var(--world-flare); }
+.writeup__tiles button[aria-pressed="true"] .writeup__mark::after { content: "\2713"; color: var(--world-deep); font: 700 0.85rem/1 var(--font-ui); }
+.writeup__tiles .money, .writeup__tiles b { font: var(--m-sm); font-feature-settings: var(--num); }
+.writeup__answer { display: grid; align-content: start; gap: var(--s-3); padding: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); }
+.writeup__starters { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.writeup__starters button { min-height: 40px; padding: 0 var(--s-4); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-pill); cursor: pointer; font: var(--t-sm); }
+.writeup__answer label { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
+.writeup__answer textarea { width: 100%; padding: var(--s-4); background: var(--surface); border: 1.5px solid var(--border-strong); border-radius: var(--r-sm); font: var(--t-body); }
+.writeup__answer footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3); }
+.writeup__answer footer p { margin: 0; color: var(--ink-3); font: var(--t-sm); }
+
+/* The delivery line is written for a dark scene in the other world. Here it sits on cream,
+   so it takes cream's ink — the same words, and a contrast ratio that has been checked
+   against the surface they are actually on. */
+.popup-shell .delivery { color: var(--ink-2); font: var(--t-body); }
+.popup-shell .delivery--failed { color: var(--fin-over-ink); font-weight: 600; }
+.popup-shell .handed-in { display: grid; gap: var(--s-4); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); }
+.popup-shell .handed-in blockquote { max-width: 62ch; margin: 0; padding-left: var(--s-4); border-left: 3px solid var(--world-accent); font: var(--t-body-lg); }
+.popup-shell .handed-in__record { display: grid; gap: var(--s-3); }
+
+/* ---------------------------------------------------------------------------
+   Narrow: one column everywhere, and the dominant action stays in the viewport.
+   --------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  .pitch, .tray-order, .helper-card, .writeup { grid-template-columns: minmax(0, 1fr); }
+  .popup-main { padding-top: var(--s-5); }
+}
+
+/* A Chromebook screen is 600px tall. The picker has to put both cards and both buttons on it,
+   so the scene band gives up the height rather than the decision doing it. */
+@media (max-height: 700px) {
+  .worldpick__main { padding-top: var(--s-5); }
+  .worldpick__say { margin-bottom: var(--s-5); }
+  .worldpick__say h1 { font-size: 2rem; }
+  .worldcard__scene { height: 104px; }
+  .worldcard__body { gap: var(--s-3); padding: var(--s-4); }
+  .worldcard__facts { padding-top: var(--s-3); }
+}
+
+@media (max-width: 760px) {
+  /* The same two-column crush the challenge shell had, in the market's bar.
+     `minmax(0, 1fr) auto` gave the mark a track that can go to zero and the four-Saturday
+     strip a track that takes whatever it asks for — and the strip asks for a lot. Measured at
+     320, 360 and 390 the computed tracks were `0px 280px`, `0px 304px`, `0px 334px`: the BOW
+     mark was drawn at zero width on every phone in this world. The strip goes to its own row,
+     as it does in the other world, and the mark and the run menu share row one. */
+
+  /* And the gutter comes down with it, as it does on the challenge shell. With the full
+     gutter the mark's track was 103px against a 129px wordmark at 320 — the letters were
+     drawn and then cut. */
+  .popup-topbar { grid-template-columns: minmax(0, 1fr) minmax(0, auto); gap: var(--s-2) var(--s-3); padding: var(--s-3); }
+  .popup-topbar > .popup-topbar__end { grid-column: 2; grid-row: 1; justify-self: end; }
+  .market-strip { grid-column: 1 / -1; grid-row: 2; flex-wrap: wrap; min-width: 0; }
+  .market-strip ol { min-width: 0; flex-basis: 100%; }
+  .popup-main { width: calc(100% - 24px); }
+  .popup-heading h1 { font-size: 2rem; }
+  .popup-action, .popup-commit { flex-direction: column; align-items: stretch; }
+  .popup-action .button, .popup-commit .button { width: 100%; }
+  .night__figures, .tray-order__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .worldpick__cards { grid-template-columns: minmax(0, 1fr); }
+  .season-table th, .season-table td { padding: var(--s-2) var(--s-3); }
+}

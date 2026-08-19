@@ -5,6 +5,7 @@ import { createInitialState, type ChallengeState } from "../machine/state";
 import type { ChallengeAction } from "../machine/actions";
 import { CONCEPTS } from "../blueprint/concepts";
 import { evidenceRequirementById } from "../competency/competencies";
+import { PLAN_UNDER_PRESSURE_LAUNCH } from "../scenario/registry";
 import { BASKETBALL_EVIDENCE_ROUTES } from "../scenario/worlds/basketball/observer";
 import { EVIDENCE_EVENT_TYPES } from "./types";
 import { deriveGrade, REASONING_MAXIMUM, STRUCTURED_MAXIMUM } from "./grade";
@@ -94,7 +95,7 @@ describe("the shared evidence envelope", () => {
     expect(floor?.evidenceRequirementIds).toEqual(["plan-within-income.er1"]);
     expect(floor?.competencyIds).toEqual(["plan-within-income"]);
     const defense = log.find((event) => event.type === "DEFENSE_SUBMITTED");
-    expect(defense?.competencyIds).toEqual(["plan-within-income", "adapt-a-plan"]);
+    expect(defense?.competencyIds).toEqual(["plan-within-income", "adapt-a-plan", "sort-by-need-want-goal"]);
   });
 
   it("tags savings-was-planned on the one statement that is evidence about it, and nowhere else", () => {
@@ -123,9 +124,15 @@ describe("the shared evidence envelope", () => {
   });
 
   it("records reaching a screen as its own fact", () => {
+    // Stage progression is recorded, not inferred: a student who reached a screen and did
+    // nothing has to be distinguishable from one who never got there. Where the session
+    // opens depends on the launch — straight into Avery's deal until the world picker
+    // ships, onto the choice once it has — and the log says whichever actually happened.
     const entered = log.filter((event) => event.type === "STAGE_ENTERED");
     expect(entered.length).toBeGreaterThan(0);
-    expect(entered.map((event) => (event.payload as { stage: string }).stage)).toContain("role-contract");
+    expect(entered.map((event) => (event.payload as { stage: string }).stage))
+      .toContain(PLAN_UNDER_PRESSURE_LAUNCH.studentChoosesWorld ? "choose-world" : "role-contract");
+    expect(entered.map((event) => (event.payload as { from: string }).from)).toContain("entry");
   });
 
   it("writes only the event types the data doctrine allows", () => {
@@ -139,19 +146,25 @@ describe("the shared evidence envelope", () => {
   });
 });
 
+/**
+ * `deriveGrade` no longer takes the concept results, and these calls dropped the `[]` they
+ * were passing for them. The parameter existed only to compute `GradeResult.summary` — the
+ * four `*_application` strings off a 65/80/90 ladder — which nothing rendered and which is
+ * now deleted. Every claim below is about the points and is unchanged.
+ */
 describe("the grade cannot be pushed outside its own scale", () => {
   const observations = [{ microSkillId: "C1.1", conceptId: "income-reliability", points: 5, outcome: "demonstrated", supportLevel: "standard_access", evidenceRefs: ["x"], reason: "" }] as never;
 
   it("clamps educator-entered reasoning points to the rubric", () => {
-    expect(deriveGrade(observations, [], 40).reasoningPoints).toBe(REASONING_MAXIMUM);
-    expect(deriveGrade(observations, [], -5).reasoningPoints).toBe(0);
-    expect(deriveGrade(observations, [], 7.4).reasoningPoints).toBe(7);
-    expect(deriveGrade(observations, [], Number.NaN).reasoningPoints).toBeNull();
+    expect(deriveGrade(observations, 40).reasoningPoints).toBe(REASONING_MAXIMUM);
+    expect(deriveGrade(observations, -5).reasoningPoints).toBe(0);
+    expect(deriveGrade(observations, 7.4).reasoningPoints).toBe(7);
+    expect(deriveGrade(observations, Number.NaN).reasoningPoints).toBeNull();
   });
 
   it("derives the structured maximum from the blueprint rather than restating it", () => {
     expect(STRUCTURED_MAXIMUM).toBe(90);
-    expect(deriveGrade(observations, [], 5).structuredMaximum).toBe(STRUCTURED_MAXIMUM);
+    expect(deriveGrade(observations, 5).structuredMaximum).toBe(STRUCTURED_MAXIMUM);
   });
 
   it("separates a student who stopped from a student who finished without showing everything", () => {
@@ -159,9 +172,9 @@ describe("the grade cannot be pushed outside its own scale", () => {
       ...(observations as unknown[]),
       { microSkillId: "C1.2", conceptId: "income-reliability", points: null, outcome: "not_observed", supportLevel: "standard_access", evidenceRefs: ["y"], reason: "" },
     ] as never;
-    expect(deriveGrade(partial, [], 5, { submitted: false }).incomplete).toBe(true);
-    expect(deriveGrade(partial, [], 5, { submitted: false }).finalPoints).toBeNull();
-    const finished = deriveGrade(partial, [], 5, { submitted: true });
+    expect(deriveGrade(partial, 5, { submitted: false }).incomplete).toBe(true);
+    expect(deriveGrade(partial, 5, { submitted: false }).finalPoints).toBeNull();
+    const finished = deriveGrade(partial, 5, { submitted: true });
     expect(finished.incomplete).toBe(false);
     expect(finished.finalPoints).toBe(10);
   });

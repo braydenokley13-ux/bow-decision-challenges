@@ -1,5 +1,28 @@
 # BOW Decision Challenges — Architecture & Implementation Blueprint
 
+> ## Provenance — read this before anything below it
+>
+> **This is an input brief, written before the product existed. It is kept for provenance and
+> it does not describe what shipped.** Where it and the running product disagree, the product
+> is right and this document is history. The current description of what exists is
+> [`README.md`](./README.md) and [`ARCHITECTURE.md`](./ARCHITECTURE.md), and those two are the
+> only documents in this repository held to their claims by a test (`src/docsDataClaims.test.ts`).
+>
+> Four things below are now false of the product, checked against it rather than remembered:
+>
+> | This document says | The product does |
+> | --- | --- |
+> | Audience **Grades 6–8** | **Grades 5–8** — the band NYSED's own objectives are written for (`domain/standards/frameworks/nysed-2026.ts`) |
+> | A second world called **Fashion** | A second world called **Run the Pop-Up**, a market food truck (`WORLD_IDS = ["basketball", "food-truck"]`) |
+> | A **90 + 10 / 100-point** grade | No composite at all. It was removed because it was the number that could not be defended to a parent (`educator/gradebook.ts`) |
+> | **localStorage** persistence, no backend | Teacher accounts, student seats, an authenticated API and a sealed durable store (`server/`) |
+>
+> It also names **"verified NYSED alignment"** as a build target. What the product honestly
+> claims today is **one** assessable objective — NYSED Personal Finance 1.3 — and
+> `domain/standards/coverageClaims.test.ts` is what holds it to that number. Nothing here is a
+> FERPA, COPPA, New York Education Law §2-d, NYCPS, WCAG-conformance or district-approval
+> determination, and neither is anything in the product.
+
 **Status:** Definitive architecture plan for hand-off to an implementing coding agent (Codex)
 **Repo:** `bow-decision-challenges` (currently contains only the two source specs)
 **Branch:** `claude/bow-challenges-architecture-llyffe`
@@ -319,14 +342,14 @@ Three micro-skill pairs risk measuring the same thing, which would make up to 15
 |---|---|---|
 | Framework | **React 18 + TypeScript (strict)** | Required by brief; strict mode is non-negotiable given branded money types |
 | Build | **Vite** | Fast, zero-config, static output deployable to `challenges.bowsportscapital.com` |
-| Routing | **React Router 6**, client-side only | Deep-linkable educator views; invalid routes → `/` with plain-language message |
+| Routing | **React Router 7**, client-side only, Declarative Mode | Deep-linkable educator views; invalid routes → `/` with plain-language message |
 | State | **One `useReducer` + pure domain modules.** No Redux/Zustand/Jotai | The domain is a deterministic state machine over an append-only log. A state library would add indirection without solving anything, and would make it harder for Codex to see that views contain no formulas |
 | Styling | **Plain CSS with custom-property tokens + CSS Modules** | The bar is "genuinely beautiful, not generic shadcn." A bespoke token layer in one file gives full control of the financial semantics, keeps world theming a pure token override, and keeps the design system inspectable. Codex may substitute a utility framework **only if** every semantic financial token stays centrally defined and world theming remains a token override |
 | Testing | **Vitest** (unit/integration), **React Testing Library** (components), **Playwright** (E2E), **axe-core** (a11y, wired into both RTL and Playwright) | Matches brief; axe in E2E catches composition-level violations RTL misses |
 | Persistence | **`localStorage`, namespaced + schema-versioned** | Meeting MVP. Swappable later behind one `io/persistence.ts` port |
 | Money | **Integer dollars only**, branded `Dollars` type, no floats, no division outside tests | Every amount in the product is a whole dollar; floats would introduce rounding artifacts into an assessment |
 | Charts/anim | **No chart library. No animation library.** CSS transitions + Web Animations API | The Money Rail is bespoke; a chart library would fight the design |
-| Deps | Target **zero runtime dependencies beyond React + React Router** | Smallest attack surface, fastest load on Chromebooks, nothing to audit for a district |
+| Deps | Target **zero runtime dependencies beyond React + React Router** | Smallest attack surface, fastest load on Chromebooks, nothing to audit for a district. React Router 7 carries `cookie` and `set-cookie-parser` in the dependency tree; both are for its server modes and neither reaches the browser bundle, measured. |
 
 **Explicitly not added:** backend, Supabase, auth, server APIs, database, AI, analytics vendor, CMS, i18n framework, form library, date library.
 

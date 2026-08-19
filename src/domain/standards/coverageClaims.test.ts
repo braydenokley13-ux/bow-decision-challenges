@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { WorldEvidenceCoverage } from "../competency/availability";
 import { BUILT_WORLD_COVERAGE, availableCompetencyIds, worldsAssessing } from "../competency/availability";
-import { COMPETENCIES, evidenceRequirementById, requiredEvidenceRequirementsFor } from "../competency/competencies";
+import { COMPETENCIES, competencyById, evidenceRequirementById, requiredEvidenceRequirementsFor } from "../competency/competencies";
 import type { CompetencyId } from "../competency/types";
 import { NYSED_2026_STANDARDS } from "./frameworks/nysed-2026";
+import { NYSED_2026_MAPPINGS } from "./mappings/nysed-2026";
 import {
   assessableStandards,
   isAssessable,
@@ -98,7 +99,15 @@ describe("what BOW may claim about an objective", () => {
   describe("coverage levels do what they say", () => {
     it("reports an objective demonstrated from a single full mapping", () => {
       expect(resolveObjectiveCoverage(ref("1.3"), demonstrated("plan-within-income"))).toBe("demonstrated");
-      expect(resolveObjectiveCoverage(ref("1.1"), demonstrated("sort-by-need-want-goal"))).toBe("demonstrated");
+    });
+
+    it("stops short of demonstrated on 1.1, which BOW covers in part", () => {
+      // This line read `demonstrated` while 1.1 was mapped `full`. It is not: the objective
+      // names goals alongside needs, wants and values, and savings decisions alongside
+      // spending ones, and BOW's competing claims are a need, an obligation and a want in
+      // both stories with no way to bank the money. Partial is the whole of what the run
+      // shows, and partial is what a teacher should be told.
+      expect(resolveObjectiveCoverage(ref("1.1"), demonstrated("sort-by-need-want-goal"))).toBe("partially-assessed");
     });
 
     it("never reports an objective demonstrated from a partial mapping alone", () => {
@@ -121,27 +130,44 @@ describe("what BOW may claim about an objective", () => {
   });
 
   describe("assessability requires a built world, not a mapping", () => {
-    it("counts exactly what Basketball can produce every requirement of", () => {
-      // Basketball's observer produces all five of `adapt-a-plan` and, since the opening
-      // plan started recording which row takes the leftovers, all five of
-      // `plan-within-income`. Both are whole, so both are available. Nothing else is: the
-      // other nineteen competencies have a mapping and no world.
-      expect(availableCompetencyIds()).toEqual(new Set(["adapt-a-plan", "plan-within-income"]));
-      expect(worldsAssessing("adapt-a-plan")).toEqual(["basketball"]);
-      expect(worldsAssessing("plan-within-income")).toEqual(["basketball"]);
+    it("counts exactly what a built world can produce every requirement of", () => {
+      // Two worlds produce all five of `adapt-a-plan`, all five of `plan-within-income` and
+      // all four of `sort-by-need-want-goal`, and that is the point of §9.1 — a student who
+      // picks the night market instead of the season is measured on the same named things.
+      expect(availableCompetencyIds()).toEqual(new Set(["sort-by-need-want-goal", "adapt-a-plan", "plan-within-income"]));
+      expect(worldsAssessing("adapt-a-plan")).toEqual(["basketball", "food-truck"]);
+      expect(worldsAssessing("plan-within-income")).toEqual(["basketball", "food-truck"]);
+      // Both worlds, from one shared event with two worlds' fiction over it: Avery's Week 3
+      // cash and Mo's tips jar after the first Saturday. `COMPETING_CLAIMS_SETTLED` and the
+      // four reason ids are named for the situation rather than for either story, which is
+      // what let the second world produce the same evidence without a change to the spine.
+      expect(worldsAssessing("sort-by-need-want-goal")).toEqual(["basketball", "food-truck"]);
+      // Neither world produces this one, and both say why in their own route tables. A gap in
+      // both is honest; closing it in one would mean the choice of story changed what was
+      // measured.
       expect(worldsAssessing("save-toward-a-goal")).toEqual([]);
     });
 
-    it("reports exactly one objective assessable today, and it is the one with a whole world behind it", () => {
-      // 1.3 is `full`-mapped to `plan-within-income` and carries no completion rule, so a
-      // world that produces every one of that competency's requirements is the entire bar,
-      // and it is now met. Nothing else moves with it. `adapt-a-plan` is `partial` on 1.2
-      // and `supporting` on 4.1; `save-toward-a-goal` is `partial` on 1.3 and Basketball
-      // produces none of it. A partial and a supporting mapping still make nothing
-      // assessable on their own, which is why 1.3 is alone here rather than first.
-      expect(assessableStandards(NYSED).map((standard) => standard.code)).toEqual(["1.3"]);
+    it("reports exactly one objective assessable today, with a whole world behind it", () => {
+      // 1.3 is `full`-mapped to one competency and carries no completion rule, so a world
+      // that produces every one of `plan-within-income`'s requirements is the entire bar.
+      //
+      // This test said **two** for a day, and the second was 1.1. Building a real decision
+      // into Week 3 genuinely made `sort-by-need-want-goal` observable, and that part was
+      // true — but the mapping underneath it claimed `full` coverage of an objective that
+      // also names savings goals and savings decisions, which no world in this product
+      // collects and one observer deliberately refuses to. A verifier who read NYSED's
+      // sentence before reading anything here found it. Correcting the mapping takes the
+      // number back to one, and one true number is worth more than two of anything else.
+      //
+      // Nothing else moves with it. `adapt-a-plan` is `partial` on 1.2 and `supporting` on
+      // 4.1; `save-toward-a-goal` is `partial` on 1.3 and no world produces it; 2.1 needs
+      // all three of its competencies and has one. A partial, a supporting and an unfinished
+      // completion rule still make nothing assessable on their own.
+      const assessable = ["1.3"];
+      expect(assessableStandards(NYSED).map((standard) => standard.code)).toEqual(assessable);
       for (const standard of NYSED_2026_STANDARDS) {
-        expect(isAssessable(ref(standard.code)), `NYSED ${standard.code}`).toBe(standard.code === "1.3");
+        expect(isAssessable(ref(standard.code)), `NYSED ${standard.code}`).toBe(assessable.includes(standard.code));
       }
     });
 
@@ -211,6 +237,36 @@ describe("what BOW may claim about an objective", () => {
       expect(isAssessable(ref("1.7"), everything)).toBe(false);
       expect(isAssessable(ref("6.1"), everything)).toBe(false);
       expect(resolveObjectiveCoverage(ref("1.7"), everything)).toBe("not-assessed");
+    });
+  });
+
+  describe("a full mapping may not stand on an optional requirement", () => {
+    /**
+     * `full` promises a student who demonstrates the competency has done everything the
+     * standard asks. `isCompetencyAvailable` only ever checks *required* requirements — an
+     * optional one can sit unreached, forever `null`, while the competency still reports
+     * available. So the moment a `full`-mapped competency carries even one optional
+     * requirement, the mapping is promising more than the bar it is actually held to: a
+     * student can clear `full` coverage without the world ever asking for whatever that
+     * optional row was there to observe.
+     *
+     * That is exactly how `save-toward-a-goal` → 5.1 shipped wrong. NYSED 5.1 is two
+     * clauses — identify a reason to save, and build the plan — and only ER5 touched the
+     * first one. ER5 was optional, so a world could satisfy `full` coverage of 5.1 without a
+     * student ever naming a reason to save. Making ER5 required fixed that one row; this
+     * test is the general form, so the next competency that ships an optional requirement
+     * while `full`-mapped fails the build instead of shipping the same defect under a
+     * different id.
+     */
+    it("never lets a full-mapped competency carry an optional evidence requirement", () => {
+      const fullyMappedCompetencyIds = new Set(
+        NYSED_2026_MAPPINGS.filter((mapping) => mapping.coverage === "full").map((mapping) => mapping.competencyId),
+      );
+      expect(fullyMappedCompetencyIds.size).toBeGreaterThan(0);
+      for (const competencyId of fullyMappedCompetencyIds) {
+        const optional = competencyById(competencyId).evidenceRequirements.filter((requirement) => !requirement.required);
+        expect(optional.map((requirement) => requirement.id), competencyId).toEqual([]);
+      }
     });
   });
 });
