@@ -228,7 +228,8 @@ function ResultHeadline({ result, submitted, awaitingReading }: { result: Object
   );
 }
 
-function ClassResult({ entry, onThisObjective }: { entry: ObjectiveClassResult; onThisObjective: readonly CompetencyId[] }) {
+/** `unit` is the framework's own word for the thing being reported on, composed by the caller. */
+function ClassResult({ entry, onThisObjective, unit }: { entry: ObjectiveClassResult; onThisObjective: readonly CompetencyId[]; unit: string }) {
   const keyQuery = `?key=${rememberedClasses().find((known) => known.code === entry.record.code)?.teacherKey ?? ""}`;
   const shownSkills = entry.competencies.filter((row) => onThisObjective.includes(row.competencyId));
   const statesShown = shownSkills.flatMap((row) =>
@@ -242,11 +243,26 @@ function ClassResult({ entry, onThisObjective }: { entry: ObjectiveClassResult; 
         </div>
         <ResultHeadline result={entry.result} submitted={entry.submitted} awaitingReading={entry.awaitingReading} />
       </header>
+      {/* The second clause is about a pile of writing, so it waits until there is one. A class
+          nobody has started read "0 turned in · every written explanation read." — a finished
+          marking pile that does not exist, directly under a headline saying nobody has turned
+          anything in.
+
+          It also used to say that a student whose writing nobody has read "is not counted as
+          assessed", which is a rule, and this is not one: a usable result needs a level for
+          everything the objective asks for, and where the run itself supplies them all — a
+          student who closed their opening plan by naming the row that takes the remainder —
+          the reading is not what is missing. Measured on a real class: seven turned in, two
+          explanations unread, seven assessed, with that sentence printed between the two
+          numbers contradicting it. What is true is the direction: reading can add to the
+          count and can never take from it. */}
       <p className="class-state">
         {entry.submitted} turned in
-        {entry.awaitingReading > 0
-          ? ` · ${entry.awaitingReading} written explanation${entry.awaitingReading === 1 ? "" : "s"} still to read. A student whose writing nobody has read yet is not counted as assessed.`
-          : " · every written explanation read."}
+        {entry.submitted === 0
+          ? ""
+          : entry.awaitingReading > 0
+            ? ` · ${entry.awaitingReading} written explanation${entry.awaitingReading === 1 ? "" : "s"} still to read. Reading them can only add to the assessed count: unread writing is the most common reason a result is not usable yet.`
+            : " · every written explanation read."}
       </p>
       {shownSkills.length > 0 && (
         <>
@@ -263,7 +279,7 @@ function ClassResult({ entry, onThisObjective }: { entry: ObjectiveClassResult; 
                 same order, because it is the same table about the same class. */}
             <caption>
               Counts across all {entry.submitted} who turned in. {entry.result.assessed} of them have a
-              usable result — one whose written explanation somebody has read.
+              usable result — nothing this {unit} asks of them is still missing.
             </caption>
             <thead><tr><th scope="col">Skill</th><th scope="col">Where the class is</th></tr></thead>
             <tbody>
@@ -474,7 +490,14 @@ export function ObjectiveDetail() {
               : ""}
           </p>
         )}
-        {evidence.status === "ready" && evidence.results.map((entry) => <ClassResult key={entry.record.code} entry={entry} onThisObjective={covering.map((row) => row.competency.id)} />)}
+        {evidence.status === "ready" && evidence.results.map((entry) => (
+          <ClassResult
+            key={entry.record.code}
+            entry={entry}
+            onThisObjective={covering.map((row) => row.competency.id)}
+            unit={labels?.unitNounShort.toLowerCase() ?? "objective"}
+          />
+        ))}
       </section>
     </EducatorShell>
   );

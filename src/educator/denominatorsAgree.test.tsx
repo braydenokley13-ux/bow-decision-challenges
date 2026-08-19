@@ -109,8 +109,11 @@ function theTruth() {
   });
 }
 
-function serviceHoldingTheClass() {
-  const { submissions, roster, assignment } = theClass();
+/** The class as the service hands it over, or the same class before anybody has played it. */
+function serviceHoldingTheClass(over: { submissions?: SubmissionRecord[] } = {}) {
+  const built = theClass();
+  const { roster, assignment } = built;
+  const submissions = over.submissions ?? built.submissions;
   vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({
     ok: true,
     status: 200,
@@ -136,8 +139,8 @@ async function openTheClassPage(): Promise<HTMLElement> {
   return view.container;
 }
 
-async function openTheObjectivePage(): Promise<HTMLElement> {
-  serviceHoldingTheClass();
+async function openTheObjectivePage(over: { submissions?: SubmissionRecord[] } = {}): Promise<HTMLElement> {
+  serviceHoldingTheClass(over);
   rememberClass({ code: CODE, label: "Period 3", teacherKey: KEY, createdAt: NOW });
   const view = render(
     <MemoryRouter initialEntries={[`/educator/objectives/${OBJECTIVE.frameworkId}/${OBJECTIVE.code}`]}>
@@ -147,6 +150,71 @@ async function openTheObjectivePage(): Promise<HTMLElement> {
   await waitFor(() => expect(view.container.querySelector(".objective-class")).not.toBeNull());
   return view.container;
 }
+
+/**
+ * One student, one unread explanation, and a usable result all the same.
+ *
+ * A run that closes its opening plan by naming the row which takes the remainder supplies a
+ * level for everything this objective asks for, so the teacher's reading is not what is
+ * missing. The test below checks that rather than trusting this comment.
+ */
+function theQuietMarkingPile(): SubmissionRecord[] {
+  return [record(
+    buildSubmission({ seatCode: "1", setupId: "cousin-room", closeOpeningInto: "goal", defenseText: "Nobody has read this yet." }),
+    { sessionId: "s-quiet" },
+  )];
+}
+
+/**
+ * The same rule, at the denominator every class starts on.
+ *
+ * A count of nothing is still a count, and the sentence beside it is still a claim: the
+ * objective page read "0 turned in · every written explanation read." over a class created
+ * four minutes earlier, directly under a headline saying nobody had turned anything in. The
+ * marking pile it reported as finished did not exist.
+ */
+describe("a class nobody has started is described as one", () => {
+  it("does not report a finished marking pile over an empty class", async () => {
+    const container = await openTheObjectivePage({ submissions: [] });
+    const text = container.textContent ?? "";
+    expect(text).toContain("0 turned in");
+    expect(text, "a class with no writing in it has no read writing either").not.toMatch(/every written explanation read/);
+    expect(text, "and the reason there is nothing to read is the thing to say").toContain("Nobody has turned work in for this yet.");
+  });
+});
+
+/**
+ * The reading queue and the denominator, which are related and are not the same thing.
+ *
+ * This page carried the rule *"A student whose writing nobody has read yet is not counted as
+ * assessed"* beside the two counts, and it is not a rule — a usable result needs a level for
+ * everything the objective asks for, and a run can supply them all on its own. Measured on a
+ * real class through the real service: seven turned in, two explanations unread, **seven
+ * assessed**, with that sentence printed between the two numbers that contradict it.
+ *
+ * The premise is checked here rather than assumed, so if the derivation ever does make unread
+ * writing disqualifying, this test says so instead of quietly pinning the wrong copy.
+ */
+describe("unread writing is a reason, not a rule", () => {
+  it("never tells a teacher an unread explanation keeps a student out of a denominator it does not", async () => {
+    const submissions = theQuietMarkingPile();
+    const { roster, assignment } = theClass();
+    const spine = classSpineFrom({
+      record: { code: CODE, label: "Period 3", challengeId: "plan-under-pressure", createdAt: NOW, expiresAt: NOW + 1 },
+      assignments: [assignment],
+      submissions: countedSubmissions(submissions.map((entry) => ({ ...entry, assignmentId: assignment.id })), roster),
+    });
+    expect(spine.awaitingReading, "the premise: nobody has read this student's explanation").toBe(1);
+    expect(spine.assessed, "and the derivation counts them assessed anyway").toBe(1);
+
+    const container = await openTheObjectivePage({ submissions });
+    const text = container.textContent ?? "";
+    expect(text, "a page may not state as a rule the thing its own numbers disprove")
+      .not.toMatch(/not counted as assessed/i);
+    // Reading can add a level and can never remove one, so it can only move this count up.
+    expect(text).toMatch(/can only add to the assessed count/);
+  });
+});
 
 const numbersIn = (text: string): number[] => [...text.matchAll(/\d+/g)].map((match) => Number(match[0]));
 
