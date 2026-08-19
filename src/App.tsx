@@ -88,9 +88,16 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      {/* A student signs in once and comes back to a screen that is theirs. The three
-          actions are the same every time: class code, tap your name, type the code on your
-          card. Nothing here asks for a name, an email address or a birthday. */}
+      {/* A student signs in once and comes back to a screen that is theirs. What the door asks
+          for depends on whether the teacher pasted a class list: with one, the class code and
+          then the code on their own card; without one, the class code and then their own first
+          name, which BOW files the run under. The "tap your name" step this used to describe
+          went when the door stopped publishing the roster to anyone holding the class code —
+          a list of children's names is not something a five-letter code should open.
+
+          No student is asked for an email address, a password or a birthday, on either path.
+          That is the claim this comment can make; the one it used to make — that nothing here
+          asks for a name — was false of every class without a list. */}
       <Route path="/join" element={<StudentJoin />} />
       <Route path="/home" element={<StudentHome />} />
       {/* What a student gets back: their own run, read out of their own log, in their own

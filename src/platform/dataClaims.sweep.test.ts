@@ -247,16 +247,7 @@ function nameDenialsIn(sentence: string): string[] {
  *
  * Delete the entry when the sentence goes.
  */
-const ROUTED_ELSEWHERE: { path: string; sentence: string; why: string }[] = [
-  {
-    path: "src/App.tsx",
-    sentence: "Nothing here asks for a name, an email address or a birthday",
-    // Written over the student routes, and wrong twice: `/join` asks a student for a first name
-    // in every class that has no list, and the "tap your name" step the same comment describes
-    // was removed when the door stopped publishing the roster to anyone with the class code.
-    why: "the open-join door asks the student for their own first name, and the step above it no longer exists",
-  },
-];
+const ROUTED_ELSEWHERE: { path: string; sentence: string; why: string }[] = [];
 
 // ---------------------------------------------------------------------------
 
