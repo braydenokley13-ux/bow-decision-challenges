@@ -16,8 +16,9 @@ import type { WorldId } from "../../domain/core/ids";
  * because it never checks one against anything.
  *
  * What is true of both doors is the shape, and the shape is the whole of what may be said: a
- * first name, against a seat, in one teacher's class. It is handed back to that teacher's
- * account or to whoever holds that class's key (`opensClass`) and to nobody else — the
+ * first name, against a seat, in one teacher's class. The whole list goes back to that
+ * teacher's account or to whoever holds that class's key (`opensClass`), and one row goes back
+ * to the student it belongs to on their own screen — that is the whole of who reads it. The
  * unauthenticated door answers a class code with the label and the join mode and no roster at
  * all. It is sealed at rest (`server/vault.ts`), and it goes when the class goes.
  *

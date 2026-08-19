@@ -28,8 +28,9 @@ import type { StandardRef } from "../../domain/standards/types";
  * The narrower claim is the one worth keeping, because it is the one that survives reading the
  * store: the class service holds no identifier anybody else issued. No student number, no SIS
  * id, no email address for a child, no birthday, no school. What it holds is a first name
- * against a seat in one teacher's class — sealed at rest (`server/vault.ts`), readable by that
- * class's teacher, and dropped with the class after `CLASS_RETENTION_DAYS`.
+ * against a seat in one teacher's class — sealed at rest (`server/vault.ts`), read by that
+ * class's teacher and by the student whose row it is, and dropped with the class after
+ * `CLASS_RETENTION_DAYS`.
  */
 
 /** A class an educator created. The code is what students type; the key is what an educator keeps. */
