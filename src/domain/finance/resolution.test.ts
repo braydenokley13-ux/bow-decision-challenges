@@ -120,6 +120,58 @@ describe("the season resolves from the student's own decisions", () => {
  * something other than a shrug, so each one has to re-run the model with exactly one
  * decision changed rather than assert a story about it.
  */
+/**
+ * Every verdict on the ending panel, swept for the two ways a heading can lie.
+ *
+ * The panel is four to six cards, each a coloured badge over a sentence, and it is the last
+ * thing a student reads about their own season. A badge that disagrees with the sentence
+ * under it is worse than no badge: it teaches a reader that the labels are decoration.
+ */
+describe("no verdict contradicts its own card", () => {
+  const seasons = () => {
+    const plans: SnapshotInputs[] = [];
+    for (const setupId of ["gym-sublet", "teammate-share", "cousin-room"] as const) {
+      for (const includeCompletion of [false, true]) {
+        for (const includeOptionalWork of [false, true]) {
+          for (const depositTaken of [false, true]) {
+            for (const flexibleCash of [0, 600, 2100]) {
+              plans.push(plan({ setupId, includeCompletion, includeOptionalWork, depositTaken, amounts: { goal: dollars(600), reserve: dollars(400), flexibleCash: dollars(flexibleCash) } }));
+            }
+          }
+        }
+      }
+    }
+    return plans;
+  };
+
+  it("never labels a decision as taken on a season where it was not", () => {
+    // "Building the plan around the attendance bonus — NO EFFECT — Your plan was already
+    // built without it." A heading and its own sentence disagreeing about what the student
+    // did. Every label on this panel now names the call that was actually made, so no label
+    // can appear on both sides of a decision.
+    const bySide = new Map<string, Set<boolean>>();
+    for (const final of seasons()) {
+      for (const risk of resolveSeason(final, N).risks) {
+        const seen = bySide.get(risk.label) ?? new Set<boolean>();
+        seen.add(risk.taken);
+        bySide.set(risk.label, seen);
+      }
+    }
+    const ambiguous = [...bySide.entries()].filter(([, sides]) => sides.size > 1).map(([label]) => label);
+    expect(ambiguous).toEqual([]);
+  });
+
+  it("never heads a verdict that went well with a sentence about what it cost", () => {
+    for (const final of seasons()) {
+      for (const risk of resolveSeason(final, N).risks) {
+        if (risk.outcome !== "paid_off" && risk.outcome !== "no_effect") continue;
+        const opening = risk.detail.split(". ")[0] ?? "";
+        expect(opening, `${risk.id} on ${final.setupId}`).not.toMatch(/paid .*more|cost .*more|never came|did not have enough/);
+      }
+    }
+  });
+});
+
 describe("the season says which risk paid off and which one cost", () => {
   const verdict = (resolution: ReturnType<typeof resolveSeason>, id: string) =>
     resolution.risks.find((risk) => risk.id === id)!;
@@ -182,7 +234,10 @@ describe("the season says which risk paid off and which one cost", () => {
     expect(partial.attendanceHeld).toBe(false);
     expect(partial.load.bought).toBe(1);
     expect(verdict(partial, "buying-time").outcome).toBe("fell_short");
-    expect(verdict(partial, "buying-time").detail).toContain("1 hours back");
+    // "1 hours back" is what this said, and this test pinned it. The count is one because
+    // the plan bought exactly one hour, which is the case a hard-coded plural gets wrong, so
+    // the assertion is now the sentence a student would actually read.
+    expect(verdict(partial, "buying-time").detail).toContain("1 hour back");
   });
 
   /**
@@ -303,6 +358,26 @@ describe("the season says which risk paid off and which one cost", () => {
           if (read.outcome !== "no_effect") continue;
           expect(read.detail, `${String(depositTaken)} / ${week5.shortfall} of ${week5.movable}`)
             .not.toMatch(/paid .*more|cost .*less|instead of/);
+        }
+      }
+    });
+
+    /**
+     * The same rule, one level out: it is not only "no effect" that can contradict its body.
+     *
+     * A green **Paid off** shipped over *"The course cost the full price rather than the
+     * deposit, so Avery paid more"* — the badge and the first thing under it disagreeing about
+     * whether the decision went well, on a season where the course also ended unpaid. The
+     * premium is real and it is still printed; a verdict that leads with it may not be headed
+     * with a win.
+     */
+    it("never opens a verdict that went well with what the decision cost", () => {
+      for (const depositTaken of [false, true]) {
+        for (const week5 of [pressure(0, 3100), pressure(500, 1900), pressure(1200, 400), pressure(500, 1900, true)]) {
+          const read = deposit({ depositTaken }, week5);
+          if (read.outcome !== "paid_off" && read.outcome !== "no_effect") continue;
+          const opening = read.detail.split(". ")[0] ?? "";
+          expect(opening, `${String(depositTaken)} / ${week5.shortfall} of ${week5.movable}`).not.toMatch(/paid .*more|cost .*more/);
         }
       }
     });

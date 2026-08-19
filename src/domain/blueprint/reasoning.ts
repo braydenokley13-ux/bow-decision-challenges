@@ -23,7 +23,12 @@ export interface ReasoningCriterion {
 export const REASONING_CRITERIA: readonly ReasoningCriterion[] = [
   { id: "C6.1", label: "Workability", hint: "Explains why the final plan actually holds", max: 2 },
   { id: "C6.2", label: "Protected priority", hint: "Names what they chose to keep, and why", max: 2 },
-  { id: "C6.3", label: "Tradeoff / opportunity cost", hint: "Names what that choice cost them", max: 2 },
+  // One name, hyphenated. It read "Tradeoff / opportunity cost": two names for one idea
+  // offered in the same breath, in a four-item list where the other three are single noun
+  // phrases — and the hint underneath already says what it means. The hyphen matches
+  // `competencies.ts`'s "Explains the trade-off made", which is the sentence a teacher reads
+  // about the same student on the same page.
+  { id: "C6.3", label: "Trade-off", hint: "Names what that choice cost them", max: 2 },
   { id: "C6.4", label: "Numerical evidence", hint: "Two accurate, relevant numbers from their own plan", max: 4 },
 ] as const;
 

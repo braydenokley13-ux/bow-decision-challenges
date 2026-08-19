@@ -159,6 +159,59 @@ export interface AlternateStateEvidence {
 }
 
 /**
+ * Where the figure standing in one row of a plan came from.
+ *
+ * This exists because a board with one-press shortcuts on it produces two things that look
+ * identical in a saved plan and are not the same fact about a student: an amount they chose,
+ * and an amount that arrived because they pressed the biggest button on the screen. A run
+ * that cannot tell them apart credits a decision nobody made — which is exactly what
+ * "Savings is a planned amount — the course line held a figure the student set" was saying
+ * about students who never touched that line.
+ *
+ * It is deliberately **not** a `SupportLevel`. Support answers "how much help did they have
+ * with the arithmetic", and `answer_supplied` scores zero because a copied number says
+ * nothing about whether a student can produce one. A one-press fill is a different fact in
+ * both directions: the student really did choose *which line to protect*, and really did not
+ * choose *the amount*. Folding the two together would either deny them the decision they
+ * made or credit them with one they did not.
+ *
+ * - `typed` — the student produced this figure: the steppers, the keyboard, or a figure that
+ *   arrived some other way and that they then changed. This is the only value that means
+ *   "the amount is theirs".
+ * - `suggested` — BOW proposed this figure and the student accepted it whole. They chose the
+ *   line; the number is BOW's. The scaffold that fills in one balanced plan writes this.
+ * - `remainder` — the student named this row to take whatever the rest of the plan left
+ *   over. They chose the line; the *arithmetic* chose the number. It is separated from
+ *   `suggested` because the two mean different things to the one requirement that reads
+ *   them: a suggested figure is a number BOW picked, and a remainder is not a number anybody
+ *   picked. "Savings is whatever is left" is the misconception this product exists to catch,
+ *   and it is `remainder` on the savings row, not `suggested` on it.
+ *
+ * The fourth state is the absence of an entry: a row nobody touched. It is not a value here
+ * on purpose — a map with no key for a row cannot be mistaken for a decision, and every
+ * reader has to handle it.
+ */
+export type AmountSource = "typed" | "suggested" | "remainder";
+
+/** How one row's figure arrived, and whether the student has since changed it. */
+export interface AmountProvenance {
+  source: AmountSource;
+  /**
+   * The row has held a figure BOW produced, and the student changed it afterwards.
+   *
+   * It is what makes an accepted suggestion earnable back: a student who pressed a fill,
+   * looked at what it did and moved the number has made the amount theirs, and `source`
+   * reads `typed` from that moment. This flag is what lets the sentence a teacher reads say
+   * which of those two things happened rather than only that the figure is now the
+   * student's.
+   */
+  revised: boolean;
+}
+
+/** One plan's rows, by where each figure came from. A missing row was never touched. */
+export type PlanAmountSources = Partial<Record<CategoryId, AmountProvenance>>;
+
+/**
  * One moment where the student sent the money still unassigned to a named row.
  *
  * The board has always demanded that every dollar end up somewhere. What it never recorded
@@ -215,7 +268,14 @@ export interface CompetingClaimsSettlement {
 
 export interface AssessmentFacts {
   calculations: Partial<Record<CalcId, CalculationEvidence>>;
-  opening?: { snapshot: PlanSnapshot; balance: Dollars; firstSaveBalance: Dollars; conditionalExposure: Dollars; support: SupportLevel; evidenceRefs: string[] };
+  /**
+   * `sources` is optional and absent means *this log predates the record*, not *no row was
+   * touched*. An attempt saved before the board recorded where each figure came from cannot
+   * be re-read through the new rule without changing what a finished attempt means, so the
+   * observer falls back to what such a log can actually support. A run recorded today always
+   * carries one, with a key for every row the student acted on and none for the rest.
+   */
+  opening?: { snapshot: PlanSnapshot; balance: Dollars; firstSaveBalance: Dollars; conditionalExposure: Dollars; support: SupportLevel; evidenceRefs: string[]; sources?: PlanAmountSources };
   fallback?: AlternateStateEvidence;
   firstResponse?: AlternateStateEvidence;
   preview?: AlternateStateEvidence;
@@ -258,13 +318,27 @@ export interface ConceptResult {
   misconceptionTags: string[];
 }
 
+/**
+ * `summary` used to be a sixth field here, and it is gone.
+ *
+ * It was a sixth vocabulary for "how well did this student do" — `strong_application`,
+ * `secure_application`, `developing_application`, `limited_application` — computed for every
+ * attempt from a 65/80/90 threshold ladder over the composite total, and rendered on no
+ * screen since the bespoke demo pages were deleted. Four `*_application` strings would be
+ * indefensible in front of a teacher, and a field sitting in the result type waiting to be
+ * rendered is not dead weight so much as a loaded gun: the next person adding a status reads
+ * `GradeResult`, finds a ready-made verdict, and a sixth vocabulary is back on a screen.
+ *
+ * Deleted rather than fenced, for the same reason `STATUS_LABELS` and `conceptSummaries`
+ * were. It also took the last live use of the composite total's thresholds with it — the
+ * same composite `studentSpine.test.ts` says must not come back.
+ */
 export interface GradeResult {
   structuredPoints: number;
   structuredMaximum: number;
   reasoningPoints: number | null;
   finalPoints: number | null;
   incomplete: boolean;
-  summary: "strong_application" | "secure_application" | "developing_application" | "limited_application" | "incomplete" | "pending_reasoning";
 }
 
 export interface AssessmentResult {

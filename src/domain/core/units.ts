@@ -14,3 +14,14 @@ export function hours(count: number): string {
 export function hoursPerWeek(count: number): string {
   return `${hours(count)} a week`;
 }
+
+/**
+ * The whole clause, verb included, because the verb is the part that goes wrong.
+ *
+ * "1 hour of every week **belong** to the trip" shipped, on the one option that costs exactly
+ * one hour a week. A caller that interpolates a count into a sentence it wrote itself has to
+ * get the noun *and* the verb right every time; a caller that asks for the clause gets both.
+ */
+export function hoursOfEveryWeek(count: number): string {
+  return `${hours(count)} of every week ${count === 1 ? "belongs" : "belong"}`;
+}

@@ -3,6 +3,7 @@ import { useChallenge } from "../app/ChallengeContext";
 import { StageShell } from "../app/StageShell";
 import { Button } from "../components/primitives/Button";
 import { dollars, formatDollars } from "../domain/core/money";
+import { hours } from "../domain/core/units";
 import { resolveSeason, type CompetingClaimsOutcome, type RiskVerdict, type Week5Pressure } from "../domain/finance/resolution";
 import { assigned, balanceOf, residualOf } from "../domain/finance/formulas";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
@@ -37,7 +38,10 @@ const OUTCOME_LABEL: Record<RiskVerdict["outcome"], string> = {
 export function Week8Resolution() {
   const { state, dispatch } = useChallenge();
   const final = snapshotForMode(state, "final");
-  const opening = amountsFor(state, state.saved.fallback ? "fallback" : "working");
+  // The plan the season ran on. The backup check is a what-if built on top of it and is not
+  // what Week 5 landed on, so reading the shortfall off it understated what the student
+  // actually had to absorb.
+  const opening = amountsFor(state, "working");
   const response = snapshotForMode(state, "week5-first-response");
   const bonusLabel = BASKETBALL_SCENARIO.incomeCopy.completion.label;
   /**
@@ -76,7 +80,7 @@ export function Week8Resolution() {
       paidFor: week3Claims().filter((claim) => funded.includes(claim.id)).map((claim) => claim.inSentence),
       unpaid: week3Claims()
         .filter((claim) => !funded.includes(claim.id))
-        .map((claim) => ({ id: claim.id, label: claim.verdictLabel, cost: claim.cost, wentUnpaid: claim.wentUnpaid })),
+        .map((claim) => ({ id: claim.id, label: claim.verdictLabel, inSentence: claim.inSentence, cost: claim.cost, wentUnpaid: claim.wentUnpaid })),
       reasonToldBack: claimReason(state.week3.reason).toldBack,
     };
   }, [state.week3]);
@@ -94,10 +98,14 @@ export function Week8Resolution() {
   // peak of the story in front of American twelve-year-olds. The four lines are also shorter
   // than they were: this is the one place on the screen where a sentence is doing emotional
   // work rather than reporting, and a long one blunts it.
+  // Avery is speaking to the student, so every line stays in that one relation. The second
+  // of these used to read "You kept enough back that it did not sink us" — a reassurance
+  // rather than a report, and a slide from *you* to *us* inside one sentence. What Avery has
+  // to say here is what happened to Avery.
   const averyLine = !resolution.attendanceHeld
     ? resolution.uncovered > 0
-      ? `I missed a session in Week ${resolution.bonusLostWeek} and the bonus went with it. We had nothing saved for it.`
-      : `I missed a session in Week ${resolution.bonusLostWeek} and the bonus went with it. You kept enough back that it did not sink us.`
+      ? `I missed a session in Week ${resolution.bonusLostWeek} and the bonus went with it. There was no backup money left to cover it.`
+      : `I missed a session in Week ${resolution.bonusLostWeek} and the bonus went with it. The backup money you kept covered it.`
     : resolution.unplannedGain > 0
       ? `Every session, all ${decidingWeeks} weeks. The bonus turned up and neither of us was counting on it.`
       : `Every session, all ${decidingWeeks} weeks. The bonus landed exactly as you planned.`;
@@ -193,7 +201,7 @@ export function Week8Resolution() {
           </dl>
           <p>
             {resolution.spentOnTime > 0
-              ? `${formatDollars(resolution.spentOnTime)} of the plan went into Avery’s week and bought ${load.bought} hours back.`
+              ? `${formatDollars(resolution.spentOnTime)} of the plan went into Avery’s week and bought ${hours(load.bought)} back.`
               : "None of the plan went into buying Avery’s time back."}
           </p>
         </section>

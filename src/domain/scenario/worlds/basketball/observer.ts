@@ -12,7 +12,7 @@ import type { CategoryId } from "../../../core/ids";
 import { formatDollars } from "../../../core/money";
 import { deriveFacts } from "../../../evidence/facts";
 import { observeStructured } from "../../../evidence/observe";
-import type { CompetingClaimsSettlement, EvidenceEvent, MicroSkillObservation, RemainderChoice } from "../../../evidence/types";
+import type { CompetingClaimsSettlement, EvidenceEvent, MicroSkillObservation, PlanAmountSources, RemainderChoice } from "../../../evidence/types";
 import { SCENARIO_NUMBERS } from "../../numbers";
 import type { ScenarioNumbers } from "../../types";
 import { claimReason, isClaimReasonId, reachesAsFarAsItGoes, week3Claims, type CompetingClaim } from "./claims";
@@ -56,11 +56,13 @@ export type BasketballRouteVia =
     }
   | {
       /**
-       * The student named the row that takes what their other choices left over. Derived
-       * from that statement alone — never from how much any row holds, and never from the
-       * order three steppers were touched in.
+       * Read off where the savings row's figure came from, and off nothing else.
+       *
+       * Never from how much that row holds — a student who plans $0 toward the course this
+       * season has still planned it — and never from the order three steppers were touched
+       * in, which this product records nowhere and could not read if it did.
        */
-      via: "remainder-declaration";
+      via: "savings-figure";
     }
   | {
       /**
@@ -109,8 +111,8 @@ export const BASKETBALL_EVIDENCE_ROUTES: readonly BasketballEvidenceRoute[] = [
   },
   {
     evidenceRequirementId: "plan-within-income.er3",
-    via: "remainder-declaration",
-    note: "Closing the opening plan by sending the last of the money to a named row. The course line is what Avery is saving into, so a student who sends the leftovers there has let the arithmetic set their savings, and a student who sends them to Avery's week or the backup money has set the course line themselves and let something else absorb the rest.",
+    via: "savings-figure",
+    note: "Where the figure on the course line came from when the opening plan was closed. The course is what Avery is saving into, so a student who let that row take whatever the other two left has let the arithmetic set their savings, and a student who set the figure themselves and let another row absorb the rest has planned it.",
   },
   {
     evidenceRequirementId: "plan-within-income.er4",
@@ -256,9 +258,15 @@ export interface BasketballObserverInput {
     evidenceRefs: readonly string[];
   };
   /**
+   * The opening plan as it was saved: where each row's figure came from, what the savings
+   * row finished at, and the events to point a teacher at. Absent means no opening plan was
+   * ever saved, which is `null` evidence and not a low score.
+   */
+  openingPlan?: OpeningPlan;
+  /**
    * Every row the student named as taking the leftovers while building the opening plan,
-   * in the order they named them. Absent or empty means they closed the plan another way,
-   * which is `null` evidence and not a low score.
+   * in the order they named them. Read only for an attempt saved before the board recorded
+   * provenance; a run recorded today is judged from `openingPlan.sources`.
    */
   openingRemainder?: readonly RemainderChoice[];
   /**
@@ -270,6 +278,20 @@ export interface BasketballObserverInput {
    */
   competingClaims?: SettledClaims;
   scoredExplanations?: ScoredExplanations;
+}
+
+/**
+ * The opening plan, as much of it as this requirement is allowed to see.
+ *
+ * `savingsAmount` is here for one branch and one only — an attempt with no provenance whose
+ * savings row finished at $0, where the amount is what says the log cannot settle the
+ * question. Nothing else reads it, and `neutrality.test.ts` is what keeps it that way.
+ */
+export interface OpeningPlan {
+  sources?: PlanAmountSources;
+  savingsAmount: number;
+  supportLevel: SupportLevel;
+  evidenceRefs: readonly string[];
 }
 
 /** One settlement, with the event it came from. */
@@ -290,70 +312,144 @@ export interface SettledClaims {
 const SAVINGS_ROW: CategoryId = "goal";
 
 /**
- * `plan-within-income.er3`, from the one statement the student makes about it.
+ * `plan-within-income.er3` — savings as a planned amount, read off where the figure came from.
  *
  * The rule is the product definition's, unaltered: savings is a planned amount when the
  * student set it and let something else take the remainder, and is not when the remainder
- * *is* the savings.
+ * *is* the savings. What changed is what the world reads it off.
  *
- * **Only a move that left nothing unassigned counts.** A row can take the rest of the money
- * or it can fill up on the way past — the course row is capped at what the course costs, so
- * a student funding it in full still has money to place afterwards. The first is a statement
- * about where the leftovers went; the second is a deliberate figure being placed, and
- * reading it as the first would score the goal-first student as the misconception. `remaining`
- * is what tells them apart, which is why the board records it.
+ * **It used to read the closing statement alone, and that statement cannot carry it.** "Which
+ * row took the last of the money" answers only half the question. A student who pressed one
+ * card marked *"Backup money — put $1,600 in"* had named a row that was not the course line,
+ * and this file told their teacher *"the course line held a figure the student set"* about a
+ * run in which the course line was never touched and sat at $0. Three students in one red-team
+ * session were reported that way. The product could not tell "deliberately put nothing toward
+ * the course" from "never looked at the course row", and it resolved the ambiguity as a
+ * demonstrated skill.
  *
- * Three things this deliberately does not read:
+ * So the board records where each row's figure came from, and this reads the savings row:
+ *
+ * - **`typed`** — the student produced the figure, with the steppers, the keyboard, or by
+ *   moving a number that arrived some other way. The amount is theirs, whatever it is. **5**,
+ *   and **4** where they got there by taking back a figure that had been the leftovers, which
+ *   is §10.3 self-correction: got it wrong, saw the raw state, fixed it with nothing but the
+ *   board.
+ * - **`remainder`** — the course line took whatever the other rows left. That is the
+ *   misconception this competency exists to catch, named out loud. **0**.
+ * - **`suggested`** — BOW produced the figure and the student accepted it whole. They chose
+ *   the line and not the amount, and the requirement is about the amount. **0**, which is
+ *   where the support cap puts it anyway: the only control in this world that suggests a
+ *   whole plan is the third-attempt scaffold, and every event it writes carries
+ *   `answer_supplied`.
+ * - **nothing at all** — the row was never touched. **`null`**. Neither "they planned it" nor
+ *   "they failed to plan it" is supported by a row nobody acted on, and `null` is the word
+ *   this product already has for a judgement it will not make. The opening board no longer
+ *   lets a plan close in that state, so a run recorded today reaches it only by being
+ *   abandoned before the plan was saved.
+ *
+ * Three things this deliberately does not read, all unchanged:
  *
  * - **How much is in any row.** A student who plans $0 for the course this season has still
- *   planned it. Reading the size of the line would score a priority, which is the mistake
- *   `balance.ts` and `neutrality.test.ts` exist to prevent, and the reason this evidence
- *   could not be produced before.
+ *   planned it, and says so with one press. Reading the size of the line would score a
+ *   priority, which is the mistake `balance.ts` and `neutrality.test.ts` exist to prevent.
  * - **The order the steppers were touched in.** Click sequence is not intention, and this
  *   product records no clickstream to read it from even if it were.
  * - **Whether the plan is a good one.** A plan that sends the leftovers to Avery's week
  *   scores here exactly as one that sends them to the backup money.
  *
- * The one level that is not a plain read of the closing statement is 4. A student who closed
- * onto the course line, saw the board that produced, took money back off it and closed
- * somewhere else has done what §10.3 calls self-correction: got it wrong, saw the raw state,
- * fixed it with nothing but the tools already on screen.
+ * **An attempt saved before any of this was recorded** carries no provenance at all, and it
+ * is not re-read through the new rule — re-reading a finished attempt would change what a
+ * student's permanent record means. It falls back to the closing statement it was scored on,
+ * with the one correction the ruling requires: a course line sitting at $0 in a log that
+ * cannot say whether anybody touched it produces no positive observation.
  */
-function remainderObservation(
+function savingsObservation(
   route: BasketballEvidenceRoute,
   kind: EvidenceKind,
+  opening: OpeningPlan | undefined,
+  choices: readonly RemainderChoice[],
+): EvidenceRequirementObservation {
+  const said = (level: RubricLevel | null, supportLevel: SupportLevel, evidenceRefs: readonly string[], detail: string) => ({
+    evidenceRequirementId: route.evidenceRequirementId,
+    kind,
+    level,
+    supportLevel,
+    evidenceRefs: evidenceRefs.length > 0 ? [...evidenceRefs] : ["not-observed:plan-savings"],
+    reason: `${route.note} ${detail}`,
+  });
+  if (!opening) {
+    return said(null, "standard_access", [], "The opening plan was never saved, so this world saw neither answer.");
+  }
+  if (!opening.sources) return legacySavingsObservation(said, opening, choices);
+
+  const provenance = opening.sources[SAVINGS_ROW];
+  if (!provenance) {
+    // Said as a fact about the screen and a silence in the run, never as a choice and never
+    // as a failure to make one. The student's own read-back of their run says the same thing
+    // in the same shape — *the screen opened that way, you carried on, and this run cannot
+    // tell whether that was the call you meant to make* — and the two surfaces agree exactly
+    // as long as neither of them claims the student decided. "Go and ask them" is the move
+    // this sentence is for.
+    return said(
+      null,
+      opening.supportLevel,
+      opening.evidenceRefs,
+      "The course line was at $0 when the screen opened and nothing was ever put into it or said about it, so this run cannot tell whether saving nothing toward the course was the call the student meant to make.",
+    );
+  }
+  if (provenance.source === "remainder") {
+    return said(0, opening.supportLevel, opening.evidenceRefs, "The course line took what the other rows left over, so the amount saved is what the arithmetic came to rather than a figure the student set.");
+  }
+  if (provenance.source === "suggested") {
+    return said(0, opening.supportLevel, opening.evidenceRefs, "The figure on the course line is one BOW put there, and the student did not change it, so no amount here was set by them.");
+  }
+  return provenance.revised
+    ? said(4, opening.supportLevel, opening.evidenceRefs, "The course line first held a figure the student had not chosen, and they moved it themselves, with nothing on screen but the board.")
+    : said(5, opening.supportLevel, opening.evidenceRefs, "The course line held a figure the student set, and another row took the last of the money.");
+}
+
+/**
+ * The same requirement, on a log written before the board recorded where a figure came from.
+ *
+ * It is the rule those attempts were scored under — which row took the last of the money —
+ * with one thing removed. A course line sitting at $0 used to read as "a figure the student
+ * set" and it cannot: $0 in a log with no provenance is exactly the ambiguity the record was
+ * added to settle, and claiming the good half of it is how three students who never opened
+ * that row came to be reported as having planned their savings. Those runs read `null` now,
+ * which is the honest thing a log that cannot say should produce.
+ */
+function legacySavingsObservation(
+  said: (level: RubricLevel | null, supportLevel: SupportLevel, evidenceRefs: readonly string[], detail: string) => EvidenceRequirementObservation,
+  opening: OpeningPlan,
   choices: readonly RemainderChoice[],
 ): EvidenceRequirementObservation {
   const closings = choices.filter((choice) => choice.remaining === 0);
   const closed = closings.at(-1);
   if (!closed) {
-    const detail = choices.length === 0
-      ? "The student closed the opening plan without saying which row took the rest, so this world saw neither answer."
-      : "The student used the control to place a figure but finished the plan another way, so no row was ever named as taking the last of the money.";
-    return {
-      evidenceRequirementId: route.evidenceRequirementId,
-      kind,
-      level: null,
-      supportLevel: "standard_access",
-      evidenceRefs: choices.length > 0 ? choices.map((choice) => choice.evidenceRef) : ["not-observed:plan-remainder"],
-      reason: `${route.note} ${detail}`,
-    };
+    return said(
+      null,
+      "standard_access",
+      choices.map((choice) => choice.evidenceRef),
+      choices.length === 0
+        ? "The student closed the opening plan without saying which row took the rest, so this world saw neither answer."
+        : "The student used the control to place a figure but finished the plan another way, so no row was ever named as taking the last of the money.",
+    );
   }
-  const everClosedOnSavings = closings.some((choice) => choice.category === SAVINGS_ROW);
-  const level: RubricLevel = closed.category === SAVINGS_ROW ? 0 : everClosedOnSavings ? 4 : 5;
-  const detail = closed.category === SAVINGS_ROW
-    ? "The course line took what the other rows left over, so the amount saved is what the arithmetic came to rather than a figure the student set."
-    : everClosedOnSavings
-      ? "The leftovers landed on the course line first and the student took them back off it and closed somewhere else, with nothing on screen but the board."
-      : "The course line held a figure the student set, and another row took the last of the money.";
-  return {
-    evidenceRequirementId: route.evidenceRequirementId,
-    kind,
-    level,
-    supportLevel: closed.supportLevel,
-    evidenceRefs: choices.map((choice) => choice.evidenceRef),
-    reason: `${route.note} ${detail}`,
-  };
+  const refs = choices.map((choice) => choice.evidenceRef);
+  if (closed.category === SAVINGS_ROW) {
+    return said(0, closed.supportLevel, refs, "The course line took what the other rows left over, so the amount saved is what the arithmetic came to rather than a figure the student set.");
+  }
+  if (opening.savingsAmount === 0) {
+    return said(
+      null,
+      closed.supportLevel,
+      refs,
+      "Another row took the last of the money and the course line finished at $0. This attempt was recorded before the board kept where a figure came from, so it cannot say whether that was a decision or a row nobody opened, and it will not claim either.",
+    );
+  }
+  return closings.some((choice) => choice.category === SAVINGS_ROW)
+    ? said(4, closed.supportLevel, refs, "The leftovers landed on the course line first and the student took them back off it and closed somewhere else, with nothing on screen but the board.")
+    : said(5, closed.supportLevel, refs, "The course line held a figure the student set, and another row took the last of the money.");
 }
 
 /** What a conjunction of micro-skills came to, and which one decided it. */
@@ -612,8 +708,8 @@ export function observeBasketballEvidence(
     const requirement = evidenceRequirementById(route.evidenceRequirementId);
     if (!requirement || route.via === "not-produced") return [];
     if (route.via === "written-defense") return [explanationObservation(route, requirement.kind, input)];
-    if (route.via === "remainder-declaration") {
-      return [remainderObservation(route, requirement.kind, input.openingRemainder ?? [])];
+    if (route.via === "savings-figure") {
+      return [savingsObservation(route, requirement.kind, input.openingPlan, input.openingRemainder ?? [])];
     }
     if (route.via === "competing-claims") return [claimsObservation(route, requirement.kind, input.competingClaims)];
     const combined = combine(route.microSkillIds, byId);
@@ -658,6 +754,16 @@ export function observeBasketballFromLog(
     // The opening plan only. Later boards repair a plan that already exists, and ER3 is
     // about the one moment money is being divided for the first time.
     openingRemainder: (facts.remainderChoices ?? []).filter((choice) => choice.mode === "working"),
+    ...(facts.opening
+      ? {
+          openingPlan: {
+            ...(facts.opening.sources ? { sources: facts.opening.sources } : {}),
+            savingsAmount: facts.opening.snapshot.inputs.amounts.goal,
+            supportLevel: facts.opening.support,
+            evidenceRefs: facts.opening.evidenceRefs,
+          },
+        }
+      : {}),
     ...(settled
       ? {
           competingClaims: {

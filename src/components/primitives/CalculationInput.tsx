@@ -128,7 +128,10 @@ export function CalculationInput({ label, prompt, terms, expected, onSubmit, onC
         {verdict === "correct" && "That's the full amount."}
         {verdict === "low" && (low ?? "Too low. Check that you counted every amount.")}
         {verdict === "high" && (high ?? "Too high. Check whether something got counted twice.")}
-        {verdict === "invalid" && "Enter a whole dollar amount, like 1400. No dollar sign needed."}
+        {/* Says which of the two things is wrong. A dollar sign, a comma and a run of zero
+            cents are all accepted now, so what is left to refuse is a part of a dollar — and
+            "enter a whole dollar amount" was being shown to students who had entered one. */}
+        {verdict === "invalid" && "Whole dollars only — 1400, not 1400.50. A $ and commas are fine."}
         {verdict === "idle" && priorAttempts >= 2 && "Stuck? Open the step-by-step hint below."}
       </p>
       {priorAttempts >= 2 && verdict !== "correct" && (

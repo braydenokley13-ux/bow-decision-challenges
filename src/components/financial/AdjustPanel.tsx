@@ -166,7 +166,13 @@ export function AdjustPanel({
       </div>
 
       {showMeter && (
-        <WeekMeter load={load} parts={loadParts} rate={SCENARIO_NUMBERS.load.blockBuybackCost} atStake={`the ${formatDollars(SCENARIO_NUMBERS.completionIncome)} attendance bonus`} />
+        <WeekMeter
+          load={load}
+          parts={loadParts}
+          rate={SCENARIO_NUMBERS.load.blockBuybackCost}
+          headroom={Math.max(0, balance)}
+          atStake={input.includeCompletion ? `the ${formatDollars(SCENARIO_NUMBERS.completionIncome)} attendance bonus` : null}
+        />
       )}
 
       {attempts >= 2 && balance !== 0 && (

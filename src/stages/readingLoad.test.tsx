@@ -422,7 +422,16 @@ const SUBMITTED: ChallengeAction[] = [
 ];
 
 const BASKETBALL_SCREENS: readonly Screen<ChallengeAction>[] = [
-  { label: "entry", stage: "entry", actions: [] },
+  /*
+   * `entry` is gone from this list because it is gone from the run.
+   *
+   * A student who is already signed in used to land on a panel confirming that they were —
+   * "You are signed in as · Ada L. · Period 2", one button reading *Go in* — between their own
+   * home page and the game. The stage still exists and still draws that screen for a build
+   * with no class service, which is how the guide's sample run works; a rostered student
+   * never sees it, so it is not a screen on their critical path and its words are not theirs
+   * to read.
+   */
   { label: "choose-world (the picker)", stage: "choose-world", actions: CHOOSE },
   { label: "setup-comparison (rank)", stage: "setup-comparison", actions: RANK },
   { label: "setup-comparison (pick)", stage: "setup-comparison", actions: PICK },

@@ -61,34 +61,40 @@ describe("Seat 14, read as competencies", () => {
     expect(corrected?.map((observation) => observation.microSkillId)).toEqual(["C5.1"]);
   });
 
-  it("refuses to call the budget competency anything, because one requirement was never observed", () => {
-    // Four of the five things `plan-within-income` asks for are there and strong. The
-    // fifth — savings set on purpose rather than as the remainder — is not something this
-    // world can see, so it is `null`, and `null` is not a zero and not a pass. Incomplete
-    // is the only honest word: no competency result, no objective state, and nothing said
-    // about this student that the evidence does not support.
+  it("reads four of the budget competency's five, and waits on the one a person has to mark", () => {
+    // Seat 14 typed a figure into every row of the opening plan, including the course line,
+    // and saved a plan that balanced. Four of the five things `plan-within-income` asks for
+    // are there and strong; the fifth is the written explanation, which BOW never scores.
+    //
+    // **ER3 used to be `null` here, and this test used to say so.** The reason was never
+    // about this student: the board of the day recorded only one thing about savings — which
+    // row a student pressed to dispose of the leftovers — and Seat 14 pressed nothing,
+    // because they typed three figures that balanced exactly. The board now records where
+    // each row's figure came from, and theirs came from them. Nothing about the run changed;
+    // what changed is that the world can see it.
     expect(byId.get("plan-within-income")?.state).toBe("incomplete");
     expect(levelsOf(byId.get("plan-within-income"))).toEqual({
       "plan-within-income.er1": 5,
       "plan-within-income.er2": 5,
-      "plan-within-income.er3": null,
+      "plan-within-income.er3": 5,
       "plan-within-income.er4": 5,
       "plan-within-income.er5": null,
     });
   });
 
-  it("stays incomplete even once a person scores the writing", () => {
-    // The missing requirement is a fact about the world, not about the paperwork. Scoring
-    // the defense fills ER5 and changes nothing else, which is the proof that ER3 is what
-    // is holding this competency back.
+  it("completes the budget competency once a person has read the writing", () => {
+    // The one thing still missing is a mark only a person can make, and making it finishes
+    // the row. That is the difference between *incomplete* and a low score, said in the one
+    // place it can be demonstrated: nothing about Seat 14's decisions was ever in doubt, and
+    // the paperwork was.
     const scored = observeCompetencies(
       observeBasketballFromLog(log, { scoredExplanations: { "plan-within-income.er5": 5 } }),
       { submitted: true },
     );
     const planning = scored.find((result) => result.competencyId === "plan-within-income");
-    expect(planning?.state).toBe("incomplete");
+    expect(planning?.state).toBe("demonstrated");
     expect(levelsOf(planning)["plan-within-income.er5"]).toBe(5);
-    expect(levelsOf(planning)["plan-within-income.er3"]).toBeNull();
+    expect(levelsOf(planning)["plan-within-income.er3"]).toBe(5);
   });
 
   it("says nothing at all about the competencies this world cannot observe", () => {

@@ -210,7 +210,7 @@ describe("Week 8 says what happened to what went unpaid", () => {
       paidFor: week3Claims().filter((claim) => funded.includes(claim.id)).map((claim) => claim.inSentence),
       unpaid: week3Claims()
         .filter((claim) => !funded.includes(claim.id))
-        .map((claim) => ({ id: claim.id, label: claim.verdictLabel, cost: claim.cost, wentUnpaid: claim.wentUnpaid })),
+        .map((claim) => ({ id: claim.id, label: claim.verdictLabel, inSentence: claim.inSentence, cost: claim.cost, wentUnpaid: claim.wentUnpaid })),
       reasonToldBack: CLAIM_REASONS.find((entry) => entry.id === reason)!.toldBack,
     };
   };
@@ -241,7 +241,7 @@ describe("Week 8 says what happened to what went unpaid", () => {
     expect(travel.detail).toContain("You said nobody was counting on it.");
     // $30 of the $150 is left, and the away share cost more than that — so the ending does
     // not claim the leftover would have covered it, because it would not have.
-    expect(travel.detail).not.toContain("would have covered it");
+    expect(travel.detail).not.toContain("would have covered");
 
     const present = byId.get("unpaid-claim:sister-present")!;
     expect(present.detail).toContain("turned eleven");
@@ -263,13 +263,20 @@ describe("Week 8 says what happened to what went unpaid", () => {
     for (const risk of risks) expect(risk.detail.length, risk.id).toBeGreaterThan(40);
   });
 
-  it("says so when the money left over would have covered what went unpaid", () => {
+  it("says so when the money left over would have covered what went unpaid, once and by name", () => {
     // Funding only the away share leaves more than the present costs. That is the whole of
     // `er1`'s gap, said in the ending in the words a student can check.
+    //
+    // It is a fact about the week — money left in a week it could not be saved in — so it is
+    // said once and names whichever claims it is true of, rather than being appended to every
+    // card. Repeated per claim it was the third identical sentence a student who spent little
+    // met on the last screen of the run.
     const outcome = outcomeFor(["away-travel"], "only-wanted");
-    const risks = resolveSeason(finalOf({}), N, undefined, "attendance bonus", undefined, outcome).risks;
-    const present = risks.find((risk) => risk.id === "unpaid-claim:sister-present")!;
-    expect(present.detail).toContain("would have covered it");
+    const risks = resolveSeason(finalOf({}), N, undefined, "attendance bonus", undefined, outcome).risks
+      .filter((risk) => risk.id.startsWith("unpaid-claim:"));
+    expect(risks.filter((risk) => risk.detail.includes("would have covered"))).toHaveLength(1);
+    const first = risks[0]!;
+    expect(first.detail).toContain(`would have covered ${week3Claim("sister-present").inSentence}`);
   });
 
   it("leaves the ending exactly as it was for a run that never reached the week", () => {

@@ -508,11 +508,18 @@ export const POP_UP_SCENARIO: PopUpScenario = {
   // Four nights, four crowds, and each note says which way this one goes before the order for
   // it is placed. The weather used to be decoration over three Saturdays that resolved to the
   // same number; it is now the reason they do not.
+  // Every hedge in these four notes used to sit over a number the student had already been
+  // given. "About a fifth more people out" described a night the booth card had already priced
+  // at an exact count of plates, and Saturday 3's crowd "stayed home" in the past tense on a
+  // night that had not happened yet. Nothing here is uncertain — the organiser has run this
+  // market for years and tells every stall what each Saturday will be — so the prose says it
+  // the way the organiser would, and the words that performed doubt are gone. Where this world
+  // is genuinely uncertain it still says so out loud: "Two amounts might turn up."
   saturdays: [
-    { title: "Saturday 1", note: "The market opens at five and the strings of lights go up over the lane. A first Saturday brings a booth the crowd it usually gets." },
-    { title: "Saturday 2", note: "It rains until four and then it clears up properly. The market fills late and stays busy to closing, with about a fifth more people out than an ordinary Saturday." },
-    { title: "Saturday 3", note: "A cold evening, and everybody is standing around with their hands in their pockets. The band plays anyway, but about a third of the usual crowd stayed home." },
-    { title: "Saturday 4", note: "The last one, and the biggest. There are fireworks off the bridge at nine, and close to half as many people again as an ordinary Saturday come down to watch them." },
+    { title: "Saturday 1", note: "The market opens at five and the strings of lights go up over the lane. A first Saturday brings a booth the crowd it gets." },
+    { title: "Saturday 2", note: "It rains until four and then it clears up properly. The market fills late and stays busy to closing, with a fifth more people out than an ordinary Saturday." },
+    { title: "Saturday 3", note: "A cold evening, and everybody stands around with their hands in their pockets. The band plays anyway, but a third of the usual crowd stays home." },
+    { title: "Saturday 4", note: "The last one, and the biggest. There are fireworks off the bridge at nine, and half as many people again as an ordinary Saturday come down to watch them." },
   ],
   breakdown: {
     source: "Ramos Rentals",
@@ -526,9 +533,27 @@ export const POP_UP_SCENARIO: PopUpScenario = {
     locked: "The permit, the booth, the food you already cooked and Marisol's shift are paid for. None of that money is coming back.",
   },
   settle: { title: "The organiser settles up." },
+  /**
+   * The organiser's question, and the one place this world was asking for something else.
+   *
+   * It used to read *"Tell me how you would run it next season. What would you keep the same,
+   * and what would you do differently?"* — a replay plan. Three rubric rows are scored off the
+   * answer: something given up and what for, what the student refused to cut and why, and what
+   * made one claim on the tips jar matter more than another. A student could answer the old
+   * question perfectly — "I would take Middle Row and cook three trays on the cold night" —
+   * and have said none of those things, and a teacher would then mark that answer against all
+   * three. A rubric applied to work the prompt never asked for is the rubric marking the wrong
+   * thing, and it lands hardest on the claim the two worlds rest on: that a class where half
+   * the room ran the market still produces one answer about the class.
+   *
+   * It now asks for the same three things Basketball's Week 8 question asks for, in the
+   * organiser's voice rather than the coach's, and it ends on the same clause — *not what it
+   * cost, but what it was* — because that clause is the whole of the difference between price
+   * and worth, and a student who played either world should meet it.
+   */
   writeUp: {
     kicker: "Nadia Okafor, market organiser",
-    prompt: "Tell me how you would run it next season. What would you keep the same, and what would you do differently?",
+    prompt: "Tell me how the money went. What did you protect when the generator died, and what did you give up to do it? And say what made the thing the tips jar did not pay for matter less than the things it did — not what it cost, but what it was.",
     note: "A person reads this and writes back, so use your own numbers and say what you were thinking.",
   },
   screens: {
@@ -654,7 +679,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
     first: {
       kicker: "Saturday 1",
       title: "How much do you cook?",
-      deck: "Order the food before the doors open. Whatever the crowd does not buy is money in the bin.",
+      deck: "Order the food before the doors open. Anything you cook past what the crowd will buy is money in the bin.",
     },
     tips: {
       kicker: "The tips jar",
@@ -796,7 +821,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       },
     },
     writeUp: {
-      title: "How would you run it again?",
+      title: "What did the money do?",
       tiles: "Pick two or three of your own numbers",
       tileLabels: {
         takings: "What the market paid you",
@@ -807,7 +832,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
         cushion: "Cash left in the box",
       },
       field: "Two to four sentences",
-      starters: ["I would keep…", "I would change…", "The money went…"],
+      starters: ["I protected…", "I gave up…", "The money went…"],
       pickMoreOne: "more number to pick.",
       pickMore: "more numbers to pick.",
       ready: "Numbers ready.",

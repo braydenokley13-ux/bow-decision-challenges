@@ -7,7 +7,6 @@ import { formatDollars } from "../domain/core/money";
 import type { ClaimReasonId } from "../domain/core/ids";
 import { hours } from "../domain/core/units";
 import { depositPreview, seasonLedger } from "../domain/finance/timeline";
-import type { PlanMode } from "../domain/finance/types";
 import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
 import { weeksBeforeDisruption } from "../domain/scenario/season";
 import { CLAIM_REASONS, costOfClaims, week3Claims } from "../domain/scenario/worlds/basketball/claims";
@@ -17,6 +16,18 @@ const PLAYED_WEEKS = weeksBeforeDisruption(SCENARIO_NUMBERS);
 const DEADLINE = SCENARIO_NUMBERS.course.depositDeadlineWeek;
 const REMAINING_WEEKS = SCENARIO_NUMBERS.weeks - PLAYED_WEEKS.length;
 const CLAIMS = week3Claims();
+
+/**
+ * A sentence the student taps, put inside a sentence the product writes.
+ *
+ * The four reasons are written as things a student says out loud — "It was the cheapest one
+ * to drop." — so dropping one into the middle of a clause produced "…because It was the
+ * cheapest one to drop." One capital letter, and the sentence stops reading as English.
+ */
+function lowerFirst(label: string): string {
+  const trimmed = label.replace(/\.$/, "");
+  return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
+}
 const CASH = SCENARIO_NUMBERS.week3.cash;
 const CASH_WEEK = SCENARIO_NUMBERS.week3.week;
 
@@ -24,8 +35,12 @@ const CASH_WEEK = SCENARIO_NUMBERS.week3.week;
 function useSeason() {
   const { state } = useChallenge();
   const setupId = state.setupId;
-  const savedMode: PlanMode = state.saved.fallback ? "fallback" : "working";
-  const amounts = amountsFor(state, savedMode);
+  // The plan the season runs on is the one the student committed, not the backup check they
+  // were asked to build on top of it. The check asks "would this still hold if the money you
+  // counted on never came" and is never a plan Avery lives on — every later board, the Week 5
+  // arithmetic and Week 8's own reckoning all measure from the working plan, and this used to
+  // be the one place that did not.
+  const amounts = amountsFor(state, "working");
   const ledger = useMemo(() => (setupId ? seasonLedger(setupId, PLAYED_WEEKS.length, SCENARIO_NUMBERS) : []), [setupId]);
   return { setupId, amounts, ledger };
 }
@@ -78,6 +93,12 @@ export function SeasonWeeks() {
   const scale = Math.max(1, closing.received);
   const spent = costOfClaims(funded);
   const left = CASH - spent;
+  const inSentence = (claims: readonly typeof CLAIMS[number][]) => (claims.length <= 1
+    ? claims[0]?.inSentence ?? ""
+    : `${claims.slice(0, -1).map((claim) => claim.inSentence).join(", ")} and ${claims.at(-1)!.inSentence}`);
+  const unfunded = CLAIMS.filter((claim) => !funded.includes(claim.id));
+  const unpaidNames = inSentence(unfunded);
+  const fundedNames = inSentence(CLAIMS.filter((claim) => funded.includes(claim.id)));
 
   const toggle = (id: string) => {
     setRefusal(null);
@@ -164,7 +185,12 @@ export function SeasonWeeks() {
             the one thing this beat exists to avoid. */}
         {funded.length > 0 && (
           <div className="claims__why">
-            <p className="field-label" id="why-heading">What made you leave the rest out?</p>
+            {/* Named, not "the rest". The question is about the specific things this student
+                is walking away from, and reading their own names beside the four answers is
+                what makes an answer that is not true of them visible — calling the shoes that
+                are splitting the one Avery only wanted is a much harder thing to tap when the
+                shoes are in the question. */}
+            <p className="field-label" id="why-heading">What made you leave {unpaidNames} out?</p>
             <ul aria-labelledby="why-heading">
               {CLAIM_REASONS.map((entry) => (
                 <li key={entry.id}>
@@ -209,6 +235,22 @@ export function SeasonWeeks() {
               : <><b>One thing left.</b> Say what made you leave {formatDollars(CASH - spent)} worth of it out.</>}
           </p>
         )}
+        {/* The pairing the whole beat is about, stated once the student has made both halves
+            of it and directly above the press that records them. It is the same sentence the
+            evidence trail will carry, and it is here because a run in which the claim and the
+            reason are never on screen together is a run where the second is answered without
+            reading the first. */}
+        {/* Permanent, so the sentence is announced when it arrives rather than appearing in a
+            region that was not there a moment ago. An empty paragraph in this bar takes no
+            height and the button keeps its place. */}
+        <p className="claims__settled" aria-live="polite">
+          {funded.length > 0 && reason !== null && (
+          <>
+            <strong>{formatDollars(spent)}</strong> goes on {fundedNames}. {unpaidNames.charAt(0).toUpperCase()}{unpaidNames.slice(1)} {unfunded.length > 1 ? "go" : "goes"} unpaid,
+            because <strong>{lowerFirst(CLAIM_REASONS.find((entry) => entry.id === reason)?.label ?? "")}</strong>.
+          </>
+          )}
+        </p>
         <Button onClick={settle}>Week {DEADLINE} · the course office is calling</Button>
       </div>
     </StageShell>

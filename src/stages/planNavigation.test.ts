@@ -18,7 +18,7 @@ function states(position: PlanPosition) {
 
 describe("the plan rail", () => {
   it("starts with only question 1, nothing done, nothing clickable", () => {
-    const position = planPosition({ wanted: 0, visited: 0, gates: { floorReady: false, essentialsReady: false }, questions: QUESTIONS });
+    const position = planPosition({ wanted: 0, visited: 0, gates: { floorReady: false, bonusesAnswered: false, essentialsReady: false }, questions: QUESTIONS });
     expect(states(position)).toEqual([
       { state: "current", open: false },
       { state: "todo", open: false },
@@ -30,7 +30,7 @@ describe("the plan rail", () => {
   it("never marks an unreached question done or clickable when question 1 is answered", () => {
     // Floor answered, still on question 1. Question 2 is the real next question and opens;
     // question 3 stays shut even though the old furthest computation would have opened it.
-    const position = planPosition({ wanted: 0, visited: 0, gates: { floorReady: true, essentialsReady: false }, questions: QUESTIONS });
+    const position = planPosition({ wanted: 0, visited: 0, gates: { floorReady: true, bonusesAnswered: true, essentialsReady: false }, questions: QUESTIONS });
     expect(position.reachable).toBe(1);
     expect(states(position)).toEqual([
       { state: "current", open: false },
@@ -40,12 +40,10 @@ describe("the plan rail", () => {
     ]);
   });
 
-  it("opens question 3 only once question 2 has actually been on screen", () => {
-    const gates = { floorReady: true, essentialsReady: false };
+  it("opens question 3 only once question 2 has been on screen and answered", () => {
+    const gates = { floorReady: true, bonusesAnswered: true, essentialsReady: false };
     const before = planPosition({ wanted: 0, visited: 0, gates, questions: QUESTIONS });
     expect(railStop(2, before).open).toBe(false);
-    // The student walks forward to question 2. Being there is what opens question 3 —
-    // question 2's standing answer is already "leave it out", so it has no gate of its own.
     const after = planPosition({ wanted: 1, visited: 1, gates, questions: QUESTIONS });
     expect(after.at).toBe(1);
     expect(railStop(0, after)).toEqual({ state: "done", open: true });
@@ -53,21 +51,35 @@ describe("the plan rail", () => {
     expect(railStop(3, after)).toEqual({ state: "todo", open: false });
   });
 
+  it("holds question 3 shut while the two bonuses are unanswered", () => {
+    // This used to be the one question in the plan with no gate at all. Both cards opened
+    // with "No — leave it out" already pressed — the pedagogically right answer — so a
+    // student standing on question 2 was offered *Next* before deciding anything, and the
+    // plan then recorded the decision as theirs. Sitting on the question is no longer
+    // answering it.
+    const gates = { floorReady: true, bonusesAnswered: false, essentialsReady: false };
+    const standing = planPosition({ wanted: 1, visited: 1, gates, questions: QUESTIONS });
+    expect(standing.reachable).toBe(1);
+    expect(railStop(2, standing).open).toBe(false);
+    const answered = planPosition({ wanted: 1, visited: 1, gates: { ...gates, bonusesAnswered: true }, questions: QUESTIONS });
+    expect(railStop(2, answered).open).toBe(true);
+  });
+
   it("holds question 4 shut until the essentials total is right", () => {
-    const at3 = planPosition({ wanted: 2, visited: 2, gates: { floorReady: true, essentialsReady: false }, questions: QUESTIONS });
+    const at3 = planPosition({ wanted: 2, visited: 2, gates: { floorReady: true, bonusesAnswered: true, essentialsReady: false }, questions: QUESTIONS });
     expect(at3.reachable).toBe(2);
     expect(railStop(3, at3).open).toBe(false);
-    const answered = planPosition({ wanted: 2, visited: 2, gates: { floorReady: true, essentialsReady: true }, questions: QUESTIONS });
+    const answered = planPosition({ wanted: 2, visited: 2, gates: { floorReady: true, bonusesAnswered: true, essentialsReady: true }, questions: QUESTIONS });
     expect(railStop(3, answered).open).toBe(true);
   });
 
   it("clamps a wanted question past the frontier back to where the student may stand", () => {
-    const position = planPosition({ wanted: 3, visited: 0, gates: { floorReady: true, essentialsReady: false }, questions: QUESTIONS });
+    const position = planPosition({ wanted: 3, visited: 0, gates: { floorReady: true, bonusesAnswered: true, essentialsReady: false }, questions: QUESTIONS });
     expect(position.at).toBe(1);
   });
 
   it("keeps every opened question clickable when the student walks back", () => {
-    const position = planPosition({ wanted: 0, visited: 3, gates: { floorReady: true, essentialsReady: true }, questions: QUESTIONS });
+    const position = planPosition({ wanted: 0, visited: 3, gates: { floorReady: true, bonusesAnswered: true, essentialsReady: true }, questions: QUESTIONS });
     expect(position.at).toBe(0);
     expect(states(position).slice(1).every((stop) => stop.state === "done" && stop.open)).toBe(true);
   });

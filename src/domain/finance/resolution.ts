@@ -1,4 +1,5 @@
 import { dollars, formatDollars, type Dollars } from "../core/money";
+import { hours } from "../core/units";
 import type { ScenarioNumbers } from "../scenario/types";
 import { bonusWeeks } from "../scenario/season";
 import { assigned, courseCostFor } from "./formulas";
@@ -42,6 +43,8 @@ export interface UnpaidClaim {
   id: string;
   /** What the verdict is headed. */
   label: string;
+  /** The same claim inside a sentence, for the line that names several of them at once. */
+  inSentence: string;
   cost: Dollars;
   /** What Avery was left with. The world's sentence, in the world's voice. */
   wentUnpaid: string;
@@ -178,6 +181,10 @@ function depositVerdict(final: SnapshotInputs, n: ScenarioNumbers, pressure: Wee
 
   if (final.depositTaken) {
     const strained = tested && (!held || pressure.courseLineCut);
+    // The badge and the first sentence have to agree. A verdict headed "Cost you" that opens
+    // "the course cost less" reads as a mistake, and one headed "Paid off" that opens with
+    // what the decision cost teaches a student that the badge is decoration. The price is in
+    // every branch; what moves is whether it leads or follows.
     const priced = `The seat was held from Week ${week} for ${early} instead of ${full}, so the course cost ${premium} less.`;
     return {
       id: "course-deposit",
@@ -185,7 +192,7 @@ function depositVerdict(final: SnapshotInputs, n: ScenarioNumbers, pressure: Wee
       taken: true,
       outcome: strained ? "cost_you" : "paid_off",
       detail: strained
-        ? `${priced} It also stopped being money Avery could move, and Week 5 asked for ${asked} out of the ${movable} that still could.`
+        ? `Reserving it stopped being money Avery could move, and Week 5 asked for ${asked} out of the ${movable} that still could. ${priced}`
         : tested
           ? `${priced} Week 5 asked for ${asked}, and the ${movable} still free to move covered it.`
           : `${priced} Week 5 asked nothing of the money left movable, so committing early cost Avery no room.`,
@@ -203,11 +210,15 @@ function depositVerdict(final: SnapshotInputs, n: ScenarioNumbers, pressure: Wee
     // true when Week 5 never tested the plan is that the money bought room nobody needed:
     // a decision that cost something and returned nothing.
     outcome: !tested ? "cost_you" : held ? "paid_off" : "fell_short",
+    // Same rule as the branch above, and this is where it was broken: a green **Paid off**
+    // sat over a sentence opening "the course cost the full price … so Avery paid more". The
+    // premium is a real cost and it is still said; what leads the sentence is whatever the
+    // badge is about.
     detail: !tested
       ? `${priced} Week 5 then asked nothing of the money Avery kept reachable, so the room it bought was never needed.`
       : held
-        ? `${priced} Week 5 asked for ${asked}, and it came out of the ${movable} Avery had kept reachable.`
-        : `${priced} Week 5 asked for ${asked} and only ${movable} could move, so keeping it reachable was not enough on its own.`,
+        ? `Week 5 asked for ${asked}, and it came out of the ${movable} Avery had kept reachable. Reserving early would have locked some of that away. ${priced}`
+        : `Week 5 asked for ${asked} and only ${movable} could move, so keeping it reachable was not enough on its own. ${priced}`,
   };
 }
 
@@ -236,16 +247,21 @@ function unpaidClaimVerdicts(outcome: CompetingClaimsOutcome): RiskVerdict[] {
   // under one heading, twelve words apart, at the end of the run. The verdicts keep their
   // order through the sort below: both are `cost_you`, so they carry the same weight and stay
   // adjacent, which is what lets the second one lean on the first.
+  // Money left in a week it could not be saved in, beside the claims it would have covered.
+  // It is one fact about the week and not a fact about a claim, so it is said once and names
+  // whichever of them it is true of. Printed per card it produced the same sentence twice
+  // under two headings twelve words apart, at the end of the run, to a student who had just
+  // been told twice what their choice cost.
+  const covered = outcome.unpaid.filter((claim) => claim.cost <= outcome.leftOver);
+  const affordable = covered.length > 0
+    ? ` The ${formatDollars(outcome.leftOver)} left over would have covered ${listOf(covered.map((claim) => claim.inSentence))}.`
+    : "";
   return outcome.unpaid.map((claim, index) => ({
     id: `unpaid-claim:${claim.id}` as const,
     label: claim.label,
     taken: false,
     outcome: "cost_you" as const,
-    // The last clause only appears where it is true, and where it is true it is the whole
-    // finding: money was left in a week it could not be saved in, beside a claim it covered.
-    detail: `${claim.wentUnpaid}${index === 0 ? ` ${wentOn} ${outcome.reasonToldBack}` : ""}${
-      claim.cost <= outcome.leftOver ? ` The ${formatDollars(outcome.leftOver)} left over would have covered it.` : ""
-    }`,
+    detail: `${claim.wentUnpaid}${index === 0 ? ` ${wentOn} ${outcome.reasonToldBack}${affordable}` : ""}`,
   }));
 }
 
@@ -273,7 +289,11 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
   const verdicts: RiskVerdict[] = [
     {
       id: "attendance-bonus",
-      label: `Building the plan around the ${bonusLabel}`,
+      // The label names the call the student made. It used to read "Building the plan around
+      // the attendance bonus" over a body saying "Your plan was already built without it" —
+      // a heading and its own sentence disagreeing about what the student did. Every other
+      // verdict on this panel already names both sides of its decision.
+      label: final.includeCompletion ? `Building the plan around the ${bonusLabel}` : `Planning without the ${bonusLabel}`,
       taken: final.includeCompletion,
       outcome: !final.includeCompletion ? "no_effect" : held ? "paid_off" : "cost_you",
       // The verdict that costs the most is the one that most needs the counterfactual: a
@@ -289,7 +309,7 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
     },
     {
       id: "clinics",
-      label: "Coaching the Saturday clinics",
+      label: final.includeOptionalWork ? "Coaching the Saturday clinics" : "Keeping the Saturdays",
       taken: final.includeOptionalWork,
       outcome: !final.includeOptionalWork
         ? "no_effect"
@@ -312,7 +332,7 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
     },
     {
       id: "buying-time",
-      label: "Paying for rides",
+      label: final.amounts.flexibleCash > 0 ? "Paying for rides" : "Putting nothing into rides",
       taken: final.amounts.flexibleCash > 0,
       outcome: final.amounts.flexibleCash === 0
         ? "no_effect"
@@ -327,7 +347,7 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, held: boolean, 
           ? "This is what saved the bonus. Without the hours you bought back, Avery would have run out of week."
           : held
             ? "Avery would have made every session either way, so this money bought rest rather than the bonus."
-            : `It bought ${loadFor({ setupId: final.setupId, rehabActive: true, clinicsAccepted: final.includeOptionalWork, timeMoney: final.amounts.flexibleCash }, n).bought} hours back, and Avery still did not have enough week left.`,
+            : `It bought ${hours(loadFor({ setupId: final.setupId, rehabActive: true, clinicsAccepted: final.includeOptionalWork, timeMoney: final.amounts.flexibleCash }, n).bought)} back, and Avery still did not have enough week left.`,
     },
     depositVerdict(final, n, pressure),
     // Appended before the sort rather than merged into it, so that within one outcome the

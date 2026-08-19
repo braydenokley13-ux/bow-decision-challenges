@@ -1,8 +1,9 @@
+import type { CategoryId } from "../core/ids";
 import { dollars } from "../core/money";
 import { DEFAULT_WORLD_ID, numbersFor, PLAN_UNDER_PRESSURE_LAUNCH } from "../scenario/registry";
 import { balanceOf, readoutFor, residualOf, unassignedOf } from "../finance/formulas";
 import type { PlanMode, SnapshotInputs } from "../finance/types";
-import type { CompetingClaimsSettlement, EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../evidence/types";
+import type { AmountSource, CompetingClaimsSettlement, EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../evidence/types";
 import { competenciesForEvent, conceptsForEvent, evidenceRequirementsForEvent } from "../evidence/eventConcepts";
 import type { ChallengeAction } from "./actions";
 import { EMPTY_AMOUNTS, type ChallengeState } from "./state";
@@ -53,6 +54,32 @@ function goTo(state: ChallengeState, stage: StageId, at?: number): ChallengeStat
   if (state.stage === stage) return state;
   const moved = { ...state, stage, stageHistory: [...state.stageHistory, stage] };
   return append(moved, "STAGE_ENTERED", { stage, from: state.stage }, "standard_access", `stage:${stage}`, at);
+}
+
+/**
+ * One row's provenance, after an act on it.
+ *
+ * The rule is the whole of what `AmountProvenance` promises, and it is short on purpose:
+ *
+ * - `source` is the act that produced the figure now standing in the row. A fresh fill
+ *   replaces whatever was there, because the number in the row is BOW's again.
+ * - `revised` says the row has held a figure BOW produced and the student changed it. It is
+ *   what lets the sentence a teacher reads tell "they set it" from "they took BOW's number
+ *   and then moved it", and it is why an accepted suggestion is earnable back rather than a
+ *   mark against the run.
+ *
+ * Nothing here records when, in what order, or how many times. A row's history is one word
+ * and one flag.
+ */
+function withSource(
+  sources: ChallengeState["amountSources"],
+  mode: PlanMode,
+  category: CategoryId,
+  source: AmountSource,
+): ChallengeState["amountSources"] {
+  const before = sources[mode]?.[category];
+  const revised = source === "typed" ? before !== undefined && (before.source !== "typed" || before.revised) : false;
+  return { ...sources, [mode]: { ...(sources[mode] ?? {}), [category]: { source, revised } } };
 }
 
 function supportFor(state: ChallengeState, interactionId: string): SupportLevel {
@@ -182,7 +209,11 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
       return append(next, action.type, action, "standard_access", undefined, at);
     }
     case "PLAN_AMOUNT_CHANGED":
-      return { ...state, drafts: { ...state.drafts, [action.mode]: { ...(state.drafts[action.mode] ?? defaultAmountsFor(state, action.mode)), [action.category]: action.amount } } };
+      return {
+        ...state,
+        drafts: { ...state.drafts, [action.mode]: { ...(state.drafts[action.mode] ?? defaultAmountsFor(state, action.mode)), [action.category]: action.amount } },
+        amountSources: withSource(state.amountSources, action.mode, action.category, action.via ?? "typed"),
+      };
     case "PLAN_REMAINDER_ASSIGNED": {
       // The one move on this board that is a statement rather than an adjustment: the
       // student names the row that absorbs whatever the rest of their plan left over. It
@@ -190,31 +221,44 @@ export function challengeReducer(state: ChallengeState, action: TimestampedActio
       // and not the other — what it adds is a record of which line they let the arithmetic
       // decide, which is the only difference between planned savings and leftover savings.
       const current = state.drafts[action.mode] ?? defaultAmountsFor(state, action.mode);
-      const moved = {
+      const placed = {
         ...state,
         drafts: { ...state.drafts, [action.mode]: { ...current, [action.category]: dollars(current[action.category] + action.amount) } },
       };
-      const after = snapshotInputs(moved, action.mode);
+      const after = snapshotInputs(placed, action.mode);
       if (!after) return state;
       // What is still looking for a job once this row has taken its share. Recorded because
       // it is the difference between the two things this move can mean: a row that took the
       // last of the money closed the plan, and a row that hit its own cap on the way past
       // did not. Only the first is a statement about where the leftovers went.
-      const remaining = unassignedOf(balanceOf(after, numbersOf(moved)));
-      return append(moved, action.type, { ...action, remaining }, supportFor(state, action.mode), undefined, at);
+      const remaining = unassignedOf(balanceOf(after, numbersOf(placed)));
+      // What the press meant, from what it left behind. A row that took the last of the
+      // money is the leftovers landing somewhere — nobody picked that number. A row that
+      // filled up on the way past hit a cap this world set, which is a figure BOW produced
+      // and the student accepted. The board only offers the first of those now, and the
+      // second is kept because a log written when it did offer both has to still read.
+      const moved = {
+        ...placed,
+        amountSources: withSource(state.amountSources, action.mode, action.category, remaining === 0 ? "remainder" : "suggested"),
+      };
+      // The whole plan's provenance rides along, not only this row's. What the requirement
+      // about planned savings has to read is where the *savings* figure came from at the
+      // moment the plan was closed, and that is a fact about a row this event does not name.
+      return append(moved, action.type, { ...action, remaining, sources: moved.amountSources[action.mode] ?? {} }, supportFor(state, action.mode), undefined, at);
     }
     case "PLAN_SAVE_REQUESTED": {
       const inputs = snapshotInputs(state, action.mode);
       if (!inputs) return state;
       const balance = balanceOf(inputs, numbersOf(state));
-      let next = append(state, action.type, { mode: action.mode, inputs, balance, residual: residualOf(balance), unassigned: unassignedOf(balance), acknowledgedResidual: action.acknowledgedResidual }, supportFor(state, action.mode), undefined, at);
+      const sources = state.amountSources[action.mode] ?? {};
+      let next = append(state, action.type, { mode: action.mode, inputs, balance, residual: residualOf(balance), unassigned: unassignedOf(balance), acknowledgedResidual: action.acknowledgedResidual, sources }, supportFor(state, action.mode), undefined, at);
       if (balance !== 0 && action.acknowledgedResidual === undefined) return next;
       const sequence = next.log.length + 1;
       // The readout is frozen onto the snapshot here, priced with the numbers in force at
       // save time, so a later re-balancing of the scenario cannot rewrite this result.
       const snapshot = { id: `snapshot-${sequence}`, sequence, inputs, readout: readoutFor(inputs, numbersOf(state)), ...(action.acknowledgedResidual !== undefined ? { acknowledgedResidual: action.acknowledgedResidual } : {}) };
       next = { ...next, snapshots: [...next.snapshots, snapshot], saved: { ...next.saved, [action.mode]: snapshot.id } };
-      next = append(next, "PLAN_SAVED", { mode: action.mode, snapshot, balance }, supportFor(state, action.mode), undefined, at);
+      next = append(next, "PLAN_SAVED", { mode: action.mode, snapshot, balance, sources }, supportFor(state, action.mode), undefined, at);
       // A plan built on no conditional income has no lower-resource version to build,
       // so the season starts instead of a screen that only says there is nothing to do.
       if (action.mode === "working") return goTo(next, state.income.includeCompletion || state.income.includeOutcome ? "fallback-version" : "season-weeks", at);

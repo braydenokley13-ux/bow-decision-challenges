@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useChallenge } from "../../app/ChallengeContext";
 import { PopUpProvider, usePopUp } from "./PopUpContext";
+import { useSessionSeat } from "./seat";
 import {
   FirstSaturdayStage, GeneratorStage, MoneyStage, PlanStage, RepairStage,
   SettleStage, SpotStage, StandingOrderStage, SubmittedStage, WriteUpStage,
@@ -14,11 +15,19 @@ import {
  * who is sitting here — and no decision, no economy and no evidence ever does.
  */
 export function PopUpChallenge() {
-  const { state, transport } = useChallenge();
+  const { state, transport, sample } = useChallenge();
   const { classCode, seatCode, assignmentId } = state.meta;
-  const seed = useMemo(() => ({ classCode, seatCode, assignmentId }), [classCode, seatCode, assignmentId]);
+  const fromRun = useMemo(() => ({ classCode, seatCode, assignmentId }), [classCode, seatCode, assignmentId]);
+  // The one fact that crosses the seam, asked of the student's session rather than read out of
+  // the other world's reducer. `seat.ts` carries the whole reason; the short version is that on
+  // a second device that reducer is virgin, and a market that takes its identity from it opens
+  // with no seat, throws away a run the service is holding, and never checkpoints again.
+  const seed = useSessionSeat(fromRun);
+  // Nothing true to say while the question is out. The market's own gate draws the same empty
+  // shell a moment later for the same reason.
+  if (!seed) return <div className="popup-shell" data-world="food-truck" />;
   return (
-    <PopUpProvider seed={seed} transport={transport}>
+    <PopUpProvider seed={seed} transport={transport} sample={sample}>
       <PopUpStages />
     </PopUpProvider>
   );

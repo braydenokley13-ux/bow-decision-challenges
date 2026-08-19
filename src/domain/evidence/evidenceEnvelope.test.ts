@@ -146,19 +146,25 @@ describe("the shared evidence envelope", () => {
   });
 });
 
+/**
+ * `deriveGrade` no longer takes the concept results, and these calls dropped the `[]` they
+ * were passing for them. The parameter existed only to compute `GradeResult.summary` — the
+ * four `*_application` strings off a 65/80/90 ladder — which nothing rendered and which is
+ * now deleted. Every claim below is about the points and is unchanged.
+ */
 describe("the grade cannot be pushed outside its own scale", () => {
   const observations = [{ microSkillId: "C1.1", conceptId: "income-reliability", points: 5, outcome: "demonstrated", supportLevel: "standard_access", evidenceRefs: ["x"], reason: "" }] as never;
 
   it("clamps educator-entered reasoning points to the rubric", () => {
-    expect(deriveGrade(observations, [], 40).reasoningPoints).toBe(REASONING_MAXIMUM);
-    expect(deriveGrade(observations, [], -5).reasoningPoints).toBe(0);
-    expect(deriveGrade(observations, [], 7.4).reasoningPoints).toBe(7);
-    expect(deriveGrade(observations, [], Number.NaN).reasoningPoints).toBeNull();
+    expect(deriveGrade(observations, 40).reasoningPoints).toBe(REASONING_MAXIMUM);
+    expect(deriveGrade(observations, -5).reasoningPoints).toBe(0);
+    expect(deriveGrade(observations, 7.4).reasoningPoints).toBe(7);
+    expect(deriveGrade(observations, Number.NaN).reasoningPoints).toBeNull();
   });
 
   it("derives the structured maximum from the blueprint rather than restating it", () => {
     expect(STRUCTURED_MAXIMUM).toBe(90);
-    expect(deriveGrade(observations, [], 5).structuredMaximum).toBe(STRUCTURED_MAXIMUM);
+    expect(deriveGrade(observations, 5).structuredMaximum).toBe(STRUCTURED_MAXIMUM);
   });
 
   it("separates a student who stopped from a student who finished without showing everything", () => {
@@ -166,9 +172,9 @@ describe("the grade cannot be pushed outside its own scale", () => {
       ...(observations as unknown[]),
       { microSkillId: "C1.2", conceptId: "income-reliability", points: null, outcome: "not_observed", supportLevel: "standard_access", evidenceRefs: ["y"], reason: "" },
     ] as never;
-    expect(deriveGrade(partial, [], 5, { submitted: false }).incomplete).toBe(true);
-    expect(deriveGrade(partial, [], 5, { submitted: false }).finalPoints).toBeNull();
-    const finished = deriveGrade(partial, [], 5, { submitted: true });
+    expect(deriveGrade(partial, 5, { submitted: false }).incomplete).toBe(true);
+    expect(deriveGrade(partial, 5, { submitted: false }).finalPoints).toBeNull();
+    const finished = deriveGrade(partial, 5, { submitted: true });
     expect(finished.incomplete).toBe(false);
     expect(finished.finalPoints).toBe(10);
   });

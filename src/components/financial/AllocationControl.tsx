@@ -91,7 +91,16 @@ export function AllocationControl({ id, label, description, value, step, max, or
           aria-valuemax={max}
           aria-valuenow={value}
           aria-valuetext={formatDollars(value)}
-          value={raw ?? String(value)}
+          /*
+           * Money, written the way the row beside it writes money.
+           *
+           * This box and the `<strong>` 40px to its left are the same number, and they were
+           * printing it two different ways: "$1,500" in the money column and a bare "1500" in
+           * the field. One row, one amount, two notations — and the bare integer is the one a
+           * child is asked to read a decision off. `parseDollars` has always stripped "$" and
+           * "," on the way back in, so the field can say what the row says.
+           */
+          value={raw ?? formatDollars(value)}
           onChange={(event) => setRaw(event.target.value)}
           onBlur={() => commit(raw ?? String(value))}
           onKeyDown={(event) => {

@@ -15,7 +15,7 @@ import { AdjustPanel, type SupplyChange } from "../components/financial/AdjustPa
 import { CourtBackdrop } from "../components/story/CourtBackdrop";
 import { RosterCard } from "../components/story/RosterCard";
 import { dollars, formatDollars, type Dollars } from "../domain/core/money";
-import { hours, hoursPerWeek } from "../domain/core/units";
+import { hoursOfEveryWeek, hoursPerWeek } from "../domain/core/units";
 import type { CalcId, CategoryId, SetupId } from "../domain/core/ids";
 import type { PlanMode } from "../domain/finance/types";
 import { availableFor, lockedFor, week5Change } from "../domain/finance/formulas";
@@ -37,6 +37,7 @@ import { worldOffer } from "./worldOffer";
 import { DEFAULT_WORLD_ID, PLAYABLE_WORLDS, WORLD_CHOICE_UI_READY } from "../domain/scenario/registry";
 import { PopUpChallenge } from "./popup/PopUpChallenge";
 import type { StageId } from "../domain/evidence/types";
+import { checkWriting, NUMBERS_WANTED } from "../domain/evidence/writingGate";
 
 const BONUS_WEEKS = bonusWeeks(SCENARIO_NUMBERS);
 const CLINIC_WEEKS = clinicWeeks(SCENARIO_NUMBERS);
@@ -53,12 +54,31 @@ function calculationSupport(dispatch: ReturnType<typeof useChallenge>["dispatch"
   };
 }
 
-/** Brings a section that has just appeared into view without yanking the page around. */
+/**
+ * Brings a section that has just *appeared* into view, and never a section that was there
+ * when the screen opened.
+ *
+ * The second half is the whole of it. `useStageArrival` puts a new screen at the top and
+ * moves focus to its heading; this used to fire on its own first run as well, so on any
+ * screen whose revealed section was already open on arrival the two ran on the same tick and
+ * this one won. The result was measured in a real page: the new `<h1>` at `top: -11`, eighty-
+ * three pixels of it behind the sticky bar, and on the next transition `top: -83`. Identical
+ * under `prefers-reduced-motion: reduce`, because it was never an animation — it was two
+ * hooks arguing about where the page starts, and the one that should not care winning.
+ *
+ * So the ref remembers what `active` was on the first run and only ever scrolls on a
+ * false→true transition after that. A section that is already open when the screen arrives is
+ * part of the screen, and where a screen starts is `useStageArrival`'s to say.
+ */
 function useRevealOnce<T extends HTMLElement = HTMLDivElement>(active: boolean) {
   const ref = useRef<T>(null);
   const done = useRef(false);
+  const wasActive = useRef<boolean | null>(null);
   useEffect(() => {
-    if (!active || done.current || !ref.current) return;
+    const first = wasActive.current === null;
+    const appeared = !first && wasActive.current === false && active;
+    wasActive.current = active;
+    if (!appeared || done.current || !ref.current) return;
     done.current = true;
     ref.current.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
   }, [active]);
@@ -109,6 +129,7 @@ function OpeningStage() {
   // there is nothing to ask and nobody to ask, so it is a fact about the build, not a load.
   const [seat, setSeat] = useState<StartingSeat | null>(() => (transport.requiresClass ? null : OFFLINE_SEAT));
   const [problem, setProblem] = useState<string | null>(null);
+  const started = useRef(false);
   // Whether a picker exists at all. The class decides whether it is offered, and that is not
   // known until the session has answered — but a build with one world can never show one, and
   // a build with two should not promise either before the student has chosen.
@@ -156,6 +177,8 @@ function OpeningStage() {
 
   const start = () => {
     if (!seat) return;
+    if (started.current) return;
+    started.current = true;
     // What this class was set, carried to the picker so it does not have to ask again.
     setOffer(worldOffer({
       allowedWorldIds: seat.assignment?.allowedWorldIds ?? [],
@@ -173,11 +196,36 @@ function OpeningStage() {
     });
   };
 
-  if (!seat) {
+  /**
+   * A student who is already signed in does not meet a screen asking them to confirm it.
+   *
+   * They came from their own home page, which shows their name, offers "Not you?" and has a
+   * button reading *Start*. Pressing it used to land them here, on a panel headed **"You are
+   * signed in as · Ada L. · Period 2"** with a button reading *Go in* — and, where the class
+   * offers a choice, on the world picker after that. Two critics and a student red team
+   * counted the same thing: four screens between the door and the game, two of which only
+   * confirm what the student just did.
+   *
+   * The branch under it stays exactly as it is, and it is not an accident. A build with no
+   * class service resolves a seat during render and draws this screen for real — no session,
+   * no card, no roster — which is how the guide's "Try it as a student" lets a teacher play
+   * the actual run. That path has a story to show and a button worth pressing. A signed-in
+   * student has already pressed it.
+   */
+  useEffect(() => {
+    if (!transport.requiresClass || !seat || started.current) return;
+    start();
+    // `start` closes over `seat` and `setOffer`, and re-running on either is exactly what the
+    // ref guards against: the session is started once per arrival, and the reducer moves the
+    // stage off `entry` the moment it is.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seat, transport.requiresClass]);
+
+  if (!seat || transport.requiresClass) {
     return (
       <div className="opening opening--waiting" data-world={state.meta.worldId}>
         <div className="opening__bar"><AppMark /><span>Plan Under Pressure</span></div>
-        <p className="join-status" aria-live="polite">{problem ?? "Getting your class…"}</p>
+        <p className="join-status" aria-live="polite">{problem ?? (seat ? "Opening your run…" : "Getting your class…")}</p>
         {problem && <Button type="button" variant="secondary" onClick={() => window.location.reload()}>Try again</Button>}
       </div>
     );
@@ -234,7 +282,11 @@ function OpeningStage() {
                 Not you?
               </Button>
             )}
-            <p className="privacy-note">{STUDENT_COPY.join.privacy}</p>
+            {/* Only where there is a class list for it to be true of. A build with no class
+                service has no teacher and no roster, and telling a teacher trying the sample
+                run that "the only name here is the one your teacher wrote on their class
+                list" is a claim about a list that does not exist. */}
+            {seat.displayName && <p className="privacy-note">{STUDENT_COPY.join.privacy}</p>}
           </div>
         </aside>
         {/* The story. It used to open with an 01/02/03 list of the decisions ahead — a
@@ -426,9 +478,29 @@ function SetupStage() {
             </div>
           )}
           <div className="stage-action">
-            {chosen
-              ? <p aria-live="polite"><strong>{chosen.title}.</strong> {formatDollars(chosen.total)} of Avery’s money is spoken for, and {hours(SCENARIO_NUMBERS.load.commuteBlocks[chosen.id])} of every week belong to the trip.</p>
-              : <p>Each place asks for something different. Pick the one you want to build the plan around.</p>}
+            {/* What this footer may say, and when.
+                It used to print the eight-week total the box above it was asking for —
+                "…of Avery's money is spoken for", a hundred and twenty pixels under
+                "What the Gym District Sublet costs Avery — Total $___". A student who read
+                the whole screen was handed the answer and a student who read less carefully
+                did the arithmetic, which is the opposite of the lesson. The hours are not the
+                answer to anything on this screen, so they stay; the money arrives when the
+                student has worked it out, as a confirmation of their own figure rather than
+                as a crib for it.
+                `hoursOfEveryWeek` is a whole clause from `units.ts` because the Gym District
+                Sublet costs exactly one hour a week, and a hard-coded plural here is how the
+                screen came to read "1 hour of every week belong to the trip". */}
+            {/* One paragraph, always here, so the live region exists before it has anything
+                to say. It used to be three: the "pick one" line carried no `aria-live` at
+                all and the other two appeared only once a place was chosen, which meant the
+                region arrived with its text already inside it and announced nothing. */}
+            <p aria-live="polite">
+              {!chosen
+                ? "Each place asks for something different. Pick the one you want to build the plan around."
+                : totalEntered
+                  ? <><strong>{chosen.title}.</strong> {formatDollars(chosen.total)} of Avery’s money is spoken for, and {hoursOfEveryWeek(SCENARIO_NUMBERS.load.commuteBlocks[chosen.id])} to the trip.</>
+                  : <><strong>{chosen.title}.</strong> {hoursOfEveryWeek(SCENARIO_NUMBERS.load.commuteBlocks[chosen.id])} to the trip. Now work out what eight weeks of it costs.</>}
+            </p>
             <Button aria-disabled={!ready} onClick={() => ready && dispatch({ type: "GO_TO_STAGE", stage: "working-plan" })}>
               {ready ? "Build the plan" : chosen ? "Work out the eight-week cost to continue" : "Pick a place to continue"}
             </Button>
@@ -443,7 +515,10 @@ function SetupStage() {
 function baselineFor(state: ReturnType<typeof useChallenge>["state"], mode: PlanMode) {
   switch (mode) {
     case "fallback": return amountsFor(state, "working");
-    case "week5-first-response": return amountsFor(state, state.saved.fallback ? "fallback" : "working");
+    // The working plan, not the backup check. The check is a what-if built on top of this
+    // plan and the season never ran on it; opening Week 5 from it made the repair the student
+    // was asked for disagree with the total they had just been made to work out.
+    case "week5-first-response": return amountsFor(state, "working");
     case "final": return amountsFor(state, "week5-first-response");
     case "remaining-risk": return amountsFor(state, "final");
     case "working": return undefined;
@@ -493,13 +568,14 @@ function usePlanWiring(mode: PlanMode) {
     if (remainder > 0) amounts.flexibleCash += remainder;
 
     dispatch({ type: "SHOW_AND_CONTINUE_USED", interactionId: mode });
-    for (const category of CHOICE_KEYS) setAmount(category, dollars(amounts[category]));
-    // The supplied plan closes the same way a hand-built one does, or it would be a way of
-    // committing the opening board that skips the one statement the board exists to collect.
-    // The row named here cannot flatter anybody: every event from this press carries
-    // `answer_supplied`, which scores nothing, so what it records is "this plan was closed,
-    // and BOW closed it" rather than a priority the student expressed.
-    if (mode === "working") dispatch({ type: "PLAN_REMAINDER_ASSIGNED", mode, category: "flexibleCash", amount: dollars(0) });
+    // Every row is written as BOW's own figure. That is what it is, and it is what closes the
+    // opening board honestly: three rows have been answered for, so the plan can be saved, and
+    // every one of those answers says on the record that the student did not make it.
+    //
+    // It used to close by dispatching a $0 remainder onto Avery's week — a statement the
+    // student never made, manufactured to get past a gate. The gate is now three rows with
+    // something said about each, and a supplied plan says the true thing about all three.
+    for (const category of CHOICE_KEYS) dispatch({ type: "PLAN_AMOUNT_CHANGED", mode, category, amount: dollars(amounts[category]), via: "suggested" });
     dispatch({ type: "PLAN_SAVE_REQUESTED", mode });
   };
 
@@ -545,19 +621,16 @@ function PlanLedgerFor({ mode, known, placing }: { mode: PlanMode; known?: Ledge
 }
 
 /**
- * Whether this student has closed the opening plan by naming a row, in the sense the
- * requirement is written in: a row that took *the last* of the money.
+ * Which rows of a plan the student has actually said something about.
  *
- * A press that filled a capped row on the way past is a figure being placed, not a plan being
- * closed, and reading it as one would let a run finish with the statement unmade while the
- * board believed it had been made.
+ * A row with an entry has been acted on — a figure typed, a stepper pressed, the leftovers
+ * sent to it, or "nothing this season" said out loud. A row without one is at whatever the
+ * board started it on and nobody has read it, which is a different fact about a child and the
+ * one the opening board now refuses to close over.
  */
-function openingRemainderDeclared(state: ReturnType<typeof useChallenge>["state"]): boolean {
-  return state.log.some((event) => {
-    if (event.type !== "PLAN_REMAINDER_ASSIGNED") return false;
-    const payload = event.payload as { mode?: PlanMode; remaining?: number };
-    return payload.mode === "working" && payload.remaining === 0;
-  });
+function spokenFor(state: ReturnType<typeof useChallenge>["state"], mode: PlanMode): CategoryId[] {
+  const sources = state.amountSources[mode] ?? {};
+  return CHOICE_KEYS.filter((category) => sources[category] !== undefined);
 }
 
 /** The full board. Only the first plan and the Week 5 triage get one. */
@@ -588,8 +661,8 @@ function BoardForMode({ mode, variant, commitLabel, lead, change }: {
       onAmountChange={wiring.setAmount}
       onAssignRemainder={wiring.assignRemainder}
       onCommit={wiring.commit}
-      requireRemainder={opening}
-      remainderDeclared={openingRemainderDeclared(state)}
+      opening={opening}
+      spokenFor={spokenFor(state, mode)}
       onScaffold={wiring.scaffold}
       onShowAndContinue={wiring.supplyOneBalancedPlan}
       {...(change ? { change } : {})}
@@ -687,11 +760,23 @@ function WorkingStage() {
   // a refresh lands them back on the question they were actually looking at. From there,
   // `visited` grows only by actually opening a question — the answers open the door to the
   // next one, they do not walk through it.
-  const bonusesAnswered = state.log.some((event) => event.type === "INCOME_SOURCE_TOGGLED");
-  const seed = seedVisited({ floorReady, essentialsReady, bonusesAnswered });
+  /**
+   * Which of the two bonuses this student has actually answered for.
+   *
+   * Both cards used to open with *"No — leave it out"* already pressed — the pedagogically
+   * correct answer — so a student who pressed *Next* without reading got the question right,
+   * the ledger recorded a decision they never made, and the micro-skill that asks whether
+   * conditional money was kept out of the total scored full marks for not reading. The state
+   * behind them still starts at "out", because a plan has to start somewhere and this is the
+   * only safe place; what is gone is the screen claiming that is an answer.
+   */
+  const answeredBonus = (sourceId: string) => state.log.some((event) =>
+    event.type === "INCOME_SOURCE_TOGGLED" && (event.payload as { sourceId?: string }).sourceId === sourceId);
+  const bonusesAnswered = BETS.every(([sourceId]) => answeredBonus(sourceId));
+  const gates = { floorReady, essentialsReady, bonusesAnswered };
+  const seed = seedVisited(gates);
   const [visited, setVisited] = useState(seed);
   const [wanted, setWanted] = useState(seed);
-  const gates = { floorReady, essentialsReady };
   const position = planPosition({ wanted, visited, gates, questions: PLAN_COPY.map.length });
   const at = position.at;
   const go = (index: number) => {
@@ -725,6 +810,7 @@ function WorkingStage() {
     <section ref={pullRef} className="bets" data-settled={backup} aria-label={backup ? "Neither bonus arrived" : PLAN_COPY.steps.bonuses.name}>
       {BETS.map(([sourceId, key]) => {
         const included = key === "completion" ? state.income.includeCompletion : state.income.includeOutcome;
+        const answered = answeredBonus(sourceId);
         // What it costs the season when the rule is not met. This is the sentence the deleted
         // contract screen existed for, and it reads as a consequence on its own — the line
         // above it has just said what the rule is, so this one does not need to name it again.
@@ -738,15 +824,15 @@ function WorkingStage() {
             <p className="bet__rule">Avery only gets this if {BASKETBALL_SCENARIO.incomeCopy[key].rule}</p>
             {!backup && ifNot && <p className="bet__rule" data-tone="ifnot">{ifNot}</p>}
             {backup ? (
-              <p className="bet__verdict">{included ? "You counted on it. Take it back out of the plan." : "You left it out, so nothing here changes."}</p>
+              <p className="bet__verdict">{included ? "You counted on it. Take it back out and see." : "You left it out, so nothing here changes."}</p>
             ) : (
               /* The question is asked once, at the head of the screen. It used to be printed
                  again inside each card, and a chip repeated whichever button was already
                  pressed — one question and one answer, said three times each. The pressed
                  button carries the state, which is what a pressed button is for. */
               <div className="binary-choice">
-                <button type="button" aria-pressed={included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: true })}>{PLAN_COPY.steps.bonuses.yes}</button>
-                <button type="button" aria-pressed={!included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: false })}>{PLAN_COPY.steps.bonuses.no}</button>
+                <button type="button" aria-pressed={answered && included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: true })}>{PLAN_COPY.steps.bonuses.yes}</button>
+                <button type="button" aria-pressed={answered && !included} onClick={() => dispatch({ type: "INCOME_SOURCE_TOGGLED", sourceId, included: false })}>{PLAN_COPY.steps.bonuses.no}</button>
               </div>
             )}
           </article>
@@ -757,20 +843,29 @@ function WorkingStage() {
 
   if (backup) {
     return (
-      <StageShell stage="fallback-version" kicker={`The same plan, without ${removed.length > 1 ? "the bonuses" : "the bonus"}`} title="That money never arrives.">
+      /* A check, and it now says so.
+         It used to be headed "That money never arrives." and told the student "You counted on
+         it. Take it back out of the plan." — which reads as the season having decided
+         something. It has not. Every board after this one, the Week 5 arithmetic and Week 8's
+         own reckoning all measure from the plan the student saved a screen ago; this one is
+         the same question the last check of Week 5 asks — *would it still hold if the money
+         you counted on never came* — and its amounts go no further than this screen.
+         A student who was not told that rebuilt a plan, watched the next screen show them a
+         different one, and was asked for a total that matched neither. */
+      <StageShell stage="fallback-version" kicker={`A check · the same plan without ${removed.length > 1 ? "the bonuses" : "the bonus"}`} title={`What if ${removed.length > 1 ? "they never arrive" : "it never arrives"}?`}>
         <PlanScene ledger={<PlanLedgerFor mode="fallback" />}>
           <p className="stage-deck">
-            {formatDollars(removed.reduce((sum, item) => sum + item.amount, 0))} you were counting on is gone. Everything Avery
-            owes is exactly where it was. Only your three amounts can move.
+            Take out the {formatDollars(removed.reduce((sum, item) => sum + item.amount, 0))} you were counting on and see whether the plan still
+            holds. Everything Avery owes is exactly where it was. Only your three amounts can move.
           </p>
           {bonusCards}
           <AdjustForMode
             mode="fallback"
-            eyebrow="Backup plan"
-            headline="Put the plan back together without it."
-            lead="Rent, the weekly basics and where Avery lives do not change. Only your three amounts can move."
+            eyebrow="Safety check"
+            headline={`Show it still works without ${removed.length > 1 ? "them" : "it"}.`}
+            lead="Rent, the weekly basics and where Avery lives do not change. This is a check, not a new plan — the season runs on the plan you saved."
             changes={removed}
-            commitLabel="Save the backup plan"
+            commitLabel="Save this check"
           />
         </PlanScene>
       </StageShell>
@@ -782,7 +877,10 @@ function WorkingStage() {
   // offer a greyed one, which a cold reader read as an application that had stopped working
   // rather than as their turn — and under a cursor it painted its own label in its own
   // background and vanished entirely.
-  const ready = at === 0 ? floorReady : at === 2 ? essentialsReady : true;
+  // Question two is now gated like the two arithmetic questions either side of it: no onward
+  // button until it has been answered. It was the only one of the four a student could walk
+  // past without touching, and walking past it was the right answer.
+  const ready = at === 0 ? floorReady : at === 1 ? bonusesAnswered : at === 2 ? essentialsReady : true;
   const nextLabel = at === 0 ? question.countOn.next : at === 1 ? question.bonuses.next : question.committed.next;
   const titled = [question.countOn.title, question.bonuses.title, question.committed.title, question.decide.title][at]!;
   const asked = [question.countOn.ask, question.bonuses.ask, question.committed.ask, question.decide.ask][at]!;
@@ -798,7 +896,7 @@ function WorkingStage() {
         ledger={(
           <PlanLedgerFor
             mode="working"
-            known={{ certain: floorReady, bonuses: at >= 1, essentials: essentialsReady }}
+            known={{ certain: floorReady, bonuses: bonusesAnswered, essentials: essentialsReady }}
             placing={at >= 3}
           />
         )}
@@ -896,6 +994,21 @@ function WorkingStage() {
   );
 }
 
+/**
+ * What the course row is worth saying, given what has happened to the course.
+ *
+ * A reserved seat empties this row: the money left the plan and became a paid-for place, and
+ * the board locks the row at $0 from that moment. Printing `$0` beside "Sports-media course"
+ * in a summary is then a true statement about a row and a false one about the season — a
+ * student who had just been told, in the resolution's own words, that the sports-media seat
+ * was held and paid for at its full price read `Sports-media course $0` on the receipt for the
+ * same run. (The figure is not spelled here on purpose: the scenario owns every amount, and a
+ * comment quoting one is a second place to update when the price moves.)
+ */
+function courseRowReading(depositTaken: boolean | null, amount: number): string {
+  return depositTaken ? `${formatDollars(SCENARIO_NUMBERS.course.depositPrice)} paid` : formatDollars(amount);
+}
+
 /** The three amounts the student chose, as they stand in the plan they last committed. */
 function PlanEcho({ mode, label, note }: { mode: PlanMode; label: string; note?: string }) {
   const { state } = useChallenge();
@@ -909,7 +1022,10 @@ function PlanEcho({ mode, label, note }: { mode: PlanMode; label: string; note?:
           they had built. */}
       <dl>
         {CHOICE_ORDER.map((category) => (
-          <div key={category}><dt>{CHOICE_LABELS[category]}</dt><dd className="money">{formatDollars(amounts[category])}</dd></div>
+          <div key={category}>
+            <dt>{CHOICE_LABELS[category]}</dt>
+            <dd className="money">{category === "goal" ? courseRowReading(state.depositTaken, amounts[category]) : formatDollars(amounts[category])}</dd>
+          </div>
         ))}
       </dl>
       {note && <p className="plan-echo__note">{note}</p>}
@@ -942,30 +1058,49 @@ function Week5EventStage() {
   const expected = week5Change({ includeOutcome: state.income.includeOutcome, setupId: state.setupId }, SCENARIO_NUMBERS);
   const setup = BASKETBALL_SCENARIO.setups.find((item) => item.id === state.setupId)!;
   const outcomeLabel = BASKETBALL_SCENARIO.incomeCopy.outcome.label;
+  // The world writes its rules as standalone sentences ("The Flight qualifies for the
+  // showcase."), so putting one after "Paid only if" needs the capital taken off the front or
+  // the card reads "Paid only if The Flight qualifies…".
+  const rule = BASKETBALL_SCENARIO.incomeCopy.outcome.rule ?? "";
+  const outcomeRule = `Paid only if ${rule.charAt(0).toLowerCase()}${rule.slice(1)}`;
   // What Week 5 actually did to this plan. Only changes that moved money appear, so a setup
   // with no extra travel cost produces no card and nothing here is worth $0. These three ids
   // are the ones the component-selection observation has always read.
+  /**
+   * The cards, and what they may say.
+   *
+   * The task is "some of these changed this week, some did not — tap the ones that changed",
+   * and the eyebrows used to answer it: **MONEY GONE**, **NEW BILL**, **ALREADY PROMISED**,
+   * **ALREADY PAID**, **NEVER COUNTED**. Five labels partitioning the set exactly the way the
+   * question does, which makes the only question on the screen a matter of reading five words
+   * in capitals. The tag now says what *kind* of line it is, and both kinds contain cards that
+   * moved and cards that did not, so it settles nothing.
+   *
+   * The details are facts about this student's own plan and about what each line is. What
+   * they no longer contain is the verdict — "It is not coming", "A new bill" — because the
+   * whole of the task is deriving that from the bulletins at the top of the screen and the
+   * plan directly above the cards.
+   */
   const moved = [
     ...(state.income.includeOutcome
-      ? [{ id: "lost-outcome", kind: "lost" as const, tag: "Money gone", label: outcomeLabel, detail: "Your plan counted on this money. It is not coming.", amount: SCENARIO_NUMBERS.outcomeIncome as number }]
+      ? [{ id: "lost-outcome", kind: "lost" as const, tag: "Bonus", label: outcomeLabel, detail: `${outcomeRule} Your plan counted on it.`, amount: SCENARIO_NUMBERS.outcomeIncome as number }]
       : []),
-    { id: "required-cost", kind: "bill" as const, tag: "New bill", label: BASKETBALL_SCENARIO.disruption.requiredCostLabel, detail: "A new bill. Avery has to pay it either way.", amount: SCENARIO_NUMBERS.requiredWeek5Cost as number },
+    { id: "required-cost", kind: "bill" as const, tag: "Bill", label: BASKETBALL_SCENARIO.disruption.requiredCostLabel, detail: "What the clinic charges for the brace and the sessions.", amount: SCENARIO_NUMBERS.requiredWeek5Cost as number },
     ...(setup.eventCost > 0
-      ? [{ id: "setup-cost", kind: "bill" as const, tag: "New bill", label: "Extra travel to rehab", detail: `A new bill, because Avery lives at the ${setup.title}.`, amount: setup.eventCost as number }]
+      ? [{ id: "setup-cost", kind: "bill" as const, tag: "Bill", label: "Extra travel to rehab", detail: `Getting to rehab and back from the ${setup.title}.`, amount: setup.eventCost as number }]
       : []),
   ];
-  // Real amounts out of this student's own season that Week 5 leaves exactly where they were.
-  // Each one is a line they set or agreed themselves, stated as what it is rather than as a
+  // Real amounts out of this student's own season, each stated as what it is rather than as a
   // verdict on whether it belongs — working that out is the whole of the task.
   const held = [
-    { id: "decoy-rent", kind: "committed" as const, tag: "Already promised", label: "Where Avery lives", detail: `${SCENARIO_NUMBERS.weeks} weeks at the ${setup.title}, agreed before the season.`, amount: Number(SCENARIO_NUMBERS.setupCosts[state.setupId]) },
+    { id: "decoy-rent", kind: "committed" as const, tag: "Bill", label: "Where Avery lives", detail: `${SCENARIO_NUMBERS.weeks} weeks at the ${setup.title}.`, amount: Number(SCENARIO_NUMBERS.setupCosts[state.setupId]) },
     ...(state.income.includeOutcome
       ? []
-      : [{ id: "decoy-outcome", kind: "uncounted" as const, tag: "Never counted", label: outcomeLabel, detail: "You left this out when you built the plan.", amount: SCENARIO_NUMBERS.outcomeIncome as number }]),
+      : [{ id: "decoy-outcome", kind: "uncounted" as const, tag: "Bonus", label: outcomeLabel, detail: `${outcomeRule} Your plan never counted on it.`, amount: SCENARIO_NUMBERS.outcomeIncome as number }]),
     ...(state.depositTaken
-      ? [{ id: "decoy-deposit", kind: "committed" as const, tag: "Already paid", label: "Course seat", detail: `Paid at the Week ${SCENARIO_NUMBERS.course.depositDeadlineWeek} deadline to hold the place.`, amount: Number(SCENARIO_NUMBERS.course.depositPrice) }]
+      ? [{ id: "decoy-deposit", kind: "committed" as const, tag: "Bill", label: "Course seat", detail: `Reserved at the Week ${SCENARIO_NUMBERS.course.depositDeadlineWeek} deadline.`, amount: Number(SCENARIO_NUMBERS.course.depositPrice) }]
       : []),
-    { id: "decoy-essentials", kind: "committed" as const, tag: "Already promised", label: "Food, phone and laundry", detail: `${formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)} a week, all ${SCENARIO_NUMBERS.weeks} weeks.`, amount: Number(SCENARIO_NUMBERS.essentialsTotal) },
+    { id: "decoy-essentials", kind: "committed" as const, tag: "Bill", label: "Food, phone and laundry", detail: `${formatDollars(SCENARIO_NUMBERS.essentialsPerWeek)} a week, all ${SCENARIO_NUMBERS.weeks} weeks.`, amount: Number(SCENARIO_NUMBERS.essentialsTotal) },
   ];
   // Interleaved to a fixed order rather than shuffled: the run has to be reproducible from the
   // log, and a set where every card that counts sits at the top is a set nobody has to read.
@@ -996,7 +1131,7 @@ function Week5EventStage() {
         </div>
       }
     >
-      <PlanEcho mode={state.saved.fallback ? "fallback" : "working"} label="The plan Avery walked into this week with" note="It was built for a season that still had a showcase in it." />
+      <PlanEcho mode="working" label="The plan Avery walked into this week with" note="It was built for a season that still had a showcase in it." />
       {/* The cards come before the box that totals them. They used to sit beside it, which
           on a narrow screen put the answer above the evidence — a student met the question
           before they had seen a single thing they were meant to be adding up. */}
@@ -1201,7 +1336,7 @@ function FinalRepairStage() {
           headline="Take it out and see."
           lead="Same plan, same bills, that money gone. If it never arrives, this is what Avery is living on."
           changes={[{ id: "bonus", label: `${bonusLabel} — never arrives`, amount: Number(SCENARIO_NUMBERS.completionIncome), direction: "out" }]}
-          commitLabel="Save this check"
+          commitLabel="Save the last check"
         />
       ) : ready ? (
         <div ref={revealRef}>
@@ -1218,7 +1353,9 @@ function FinalRepairStage() {
         </div>
       ) : (
         /* A dashed outline around a sentence reads as a control that has stopped working.
-           It is a status, so it is written as one. */
+           It is a status, so it is written as one. It is also the last thing on this screen
+           before the board appears, so it is here on arrival and the region announces the
+           change from two calls to one. */
         <p className="board-waiting" aria-live="polite">
           {state.income.includeOptionalWork === null && !completionDecided
             ? "Two calls still to make. The plan moves once both are answered."
@@ -1252,9 +1389,17 @@ function DefenseStage() {
     ...(state.income.includeCompletionFinal ? [{ id: "completion", label: `${BASKETBALL_SCENARIO.incomeCopy.completion.label} your plan was counting on`, value: SCENARIO_NUMBERS.completionIncome as number }] : []),
     ...(state.income.includeOptionalWork ? [{ id: "clinic", label: "Earned from the clinics", value: SCENARIO_NUMBERS.optionalWorkIncome as number }] : []),
   ].filter((tile) => tile.value > 0);
-  const canSubmit = selected.length >= 2 && selected.length <= 3 && text.trim().length >= 40;
-  const toggle = (id: string) => setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length < 3 ? [...current, id] : current);
-  const stillToPick = Math.max(0, 2 - selected.length);
+  // What this answer still needs, said out loud. The gate used to be a silent character
+  // count: a student saw a dead button and one sentence of instruction that did not describe
+  // the rule, and the fastest way past was padding.
+  const gate = checkWriting({
+    chosen: selected.flatMap((id) => {
+      const tile = tiles.find((entry) => entry.id === id);
+      return tile ? [{ label: tile.label, value: tile.value }] : [];
+    }),
+    text,
+  });
+  const toggle = (id: string) => setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : current.length < NUMBERS_WANTED.max ? [...current, id] : current);
   return (
     <StageShell stage="defense" kicker="Week 8" title="Explain your plan.">
       <div className="interview">
@@ -1267,10 +1412,17 @@ function DefenseStage() {
               one BOW-B1's explanation requirement is scored against — what made one claim matter
               more than another — and it names the misconception out loud, because a rubric row
               that catches "it was the cheapest" is worth more if the student was told first. */}
+          {/* It used to end "— 'it was the cheapest' is not an answer." Week 3 offers exactly
+              that as one of its four answers, records it, and the ending says it back to the
+              student in their own words. Telling a child three screens later that the answer
+              the product took from them is not an answer is the product contradicting itself
+              in front of them, and it does not teach the distinction — it only says the last
+              thing they did was wrong. What separates price from worth is what the sentence
+              now asks for, in the positive. */}
           <p>
             Say how it worked after Week 5, what you protected, and what you gave up. And say what
             made the thing you left unpaid in Week&nbsp;3 matter less than the ones you paid for —
-            &ldquo;it was the cheapest&rdquo; is not an answer.
+            not what it cost, but what it was.
           </p>
           {/* The numbers are the interaction, so they carry a mark. Without one they read
               as a list of facts and a student can sit in front of the screen never
@@ -1299,13 +1451,17 @@ function DefenseStage() {
               just been told to write sentences, and start that count at "2 more" when they
               had picked none. */}
           <footer>
-            {/* "On the left" was true at a laptop width and false at 640, where the numbers
-                stack above the box. The instruction names what to tap, not where it sits. */}
-            <p aria-live="polite">
-              {stillToPick > 0 ? `Tap ${stillToPick} more of Avery’s number${stillToPick === 1 ? "" : "s"}. ` : "Numbers ready. "}
-              {text.trim().length < 40 ? "Then write two to four sentences." : "Long enough to turn in."}
-            </p>
-            <Button aria-disabled={!canSubmit} onClick={() => canSubmit && dispatch({ type: "DEFENSE_SUBMITTED", tileIds: selected, text })}>Turn in my plan</Button>
+            {/* Every rule, whether or not it is met, with the one thing outstanding named
+                beside it. A student who cannot see the rule can only get past it by guessing,
+                and the guess that worked was length. */}
+            <div className="writing-rules" aria-live="polite">
+              {gate.rules.map((rule) => (
+                <p key={rule.id} data-met={rule.met}>
+                  <span aria-hidden="true">{rule.met ? "✓" : "◦"}</span> {rule.said}
+                </p>
+              ))}
+            </div>
+            <Button aria-disabled={!gate.ready} onClick={() => gate.ready && dispatch({ type: "DEFENSE_SUBMITTED", tileIds: selected, text })}>Turn in my plan</Button>
           </footer>
         </section>
       </div>
@@ -1379,7 +1535,10 @@ function SubmittedStage() {
         <ul className="handed-in__numbers">
           {setup && <li><span>Where Avery lived</span><strong>{setup.title}</strong></li>}
           {CHOICE_ORDER.map((category) => (
-            <li key={category}><span>{CHOICE_LABELS[category]}</span><strong className="money">{formatDollars(finalAmounts[category])}</strong></li>
+            <li key={category}>
+              <span>{CHOICE_LABELS[category]}</span>
+              <strong className="money">{category === "goal" ? courseRowReading(state.depositTaken, finalAmounts[category]) : formatDollars(finalAmounts[category])}</strong>
+            </li>
           ))}
         </ul>
         <p className="handed-in__said">Your {state.defense.tileIds.length} numbers, and what you said about them:</p>

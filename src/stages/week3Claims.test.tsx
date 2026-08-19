@@ -62,7 +62,14 @@ function draw(state: ChallengeState) {
 
 const claim = (name: RegExp) => screen.getByRole("button", { name });
 const carryOn = () => screen.getByRole("button", { name: /course office/i });
-const askedWhy = () => screen.queryByText(/What made you leave the rest out\?/i);
+/**
+ * The question, which now names what is actually being left out rather than saying "the rest".
+ *
+ * "What made you leave the rest out?" was answerable without reading the cards. With the
+ * claims named in it, an answer that is not true of them — "it was the one I only wanted",
+ * about shoes that are splitting — is a much harder thing to tap by accident.
+ */
+const askedWhy = () => screen.queryByText(/^What made you leave .+ out\?$/i);
 
 afterEach(() => {
   cleanup();
@@ -102,11 +109,30 @@ describe("the question is not asked before there is anything to answer", () => {
     }
   });
 
-  it("asks it the moment something has actually been left out", () => {
+  it("asks it the moment something has actually been left out, and names what that is", () => {
     draw(atWeek3());
     fireEvent.click(claim(/present for Avery/));
     expect(askedWhy()).toBeInTheDocument();
+    expect(askedWhy()).toHaveTextContent(/the team shoes and the away-game travel share/i);
     expect(screen.getAllByRole("button", { name: /wanted|counting|wait|cheapest/i })).toHaveLength(4);
+  });
+
+  it("puts the claim and the reason in one sentence before it records either", () => {
+    // The pairing this beat exists to produce, on screen while the student can still change
+    // it. A student who taps the first chip without reading has still had to read what they
+    // paid for and what they left, side by side, in the sentence above the button that sends
+    // it — which is the sentence a teacher will read afterwards.
+    draw(atWeek3());
+    fireEvent.click(claim(/present for Avery/));
+    // The region is permanent — a live region that arrives with its text already inside it
+    // announces nothing — so what changes is whether it has anything in it.
+    expect(document.querySelector(".claims__settled")?.textContent).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: /cheapest/i }));
+    const settled = document.querySelector(".claims__settled");
+    expect(settled).not.toBeNull();
+    expect(settled).toHaveTextContent(/goes on the present for Avery/i);
+    expect(settled).toHaveTextContent(/The team shoes and the away-game travel share go unpaid/i);
+    expect(settled).toHaveTextContent(/It was the cheapest one to drop/i);
   });
 
   it("takes it away again if the student puts everything back", () => {

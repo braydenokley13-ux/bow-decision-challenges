@@ -1,7 +1,7 @@
 import type { CalcId, ClaimReasonId, SetupId, WorldId } from "../core/ids";
 import { dollars, type Dollars } from "../core/money";
 import type { PlanAmounts, PlanMode } from "../finance/types";
-import type { EvidenceEvent, PlanSnapshot, StageId, SupportLevel } from "../evidence/types";
+import type { EvidenceEvent, PlanAmountSources, PlanSnapshot, StageId, SupportLevel } from "../evidence/types";
 import { PLAN_UNDER_PRESSURE } from "../../platform/challenges/registry";
 
 export interface CalculationState {
@@ -51,6 +51,22 @@ export interface ChallengeState {
   week3: { fundedIds: readonly string[]; reason: ClaimReasonId } | null;
   income: { includeCompletion: boolean; includeOutcome: boolean; includeCompletionFinal: boolean; includeOptionalWork: boolean | null };
   drafts: Partial<Record<PlanMode, PlanAmounts>>;
+  /**
+   * Where each row's figure came from, per plan, and nothing about the order they were
+   * touched in.
+   *
+   * A row with no entry has never been acted on. That is the fact the board and the evidence
+   * both need and the one a plan of three amounts cannot carry: `$0` in a row is either a
+   * season with nothing put toward the course or a row nobody read, and until this existed
+   * the product resolved that ambiguity in the student's favour and told a teacher they had
+   * set a figure they had not.
+   *
+   * It is not a clickstream. Three keys per plan, each holding where the standing figure came
+   * from and whether the student has changed it — no sequence, no timing, no count of
+   * presses. It rides on the events that already carry the amounts rather than becoming
+   * events of its own, for the same reason.
+   */
+  amountSources: Partial<Record<PlanMode, PlanAmountSources>>;
   snapshots: PlanSnapshot[];
   saved: Partial<Record<PlanMode, string>>;
   selectedGapTiles: string[];
@@ -84,6 +100,7 @@ export function createInitialState(now = 1): ChallengeState {
     week3: null,
     income: { includeCompletion: false, includeOutcome: false, includeCompletionFinal: false, includeOptionalWork: null },
     drafts: {},
+    amountSources: {},
     snapshots: [],
     saved: {},
     selectedGapTiles: [],

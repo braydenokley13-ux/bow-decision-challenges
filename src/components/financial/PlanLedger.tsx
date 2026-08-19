@@ -201,8 +201,15 @@ export function PlanLedger({ input, setupTitle, onLockedMoveAttempt, known = ALL
             {/* Withheld while it would say nothing new. Before a dollar is placed the money
                 still looking for a job *is* the money left to decide, and printing it a
                 second inch below the figure it equals reads as two different facts. */}
+            {/* The live region is permanent and the row it describes is not. A region that
+                arrives with its text already in it announces nothing — the region has to
+                exist, empty, before the words do — so this one is always here and the row is
+                hidden from assistive technology rather than read a second time. */}
+            <p className="visually-hidden" aria-live="polite">
+              {placedRows.length > 0 || balance !== 0 ? `${liveLabel}${balance !== 0 ? ` ${formatDollars(Math.abs(balance))}` : ""}.` : ""}
+            </p>
             {(placedRows.length > 0 || balance !== 0) && (
-              <p className="ledger__live" data-state={state} aria-live="polite">
+              <p className="ledger__live" data-state={state} aria-hidden="true">
                 <span>{liveLabel}</span>
                 {balance !== 0 && <strong className="money">{formatDollars(Math.abs(balance))}</strong>}
               </p>

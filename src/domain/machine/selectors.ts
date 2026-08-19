@@ -11,10 +11,27 @@ function numbersOf(state: ChallengeState) {
 
 export function snapshotForMode(state: ChallengeState, mode: PlanMode): SnapshotInputs | null {
   if (!state.setupId) return null;
+  /**
+   * The plan each board opens on: what the student last committed *that the season is
+   * actually running on*.
+   *
+   * The two safety checks are not that. `fallback` and `remaining-risk` both ask the same
+   * question — *show it still holds if the money you counted on never comes* — and both are
+   * built on top of a plan that stays where it is. Their amounts do not carry forward, which
+   * is why `remaining-risk` has nothing after it and why `week5-first-response` opens on the
+   * working plan rather than on the backup check.
+   *
+   * It used to open on the backup check, and that is the seam the whole of Week 5 fell
+   * through. A student who counted both bonuses rebuilt without them, and then Week 5 showed
+   * them that backup plan under the heading "the plan Avery walked into this week with",
+   * demanded a total measured against the *working* plan — $2,000, refusing $1,000 as too low
+   * — and handed them a board asking them to find $200. Three numbers, three different plans,
+   * on two consecutive screens.
+   */
   const defaultAmounts = mode === "fallback"
     ? state.drafts.working
     : mode === "week5-first-response"
-      ? state.drafts.fallback ?? state.drafts.working
+      ? state.drafts.working
       : mode === "final"
         ? state.drafts["week5-first-response"] ?? state.drafts.working
         : mode === "remaining-risk"

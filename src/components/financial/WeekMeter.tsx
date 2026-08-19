@@ -6,8 +6,23 @@ interface WeekMeterProps {
   load: LoadReadout;
   /** What is taking the hours, in the order they stack. */
   parts: readonly { id: string; label: string; blocks: number }[];
-  /** Named so the meter can say what the line is actually protecting. */
-  atStake: string;
+  /**
+   * What the line is actually protecting, or `null` where this plan is not counting on it.
+   *
+   * It used to be named unconditionally. A student who had just pressed *"No — plan without
+   * it"* was told on the very next screen that leaving the plan alone meant "the attendance
+   * bonus does not arrive" — coaching that ignores the decision they had made two seconds
+   * earlier, about money their plan no longer holds.
+   */
+  atStake: string | null;
+  /**
+   * Money still unassigned on this board, which is the only money that could go into rides.
+   *
+   * The "another $X on rides would cover it" line used to be printed on a board that was
+   * already over: a student with $400 to find was told to spend $1,350. A suggestion the
+   * screen beside it forbids is not help.
+   */
+  headroom: number;
   /** What one hour costs, so the row can be reasoned about rather than nudged. */
   rate: number;
 }
@@ -25,7 +40,7 @@ interface WeekMeterProps {
  * fourteen hours were covered while the picture showed the load getting bigger, and a
  * reader who compared the two believed neither.
  */
-export function WeekMeter({ load, parts, atStake, rate }: WeekMeterProps) {
+export function WeekMeter({ load, parts, atStake, headroom, rate }: WeekMeterProps) {
   const scale = Math.max(load.capacity, load.demand);
   const width = (blocks: number) => `${(blocks / scale) * 100}%`;
   const state = !load.atRisk ? "quiet" : load.attendanceHolds ? "safe" : "over";
@@ -74,9 +89,9 @@ export function WeekMeter({ load, parts, atStake, rate }: WeekMeterProps) {
         {!load.atRisk
           ? "This is what the trip alone takes. Rehab and anything else Avery takes on would come out of the same week."
           : load.attendanceHolds
-            ? `Avery can fit it all in, makes every session, and ${atStake} still arrives.`
-            : `${hours(load.overBy)} more than Avery has. Leave the plan like this and something gets missed — and then ${atStake} does not arrive.`}
-        {load.atRisk && !load.attendanceHolds && (
+            ? `Avery can fit it all in and makes every session${atStake ? `, and ${atStake} still arrives` : ""}.`
+            : `${hours(load.overBy)} more than Avery has. Leave the plan like this and something gets missed${atStake ? `, and then ${atStake} does not arrive` : ""}.`}
+        {load.atRisk && !load.attendanceHolds && headroom >= load.costToClear && load.costToClear > 0 && (
           <> Another <strong className="money">{formatDollars(load.costToClear)}</strong> on rides would cover it.</>
         )}
       </p>

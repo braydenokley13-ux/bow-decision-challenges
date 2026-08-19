@@ -833,6 +833,12 @@ export function GeneratorStage() {
           ? <Settled label={COPY.generator.gap.label} amount={swapBill(N)} />
           : <PopUpSum sumId="swap-gap" copy={COPY.generator.gap} expected={swapBill(N)} />}
       </div>
+      {/* What the three lines are holding, on the screen that says which of them can still
+          move. A coherence critic's charge was that this world has no ledger where the other
+          one has a rail; it has one, inside every screen that can spend — and this was the one
+          screen where the student is about to be asked which line pays and could not see what
+          any of them held. */}
+      <LinesHeld plan={ledger.held} label={COPY.plan.placedLabel} />
       <div className="popup-action">
         <p>{S.breakdown.movable}</p>
         <Button type="button" aria-disabled={!gapDone} onClick={() => gapDone && dispatch({ type: "GO_TO_STAGE", stage: "popup-repair" })}>

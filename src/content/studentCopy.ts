@@ -133,15 +133,37 @@ export const STUDENT_COPY = {
         ask: "Give each part of the plan an amount.",
         why: "There is no right split. There is only what Avery will be glad of in eight weeks.",
       },
+      /**
+       * The one-press way to place what is still unassigned, and the question it is not.
+       *
+       * `ask` used to read *"One of these takes what is left over. Which one?"* and it was
+       * asked at every balance, including zero — where all three cards were captioned
+       * *"Nothing is left over. Every dollar already has a job."* under a banner saying the
+       * same thing. A screen asking a question its own answer contradicts is a screen a
+       * twelve-year-old stops trying to understand, and one of the red team's students said
+       * exactly that about this section.
+       *
+       * So it says what it does. There is money with no job yet; here is one press that
+       * sends all of it to a row; the steppers reach every other amount. When there is
+       * nothing left to send, the section is not there.
+       *
+       * `nothing` is the other half of the same idea, on the row rather than here: a row can
+       * be given nothing on purpose, and until a student could say so the product could not
+       * tell "Avery saves nothing this season" from "nobody opened that row" — and told
+       * teachers the second was the first.
+       */
       rest: {
-        name: "Say where the rest goes",
-        ask: "One of these takes what is left over. Which one?",
+        name: "Send what is left to one row",
         why: "Whatever is left over goes to the one you pick.",
         /* Said as what it is. A row of marked cards under a question reads as a choice the
            screen is waiting on, and a reader who thinks the plan cannot be checked until
            they answer it is a reader the shortcut has cost time rather than saved it. */
         shortcut: "A shortcut. Or use − and + above.",
-        done: "Nothing is left over. Every dollar already has a job.",
+        nothing: "Nothing this season",
+        /* The refusal, when a plan that balances still has a row nobody has said anything
+           about. It names what is missing and both ways of answering it, because "give it an
+           amount" alone would read as an instruction to put money there. */
+        unspoken: "Every row needs an answer, even if the answer is nothing.",
       },
       review: {
         name: "Check it and save it",

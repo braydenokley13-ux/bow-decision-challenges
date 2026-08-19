@@ -12,6 +12,16 @@
 export interface PlanGates {
   /** Question 1's total is right. Until then nothing past question 1 exists to walk to. */
   floorReady: boolean;
+  /**
+   * Both bonuses have been answered for. It gates question 2 the way the totals gate the
+   * other two.
+   *
+   * The cards used to open with the right answer already pressed, and question 2 opened
+   * onward the moment it was reached — so *Next* was on screen before anything had been
+   * decided, and pressing it recorded a decision the student never made. A question that
+   * cannot be got wrong is still a question that has to be answered.
+   */
+  bonusesAnswered: boolean;
   /** Question 3's total is right. It gates question 4 the same way. */
   essentialsReady: boolean;
 }
@@ -25,11 +35,14 @@ export interface PlanPosition {
   reachable: number;
 }
 
-/** Whether the question at `index` lets the student move past it. Question 2 asks for a
- *  decision whose standing answer is already "leave it out", so it opens the next question
- *  by being reached; only the two totals gate anything, because only they can be wrong. */
+/** Whether the question at `index` lets the student move past it. All three of the first
+ *  three do gate: two of them on a total being right, and question 2 on the two bonuses
+ *  having been answered at all. Question 2 cannot be *wrong* — either answer is a plan — but
+ *  it can be unanswered, and a screen that walks past an unanswered decision is a screen that
+ *  records one nobody made. */
 function opensOnward(index: number, gates: PlanGates): boolean {
   if (index === 0) return gates.floorReady;
+  if (index === 1) return gates.bonusesAnswered;
   if (index === 2) return gates.essentialsReady;
   return true;
 }
@@ -48,7 +61,7 @@ export function planPosition(input: { wanted: number; visited: number; gates: Pl
  * they were actually looking at. `bonusesAnswered` stands in for having opened question 2,
  * because touching either bonus card is the only mark that question leaves.
  */
-export function seedVisited(input: PlanGates & { bonusesAnswered: boolean }): number {
+export function seedVisited(input: PlanGates): number {
   if (input.essentialsReady) return 3;
   if (!input.floorReady) return 0;
   return input.bonusesAnswered ? 2 : 1;
