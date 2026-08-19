@@ -7,7 +7,7 @@ import { PLAN_UNDER_PRESSURE } from "./challenges/registry";
 import type { ClassCreation } from "./classes/types";
 import { localOnlyTransport } from "./evidence/transports";
 import type { JoinCard } from "./identity/types";
-import { withoutComments } from "../test/source";
+import { commentsOnly, withoutComments } from "../test/source";
 
 /**
  * The rest of what this product says about the data it holds — the claims the name scan was
@@ -220,13 +220,6 @@ const ABOUT_A_PERSON = /\b(?:student|child|children|pupil|e-?mail|birthday|addre
 
 const REACH = 70;
 
-function comments(text: string): string {
-  const found: string[] = [];
-  for (const block of text.matchAll(/\/\*[\s\S]*?\*\//g)) found.push(block[0]);
-  for (const line of text.matchAll(/(^|[^:])(\/\/[^\n]*)/g)) found.push(line[2] ?? "");
-  return found.join("\n");
-}
-
 /** A quoted claim is a record of what was said. An unquoted one is what this file says. */
 function withoutQuotations(text: string): string {
   return text.replace(/\*"[\s\S]*?"\*/g, " ").replace(/"[^"]*"/g, " ").replace(/`[^`]*`/g, " ");
@@ -321,7 +314,7 @@ describe("what this product promises about where a child's data goes", () => {
   it("lets no comment deny that BOW holds a student's name", () => {
     const offenders: string[] = [];
     for (const { path, text } of sources()) {
-      const prose = withoutQuotations(comments(text)).replace(/\s+/g, " ");
+      const prose = withoutQuotations(commentsOnly(text)).replace(/\s+/g, " ");
       for (const sentence of prose.split(/(?<=[.!?])\s+/)) {
         const offences = nameDenialsIn(sentence);
         if (offences.length === 0) continue;

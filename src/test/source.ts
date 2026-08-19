@@ -47,6 +47,32 @@ export function withoutComments(source: string, options: StripOptions = {}): str
   return options.html ? stripped.replace(/<!--[\s\S]*?-->/g, " ") : stripped;
 }
 
+/**
+ * The other half of the same rule: the comments on their own, for the one scan that reads them.
+ *
+ * `withoutComments` exists because a scan that reads comments fails on its own explanation.
+ * This exists because two of this product's false claims about what it holds of a child were
+ * *only* in comments — `classes/types.ts` and `identity/types.ts` both opened by denying the
+ * roster — and a file head is what the next engineer believes. No scan in the repository could
+ * reach either.
+ *
+ * It lives here rather than in its caller for the reason stated above and enforced by
+ * `source.test.ts`: a scan that defines its own idea of where a comment starts is a scan
+ * enforcing a private one, and the extractor and the stripper have to be the same idea seen
+ * from two sides or the pair covers less than either claims. Same three rules, same colon
+ * exemption for `https://`.
+ *
+ * The caller is `src/platform/dataClaims.sweep.test.ts`, and it defuses the landmine the
+ * stripper exists for by exempting *quoted* claims rather than all comments: to write the
+ * retired sentence down you mark it as a quotation, which is what makes it safe to write down.
+ */
+export function commentsOnly(source: string): string {
+  const found: string[] = [];
+  for (const block of source.matchAll(/\/\*[\s\S]*?\*\//g)) found.push(block[0]);
+  for (const line of source.matchAll(/(^|[^:])(\/\/[^\n]*)/g)) found.push(line[2] ?? "");
+  return found.join("\n");
+}
+
 /** The same, for the callers that hold a path rather than a string. */
 export function sourceWithoutComments(path: string, options: StripOptions = {}): string {
   return withoutComments(readFileSync(path, "utf8"), options);
