@@ -45,7 +45,10 @@ import { forgetStudent, readMyClasses, studentToken, type StudentClass } from ".
 export function RunReport() {
   const { classCode = "", sessionId = "" } = useParams();
   const navigate = useNavigate();
-  const [state, setState] = useState<{ status: "loading" } | { status: "ready"; classes: readonly StudentClass[] }>({ status: "loading" });
+  const [state, setState] = useState<
+    | { status: "loading" }
+    | { status: "ready"; classes: readonly StudentClass[]; source: CompletedRunSource }
+  >({ status: "loading" });
 
   useEffect(() => {
     if (!studentToken()) {
@@ -54,33 +57,36 @@ export function RunReport() {
     }
     let cancelled = false;
     void (async () => {
-      const result = await readMyClasses();
+      // Both at once, and only one of them can send a student back to the door. The run comes
+      // from `/me/runs/:sessionId` — the copy they turned in — and the class list is here for
+      // one thing: what a person wrote back. A class list that fails to load costs this page
+      // the teacher's note and nothing else, because a dropped wifi is not a signed-out
+      // student, and treating it as one is how a network blip logged a child out of their
+      // own class and sent them off to find their card again.
+      const [classes, source] = await Promise.all([readMyClasses(), completedRunSource(sessionId)]);
       if (cancelled) return;
-      if (!result.ok) {
+      if (source.status === "signed-out") {
         forgetStudent();
         navigate("/join", { replace: true });
         return;
       }
-      setState({ status: "ready", classes: result.body.classes });
+      setState({ status: "ready", classes: classes.ok ? classes.body.classes : [], source });
     })();
     return () => { cancelled = true; };
-  }, [navigate]);
+  }, [navigate, sessionId]);
 
   if (state.status === "loading") {
     return <main className="student-home"><p aria-live="polite">Getting your run…</p></main>;
   }
 
-  const entry = state.classes.find((row) => row.classCode === classCode.toUpperCase());
-  const done = entry?.completed.find((row) => row.sessionId === sessionId);
-  if (!entry || !done) return <NoSuchRun />;
+  // The service is the one that decides whose run this is; the class list is only how the
+  // page finds the teacher's note, and a page that refused to draw without it would be a page
+  // that goes blank when the wifi does.
+  if (state.source.status === "not-yours") return <NoSuchRun />;
+  const entry = state.classes.find((row) => row.classCode === classCode.toUpperCase()) ?? null;
+  const done = entry?.completed.find((row) => row.sessionId === sessionId) ?? null;
 
-  return (
-    <Report
-      entry={entry}
-      done={done}
-      source={completedRunSource(done.sessionId, done.worldId)}
-    />
-  );
+  return <Report entry={entry} done={done} source={state.source} sessionId={sessionId} />;
 }
 
 /**
@@ -106,15 +112,24 @@ function NoSuchRun() {
   );
 }
 
-function Report({ entry, done, source }: {
-  entry: StudentClass;
-  done: { sessionId: string; submittedAt: number };
+function Report({ entry, done, source, sessionId }: {
+  entry: StudentClass | null;
+  done: { sessionId: string; submittedAt: number } | null;
   source: CompletedRunSource;
+  sessionId: string;
 }) {
+  // Keyed on the run, not on mount alone: a student who opens a second finished run from
+  // /home moves between two pages that share this component, and a route change nobody is
+  // told about leaves a screen-reader user tabbing from the top of six sections of document.
   const title = useRef<HTMLHeadingElement>(null);
-  useEffect(() => { title.current?.focus(); }, []);
+  useEffect(() => { title.current?.focus(); }, [sessionId]);
   const recap = source.status === "ready" ? source.recap : null;
-  const notes = entry.feedback.filter((note) => note.sessionId === done.sessionId);
+  // Both facts are the service's, and the class list is only a second place they happen to
+  // appear. Neither is invented when nobody could say: a page with no date simply has no
+  // date on it, which is a smaller wrong than a date that is not the one on the record.
+  const label = (source.status === "ready" ? source.label : undefined) ?? entry?.label ?? null;
+  const turnedInAt = (source.status === "ready" ? source.submittedAt : undefined) ?? done?.submittedAt ?? null;
+  const notes = entry?.feedback.filter((note) => note.sessionId === sessionId) ?? [];
 
   return (
     <main className="student-home">
@@ -124,12 +139,17 @@ function Report({ entry, done, source }: {
       </header>
 
       <div>
-        <p className="eyebrow">{entry.label}{recap ? ` · ${recap.worldTitle}` : ""}</p>
+        <p className="eyebrow">{[label, recap?.worldTitle].filter(Boolean).join(" · ")}</p>
         <h1 className="student-home__title" tabIndex={-1} ref={title}>What your run shows</h1>
-        <p>
-          You turned this in on {new Date(done.submittedAt).toLocaleDateString()}. Everything below is something
-          you did with the money in your run, written down from your own run and nobody else’s.
-        </p>
+        {/* Only where there is something below. On the screen that says the page could not
+            load, "everything below" is a promise about an apology. */}
+        {recap && (
+          <p>
+            {turnedInAt === null ? "" : `You turned this in on ${new Date(turnedInAt).toLocaleDateString()}. `}
+            Everything below is something you did with the money in your run, written down from your own run and
+            nobody else’s.
+          </p>
+        )}
       </div>
 
       {/* The person first, always. A teacher's sentence outranks every read-out under it,
@@ -151,7 +171,11 @@ function Report({ entry, done, source }: {
       )}
 
       {/* The two things this page is not, said before it starts rather than buried at the
-          bottom — because the question a twelve-year-old opens it with is "what did I get". */}
+          bottom — because the question a twelve-year-old opens it with is "what did I get".
+          Drawn only when there is something under it: promising a list that is not there and
+          then saying the page could not load is two paragraphs of throat-clearing in front of
+          an apology. */}
+      {recap && (
       <section className="handed-in__record">
         <p className="stamp">Before you read it</p>
         <p>
@@ -160,7 +184,7 @@ function Report({ entry, done, source }: {
         </p>
         <p>
           {notes.length > 0
-            ? "Your writing is the part a person reads, and your teacher has written back about it above. Nothing BOW put on this page is about your writing."
+            ? "Your writing is the part a person reads. Your teacher has written back, and their note is at the top of this page. Nothing else here is about your writing."
             : "Your writing is the part a person reads. Your teacher has it and has not read it yet — when they write back, it will appear at the top of this page. Nothing on this page is about your writing."}
         </p>
         {recap?.topics.some((topic) => topic.notes.some((note) => note.kind === "support")) && (
@@ -170,6 +194,7 @@ function Report({ entry, done, source }: {
           </p>
         )}
       </section>
+      )}
 
       {recap
         ? recap.topics.map((topic) => <Topic key={topic.id} topic={topic} />)
@@ -214,27 +239,30 @@ function Note({ note }: { note: RecapNote }) {
 }
 
 /**
- * The run is real and the log is not here.
+ * The run is real and this page could not get it.
  *
- * Said as a fact about this computer rather than as a fact about the student, because it is
- * one — and never dressed up as "nothing to show", which would read as "you did nothing".
+ * Said as a fact about the network or about the build, never as a fact about the student, and
+ * never dressed up as "nothing to show" — which a twelve-year-old reads as "you did nothing".
+ * The reload is offered because it is the whole of the fix: the run is on the service, and the
+ * next request that gets through will have it.
  */
 function Missing({ source }: { source: CompletedRunSource }) {
+  if (source.status === "offline") {
+    return (
+      <section className="student-card">
+        <h2>BOW could not reach your class just now.</h2>
+        <p>
+          Your work went to your teacher and it is safe — this page is the part that could not load. It is
+          almost always the wifi.
+        </p>
+        <p>Try again in a minute, or open this from the computer you played on.</p>
+      </section>
+    );
+  }
   return (
     <section className="student-card">
-      <h2>This one is not on this computer.</h2>
-      {source.status === "not-on-this-device" ? (
-        <>
-          <p>
-            Your work went to your teacher and it is safe. The copy BOW reads this page from stays on the
-            computer you played on, so opening it somewhere else — or after the browser has been cleared —
-            leaves nothing here to read back to you.
-          </p>
-          <p>Open it again on the computer you played it on, and it will be here.</p>
-        </>
-      ) : (
-        <p>Your work went to your teacher and it is safe. BOW cannot read this run back to you.</p>
-      )}
+      <h2>BOW cannot read this run back to you.</h2>
+      <p>Your work went to your teacher and it is safe. This run was played in a story this version does not know how to read back.</p>
     </section>
   );
 }

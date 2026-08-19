@@ -5,6 +5,8 @@ import { recapFor } from ".";
 import { RECAP_CONCEPTS, RECAP_TOPIC_ORDER } from "./types";
 import type { EvidenceEvent } from "../evidence/types";
 import type { RunRecap } from "./types";
+import { createPopUpState, popUpReducer, type TimestampedPopUpAction } from "../scenario/worlds/food-truck/machine";
+import { dollars } from "../core/money";
 
 /**
  * The promises this surface makes about a child, held as tests.
@@ -136,6 +138,31 @@ describe("a student who used a scaffold is described as having used one", () => 
     for (const note of everyNote(supplied)) {
       expect(note.text).not.toMatch(/\byou (?:are|seem|struggle|need|cannot|always|never)\b/i);
     }
+  });
+
+  it("never claims a student worked out a number the run handed them", () => {
+    // Driven through the world's own reducer rather than hand-written, because "the student
+    // pressed the button that supplies the answer" is a sequence, and the harnesses do not
+    // offer it: two wrong answers, the help, the supplied answer, then the right number.
+    let state = createPopUpState(1_780_000_000_000);
+    const send = (action: TimestampedPopUpAction) => { state = popUpReducer(state, action); };
+    send({ type: "SESSION_STARTED", sessionId: "session-supplied", classCode: "H4KVW", seatCode: "3" });
+    send({ type: "GO_TO_STAGE", stage: "popup-spot" });
+    send({ type: "POPUP_SPOT_SELECTED", spotId: "middle-row" });
+    send({ type: "POPUP_SUM_SUBMITTED", sumId: "owed-up-front", raw: "430", value: dollars(430), correct: false });
+    send({ type: "POPUP_SUM_SUBMITTED", sumId: "owed-up-front", raw: "410", value: dollars(410), correct: false });
+    send({ type: "SCAFFOLD_OPENED", interactionId: "owed-up-front" });
+    send({ type: "SHOW_AND_CONTINUE_USED", interactionId: "owed-up-front" });
+    send({ type: "POPUP_SUM_SUBMITTED", sumId: "owed-up-front", raw: "390", value: dollars(390), correct: true });
+
+    const recap = recapFor(POPUP, "session-supplied", state.log)!;
+    const about = everyNote(recap).filter((entry) => entry.text.includes("what the market wanted up front"));
+    expect(about).toHaveLength(1);
+    expect(about[0]!.kind).toBe("support");
+    expect(about[0]!.text).not.toMatch(/^You worked out/);
+    expect(about[0]!.text).toContain("Show the answer and keep going");
+    // And the number the run handed over is never printed back as though the student found it.
+    expect(everyWord(recap)).not.toContain("up front: $390");
   });
 
   it("keeps a mistake and what happened next in the same sentence", () => {

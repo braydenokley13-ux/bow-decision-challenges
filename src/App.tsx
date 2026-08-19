@@ -13,6 +13,7 @@ import { Roster } from "./educator/Roster";
 import { ShareOut } from "./educator/ShareOut";
 import { PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
 import { StudentJoin } from "./student/Join";
+import { studentToken } from "./student/session";
 import { StudentHome } from "./student/Home";
 import { RunReport } from "./student/RunReport";
 import { ResumeGate } from "./student/ResumeGate";
@@ -56,9 +57,15 @@ function Home() {
             Two stories, one job. {PLAYABLE_WORLDS.map((world) => world.title).join(" or ")} — you handle the money,
             and you find out what your decisions cost.
           </p>
+          {/* Two buttons that were the same door. "Come back to my class" led to `/home`, which
+              sends a student with no session straight to `/join` — so on a new tab, a cleared
+              browser or a school-managed machine the returning student was offered a door that
+              was the door they had just declined, and the two screens were byte-identical. The
+              second one is offered only when this browser actually holds a session for it to
+              open, which is the only case where it goes anywhere the first one does not. */}
           <div className="home__actions">
             <Link className="button button--primary" to="/join">I have a class code</Link>
-            <Link className="button button--secondary" to="/home">Come back to my class</Link>
+            {studentToken() && <Link className="button button--secondary" to="/home">Come back to my class</Link>}
           </div>
         </div>
         <aside className="home__side">

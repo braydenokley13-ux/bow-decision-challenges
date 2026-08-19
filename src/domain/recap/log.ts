@@ -110,6 +110,18 @@ export function notesForTried(tried: Tried | null, subject: string): RecapNote[]
   const wrong = tried.attempts.filter((attempt) => !attempt.correct);
   const last = right.at(-1);
 
+  // A supplied answer replaces the sentence rather than following it. "You worked out X: $Y"
+  // and "you pressed Show the answer" in the same breath is a contradiction, and the half a
+  // student would remember is the first one — which is the half that is not true.
+  if (tried.wasSupplied) {
+    notes.push(note("support",
+      wrong.length > 0
+        ? `You were working out ${subject}. Your first answer was ${asTyped(wrong[0]!)}, and then you pressed \u201cShow the answer and keep going\u201d to move on \u2014 so this run cannot say how you would have got there on your own.`
+        : `You were working out ${subject}. You pressed \u201cShow the answer and keep going\u201d to move on, so this run cannot say how you would have got there on your own.`,
+      [...refs, ...tried.supportRefs]));
+    return notes;
+  }
+
   if (last && wrong.length === 0) {
     notes.push(note("decision", `You worked out ${subject}: ${asTyped(last)}.`, refs));
   } else if (last) {
@@ -125,15 +137,7 @@ export function notesForTried(tried: Tried | null, subject: string): RecapNote[]
       refs));
   }
 
-  // Said once each, and short. The sentence explaining that using help is allowed and is
-  // written down as help rather than as a mistake belongs on the page, once, where it reads
-  // as the product's position instead of as three separate reassurances a student did not
-  // ask for.
-  if (tried.wasSupplied) {
-    notes.push(note("support",
-      `You pressed \u201cShow the answer and keep going\u201d here, so this run cannot say how you would have got ${subject} on your own.`,
-      tried.supportRefs));
-  } else if (tried.usedHelp) {
+  if (tried.usedHelp && !tried.wasSupplied) {
     notes.push(note("support", "You opened the step-by-step help before answering this one.", tried.supportRefs));
   }
   return notes;

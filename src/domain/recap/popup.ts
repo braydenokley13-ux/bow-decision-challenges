@@ -190,7 +190,7 @@ function notEnoughForEverything(log: Log): RecapNote[] {
     note("decision", `You said ${REASON_SAID[payload.reason]}.`, [settled.id]),
   ];
   if (payload.leftOver > 0) {
-    notes.push(note("decision", `${money(payload.leftOver)} of it was left in the jar.`, [settled.id]));
+    notes.push(note("decision", `You left ${money(payload.leftOver)} of it in the jar, and a dollar left in the jar buys nothing.`, [settled.id]));
   }
   return notes;
 }

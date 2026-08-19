@@ -105,11 +105,17 @@ function moneyYouCanCountOn(log: Log): RecapNote[] {
 
   const finalCall = eventsOfType(log, "COMPLETION_INCOME_DECIDED").at(-1);
   if (finalCall) {
+    // Three different sentences, because "you stopped counting it in" is only true of a
+    // student who was counting it in. Said to one who never did, it invents a change of mind.
+    const kept = payloadOf<{ included: boolean }>(finalCall).included;
+    const hadIt = opening?.snapshot.inputs.includeCompletion === true;
     notes.push(note("decision",
-      payloadOf<{ included: boolean }>(finalCall).included
-        ? `By Week 5 you were still counting ${money(N.completionIncome)} of bonus money in.`
-        : "By Week 5 you had stopped counting the bonus money in, and rebuilt without it.",
-      [finalCall.id]));
+      kept
+        ? `Week 5 asked you about the ${money(N.completionIncome)} attendance bonus again, and you were still counting it in.`
+        : hadIt
+          ? "By Week 5 you had stopped counting the attendance bonus in, and rebuilt the plan without it."
+          : "Week 5 asked you about the attendance bonus again, and you left it out again.",
+      [finalCall.id, ...(opening ? [opening.ref] : [])]));
   }
   return notes;
 }
@@ -136,7 +142,7 @@ function whatHadToBePaid(log: Log): RecapNote[] {
   }
   const chosen = triedAt(log, "CALCULATION_SUBMITTED", "calcId", "chosen-setup-total");
   if (chosen) {
-    notes.push(...notesForTried(chosen, "what that place takes out of Avery's money over the eight weeks, before anything else is decided"));
+    notes.push(...notesForTried(chosen, "what that place takes out of Avery's money over the eight weeks"));
   } else if (selected) {
     const setupId = payloadOf<{ setupId: SetupId }>(selected).setupId;
     notes.push(note("decision",
@@ -212,7 +218,7 @@ function notEnoughForEverything(log: Log): RecapNote[] {
     note("decision", `You said ${REASON_SAID[payload.reason]}.`, [settled.id]),
   ];
   if (payload.leftOver > 0) {
-    notes.push(note("decision", `${money(payload.leftOver)} of it was left over.`, [settled.id]));
+    notes.push(note("decision", `You left ${money(payload.leftOver)} of it unspent, and cash Avery does not spend that week goes nowhere.`, [settled.id]));
   }
   return notes;
 }

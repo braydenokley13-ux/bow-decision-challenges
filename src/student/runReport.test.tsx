@@ -32,23 +32,47 @@ function stash(state: PopUpState) {
   }));
 }
 
-function service(state: PopUpState, feedback: unknown[] = []) {
-  return vi.fn(() => Promise.resolve({
-    ok: true,
-    status: 200,
-    text: () => Promise.resolve(JSON.stringify({
-      classes: [{
-        classCode: CLASS_CODE,
-        label: "Period 3 · Grade 7",
-        seatCode: "7",
-        displayName: "Robin",
-        assignments: [],
-        inProgress: null,
-        completed: [{ sessionId: state.meta.sessionId, submittedAt: 1_780_000_100_000, worldId: "food-truck" }],
-        feedback,
-      }],
-    })),
-  } as Response));
+/**
+ * The class service, answering the two calls this page makes.
+ *
+ * `/me/runs/:sessionId` is the one that matters: it is where a finished run's log comes from
+ * now, so `run: "missing"` and `run: "down"` are how these tests reach the two failures that
+ * used to be invisible behind a local archive.
+ */
+function service(state: PopUpState, options: { feedback?: unknown[]; run?: "ok" | "missing" | "down" } = {}) {
+  const classes = {
+    classes: [{
+      classCode: CLASS_CODE,
+      label: "Period 3 · Grade 7",
+      seatCode: "7",
+      displayName: "Robin",
+      assignments: [],
+      inProgress: null,
+      completed: [{ sessionId: state.meta.sessionId, submittedAt: 1_780_000_100_000, worldId: "food-truck" }],
+      feedback: options.feedback ?? [],
+    }],
+  };
+  return vi.fn((url: string) => {
+    if (String(url).includes("/me/runs/")) {
+      if ((options.run ?? "ok") === "down") return Promise.reject(new Error("network"));
+      if (options.run === "missing") {
+        return Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({}) } as unknown as Response);
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({
+          sessionId: state.meta.sessionId,
+          classCode: CLASS_CODE,
+          label: "Period 3 · Grade 7",
+          seatCode: "7",
+          submittedAt: 1_780_000_100_000,
+          log: state.log,
+        }),
+      } as unknown as Response);
+    }
+    return Promise.resolve({ ok: true, status: 200, text: () => Promise.resolve(JSON.stringify(classes)), json: () => Promise.resolve(classes) } as unknown as Response);
+  });
 }
 
 function open(state: PopUpState) {
@@ -133,7 +157,7 @@ describe("the teacher goes first", () => {
     signedIn();
     const state = runPopUp();
     stash(state);
-    vi.stubGlobal("fetch", service(state, [{ id: "note-1", body: "Strong on the cushion. Read your last sentence again.", at: 1_780_000_200_000, sessionId: state.meta.sessionId }]));
+    vi.stubGlobal("fetch", service(state, { feedback: [{ id: "note-1", body: "Strong on the cushion. Read your last sentence again.", at: 1_780_000_200_000, sessionId: state.meta.sessionId }] }));
     open(state);
     const note = await screen.findByText(/Strong on the cushion/);
     const derived = await screen.findByText(/booth\./);
@@ -142,15 +166,38 @@ describe("the teacher goes first", () => {
   });
 });
 
-describe("a run whose log is not on this computer", () => {
-  it("says so as a fact about the machine, and never as nothing to show", async () => {
+describe("the run comes from the class service, not from this computer", () => {
+  it("reads back a run this machine has never held", async () => {
     signedIn();
-    const state = runPopUp();
-    // Nothing stashed: this is the class laptop's copy opened at home.
+    const state = runPopUp({ spotId: "bridge-gate" });
+    // Nothing stashed: the class laptop's run, opened at home on a different machine.
     vi.stubGlobal("fetch", service(state));
     open(state);
-    expect(await screen.findByText(/This one is not on this computer\./)).toBeInTheDocument();
+    expect(await screen.findByText(/Bridge Gate booth/)).toBeInTheDocument();
+  });
+
+  it("falls back to this machine's own copy when the network is down", async () => {
+    signedIn();
+    const state = runPopUp({ spotId: "bridge-gate" });
+    stash(state);
+    vi.stubGlobal("fetch", service(state, { run: "down" }));
+    open(state);
+    // Same run, same sentences, and the page never says which copy it read.
+    expect(await screen.findByText(/Bridge Gate booth/)).toBeInTheDocument();
+    expect(screen.queryByText(/could not reach your class/)).not.toBeInTheDocument();
+  });
+
+  it("says the network failed, as a fact about the network", async () => {
+    signedIn();
+    const state = runPopUp();
+    // Network down and nothing here: the honest answer, and never "nothing to show".
+    vi.stubGlobal("fetch", service(state, { run: "down" }));
+    open(state);
+    expect(await screen.findByText(/BOW could not reach your class just now\./)).toBeInTheDocument();
     expect(screen.getByText(/went to your teacher and it is safe/)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/nothing to show/i);
+    // No promises about a list that is not there.
+    expect(screen.queryByText(/There is no score on this page/)).not.toBeInTheDocument();
   });
 });
 
@@ -159,13 +206,25 @@ describe("somebody else's run", () => {
     signedIn();
     const state = runPopUp();
     stash(state);
-    vi.stubGlobal("fetch", service(state));
+    vi.stubGlobal("fetch", service(state, { run: "missing" }));
     render(
       <MemoryRouter initialEntries={[`/run/${CLASS_CODE}/not-my-session`]}>
         <Routes><Route path="/run/:classCode/:sessionId" element={<RunReport />} /></Routes>
       </MemoryRouter>,
     );
     expect(await screen.findByText(/That run is not one of yours\./)).toBeInTheDocument();
+  });
+
+  it("is refused on the service's word even when this machine is holding it", async () => {
+    signedIn();
+    const state = runPopUp({ spotId: "bridge-gate" });
+    // The previous student's attempt, still in local storage on a shared Chromebook, and a
+    // service that says this seat did not file that run.
+    stash(state);
+    vi.stubGlobal("fetch", service(state, { run: "missing" }));
+    open(state);
+    expect(await screen.findByText(/That run is not one of yours\./)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/Bridge Gate/);
   });
 });
 

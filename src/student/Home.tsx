@@ -4,7 +4,12 @@ import { AppMark } from "../components/primitives/AppMark";
 import { Button } from "../components/primitives/Button";
 import { PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
 import { stageLabel, WORLD_REGISTRY } from "../domain/scenario/registry";
-import { forgetStudent, readMyClasses, studentToken, type StudentClass } from "./session";
+import { forgetStudent, studentToken, type StudentClass } from "./session";
+import { NOT_A_RUN_IN_PROGRESS, readClasses, unfinishedRunHere } from "./completedRun";
+import { PLAYABLE_WORLDS, DEFAULT_WORLD_ID } from "../domain/scenario/registry";
+import { clearAttemptFor } from "../domain/io/persistence";
+import { worldOffer } from "../stages/worldOffer";
+import type { WorldId } from "../domain/core/ids";
 
 /**
  * The whole of a student's own screen.
@@ -33,12 +38,18 @@ export function StudentHome() {
     }
     let cancelled = false;
     void (async () => {
-      const result = await readMyClasses();
+      const result = await readClasses();
       if (cancelled) return;
       if (!result.ok) {
-        // A dead session is not an error to explain, it is a sign-in to do again.
-        forgetStudent();
-        navigate("/join", { replace: true });
+        // A dead session is a sign-in to do again. A dead network is not, and this screen used
+        // to treat them the same — it forgot the student's session on any failure, so a wifi
+        // blip on a Chromebook cart logged a child out and sent them off to find their card.
+        if (result.why === "signed-out") {
+          forgetStudent();
+          navigate("/join", { replace: true });
+          return;
+        }
+        setState({ status: "error", message: "BOW could not reach your class just now. It is almost always the wifi. Your work is safe — try again in a minute." });
         return;
       }
       setState({ status: "ready", classes: result.body.classes });
@@ -50,11 +61,34 @@ export function StudentHome() {
     return <main className="student-home"><p aria-live="polite">Getting your classes…</p></main>;
   }
   if (state.status === "error") {
-    return <main className="student-home"><p role="alert">{state.message}</p></main>;
+    return <ClassDidNotLoad message={state.message} />;
   }
 
   const signedInAs = state.classes[0]?.displayName ?? null;
   return <Ready classes={state.classes} signedInAs={signedInAs} onSignOut={() => { forgetStudent(); navigate("/join", { replace: true }); }} />;
+}
+
+/**
+ * The screen when the class could not be fetched.
+ *
+ * It takes focus on arrival for the same reason every other screen here does: this is a page
+ * change, and a student using a screen reader who is not told about it is a student tabbing
+ * from the top of the document to find out what happened.
+ */
+function ClassDidNotLoad({ message }: { message: string }) {
+  const title = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { title.current?.focus(); }, []);
+  return (
+    <main className="student-home">
+      <header className="student-home__bar"><AppMark /></header>
+      <section className="student-home__empty">
+        <h1 tabIndex={-1} ref={title}>Your class did not load.</h1>
+        <p role="alert">{message}</p>
+        <Button variant="secondary" onClick={() => window.location.reload()}>Try again</Button>
+        <Link to="/join">Type a class code</Link>
+      </section>
+    </main>
+  );
 }
 
 /**
@@ -112,8 +146,20 @@ function Ready({ classes, signedInAs, onSignOut }: {
   );
 }
 
+/**
+ * The run this student actually has open, or null.
+ *
+ * A checkpoint on one of the screens before a story starts is not a run in progress — see
+ * `NOT_A_RUN_IN_PROGRESS`. A finished run is the service's job and it does it: a submission
+ * marks its seat's checkpoint, and that mark now survives the checkpoints written after it.
+ */
+function liveRun(entry: StudentClass): StudentClass["inProgress"] {
+  return entry.inProgress && !NOT_A_RUN_IN_PROGRESS.includes(entry.inProgress.stage) ? entry.inProgress : null;
+}
+
 function ClassBlock({ entry }: { entry: StudentClass }) {
-  const world = entry.inProgress ? WORLD_REGISTRY[entry.inProgress.worldId] : undefined;
+  const inProgress = liveRun(entry);
+  const world = inProgress ? WORLD_REGISTRY[inProgress.worldId] : undefined;
   return (
     <section className="student-class">
       <p className="eyebrow">{entry.label}</p>
@@ -138,10 +184,10 @@ function ClassBlock({ entry }: { entry: StudentClass }) {
         </div>
       )}
 
-      {entry.inProgress ? (
+      {inProgress ? (
         <div className="student-card student-card--live">
           <h2>{world?.title ?? "Your run"}</h2>
-          <p>You stopped at <strong>{stageLabel(entry.inProgress.worldId, entry.inProgress.stage)}</strong>.</p>
+          <p>You stopped at <strong>{stageLabel(inProgress.worldId, inProgress.stage)}</strong>.</p>
           {/* The class code goes with them. It is what lets the run be fetched from the service
               rather than from this machine's storage, which is the whole of "started it in class
               on Tuesday, finished it at home on Thursday". Without it this button was a promise
@@ -175,6 +221,90 @@ function ClassBlock({ entry }: { entry: StudentClass }) {
           <Link to={`/run/${entry.classCode}/${done.sessionId}`}>See what your run shows</Link>
         </div>
       ))}
+
+      {/* Under the work rather than over it: the offer of another go is the answer to
+          "what now", and "what now" comes after "what happened". Clearing this machine's
+          attempt costs the student nothing now — a finished run is read back from the class
+          service, not from the copy the run left behind. */}
+      {entry.completed.length > 0 && liveRun(entry) === null && <PlayAgain entry={entry} />}
     </section>
+  );
+}
+
+/**
+ * The way back in, which did not exist.
+ *
+ * A student who finished used to reach the end of the product. The turn-in screen offers
+ * *"Run the market again"* / *"Try a different plan"*, and both of those clear the attempt
+ * and send the browser to `/` — the front door, which is a marketing page with a *"For
+ * educators"* link on it and no way back into the class. From `/home` there was nothing at
+ * all: the card that offers to start is drawn only while `completed` is empty. So the only
+ * route to a second run was typing the challenge URL, which a student in the red-team review
+ * worked out and did — producing a second submission on his seat that the product had never
+ * agreed to and could not label.
+ *
+ * Three rulings are baked into what this says, and each is a decision rather than a default.
+ *
+ * **It offers whatever the class was set, not "the same one again."** If the teacher enabled
+ * choice, this lands on the picker, because the most useful second run is usually the other
+ * story: the same money problem with different constraints is the whole reason two worlds
+ * exist. If the class was set one world, it opens that world, because offering a choice the
+ * teacher switched off would be the student screen overruling them.
+ *
+ * **It says what happens to the first run, in the same words the turn-in screen used.** A
+ * second run is turned in *as well as*, never *instead of*. A student who thinks they can
+ * quietly replace a bad run is a student who has been misled by the button, and their teacher
+ * is the one who finds out.
+ *
+ * **It is offered to everybody, including in a class whose work is going in a gradebook.**
+ * The product has no field that says an assignment is graded, and inferring one — from
+ * whether the teacher attached an objective, say — would let a reporting choice silently
+ * decide what a child is allowed to do, and be wrong in both directions. The thing that made
+ * "let them replay" dangerous is a score to beat, and there is no score anywhere on a
+ * student's side of this product: what a second run offers is a different ending, which is
+ * what the run itself says at Week 8. Whether a second attempt counts is a teacher's
+ * judgement, and the teacher can now see both.
+ */
+function PlayAgain({ entry }: { entry: StudentClass }) {
+  const offer = worldOffer({
+    allowedWorldIds: entry.assignments.flatMap((assignment) => assignment.allowedWorldIds ?? []),
+    assignmentAllowsChoice: entry.assignments.some((assignment) => assignment.studentChoosesWorld),
+    playableWorldIds: PLAYABLE_WORLDS.map((world) => world.id),
+    pickerReady: true,
+    defaultWorldId: DEFAULT_WORLD_ID,
+  });
+  const played = new Set(entry.completed.map((done) => done.worldId).filter((id): id is WorldId => id !== null));
+  const other = offer.worldIds.filter((id) => !played.has(id));
+
+  // Nothing is offered while this machine is holding a run nobody has turned in, because
+  // "again" clears exactly that. Finishing what you started is also the better prompt.
+  if (unfinishedRunHere(offer.worldIds, entry.completed.map((done) => done.sessionId))) return null;
+
+  return (
+    <div className="student-card">
+      <h2>Run it again?</h2>
+      <p>
+        {offer.studentChooses && other.length > 0
+          ? `You can go again, and you can pick a different one — ${other.map((id) => WORLD_REGISTRY[id]?.title ?? id).join(" or ")} is still there.`
+          : offer.studentChooses
+            ? "You can go again, in either story."
+            : `You can play ${WORLD_REGISTRY[offer.opensInto]?.title ?? "it"} again.`}
+        {" "}Different decisions make a different ending, and there is no score here to beat.
+      </p>
+      {/* The same promise the turn-in screen makes, kept on the screen where it is acted on. */}
+      <p>Starting again does not take the last one back. What you turned in stays with your teacher, and a new run is turned in as well as it, not instead of it — your teacher sees both.</p>
+      <a
+        className="button button--secondary"
+        href={`${PLAN_UNDER_PRESSURE.route}?class=${entry.classCode}`}
+        onClick={() => {
+          // Cleared here rather than by the run itself, because a restored attempt is what
+          // "again" has to mean the opposite of. Only the worlds this class was set: an
+          // attempt in a world this class never offered belongs to another class's run.
+          for (const worldId of offer.worldIds) clearAttemptFor(worldId);
+        }}
+      >
+        Play it again
+      </a>
+    </div>
   );
 }
