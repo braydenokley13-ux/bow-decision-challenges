@@ -303,3 +303,28 @@ mean.
 **N8 — the unit suite at HEAD: 1,315 passing, 0 failing, 1 skipped**, across 107 files, with
 `npx tsc -b` clean and `scripts/verify-head.sh` confirming the commit builds from a clean
 checkout rather than only the working tree.
+
+
+**N9 — the student's own read-back of their run, read by the lead.** Rendered over a real
+basketball run in which the savings row took the leftovers. Six topics, each naming the idea
+and then stating what this student did, every sentence carrying references into their own log
+and no score anywhere. Three sentences worth quoting because of what they refuse to say:
+
+> *"Your first plan left the $800 attendance bonus out. The screen opened that way and you
+> carried on without changing it, so this run cannot tell whether leaving it out was the call
+> you meant to make."*
+>
+> *"You gave the other rows a figure of your own and then sent what was left — $1,200 — to
+> Sports-media course. That row is the one that took whatever the arithmetic ended up with."*
+>
+> *"You left $45 of it unspent, and cash Avery does not spend that week goes nowhere."*
+
+The first is the same honesty about an untouched default that N6 checked on the teacher's side,
+in a child's words instead of a rubric's — the two surfaces agree, which is the thing that had
+to be true and was not guaranteed by anything but two agents talking to each other through the
+lead.
+
+I also went looking for a defect here and did not find one: my first read showed `undefined`
+where the concept name and its one-line meaning should be, and that was my probe using the wrong
+field names, not the product. Recorded because "checked and found nothing" is a result and
+because a finding filed without that check would have been wrong.
