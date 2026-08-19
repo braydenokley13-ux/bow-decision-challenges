@@ -1,5 +1,5 @@
 # Reverting each fix and watching the scan name it
-# 2026-08-19T06:27:20Z — HEAD 29858f2
+# 2026-08-19T06:50:27Z — HEAD 254bd39
 # python3 gauntlet/receipts/dataclaims-pg1522/prove.py
 
 → the sentence on the student's own screen (src/content/studentCopy.ts)
