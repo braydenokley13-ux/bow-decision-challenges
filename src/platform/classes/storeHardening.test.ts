@@ -486,3 +486,38 @@ describe("a student who sends a session id shaped like a path", () => {
     expect(await store.getClass("H4KVW")).toMatchObject({ code: "H4KVW" });
   });
 });
+
+/**
+ * A class code that could never be a class code, at the door that was not checking.
+ *
+ * `handler.ts` validates one with `isWellFormedClassCode` and answers 404. `identity.ts` did
+ * not, and leaned on the store's `segment()` throwing instead — fail-closed, no path built,
+ * nothing touched, but the throw comes back through the transport's catch as a 503. So an
+ * unauthenticated caller could make an untouched service say "the class service is not
+ * reachable right now" by sending a `%` in a URL, and the two routers gave two different
+ * answers about the same string. A 503 is what an operator pages somebody about.
+ */
+describe("a class code the store could never turn into a filename", () => {
+  it("is the same clean 404 at both doors, rather than a 503 from the identity one", async () => {
+    const root = await mkdtemp(join(tmpdir(), "bow-idcode-"));
+    const store = fileStore(root, vault(KEY));
+    const record = { ...CLASS, expiresAt: NOW + 1000 * 60 * 60 * 24 * 30 };
+    await store.putClass(record);
+    const call = (path: string) => handleApiRequest({ method: "GET", path, headers: {} }, { store, now: () => NOW });
+    const before = (await readdir(root)).sort();
+
+    // A pathname keeps its percent-encoding, so these arrive as the literal characters `%`,
+    // `2`, `5` — and `%` is not one the store will put in a filename.
+    for (const code of ["AAAA%00", "%25", "..%2f..%2fetc", "AAAA%2e%2e", "._."]) {
+      // `/classes/:code` — the class service's own door, which has always answered this way.
+      expect((await call(`/classes/${code}`)).status).toBe(404);
+      // And the identity routes underneath it, which used to throw here and 503.
+      expect((await call(`/classes/${code}/roster`)).status).toBe(404);
+    }
+
+    // The class that does exist still opens, so this is a check and not a wall.
+    expect((await call(`/classes/${record.code}/roster`)).status).toBe(200);
+    // And nothing was written anywhere while all of that was refused.
+    expect((await readdir(root)).sort()).toEqual(before);
+  });
+});

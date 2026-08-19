@@ -1,4 +1,4 @@
-import { CODE_ALPHABET, isWellFormedSeatCode, normaliseSeatCode } from "../src/platform/classes/codes";
+import { CODE_ALPHABET, isWellFormedClassCode, isWellFormedSeatCode, normaliseClassCode, normaliseSeatCode } from "../src/platform/classes/codes";
 import { asRunCopy, copyToKeep } from "../src/platform/identity/runCopies";
 import {
   IDENTITY_ERROR_MESSAGES,
@@ -587,7 +587,24 @@ export async function handleIdentityRequest(
   }
 
   if (head !== "classes" || !second) return null;
-  const code = second.toUpperCase();
+  // The same check the class service makes at its own door, with the same answer.
+  //
+  // This was `second.toUpperCase()` and nothing else, and relied on the store's `segment()`
+  // throwing on anything that cannot be part of a filename. That is fail-closed — no path is
+  // built and nothing is touched — but the throw surfaces as the transport's 503, so an
+  // unauthenticated caller sending `%00` in a class code got "the class service is not
+  // reachable right now" over a request that was simply malformed. An operator reading that
+  // goes looking for a broken deployment, and the two routers disagreed about the same string.
+  //
+  // A 404 rather than a 400 because a malformed code and a code nobody owns are the same
+  // event to the person who typed it, and telling an enumerator that their guess was the
+  // wrong *shape* is a hint the class service already declines to give.
+  if (!isWellFormedClassCode(second)) {
+    return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
+  }
+  // Normalised, not upper-cased, so this file looks up the string the class service would have
+  // looked up: a code read off a whiteboard as `0` for `Q` reaches the same class from both.
+  const code = normaliseClassCode(second);
 
   // -- GET /classes/:code/roster — the list a student picks their own name off. --
   if (request.method === "GET" && third === "roster" && !fourth) {
