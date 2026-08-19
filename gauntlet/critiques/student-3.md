@@ -9,14 +9,16 @@
 
 **Who I played.** Deshawn, who clicks fast and looks for the answer. Kayla, who cannot do
 $225 × 8 in her head and needs every scaffold there is. Nadia/Priya/Ravi, who read everything
-and want to say what they meant. Each of them through *Eight Weeks to the Showcase* and *Run
-the Pop-Up*, from the join screen to the turned-in screen, plus what the teacher then sees.
+and want to say what they meant. All three through *Eight Weeks to the Showcase* from the join
+screen to the turned-in screen and on into what the teacher sees; all three through *Run the
+Pop-Up* — the fast route, the every-scaffold route (three wrong guesses and the answer supply on
+every sum in the market), and the careful route — to the turned-in screen.
 
 ---
 
 ## The short version
 
-There is a genuinely good product in here, and it is not close. The Week 8 resolution, the
+There is a genuinely good product in here, and saying so is not politeness. The Week 8 resolution, the
 Week 4 deposit deadline, the hour budget that makes money and time compete for the same plan,
 the glossary, and the second-window screen are better than most things sold into schools. Two
 or three of the moments in a run are real decisions with real consequences that thirteen-year-
