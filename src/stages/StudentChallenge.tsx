@@ -26,7 +26,7 @@ import { SCENARIO_NUMBERS } from "../domain/scenario/numbers";
 import { essentialsExpectation, incomeAmount, reliableFloorExpectation, setupCostOrder } from "../domain/scenario/expectations";
 import { bonusWeeks, clinicWeeks } from "../domain/scenario/season";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
-import { amountsFor, meaningfulAttempts, snapshotForMode } from "../domain/machine/selectors";
+import { amountsFor, meaningfulAttempts, rankingAttempts, snapshotForMode } from "../domain/machine/selectors";
 import { STUDENT_COPY } from "../content/studentCopy";
 import type { Assignment } from "../platform/classes/types";
 import { forgetStudent, readMyClasses, studentToken } from "../student/session";
@@ -379,6 +379,8 @@ function SetupStage() {
    * on an answer the student has already read.
    */
   const [showingAnswer, setShowingAnswer] = useState(false);
+  /** Whether the worked step is open. Kept locally, and recovered from the record on reload. */
+  const [openedStep, setOpenedStep] = useState(false);
   const ranked = state.setupRanking?.correct === true || (supplied && !showingAnswer);
   const totalEntered = state.calculations["chosen-setup-total"]?.correct === true;
   const chosen = setups.find((setup) => setup.id === state.setupId);
@@ -437,7 +439,9 @@ function SetupStage() {
             Three places, three ways of paying. Put them in order, cheapest first —
             <strong> over all eight weeks</strong>, not per week.
           </p>
-          <ol className="rank-list" data-checked={state.setupRanking ? (state.setupRanking.correct ? "right" : "wrong") : "unchecked"}>
+          {/* A list showing the answer is not a list needing another look, whatever the last
+              thing the student tried was. */}
+          <ol className="rank-list" data-checked={showingAnswer ? "right" : state.setupRanking ? (state.setupRanking.correct ? "right" : "wrong") : "unchecked"}>
             {order.map((id, index) => {
               const setup = byId(id);
               return (
@@ -459,17 +463,41 @@ function SetupStage() {
               position as the neutral hint it replaced — a twelve-year-old would not notice
               anything had happened. The panel changes state, the list is marked as needing
               another look, and the line says something true without naming the row. */}
-          <div className="stage-action" data-state={state.setupRanking && !state.setupRanking.correct ? "wrong" : "neutral"}>
-            {state.setupRanking && !state.setupRanking.correct
-              ? (
-                <p aria-live="assertive">
-                  <b>Not that order.</b> One of these prices is for the whole eight weeks, not
-                  for one week. Work out what each place costs across all {SCENARIO_NUMBERS.weeks} of them.
-                </p>
-              )
-              : <p>Cheapest over eight weeks goes first.</p>}
-            <Button type="button" onClick={checkOrder}>{state.setupRanking && !state.setupRanking.correct ? "Check it again" : "Check the order"}</Button>
+          <div className="stage-action" data-state={showingAnswer ? "neutral" : state.setupRanking && !state.setupRanking.correct ? "wrong" : "neutral"}>
+            {showingAnswer
+              ? <p aria-live="assertive"><b>That is the order.</b> Cheapest first, over all {SCENARIO_NUMBERS.weeks} weeks.</p>
+              : state.setupRanking && !state.setupRanking.correct
+                ? (
+                  <p aria-live="assertive">
+                    <b>Not that order.</b> One of these prices is for the whole eight weeks, not
+                    for one week. Work out what each place costs across all {SCENARIO_NUMBERS.weeks} of them.
+                  </p>
+                )
+                : <p>Cheapest over eight weeks goes first.</p>}
+            {showingAnswer
+              ? <Button type="button" onClick={() => setShowingAnswer(false)}>Keep going</Button>
+              : <Button type="button" onClick={checkOrder}>{state.setupRanking && !state.setupRanking.correct ? "Check it again" : "Check the order"}</Button>}
           </div>
+          {/* The ladder every other gated question in the product has, in the same words and
+              the same order, so a student who has met one has met this one. Nothing here is
+              on the screen until two orders have been refused — the first two minutes of the
+              run are unchanged for the student who does not need it. */}
+          {!showingAnswer && wrongTries >= 2 && (
+            <div className="calculation-help">
+              {!stepOpen
+                ? <Button type="button" variant="quiet" onClick={openStep}>Show me one step</Button>
+                : (
+                  <div role="note">
+                    <strong>Try it this way:</strong>
+                    <span>
+                      Take one place at a time. {dearest.title}: {dearest.terms} — that is {formatDollars(dearest.total)} over
+                      the season. Work the other two out the same way, then put the cheapest first.
+                    </span>
+                  </div>
+                )}
+              {wrongTries >= 3 && <Button type="button" variant="quiet" onClick={handOverTheOrder}>Show the answer and keep going</Button>}
+            </div>
+          )}
         </>
       ) : (
         <div ref={revealRef}>

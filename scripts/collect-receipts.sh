@@ -30,8 +30,15 @@ count="$(printf '%s\n' "$files" | grep -c .)"
 # The index is shared with every other agent in this container, so losing the race is normal
 # and removing the lock would corrupt what the winner is writing. Retry; never unlink.
 for attempt in 1 2 3 4 5 6; do
+  # `--only` is load-bearing, not tidiness. A plain `git commit` writes the whole index, and in
+  # a tree a dozen agents share, the index holds whatever any of them has staged. This script
+  # committed somebody's half-staged `StudentChallenge.tsx` inside a receipts commit that way —
+  # the *uses* of three identifiers without their declarations — and published a branch tip that
+  # would not compile, blocking every other agent's pre-push gate. `--only <paths>` commits the
+  # named paths and nothing else, whatever else is staged.
   if printf '%s\n' "$files" | xargs -r git add 2>/dev/null \
-    && git commit -q -m "Collect ${count} receipts that have finished being written" 2>/dev/null; then
+    && printf '%s\n' "$files" | xargs -r git commit -q --only \
+        -m "Collect ${count} receipts that have finished being written" -- 2>/dev/null; then
     git push -q origin "$BRANCH" 2>/dev/null || true
     echo "committed ${count} settled receipt files"
     exit 0
