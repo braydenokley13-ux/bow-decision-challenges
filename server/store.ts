@@ -722,7 +722,16 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
     },
     deleteClass: async (code) => {
       for (const entry of await readHash<StoredRosterEntry>(`roster:${code}`)) {
-        if (entry.studentId) await command("HDEL", `student-seats:${entry.studentId}`, code);
+        if (!entry.studentId) continue;
+        await command("HDEL", `student-seats:${entry.studentId}`, code);
+        // And the account itself, once it holds no seats — the same rule the file store
+        // states above, which this driver did not follow. A student account is `{ id,
+        // createdAt }` and holds nothing personal, but an orphan is a row nobody can reach
+        // and nobody meant to keep, and a retention promise that leaves litter is a retention
+        // promise a reviewer stops believing.
+        if ((await readHash<StudentSeat>(`student-seats:${entry.studentId}`)).length === 0) {
+          await command("DEL", `student:${entry.studentId}`, `student-seats:${entry.studentId}`);
+        }
       }
       const raw = await command<string>("GET", `class:${code}`);
       const record = raw ? get<StoredClass>(raw) : null;
@@ -733,13 +742,26 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
         `roster:${code}`, `checkpoints:${code}`, `feedback:${code}`, `shareout:${code}`,
       );
     },
-    // Every key this driver writes carries a TTL tied to the class's own expiry, so retention
-    // is executed by the store rather than by a sweeper this process has to remember to run.
-    // An empty list is the true answer here, not a stub: there is nothing left to delete.
+    // Every key this driver writes *about a class* carries a TTL tied to that class's expiry,
+    // so retention is executed by the store rather than by a sweeper this process has to
+    // remember to run. An empty list is the true answer here, not a stub.
+    //
+    // The qualifier is load-bearing and was missing. `putStudent` writes `student:<id>` with a
+    // plain `SET` and no TTL, because an account is not owned by any one class — a child can
+    // sit in two — so it cannot expire with one. The sentence therefore used to be false of
+    // exactly the key it most needed to be true of, and on a managed deployment a student
+    // record outlived the retention window with nothing left to reach it. `deleteClass` and
+    // `eraseSeat` now delete an account when its last seat goes, which is what the file store
+    // has always done.
     expiredClassCodes: () => Promise.resolve([]),
     eraseSeat: async (code, seatCode) => {
       const entry = (await readHash<StoredRosterEntry>(`roster:${code}`)).find((row) => row.seatCode === seatCode);
-      if (entry?.studentId) await command("HDEL", `student-seats:${entry.studentId}`, code);
+      if (entry?.studentId) {
+        await command("HDEL", `student-seats:${entry.studentId}`, code);
+        if ((await readHash<StudentSeat>(`student-seats:${entry.studentId}`)).length === 0) {
+          await command("DEL", `student:${entry.studentId}`, `student-seats:${entry.studentId}`);
+        }
+      }
       await command("HDEL", `roster:${code}`, seatCode);
       for (const record of await readHash<SubmissionRecord>(`submissions:${code}`)) {
         if (record.seatCode === seatCode) await command("HDEL", `submissions:${code}`, submissionKey(record));
