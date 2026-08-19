@@ -251,6 +251,20 @@ function ClassResult({ entry, onThisObjective }: { entry: ObjectiveClassResult; 
       {shownSkills.length > 0 && (
         <>
           <table className="micro-table">
+            {/* The denominator these rows are actually counted over, said on the table
+                rather than left to be inferred from the headline above it — which counts a
+                different population. Every student who turned in lands in exactly one state
+                per skill, with the ones nobody has assessed yet named as an absence rather
+                than dropped, so the rows add up to the students who turned in and the
+                headline adds up to the ones with a usable result. Uncaptioned, this table
+                sat under "9 of 12 assessed" with rows totalling eighteen, and a teacher had
+                two true numbers on one screen and no way to tell they were about two
+                different sets of children. The class page states the same two facts in the
+                same order, because it is the same table about the same class. */}
+            <caption>
+              Counts across all {entry.submitted} who turned in. {entry.result.assessed} of them have a
+              usable result — one whose written explanation somebody has read.
+            </caption>
             <thead><tr><th scope="col">Skill</th><th scope="col">Where the class is</th></tr></thead>
             <tbody>
               {shownSkills.map((row) => (

@@ -25,6 +25,22 @@ import { levelLabel, LEVEL_BUCKET_LABELS, TERMS } from "./labels";
  * should I teach next?" for the same class.
  */
 
+/** Nothing happened here: nobody fell short of it, and nobody went unasked. */
+function nothingHappened(gap: RequirementGap): boolean {
+  return gap.struggled === 0 && gap.notObserved === 0;
+}
+
+/**
+ * How many rows of nothing it takes before they are worth saying once.
+ *
+ * Two is not a wall and folding two would cost a teacher two labels to save two lines. Ten
+ * is a wall: a reviewer opened the sample class and met a thirteen-row table of which ten
+ * read `0 of 12` and `0%`, directly under a banner that had already told them nothing stood
+ * out. Seven hundred pixels of a screen a teacher opens between lessons, restating the
+ * sentence above it.
+ */
+const FOLD_ROWS_OF_NOTHING_FROM = 3;
+
 /**
  * The counts behind everything the work had to show. The audit trail for the card above it.
  *
@@ -38,6 +54,10 @@ import { levelLabel, LEVEL_BUCKET_LABELS, TERMS } from "./labels";
  * opportunity the run never presented can never be read as a student who got it wrong.
  */
 function GapTable({ gaps, assessed }: { gaps: readonly RequirementGap[]; assessed: number }) {
+  // The reading sorts worst first, so the rows nothing happened on are the tail of it.
+  const quiet = gaps.filter(nothingHappened);
+  const folded = quiet.length >= FOLD_ROWS_OF_NOTHING_FROM;
+  const rows = folded ? gaps.filter((gap) => !nothingHappened(gap)) : gaps;
   return (
     <table className="micro-table next-lesson__gaps">
       <thead>
@@ -48,7 +68,7 @@ function GapTable({ gaps, assessed }: { gaps: readonly RequirementGap[]; assesse
         </tr>
       </thead>
       <tbody>
-        {gaps.map((gap) => (
+        {rows.map((gap) => (
           <tr key={gap.evidenceRequirementId}>
             <th scope="row">
               {gap.label}
@@ -64,6 +84,24 @@ function GapTable({ gaps, assessed }: { gaps: readonly RequirementGap[]; assesse
             <td>{gap.notObserved === 0 ? "—" : `${gap.notObserved} of ${assessed}`}</td>
           </tr>
         ))}
+        {/* One row for every row that had nothing in it, in the same three columns and with
+            the same denominator, and every one of them named underneath. This is a fold and
+            not a deletion: an audit trail that quietly dropped ten of thirteen rows would be
+            worse than the wall it replaced, and a district reading down this table can still
+            find the one it came for. */}
+        {folded && (
+          <tr>
+            <th scope="row">
+              {rows.length === 0 ? "All" : "The other"} {quiet.length} things the work had to show
+              <small>{quiet.map((gap) => gap.label).join(" · ")}</small>
+            </th>
+            <td>
+              0 of {assessed}
+              {quiet.some((gap) => gap.percentOfAssessed !== null) && <small>0%</small>}
+            </td>
+            <td>—</td>
+          </tr>
+        )}
       </tbody>
     </table>
   );
