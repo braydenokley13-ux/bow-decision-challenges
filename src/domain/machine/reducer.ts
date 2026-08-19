@@ -5,6 +5,7 @@ import { balanceOf, readoutFor, residualOf, unassignedOf } from "../finance/form
 import type { PlanMode, SnapshotInputs } from "../finance/types";
 import type { AmountSource, CompetingClaimsSettlement, EvidenceEvent, EvidenceEventType, StageId, SupportLevel } from "../evidence/types";
 import { competenciesForEvent, conceptsForEvent, evidenceRequirementsForEvent } from "../evidence/eventConcepts";
+import { carriedAmountsFor } from "./selectors";
 import type { ChallengeAction } from "./actions";
 import { EMPTY_AMOUNTS, type ChallengeState } from "./state";
 
@@ -86,12 +87,19 @@ function supportFor(state: ChallengeState, interactionId: string): SupportLevel 
   return state.support[interactionId] ?? "standard_access";
 }
 
+/**
+ * The plan a first edit on an untouched board is an edit *to*.
+ *
+ * A row the student moves does not only move that row: it writes the whole draft, so the two
+ * rows they have not reached yet are written too, from whatever this returns. So this has to
+ * be the same plan the board was drawing before they pressed anything, and there is exactly
+ * one statement of which plan that is — `carriedAmountsFor`, which the screen reads as well.
+ * This used to hold its own copy of the rule, the copy said `drafts.fallback` for Week 5, and
+ * the answer is written out in full over there because it cost a student $800 of somebody
+ * else's plan on the screen a teacher grades.
+ */
 function defaultAmountsFor(state: ChallengeState, mode: PlanMode) {
-  if (mode === "fallback") return state.drafts.working ?? EMPTY_AMOUNTS;
-  if (mode === "week5-first-response") return state.drafts.fallback ?? state.drafts.working ?? EMPTY_AMOUNTS;
-  if (mode === "final") return state.drafts["week5-first-response"] ?? state.drafts.working ?? EMPTY_AMOUNTS;
-  if (mode === "remaining-risk") return state.drafts.final ?? EMPTY_AMOUNTS;
-  return EMPTY_AMOUNTS;
+  return carriedAmountsFor(state, mode) ?? EMPTY_AMOUNTS;
 }
 
 /**
