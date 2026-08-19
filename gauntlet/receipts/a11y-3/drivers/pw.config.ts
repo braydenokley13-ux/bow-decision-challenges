@@ -22,6 +22,6 @@ export default defineConfig({
     { name: "chromebook", use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 600 } } },
     { name: "w320", use: { ...devices["Desktop Chrome"], viewport: { width: 320, height: 640 } } },
     { name: "zoom400", use: { ...devices["Desktop Chrome"], viewport: { width: 320, height: 256 }, deviceScaleFactor: 4 } },
-    { name: "zoom200", use: { ...devices["Desktop Chrome"], viewport: { width: 640, height: 384 }, deviceScaleFactor: 2 } },
+    { name: "zoom200", use: { ...devices["Desktop Chrome"], viewport: { width: 683, height: 384 } } },
   ],
 });

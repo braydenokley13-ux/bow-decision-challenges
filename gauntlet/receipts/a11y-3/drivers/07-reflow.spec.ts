@@ -55,7 +55,7 @@ async function measure(page: Page, screen: string) {
     (found.clipped.length ? `\n  CLIPPED TEXT:\n${found.clipped.map((b) => "    " + b).join("\n")}` : "") +
     (found.tiny.length ? `\n  TARGETS UNDER 24px:\n${found.tiny.map((b) => "    " + b).join("\n")}` : "") +
     (found.covered.length ? `\n  CONTROL COVERED BY SOMETHING ELSE:\n${found.covered.map((b) => "    " + b).join("\n")}` : ""));
-  if (problems) await page.screenshot({ path: `${OUT}/reflow/${project}-${screen}.png`, fullPage: true });
+  if (problems) await page.screenshot({ path: `${OUT}/reflow/${project}-${screen}.png` });
   return found;
 }
 
