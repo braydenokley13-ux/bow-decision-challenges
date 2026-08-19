@@ -3,6 +3,7 @@ import { CLASS_API_BASE } from "../platform/evidence/transports";
 import type { Assignment, AttributedSubmission, ClassRecord } from "../platform/classes/types";
 import type { StandardRef } from "../domain/standards";
 import { objectiveResultForClass, type ObjectiveClassResult } from "./objectiveResults";
+import { analyseClass, classRoll } from "./analysis";
 import { rememberedClasses } from "./classMemory";
 
 /**
@@ -25,6 +26,21 @@ export type ObjectiveEvidenceState =
 /** No objective to read against is a fact about this render, not something to go and find out. */
 const NOTHING_TO_READ: ObjectiveEvidenceState = { status: "ready", results: [], classesRead: 0, classesUnreadable: 0 };
 
+/**
+ * One attempt per student still in the class — the same reading every other surface uses.
+ *
+ * `classRoll` is the one place that decides what a student is and which of their attempts
+ * stands for them, and this page was the last surface not asking it.
+ */
+export function countedSubmissions(
+  submissions: readonly AttributedSubmission[],
+  roster: readonly { seatCode: string; removedAt?: number | null }[],
+): AttributedSubmission[] {
+  const roll = classRoll({ rows: analyseClass([...submissions]).rows, roster });
+  const counted = new Set(roll.rows.map((row) => row.sessionId));
+  return submissions.filter((submission) => counted.has(submission.sessionId));
+}
+
 export function useObjectiveEvidence(ref: StandardRef | null): ObjectiveEvidenceState {
   const [state, setState] = useState<ObjectiveEvidenceState>({ status: "loading" });
   const key = ref ? `${ref.frameworkId}/${ref.code}` : "";
@@ -40,7 +56,12 @@ export function useObjectiveEvidence(ref: StandardRef | null): ObjectiveEvidence
             headers: { "X-BOW-Teacher-Key": remembered.teacherKey },
           });
           if (!response.ok) return null;
-          return (await response.json()) as { class: ClassRecord; assignments: Assignment[]; submissions: AttributedSubmission[] };
+          return (await response.json()) as {
+            class: ClassRecord;
+            assignments: Assignment[];
+            submissions: AttributedSubmission[];
+            roster?: { seatCode: string; removedAt?: number | null }[];
+          };
         } catch {
           // An expired class, a key this browser no longer holds, or a service having a bad
           // moment. Counted and reported; never rendered as a class with nothing in it.
@@ -52,7 +73,17 @@ export function useObjectiveEvidence(ref: StandardRef | null): ObjectiveEvidence
       setState({
         status: "ready",
         results: readable.flatMap((payload) => {
-          const result = objectiveResultForClass({ ref, record: payload.class, assignments: payload.assignments, submissions: payload.submissions });
+          const result = objectiveResultForClass({
+            ref,
+            record: payload.class,
+            assignments: payload.assignments,
+            // The class as the class page counts it, not the pile of records the service holds.
+            // This read every submission, so a student who had a second go was two students
+            // here and one there, and a seat the teacher had removed was still in the
+            // denominator — which is how one class came to report "12 of 13 assessed" on this
+            // page and "11 of 12" on the class page inside the same minute.
+            submissions: countedSubmissions(payload.submissions, payload.roster ?? []),
+          });
           return result ? [result] : [];
         }),
         classesRead: readable.length,

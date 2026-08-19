@@ -266,14 +266,22 @@ describe("a note is delivered whole or refused, never quietly cut", () => {
 describe("notes written before feedback was a sequence are not lost", () => {
   it("keeps delivering a note stored under the old one-per-attempt shape, and adds to it", async () => {
     const root = await mkdtemp(join(tmpdir(), "bow-feedback-"));
-    const store = fileStore(root, sealed());
+    const keeper = sealed();
+    const store = fileStore(root, keeper);
     const place = await room(store, "session-legacy");
 
-    // Exactly what the old code wrote: no id, filed under the attempt it was about.
+    // Exactly what the old code wrote: no id, filed under the attempt it was about — and
+    // sealed, because the old *schema* and the old *encryption* are two different migrations
+    // and this test is about the first one. It used to plant the record as plain JSON, which
+    // worked because a keyed vault read anything that was not a sealed envelope straight
+    // through. A second vendor review showed what that cost: an attacker who could write one
+    // file replaced a teacher's sealed record with a plaintext one carrying a password hash of
+    // their choosing and signed in. `open()` refuses an unsealed record now, so staging one
+    // here would be staging the attack rather than the migration.
     await mkdir(join(root, place.code, "feedback"), { recursive: true });
     await writeFile(
       join(root, place.code, "feedback", `${place.seatCode}:${place.sessionId}.json`),
-      JSON.stringify({
+      keeper.seal({
         classCode: place.code, seatCode: place.seatCode, sessionId: place.sessionId,
         body: "Written last term, before any of this.", at: NOW - 5 * MINUTE, flagged: false,
       }),

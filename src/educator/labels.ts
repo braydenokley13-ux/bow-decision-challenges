@@ -3,7 +3,6 @@ import {
   DEVELOPING_THRESHOLD_PERCENT,
   MINIMUM_ASSESSED_FOR_A_STATE,
   STRONG_THRESHOLD_PERCENT,
-  type ObjectiveMapState,
   type ObjectiveResultState,
 } from "../domain/competency/objectiveState";
 import { labelsFor, type Coverage, type FrameworkId } from "../domain/standards";
@@ -330,36 +329,6 @@ export const CLASS_STATE_DESCRIPTIONS: Record<ObjectiveResultState, string> = {
   "not-assessed": "No student has a usable result yet.",
 };
 
-/**
- * The Objective Map's states, in the words §15.3 defines them by.
- *
- * Five of the nine are not claims about students at all, and their words are chosen to make
- * that unmistakable on a page next to four that are. "Coming" is a fact about BOW's
- * coverage; "Not taught" and "Taught" are a teacher's own record; "Assigned" is work still
- * in flight; "Partly assessed" is a marking pile. None of them is a score and none may be
- * read as one. They are kept verbatim.
- *
- * The other four are Ladder 4, read from its table rather than restated here — the map and
- * the objective page used to carry two spellings of "too few assessed" between them.
- */
-export const MAP_STATE_LABELS: Record<ObjectiveMapState, string> = {
-  "not-available": "Coming",
-  "not-taught": "Not taught",
-  "taught-not-assessed": "Taught",
-  assigned: "Assigned",
-  "partially-assessed": "Partly assessed",
-  "too-few-assessed": CLASS_STATE_LABELS["too-few-assessed"],
-  strong: CLASS_STATE_LABELS.strong,
-  developing: CLASS_STATE_LABELS.developing,
-  "needs-attention": CLASS_STATE_LABELS["needs-attention"],
-};
-
-/** Worst first, because a teacher scanning a filter is looking for what needs them. */
-export const MAP_STATE_ORDER: readonly ObjectiveMapState[] = [
-  "needs-attention", "developing", "strong", "too-few-assessed",
-  "partially-assessed", "assigned", "taught-not-assessed", "not-taught", "not-available",
-];
-
 // ---------------------------------------------------------------------------
 // The one glossary the product needs
 // ---------------------------------------------------------------------------
@@ -420,44 +389,3 @@ export function levelBucketKey(): KeyEntry[] {
 export const NAV_LABELS = {
   objectives: `${labelsFor(NAV_FRAMEWORK)?.unitNounShort ?? "Objective"}s`,
 } as const;
-
-/**
- * Teacher-facing names for the moments an evidence trail is built out of.
- *
- * The stage and event ids are the product's internal vocabulary. A trail printed in that
- * vocabulary would be a log file with a heading on it, so every id a teacher can reach is
- * named here, and anything unnamed falls back to its id rather than to a blank.
- */
-export const MOMENT_LABELS: { stage: Record<string, string>; event: Record<string, string> } = {
-  stage: {
-    "role-contract": "The terms",
-    "setup-comparison": "Choosing where to live",
-    "working-plan": "The first plan",
-    "fallback-version": "The plan without the bonus",
-    "season-weeks": "Weeks 1–4",
-    "week5-event": "Week 5 · the news",
-    "first-response": "Week 5 · first response",
-    "opportunity-final-repair": "Week 5 · the two calls",
-    "remaining-risk-preview": "Week 5 · the last check",
-    "week8-resolution": "Week 8",
-    defense: "Explaining the plan",
-    submitted: "Turned in",
-  },
-  event: {
-    CALCULATION_SUBMITTED: "Worked out a total",
-    SETUP_RANKED: "Ordered the places by cost",
-    SETUP_SELECTED: "Chose a place to live",
-    COURSE_DEPOSIT_DECIDED: "Decided about the course seat",
-    INCOME_SOURCE_TOGGLED: "Decided about a bonus",
-    PLAN_SAVE_REQUESTED: "Checked the plan",
-    PLAN_SAVED: "Saved the plan",
-    PLAN_REMAINDER_ASSIGNED: "Named the row that takes the rest",
-    LOCKED_MOVE_ATTEMPTED: "Tried to move committed money",
-    GAP_TILE_TOGGLED: "Counted up what Week 5 cost",
-    OPTIONAL_WORK_DECIDED: "Decided about the Saturday clinics",
-    COMPLETION_INCOME_DECIDED: "Decided about the attendance bonus",
-    SCAFFOLD_OPENED: "Opened a hint",
-    SHOW_AND_CONTINUE_USED: "Was shown the answer",
-    DEFENSE_SUBMITTED: "Wrote the explanation",
-  },
-};

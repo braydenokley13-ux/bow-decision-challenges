@@ -10,7 +10,6 @@ import {
   LEVEL_BUCKET_LABELS,
   LEVEL_DESCRIPTIONS,
   LEVEL_LABELS,
-  MAP_STATE_LABELS,
   SKILL_STATE_DESCRIPTIONS,
   SKILL_STATE_LABELS,
   TERMS,
@@ -197,7 +196,6 @@ describe("one vocabulary on the teacher's screen", () => {
     const sources = teacherSources();
     expect(sources).toContain("src/educator/labels.ts");
     expect(sources).toContain("src/educator/RealClassPages.tsx");
-    expect(sources).toContain("src/educator/ObjectiveMap.tsx");
     expect(sources.length).toBeGreaterThan(15);
   });
 
@@ -295,26 +293,8 @@ describe("Ladder 4 can never be read as a claim about a child", () => {
     for (const label of LADDER_3) expect(label, `Ladder 3's “${label}” names a subject`).not.toMatch(SUBJECT);
   });
 
-  it("keeps the map's five non-result states verbatim, because none of them is a score", () => {
-    // Facts about BOW's coverage, or a teacher's own record, or work still in flight. Their
-    // words are chosen so they cannot be read as claims about students, and they are the one
-    // part of the educator vocabulary the audit found nothing wrong with.
-    expect(MAP_STATE_LABELS["not-available"]).toBe("Coming");
-    expect(MAP_STATE_LABELS["not-taught"]).toBe("Not taught");
-    expect(MAP_STATE_LABELS["taught-not-assessed"]).toBe("Taught");
-    expect(MAP_STATE_LABELS.assigned).toBe("Assigned");
-    expect(MAP_STATE_LABELS["partially-assessed"]).toBe("Partly assessed");
-  });
-
-  it("reads its four result states out of Ladder 4 rather than keeping a second spelling", () => {
-    // The map said "Too few assessed" and the objective page said "Too few assessed for a
-    // class state" for the same fact about the same denominator.
-    expect(MAP_STATE_LABELS.strong).toBe(CLASS_STATE_LABELS.strong);
-    expect(MAP_STATE_LABELS.developing).toBe(CLASS_STATE_LABELS.developing);
-    expect(MAP_STATE_LABELS["needs-attention"]).toBe(CLASS_STATE_LABELS["needs-attention"]);
-    expect(MAP_STATE_LABELS["too-few-assessed"]).toBe(CLASS_STATE_LABELS["too-few-assessed"]);
-  });
 });
+
 
 describe("no label overclaims, and no absence is a score", () => {
   it("says nothing about mastery, ability or achievement anywhere in any ladder", () => {
@@ -420,6 +400,38 @@ describe("Ladder 2 and Ladder 3 agree by construction", () => {
     for (const label of [...LADDER_2, ...LADDER_3, ...LADDER_4]) {
       expect(label, `“${label}” uses the word support`).not.toMatch(/\bsupport\b/i);
     }
+  });
+});
+
+describe("the cap sentence — the densest teacher string in the product", () => {
+  const trail = readFileSync("src/educator/EvidenceTrailPanel.tsx", "utf8");
+  const cap = trail.slice(trail.indexOf("judgement.cappedBySupport &&"), trail.indexOf("judgement__verdicts"));
+
+  it("names the cap once, not twice", () => {
+    // It used to read "BOW saw Independently, held to After a hint: a hint that named the
+    // problem caps this at After a hint" — four level words in eighteen, two of them the same
+    // word twice, and it could not help it: `levelUnderRubric` is `min(claimed, cap)`, so a
+    // capped level *is* the cap. Two level words is the floor, and it is what it now uses.
+    expect(cap.match(/levelLabel\(/g)).toHaveLength(2);
+    expect(cap).not.toContain("capFor");
+    expect(trail).not.toContain("capFor");
+  });
+
+  it("names what did the capping, so the cap is never read as the student's doing", () => {
+    // The difference between "they needed a hint" and "they could not do it".
+    expect(cap).toContain("SUPPORT_LABELS[judgement.supportLevel]");
+  });
+
+  it("stays true when the cap is zero, which is the case a label alone cannot carry", () => {
+    // `answer_supplied` caps at 0. The student typed the right number — after BOW showed them
+    // what it was — so "Did not do it" is a verdict about evidence rather than a description
+    // of what happened at the keyboard. The sentence is what makes that readable: *BOW read
+    // this as Right first time, and the answer being supplied holds it at Did not do it.*
+    // Written down here because it is the one path the seeded classes cannot reach: neither
+    // headless run builder emits `SHOW_AND_CONTINUE_USED`.
+    expect(cap).toContain("BOW read this as");
+    expect(cap).toContain("holds");
+    expect(LEVEL_DESCRIPTIONS[0]).toMatch(/supplied the answer/i);
   });
 });
 

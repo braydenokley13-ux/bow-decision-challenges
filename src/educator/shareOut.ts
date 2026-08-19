@@ -37,6 +37,16 @@ import { studentSpineFor } from "./studentSpine";
  * teacher cannot trust is worse than no reason, so each submission carries the single
  * strongest reason it earned and appears once.
  *
+ * **A reason that is true of everybody is not a reason.** The most common sentence in this
+ * list was *"Their cushion covered the generator in full."*, attached to seven of the ten
+ * students who ran that story — a property of every single one of them, which the class page
+ * states on the same data as *10 of 10*. It cost a teacher the read of seven interchangeable
+ * candidates to discover they were interchangeable, and it cost them the trust in the four
+ * that were not. So a reason is offered only while it still discriminates: at most a third of
+ * the students who ran that story, and never fewer than two, because a pair chosen for
+ * contrast is a selection rather than a category. What is suppressed is not hidden — it comes
+ * back as `tooCommon`, which is a fact for the debrief and is offered as one.
+ *
  * **A reason that only one world can earn is not a reason.** Every per-student reason here is
  * asked of the world the student played (`runOutcome`), because the ones that read
  * `resolution` directly were Basketball's — `resolveSeason` returns nothing for a market run
@@ -86,21 +96,73 @@ const KIND_ORDER: readonly ShareOutCandidate["kind"][] = [
  * teacher who takes a student off the roll has said something about who is in the room, and
  * projecting their work is the loudest possible way of ignoring it.
  */
+/** A reason BOW declined to offer, and how much of the story it was true of. */
+export interface CommonReason {
+  reason: string;
+  worldId: string;
+  /** How many students in that story earned it, and how many ran it. */
+  earned: number;
+  ran: number;
+}
+
+export interface ShareOutReading {
+  candidates: ShareOutCandidate[];
+  /**
+   * Reasons true of too much of a story to single anybody out with. Kept, and said out loud
+   * on the page, because "everybody covered the generator" is worth a teacher knowing — it is
+   * simply not a reason to project one child's work.
+   */
+  tooCommon: CommonReason[];
+}
+
+/**
+ * How many candidates one reason may be attached to before it stops discriminating.
+ *
+ * A third of the students who ran that story, and never fewer than two: a reason attached to
+ * exactly two is a pair, and a pair is what a discussion is made of. Anything above it is a
+ * category, and a category with a name on it is what the class page and the debrief are for.
+ */
+function discriminationCeiling(ran: number): number {
+  return Math.max(2, Math.floor(ran / 3));
+}
+
 export function shareOutCandidates(
   rows: readonly StudentRow[],
   submissions: readonly AttributedSubmission[],
 ): ShareOutCandidate[] {
+  return shareOutReading(rows, submissions).candidates;
+}
+
+export function shareOutReading(
+  rows: readonly StudentRow[],
+  submissions: readonly AttributedSubmission[],
+): ShareOutReading {
   const byId = new Map(submissions.map((submission) => [submission.sessionId, submission]));
+  // Every reason every submission earned, before any of them is chosen. The suppression has to
+  // happen over the whole list — a reason cannot be judged common until the list is complete —
+  // and only then does each submission take the strongest of whatever survived.
+  const earned: { row: StudentRow; kind: ShareOutCandidate["kind"]; reason: string; ran: number }[] = [];
+  const tooCommon: CommonReason[] = [];
   const best = new Map<string, ShareOutCandidate>();
-  const add = (row: StudentRow, kind: ShareOutCandidate["kind"], reason: string) => {
-    const submission = byId.get(row.sessionId);
-    if (!submission) return;
-    const standing = best.get(row.sessionId);
-    if (standing && KIND_ORDER.indexOf(standing.kind) <= KIND_ORDER.indexOf(kind)) return;
-    best.set(row.sessionId, { sessionId: row.sessionId, seatCode: row.seatCode, worldId: row.worldId, kind, reason, quote: quoteOf(submission) });
-  };
 
   for (const world of worldSections([...rows])) {
+    const ran = world.rows.length;
+    const add = (row: StudentRow, kind: ShareOutCandidate["kind"], reason: string) => {
+      if (!byId.has(row.sessionId)) return;
+      earned.push({ row, kind, reason, ran });
+    };
+    // How many students in this story actually fell short of each requirement, counted before
+    // any sentence names a number. The sentence that used to sit at the bottom of this loop
+    // said "which several students did not show" from a fixed string, so a class of two where
+    // nobody failed to show it was told several students had.
+    const shortOnRequirement = new Map<string, number>();
+    for (const row of world.rows) {
+      const submission = byId.get(row.sessionId);
+      if (!submission) continue;
+      for (const flag of studentSpineFor(submission).shortfalls) {
+        shortOnRequirement.set(flag.evidenceRequirementId, (shortOnRequirement.get(flag.evidenceRequirementId) ?? 0) + 1);
+      }
+    }
     // Two students who decided differently. The single most reliable way to open a
     // conversation, and the one the class page already knows the answer to.
     if (world.contrast) {
@@ -139,13 +201,54 @@ export function shareOutCandidates(
       // rather than a mark.
       const shortfall = spine.shortfalls[0];
       if (shortfall && quoteOf(submission)) {
-        add(row, "misconception", `Their writing is a good way into "${shortfall.label.toLowerCase()}", which several students did not show.`);
+        // Counted, never characterised. "Several" was a word standing in for a number nobody
+        // had worked out, and in the class it was reproduced on the number was one.
+        const short = shortOnRequirement.get(shortfall.evidenceRequirementId) ?? 1;
+        const alsoShort = short > 1
+          ? `, which ${short} of the ${ran} who ran this story did not show`
+          : `, which nobody else in this story fell short on`;
+        add(row, "misconception", `Their writing is a good way into "${shortfall.label.toLowerCase()}"${alsoShort}.`);
       }
     }
   }
 
-  return [...best.values()].sort((a, b) =>
-    KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || Number(a.seatCode) - Number(b.seatCode));
+  // How many candidates each reason is attached to, per story. A sentence true of most of a
+  // story is a fact about the story, and it is returned as one rather than printed seven times.
+  const counts = new Map<string, { reason: string; worldId: string; earned: number; ran: number }>();
+  for (const entry of earned) {
+    const key = `${entry.row.worldId}::${entry.reason}`;
+    const standing = counts.get(key);
+    if (standing) standing.earned += 1;
+    else counts.set(key, { reason: entry.reason, worldId: entry.row.worldId, earned: 1, ran: entry.ran });
+  }
+  for (const entry of counts.values()) {
+    if (entry.earned > discriminationCeiling(entry.ran)) tooCommon.push(entry);
+  }
+  const suppressed = new Set([...counts.entries()]
+    .filter(([, entry]) => entry.earned > discriminationCeiling(entry.ran))
+    .map(([key]) => key));
+
+  for (const entry of earned) {
+    if (suppressed.has(`${entry.row.worldId}::${entry.reason}`)) continue;
+    const submission = byId.get(entry.row.sessionId);
+    if (!submission) continue;
+    const standing = best.get(entry.row.sessionId);
+    if (standing && KIND_ORDER.indexOf(standing.kind) <= KIND_ORDER.indexOf(entry.kind)) continue;
+    best.set(entry.row.sessionId, {
+      sessionId: entry.row.sessionId,
+      seatCode: entry.row.seatCode,
+      worldId: entry.row.worldId,
+      kind: entry.kind,
+      reason: entry.reason,
+      quote: quoteOf(submission),
+    });
+  }
+
+  return {
+    candidates: [...best.values()].sort((a, b) =>
+      KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || Number(a.seatCode) - Number(b.seatCode)),
+    tooCommon: tooCommon.sort((a, b) => b.earned - a.earned),
+  };
 }
 
 /** Where no contrasting pair was computed, the two rows whose written answers differ most. */
@@ -156,6 +259,12 @@ function addDivergent(world: WorldSection, add: (row: StudentRow, kind: ShareOut
   for (const row of [sorted[0]!, sorted.at(-1)!]) {
     add(row, "different-decisions", `Two of the ${world.title} explanations, as far apart as this class got.`);
   }
+}
+
+/** One student's written explanation, normalised, as the thing two of them are compared on. */
+function writtenOf(byId: ReadonlyMap<string, AttributedSubmission>, row: StudentRow): string {
+  const submission = byId.get(row.sessionId);
+  return (submission ? quoteOf(submission) ?? "" : "").trim().replace(/\s+/g, " ").toLowerCase();
 }
 
 /**
@@ -177,7 +286,12 @@ function sameCallDifferentReason(
         .filter((row): row is StudentRow => Boolean(row && byId.get(row.sessionId) && quoteOf(byId.get(row.sessionId)!)));
       if (wrote.length >= 2) {
         const first = wrote[0]!;
-        const other = wrote.find((row) => row.defense?.text.trim() !== first.defense?.text.trim());
+        // Compared on the text the card is about to print, not on a field beside it. This read
+        // `row.defense`, and the card shows `quoteOf(submission)` — so two students whose
+        // explanations were word for word identical were offered under "and gave a different
+        // reason for it", with the two identical paragraphs printed directly underneath.
+        const firstText = writtenOf(byId, first);
+        const other = wrote.find((row) => writtenOf(byId, row) !== firstText);
         if (other) return [[first, other]];
       }
     }

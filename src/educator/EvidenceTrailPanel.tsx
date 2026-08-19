@@ -5,8 +5,9 @@ import { evidenceTrail, judgementsOf, type TrailJudgement } from "../domain/comp
 import { reteachFor } from "../domain/competency/reteach";
 import type { RubricLevel } from "../domain/competency/types";
 import type { SubmissionRecord, TeacherOverride } from "../platform/classes/types";
-import { machineObservationsFor } from "./objectiveResults";
-import { levelDescription, levelKey, levelLabel, LEVEL_ORDER, SUPPORT_LABELS, MOMENT_LABELS } from "./labels";
+import { machineObservationsFor, worldOfSubmission } from "./objectiveResults";
+import { eventLabel, stageLabel } from "../domain/scenario/registry";
+import { levelDescription, levelKey, levelLabel, LEVEL_ORDER, SUPPORT_LABELS } from "./labels";
 import { StateKey } from "./EducatorShell";
 import type { OverrideRequest } from "./useClassEvidence";
 
@@ -168,6 +169,7 @@ export function EvidenceTrailPanel({ submission, onOverride }: {
   onOverride: ((override: OverrideRequest) => Promise<boolean>) | null;
 }) {
   const trail = evidenceTrail(submission.log, machineObservationsFor(submission));
+  const worldId = worldOfSubmission(submission);
   const overrides = submission.overrides ?? [];
   const standing = judgementsOf(trail).filter((judgement) => !judgement.superseded);
   const byCompetency = [...new Set(standing.map((judgement) => judgement.competencyId))];
@@ -208,13 +210,23 @@ export function EvidenceTrailPanel({ submission, onOverride }: {
         </div>
         {/* The timeline is the audit trail: each row is one moment from the log, and the
             judgements under it are the ones that moment settled. */}
+        {/* Named by the world the student was actually in. The stage ids and the event types
+            are BOW's internal vocabulary, and a trail printed in that vocabulary is a log file
+            with a heading on it — which is what the market's students arrived as, screen after
+            screen of `popup-spot / POPUP_SUM_SUBMITTED`, on the page whose only job is letting
+            a teacher check what BOW saw about a child they can name.
+
+            The `<code>event-5</code>` that used to close each row went with it. It was the
+            anchor, and an anchor nobody can read is decoration: the moments are already in the
+            order they happened, so the position in that order is the reference, and it is
+            written in words. */}
         <ol className="trail">
-          {trail.moments.map((moment) => (
+          {trail.moments.map((moment, index) => (
             <li key={moment.eventId}>
               <div className="trail__when">
-                <b>{MOMENT_LABELS.stage[moment.stage] ?? moment.stage}</b>
-                <span>{MOMENT_LABELS.event[moment.type] ?? moment.type}</span>
-                <code>{moment.eventId}</code>
+                <b>{stageLabel(worldId, moment.stage)}</b>
+                <span>{eventLabel(worldId, moment.type)}</span>
+                <span className="trail__step">Step {index + 1} of {trail.moments.length}</span>
               </div>
               <ul className="trail__judgements">
                 {moment.judgements.map((judgement) => (

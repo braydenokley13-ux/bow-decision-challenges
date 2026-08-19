@@ -73,13 +73,24 @@ export function MyClasses() {
 
   const create = async () => {
     if (working) return;
+    // A class with no name was accepted and became "Untitled class" — which is what a teacher
+    // setting up between periods gets by pressing the button with the field untouched, and a
+    // five-period day could end with three of them, told apart only by a five-letter code and
+    // a date. The name is one line of typing and it is the only thing that will distinguish
+    // this class on the list, on the printed cards, in the debrief and in the export, so it is
+    // asked for rather than invented. The default that used to live here is gone; the service
+    // keeps one for callers that are not this screen, and that is now the only one.
+    if (label.trim().length === 0) {
+      setProblem("Give the class a name — it is what tells it apart from your other classes on every screen and every printed card.");
+      return;
+    }
     setWorking(true);
     setProblem(null);
     try {
       const response = await fetch(`${CLASS_API_BASE}/classes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ label: label.trim() || "Untitled class", challengeId: PLAN_UNDER_PRESSURE.id }),
+        body: JSON.stringify({ label: label.trim(), challengeId: PLAN_UNDER_PRESSURE.id }),
       });
       const body: unknown = await response.json();
       if (!response.ok) {
@@ -209,7 +220,7 @@ export function MyClasses() {
           </span>
         </label>
       </fieldset>
-      <Button type="button" aria-disabled={working} onClick={() => void create()}>
+      <Button type="button" aria-disabled={working || label.trim().length === 0} onClick={() => void create()}>
         {working ? "Creating…" : "Create the class"}
       </Button>
       <p id="class-form-status" className={`class-form__status${problem ? " class-form__status--problem" : ""}`} aria-live="polite">

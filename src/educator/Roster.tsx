@@ -43,6 +43,11 @@ type State =
   | { status: "error"; message: string }
   | { status: "ready"; rows: RosterRow[]; joinMode: ClassJoinMode };
 
+/** Two names are the same name when a person would say they were. */
+function normalName(name: string): string {
+  return name.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 export function Roster() {
   const { code } = useParams();
   const [params] = useSearchParams();
@@ -58,6 +63,11 @@ export function Roster() {
   const [cards, setCards] = useState<JoinCard[]>([]);
   const [typed, setTyped] = useState("");
   const [busy, setBusy] = useState(false);
+  // A paste that is mostly names already on the list, held back with the question asked rather
+  // than added. See `add` below.
+  const [duplicates, setDuplicates] = useState<{ already: string[]; fresh: string[] } | null>(null);
+  // The seats the last paste created, so one press can take them off again.
+  const [lastBatch, setLastBatch] = useState<string[] | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   // Which seat has been asked to be erased, and is one press from being erased. Erasure is the
   // one thing on this page that cannot be undone, so it asks — once, in place, naming the
@@ -96,18 +106,77 @@ export function Roster() {
     return () => { cancelled = true; };
   }, [load]);
 
-  const add = async () => {
-    const names = typed.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
+  /**
+   * Adding the names, and the second press that used to double the class.
+   *
+   * Pasting twenty-eight names takes about three seconds of server work behind a button that
+   * says *Making cards…* and nothing else, which is exactly long enough for a teacher on a
+   * school laptop to decide it has hung and press again. What came back was fifty-six on the
+   * list, every child twice, twenty-eight dead cards and no way back but twenty-eight
+   * "take off the list" presses.
+   *
+   * So a name already on the live list is not added silently. If the whole paste is already
+   * there it says so and adds nothing; if part of it is, it asks which — and the answer that
+   * needs no thought, *add the four who are new*, is the one that takes one press. A teacher
+   * who really does have two children with the same name can still add both, deliberately.
+   *
+   * Names are compared the way a person would compare them: case and spacing do not count.
+   */
+  const namesTyped = (): string[] => typed.split("\n").map((line) => line.trim()).filter((line) => line.length > 0);
+
+  const send = async (names: string[]) => {
     if (names.length === 0 || busy) return;
     setBusy(true);
     setProblem(null);
+    setDuplicates(null);
     try {
       const body = (await call(`/classes/${code}/roster`, { method: "POST", body: JSON.stringify({ names }) })) as { cards: JoinCard[] };
       setCards(body.cards);
+      setLastBatch(body.cards.map((card) => card.seatCode));
       setTyped("");
       await load();
     } catch (error) {
       setProblem(error instanceof Error ? error.message : "Those names were not added.");
+    }
+    setBusy(false);
+  };
+
+  const add = async () => {
+    const names = namesTyped();
+    if (names.length === 0 || busy) return;
+    const onList = new Set(
+      (state.status === "ready" ? state.rows : [])
+        .filter((row) => !row.removedAt)
+        .map((row) => normalName(row.displayName)),
+    );
+    const already = names.filter((name) => onList.has(normalName(name)));
+    if (already.length === 0) {
+      await send(names);
+      return;
+    }
+    setProblem(null);
+    setDuplicates({ already, fresh: names.filter((name) => !onList.has(normalName(name))) });
+  };
+
+  /**
+   * Taking the last paste back off the list.
+   *
+   * The undo the paste box never had. It removes the seats this page just created and nothing
+   * else — a seat added in an earlier batch, or by hand, is not in the list it holds.
+   */
+  const undoLastBatch = async () => {
+    if (busy || !lastBatch || lastBatch.length === 0) return;
+    setBusy(true);
+    setProblem(null);
+    try {
+      for (const seatCode of lastBatch) {
+        await call(`/classes/${code}/roster/${seatCode}`, { method: "DELETE" });
+      }
+      setCards([]);
+      setLastBatch(null);
+      await load();
+    } catch (error) {
+      setProblem(error instanceof Error ? error.message : "Those names were not taken off.");
     }
     setBusy(false);
   };
@@ -218,6 +287,37 @@ export function Roster() {
         <Button variant="primary" aria-disabled={typed.trim().length === 0 || busy} onClick={() => void add()}>
           {busy ? "Making cards…" : "Add them and make the cards"}
         </Button>
+        {duplicates && (
+          <div className="roster-add__note" role="group" aria-label="Names already on the list">
+            <p>
+              <strong>
+                {duplicates.already.length} of these {duplicates.already.length + duplicates.fresh.length}{" "}
+                {duplicates.already.length === 1 ? "name is" : "names are"} already on the list.
+              </strong>{" "}
+              {duplicates.already.slice(0, 6).join(", ")}
+              {duplicates.already.length > 6 ? ` and ${duplicates.already.length - 6} more` : ""}.
+            </p>
+            <div className="feedback__actions">
+              {duplicates.fresh.length > 0 && (
+                <Button variant="primary" aria-disabled={busy} onClick={() => void send(duplicates.fresh)}>
+                  Add the {duplicates.fresh.length} that {duplicates.fresh.length === 1 ? "is" : "are"} new
+                </Button>
+              )}
+              {/* Two children really can have the same name, and a teacher who means it says so. */}
+              <Button variant="secondary" aria-disabled={busy} onClick={() => void send(namesTyped())}>
+                Add all {duplicates.already.length + duplicates.fresh.length} anyway
+              </Button>
+              <Button variant="quiet" aria-disabled={busy} onClick={() => setDuplicates(null)}>Cancel</Button>
+            </div>
+          </div>
+        )}
+        {lastBatch && lastBatch.length > 0 && !duplicates && (
+          <p className="roster-add__note">
+            <Button variant="quiet" aria-disabled={busy} onClick={() => void undoLastBatch()}>
+              Undo — take those {lastBatch.length} back off the list
+            </Button>
+          </p>
+        )}
       </section>
 
       <section className="dashboard-section">

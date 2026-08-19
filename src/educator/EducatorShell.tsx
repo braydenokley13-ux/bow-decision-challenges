@@ -42,7 +42,6 @@ export function EducatorShell({ children, measure = "evidence" }: PropsWithChild
         <nav aria-label="Educator navigation">
           <NavLink to="/educator/classes">My classes</NavLink>
           <NavLink to="/educator/objectives">{NAV_LABELS.objectives}</NavLink>
-          <NavLink to="/educator/map">Map</NavLink>
           <NavLink to="/educator/guide">Guide</NavLink>
         </nav>
         {/* Whether this browser is anything more than a browser. Without an account a class

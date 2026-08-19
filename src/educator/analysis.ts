@@ -1,5 +1,5 @@
 import type { CategoryId, SetupId, WorldId } from "../domain/core/ids";
-import { dollars, type Dollars } from "../domain/core/money";
+import { dollars, formatDollars, type Dollars } from "../domain/core/money";
 import { deriveFacts } from "../domain/evidence/facts";
 import { writtenAnswerFrom } from "../domain/evidence/writtenAnswer";
 import { deriveResult } from "../domain/evidence/result";
@@ -11,6 +11,8 @@ import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
 import { POP_UP_SCENARIO } from "../domain/scenario/worlds/food-truck";
 import { WORLD_REGISTRY } from "../domain/scenario/registry";
 import { derivePopUpFacts } from "../domain/scenario/worlds/food-truck/facts";
+import { repairSplitFromLog } from "../domain/scenario/worlds/food-truck/fromLog";
+import type { PopUpLineId } from "../domain/scenario/worlds/food-truck/types";
 import type { ReasoningScores } from "../domain/blueprint/reasoning";
 import { worldOfSubmission } from "./objectiveResults";
 import type { SubmissionRecord } from "../platform/classes/types";
@@ -270,6 +272,16 @@ function popUpAdaptation(rows: StudentRow[]): WorldSection["adaptation"] {
  *
  * A run that never reached its shock returns `null`. That is an absence rather than an
  * outcome, and it is not something to offer a teacher as a thing to show.
+ *
+ * **Every sentence here is derived, and none of them is a shape somebody had in mind.** The
+ * market branch used to read `residual === 0` and print *"Their cushion covered the generator
+ * in full."* — a sentence equally true of a student who emptied the cushion, one who took two
+ * dollars off it, and one who never touched it. It was projected to a room above the words of
+ * a student who had taken the $270 off all three lines and written that they would keep the
+ * cushion bigger. So a line is named only where `repairSplitFromLog` says that line covered
+ * the whole bill on its own, and where it did not, the sentence itemises what each line
+ * actually gave. Basketball's two sentences were true but vague for the same reason — "the
+ * loss they had planned for" without saying how much — and now carry their own figures.
  */
 export interface RunOutcome {
   kind: "absorbed" | "came-up-short";
@@ -281,18 +293,55 @@ export function runOutcome(row: StudentRow): RunOutcome | null {
   if (row.worldId === "food-truck") {
     const facts = derivePopUpFacts(row.log);
     if (!facts.repair.saved) return null;
-    return facts.repair.residual === 0
-      ? { kind: "absorbed", label: "Their cushion covered the generator in full." }
-      : { kind: "came-up-short", label: "Covered what they could and finished the generator still short — worth asking what they would move first." };
+    const split = repairSplitFromLog(row.log);
+    if (split.residual > 0) {
+      return {
+        kind: "came-up-short",
+        label: `Found ${formatDollars(dollars(split.freed))} of the ${formatDollars(dollars(split.bill))} the generator cost and said out loud what was still short.`,
+      };
+    }
+    // One line, the whole bill, nothing off the other two is the only shape under which a
+    // sentence with a line's name in it is true. Everything else says how many lines it took,
+    // because that is the fact the log carries and it is the more interesting one anyway.
+    if (split.soleLine) {
+      return {
+        kind: "absorbed",
+        label: `Took the whole ${formatDollars(dollars(split.bill))} off ${POP_UP_LINE_LABELS[split.soleLine]} and left the other two alone.`,
+      };
+    }
+    return {
+      kind: "absorbed",
+      label: `Found the whole ${formatDollars(dollars(split.bill))} the generator cost, off ${listedLines(split.lines)}.`,
+    };
   }
   if (!row.resolution) return null;
   if (row.resolution.uncovered > 0) {
-    return { kind: "came-up-short", label: "Finished with something still uncovered — worth asking what they would move first." };
+    return {
+      kind: "came-up-short",
+      label: `Finished with ${formatDollars(dollars(row.resolution.uncovered))} still uncovered — worth asking what they would move first.`,
+    };
   }
   if (row.resolution.absorbed > 0) {
-    return { kind: "absorbed", label: "Their backup money absorbed the loss they had planned for." };
+    return {
+      kind: "absorbed",
+      label: `Their backup money absorbed ${formatDollars(dollars(row.resolution.absorbed))} of the loss they had planned for.`,
+    };
   }
   return null;
+}
+
+const POP_UP_LINE_LABELS: Record<PopUpLineId, string> = {
+  stock: POP_UP_SCENARIO.lines.stock.label,
+  cushion: POP_UP_SCENARIO.lines.cushion.label,
+  cut: POP_UP_SCENARIO.lines.cut.label,
+};
+
+/** "the cushion ($130), stock ($90) and your cut ($50)", in the world's own words. */
+function listedLines(lines: readonly { line: PopUpLineId; amount: number }[]): string {
+  const parts = lines.map((entry) => `${POP_UP_LINE_LABELS[entry.line]} (${formatDollars(dollars(entry.amount))})`);
+  if (parts.length === 0) return "no line that could still move";
+  if (parts.length === 1) return parts[0]!;
+  return `${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}`;
 }
 
 /**
@@ -329,8 +378,26 @@ export interface ClassSeat {
   attempts: StudentRow[];
   /** The attempt that stands for this student, or `null` when they have not turned in. */
   latest: StudentRow | null;
-  state: "turned-in" | "still-working" | "not-started";
+  state: "turned-in" | "still-working" | "started-quiet" | "not-started";
+  /** When this seat's browser last said anything, for a seat that has one. */
+  lastSeenAt: number | null;
 }
+
+/**
+ * How long a checkpoint means "right now".
+ *
+ * A tile that counts a child as *still working* counts them until somebody re-reads the page,
+ * and the heading over it says **Right now** — so on Wednesday morning it said three children
+ * were working in a room with nobody in it. The number was a fact about Tuesday under a
+ * heading that promised the present tense.
+ *
+ * Ninety minutes is deliberately longer than any lesson this runs in: inside a lesson nothing
+ * moves, so a child who sits on one screen for half an hour is never quietly written off, and
+ * by the next morning nobody is "working" who is not. A checkpoint past it is not discarded —
+ * it becomes *started, not turned in*, which is the other true thing about that child and the
+ * one a teacher acts on the following day.
+ */
+export const LESSON_QUIET_MS = 90 * 60_000;
 
 export interface ClassRoll {
   /** Whether the teacher has told BOW who is in this class. Without it "not started" is unknowable. */
@@ -344,7 +411,10 @@ export interface ClassRoll {
   /** Attempts from seats that are no longer in the class. Counted nowhere, shown nowhere. */
   excluded: StudentRow[];
   turnedIn: number;
+  /** Seats whose browser has said something inside `LESSON_QUIET_MS`. True in the present tense. */
   stillWorking: number;
+  /** Seats that started, went quiet for longer than a lesson, and never turned in. */
+  startedQuiet: number;
   /** `null` where there is no roster, because a class that never said who is in it cannot say who is missing. */
   notStarted: number | null;
   /** Students whose writing nobody has read yet. Students, not records. */
@@ -371,17 +441,34 @@ function byAttemptOrder(a: StudentRow, b: StudentRow): number {
  * against the wrong evidence.
  */
 export function latestAttemptFor(rows: readonly StudentRow[], seatCode: string): StudentRow | null {
-  return rows.filter((row) => row.seatCode === seatCode).sort(byAttemptOrder).at(-1) ?? null;
+  return attemptsFor(rows, seatCode).at(-1) ?? null;
+}
+
+/**
+ * Every attempt one seat turned in, oldest first.
+ *
+ * A student who had a second go is one student everywhere they are counted and two attempts
+ * everywhere they are read, and only the export used to know the difference: the queue put
+ * their name in twice with nothing to tell the two apart, the class row said nothing, and
+ * their own page silently showed the later one. Any surface that wants to say which attempt
+ * it is showing reads it from here, so none of them can count them differently.
+ */
+export function attemptsFor(rows: readonly StudentRow[], seatCode: string): StudentRow[] {
+  return rows.filter((row) => row.seatCode === seatCode).sort(byAttemptOrder);
 }
 
 export function classRoll(input: {
   rows: readonly StudentRow[];
   roster: readonly RosterSeat[];
-  progress?: readonly { seatCode: string }[];
+  progress?: readonly { seatCode: string; updatedAt?: number }[];
+  /** When the page was read. Elapsed time is measured from it, so a render is a function of its input. */
+  at?: number;
 }): ClassRoll {
   const live = input.roster.filter((seat) => !seat.removedAt).map((seat) => seat.seatCode);
   const hasRoster = live.length > 0;
+  const at = input.at ?? Date.now();
   const working = new Set((input.progress ?? []).map((entry) => entry.seatCode));
+  const lastSeen = new Map((input.progress ?? []).map((entry) => [entry.seatCode, entry.updatedAt ?? at]));
   // Without a roster the only students BOW knows about are the ones who have shown up. With
   // one, the roster is the class and nothing else is — which is what keeps a removed seat out
   // of every count on the page rather than out of some of them.
@@ -393,11 +480,14 @@ export function classRoll(input: {
   const seats: ClassSeat[] = seatCodes.map((seatCode) => {
     const attempts = input.rows.filter((row) => row.seatCode === seatCode).sort(byAttemptOrder);
     const latest = latestAttemptFor(attempts, seatCode);
+    const seen = lastSeen.get(seatCode) ?? null;
+    const quiet = seen !== null && at - seen > LESSON_QUIET_MS;
     return {
       seatCode,
       attempts,
       latest,
-      state: latest ? "turned-in" : working.has(seatCode) ? "still-working" : "not-started",
+      state: latest ? "turned-in" : working.has(seatCode) ? (quiet ? "started-quiet" : "still-working") : "not-started",
+      lastSeenAt: seen,
     };
   });
 
@@ -410,6 +500,7 @@ export function classRoll(input: {
     excluded: input.rows.filter((row) => !inClass.has(row.seatCode)),
     turnedIn: seats.filter((seat) => seat.state === "turned-in").length,
     stillWorking: seats.filter((seat) => seat.state === "still-working").length,
+    startedQuiet: seats.filter((seat) => seat.state === "started-quiet").length,
     notStarted: hasRoster ? seats.filter((seat) => seat.state === "not-started").length : null,
     awaitingReading: rows.filter((row) => row.reasoningPoints === null).map((row) => row.seatCode),
   };

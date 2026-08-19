@@ -39,7 +39,15 @@ describe("one student's run reads back as what they did", () => {
     expect(row.result.grade.structuredPoints).toBeGreaterThan(0);
     expect(row.result.grade.structuredPoints).toBeLessThanOrEqual(row.result.grade.structuredMaximum);
     expect(row.result.grade.finalPoints).toBeNull();
-    expect(row.result.grade.summary).toBe("pending_reasoning");
+    // This used to assert `grade.summary === "pending_reasoning"`. That field is deleted: it
+    // was a sixth vocabulary for how well a student did — `strong_application`,
+    // `secure_application`, `developing_application`, `limited_application` — computed for
+    // every attempt and rendered nowhere. The fact it was standing in for is the one that
+    // matters and it is already on the line above: **until a person has read the writing
+    // there is no final number**, and `incomplete` says whether the run was finished, which
+    // is a different question and is asserted separately below.
+    expect(row.result.grade.incomplete).toBe(false);
+    expect(row.result.grade.reasoningPoints).toBeNull();
   });
 
   it("resolves the season the plan actually produced", () => {

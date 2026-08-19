@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { analyseClass, classRoll } from "./analysis";
-import { shareOutCandidates, shareOutSlides } from "./shareOut";
+import { shareOutCandidates, shareOutReading, shareOutSlides } from "./shareOut";
 import { buildSubmission } from "../test/runChallenge";
 import { buildPopUpSubmission } from "../test/runPopUp";
 import type { AttributedSubmission, SubmissionRecord } from "../platform/classes/types";
@@ -168,5 +168,91 @@ describe("what reaches the projector", () => {
     expect(anonymous.map((slide) => slide.title)).toEqual(["Plan A", "Plan B"]);
     const named = shareOutSlides({ items, submissions, named: true, nameFor: () => "Ana R.", summaryFor: () => "" });
     expect(named.every((slide) => slide.title === "Ana R.")).toBe(true);
+  });
+});
+
+/**
+ * A reason has to tell one child's work apart from the next, or it is not a reason.
+ *
+ * The list a teacher gets two minutes before a lesson had *"Their cushion covered the
+ * generator in full."* against seven of its candidates — more than the other three reasons put
+ * together, and a property of **every** student who ran that story, which the class page states
+ * on the same data as *10 of 10*. Reading seven paragraphs to discover they are interchangeable
+ * is exactly the two minutes a teacher does not have, and it costs the trust in the four
+ * candidates that were selective.
+ *
+ * The invariant is not a threshold number. It is: **nothing is offered under a reason that most
+ * of a story earned**, whatever the reason says and whichever story it came from.
+ */
+describe("a reason that does not discriminate is not offered", () => {
+  /** Ten market runs that all did the same thing, plus two that wrote something worth reading. */
+  function aStoryWhereEverybodyDidTheSameThing(): AttributedSubmission[] {
+    return Array.from({ length: 10 }, (_, index) =>
+      attributed(buildPopUpSubmission({
+        seatCode: String(index + 1),
+        spotId: index % 2 === 0 ? "bridge-gate" : "middle-row",
+        countCatering: index % 3 === 0,
+        writeUpText: index === 0
+          ? "I kept the cushion big enough for the generator, and gave up my own cut on Saturday 2 to do it."
+          : index === 1
+            ? "I went for the big booth because the demand was worth more than the fee, and I still had cash on the last Saturday."
+            : "I planned it out and it worked.",
+      })));
+  }
+
+  it("offers nothing under a reason most of the story earned", () => {
+    const submissions = aStoryWhereEverybodyDidTheSameThing();
+    const rows = analyseClass([...submissions]).rows;
+    const reading = shareOutReading(rows, submissions);
+    const perReason = new Map<string, number>();
+    for (const candidate of reading.candidates) {
+      perReason.set(candidate.reason, (perReason.get(candidate.reason) ?? 0) + 1);
+    }
+    for (const [reason, count] of perReason) {
+      expect(count, `"${reason}" is offered against ${count} of ${rows.length} candidates`)
+        .toBeLessThanOrEqual(Math.max(2, Math.floor(rows.length / 3)));
+    }
+  });
+
+  it("says what it suppressed, and how much of the story it was true of", () => {
+    const submissions = aStoryWhereEverybodyDidTheSameThing();
+    const reading = shareOutReading(analyseClass([...submissions]).rows, submissions);
+    expect(reading.tooCommon.length).toBeGreaterThan(0);
+    for (const common of reading.tooCommon) {
+      // Suppressed, not hidden: it comes back with its own count and denominator, which is
+      // what makes it a fact for the debrief rather than a disappearance.
+      expect(common.earned).toBeGreaterThan(Math.max(2, Math.floor(common.ran / 3)));
+      expect(common.ran).toBeGreaterThanOrEqual(common.earned);
+      expect(common.reason.length).toBeGreaterThan(0);
+    }
+    // And nothing it suppressed is still on the list under the same words.
+    for (const common of reading.tooCommon) {
+      expect(reading.candidates.map((candidate) => candidate.reason)).not.toContain(common.reason);
+    }
+  });
+
+  it("keeps a pair, because two is a selection and not a category", () => {
+    // The two-student class every small group is. A reason both of them earned is still the
+    // reason to put those two beside each other.
+    const reading = shareOutReading(analyseClass([...basketballPair()]).rows, basketballPair());
+    expect(reading.candidates.length).toBeGreaterThan(0);
+    expect(reading.tooCommon).toEqual([]);
+  });
+
+  it("never claims a different reason for two identical paragraphs", () => {
+    // Two students who made the same call and wrote, word for word, the same thing. The claim
+    // "and gave a different reason for it" was made against the two identical paragraphs
+    // printed directly underneath it, because the comparison read a different field from the
+    // one the card renders.
+    const same = "I picked the cousin's room because it was the cheapest over eight weeks.";
+    const submissions = [
+      attributed(buildSubmission({ seatCode: "1", setupId: "cousin-room", defenseText: same })),
+      attributed(buildSubmission({ seatCode: "2", setupId: "cousin-room", defenseText: same })),
+      attributed(buildSubmission({ seatCode: "3", setupId: "cousin-room", defenseText: same })),
+    ];
+    const candidates = shareOutCandidates(analyseClass([...submissions]).rows, submissions);
+    for (const candidate of candidates) {
+      expect(candidate.reason).not.toContain("different reason");
+    }
   });
 });

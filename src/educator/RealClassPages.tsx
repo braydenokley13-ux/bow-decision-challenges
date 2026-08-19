@@ -5,12 +5,13 @@ import { EducatorShell, StateKey } from "./EducatorShell";
 import { useClassEvidence, type ClassEvidenceState, type OverrideRequest } from "./useClassEvidence";
 import { EvidenceTrailPanel, StudentSummary } from "./EvidenceTrailPanel";
 import type { AttributedSubmission } from "../platform/classes/types";
-import { classRoll, latestAttemptFor, worldSections, type ChoiceDistribution, type ClassAnalysis, type ClassRoll, type StudentRow } from "./analysis";
+import { attemptsFor, classRoll, worldSections, type ChoiceDistribution, type ClassAnalysis, type ClassRoll, type StudentRow } from "./analysis";
 import { SeatNamesContext, seatLabels, seatNames, useSeatLabel, useSeatNames, type RosterRow } from "./names";
 import { gradebookLineFor, gradebookRows, gradebookTsv } from "./gradebook";
 import { MAX_FEEDBACK_LENGTH, type TeacherFeedback } from "../platform/identity/types";
 import type { ProgressRow } from "../platform/identity/types";
 import { stageLabel } from "../domain/scenario/registry";
+import type { WorldId } from "../domain/core/ids";
 import { dollars, formatDollars } from "../domain/core/money";
 import { CHOICE_LABELS, CHOICE_ORDER } from "../components/financial/choices";
 import { BASKETBALL_SCENARIO } from "../domain/scenario/worlds/basketball";
@@ -21,8 +22,11 @@ import type { CompetencyResultState } from "../domain/competency/types";
 import { levelBucketKey, levelLabel, skillStateKey, skillStateInSentence, LEVEL_BUCKET_LABELS, SKILL_STATE_LABELS, TERMS } from "./labels";
 import { REASONING_MAXIMUM } from "../domain/evidence/grade";
 import { REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
-import { MINIMUM_ASSESSED_FOR_A_STATE, MINIMUM_RESULTS_FOR_CLASS_NARRATION } from "../domain/competency/objectiveState";
+import { MINIMUM_RESULTS_FOR_CLASS_NARRATION } from "../domain/competency/objectiveState";
 import { classSpineFrom, type ClassSpine } from "./classSpine";
+import { CLASS_API_BASE } from "../platform/evidence/transports";
+import { keyForClass, rememberClass, rememberedClasses } from "./classMemory";
+import { classLeadFor } from "./classLead";
 import { studentSpineFor, type StudentSpine } from "./studentSpine";
 import { TeachNext } from "./TeachNext";
 
@@ -79,15 +83,17 @@ function ClassFrame({ state, children, title }: {
  * can read it from their seats. So the code is the page, at the size a projector needs, with
  * the address they type beside it.
  */
-function NothingYet({ code, label, keyQuery, hasRoster, roll, roster, progress, loadedAt }: {
+function NothingYet({ code, label, keyQuery, teacherKey, hasRoster, roll, roster, progress, loadedAt, spine }: {
   code: string;
   label: string;
   keyQuery: string;
+  teacherKey: string;
   hasRoster: boolean;
   roll: ClassRoll;
   roster: readonly RosterRow[];
   progress: readonly ProgressRow[];
   loadedAt: number;
+  spine: ClassSpine;
 }) {
   // A lesson that has started and finished nothing is not an empty class, and it is the exact
   // moment this page is most use. It used to answer "Nothing turned in yet · 0 turned in" to a
@@ -98,10 +104,16 @@ function NothingYet({ code, label, keyQuery, hasRoster, roll, roster, progress, 
     <>
       <header className="class-header">
         <div>
-          <p className="eyebrow">{label}</p>
-          <h1>{working ? "Nobody has finished yet." : "Nothing turned in yet."}</h1>
+          <ClassName code={code} label={label} teacherKey={teacherKey} worlds={null} />
+          {/* The same lead as every other moment of the lesson, and at this one it is the nine
+              children who have not got in — the only thing on this screen a teacher can walk
+              across the room and fix. It used to read "Nothing turned in yet · 0 turned in":
+              a count of nobody, against nothing. */}
+          <ClassLead spine={spine} roll={roll} code={code} keyQuery={keyQuery} />
         </div>
-        <div><span>0 turned in</span></div>
+        <div>
+          <span>{roll.seats.length} {roll.seats.length === 1 ? "student" : "students"} · 0 attempts</span>
+        </div>
       </header>
       {working && <LiveState roll={roll} roster={roster} progress={progress} code={code} keyQuery={keyQuery} loadedAt={loadedAt} />}
       <section className="class-created">
@@ -120,10 +132,22 @@ function NothingYet({ code, label, keyQuery, hasRoster, roll, roster, progress, 
               with a list hands out cards and the card decides the seat, and a class without
               one asks the student for the name their teacher will see. A launch instruction
               that describes neither sends a room of thirty looking for a control. */}
+          {/* What BOW does not hold, said as what it does not hold. This used to promise "no
+              accounts", which stopped being true when students got sessions, seats and a run
+              that follows them to another machine — and it is the sentence a teacher would
+              repeat to a parent. What was always the point of it is still true and is what it
+              says now: no email address, no last name, nothing a child types about themselves
+              beyond the name their teacher chose to see. */}
           {hasRoster ? (
-            <p>Each student types the code, then the code on their own card. No accounts and no email addresses.</p>
+            <p>
+              Each student types the code, then the code on their own card. BOW never asks a child for an
+              email address or a last name — the only name it holds is the one you put on the list.
+            </p>
           ) : (
-            <p>Each student types the code and the name you will see beside their work. No accounts, no email addresses.</p>
+            <p>
+              Each student types the code and the name you will see beside their work. BOW never asks a child
+              for an email address or a last name.
+            </p>
           )}
           <p>
             {hasRoster ? "Their cards are on the " : "Or hand out named cards instead — "}
@@ -133,6 +157,95 @@ function NothingYet({ code, label, keyQuery, hasRoster, roll, roster, progress, 
         </div>
       </section>
     </>
+  );
+}
+
+/**
+ * The class's name, and the four seconds that used to make it permanent.
+ *
+ * A class could not be renamed. There was no control on any surface and no route that would
+ * have accepted one — `POST /classes`, `DELETE`, and nothing in between — so a teacher who
+ * typed "Perido 6" between periods carried it for a hundred and twenty days: on this page, on
+ * every printed card, on the debrief read aloud to the room, and in the gradebook export. The
+ * product's only answer to a typo was to delete the class and lose the work inside it.
+ *
+ * It belongs here because this is where a teacher reads the name — at the top of the page they
+ * open every lesson — rather than on a settings screen nobody would look for. The name is the
+ * only thing it can change; the code, the key and the evidence are not editable by anything.
+ */
+function ClassName({ code, label: given, teacherKey, worlds }: {
+  code: string;
+  label: string;
+  teacherKey: string;
+  worlds: string | null;
+}) {
+  const [label, setLabel] = useState(given);
+  const [editing, setEditing] = useState(false);
+  const [typed, setTyped] = useState(label);
+  const [said, setSaid] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    const wanted = typed.trim();
+    if (!wanted || busy) return;
+    setBusy(true);
+    try {
+      const response = await fetch(`${CLASS_API_BASE}/classes/${code}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey || keyForClass(code) || "" },
+        body: JSON.stringify({ label: wanted }),
+      });
+      if (!response.ok) {
+        setSaid("That name was not saved.");
+        return;
+      }
+      const body = (await response.json()) as { label?: string };
+      const saved = typeof body.label === "string" ? body.label : wanted;
+      setLabel(saved);
+      // The browser's own list of classes carries a copy of the name, and a rename that left it
+      // behind would put two names for one class on two screens.
+      const remembered = rememberedClasses().find((entry) => entry.code === code);
+      if (remembered) rememberClass({ ...remembered, label: saved });
+      setEditing(false);
+      setSaid("Renamed.");
+    } catch {
+      setSaid("That name was not saved.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <p className="eyebrow">
+        {[label, worlds].filter(Boolean).join(" · ")}{" "}
+        <Button type="button" variant="quiet" onClick={() => { setTyped(label); setSaid(null); setEditing(true); }}>
+          Rename
+        </Button>
+        {said && <span aria-live="polite"> · {said}</span>}
+      </p>
+    );
+  }
+  return (
+    <div>
+      <label className="field" htmlFor="class-rename">
+        <span className="field-label">What this class is called</span>
+        <input
+          id="class-rename"
+          value={typed}
+          maxLength={60}
+          onChange={(event) => setTyped(event.target.value)}
+          onKeyDown={(event) => { if (event.key === "Enter") void save(); }}
+        />
+      </label>
+      <div className="feedback__actions">
+        <Button variant="primary" aria-disabled={busy || typed.trim().length === 0} onClick={() => void save()}>
+          {busy ? "Saving…" : "Save the name"}
+        </Button>
+        <Button variant="quiet" aria-disabled={busy} onClick={() => { setTyped(label); setEditing(false); }}>Cancel</Button>
+        <span aria-live="polite">{said}</span>
+      </div>
+    </div>
   );
 }
 
@@ -172,47 +285,103 @@ function Distribution({ distribution }: { distribution: ChoiceDistribution }) {
 }
 
 /**
- * The class headline, and the rule that governs it.
+ * The first ten seconds, and the rule that governs them.
  *
- * A share is only ever shown at a denominator that can carry one. Below it the same two
- * numbers are still true and are printed as a count, which is what §15.3's first guard asks
- * for and what stops "60%" being read as a fact about a room of twenty-eight.
+ * The largest text on this page used to be the assessment reading whatever the assessment
+ * reading was worth. Mid-lesson, with twenty-two turned in and one explanation read, that was
+ * **"1 of 1 assessed showed it."** in the display face — a fact about one child over a room of
+ * twenty-eight — while the only actionable thing on the screen, *21 awaiting your reading*,
+ * was the smallest type on it. The disclosure underneath was honest and the typography
+ * contradicted it.
+ *
+ * So what leads is what a teacher does next, and the assessment earns the headline only once
+ * every explanation has been read and there is a class-sized denominator behind it.
+ * `classLead.ts` decides which of those it is and writes the sentence; this renders it and
+ * puts the next step under it as something to press. Nothing here composes a count.
  */
-function ClassLead({ spine }: { spine: ClassSpine }) {
-  const reading = spine.reading;
-  if (!reading || spine.assessed === 0) {
-    return (
-      <>
-        <h1>Nobody is assessed yet.</h1>
-        <p>
-          {spine.awaitingReading > 0
-            ? `${spine.submitted} turned in. ${spine.awaitingReading} written ${spine.awaitingReading === 1 ? "explanation is" : "explanations are"} still to read, and a student whose writing nobody has read is not assessed.`
-            : `${spine.submitted} turned in, and none of it has produced a usable result yet.`}
-        </p>
-      </>
-    );
-  }
-  // The share is refused at a denominator that cannot carry one, and the same two numbers
-  // are printed as the count they are.
-  if (reading.result.percentDemonstrated === null) {
-    return (
-      <>
-        <h1>{reading.result.demonstrated} of {spine.assessed} assessed showed it.</h1>
-        <p>
-          {spine.submitted} turned in. Under {MINIMUM_ASSESSED_FOR_A_STATE} assessed students BOW shows the
-          count rather than a share, because a share of {spine.assessed} reads as a fact about the whole class.
-        </p>
-      </>
-    );
-  }
+function ClassLead({ spine, roll, code, keyQuery }: {
+  spine: ClassSpine;
+  roll: ClassRoll;
+  code: string;
+  keyQuery: string;
+}) {
+  const lead = classLeadFor({
+    // The class as the roll counts it — one row per student still in the room — so the
+    // headline's denominator is the same class the tiles and the list below are about.
+    inClass: roll.seats.length,
+    hasRoster: roll.hasRoster,
+    turnedIn: roll.turnedIn,
+    working: roll.stillWorking,
+    notStarted: roll.notStarted,
+    awaitingReading: roll.awaitingReading.length,
+    assessed: spine.assessed,
+    demonstrated: spine.reading?.result.demonstrated ?? 0,
+    percentDemonstrated: spine.reading?.result.percentDemonstrated ?? null,
+    state: spine.reading?.result.state ?? null,
+    narratable: spine.narratable,
+  });
   return (
     <>
-      <h1>{reading.result.percentDemonstrated}% showed it.</h1>
-      <p>{reading.result.demonstrated} of {spine.assessed} assessed · {spine.submitted} turned in</p>
+      <h1>{lead.headline}</h1>
+      <p>{lead.detail}</p>
+      {/* The refusal, in the words §15.3 defines it by. It is a definition rather than a
+          count, so it sits under the count it explains rather than inside it. */}
+      {lead.note && <p className="class-state">{lead.note}</p>}
+      {lead.action && (
+        <p>
+          <Link className="button button--primary" to={`/educator/class/${code}/${lead.action.route}${keyQuery}`}>
+            {lead.action.label} →
+          </Link>
+        </p>
+      )}
     </>
   );
 }
 
+
+/**
+ * The last screen of a run, in both stories.
+ *
+ * A checkpoint is written at every stage transition and deleted by the service the moment a
+ * submission from that seat arrives — so a checkpoint that is *still* sitting on the final
+ * stage means the student reached the end and nothing came back. Two ways that happens: the
+ * submission was refused, or the browser never sent it.
+ */
+const TERMINAL_STAGES = new Set(["submitted", "popup-submitted"]);
+
+/**
+ * What screen a student who has not turned in is on, said truthfully.
+ *
+ * Both stories name their last stage **"Turned in"**, which is the right word for a run that
+ * arrived and the worst possible word for one that did not. A teacher's live panel printed
+ * *"Clever Cam — Turned in — 6 min ago"* about a child whose work had been rejected and did not
+ * exist, three inches above a list of who had turned in that did not contain him. She read the
+ * row and left him alone.
+ *
+ * A row is only ever in this list because the roll put the seat in a state that is not
+ * `turned-in`, so the stage cannot be allowed to say otherwise. What it says instead is the
+ * fact a teacher can act on: their browser got to the end, and nothing reached this class.
+ */
+function startedStageLabel(worldId: WorldId, stage: string): string {
+  return TERMINAL_STAGES.has(stage) ? "Reached the last screen — nothing arrived" : stageLabel(worldId, stage);
+}
+
+/**
+ * How long ago, in the units a teacher would say it in.
+ *
+ * "142 min ago" is a number a person has to divide. Past an hour this reads in hours and past
+ * a day in days, because by then the question is not whether to walk over — it is whether the
+ * child needs Thursday.
+ */
+function sinceLabel(elapsed: number): string {
+  const minutes = Math.max(0, Math.round(elapsed / 60_000));
+  if (minutes < 1) return "just now";
+  if (minutes < 90) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 36) return `${hours} h ago`;
+  const days = Math.round(hours / 24);
+  return `${days} ${days === 1 ? "day" : "days"} ago`;
+}
 
 /**
  * Where the room is, right now.
@@ -240,13 +409,14 @@ function LiveState({ roll, roster, progress, code, keyQuery, loadedAt }: {
 }) {
   const label = useSeatLabel();
   if (roll.seats.length === 0) return null;
-  // The three tiles are three states of the same list of seats, so they add up to the class
-  // by construction. They used to be computed from three different lists — a set of seats
-  // that had submitted, unfiltered by the roster, against a roster that was filtered — and a
+  // The tiles are states of the same list of seats, so they add up to the class by
+  // construction. They used to be computed from three different lists — a set of seats that
+  // had submitted, unfiltered by the roster, against a roster that was filtered — and a
   // teacher who removed one student got a panel reporting a class larger than the class.
   const notStarted = roll.seats.filter((seat) => seat.state === "not-started");
-  const working = roll.seats.filter((seat) => seat.state === "still-working");
-  const workingRows = working.flatMap((seat) => progress.filter((row) => row.seatCode === seat.seatCode).slice(0, 1));
+  const started = roll.seats.filter((seat) => seat.state === "still-working" || seat.state === "started-quiet");
+  const startedRows = started.flatMap((seat) => progress.filter((row) => row.seatCode === seat.seatCode).slice(0, 1));
+  const size = roll.seats.length;
 
   return (
     <section className="dashboard-section live-state">
@@ -254,32 +424,58 @@ function LiveState({ roll, roster, progress, code, keyQuery, loadedAt }: {
         <p className="eyebrow">Right now</p>
         <h2>Where the room is</h2>
       </div>
+      {/* Every tile carries the class it is a count of. "Still working 3" was a number a
+          teacher had to hold the class size in their head to read — and the morning after the
+          lesson it was a number about nobody. */}
       <dl className="live-state__counts">
-        <div><dt>Turned in</dt><dd>{roll.turnedIn}</dd></div>
-        <div><dt>Still working</dt><dd>{roll.stillWorking}</dd></div>
-        <div><dt>Not started</dt><dd>{roll.notStarted ?? "—"}</dd></div>
+        <div><dt>Turned in</dt><dd>{roll.turnedIn} of {size}</dd></div>
+        <div><dt>Working right now</dt><dd>{roll.stillWorking} of {size}</dd></div>
+        {/* Only when there is one. A checkpoint quiet for longer than a lesson is a fact about
+            a child who stopped rather than a child at a keyboard, and the heading over this
+            panel says Right now. */}
+        {roll.startedQuiet > 0 && (
+          <div><dt>Started, not turned in</dt><dd>{roll.startedQuiet} of {size}</dd></div>
+        )}
+        <div><dt>Not started</dt><dd>{roll.notStarted === null ? "—" : `${roll.notStarted} of ${size}`}</dd></div>
       </dl>
-      {workingRows.length > 0 && (
+      {/* First, because it is the only line on this screen a teacher acts on by standing up.
+          It used to print under a list of nineteen working students, which at minute five of
+          a lesson pushed it off a 1366×768 screen — the one minute it exists for. */}
+      {notStarted.length > 0 && (
+        // Every one of them, named. This line is a walking list — a teacher reads it and gets
+        // up — so "and 3 more" is three children she has been told about and cannot find. The
+        // six-name cap belongs on lines that summarise; this one does not summarise.
+        <p className="live-state__waiting">
+          Not started: {seatLabels(notStarted.map((seat) => seat.seatCode), seatNames(roster), notStarted.length)}.
+        </p>
+      )}
+      {startedRows.length > 0 && (
         <ul className="live-state__list">
-          {workingRows
+          {startedRows
             .slice()
             .sort((a, b) => a.updatedAt - b.updatedAt)
-            .map((row) => {
-              const quiet = Math.max(0, Math.round((loadedAt - row.updatedAt) / 60_000));
-              return (
-                <li key={row.seatCode}>
-                  <Link to={`/educator/class/${code}/students/${row.seatCode}${keyQuery}`}>{label(row.seatCode)}</Link>
-                  <span>{stageLabel(row.worldId, row.stage)}</span>
-                  {/* Said as elapsed time rather than a clock, because what a teacher does
-                      with it is decide whether to walk over. */}
-                  <span className="live-state__quiet">{quiet < 1 ? "just now" : `${quiet} min ago`}</span>
-                </li>
-              );
-            })}
+            .map((row) => (
+              <li key={row.seatCode}>
+                <Link to={`/educator/class/${code}/students/${row.seatCode}${keyQuery}`}>{label(row.seatCode)}</Link>
+                <span>{startedStageLabel(row.worldId, row.stage)}</span>
+                {/* Said as elapsed time rather than a clock, because what a teacher does with
+                    it is decide whether to walk over — or, the next morning, whether to give
+                    them Thursday. */}
+                <span className="live-state__quiet">{sinceLabel(loadedAt - row.updatedAt)}</span>
+              </li>
+            ))}
         </ul>
       )}
-      {notStarted.length > 0 && (
-        <p className="live-state__waiting">Not started: {seatLabels(notStarted.map((seat) => seat.seatCode), seatNames(roster))}.</p>
+      {/* Said out loud, because it is the one row on this panel that needs a teacher to walk
+          over and it looks like the one that does not. The service deletes a checkpoint when a
+          submission from that seat arrives, so a seat still sitting on the last screen is a run
+          that ended with nothing reaching this class. */}
+      {startedRows.some((row) => TERMINAL_STAGES.has(row.stage)) && (
+        <p className="live-state__waiting">
+          {startedRows.filter((row) => TERMINAL_STAGES.has(row.stage)).length === 1 ? "One student" : "Some students"} reached
+          the end of the run and no work arrived here. Nothing of theirs is in this class — the work is still on the
+          computer they used, and pressing Turn in again from that computer sends it.
+        </p>
       )}
       {!roll.hasRoster && (
         <p className="class-state">
@@ -436,25 +632,30 @@ export function RealClassOverview() {
         // below is taken from it — the headline, the live tiles, the table's denominator, the
         // student list and the export — so two of them cannot disagree about the same room.
         // They used to be computed five ways and three of them were on screen at once.
-        const roll = classRoll({ rows: analysis.rows, roster: ready.roster, progress: ready.progress });
+        // `at` is when the page was read, so "still working" is a claim about now rather than
+        // about whenever a browser last said anything. A checkpoint quiet for longer than a
+        // lesson stops counting as a child at a keyboard.
+        const roll = classRoll({ rows: analysis.rows, roster: ready.roster, progress: ready.progress, at: ready.loadedAt });
+        // The spine is read against the same class: one attempt per student still in the
+        // room, so "turned in" in the headline is the same number as "turned in" in the tile.
+        const counted = roll.rows.flatMap((row) => submissions.filter((entry) => entry.sessionId === row.sessionId));
+        const spine = classSpineFrom({ record, assignments, submissions: counted });
         if (roll.rows.length === 0) {
           return (
             <NothingYet
               code={record.code}
               label={record.label}
               keyQuery={keyQuery}
+              teacherKey={teacherKey}
               hasRoster={roll.hasRoster}
               roll={roll}
               roster={ready.roster}
               progress={ready.progress}
               loadedAt={ready.loadedAt}
+              spine={spine}
             />
           );
         }
-        // The spine is read against the same class: one attempt per student still in the
-        // room, so "turned in" in the headline is the same number as "turned in" in the tile.
-        const counted = roll.rows.flatMap((row) => submissions.filter((entry) => entry.sessionId === row.sessionId));
-        const spine = classSpineFrom({ record, assignments, submissions: counted });
         const total = roll.turnedIn;
         const students = (
           <section className="dashboard-section">
@@ -462,7 +663,13 @@ export function RealClassOverview() {
               <p className="eyebrow">Open these</p>
               <h2>Every student who turned in</h2>
             </div>
-            <StudentRows rows={roll.rows} submissions={submissions} code={record.code} keyQuery={keyQuery} />
+            <StudentRows
+              rows={roll.rows}
+              submissions={submissions}
+              code={record.code}
+              keyQuery={keyQuery}
+              attempts={new Map(roll.seats.map((seat) => [seat.seatCode, seat.attempts.length]))}
+            />
           </section>
         );
 
@@ -470,11 +677,21 @@ export function RealClassOverview() {
           <>
             <header className="class-header">
               <div>
-                <p className="eyebrow">{[record.label, worldsPlayed(roll.rows)].filter(Boolean).join(" · ")}</p>
-                <ClassLead spine={spine} />
+                <ClassName
+                  code={record.code}
+                  label={record.label}
+                  teacherKey={teacherKey}
+                  worlds={worldsPlayed(roll.rows)}
+                />
+                <ClassLead spine={spine} roll={roll} code={record.code} keyQuery={keyQuery} />
               </div>
               <div>
-                <span>{total} turned in</span>
+                {/* The unit, said out loud, on the surface a teacher reads a number off and
+                    then says it to a room. One student who had two goes is one student and two
+                    attempts, and the debrief, the queue and the export all count the first of
+                    those — so the header names both rather than leaving a colleague to work out
+                    which of two screens is lying. */}
+                <span>{roll.seats.length} {roll.seats.length === 1 ? "student" : "students"} · {roll.attempts.length} {roll.attempts.length === 1 ? "attempt" : "attempts"}</span>
                 {/* The largest single job this product creates, and it used to be a
                     sentence. It is the way into the queue that does it. */}
                 {roll.awaitingReading.length > 0
@@ -650,11 +867,13 @@ function competencyStatement(competencyId: string, submissions: readonly Attribu
  * everybody and says nothing about what to do next. It opens with the competency state and
  * the requirement that fell short, which is the sentence a teacher acts on.
  */
-function StudentRows({ rows, submissions, code, keyQuery }: {
+function StudentRows({ rows, submissions, code, keyQuery, attempts }: {
   rows: readonly StudentRow[];
   submissions: readonly AttributedSubmission[];
   code: string;
   keyQuery: string;
+  /** How many attempts each seat turned in. One row per student either way; the row says so. */
+  attempts: ReadonlyMap<string, number>;
 }) {
   const label = useSeatLabel();
   return (
@@ -662,10 +881,13 @@ function StudentRows({ rows, submissions, code, keyQuery }: {
       {rows.map((row) => {
         const submission = submissions.find((entry) => entry.sessionId === row.sessionId);
         const spine = submission ? studentSpineFor(submission) : null;
+        // A student who had a second go is one row here and was one row here before — the
+        // difference is that the row now says which of their attempts it is describing.
+        const count = attempts.get(row.seatCode) ?? 1;
         return (
           <Link key={row.sessionId} to={`/educator/class/${code}/students/${row.seatCode}${keyQuery}`}>
             <div>
-              <small>{label(row.seatCode)}</small>
+              <small>{label(row.seatCode)}{count > 1 ? ` · attempt ${count} of ${count}` : ""}</small>
               <h3>{spine ? SKILL_STATE_LABELS[spine.lead] : "No result"}</h3>
               <small>{spine ? shortfallLine(spine, row) : "This attempt could not be read."}</small>
             </div>
@@ -706,11 +928,16 @@ export function RealStudentEvidence() {
   return (
     <ClassFrame state={state} title="That student's work did not open.">
       {(ready) => {
-        // The same attempt the class list opened: a seat's **latest**, so the page a teacher
-        // lands on from a row is the run that row was describing. Read from every row this
-        // class holds rather than from the roll, so a seat taken off the roster is still
-        // reachable from a link somebody already has — it is simply not listed anywhere.
-        const row = latestAttemptFor(ready.analysis.rows, seatCode ?? "");
+        // Every attempt this seat turned in, oldest first. The page opens on their **latest**,
+        // so the run a teacher lands on from a class row is the run that row described — and
+        // an earlier attempt is one press away rather than invisible, which is what a parent
+        // asking about "the first one they did" needs it to be. Read from every row this class
+        // holds rather than from the roll, so a seat taken off the roster is still reachable
+        // from a link somebody already has — it is simply not listed anywhere.
+        const attempts = attemptsFor(ready.analysis.rows, seatCode ?? "");
+        const asked = Number(params.get("attempt"));
+        const index = Number.isInteger(asked) && asked >= 1 && asked <= attempts.length ? asked - 1 : attempts.length - 1;
+        const row = attempts[index] ?? null;
         if (!row) {
           return (
             <header className="page-header page-header--with-back">
@@ -729,6 +956,7 @@ export function RealStudentEvidence() {
             row={row}
             code={code ?? ""}
             keyQuery={keyQuery}
+            attempt={{ number: index + 1, of: attempts.length }}
             onScore={scoreReasoning}
             {...(submission ? { submission } : {})}
             onOverride={(override) => recordOverride(row.seatCode, row.sessionId, override)}
@@ -796,10 +1024,12 @@ function StudentLead({ spine, awaitingReading }: { spine: StudentSpine; awaiting
   );
 }
 
-function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride, onFeedback, feedback }: {
+function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride, onFeedback, feedback, attempt }: {
   row: StudentRow;
   code: string;
   keyQuery: string;
+  /** Which of this seat's attempts is on screen, and how many there are. */
+  attempt: { number: number; of: number };
   onScore: (seat: string, session: string, scores: ReasoningScores | null) => Promise<boolean>;
   submission?: AttributedSubmission;
   onOverride: (override: OverrideRequest) => Promise<boolean>;
@@ -826,6 +1056,25 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride, on
           <Link to={`/educator/class/${code}${keyQuery}`}>← Class evidence</Link>
           <p className="eyebrow">Turned in {new Date(row.submittedAt).toLocaleString()}</p>
           <h1>{label(row.seatCode)}</h1>
+          {/* A student who turned in twice used to be shown their later attempt silently, on a
+              page with no switcher and no mention of the first — while the export listed both
+              and the queue listed neither. Which one is on screen, which one the class counts,
+              and a way to the other. */}
+          {attempt.of > 1 && (
+            <p className="class-state">
+              Attempt {attempt.number} of {attempt.of}.{" "}
+              {attempt.number === attempt.of
+                ? "Their latest, and the one every count on this class is made from."
+                : `Every count on this class is made from attempt ${attempt.of}, their latest.`}{" "}
+              {Array.from({ length: attempt.of }, (_, index) => index + 1)
+                .filter((number) => number !== attempt.number)
+                .map((number) => (
+                  <Link key={number} to={`/educator/class/${code}/students/${row.seatCode}${keyQuery ? `${keyQuery}&` : "?"}attempt=${number}`}>
+                    See attempt {number}
+                  </Link>
+                ))}
+            </p>
+          )}
           <p>{summarise(row)}</p>
         </div>
         {spine
@@ -889,7 +1138,13 @@ function StudentPanel({ row, code, keyQuery, onScore, submission, onOverride, on
           </p>
         </div>
         <div className="rubric-panel">
-          <p className="eyebrow">{REASONING_MAXIMUM}-point reasoning rubric</p>
+          {/* Not "10-point reasoning rubric". That sentence introduced a second scale as a
+              fact a teacher already knew, on the two surfaces where they meet it first — and
+              the product has one rubric, the levels in `labels.ts`, which this is not. What
+              this panel is, is four things a person marks by hand. The maximum is not
+              asserted here because it is on screen twice already: on each row's own buttons
+              and in the total underneath. */}
+          <p className="eyebrow">Score the writing — four things, you decide</p>
           {REASONING_CRITERIA.map((criterion) => (
             <div className="rubric-row" key={criterion.id}>
               <div><b>{criterion.label}</b><span>{criterion.hint}</span></div>
@@ -1060,7 +1315,19 @@ function Gradebook({ submission, displayName }: { submission: AttributedSubmissi
             failed, and this is the one artefact that gets copied somewhere nothing can
             explain it — which is why the export names these three the same way. */}
         <div><dt>{LEVEL_BUCKET_LABELS.neverAsked}</dt><dd>{line.requirements.neverAsked}</dd></div>
+        {/* What a mark on this student would be out of, worked out once here rather than by
+            twenty-eight teachers with a calculator. It is `did it + fell short` and it varies
+            per student, because the two stories ask different numbers of things and a run that
+            stopped early asked fewer still. */}
+        <div><dt>Asked of this run</dt><dd>{line.requirements.asked}</dd></div>
       </dl>
+      <p className="gradebook__note">
+        A mark on this attempt is out of {line.requirements.asked} — {LEVEL_BUCKET_LABELS.met.toLowerCase()} plus{" "}
+        {LEVEL_BUCKET_LABELS.short.toLowerCase()}.
+        {line.requirements.neverAsked > 0
+          ? ` The ${line.requirements.neverAsked} this run never asked ${line.requirements.neverAsked === 1 ? "is" : "are"} not in it: absences, not zeros.`
+          : ""}
+      </p>
       {/* The same glossary rule as every other surface, applied to the one artefact that
           leaves the product. The three sentences are attached to their own labels rather than
           run together into a paragraph — a teacher copying three numbers into a district
@@ -1088,10 +1355,13 @@ function Gradebook({ submission, displayName }: { submission: AttributedSubmissi
           ))}
         </dl>
       )}
-      {line.teacherReadings > 0 && (
+      {/* Overrules, named as overrules. This counted the same thing before and called it
+          "readings", which is what a teacher does to every paragraph in the queue — so it read
+          0 beside writing they had read and marked themselves. */}
+      {line.overrules > 0 && (
         <p className="gradebook__note">
-          You have recorded {line.teacherReadings} {line.teacherReadings === 1 ? "reading" : "readings"} of your own on this
-          attempt, and {line.teacherReadings === 1 ? "it stands" : "they stand"} above BOW&rsquo;s.
+          You have read {line.overrules} {line.overrules === 1 ? "judgement" : "judgements"} on this attempt differently
+          from BOW, and {line.overrules === 1 ? "yours stands" : "yours stand"}.
         </p>
       )}
     </section>

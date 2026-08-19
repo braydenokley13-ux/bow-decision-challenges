@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import type { Assignment, AttributedSubmission, ClassRecord } from "../platform/classes/types";
-import type { StandardRef } from "../domain/standards";
 import { rememberClass, rememberedClasses } from "./classMemory";
 import { claimRememberedClasses, myTeaching, teacherToken } from "./teacherSession";
 
@@ -36,8 +35,6 @@ export type TeacherClassesState =
 export function useTeacherClasses(): {
   state: TeacherClassesState;
   reload: () => void;
-  /** Record, or withdraw, that this class has been taught an objective. Never inferred. */
-  markTaught: (classCode: string, ref: StandardRef, taught: boolean) => Promise<boolean>;
 } {
   const [state, setState] = useState<TeacherClassesState>({ status: "loading" });
   const [nonce, setNonce] = useState(0);
@@ -88,24 +85,5 @@ export function useTeacherClasses(): {
 
   const reload = useCallback(() => setNonce((value) => value + 1), []);
 
-  const markTaught = useCallback(
-    async (classCode: string, ref: StandardRef, taught: boolean): Promise<boolean> => {
-      const key = rememberedClasses().find((entry) => entry.code === classCode)?.teacherKey;
-      if (!key) return false;
-      try {
-        const response = await fetch(`${CLASS_API_BASE}/classes/${classCode}/taught`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": key },
-          body: JSON.stringify({ frameworkId: ref.frameworkId, standardCode: ref.code, taught }),
-        });
-        if (response.ok) reload();
-        return response.ok;
-      } catch {
-        return false;
-      }
-    },
-    [reload],
-  );
-
-  return { state, reload, markTaught };
+  return { state, reload };
 }

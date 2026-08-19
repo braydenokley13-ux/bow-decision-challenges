@@ -190,8 +190,29 @@ export function useDraft<T>(worldId: WorldId, id: string, initial: T): [T, Dispa
 /** Which tab is running this attempt, and when it last said so. */
 const RUN_LOCK_KEY = "bow.run.tab";
 
+/**
+ * Where an arriving tab knocks, and where a live tab answers.
+ *
+ * A claim on its own cannot tell "another tab is running this" from "a tab that is gone left
+ * this behind", and the difference is the whole of what a student is told. So an arriving tab
+ * asks: it writes here, and any tab that holds the claim renews it the moment the write lands.
+ * An answer means somebody is there. Silence means nobody is, and silence is the common case —
+ * a child who closed the browser at the end of the lesson and came back the next morning.
+ */
+const RUN_PING_KEY = "bow.run.ping";
+
 /** How often the tab holding the run says it is still there. */
 const LOCK_HEARTBEAT_MS = 2_000;
+
+/**
+ * How long an arriving tab waits for an answer before deciding the run is nobody's.
+ *
+ * A `storage` event crosses tabs in the same browser in single-digit milliseconds, so a second
+ * is many times what a live tab needs, and it is short enough that a student who has genuinely
+ * come back to an empty machine sees one blink of "picking your run back up" rather than an
+ * accusation.
+ */
+const PING_GRACE_MS = 1_000;
 
 /**
  * How long a silent lock is believed.
@@ -207,6 +228,17 @@ const LOCK_STALE_MS = 6_000;
 interface Claim {
   tabId: string;
   at: number;
+  /**
+   * The tab this claim is an answer to, when it is one.
+   *
+   * A knock is answered by name rather than by timestamp. Time was the obvious way and it is
+   * the wrong one: a claim written and a knock sent inside the same millisecond are
+   * indistinguishable by clock, and the two ways that reads wrong are a student being told
+   * their run is open in a window that closed, and a student being turned out of the window
+   * they are actually working in. Neither is acceptable, and neither can happen if the answer
+   * carries the name of who it is for.
+   */
+  ack?: string;
 }
 
 /**
@@ -238,15 +270,40 @@ function readClaim(): Claim | null {
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as Partial<Claim>;
-    return typeof parsed.tabId === "string" && typeof parsed.at === "number" ? { tabId: parsed.tabId, at: parsed.at } : null;
+    if (typeof parsed.tabId !== "string" || typeof parsed.at !== "number") return null;
+    return { tabId: parsed.tabId, at: parsed.at, ...(typeof parsed.ack === "string" ? { ack: parsed.ack } : {}) };
   } catch {
     return null;
   }
 }
 
+/** Who knocked, off the ping they wrote. */
+function readPing(raw: string | null): string | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as { from?: unknown };
+    return typeof parsed.from === "string" ? parsed.from : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * What this tab knows about who is running the attempt.
+ *
+ * `checking` is the state that was missing, and its absence is what made the product lie. A
+ * tab that found a claim it did not own went straight to *your challenge is open in another
+ * tab* without ever having heard from that tab — so every student who closed the browser and
+ * came back met a red screen about a window that did not exist. Not knowing yet is a real
+ * state and it is a short one; it is not the same fact as knowing.
+ */
+export type RunLockState = "running" | "checking" | "elsewhere";
+
 export interface RunLock {
-  /** True when another tab is running this attempt, so this one must not write. */
+  /** True while this tab must not write — either somebody else has the run, or nobody knows yet. */
   shadowed: boolean;
+  /** What is actually known, as opposed to what is assumed. */
+  state: RunLockState;
   /** Move the run to this tab. The caller reloads, because this tab's copy is behind. */
   takeOver: () => void;
   /** Let go, so a tab opened after this one is not told the run is still in use here. */
@@ -269,10 +326,15 @@ export interface RunLock {
  * newest work rather than from whatever it had in memory.
  */
 export function useRunLock(): RunLock {
-  const [shadowed, setShadowed] = useState<boolean>(() => heldElsewhere(readClaim()));
+  // A claim that has not been renewed inside the stale window is nobody's, and this tab simply
+  // takes the run. A claim that looks live is not believed either — it is asked.
+  const [state, setState] = useState<RunLockState>(() => (heldElsewhere(readClaim()) ? "checking" : "running"));
 
-  const claim = useCallback(() => {
-    window.localStorage.setItem(RUN_LOCK_KEY, JSON.stringify({ tabId: thisTab(), at: Date.now() }));
+  const claim = useCallback((ack?: string) => {
+    window.localStorage.setItem(
+      RUN_LOCK_KEY,
+      JSON.stringify({ tabId: thisTab(), at: Date.now(), ...(ack ? { ack } : {}) }),
+    );
   }, []);
 
   const release = useCallback(() => {
@@ -280,9 +342,9 @@ export function useRunLock(): RunLock {
   }, []);
 
   useEffect(() => {
-    if (shadowed) return;
+    if (state !== "running") return;
     claim();
-    const beat = window.setInterval(claim, LOCK_HEARTBEAT_MS);
+    const beat = window.setInterval(() => claim(), LOCK_HEARTBEAT_MS);
     // A tab that goes away hands the run on rather than making the next one wait out the
     // stale window with a screen that says the run is somewhere it is not.
     window.addEventListener("pagehide", release);
@@ -290,20 +352,68 @@ export function useRunLock(): RunLock {
       window.clearInterval(beat);
       window.removeEventListener("pagehide", release);
     };
-  }, [shadowed, claim, release]);
+  }, [state, claim, release]);
+
+  // Knocking, and listening for an answer. This is the whole of the difference between "your
+  // run is open somewhere else" and "the last tab to run this did not clean up after itself".
+  useEffect(() => {
+    if (state !== "checking") return;
+    const askedAt = Date.now();
+    window.localStorage.setItem(RUN_PING_KEY, JSON.stringify({ from: thisTab(), at: askedAt }));
+    // An answer is a claim addressed to this tab by name. Nothing else counts as one.
+    const answered = () => {
+      const current = readClaim();
+      return current !== null && current.tabId !== thisTab() && current.ack === thisTab();
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== RUN_LOCK_KEY) return;
+      if (answered()) setState("elsewhere");
+    };
+    window.addEventListener("storage", onStorage);
+    const decide = window.setTimeout(() => setState(answered() ? "elsewhere" : "running"), PING_GRACE_MS);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.clearTimeout(decide);
+    };
+  }, [state]);
+
+  // Answering. A tab that holds the run renews its claim the instant somebody knocks, so the
+  // tab that knocked hears back inside its grace window rather than waiting out a heartbeat.
+  useEffect(() => {
+    const onPing = (event: StorageEvent) => {
+      if (event.key !== RUN_PING_KEY) return;
+      if (readClaim()?.tabId !== thisTab()) return;
+      const from = readPing(event.newValue);
+      claim(from ?? undefined);
+    };
+    window.addEventListener("storage", onPing);
+    return () => window.removeEventListener("storage", onPing);
+  }, [claim]);
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
       if (event.key !== null && event.key !== RUN_LOCK_KEY) return;
       const current = readClaim();
-      // Somebody else has the run: stop writing at once, whatever this tab was doing.
-      if (heldElsewhere(current)) setShadowed(true);
+      // Somebody else has the run and is saying so: stop writing at once, whatever this tab
+      // was doing. A tab that is still checking decides for itself, in the effect above.
+      if (state === "running" && heldElsewhere(current)) setState("elsewhere");
       // Nobody has it and this tab was waiting: it is free to take it.
-      else if (!current && shadowed) setShadowed(false);
+      else if (!current && state === "elsewhere") setState("running");
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, [shadowed]);
+  }, [state]);
+
+  // A tab that was told to wait must not wait for ever. A browser that is killed, a laptop
+  // that sleeps and a tab a browser discards all leave a claim behind and fire no event, and
+  // without this the student sat on the waiting screen until they thought to reload.
+  useEffect(() => {
+    if (state !== "elsewhere") return;
+    const watch = window.setInterval(() => {
+      if (!heldElsewhere(readClaim())) setState("running");
+    }, LOCK_HEARTBEAT_MS);
+    return () => window.clearInterval(watch);
+  }, [state]);
 
   const takeOver = useCallback(() => {
     claim();
@@ -313,5 +423,5 @@ export function useRunLock(): RunLock {
     window.location.reload();
   }, [claim]);
 
-  return { shadowed, takeOver, release };
+  return { shadowed: state !== "running", state, takeOver, release };
 }

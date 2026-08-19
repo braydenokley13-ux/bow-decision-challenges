@@ -50,8 +50,19 @@ export interface GradebookLine {
   sessionId: string;
   submittedAt: number;
   competencies: readonly { competencyId: string; statement: string; state: CompetencyResultState }[];
-  /** Required evidence requirements, in three buckets that never collapse into each other. */
-  requirements: { met: number; short: number; neverAsked: number };
+  /**
+   * Required evidence requirements, in three buckets that never collapse into each other,
+   * plus the sum of the two that a mark is out of.
+   *
+   * `asked` is `met + short`, and it is here because a teacher converting this to a percentage
+   * has to know what to divide by — and it is not thirteen. **`neverAsked` is not in it**: the
+   * student page says out loud that those are absences rather than zeros, so putting them in a
+   * denominator would be the same claim the rest of the product refuses, done with division.
+   * It varies per student, because the two stories ask different numbers of things and a run
+   * that stopped early asked fewer still. That is one column of arithmetic BOW can do once and
+   * twenty-eight teachers were each doing by hand.
+   */
+  requirements: { met: number; short: number; neverAsked: number; asked: number };
   /**
    * The one number that leaves, and it is a person's own.
    *
@@ -59,8 +70,16 @@ export interface GradebookLine {
    * exporting on Friday sees a blank and knows what it means.
    */
   reasoning: { total: number | null; maximum: number; criteria: readonly { id: string; label: string; mark: number | null; maximum: number }[] };
-  /** How many judgements on this attempt the teacher has recorded a different reading of. */
-  teacherReadings: number;
+  /**
+   * How many of BOW's judgements on this attempt the teacher has overruled.
+   *
+   * It was exported under the header *Teacher readings*, which is what a teacher does to every
+   * paragraph in the queue — so the column read `0` beside a mark they had personally awarded
+   * after reading the writing, and `1` only where they had disagreed with BOW. In a gradebook
+   * that is an invitation to a conversation nobody can win. It counts overrules, so it is
+   * called overrules.
+   */
+  overrules: number;
 }
 
 export function gradebookLineFor(submission: AttributedSubmission, displayName: string | null): GradebookLine {
@@ -86,7 +105,7 @@ export function gradebookLineFor(submission: AttributedSubmission, displayName: 
       statement: competencyById(line.competencyId)?.statement ?? line.competencyId,
       state: line.state,
     })),
-    requirements: { met, short, neverAsked },
+    requirements: { met, short, neverAsked, asked: met + short },
     reasoning: {
       total: submission.reasoningPoints,
       maximum: REASONING_MAXIMUM,
@@ -97,7 +116,7 @@ export function gradebookLineFor(submission: AttributedSubmission, displayName: 
         maximum: criterion.max,
       })),
     },
-    teacherReadings: submission.overrides?.length ?? 0,
+    overrules: submission.overrides?.length ?? 0,
   };
 }
 
@@ -206,9 +225,12 @@ export function gradebookTsv(rows: readonly GradebookRow[]): string {
     `${TERMS.Requirement} — ${LEVEL_BUCKET_LABELS.met.toLowerCase()}`,
     `${TERMS.Requirement} — ${LEVEL_BUCKET_LABELS.short.toLowerCase()}`,
     `${TERMS.Requirement} — ${LEVEL_BUCKET_LABELS.neverAsked.toLowerCase()} (this run never asked)`,
+    // The denominator, on the row rather than inferred from it. It is not the same number for
+    // every student and it is not the number of columns to its left.
+    `${TERMS.Requirement} — asked of this run (${LEVEL_BUCKET_LABELS.met.toLowerCase()} + ${LEVEL_BUCKET_LABELS.short.toLowerCase()}, and what a mark is out of)`,
     ...criteria.map((criterion) => `${criterion.label} (/${criterion.max})`),
     `Reasoning (/${REASONING_MAXIMUM}) — your own marks`,
-    "Your readings recorded",
+    "BOW judgements you overruled",
     ...competencies.map((entry) => `Skill: ${entry.statement}`),
     "Session",
   ];
@@ -229,12 +251,13 @@ export function gradebookTsv(rows: readonly GradebookRow[]): string {
       String(line.requirements.met),
       String(line.requirements.short),
       String(line.requirements.neverAsked),
+      String(line.requirements.asked),
       ...criteria.map((criterion) => {
         const mark = line.reasoning.criteria.find((entry) => entry.id === criterion.id)?.mark;
         return mark === null || mark === undefined ? "" : String(mark);
       }),
       line.reasoning.total === null ? "" : String(line.reasoning.total),
-      String(line.teacherReadings),
+      String(line.overrules),
       ...competencies.map((column) => {
         const entry = line.competencies.find((item) => item.competencyId === column.competencyId);
         return entry ? SKILL_STATE_LABELS[entry.state] : "";

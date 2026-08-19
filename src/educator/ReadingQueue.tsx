@@ -75,23 +75,34 @@ export function ReadingQueue() {
         <p>
           {rows.length === 0
             ? "Nothing turned in yet. The queue fills as work arrives."
-            : `${rows.length} turned in · ${unread} still unread. You score the writing; nothing here is machine-scored.`}
+            // The pile, against the class it came out of. One student who had two goes is one
+            // entry in this queue and always was; what was missing was the class it is a
+            // queue for.
+            : `${rows.length} of ${roll.seats.length} turned in · ${unread} still to read. You score the writing; nothing here is machine-scored.`}
         </p>
       </header>
 
       {rows.length > 0 && (
-        <Queue rows={rows} code={state.record.code} keyQuery={keyQuery} onScore={scoreReasoning} />
+        <Queue
+          rows={rows}
+          code={state.record.code}
+          keyQuery={keyQuery}
+          onScore={scoreReasoning}
+          attempts={new Map(roll.seats.map((seat) => [seat.seatCode, seat.attempts.length]))}
+        />
       )}
       </SeatNamesContext.Provider>
     </EducatorShell>
   );
 }
 
-function Queue({ rows, code, keyQuery, onScore }: {
+function Queue({ rows, code, keyQuery, onScore, attempts }: {
   rows: readonly StudentRow[];
   code: string;
   keyQuery: string;
   onScore: (seatCode: string, sessionId: string, scores: ReasoningScores | null) => Promise<boolean>;
+  /** How many attempts each seat turned in, so the card can say which one this is. */
+  attempts: ReadonlyMap<string, number>;
 }) {
   // Taken from the rows this mounted with. A save changes whether a student is unread, and
   // recomputing the sort from that would reorder the queue mid-pass.
@@ -130,17 +141,20 @@ function Queue({ rows, code, keyQuery, onScore }: {
       keyQuery={keyQuery}
       headingRef={headingRef}
       onMove={goTo}
+      attempts={attempts.get(row.seatCode) ?? 1}
       onScore={(scores) => onScore(row.seatCode, row.sessionId, scores)}
     />
   );
 }
 
-function ReadingCard({ row, position, count, code, keyQuery, headingRef, onMove, onScore }: {
+function ReadingCard({ row, position, count, code, keyQuery, headingRef, onMove, onScore, attempts }: {
   row: StudentRow;
   position: number;
   count: number;
   code: string;
   keyQuery: string;
+  /** How many attempts this seat turned in. The queue reads their latest. */
+  attempts: number;
   headingRef: React.RefObject<HTMLHeadingElement>;
   onMove: (index: number) => void;
   onScore: (scores: ReasoningScores) => Promise<boolean>;
@@ -165,8 +179,13 @@ function ReadingCard({ row, position, count, code, keyQuery, headingRef, onMove,
         <Button variant="quiet" aria-disabled={position === 0} onClick={() => position > 0 && onMove(position - 1)}>
           ← Previous
         </Button>
+        {/* A student who had a second go used to appear here twice with identical headers, and
+            a teacher marked the same child twice without being told which mark counted. The
+            queue now reads one attempt per student — their latest — and says so. */}
         <p aria-live="polite">
-          {position + 1} of {count} · {label(row.seatCode)} · {row.reasoningPoints === null ? "unread" : `scored ${row.reasoningPoints}/${REASONING_MAXIMUM}`}
+          {position + 1} of {count} · {label(row.seatCode)}
+          {attempts > 1 ? ` · attempt ${attempts} of ${attempts}` : ""}
+          {" · "}{row.reasoningPoints === null ? "still to read" : `scored ${row.reasoningPoints}/${REASONING_MAXIMUM}`}
         </p>
         <Button variant="quiet" aria-disabled={last} onClick={() => !last && onMove(position + 1)}>
           Next →
@@ -182,11 +201,24 @@ function ReadingCard({ row, position, count, code, keyQuery, headingRef, onMove,
             ? <blockquote>{row.defense.text}</blockquote>
             : <p className="class-state">This student turned in no written explanation.</p>}
           <p className="response-note">
-            <Link to={`/educator/class/${code}/students/${row.seatCode}${keyQuery}`}>Open this student’s evidence →</Link>
+            {/* Named to the attempt this card is about, not to the seat. A teacher read one
+                student's market write-up here, followed this link, and landed on a basketball
+                plan — the same child's other attempt — with nothing on either screen saying so.
+                Scoring "two accurate numbers from their own plan" against that marks a child
+                down for numbers that are nowhere in the plan in front of you. */}
+            <Link to={`/educator/class/${code}/students/${row.seatCode}${keyQuery ? `${keyQuery}&` : "?"}attempt=${attempts}`}>
+              Open this student’s evidence →
+            </Link>
           </p>
         </div>
         <div className="rubric-panel">
-          <p className="eyebrow">{REASONING_MAXIMUM}-point reasoning rubric</p>
+          {/* Not "10-point reasoning rubric". That sentence introduced a second scale as a
+              fact a teacher already knew, on the two surfaces where they meet it first — and
+              the product has one rubric, the levels in `labels.ts`, which this is not. What
+              this panel is, is four things a person marks by hand. The maximum is not
+              asserted here because it is on screen twice already: on each row's own buttons
+              and in the total underneath. */}
+          <p className="eyebrow">Score the writing — four things, you decide</p>
           {REASONING_CRITERIA.map((criterion) => (
             <div className="rubric-row" key={criterion.id}>
               <div><b>{criterion.label}</b><span>{criterion.hint}</span></div>
