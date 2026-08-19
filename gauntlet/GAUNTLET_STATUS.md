@@ -337,6 +337,43 @@ The other ten are on ground no round has touched:
   answered their round-four findings.
 
 
+## What twenty agents cost, and the number the box actually holds
+
+Twenty ran for about fifteen minutes and then the container died. Load average was 25 on four
+cores — which is fine, they queue — but free memory oscillated between 190 MB and 1.5 GB with
+Chromium instances spiking, and that is the number that kills. It took every agent's uncommitted
+reasoning with it for the second time tonight.
+
+**The honest ceiling on this box is about eight**, and the loop runs there now, refilling as
+agents land rather than stacking. That is not caution: past the memory line the next agent does
+not add throughput, it trades against an existing one and eventually against all of them.
+
+**What survived, and why.** Every builder launched after the first crash carried an instruction
+to commit and push in increments. The path-traversal fix below exists because the reviewer who
+found it messaged the lead instead of holding it in a working tree; it was fixed and pushed
+within minutes of being reported. Nothing that had been committed was lost either time.
+
+### The worst defect in the gauntlet, found and fixed between the two crashes
+
+A signed-in **student** could permanently destroy any other teacher's class by sending a session
+id shaped like a path. `readSubmission()` checked length and not characters; the file store built
+a submission's filename out of `${seatCode}:${sessionId}`; a session id of
+`aaaaaaaa/../../../<victim's code>/class` walked out of the submissions directory and overwrote
+the victim's `class.json`. **HTTP 202.** The victim teacher, holding their own teacher key, then
+got a 403 on their own class — a term of thirty children's evidence permanently unreachable —
+and health reported the store as fine, because the blob was valid ciphertext.
+
+To do it: a class code off a whiteboard, and a student session anybody can self-serve by joining
+any open class. No store key. No disk access. The same primitive reached the key canary, the
+teacher accounts, and every roster and evidence file the server can write.
+
+Fixed at `c1f09bf` in two layers, because one validator is how it happened: identifiers a client
+chose must match a character set at the door, and the file store now **throws** rather than
+sanitises when anything client-influenced is about to become part of a path. Two tests, one per
+layer; the second matters more, because the door's rule can be got wrong again and the store's
+refusal is the guarantee that the next time it is, this is not the consequence.
+
+
 ## Largest remaining gap
 
 **No longer J1.** The reading load was the largest measured gap for two rounds and it is now
