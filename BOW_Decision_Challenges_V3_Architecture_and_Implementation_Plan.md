@@ -319,14 +319,14 @@ Three micro-skill pairs risk measuring the same thing, which would make up to 15
 |---|---|---|
 | Framework | **React 18 + TypeScript (strict)** | Required by brief; strict mode is non-negotiable given branded money types |
 | Build | **Vite** | Fast, zero-config, static output deployable to `challenges.bowsportscapital.com` |
-| Routing | **React Router 6**, client-side only | Deep-linkable educator views; invalid routes → `/` with plain-language message |
+| Routing | **React Router 7**, client-side only, Declarative Mode | Deep-linkable educator views; invalid routes → `/` with plain-language message |
 | State | **One `useReducer` + pure domain modules.** No Redux/Zustand/Jotai | The domain is a deterministic state machine over an append-only log. A state library would add indirection without solving anything, and would make it harder for Codex to see that views contain no formulas |
 | Styling | **Plain CSS with custom-property tokens + CSS Modules** | The bar is "genuinely beautiful, not generic shadcn." A bespoke token layer in one file gives full control of the financial semantics, keeps world theming a pure token override, and keeps the design system inspectable. Codex may substitute a utility framework **only if** every semantic financial token stays centrally defined and world theming remains a token override |
 | Testing | **Vitest** (unit/integration), **React Testing Library** (components), **Playwright** (E2E), **axe-core** (a11y, wired into both RTL and Playwright) | Matches brief; axe in E2E catches composition-level violations RTL misses |
 | Persistence | **`localStorage`, namespaced + schema-versioned** | Meeting MVP. Swappable later behind one `io/persistence.ts` port |
 | Money | **Integer dollars only**, branded `Dollars` type, no floats, no division outside tests | Every amount in the product is a whole dollar; floats would introduce rounding artifacts into an assessment |
 | Charts/anim | **No chart library. No animation library.** CSS transitions + Web Animations API | The Money Rail is bespoke; a chart library would fight the design |
-| Deps | Target **zero runtime dependencies beyond React + React Router** | Smallest attack surface, fastest load on Chromebooks, nothing to audit for a district |
+| Deps | Target **zero runtime dependencies beyond React + React Router** | Smallest attack surface, fastest load on Chromebooks, nothing to audit for a district. React Router 7 carries `cookie` and `set-cookie-parser` in the dependency tree; both are for its server modes and neither reaches the browser bundle, measured. |
 
 **Explicitly not added:** backend, Supabase, auth, server APIs, database, AI, analytics vendor, CMS, i18n framework, form library, date library.
 
