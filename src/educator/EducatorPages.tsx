@@ -153,9 +153,42 @@ export function EducatorGuide() {
           <li><span>05</span>Revise after income or expenses change.</li>
           <li><span>06</span>Explain a trade-off with relevant numbers.</li>
         </ol>
-        <p className="companion-callout">
-          Schools may use their own instruction. <Link to="/educator/teaching-companion">A two-day sample mini-unit →</Link>
-        </p>
+        {/* The sample mini-unit, folded in from `/educator/teaching-companion`.
+
+            It was a route of its own, and it was the one thing in this product that is
+            instruction — a two-day sequence with named characters, activities and exit
+            prompts, on a surface whose whole positioning is "you teach the concept; the
+            challenge gives students a world in which they have to use it". A coherence
+            critic called it the more literal of the product's two drifts toward an LMS.
+
+            It is not an LMS, and the distinction is worth writing down because the other
+            drift was. An LMS is a system of record: the Objective Map's "MARKED TAUGHT"
+            flag was one, because BOW was keeping a record about instruction BOW did not
+            deliver. This stores nothing, tracks nothing and reports nothing. It is a
+            handout.
+
+            So the content stays and the route goes. The product cannot both require the
+            unit — §4.3 of the spec names seven prerequisite objectives and says in terms
+            that the challenge does not teach them from scratch — and refuse to say what
+            it is. What the fold buys is that the answer now sits directly under the
+            sentence that raises the question, instead of being the fourth educator
+            surface a teacher has to know exists. Every word below is the page's own. */}
+        <p className="companion-callout">Schools may use their own instruction.</p>
+        <details className="next-lesson__working">
+          <summary>A two-day sample mini-unit, if you want one</summary>
+          <p>
+            This sample sequence shows the prerequisite skills students should learn before {PLAN_UNDER_PRESSURE.title}.
+            It does not pre-teach Avery's answers.
+          </p>
+          <div className="mini-unit-grid">
+            <article><header><span>Day 01</span><h3>Build a plan from dependable money</h3><p>Example context: Jordan is saving for a robotics camp while earning money from neighborhood jobs.</p></header><ol><li><b>Dependable vs conditional income</b><p>Sort a guaranteed allowance from snow-shoveling money that depends on weather.</p></li><li><b>Recurring + one-time full cost</b><p>Calculate six weeks of bus fare plus a one-time registration fee.</p></li><li><b>A budget that works</b><p>Give every dollar one job across required costs, a goal, a reserve, and flexible cash.</p></li></ol><aside>Exit prompt: “Which dollars can Jordan count on before the weather is known?”</aside></article>
+            <article><header><span>Day 02</span><h3>Revise when conditions change</h3><p>Example context: Sam is preparing for a school music showcase with a short paid equipment-helper role.</p></header><ol><li><b>Committed vs adjustable money</b><p>Mark the registration and transit already committed; keep future savings adjustable.</p></li><li><b>Contingency thinking</b><p>Construct a lower-income version without telling students which priority to reduce.</p></li><li><b>Unexpected change</b><p>Add a required repair cost, revise the plan, and explain one trade-off with two numbers.</p></li></ol><aside>Debrief prompt: “How can two different revised plans both be financially coherent?”</aside></article>
+          </div>
+          <section className="teaching-boundary">
+            <h3>Keep the assessment clean</h3>
+            <p>Teach the {TERMS.skills} with different names, amounts, and situations. During the BOW challenge, allow calculators and access tools, but do not tell students which financial strategy to choose.</p>
+          </section>
+        </details>
       </section>
       <section className="dashboard-section launch-guide">
         <div className="section-head">
@@ -174,19 +207,6 @@ export function EducatorGuide() {
         </p>
       </section>
       <AlignmentBlock />
-    </EducatorShell>
-  );
-}
-
-export function TeachingCompanion() {
-  return (
-    <EducatorShell measure="bleed">
-      <header className="page-header"><p className="eyebrow">Optional educator resource</p><h1>A two-day mini-unit: budgeting under uncertainty</h1><p>Schools may use their own instruction. This sample sequence shows the prerequisite skills students should learn before Plan Under Pressure. It does not pre-teach Avery's answers.</p></header>
-      <div className="mini-unit-grid">
-        <article><header><span>Day 01</span><h2>Build a plan from dependable money</h2><p>Example context: Jordan is saving for a robotics camp while earning money from neighborhood jobs.</p></header><ol><li><b>Dependable vs conditional income</b><p>Sort a guaranteed allowance from snow-shoveling money that depends on weather.</p></li><li><b>Recurring + one-time full cost</b><p>Calculate six weeks of bus fare plus a one-time registration fee.</p></li><li><b>A budget that works</b><p>Give every dollar one job across required costs, a goal, a reserve, and flexible cash.</p></li></ol><aside>Exit prompt: “Which dollars can Jordan count on before the weather is known?”</aside></article>
-        <article><header><span>Day 02</span><h2>Revise when conditions change</h2><p>Example context: Sam is preparing for a school music showcase with a short paid equipment-helper role.</p></header><ol><li><b>Committed vs adjustable money</b><p>Mark the registration and transit already committed; keep future savings adjustable.</p></li><li><b>Contingency thinking</b><p>Construct a lower-income version without telling students which priority to reduce.</p></li><li><b>Unexpected change</b><p>Add a required repair cost, revise the plan, and explain one trade-off with two numbers.</p></li></ol><aside>Debrief prompt: “How can two different revised plans both be financially coherent?”</aside></article>
-      </div>
-      <section className="teaching-boundary"><h2>Keep the assessment clean</h2><p>Teach the {TERMS.skills} with different names, amounts, and situations. During the BOW challenge, allow calculators and access tools, but do not tell students which financial strategy to choose.</p><Link className="button button--primary" to="/educator/guide">Return to challenge brief</Link></section>
     </EducatorShell>
   );
 }

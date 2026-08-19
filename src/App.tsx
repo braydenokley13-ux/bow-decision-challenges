@@ -1,7 +1,7 @@
 import { Link, Navigate, Route, Routes, useParams } from "react-router-dom";
 import { AppMark } from "./components/primitives/AppMark";
 import { StudentChallenge } from "./stages/StudentChallenge";
-import { EducatorGuide, TeachingCompanion } from "./educator/EducatorPages";
+import { EducatorGuide } from "./educator/EducatorPages";
 import { SampleRun } from "./educator/SampleRun";
 import { MyClasses } from "./educator/MyClasses";
 import { TeacherSignIn } from "./educator/SignIn";
@@ -124,7 +124,10 @@ export function App() {
       {/* One path to assigning work, and it is the classes page. This is the URL the old
           second path shipped on. */}
       <Route path="/educator/assign" element={<AssignFlow />} />
-      <Route path="/educator/teaching-companion" element={<TeachingCompanion />} />
+      {/* The two-day sample mini-unit used to be a page. It is a disclosure inside the
+          guide's "Before students begin" now, directly under the six prerequisites it is a
+          worked answer to — so the bookmark lands on the content rather than on nothing. */}
+      <Route path="/educator/teaching-companion" element={<Navigate to="/educator/guide" replace />} />
       {/* A real class. Everything under here reads submitted evidence and nothing else. */}
       <Route path="/educator/class/:code" element={<RealClassOverview />} />
       <Route path="/educator/class/:code/students/:seatCode" element={<RealStudentEvidence />} />
