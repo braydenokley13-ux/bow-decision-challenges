@@ -1177,8 +1177,16 @@ studentTest("an educator reads one student's evidence and scores their writing",
   const lead = page.locator(".student-lead");
   await expect(lead).toBeVisible();
   await expect(lead).toContainText("What the evidence shows");
-  await expect(page.locator(".student-evidence-header")).not.toContainText("/100");
-  await expect(page.locator(".student-evidence-header")).not.toContainText("90");
+  // Asserted on the lead block the page actually renders. This named `.student-evidence-header`
+  // — a class that survives only in three CSS comments recording its removal, one of which
+  // reads "`.student-evidence-header` is gone too". A locator matching nothing contains
+  // nothing, so both lines were green against a page leading with any total it liked, which is
+  // the exact defect they were written to stop. `StudentLead`'s own docstring names it: the
+  // header "used to print `STRUCTURED 90/90 · REASONING 10/10 · TOGETHER 100/100` two hundred
+  // pixels above a red *Not demonstrated*". `.student-lead` is asserted visible two lines up,
+  // so these cannot go quiet again without that assertion failing first.
+  await expect(lead).not.toContainText("/100");
+  await expect(lead).not.toContainText("90");
   // Nobody has read the writing, so the evidence is not all in and the page says which piece.
   await expect(lead).toContainText("Not assessed yet");
   await expect(lead).toContainText("written explanation has not been read");
@@ -1216,7 +1224,9 @@ studentTest("an educator reads one student's evidence and scores their writing",
   // gradebook line at the bottom of the page that says what it counts.
   await expect(page.locator(".gradebook")).toContainText("of 100");
   await expect(page.locator(".gradebook")).toContainText("It is a mark for a gradebook.");
-  await expect(page.locator(".student-evidence-header")).not.toContainText("of 100");
+  // Same dead class, same rule, after a person has scored the writing: the together-figure
+  // exists now, and it belongs to the gradebook line asserted directly above, not to the lead.
+  await expect(page.locator(".student-lead")).not.toContainText("of 100");
   await noSeriousAxeViolations(page);
 });
 
