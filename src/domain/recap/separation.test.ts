@@ -1,3 +1,4 @@
+import { sourceWithoutComments, withoutComments } from "../../test/source";
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
@@ -48,8 +49,13 @@ const JUDGEMENT = [
 ];
 
 function importsIn(source: string): { module: string; typeOnly: boolean }[] {
-  const withoutComments = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
-  return [...withoutComments.matchAll(/import\s+(type\s+)?[^"';]*from\s+["']([^"']+)["']/g)]
+  // The shared rule, rather than the local variant this used to hold — which stripped only
+  // whole-line `//` comments and left a trailing one in place. On an import scan that is very
+  // nearly harmless and exactly the kind of nearly that stops being true: `import { judge }
+  // from "./x"; // not from ../scoring` would have been read as two imports, one of them
+  // imaginary, and the imaginary one is in the layer this test exists to keep out.
+  const stripped = withoutComments(source);
+  return [...stripped.matchAll(/import\s+(type\s+)?[^"';]*from\s+["']([^"']+)["']/g)]
     .map((match) => ({ module: match[2]!, typeOnly: Boolean(match[1]) }));
 }
 
@@ -68,9 +74,7 @@ describe("a recap can never become a judgement", () => {
 
   it("writes no rubric word anywhere in its own source", () => {
     for (const path of sourcesIn("src/domain/recap")) {
-      const source = readFileSync(path, "utf8")
-        .replace(/\/\*[\s\S]*?\*\//g, "")
-        .replace(/^\s*\/\/.*$/gm, "");
+      const source = sourceWithoutComments(path);
       // The vocabulary of the assessment side, absent by construction from the student side.
       expect(source).not.toMatch(/RubricLevel|MasteryStatus|EvidenceRequirement|CompetencyResult|observeCompetencies|structuredPoints/);
     }

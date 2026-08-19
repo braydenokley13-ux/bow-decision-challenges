@@ -1,3 +1,4 @@
+import { withoutComments } from "../test/source";
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
@@ -26,9 +27,6 @@ function teacherSources(): string[] {
 }
 
 /** Comments are not read by anybody in a classroom. The `[^:]` guard protects `https://`. */
-function withoutComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-}
 
 /** An instruction that names a seat number as something a person is given or types. */
 const SEAT_INSTRUCTION = /\bseat (?:number|code)s?\b|\bpicks? a seat\b/gi;

@@ -1,3 +1,4 @@
+import { withoutComments } from "../test/source";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { REASONING_CRITERIA, type ReasoningScores } from "../domain/blueprint/reasoning";
@@ -108,7 +109,7 @@ describe("the points model stays out of the lead", () => {
     // that let students choose put a number beside half the room and an explanation beside
     // the other half. A single figure over that sum cannot be traced to either half of it.
     // Code, not prose: a comment may still explain what was removed and why.
-    const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    const code = withoutComments(source);
     expect(code).not.toMatch(/finalPoints|structuredPoints|structuredMaximum/);
     expect(code).not.toContain("of 100");
     expect(code).not.toContain("of 90");

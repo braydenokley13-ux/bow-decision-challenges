@@ -1,3 +1,4 @@
+import { sourceWithoutComments } from "../../test/source";
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { dollars } from "../core/money";
@@ -136,11 +137,6 @@ function competencySources(): string[] {
 }
 
 /** Comments are stripped: a comment explaining the boundary is not a violation of it. */
-function withoutComments(path: string): string {
-  return readFileSync(path, "utf8")
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-}
 
 const ENGINE_SOURCES = competencySources().filter((path) => !path.endsWith("availability.ts") && !path.endsWith("index.ts"));
 
@@ -154,7 +150,7 @@ describe("the shared engine cannot tell which world it is scoring", () => {
     // `availability.ts` is the one file in the layer that names worlds at all — §4.5 makes
     // a competency's availability depend on whether some world can produce its evidence —
     // and it is excluded above. It answers "does a world exist for this"; it never scores.
-    expect(withoutComments(path), path).not.toMatch(/world/i);
+    expect(sourceWithoutComments(path), path).not.toMatch(/world/i);
   });
 
   it("gives the same result to the same evidence however it was labelled", () => {

@@ -1,3 +1,4 @@
+import { withoutComments } from "../test/source";
 // @vitest-environment jsdom
 import { readdirSync, readFileSync } from "node:fs";
 import { cleanup, render } from "@testing-library/react";
@@ -59,9 +60,6 @@ function teacherSources(): string[] {
 }
 
 /** Comments are not read by anybody in a classroom. The `[^:]` guard protects `https://`. */
-function withoutComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-}
 
 /**
  * Ways of promising a teacher there is nothing to hear.

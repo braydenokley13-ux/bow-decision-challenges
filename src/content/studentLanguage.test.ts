@@ -1,3 +1,4 @@
+import { withoutComments } from "../test/source";
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { popUpStudentCopy } from "../domain/scenario/worlds/food-truck";
@@ -31,9 +32,6 @@ function studentSources(): string[] {
 }
 
 /** Comments are stripped: a comment explaining a rule is not a violation of it. */
-function withoutComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-}
 
 /**
  * Only the quoted strings, because only quoted strings reach a screen.

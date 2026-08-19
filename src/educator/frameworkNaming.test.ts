@@ -1,3 +1,4 @@
+import { sourceWithoutComments } from "../test/source";
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { FRAMEWORKS } from "../domain/standards";
@@ -26,11 +27,6 @@ function surfaceSources(): string[] {
 }
 
 /** Comments are stripped: a comment explaining the rule is not a violation of it. */
-function withoutComments(path: string): string {
-  return readFileSync(path, "utf8")
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-}
 
 /**
  * The files this rule does not reach, and why the one that is on the list is on it.
@@ -68,7 +64,7 @@ describe("no teacher-facing string hardcodes a framework", () => {
   });
 
   it.each(surfaceSources().filter((path) => !EXEMPT.includes(path)))("does not name a framework in %s", (path) => {
-    const source = withoutComments(path);
+    const source = sourceWithoutComments(path);
     for (const name of FRAMEWORK_NAMES) {
       // The framework *id* is data — a key into `FRAMEWORKS`, not a word anybody reads —
       // so it is allowed. What is not allowed is the acronym or the published name.

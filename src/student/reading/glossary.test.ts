@@ -1,3 +1,4 @@
+import { withoutComments } from "../../test/source";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { CHOICE_LABELS } from "../../components/financial/choices";
@@ -72,9 +73,6 @@ const RUN_COPY = [
 ];
 
 /** A comment explaining why a word was chosen is not a word on a screen. */
-function withoutComments(source: string): string {
-  return source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-}
 
 /**
  * Whether a run of text is prose a student reads rather than machinery.

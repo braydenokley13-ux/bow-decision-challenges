@@ -1,3 +1,4 @@
+import { withoutComments } from "../../test/source";
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { gradeBandLabel } from "./index";
@@ -32,12 +33,6 @@ const CANONICAL = gradeBandLabel("nysed-pf-2026");
 const BAND_PATTERN = /\bgrades?\s+(\d{1,2})\s*[–—-]\s*(\d{1,2})\b/gi;
 
 /** Comments are not user-visible. The `[^:]` guard keeps `https://` out of the line-comment rule. */
-function withoutComments(source: string): string {
-  return source
-    .replace(/<!--[\s\S]*?-->/g, " ")
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-}
 
 /** Every file that can put words on a screen: the app's own source, and the page that hosts it. */
 function readableSources(): string[] {
@@ -48,7 +43,9 @@ function readableSources(): string[] {
 }
 
 function bandsIn(path: string): { text: string; line: number }[] {
-  const source = withoutComments(readFileSync(path, "utf8"));
+  // `html: true` because the file list starts with `index.html`. An HTML comment naming the
+  // old grade band would otherwise read as a live claim about who this product is for.
+  const source = withoutComments(readFileSync(path, "utf8"), { html: true });
   return [...source.matchAll(BAND_PATTERN)].map((match) => ({
     text: match[0],
     line: source.slice(0, match.index).split("\n").length,

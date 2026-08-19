@@ -1,3 +1,4 @@
+import { withoutComments } from "../../test/source";
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
@@ -64,7 +65,7 @@ describe("nothing about who used this goes anywhere", () => {
     const leaks: string[] = [];
     for (const { path, text } of sources()) {
       // Comments are where the rule is explained, so they are allowed to name the thing.
-      const code = text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+      const code = withoutComments(text);
       for (const pattern of [/\bdispatch\b/, /\bevidence\b/i, /\bsubmission\b/i, /\bcheckpoint\b/i, /\bsupportLevel\b/, /\bobserve\b/]) {
         if (pattern.test(code)) leaks.push(`${path} → ${pattern.source}`);
       }
