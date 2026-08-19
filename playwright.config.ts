@@ -1,5 +1,27 @@
 import { defineConfig, devices } from "@playwright/test";
 
+/**
+ * The two ports, so a run can stand up its own pair instead of inheriting somebody else's.
+ *
+ * The defaults are the ports this suite has always used, so a run with nothing set in the
+ * environment behaves exactly as it did before. They are overridable because
+ * `reuseExistingServer` below reuses whatever happens to be listening, and what is listening
+ * is not necessarily built from the commit under test: `npm run api` compiles `server/` into
+ * `dist-server/` and then runs the compile, so a class service started an hour ago is still
+ * serving an hour-old `server/` no matter how many times it has been rewritten since. A suite
+ * pointed at that is measuring the past, and it fails precisely in the places the last hour of
+ * work changed — which is the one thing a browser suite is for. On a machine where somebody
+ * else holds 4180 and cannot be asked to let go, that is not a hypothetical.
+ *
+ * `BOW_E2E_APP_PORT` and `BOW_API_PORT` together give a run a private pair. The app port goes
+ * to Vite on the command line, and the API port goes into Vite's environment as well as the
+ * class service's, because `vite.config.ts` reads `BOW_API_PORT` to aim its `/api` proxy: a
+ * dev server started without it proxies to 4180 whichever class service this run meant to use,
+ * which is the same stale-server problem wearing a second hat.
+ */
+const APP_PORT = process.env.BOW_E2E_APP_PORT ?? "4173";
+const API_PORT = process.env.BOW_API_PORT ?? "4180";
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -21,7 +43,7 @@ export default defineConfig({
    */
   expect: { timeout: 20_000 },
   use: {
-    baseURL: "http://127.0.0.1:4173",
+    baseURL: `http://127.0.0.1:${APP_PORT}`,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     /**
@@ -106,15 +128,19 @@ export default defineConfig({
   // a run starts clean and leaves nothing behind.
   webServer: [
     {
+      // Most of this wait is `npm run api` compiling `server/`, not the service coming up.
       command: "npm run api",
-      url: "http://127.0.0.1:4180/api/health",
+      url: `http://127.0.0.1:${API_PORT}/api/health`,
       reuseExistingServer: true,
-      env: { BOW_CLASS_STORE: "memory", BOW_API_PORT: "4180" },
+      timeout: 180_000,
+      env: { BOW_CLASS_STORE: "memory", BOW_API_PORT: API_PORT },
     },
     {
-      command: "npm run dev",
-      url: "http://127.0.0.1:4173",
+      command: `npm run dev -- --port ${APP_PORT} --strictPort`,
+      url: `http://127.0.0.1:${APP_PORT}`,
       reuseExistingServer: true,
+      timeout: 120_000,
+      env: { BOW_API_PORT: API_PORT },
     },
   ],
 });
