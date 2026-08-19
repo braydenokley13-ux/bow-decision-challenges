@@ -36,7 +36,7 @@ import {
   API,
 } from "./flow";
 import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
-import { CLASS_STATE_LABELS, LEVEL_LABELS, skillStateInSentence } from "../src/educator/labels";
+import { CLASS_STATE_LABELS, LEVEL_LABELS, TERMS, skillStateInSentence } from "../src/educator/labels";
 import { PLAYABLE_WORLDS } from "../src/domain/scenario/registry";
 import { isAssessable, labelsFor, standardsIn, type FrameworkId } from "../src/domain/standards";
 import { DEMO_CLASS_LABEL } from "../src/fixtures/demoClass";
@@ -1936,8 +1936,16 @@ test("the objective screens name one set of skills and one grammatical sentence"
   // does not rest on, so the page named two at the top and different ones underneath; and
   // the coming page shipped "everything it ask for" above the fold.
   await page.goto("/educator/objectives/nysed-pf-2026/4.2");
-  await expect(page.getByText("everything it asks for", { exact: false })).toBeVisible();
-  await expect(page.getByText(/it ask for/)).toHaveCount(0);
+  // The sentence has been rewritten since it was pinned — it names the story rather than a
+  // world now — so this composes it from the same nouns the page composes it from instead of
+  // quoting the wording of the day. Quoting it is what let the old line sit here dead: the
+  // words moved, the assertion could only fail, and it took the rest of the file with it.
+  await expect(page.getByText(`this ${TERMS.skill}, and neither ${TERMS.story} asks a student for everything it needs`, { exact: false })).toBeVisible();
+  // The defect was number agreement — "everything it ask for" over a one-item list — and the
+  // rewrite kept the branch that produced it. 4.2 rests on one skill, so the plural branch's
+  // own words are the thing that must not be on this page.
+  await expect(page.getByText(`these ${TERMS.skills}`, { exact: false })).toHaveCount(0);
+  await expect(page.getByText("everything they need", { exact: false })).toHaveCount(0);
 
   await page.goto("/educator/objectives/nysed-pf-2026/1.3");
   const skills = page.locator(".micro-table tbody th code");
@@ -1955,7 +1963,10 @@ test("an objective with no world is a short honest page, not a dashboard of empt
   // out. Twenty-two of these exist; none of them is a results page with nothing in it.
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.locator(".objective-wording")).not.toBeEmpty();
-  await expect(page.getByText("BOW cannot assess this objective yet.", { exact: true })).toBeVisible();
+  // Composed from the framework's own noun, exactly as the page composes it. Spelling "objective"
+  // here is spelling New York's word for it on a page that reads a table, so a New Jersey
+  // deployment would fail this on a sentence that is correct for New Jersey.
+  await expect(page.getByText(`BOW cannot assess this ${labelsFor(FRAMEWORK_ID)?.unitNounShort.toLowerCase()} yet.`, { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Assign this" })).toHaveCount(0);
   await expect(page.getByText("%")).toHaveCount(0);
   await expect(page.getByText(/\.\s+—\s+and/)).toHaveCount(0);
@@ -1973,6 +1984,12 @@ test("an objective with no world is a short honest page, not a dashboard of empt
 
 test("a teacher assigns 1.3, three students submit, and the objective reports what they did", async ({ page, browser, request }) => {
   test.setTimeout(180_000);
+
+  // The three students, named once. Every count this test reads off a teacher's screen is the
+  // size of this list, so it is composed from it rather than typed as a 3 beside it — the
+  // habit of typing the number out is what left `"3 turned in · …"` here as a literal the
+  // product had long since started composing for itself.
+  const SEATS = ["7", "8", "9"];
 
   await page.goto("/educator/objectives/nysed-pf-2026/1.3");
   await page.getByRole("link", { name: "Assign this" }).click();
@@ -1999,7 +2016,7 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   // written: joining a class clears the browser's saved attempt, and the teacher's saved
   // classes live in the same storage.
   const plan: PlanContext = { setupId: "cousin-room" };
-  for (const seat of ["7", "8", "9"]) {
+  for (const seat of SEATS) {
     const context = await browser.newContext();
     const student = await context.newPage();
     try {
@@ -2028,7 +2045,7 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   // and that reads as an absence rather than as three failures.
   await page.goto(`/educator/objectives/nysed-pf-2026/1.3?t=${Date.now()}`);
   await expect(page.getByText("Period 3 · Grade 7")).toBeVisible();
-  await expect(page.getByText("3 turned in · 3 written explanations still to read.", { exact: false })).toBeVisible();
+  await expect(page.getByText(`${SEATS.length} turned in · ${SEATS.length} written explanations still to read.`, { exact: false })).toBeVisible();
   await expect(page.getByText(CLASS_STATE_LABELS["not-assessed"])).toBeVisible();
   // Nobody is assessed, so there is nothing to teach next and the block is absent rather
   // than present and empty.
@@ -2036,7 +2053,7 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
 
   // A person reads all three. Marks are recorded criterion by criterion, which is what lets
   // the explanation requirement stand on a judgement somebody actually made.
-  for (const seat of ["7", "8", "9"]) {
+  for (const seat of SEATS) {
     await page.goto(`/educator/class/${code}/students/${seat}?key=${teacherKey}`);
     // Reading the writing is one of the four things a teacher opens a student to do, and it
     // is on its own tab — the page opens on the evidence trail.
@@ -2059,7 +2076,7 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   // Now three students have a usable result — and three is still below the denominator a
   // class state needs, so BOW shows the count and refuses the state.
   await page.goto(`/educator/objectives/nysed-pf-2026/1.3?t=${Date.now()}`);
-  await expect(page.getByText("3 of 3 assessed")).toBeVisible();
+  await expect(page.getByText(`${SEATS.length} of ${SEATS.length} assessed`)).toBeVisible();
   await expect(page.getByText(/BOW shows the count and not a\s+class state/)).toBeVisible();
   // None of the three words BOW would use about a room appears anywhere on the page, because
   // the state was refused. The words are read from Ladder 4's own table: this listed "Strong",

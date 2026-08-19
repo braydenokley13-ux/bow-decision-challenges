@@ -67,21 +67,31 @@ describe("the browser suite asserts text the product still says", () => {
    * later assertion in the file with it.
    */
   /**
-   * Four assertions are already dead, and they are quarantined rather than deleted.
+   * The quarantine is empty, and what emptying it taught is worth more than the list was.
    *
-   * Each is text the product no longer contains, so each can only fail — and in Playwright a
-   * failing assertion takes every later assertion in the file with it. `"Not yet assessed"` was
-   * the first, 214 commits stale, and fixing it only moves the wall to the next one. They are
-   * listed here so this test can land and start guarding, and **an entry must be deleted when
-   * its assertion is fixed**: the list is compared by equality, so a repair that leaves its
-   * entry behind fails just as loudly as a new stale literal.
+   * Four entries went in. **One was dead and three were not**, and the difference is the limit
+   * of the rule above. `"everything it asks for"` was genuinely unreachable: the sentence had
+   * been rewritten to *"…asks a student for everything it needs"*, so the assertion could only
+   * fail, exactly like `"Not yet assessed"` before it. The other three —
+   * `"BOW cannot assess this objective yet."`, `"3 turned in · 3 written explanations still to
+   * read."` and `"3 of 3 assessed"` — were on screen the whole time. The product **composes**
+   * them (`BOW cannot assess this {unitNounShort.toLowerCase()} yet.`, `{submitted} turned in`,
+   * `{demonstrated} of {assessed} assessed`), so no file contains the finished string and a
+   * search of the source cannot find it.
+   *
+   * That is a false positive this check cannot avoid and should not try to: it reads source,
+   * and a composed sentence exists only at runtime. It is still the right check, because a spec
+   * that types out a string the product composes is one rename or one seat away from the bug
+   * that started this — the retyped `3` in `"3 of 3 assessed"` is the count of students the
+   * test itself enrolled, and the retyped `objective` is New York's word for a unit the page
+   * reads from a framework table. All four now compose what they assert from the same source
+   * the page does, which fixes the dead one and makes the other three unable to go the same way.
+   *
+   * So an entry belongs here only while a genuinely dead assertion is waiting to be repaired,
+   * and **must be deleted when its assertion is fixed**: the list is compared by equality, so a
+   * repair that leaves its entry behind fails just as loudly as a new stale literal.
    */
-  const QUARANTINED = [
-    'e2e/bow.spec.ts — "everything it asks for"',
-    'e2e/bow.spec.ts — "BOW cannot assess this objective yet."',
-    'e2e/bow.spec.ts — "3 turned in · 3 written explanations still to read."',
-    'e2e/bow.spec.ts — "3 of 3 assessed"',
-  ];
+  const QUARANTINED: string[] = [];
 
   it("has no spec asserting text that appears nowhere in the product", () => {
     const product = productText();
