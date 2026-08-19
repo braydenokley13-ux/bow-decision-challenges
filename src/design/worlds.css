@@ -144,7 +144,7 @@
 .worldpick__say { max-width: 46ch; margin-bottom: var(--s-7); }
 .worldpick__say h1 { margin: 0 0 var(--s-4); font: var(--t-display1); letter-spacing: var(--display-tracking); text-transform: uppercase; }
 .worldpick__say p { margin: 0; font: var(--t-body-lg); }
-.worldpick__cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--s-5); margin: 0; padding: 0; list-style: none; }
+.worldpick__cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: var(--s-5); margin: 0; padding: 0; list-style: none; }
 .worldpick__cards > li { display: grid; }
 
 .worldcard { display: flex; flex-direction: column; background: var(--surface-raised); border: 1px solid var(--border-default); box-shadow: var(--shadow-card); }
@@ -210,7 +210,7 @@
 /* ---------------------------------------------------------------------------
    Beat 1 — the pitch.
    --------------------------------------------------------------------------- */
-.pitch-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; margin: 0; padding: 1px; background: var(--world-panel-edge); }
+.pitch-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 1px; margin: 0; padding: 1px; background: var(--world-panel-edge); }
 .pitch-facts > div { padding: var(--s-4) clamp(16px, 3vw, 32px); background: var(--world-panel); }
 .pitch-facts dt { color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.12em; text-transform: uppercase; }
 .pitch-facts dd { margin: var(--s-2) 0 0; color: var(--world-hero-ink); font: var(--m-md); font-feature-settings: var(--num); }
@@ -245,7 +245,7 @@
 .permit-slip p { margin: 0; }
 .permit-slip p:last-child { color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
 .permit-slip .money { font: var(--m-md); font-feature-settings: var(--num); }
-.spot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
+.spot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
 .spot-grid > li { display: grid; }
 .spot-card { display: flex; flex-direction: column; gap: var(--s-3); padding-bottom: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); box-shadow: var(--shadow-card); }
 .spot-card[data-chosen="true"] { border-color: var(--world-accent); box-shadow: var(--shadow-lift); }
@@ -269,8 +269,8 @@
 .popup-settled { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); max-width: 640px; margin: 0; padding: var(--s-4) var(--s-5); background: var(--world-accent-soft); border-left: 4px solid var(--world-accent); }
 .popup-settled span { color: var(--world-accent-ink); font: var(--t-ui); }
 .popup-settled strong { font: var(--m-md); font-feature-settings: var(--num); }
-.popup-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s-3); }
-.maybe-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
+.popup-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: var(--s-3); }
+.maybe-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
 .maybe-card { display: flex; flex-direction: column; gap: var(--s-3); height: 100%; padding: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); border-top: 3px solid var(--fin-conditional); }
 .maybe-card[data-counted="true"] { border-top-color: var(--fin-adjustable); }
 .maybe-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
@@ -282,13 +282,13 @@
 .maybe-card__state { color: var(--ink-2); font: var(--t-sm); }
 
 /* What the plan is dividing, and what is still looking for a job. */
-.popup-read { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; padding: 1px; background: var(--border-default); }
+.popup-read { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: 1px; padding: 1px; background: var(--border-default); }
 .popup-read > div { display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-5); background: var(--surface-raised); }
 .popup-read span { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
 .popup-read strong { font: var(--m-lg); font-feature-settings: var(--num); }
 .popup-read > div[data-alert="true"] { background: var(--fin-conditional-soft); }
 .popup-read > div[data-alert="true"] strong { color: var(--fin-conditional-ink); }
-.line-jobs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
+.line-jobs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
 .line-jobs li { display: grid; gap: var(--s-2); padding: var(--s-4); background: var(--surface); border-top: 3px solid var(--border-strong); }
 .line-jobs li[data-line="stock"] { border-top-color: var(--choice-1); }
 .line-jobs li[data-line="cushion"] { border-top-color: var(--choice-2); }
@@ -338,7 +338,7 @@
 .popup-closer { display: grid; gap: var(--s-3); padding: var(--s-5); background: var(--surface-raised); border-left: 4px solid var(--world-accent); }
 .popup-closer h3 { margin: 0; font: var(--t-title2); }
 .popup-closer p { margin: 0; color: var(--ink-2); font: var(--t-sm); }
-.popup-closer__choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--s-3); }
+.popup-closer__choice { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: var(--s-3); }
 .popup-closer__choice button { display: grid; grid-template-columns: auto minmax(0, 1fr); align-content: start; gap: var(--s-2) var(--s-3); min-height: var(--tap); padding: var(--s-4) var(--s-5); text-align: left; color: var(--ink-1); background: var(--surface-raised); border: 1.5px solid var(--border-ink); border-left-width: 6px; box-shadow: var(--shadow-card); cursor: pointer; }
 .popup-closer__choice button[data-line="stock"] { border-left-color: var(--choice-1); }
 .popup-closer__choice button[data-line="cushion"] { border-left-color: var(--choice-2); }
@@ -376,7 +376,7 @@
    --------------------------------------------------------------------------- */
 .lines-held { display: grid; gap: var(--s-3); padding: var(--s-4) var(--s-5); background: var(--surface); border: 1px solid var(--border-default); }
 .lines-held .field-label { margin: 0; }
-.lines-held dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--s-4); margin: 0; }
+.lines-held dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr)); gap: var(--s-4); margin: 0; }
 .lines-held dl > div { display: grid; gap: 2px; padding-left: var(--s-3); border-left: 4px solid var(--border-strong); }
 .lines-held dl > div[data-line="stock"] { border-left-color: var(--choice-1); }
 .lines-held dl > div[data-line="cushion"] { border-left-color: var(--choice-2); }
@@ -395,7 +395,7 @@
 .tray-order__cost span { font: var(--m-md); font-feature-settings: var(--num); }
 .tray-order__cost small { color: var(--ink-3); font: var(--t-micro); }
 .tray-order__read { display: grid; align-content: start; gap: var(--s-3); }
-.tray-order__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--s-3); margin: 0; }
+.tray-order__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr)); gap: var(--s-3); margin: 0; }
 .tray-order__facts > div { display: grid; gap: 2px; padding: var(--s-3); background: var(--surface); }
 .tray-order__facts dt { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
 .tray-order__facts dd { margin: 0; font: var(--m-md); font-feature-settings: var(--num); }
@@ -443,7 +443,7 @@
 .standing-next > p { max-width: 62ch; margin: 0; font: var(--t-body); }
 
 /* The two nights one order has to answer to, said before the order is placed. */
-.standing-next__nights { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.standing-next__nights { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
 .standing-next__nights li { display: grid; gap: var(--s-2); padding: var(--s-4); background: var(--surface); border-left: 4px solid var(--world-accent-soft); }
 .standing-next__nights b { font: var(--t-title3); }
 .standing-next__nights span { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
@@ -469,7 +469,7 @@
 
 .recap { display: grid; gap: var(--s-4); }
 .recap h2 { margin: 0; font: var(--t-section); letter-spacing: var(--display-tracking); }
-.recap__nights { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s-4); }
+.recap__nights { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: var(--s-4); }
 .cover-read { max-width: 62ch; margin: 0; padding: var(--s-4) var(--s-5); background: var(--surface); border-left: 4px solid var(--fin-conditional); font: var(--t-body); }
 .cover-read .money { font-feature-settings: var(--num); }
 
@@ -483,7 +483,7 @@
 .season-table th:first-child, .season-table thead th:first-child { text-align: left; }
 .season-table tbody th { color: var(--ink-1); font: var(--m-sm); }
 .season-table td[data-alert="true"] { color: var(--fin-over-ink); background: var(--fin-over-soft); }
-.settle-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--s-2); margin: 0; }
+.settle-figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: var(--s-2); margin: 0; }
 
 /* Cells carry their own edge rather than the container painting one behind them: six figures
    in a four-column row leaves two empty slots, and a painted container turns those into two

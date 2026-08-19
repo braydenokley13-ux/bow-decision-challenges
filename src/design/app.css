@@ -405,7 +405,7 @@ p { color: var(--ink-2); }
 .brief-answers dd { margin: 0; color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
 .brief-answers__links { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); margin-top: var(--s-5); }
 .brief-answers__links a { color: var(--ink-1); font: var(--t-ui); }
-.prerequisite-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1px; margin: 0; padding: 1px; list-style: none; }
+.prerequisite-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 1px; margin: 0; padding: 1px; list-style: none; }
 .prerequisite-list li { display: grid; grid-template-columns: auto 1fr; gap: var(--s-4); align-content: start; padding: var(--s-5); background: var(--surface); box-shadow: 0 0 0 1px var(--border-subtle); font: var(--t-body); }
 .prerequisite-list span { color: var(--ink-3); font: var(--font-mono); }
 .companion-callout { margin-top: var(--s-5); }
@@ -464,7 +464,7 @@ p { color: var(--ink-2); }
 /* The sample mini-unit, which is two cards on the page spine now rather than a full-bleed
    band of its own. `padding: var(--s-7)` inset the cards 32px from the text introducing
    them; the block padding is what it was actually for. */
-.mini-unit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--s-5); padding-block: var(--s-7); }
+.mini-unit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: var(--s-5); padding-block: var(--s-7); }
 .mini-unit-grid > article { background: var(--surface); border: 1px solid var(--border-default); }
 
 /* Padded by content. `min-height: 240px` left 120px of empty navy under two lines of text —
@@ -567,7 +567,7 @@ p { color: var(--ink-2); }
  * `auto-fit` collapses a track with nothing in it, so the cards divide the row however many
  * there are, and the same rule handles the narrow width that used to need a media query.
  */
-.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--card-min, 260px), 1fr)); gap: 1px; padding: 1px; background: var(--border-default); }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--card-min, 260px), 100%), 1fr)); gap: 1px; padding: 1px; background: var(--border-default); }
 .card-grid > * { padding: var(--s-5); background: var(--surface); }
 
 /* `margin-block`: this sits on the page spine like every other block, and only its vertical
@@ -933,7 +933,7 @@ p { color: var(--ink-2); }
 .reading-queue h2:focus-visible { outline: 2px solid var(--focus-ring, var(--ink-1)); outline-offset: 4px; }
 
 /* Six BOW-internal levels, each saying what it means beside the control that records it. */
-.override-levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s-2); margin: var(--s-3) 0 0; padding: 0; list-style: none; }
+.override-levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: var(--s-2); margin: var(--s-3) 0 0; padding: 0; list-style: none; }
 .override-levels li { display: grid; gap: 2px; }
 .override-levels button { min-height: var(--tap); padding: 0 var(--s-4); color: var(--ink-1); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); cursor: pointer; font: var(--t-ui); }
 .override-levels button[aria-pressed="true"] { color: var(--ink-invert); background: var(--ink-1); border-color: var(--ink-1); }
@@ -1089,7 +1089,7 @@ p { color: var(--ink-2); }
 .empty-state dt { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
 .empty-state dd { margin: var(--s-1) 0 0; font: var(--m-md); font-feature-settings: var(--num); }
 
-.choice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--s-4); }
+.choice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: var(--s-4); }
 .choice-dist { display: grid; align-content: start; gap: var(--s-3); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); }
 .choice-dist h3 { margin: 0; font: var(--t-title3); }
 .choice-dist__bar { display: flex; height: 10px; overflow: hidden; background: var(--surface-inset); border-radius: var(--r-pill); }
@@ -1108,7 +1108,7 @@ p { color: var(--ink-2); }
 .cut-list b { font: var(--m-sm); font-feature-settings: var(--num); }
 .cut-list .choice-dist__seats { grid-column: 2; }
 
-.adaptation-lines { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s-4); margin: 0; }
+.adaptation-lines { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: var(--s-4); margin: 0; }
 .adaptation-lines > div { display: grid; gap: var(--s-1); padding: var(--s-4); background: var(--surface-sunken); }
 .adaptation-lines dt { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
 .adaptation-lines dd { margin: 0; font: var(--m-sm); font-feature-settings: var(--num); }
@@ -1137,7 +1137,7 @@ p { color: var(--ink-2); }
 .debrief__because { margin: var(--s-2) 0 0; color: var(--ink-3); font: var(--t-sm); font-weight: 400; }
 .debrief__list { display: grid; gap: var(--s-2); margin: var(--s-3) 0; padding-left: var(--s-6); }
 .debrief__list li { font: var(--t-body); }
-.debrief__contrast { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s-4); }
+.debrief__contrast { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: var(--s-4); }
 .debrief__plan { padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--fin-reliable); }
 .debrief__plan h3 { margin: var(--s-1) 0 var(--s-4); font: var(--t-title3); }
 .debrief__plan dl { display: grid; gap: var(--s-2); margin: 0; }
@@ -1279,7 +1279,7 @@ p { color: var(--ink-2); }
 
 /* The gap used to be a background showing through, which painted the unused cells at the
    end of a short topic as solid blocks of nothing. */
-.topic-band ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(238px, 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; }
+.topic-band ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(238px, 100%), 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; }
 .topic-band li { background: var(--surface); box-shadow: 0 0 0 1px var(--border-subtle); }
 .topic-band a { min-height: 92px; display: grid; grid-template-columns: auto 1fr; grid-template-areas: "code name" "state figure"; align-items: center; gap: var(--s-2) var(--s-4); padding: var(--s-4) var(--s-5); color: var(--ink-1); text-decoration: none; }
 .topic-band a:hover { background: var(--surface-raised); }
@@ -1398,7 +1398,7 @@ p { color: var(--ink-2); }
    quiet, because absence had been given twenty-two full table rows on the first screen a
    district ever saw. The hairline comes from the items rather than from a fill behind them,
    so a row that does not divide evenly leaves nothing painted where an item is not. */
-.coming-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; }
+.coming-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; }
 .coming-list li { background: var(--surface); box-shadow: 0 0 0 1px var(--border-subtle); }
 .coming-list a { display: block; padding: var(--s-4) var(--s-5); color: var(--ink-3); font: var(--t-ui); text-decoration: none; }
 .coming-list a:hover { color: var(--ink-1); background: var(--surface-raised); }
@@ -1450,7 +1450,7 @@ p { color: var(--ink-2); }
 .gradebook__counts div { display: grid; gap: 2px; }
 .gradebook__counts dt { color: var(--ink-3); font: var(--t-label); letter-spacing: var(--track-label); text-transform: uppercase; }
 .gradebook__counts dd { margin: 0; font: var(--m-md); font-feature-settings: var(--num); }
-.gradebook__criteria { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s-3); margin: var(--s-4) 0 0; }
+.gradebook__criteria { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: var(--s-3); margin: var(--s-4) 0 0; }
 .gradebook__criteria div { display: grid; gap: 2px; }
 .gradebook__criteria dt { color: var(--ink-2); font: var(--t-sm); }
 .gradebook__criteria dd { margin: 0; font-feature-settings: var(--num); font-weight: 600; }
@@ -1501,7 +1501,7 @@ p { color: var(--ink-2); }
 .join-code-input { width: 100%; padding: var(--s-4); font: var(--m-md); font-feature-settings: var(--num); letter-spacing: 0.18em; text-align: center; text-transform: uppercase; }
 
 /* Tap your own name. The list is the teacher's own, and a target big enough for a thumb. */
-.name-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: var(--s-3); width: 100%; margin: 0; padding: 0; list-style: none; }
+.name-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr)); gap: var(--s-3); width: 100%; margin: 0; padding: 0; list-style: none; }
 .name-grid__pick { width: 100%; min-height: 3.25rem; padding: var(--s-3) var(--s-4); background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--r-sm); color: var(--ink-1); font: var(--t-ui); text-align: left; cursor: pointer; }
 .name-grid__pick:hover { border-color: var(--bow-brand); }
 .name-grid__pick[aria-pressed="true"] { border-color: var(--bow-brand); box-shadow: inset 3px 0 0 var(--bow-brand); }
@@ -1627,7 +1627,7 @@ p { color: var(--ink-2); }
 .cards-sheet__head h2 { margin: var(--s-2) 0; color: var(--ink-1); font: var(--t-title2); }
 .cards-sheet__head p { max-width: 54ch; margin: 0; color: var(--ink-2); font: var(--t-ui); }
 .cards-sheet__acts { display: flex; flex-wrap: wrap; gap: var(--s-3); }
-.cards-sheet__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--s-4); margin: var(--s-5) 0 0; padding: 0; list-style: none; }
+.cards-sheet__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: var(--s-4); margin: var(--s-5) 0 0; padding: 0; list-style: none; }
 .join-card { padding: var(--s-4); background: var(--surface); border: 1.5px dashed var(--border-ink); }
 .join-card__name { margin: 0 0 var(--s-3); color: var(--ink-1); font: var(--t-title3); }
 .join-card dl { display: grid; gap: var(--s-2); margin: 0; }

@@ -474,7 +474,7 @@
 /* Four Saturdays, and they wrap rather than squeeze. Beside the money rail the column is
    narrower than it was, and `minmax(0, 1fr)` let each block shrink until its own date ran
    out of the side of it. */
-.saturdays { display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.saturdays { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(68px, 100%), 1fr)); gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
 .saturdays li { display: grid; gap: var(--s-2); padding: var(--s-3); text-align: center; background: var(--surface-raised); border: 1px solid var(--border-default); border-radius: var(--r-sm); transition: background var(--dur-state) var(--ease-standard), border-color var(--dur-state) var(--ease-standard); }
 .saturdays li span { color: var(--ink-3); font: var(--t-micro); overflow-wrap: anywhere; }
 .saturdays li b { font: var(--t-ui); overflow-wrap: anywhere; }
