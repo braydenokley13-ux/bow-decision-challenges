@@ -263,3 +263,97 @@ re-teaching on repair.
 **Reproduce.** Turn in five or more runs, mark none of them, open
 `/educator/class/<CODE>?key=<KEY>`, read the caption and the rows beneath it.
 
+---
+
+## F3 — [HIGH] The sign-in screen tells a teacher something about student data that is not true
+
+`01-signin.png` / `02-make-account.png`, `src/educator/SignIn.tsx:164-166`, printed at the
+exact moment a teacher decides whether to type an address:
+
+> BOW stores your email address and nothing else about you. **It never sees a student's email
+> address, name or birthday** — the names on your class list are yours, typed by you, and BOW
+> has no way to know whether any of them is real.
+
+BOW sees student names. It receives them, stores them, indexes them by seat and hands them
+back. From my own run:
+
+```
+$ curl -H "X-BOW-Teacher-Key: …" http://127.0.0.1:4931/api/classes/XEWFA/roster
+{"roster":[{"seatCode":"1","displayName":"Ana R.",…},{"seatCode":"2","displayName":"Devon P.",…}, …]}
+
+$ ls .../classes/XEWFA/roster/
+1.json 2.json 3.json … 14.json
+```
+
+They are encrypted at rest, which is good and which I praised above — but encryption under a
+key the service itself holds is *storage*, not *never seeing*.
+
+The same product contradicts the sentence two screens later. The class-created page
+(`05-class-created.png`) says:
+
+> No list to hand? Skip the cards: **students type the class code and their own first name**,
+> and BOW files their work under that.
+
+So in the product's own default no-roster path, a child types their own name into BOW.
+
+**Why this matters more than a wording nit.** In New York this is the sentence a district data
+protection officer reads. Education Law §2-d and Part 121 define student data as personally
+identifiable information from student records, and a first name plus initial attached to a
+class and a piece of assessed work is squarely inside it. A vendor whose sign-up screen says
+"it never sees a student's name" is a vendor whose §2-d Bill of Rights attachment will not
+survive review — and when it does not, the class comes down mid-term. The honest sentence is
+already available and is stronger: *"BOW stores the names you type for your own class list,
+encrypted, and deletes them with the class after 120 days. It never asks a student for an
+email address or a birthday."*
+
+**Reproduce.** Open `/educator/sign-in`, read the note under the button. Create a class, add a
+roster, then `GET /api/classes/<CODE>/roster` with the teacher key.
+
+---
+
+## F4 — [MEDIUM] Losing the printed cards costs 28 print jobs, one child at a time
+
+The batch of cards is shown once and says so plainly:
+
+> **Print these now. They are not shown again.** … If one goes missing you can print a
+> replacement from the list below — the lost one stops working when you do.
+
+That is honest and the recovery works. But the recovery is per row: each of the fourteen rows
+in "The list" has its own *Print a new card*, which opens a **single-card** print block
+(`10-reissue-single-card.png`). I lost my batch to a page navigation — which is the normal way
+to lose it, not an exotic one — and getting fourteen cards back was fourteen presses, fourteen
+print dialogs and fourteen sheets of paper with one card on each.
+
+Timed with the browser: 13.1 s of machine time for 14 reissues. With a real print dialog in the
+loop that is the whole of a free period for a class of 28, and it is clerical work a computer
+should do: there is no *Print new cards for everyone who has not signed in*, and no way to
+select rows.
+
+The screen also does not warn me before I navigate away from a block it has just told me will
+never be shown again.
+
+**Reproduce.** Add a roster, dismiss or navigate away from the cards block, then try to get all
+fourteen cards back from `/educator/class/<CODE>/roster?key=<KEY>`.
+
+---
+
+## F5 — [MEDIUM] A child can be turned in on one machine and left running on another, and neither screen says so
+
+Carlos ran on two devices, which is the ordinary case when a Chromebook dies mid-lesson.
+
+* Device A: signed in, built the opening plan, left sitting on the Week 3 screen.
+* Device B: same card, signed in, resumed correctly, played to the end and **turned in**.
+* Device A, reloaded twice — after B signed in, and again after B turned in — still shows the
+  live Week 3 screen with the claims cards and an active *Week 4 · the course office is
+  calling* button. `22-carlos-first-device-after.png`, `23-carlos-first-device-after-submit.png`.
+
+Nothing on device A says the work has already gone in. A child sitting at it carries on and
+turns in a second attempt, which is a second row in my class, a second entry in the counts, and
+a conversation I have to have.
+
+The product handles the *aftermath* well — a fresh sign-in on that machine says *"Turned in
+8/19/2026. Your teacher has it."* and *"a new run is turned in as well as it, not instead of
+it — your teacher sees both"* (`24-carlos-home-after-turnin.png`), and the class header counts
+students and attempts separately. What is missing is the one check that would stop it: the
+running tab is never told its own session was superseded.
+
