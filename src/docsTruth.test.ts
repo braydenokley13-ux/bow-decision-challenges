@@ -6,17 +6,18 @@ import { describe, expect, it } from "vitest";
  *
  * Comments in `src/` are maintained. They sit next to the thing they explain, so the edit
  * that makes one false is the edit a reviewer is already reading. `ARCHITECTURE.md` and
- * `README.md` have no such luck: nothing about renaming a function opens them, and a
- * fresh-context review found both of this file's first catches — a guard called
- * `isResultState` that had been deleted, described as "what any surface asks", and a count
- * of objective-map states that was nine when the union has five. A new engineer sent looking
- * for a function that does not exist loses an hour and some of their trust in the rest of
- * the document, which is the more expensive half.
+ * `README.md` have no such luck: nothing about renaming a function opens them. A
+ * fresh-context review found two things wrong in `ARCHITECTURE.md` — a guard called
+ * `isResultState` that had been deleted while the doc still called it "what any surface
+ * asks", and a count of objective-map states that said nine where the union has five. A new
+ * engineer sent looking for a function that does not exist loses an hour and some of their
+ * trust in the rest of the document, which is the more expensive half.
  *
  * So the check is narrow and mechanical: **every backticked thing in those two documents
  * that is shaped like a name has to exist somewhere in the repository.** It cannot tell
- * whether a sentence is true — nothing can — but a dead name is the form staleness usually
- * takes, because the prose around it stays plausible after the thing it names is gone.
+ * whether a sentence is true — the count of five is beyond it, and beyond anything short of
+ * a parser — but a dead name is the form staleness usually takes, because the prose around
+ * it stays plausible after the thing it names is gone.
  *
  * *Shaped like a name* is deliberately conservative, so that ordinary prose in backticks is
  * left alone: a path or a filename, an identifier with an internal capital or an
@@ -31,7 +32,7 @@ import { describe, expect, it } from "vitest";
 
 const DOCUMENTS = ["ARCHITECTURE.md", "README.md"];
 
-/** Everything a name could legitimately be found in. Build output and scratch are not code. */
+/** Build output, review notes and reports. A name found only in one of these is not in the code. */
 const SKIP_DIRECTORIES = new Set(["node_modules", "dist", "dist-server", "coverage", "gauntlet", "playwright-report", "test-results"]);
 const READABLE = /\.(?:ts|tsx|js|jsx|mjs|cjs|css|md|json|html|sh|ya?ml|txt)$/;
 

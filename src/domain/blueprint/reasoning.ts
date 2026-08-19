@@ -3,10 +3,11 @@ import type { ConceptDefinition, ReasoningCriterionId } from "./types";
 /**
  * The rubric a person uses to score what a student wrote.
  *
- * Four criteria, and what they add up to is worked out from them rather than written down
- * anywhere — see `reasoningMaximumOf`. It is the only part of this product a machine does
- * not touch: the writing is never sent to a model, the student is told a person will read
- * it, and the number on the other side of that reading is a person's.
+ * Four criteria. What they are out of is summed from them rather than written down beside
+ * them (`reasoningMaximumOf`), and `reasoningMaximumFrom` holds the blueprint's weight for
+ * this concept to that same sum. It is the only part of this product a machine does not
+ * touch: the writing is never sent to a model, the student is told a person will read it,
+ * and the number on the other side of that reading is a person's.
  *
  * It moved out of the review screen and into the blueprint because two things now read it —
  * the screen that renders it, and the world observer that restates the person's judgement as
@@ -88,7 +89,14 @@ export function reasoningCriterionById(id: ReasoningCriterionId): ReasoningCrite
   return REASONING_CRITERIA.find((criterion) => criterion.id === id);
 }
 
-/** Marks in, total out, each one held to its own maximum wherever it arrived from. */
+/**
+ * Marks in, total out, each one held to its own maximum wherever it arrived from.
+ *
+ * Because it clamps criterion by criterion over exactly the list `REASONING_MAXIMUM` is
+ * summed from, the total it returns is already inside that maximum for any marks at all.
+ * That is why the criteria path in `server/handler.ts` stores this straight, without the
+ * second clamp the typed-total path beside it needs.
+ */
 export function reasoningTotal(scores: ReasoningScores): number {
   return REASONING_CRITERIA.reduce((total, criterion) => total + clampCriterion(criterion.id, scores[criterion.id] ?? 0), 0);
 }
