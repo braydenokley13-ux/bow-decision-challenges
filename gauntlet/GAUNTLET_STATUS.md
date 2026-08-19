@@ -14,7 +14,71 @@
 | 1 — Research the external bar | **DONE** — 8 reports, `gauntlet/research/` |
 | 2 — Rank the gaps | **DONE** — `gauntlet/DEFECTS.md`, 60 reproduced defects |
 | 3 — Build / attack loops | **DONE** — three rounds, ten critics, 38 critique documents |
-| 4 — Six-verdict judges | **IN PROGRESS** — six launched against `760e49d` |
+| 4 — Six-verdict judges | **DONE** — six filed. **Six of six: `GO WITH CONDITIONS`.** |
+| 5 — Adversarial synthesis | **IN PROGRESS** — a seventh reader, told to disagree with all six |
+
+## The six verdicts
+
+Each judge got the goal, the bar and the running artifact — not this file, not `DEFECTS.md`,
+not the critiques, until after their verdict was written. Each pinned their own SHA. Each was
+told `NO-GO` was a real answer.
+
+| Judge | Verdict | The sentence that decided it |
+| --- | --- | --- |
+| 1 · Student | `GO WITH CONDITIONS` | *"I expected to fail this on a screen crediting a child with work the software did… It says "Here is the answer", not "You worked this out"."* |
+| 2 · Teacher | `GO WITH CONDITIONS` | *"Two of the teacher's screens are lying to her about children, and both are a day of work to close."* |
+| 3 · Assessment | `GO WITH CONDITIONS` | *"The individual instrument is the best I have seen in this category… The class layer sitting on top of it is not yet defensible."* |
+| 4 · District 26 | `GO WITH CONDITIONS` | *"What it does not survive is a vendor review, because there is no privacy notice, data inventory, subprocessor list or signable rider anywhere in it."* |
+| 5 · Engineering & security | `GO WITH CONDITIONS` | *"A store key mismatch is detected, reported, and then written into."* |
+| 6 · World-class product | `GO WITH CONDITIONS` | *"The parts somebody wrote are excellent, the parts somebody looked at are excellent, and the parts nobody looked at are where all the damage is."* |
+
+**Six identical verdicts is itself a thing to be suspicious of**, and the synthesiser is told
+so: between them the six filed roughly seventy falsifiable conditions, which is a lot of
+conditions to hang on the middle answer. Whether the panel flinched is the seventh reader's
+question, not mine.
+
+### What each of them went looking for and did not find
+
+This is the half a defect list cannot show, and all six were asked for it explicitly.
+
+- **No screen credits a child with work the software did.** Judge 1 pressed *Show the answer and
+  keep going* at every gate and then read back everything the product says about that run.
+- **No composite score exists anywhere** — not on a student surface, not on a teacher surface,
+  not in the export. Judge 3: finding one *"would be `NO-GO` and it would not be close."*
+- **No cross-tenant read.** Judge 5 attacked it eight ways: 403 every time. Nothing plaintext on
+  disk, nothing off-origin during a live run, no forgeable token.
+- **No compliance claim on any rendered screen.** Judge 4 scanned sixteen routes for FERPA,
+  COPPA, Education Law, §2-d, Part 121, NYCPS, WCAG, *compliant*, *certified*, *approved*,
+  *endorsed* — *"Every single hit was a disclaimer… I have never had a scan come back with
+  nothing but disclaimers."*
+- **No mark that moved when the teacher was not looking.** Judge 2 overruled a judgement and
+  chased it to four surfaces and the export, which counts overrules in a column of its own.
+
+## The finding of the night, and it is about this loop rather than the product
+
+A process audit (`gauntlet/UNROUTED.md`) read all 38 critique documents against this file:
+
+> **472 distinct defects named. 123 have a row here. Round 6 — nine documents, 139 findings,
+> three BLOCKERs and a CRITICAL — produced zero rows.**
+
+And the shape of the hole: **this register had no accessibility section**, so three
+accessibility critiques across three rounds produced 64 findings and nowhere to put them. Both
+of the two defects the world-class judge found by looking at the screen are accessibility
+findings that three earlier critics had already filed *with coordinates*.
+
+One row here was worse than missing. **N4** said *"The class code is on the page"*, marked
+*Closed, confirmed by someone who did not build it* — and that someone was the lead. It was
+verified on a class where nobody had turned in yet, which is the one state where the code still
+renders; from the first submission onward it is gone, for the rest of the lesson, while the room
+is still asking for it. The finding was `coherence.md` MAJOR-33, filed in Round 3, never routed,
+then hidden behind a receipt asserting the opposite. **A wrong closure is worse than an open
+row: it takes the finding off the board and puts a verification receipt where the defect was.**
+
+Section O now exists, N4 is split with its false half reopened, L7's overstated CSP claim is
+withdrawn, and G7's half-closure is recorded. The mechanism that would have caught all of it is
+in `UNROUTED.md` §5 and is the recommended next action: findings extracted from the critiques
+themselves into a ledger, gated in `verify-head.sh`, where **a row cannot say `closed` without
+naming a test that exists and runs.**
 
 ### The tree the judges were given
 
