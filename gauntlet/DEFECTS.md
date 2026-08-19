@@ -225,3 +225,22 @@ careful human read plus four rubric judgements is **45–75 seconds per student*
 class of twenty-eight is **21–35 minutes**. With the run itself at 22–28 minutes, this is a
 two-lesson resource. It is not a defect that it is; it is a defect if the product implies it
 is not.
+
+
+## N · What the lead found by using it, between rounds
+
+Not a critic's list. These are things I hit while verifying somebody else's claim in a real
+browser, on HEAD `8830342`, against the snapshot at `.scratch/lead/`. Receipts:
+`gauntlet/receipts/lead-teacher/`.
+
+| # | Sev | Defect | State |
+| --- | --- | --- | --- |
+| N1 | — | **M1 independently re-verified, and it holds.** I made an account, made a class on one browser context, then opened a second context that had never seen the product, signed in, and the class was on the page: *"Your class. On your account, so they are here on any computer you sign in on. GVVTA · created 8/19/2026."* Receipts `07-laptop-two-cold.png`, `08-laptop-two-signed-in.png`, `09-laptop-two-classes.png`. | **Closed, confirmed by someone who did not build it.** |
+| N2 | MAJOR | **A class cannot be renamed. Ever.** There is no rename control on any educator surface and no route that would accept one — the API has `POST /classes`, `DELETE`, and nothing between. A teacher who mistypes "Perido 6", or who presses *Create the class* before typing anything, is stuck with that name for the class's whole 120-day life: on the class list, on every printed card, on the debrief they read aloud, and in the exported gradebook. | Open. |
+| N3 | MINOR | **An empty class name is accepted and silently becomes "Untitled class"** — the default is written twice, once in `MyClasses.tsx:82` and once in `handler.ts:262`. I hit it by pressing *Create the class* with the field untouched, which is exactly what a teacher setting up between periods does. With N2 unfixed it is permanent, and a five-period teacher can end a day with three classes called *Untitled class*, told apart only by a five-letter code and a date. | Open. |
+
+**Why N2 is a MAJOR and not a nit.** The teacher critic measured class creation at 4.8 seconds
+and marking at 21–35 minutes per class. The product is deliberately built so setup is cheap and
+the expensive part is reading children's writing — which means setup is exactly where a teacher
+moves fast and gets it wrong, and the product's answer to a typo is currently *delete the class
+and lose everything in it*.

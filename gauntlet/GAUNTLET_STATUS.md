@@ -161,14 +161,24 @@ The six-verdict judges and the adversarial synthesis.
 
 ## Largest remaining gap
 
-**J1, and it is now measured rather than asserted.** A word instrument built for this run renders
-every screen of the critical path through the real components with state folded through the real
-reducers, and counts the DOM. Basketball declared 1,180 words and reads **2,714** — 2.4× under.
-At the product's own assumed 150 wpm that is 18.1 minutes of reading against an 18.6-minute
-budget: reading alone eats 97% of the run, leaving about thirty seconds for ten decisions. At a
-realistic 120 wpm it is 22.6 minutes, four minutes past the whole budget before a number is
-typed. Run the Pop-Up fits, with six minutes to spare at the optimistic rate and two at the
-realistic one.
+**No longer J1.** The reading load was the largest measured gap for two rounds and it is now
+inside its budget, on the instrument that found it rather than on an assurance. Running
+`src/stages/readingLoad.test.tsx` against HEAD:
 
-Cuts are landing. The declared duration moves if they are not enough — that is the honest
-outcome, and it is preferable to a number that only survives because the gate assumes it.
+| | measured words | at 150 wpm | at 120 wpm + declared interaction | declared |
+| --- | --- | --- | --- | --- |
+| Eight Weeks to the Showcase | 2,367 (was 2,714) | 15.8 min | **25.9 min** | 20–28 minutes |
+| Run the Pop-Up | 2,139 | 14.3 min | **22.6 min** | 20–28 minutes |
+
+Every stage in both worlds is now under its own budget, and the declared range covers the slow
+case rather than only the optimistic one. The duration moved as well as the prose — 20–25 became
+20–28 — because a number that survives only by assuming a fast reader is the same defect wearing
+a different hat.
+
+**The largest gap is now what Round 3 named: the product says things about children that are not
+true.** Four of them, in the student red team's list, plus one in the other direction. Two are
+closed. The rest are routed, and none of them is closed until a critic who did not build the fix
+reproduces it. A run that can be finished in 71.6 seconds by pressing the biggest button on every
+screen, and is then reported to a teacher as a demonstrated competency, is the same defect at the
+assessment layer: the instrument cannot tell a decision from a click, so its report on a child is
+not evidence of anything.
