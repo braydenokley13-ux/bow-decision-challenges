@@ -486,12 +486,17 @@ export function resolveSeason(
    * priorities and 80.5% of the simplex. A challenge with an answer key is a worse defect than
    * an ending that under-reports, so the reconciliation was reverted rather than shipped.
    *
-   * What would actually fix it, and neither is a change to this line: **say what happened** on
-   * the Week 8 card — the screen already holds both figures and prints them inches apart, and
-   * a sentence naming the money in hand beside the shortfall would make the ending true
-   * without moving a dollar — or **re-price the deposit** so that reserving early still costs
-   * something once money is fungible, which is a re-tune of the economy and needs its own
-   * sweep. `gauntlet/critiques/econ-2.md` F6 is the finding.
+   * **What was done instead, and it is not a change to this line.** The Week 8 card now says
+   * what happened: it names the money in hand beside the shortfall, says where it would have
+   * covered the gap that it would have, and states the rule the ending actually runs on —
+   * *a goal is reached by the money a plan puts toward it*. Nothing moves; the screen stops
+   * being silent about two figures it prints inches apart. `stages/week8Truth.test.tsx` pins
+   * it and re-measures the family rather than quoting the number above.
+   *
+   * The other real fix, still open and much larger, is to **re-price the deposit** so that
+   * reserving early still costs something once money is fungible — then the reconciliation
+   * can ship. That is a re-tune of the economy and needs its own sweep.
+   * `gauntlet/critiques/econ-2.md` F6 is the finding.
    */
   const coursePrice = courseCostFor(final, n);
   const courseSaved = final.depositTaken ? n.course.depositPrice : final.amounts.goal;

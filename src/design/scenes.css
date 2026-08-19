@@ -869,6 +869,10 @@
 .resolve-weeks__list span { color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: 0.08em; text-transform: uppercase; }
 .resolve-weeks__list b { color: var(--world-hero-ink); font: var(--t-ui); }
 
+/* Under the week strip, and quieter than it: the strip is the fact and this is the reading of
+   it, so it must not compete with the weeks for the first look. */
+.resolve-weeks__cause { max-width: 62ch; margin: var(--s-3) 0 0; color: var(--world-hero-body); font: var(--t-sm); font-weight: 400; }
+
 .resolve-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4); margin-top: var(--s-5); }
 .resolve-card { display: grid; align-content: start; gap: var(--s-2); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--border-strong); }
 .resolve-card[data-tone="balanced"] { border-top-color: var(--fin-balanced); }
@@ -882,6 +886,10 @@
 .resolve-card__lines dt { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
 .resolve-card__lines dd { margin: 0; font: var(--m-xs); font-feature-settings: var(--num); }
 .resolve-card__lines > div[data-alert="true"] dd { color: var(--fin-over-ink); }
+
+/* The sentence that makes the course card and the cash card add up. Ruled off from the verdict
+   above it because it is about the card standing next to this one, not about this one. */
+.resolve-card__reconcile { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--border-subtle); }
 
 .resolve-risks { margin-top: var(--s-7); }
 .resolve-risks .section-heading { margin-bottom: var(--s-5); }
