@@ -5,7 +5,7 @@ import { DEFAULT_WORLD_ID } from "../../domain/scenario/registry";
 import { completionRuleFor, FRAMEWORKS, mappingsForStandard, standardByRef } from "../../domain/standards";
 import type { FrameworkId, StandardRef } from "../../domain/standards/types";
 import { CODE_ALPHABET } from "./codes";
-import type { Assignment, AssignmentFormat, ClassRecord } from "./types";
+import type { Assignment, AssignmentFormat, ClassRecord, ClosingQuestion } from "./types";
 
 /**
  * Assignments, and what to do about every class that was created before there were any.
@@ -153,8 +153,19 @@ export interface AssignmentRequest {
   studentChoosesWorld: boolean;
   format: AssignmentFormat;
   assignedStudentIds: readonly string[] | null;
+  closingQuestion?: ClosingQuestion;
   attemptOf?: string;
 }
+
+/**
+ * The longest closing question this service will store, in characters.
+ *
+ * §37 says *keep it light*. A cap is not squeamishness about teachers: it is the difference
+ * between one question at the end and a second worksheet pasted into a text box, and the
+ * student reading it is eleven. Long enough for the examples the definition gives — *"Which
+ * decision would you change if you played again?"* — with room to spare.
+ */
+export const CLOSING_QUESTION_MAX = 300;
 
 const FORMATS: readonly AssignmentFormat[] = ["quick-check", "decision-challenge"];
 
@@ -202,6 +213,9 @@ export function readAssignmentRequest(body: unknown, existing: readonly Assignme
     return null;
   }
 
+  const closingQuestion = readClosingQuestion(candidate.closingQuestion);
+  if (closingQuestion === undefined) return null;
+
   return {
     objectiveRef,
     competencyIds: objectiveRef ? competenciesAssessedBy(objectiveRef) : competenciesMeasuredBy(DEFAULT_WORLD_ID),
@@ -211,8 +225,32 @@ export function readAssignmentRequest(body: unknown, existing: readonly Assignme
     studentChoosesWorld: chooses === true && allowedWorldIds.length > 1,
     format: format as AssignmentFormat,
     assignedStudentIds,
+    ...(closingQuestion ? { closingQuestion } : {}),
     ...(typeof attemptOf === "string" ? { attemptOf } : {}),
   };
+}
+
+/**
+ * The teacher's own closing question, or `null` for "they did not set one".
+ *
+ * `undefined` is the malformed answer, matching `readStandardRef` above — the two states a
+ * parser has to keep apart are *the teacher deliberately sent nothing* and *the client sent
+ * something wrong*, and collapsing them turns a bug into a silently empty field.
+ *
+ * Whitespace-only text is not a question. It is trimmed and then treated as absent, because a
+ * teacher who tabbed through the box has not written one and a student should not be shown a
+ * blank prompt with a text area under it.
+ */
+function readClosingQuestion(value: unknown): ClosingQuestion | null | undefined {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "object") return undefined;
+  const { text, required } = value as { text?: unknown; required?: unknown };
+  if (typeof text !== "string") return undefined;
+  if (required !== undefined && typeof required !== "boolean") return undefined;
+  const trimmed = text.trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed.length > CLOSING_QUESTION_MAX) return undefined;
+  return { text: trimmed, required: required === true };
 }
 
 /** A framework this deployment actually carries, rather than a string that looks like one. */

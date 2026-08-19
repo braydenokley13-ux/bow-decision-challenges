@@ -68,6 +68,47 @@ export type AssignmentFormat = "quick-check" | "decision-challenge";
  * moment it was set. A state that revises its framework next year rewrites the first and
  * cannot touch the second, which is what keeps an old result readable.
  */
+/**
+ * A question a teacher writes themselves, asked once, after the challenge is over.
+ *
+ * §37. It belongs to the **assignment** and never to the challenge version, and that is the
+ * whole design rather than a filing decision: a challenge version is what makes an attempt
+ * readable in three years, and a teacher typing a question on a Tuesday may not change what a
+ * run recorded in September means. Two teachers may set the same challenge with different
+ * closing questions and both attempts stay comparable, because nothing BOW measures depends on
+ * this text.
+ *
+ * It is deliberately small. §37 says *keep it light* — one question, at the end, optional to
+ * answer unless the teacher says otherwise. It is not a second rubric, it carries no
+ * competency, and no evidence requirement can ever route through it.
+ */
+export interface ClosingQuestion {
+  /** The teacher's own words. Never generated, never edited by BOW. */
+  text: string;
+  /** Whether a student must answer before the run is finished. */
+  required: boolean;
+}
+
+/**
+ * What a student wrote in answer to it.
+ *
+ * **`questionText` is copied onto the answer rather than looked up through the assignment**,
+ * and that is the load-bearing part. A teacher who edits the question next term would
+ * otherwise silently re-label every answer already given to the old one — a child's words
+ * filed under a question they were never asked. The copy is what makes the pair readable
+ * later, and it is the same reason a challenge version is stamped on an attempt.
+ *
+ * It is stored beside the evidence log and never inside it. Nothing in `observe.ts` reads it,
+ * no competency result moves because of it, and `closingAnswerIsNotEvidence.test.ts` is what
+ * holds that to being true rather than intended.
+ */
+export interface ClosingAnswer {
+  /** The question as it was asked, at the moment it was asked. */
+  questionText: string;
+  answer: string;
+  at: number;
+}
+
 export interface Assignment {
   id: string;
   /** The class it belongs to. A class is its code in V1; it has no other identity. */
@@ -95,6 +136,11 @@ export interface Assignment {
    */
   assignedStudentIds: readonly string[] | null;
   createdAt: number;
+  /**
+   * The teacher's own closing question, if they wrote one. Absent on every assignment made
+   * before this existed, and on every assignment whose teacher did not want one.
+   */
+  closingQuestion?: ClosingQuestion;
   /** The assignment this one is a reassessment of. Absent unless it is one. */
   attemptOf?: string;
 }
@@ -153,6 +199,15 @@ export interface SubmissionRecord {
    * provenance has been overwritten.
    */
   overrides?: readonly TeacherOverride[];
+  /**
+   * The answer to the teacher's own closing question, kept apart from everything BOW measures.
+   *
+   * Not in `log`, so no observer can see it. Not in `reasoningPoints` or `reasoningCriteria`,
+   * which are the canonical reasoning a rubric scores — a teacher reading this is reading
+   * their own question's answer, and whatever they think of it may not move a competency.
+   * §37: *do not let arbitrary custom prompts silently alter canonical BOW evidence.*
+   */
+  closingAnswer?: ClosingAnswer;
   log: EvidenceEvent[];
 }
 
@@ -167,6 +222,8 @@ export interface EvidenceSubmission {
   challengeId: string;
   challengeVersion: string;
   assignmentId?: string;
+  /** Present only when the assignment carried a closing question and the student answered it. */
+  closingAnswer?: ClosingAnswer;
   log: EvidenceEvent[];
 }
 

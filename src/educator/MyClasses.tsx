@@ -6,6 +6,7 @@ import { CLASS_API_BASE } from "../platform/evidence/transports";
 import { CLASS_RETENTION_DAYS, educatorClassError, isClassError, type ClassCreation } from "../platform/classes/types";
 import { durationLabel, PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
 import { PLAYABLE_WORLDS } from "../domain/scenario/registry";
+import { CLOSING_QUESTION_MAX } from "../platform/classes/assignments";
 import type { WorldId } from "../domain/core/ids";
 import { assessableStandards, FRAMEWORKS, labelsFor, standardByRef } from "../domain/standards";
 import type { FrameworkId } from "../domain/standards";
@@ -43,6 +44,22 @@ const FRAMEWORK_ID: FrameworkId = "nysed-pf-2026";
 const NO_OBJECTIVE = "";
 
 /** The value the story picker uses for "the students choose", which is not a story. */
+/**
+ * The closing questions BOW offers, which are §37's own examples and not a rubric.
+ *
+ * They exist because a blank box at the end of a setup flow is a question most teachers will
+ * skip on a Tuesday, and the ones worth asking have a shape: they point at a decision the
+ * student actually made rather than at the topic. A teacher can take one, edit it, or ignore
+ * the list entirely — none of them is BOW's question once it is sent, and the text stored on
+ * the assignment is whatever is in the box.
+ */
+const SUGGESTED_CLOSING: readonly string[] = [
+  "Which decision would you change if you played again?",
+  "Which piece of information changed your decision most?",
+  "Where did your plan become vulnerable?",
+  "Connect one decision to today's lesson.",
+];
+
 const STUDENTS_PICK = "students-pick";
 
 export function MyClasses() {
@@ -75,6 +92,8 @@ export function MyClasses() {
   // results pool. A teacher who wanted the whole room on the market — which is the setting
   // that makes a debrief compare like with like — had no control for it at all.
   const [story, setStory] = useState<WorldId | typeof STUDENTS_PICK>(STUDENTS_PICK);
+  const [closing, setClosing] = useState("");
+  const [closingRequired, setClosingRequired] = useState(false);
   const studentPicks = story === STUDENTS_PICK;
   const [assigning, setAssigning] = useState<string | null>(null);
   const [assigned, setAssigned] = useState<string | null>(null);
@@ -105,6 +124,18 @@ export function MyClasses() {
     allowedWorldIds: story === STUDENTS_PICK ? PLAYABLE_WORLDS.map((world) => world.id) : [story],
     studentChoosesWorld: story === STUDENTS_PICK,
   });
+
+  /**
+   * The teacher's own closing question, built once for the same reason `storySetting` is: two
+   * call sites send an assignment and one of them being given a field the other was not is how
+   * a class ends up set differently from the one beside it.
+   *
+   * An untouched box sends nothing at all rather than an empty string — the service reads a
+   * blank as "no question", and sending one would be asking it to make that call twice.
+   */
+  const closingSetting = () => (closing.trim().length === 0
+    ? {}
+    : { closingQuestion: { text: closing.trim(), required: closingRequired } });
 
   const create = async () => {
     if (working) return;
@@ -152,6 +183,7 @@ export function MyClasses() {
         body: JSON.stringify({
           objectiveRef: objectiveCode === NO_OBJECTIVE ? null : { frameworkId: FRAMEWORK_ID, code: objectiveCode },
           ...storySetting(),
+          ...closingSetting(),
         }),
       });
       rememberClass(record);
@@ -174,7 +206,7 @@ export function MyClasses() {
       const response = await fetch(`${CLASS_API_BASE}/classes/${record.code}/assignments`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": record.teacherKey },
-        body: JSON.stringify({ objectiveRef: { frameworkId: FRAMEWORK_ID, code: objectiveCode }, ...storySetting() }),
+        body: JSON.stringify({ objectiveRef: { frameworkId: FRAMEWORK_ID, code: objectiveCode }, ...storySetting(), ...closingSetting() }),
       });
       if (!response.ok) {
         const body: unknown = await response.json();
@@ -295,6 +327,57 @@ export function MyClasses() {
           </label>
         ))}
       </fieldset>
+
+      {/* §37. One question of the teacher's own, at the end, and deliberately nothing more.
+          It belongs to the assignment and never to the challenge version — two teachers may
+          set the same story with different questions and both classes stay comparable,
+          because nothing BOW measures can reach this text.
+
+          The suggestions are here because a blank box at the end of a setup flow is a field
+          most teachers skip between periods, and the questions worth asking have a shape:
+          they point at a decision the student made rather than at the topic. Pressing one
+          fills the box and the box is what gets sent, so an edited suggestion is the
+          teacher's question and BOW has no claim on it. */}
+      <fieldset className="class-form__closing">
+        <legend>Ask them one more thing (optional)</legend>
+        <p className="class-form__closing-note">
+          Asked once, after the {TERMS.story} is finished. It is your question — BOW stores the answer
+          beside their work and never marks it, and it changes nothing about the skills reported.
+        </p>
+        <label htmlFor="closing-question">Your question</label>
+        <textarea
+          id="closing-question"
+          value={closing}
+          maxLength={CLOSING_QUESTION_MAX}
+          rows={2}
+          placeholder="Leave this empty to ask nothing."
+          onChange={(event) => setClosing(event.target.value)}
+        />
+        <p className="class-form__closing-suggest">
+          <span id="closing-suggestions">Or take one of these and change it:</span>
+          {SUGGESTED_CLOSING.map((suggestion) => (
+            <Button
+              key={suggestion}
+              type="button"
+              variant="quiet"
+              aria-describedby="closing-suggestions"
+              onClick={() => setClosing(suggestion)}
+            >
+              {suggestion}
+            </Button>
+          ))}
+        </p>
+        <label className="class-form__closing-required">
+          <input
+            type="checkbox"
+            checked={closingRequired}
+            disabled={closing.trim().length === 0}
+            onChange={(event) => setClosingRequired(event.target.checked)}
+          />
+          <span>They have to answer it before they can turn in</span>
+        </label>
+      </fieldset>
+
       <Button type="button" aria-disabled={working || label.trim().length === 0} onClick={() => void create()}>
         {working ? "Creating…" : "Create the class"}
       </Button>

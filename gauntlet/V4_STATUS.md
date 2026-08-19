@@ -377,10 +377,10 @@ tripwire).
 
 **What one world is worth, stated plainly so it is not oversold:** Saving alone takes the
 product from **1 of 23 objectives to 5**, and from **1 of 5 topics to 2**. It does not reach
-the October floor, which asks for real assessed coverage in every module. All four do —
-roughly **12 of 23 objectives and 5 of 5 topics** — and that is the size of the remaining
-build, at somewhere near ten thousand lines a world once the twenty-one integration points
-outside a world's own directory are counted.
+the October floor, which asks for real assessed coverage in every module.
+
+All four reach **10 of 23 and 5 of 5 topics** — and this section said twelve until the
+portfolio court checked the arithmetic against the code. See §10.
 
 
 ---
@@ -427,3 +427,48 @@ Worth stating because it cuts both ways: a screenshot is evidence of what a scre
 and is not evidence of what a student can reach. The 400% zoom failures earlier in this run
 were found by a browser trying to click a control and failing, which is a different instrument
 answering a different question, and the one that found the real defects.
+
+
+---
+
+## 10. The portfolio court, and the number this file had wrong
+
+All sixteen designs were judged: four module courts, one winner each, every verdict
+`BUILD WITH CHANGES`. A fifth court then read all four verdicts **and checked them against the
+code rather than against the briefs**. `PORTFOLIO_COURT.md` is its memo, kept verbatim.
+
+Its first finding is the one that matters, and it is about the courts rather than the designs:
+
+> **the four courts did not apply the same test.** Module 2's court scored its winner against
+> the rows in `competencies.ts`; Modules 3 and 5 match the code row-for-row; **Module 4's court
+> scored Six Kits against the designer's own rubric.**
+
+Four of Six Kits' twelve rows belong to `plan-for-the-unexpected`, whose requirements array in
+shipped code is empty — deliberately, and this run left it that way on purpose — so 4.1's
+completion rule can never pass. And it is one required row short on `is-the-add-on-worth-it`,
+which carries five: **the fifth is the explanation row this run added an hour earlier**, so the
+design was written against a four-row competency that had become a five-row one. Scored against
+the spine, Module 4 lights **4.2 only**.
+
+**The portfolio is 10 of 23, not 12.** Every topic still gets a live objective. This file and
+`D26_COMMITMENTS.md` both said twelve and both are corrected.
+
+### The other four findings, in the order they cost something
+
+1. **Six worlds are three mechanical families.** Workbench and scenario-rebalancer collapse
+   into one — Basketball, the market, Six Kits and Kiln's first act all open by distributing a
+   fixed pot into containers, and `PopUpBoard.tsx` literally imports Basketball's
+   `AllocationControl`. Timeline is one. Inspection desk is one, and it exists in a single act
+   of a single world. `read-and-judge` gets **zero** worlds. Part of that is my brief's fault
+   and the memo says so: designers were anchored on three families, so a three-of-seven outcome
+   was decided before anyone designed anything.
+2. **The cheapest two objectives on the board are a written row.** 2.3 and 2.4 are capped
+   `partial` because their verbs are *explain* and *describe* and `keep-credit-costs-down`
+   carries `explanationRequired: false`. Add an explanation row, flip the flag, promote two
+   mapping rows: **+2 objectives for one row**, Module 2 to 4 of 4, portfolio to 14. It has to
+   be decided *before* that world's observer is written, because raising the required set
+   raises the availability bar on a competency that is all-or-nothing.
+3. **Topic 1 stays at 1 of 6.** Both flagship worlds live there and neither adds an objective.
+4. **Build order: Every Other Friday, then Kiln, then Ferro's** — and a capacity note this file
+   will not soften either: *"Three production Worlds by October is not a plan I would sign."*
+   Module 4 publishes **0 of 4**, which is already generated, tested, and true.

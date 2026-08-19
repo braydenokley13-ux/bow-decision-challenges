@@ -69,15 +69,26 @@ Four worlds, one per uncovered topic, each already specified and judged in this 
 
 | World | Objectives it lights | Status |
 | --- | --- | --- |
-| Saving | 5.1, 5.2, 5.3, 5.5 | designed, judged pending |
+| Saving · *The Kiln Fund* | 5.1, 5.2, 5.3, 5.5 | **BUILD WITH CHANGES** |
 | Paycheck · *Every Other Friday* | 3.2, 3.3 | **BUILD WITH CHANGES** |
 | Credit · *The Tab at Ferro's* | 2.1, 2.2 | **BUILD WITH CHANGES** |
-| Risk | 4.1, 4.2, 4.3 | designed, judged pending |
+| Risk · *Six Kits, One Fund* | **4.2 only** | **BUILD WITH CHANGES**, and see below |
 
-All four take the product to roughly **12 of 23 objectives and 5 of 5 topics**. Every rubric
-those worlds need is written and in the code. What remains is the worlds themselves, at roughly
-ten thousand lines each once the twenty-one integration points outside a world's own directory
-are counted.
+**All four take the product to 10 of 23 objectives, not 12**, and this file said twelve until
+the portfolio court checked it. `PORTFOLIO_COURT.md` found that the four module courts did not
+apply the same test: three scored their winners against the rows in `competencies.ts`, and
+**Module 4's court scored Six Kits against the rubric its own designer had written.** Four of
+Six Kits' twelve rows belong to `plan-for-the-unexpected`, whose requirements array in shipped
+code is empty — so 4.1's completion rule can never pass — and it is one required row short on
+`is-the-add-on-worth-it`, which carries five. Scored against the spine, Module 4 lights 4.2 and
+nothing else.
+
+Every topic still gets a live objective. The count is ten.
+
+What remains is the worlds themselves, at roughly ten thousand lines each once the twenty-one
+integration points outside a world's own directory are counted — and the portfolio court's
+capacity note, which is not softened here: *"Three production Worlds by October is not a plan I
+would sign."*
 
 **One world is not the floor and should not be described as one.** Saving alone reaches 5 of 23
 and 2 of 5 topics — a real improvement and not the sentence in the letter.
