@@ -101,6 +101,34 @@ export function spendRate(key: string, windowMs: number, now: number): void {
   found.count += 1;
 }
 
+/**
+ * The ceiling on wrong class codes from one caller — and it has to be *one* ceiling.
+ *
+ * A class code is five characters from a confusable-free alphabet, which is short enough to
+ * guess at and is deliberately so: it is read aloud to a room and typed by eleven-year-olds.
+ * What stops guessing being worth doing is that a wrong guess costs something. `liveClass` in
+ * `handler.ts` charged for one, and the routes under `/classes/:code` in this file charged for
+ * nothing at all — so an enumerator asked the *other* door the same question and got unlimited
+ * answers. A security reviewer measured it: 250 misses on `GET /classes/:code/roster`, all 404,
+ * none charged, and with the front-door bucket already full the roster door went on answering.
+ *
+ * A hit is never charged, and that is not an oversight — thirty students arriving at once are
+ * thirty correct codes, and a rule that counted them would throttle a room for turning up. Only
+ * a guess that was wrong costs anything.
+ *
+ * Both doors call this rather than each holding their own copy of the numbers, because two
+ * copies of a security ceiling is how this one came to have a hole in it.
+ */
+export const CODE_MISS_LIMIT = 200;
+export const CODE_MISS_WINDOW_MS = 15 * 60 * 1000;
+
+/** True if this caller may be told "no class with that code" again; false once they have spent the ceiling. */
+export function chargeCodeMiss(clientId: string, now: number): boolean {
+  if (!underRate(`lookup:${clientId}`, CODE_MISS_LIMIT, CODE_MISS_WINDOW_MS, now)) return false;
+  spendRate(`lookup:${clientId}`, CODE_MISS_WINDOW_MS, now);
+  return true;
+}
+
 /** Ten minutes, named because the message a locked-out student reads has to say the same thing. */
 export const JOIN_WINDOW_MS = 10 * 60 * 1000;
 
@@ -587,6 +615,10 @@ export async function handleIdentityRequest(
   }
 
   if (head !== "classes" || !second) return null;
+  // Every "no class with that code" answer this file gives, charged once and shaped once.
+  const classMiss = (): ApiResponse => (chargeCodeMiss(clientId, now)
+    ? { status: 404, body: { error: "class_not_found", message: "No class with that code." } }
+    : { status: 429, body: { error: "unavailable", message: "Too many class codes tried from here just now. Wait a minute and try again." } });
   // The same check the class service makes at its own door, with the same answer.
   //
   // This was `second.toUpperCase()` and nothing else, and relied on the store's `segment()`
@@ -600,7 +632,7 @@ export async function handleIdentityRequest(
   // event to the person who typed it, and telling an enumerator that their guess was the
   // wrong *shape* is a hint the class service already declines to give.
   if (!isWellFormedClassCode(second)) {
-    return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
+    return classMiss();
   }
   // Normalised, not upper-cased, so this file looks up the string the class service would have
   // looked up: a code read off a whiteboard as `0` for `Q` reaches the same class from both.
@@ -609,7 +641,7 @@ export async function handleIdentityRequest(
   // -- GET /classes/:code/roster — the list a student picks their own name off. --
   if (request.method === "GET" && third === "roster" && !fourth) {
     const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
+    if (!record || record.expiresAt <= now) return classMiss();
     const caller = await callerOf(request.headers, context);
     const roster = await store.listRoster(code);
     // A teacher sees the whole row, including who has signed in and who has not. Everybody
@@ -642,7 +674,7 @@ export async function handleIdentityRequest(
   // -- POST /classes/:code/roster — a teacher pastes their class list and gets cards back. --
   if (request.method === "POST" && third === "roster" && !fourth) {
     const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
+    if (!record || record.expiresAt <= now) return classMiss();
     const caller = await callerOf(request.headers, context);
     if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
       return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
@@ -684,7 +716,7 @@ export async function handleIdentityRequest(
   // -- POST /classes/:code/roster/:seat/code — reissuing a card a student has lost. --
   if (request.method === "POST" && third === "roster" && fourth && request.segments[4] === "code") {
     const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
+    if (!record || record.expiresAt <= now) return classMiss();
     const caller = await callerOf(request.headers, context);
     if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
       return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
@@ -723,7 +755,7 @@ export async function handleIdentityRequest(
   // any share-out. The account behind the seat goes too when it holds no other seat.
   if (request.method === "DELETE" && third === "roster" && fourth && request.query.get("erase") === "1") {
     const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
+    if (!record || record.expiresAt <= now) return classMiss();
     const caller = await callerOf(request.headers, context);
     if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
       return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
@@ -738,7 +770,7 @@ export async function handleIdentityRequest(
   // -- DELETE /classes/:code/roster/:seat — off the list, without deleting what they did. --
   if (request.method === "DELETE" && third === "roster" && fourth) {
     const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
+    if (!record || record.expiresAt <= now) return classMiss();
     const caller = await callerOf(request.headers, context);
     if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
       return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
@@ -764,7 +796,7 @@ export async function handleIdentityRequest(
     const attempts = `join:${clientId}:${code}`;
     if (!underRate(attempts, 120, JOIN_WINDOW_MS, now)) return identityFail(429, "too_many_attempts");
     const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
+    if (!record || record.expiresAt <= now) return classMiss();
     const roster = await store.listRoster(code);
     const live = roster.filter((entry) => !entry.removedAt);
     // Asked once, in one plain question, and answered "shared" when nobody says otherwise.
@@ -846,7 +878,7 @@ export async function handleIdentityRequest(
   // -- POST /classes/:code/signout — the trolley control. --
   if (request.method === "POST" && third === "signout") {
     const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
+    if (!record || record.expiresAt <= now) return classMiss();
     const caller = await callerOf(request.headers, context);
     if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
       return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
@@ -873,7 +905,7 @@ export async function handleIdentityRequest(
   // read by anybody and did not exist anywhere afterwards.
   if (request.method === "POST" && third === "feedback" && !fourth) {
     const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
+    if (!record || record.expiresAt <= now) return classMiss();
     const caller = await callerOf(request.headers, context);
     if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
       return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
@@ -917,7 +949,7 @@ export async function handleIdentityRequest(
   // teacher who takes back the wrong sentence has to be able to see what they took back.
   if ((request.method === "PATCH" || request.method === "DELETE") && third === "feedback" && fourth) {
     const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
+    if (!record || record.expiresAt <= now) return classMiss();
     const caller = await callerOf(request.headers, context);
     if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
       return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
@@ -942,7 +974,7 @@ export async function handleIdentityRequest(
   // -- GET/PUT /classes/:code/shareout — what a teacher chose to put in front of the room. --
   if (third === "shareout" && (request.method === "GET" || request.method === "PUT")) {
     const record = await store.getClass(code);
-    if (!record || record.expiresAt <= now) return { status: 404, body: { error: "class_not_found", message: "No class with that code." } };
+    if (!record || record.expiresAt <= now) return classMiss();
     const caller = await callerOf(request.headers, context);
     if (!opensClass(record, request.headers["x-bow-teacher-key"], caller)) {
       return { status: 403, body: { error: "not_authorised", message: "This link does not open that class." } };
