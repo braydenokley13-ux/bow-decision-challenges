@@ -93,13 +93,32 @@ describe("a shared machine belongs to whoever is signed in now", () => {
     expect(whatIsLeft(), "a student's own work was cleared by their own sign-in").toContain("my-own-run");
   });
 
-  it("takes the session with the work when a student hands the machine over", async () => {
+  it("ends the session on hand-over and still remembers whose work is here", async () => {
     vi.stubGlobal("fetch", door("s_first"));
     await signIn("AAAAA");
+    leaveARunBehind("the-first-student-run");
     const { forgetStudent } = await import("./session");
     forgetStudent();
-    // Clearing one and keeping the other is the shared-cart failure with an extra step.
+
     expect(studentToken()).toBeNull();
-    expect(studentIdHeld()).toBeNull();
+    // This line used to assert the opposite, on the reasoning that clearing one and keeping
+    // the other was the shared-cart failure with an extra step. It is not, and a verifier
+    // proved it on a child's own laptop: the teacher's **Sign everybody out** — offered under
+    // the sentence "Nothing they did is lost" — removed the marker as well as the session, so
+    // the next morning the same child with the same card was indistinguishable from a stranger
+    // and twenty minutes of their run was wiped before they reached it.
+    //
+    // Ending a session says "this session is over". It does not say "somebody else is about to
+    // sit down", and only the second is a reason to throw work away. The marker is what lets
+    // the next sign-in tell those apart, so it outlives the session on purpose.
+    expect(studentIdHeld()).toBe("s_first");
+    expect(whatIsLeft()).toContain("the-first-student-run");
+
+    // And the protection it exists for is unchanged: the next student is a different student,
+    // so the work goes when they arrive rather than when the last one left.
+    vi.stubGlobal("fetch", door("s_second"));
+    await signIn("BBBBB");
+    expect(whatIsLeft()).not.toContain("the-first-student-run");
+    expect(studentIdHeld()).toBe("s_second");
   });
 });

@@ -18,13 +18,25 @@
 
 const TOKEN_KEY = "bow.student.v1.token";
 /**
- * Whose session this is, kept beside the token.
+ * Whose work is on this device — **not** whose session is open.
  *
- * Not for display — a student's name comes from their teacher's class list and is read back
+ * Not for display: a student's name comes from their teacher's class list and is read back
  * from the service. This is here so the browser can answer one question: *is the person
- * signing in now the same person who was signing in last time*. Everything about clearing a
- * shared machine turns on that answer, and the token itself cannot give it, because a token is
- * opaque and a new one is issued on every sign-in.
+ * signing in now the same person whose unfinished run is sitting on this machine*. Everything
+ * about clearing a shared machine turns on that answer, and the token cannot give it, because
+ * a token is opaque and a new one is issued on every sign-in.
+ *
+ * It therefore outlives the session, and that is the whole point. It used to be removed with
+ * the token, which made the two questions one — so the ordinary end-of-day path destroyed a
+ * child's work. A teacher presses **Sign everybody out** under a sentence reading "Nothing they
+ * did is lost", the next morning the same child signs in with the same card on the same laptop,
+ * the browser cannot tell them apart from a stranger, and twenty minutes of their run is wiped
+ * before they reach it. A verifier reproduced exactly that, on a child's own device, on the path
+ * the product tells a school to use.
+ *
+ * Leaving it behind is not a new exposure. The unfinished run it refers to is already on this
+ * disk in full; this is one opaque server id whose only use is to protect that run from the
+ * next person, and the moment a different student signs in, both go.
  */
 const WHO_KEY = "bow.student.v1.id";
 
@@ -66,10 +78,18 @@ export function rememberStudentId(id: string, store: Pick<Storage, "setItem"> | 
   } catch { /* see above */ }
 }
 
+/**
+ * Ends the session. Does **not** forget whose work is on this device.
+ *
+ * Those are two different things and treating them as one is what let an end-of-day sign-out
+ * destroy a child's unfinished run. Signing out says "this session is over"; it does not say
+ * "somebody else is about to sit down", and only the second is a reason to throw work away.
+ * The answer to the second question arrives at the next sign-in, when the browser can compare
+ * who is arriving with who was here — which is exactly what `WHO_KEY` is for.
+ */
 export function forgetStudent(store: Pick<Storage, "removeItem"> | null = storage()): void {
   try {
     store?.removeItem(TOKEN_KEY);
-    store?.removeItem(WHO_KEY);
   } catch { /* nothing to forget if there is nowhere to forget it from */ }
 }
 
