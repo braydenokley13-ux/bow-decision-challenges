@@ -738,9 +738,20 @@ export function RealClassOverview() {
                   <h2>Where the class is on each skill</h2>
                 </div>
                 <table className="micro-table">
+                  {/* Two sentences because there are two numbers and only one of them is
+                      this table's denominator. It read "Counts across the {assessed} of
+                      {total} with a usable result", which claims the rows below are counted
+                      over the assessed students — and they are not: `classResultFor` puts
+                      every student who turned in into exactly one state per skill, naming the
+                      unassessed ones as an absence rather than dropping them. Before a
+                      teacher has marked anything that caption said "across the 0 of 10"
+                      directly above rows totalling ten, one of which read "10 showed it".
+                      The rows were right and the caption was the false one, so the caption
+                      now says what it is counting and states the assessed figure as the
+                      separate fact it is. */}
                   <caption>
-                    Counts across the {spine.assessed} of {total} with a usable result — one whose written
-                    explanation somebody has read.
+                    Counts across all {total} who turned in. {spine.assessed} of them have a usable
+                    result — one whose written explanation somebody has read.
                   </caption>
                   <thead><tr><th scope="col">Skill</th><th scope="col">Where the class is</th></tr></thead>
                   <tbody>

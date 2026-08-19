@@ -185,13 +185,23 @@ function countsOnScreen(container: HTMLElement) {
     startedQuiet: tile("Started, not turned in")?.count ?? 0,
     notStarted: tile("Not started")?.count ?? NaN,
     /**
-     * "Counts across the 5 of 6 with a usable result — one whose written explanation
-     * somebody has read." The trailing clause is new: "usable result" was precise,
-     * load-bearing and defined two sections further up the page, which is the wrong place
-     * for the definition of the denominator every number under it is divided by.
+     * "Counts across all 6 who turned in. 5 of them have a usable result — one whose written
+     * explanation somebody has read."
+     *
+     * Two sentences and two numbers, because only the first of them is this table's
+     * denominator. The caption used to be one sentence claiming the counts were taken across
+     * the assessed students — "Counts across the 5 of 6 with a usable result" — and they are
+     * not: every student who turned in lands in exactly one state per skill, with the
+     * unassessed named as an absence rather than dropped. A teacher who had marked nothing
+     * read "across the 0 of 10" directly above rows totalling ten. The claims below are
+     * unchanged; what they are read out of is a caption that is true.
+     *
+     * The trailing clause stays where it is: "usable result" is precise, load-bearing and
+     * was otherwise defined two sections further up the page, which is the wrong place for
+     * the definition of a number a teacher is reading here.
      */
-    captionOf: count(caption, /of (\d+) with a usable result/, "a denominator in the skill table's caption"),
-    captionAssessed: count(caption, /across the (\d+) of/, "an assessed count in the skill table's caption"),
+    captionOf: count(caption, /across all (\d+) who turned in/, "a denominator in the skill table's caption"),
+    captionAssessed: count(caption, /(\d+) of them have a usable result/, "an assessed count in the skill table's caption"),
     students: container.querySelectorAll(".row-list > a").length,
   };
 }
