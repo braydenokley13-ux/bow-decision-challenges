@@ -109,7 +109,13 @@ function BriefAnswers() {
             numbers of whichever world was built first, or the half of the room that took the
             market is being described by a sentence about a season they never played. */}
         <div><dt>What does it assess?</dt><dd>Whether students can <b>apply</b> budgeting under uncertainty — build a workable plan, keep it working when income and costs change, and justify it.</dd></div>
-        {/* "It is an application task, not a lesson." came out of this row and is not lost:
+        {/* "or everyone gets the season", not "or you set one", because the season is the only
+            thing a teacher can set. The class-creation form's second option renders
+            `WORLD_REGISTRY[DEFAULT_WORLD_ID]` and `DEFAULT_WORLD_ID` is `"basketball"`, so a
+            teacher who wants the whole room on the market cannot have it. Saying "yours to
+            set" would raise an expectation the form does not meet, one click later.
+
+            "It is an application task, not a lesson." came out of this row and is not lost:
             it is the standing line under "Before students begin", two screens down, word
             for word. What it bought is the clause in "What do students do?" that says who
             chooses the story — a teacher can set one for the room, and a row that said
@@ -152,7 +158,7 @@ function BriefAnswers() {
             old sentence and is asked "so is the last night a guess?" has been given the wrong
             answer to a fairness question about their own assessment. `marketDemand.test.ts`
             holds the count of stated nights against the numbers themselves. */}
-        <div><dt>What do students do?</dt><dd>They handle the money in one of two {TERMS.stories} — theirs to pick, or yours to set. <b>Eight Weeks to the Showcase</b>: a player’s season. They choose housing, build a plan, absorb a Week 5 loss and a new required cost, and repair it. <b>Run the Pop-Up</b>: four Saturdays at a night market. They take a booth, decide how much food to cook against the crowd it draws, and cover a generator that dies with the biggest night still ahead. Three crowds are printed before they order; the last is a range.</dd></div>
+        <div><dt>What do students do?</dt><dd>They handle the money in one of two {TERMS.stories}. Students pick, or everyone gets the season. <b>Eight Weeks to the Showcase</b>: a player’s season. They choose housing, build a plan, absorb a Week 5 loss and a new required cost, and repair it. <b>Run the Pop-Up</b>: four Saturdays at a night market. They take a booth, decide how much food to cook against the crowd it draws, and cover a generator that dies with the biggest night still ahead. Three crowds are printed before they order; the last is a range.</dd></div>
         {/* This row used to end "so a class where students chose differently still produces
             one answer about the class", and half of that is what the product does. The
             rubric half is true and structural: both worlds declare the same evidence
