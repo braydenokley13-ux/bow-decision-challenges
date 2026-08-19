@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
-import { API, createClass, createClassKeyFor, gotoFreshChallenge, noHorizontalOverflow, noSeriousAxeViolations, seatOnRoster, signIn } from "./flow";
+import { API, createClass, startIfConfirmAsked, createClassKeyFor, gotoFreshChallenge, noHorizontalOverflow, noSeriousAxeViolations, seatOnRoster, signIn } from "./flow";
 import { PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 import { POP_UP_NUMBERS as N } from "../src/domain/scenario/worlds/food-truck/numbers";
 import { parseDollars } from "../src/domain/core/money";
@@ -57,7 +57,9 @@ async function join(page: Page, classCode: string, seatCode: string) {
   const card = await seatOnRoster(page, classCode, seatCode);
   await signIn(page, { ...card, classCode });
   await page.getByRole("link", { name: /^(Start|Carry on)$/ }).click();
-  await page.getByRole("button", { name: /Start the eight weeks|Go in/ }).click();
+  // The same confirm screen `flow.ts` presses through, and the same reason it may not be
+  // there: a signed-in student is started by an effect, so the run opens on the picker.
+  await startIfConfirmAsked(page);
 }
 
 async function pickPopUp(page: Page) {

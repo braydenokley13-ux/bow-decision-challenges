@@ -265,9 +265,38 @@ export async function enterChallenge(page: Page, options: { classCode: string; s
   const card = await seatOnRoster(page, options.classCode, options.seatCode ?? "7");
   await signIn(page, { ...card, classCode: options.classCode });
   await page.getByRole("link", { name: /^(Start|Carry on)$/ }).click();
-  await page.getByRole("button", { name: /Start the eight weeks|Go in/ }).click();
+  await startIfConfirmAsked(page);
   await chooseSeasonIfOffered(page);
   await stepPastTheDeal(page);
+}
+
+/**
+ * The confirm screen, on the builds that still draw one.
+ *
+ * A signed-in student does not meet this any more, and that is a decision rather than a
+ * regression: `StudentChallenge.tsx` starts the session in an effect the moment a seat
+ * resolves, because the student "came from their own home page, which shows their name,
+ * offers 'Not you?' and has a button reading *Start*" — two critics and a student red team
+ * counted four screens between the door and the game, two of which only confirmed what the
+ * student had just done. So the reducer leaves `entry` before anything is painted and the
+ * run opens on the picker.
+ *
+ * The button is still real and still has to work. A build with no class service resolves a
+ * seat during render and draws this screen for real, which is how the guide's "Try it as a
+ * student" lets a teacher play the run without a roster — so this presses it where it is
+ * offered rather than deleting the step.
+ *
+ * Waiting on whichever screen actually arrives, rather than on the button alone, is the same
+ * lesson `stepPastTheDeal` records: clicking a screen the product has stopped showing hangs
+ * every student journey in the suite on one line, for a reason none of them was checking.
+ */
+export async function startIfConfirmAsked(page: Page) {
+  const confirm = page.getByRole("button", { name: /^(Start the eight weeks|Go in)$/ });
+  const picker = page.getByRole("heading", { name: /Pick a world/i });
+  const contract = page.getByRole("button", { name: "Find Avery a place" });
+  const ranking = page.getByRole("heading", { name: /Which place costs the least/i });
+  await expect(confirm.or(picker).or(contract).or(ranking).first()).toBeVisible();
+  if (await confirm.count()) await confirm.click();
 }
 
 /**
