@@ -297,6 +297,33 @@ export interface SeasonOutcome {
  * in: stock is bought before it is sold, the organiser settles at the end of the run, and the
  * generator dies while there is still one Saturday to pay for. That last fact is the world —
  * takings that have not landed cannot pay a bill that has.
+ *
+ * **That rule was litigated and it is kept, which is the opposite of what happened to
+ * `foodLine` above.** An economics review found the two together and was right about both: a
+ * market that closes a truck on a rule it never stated is enforcing a model rather than
+ * delivering a consequence. Of 174,339 reachable end states, **726** end with the truck shut
+ * on the biggest Saturday and **519** of those belong to a student who had planned trays for
+ * it — and every one of the 726 had taken more at the window than the $270 bill, up to
+ * $1,500. The student had been shown those takings, night by night, in their own words.
+ *
+ * The food order was fixed by letting the money through, because nothing in the fiction ever
+ * said the cash in the box could not buy food. This one is fixed the other way, by saying the
+ * rule out loud before the plan is written — `screens.plan.lead` and `breakdown.locked` — and
+ * the reason is what letting it through would cost:
+ *
+ * - **The takings would cover the bill in 85.6% of all runs that sold anything** over the
+ *   first three Saturdays, and paying from the till rather than from a line is the same $270
+ *   out of the same season either way. So the repair board would stop being a decision: no
+ *   student would ever give up stock, cushion or their own cut for a bill the till can meet.
+ * - `adapt-a-plan.er3` is scored on what the repair freed against the most the movable lines
+ *   were holding. Every run would free nothing, and the world's only evidence about repairing
+ *   a plan under a changed cost would go with it. That is a worse defect than the one it fixes.
+ *
+ * What makes the rule fair rather than merely stated is that it is *plannable*: the cushion's
+ * own line on the plan board says what it is for, the bill is worked out on screen before the
+ * repair board opens, and the organiser's rebate — which does land in the box on the night —
+ * is a refund of booth money the student already paid, not a night's takings.
+ * `takings.test.ts` holds the copy and the arithmetic to each other.
  */
 export function resolveSeason(n: PopUpNumbers, choices: PopUpChoices): SeasonOutcome {
   let lines: PopUpPlan = { ...choices.plan };

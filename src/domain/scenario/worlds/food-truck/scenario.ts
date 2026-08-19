@@ -557,7 +557,11 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       { marker: "Saturday 4", tag: "Fireworks", text: "No generator means no cooking, and no cooking means no last Saturday. The last Saturday is the one everybody comes to." },
     ],
     movable: "Stock money you have not spent yet, the cushion, and your own cut can all still be moved around.",
-    locked: "The permit, the booth, the food you already cooked and Marisol's shift are paid for. None of that money is coming back.",
+    // Names the takings as well as the spending, because this is the screen that lists what
+    // there is and the student has just been shown three Saturdays of takings. A list that
+    // silently leaves out the biggest number on their screen reads as an oversight, and the
+    // one thing it must not be is a surprise.
+    locked: "The permit, the booth, the food you already cooked and Marisol's shift are paid for. None of that money is coming back. What you have taken at the window is with the organiser until she pays the stalls at the end of the run, so it cannot pay for this either.",
   },
   settle: { title: "The organiser settles up." },
   /**
@@ -631,7 +635,13 @@ export const POP_UP_SCENARIO: PopUpScenario = {
     plan: {
       kicker: "The opening plan",
       title: "Give every dollar a job.",
-      lead: "Three lines. All of the money has to land on them, and the market starts the moment it does.",
+      // The settle-up rule is stated here, on the screen where the cushion is being set,
+      // because it is the fact that makes a cushion mean anything. A market economics review
+      // found 726 reachable runs where the generator bill closed a truck that had taken up to
+      // $1,500 at the window, on a rule the world had never said out loud — "an evening you
+      // were told would be colder is a decision, an evening that turns out colder is a
+      // surprise", applied to money. `economy.ts` carries the rest of the argument.
+      lead: "Three lines. All of the money has to land on them, and the market starts the moment it does. What you take at the window goes to the organiser, who pays every stall at the end of the run — so until then these three lines are the only money the truck can reach.",
       closer: { title: "Send the rest to one line", note: "The line you name takes whatever is left over." },
       lineNotes: {
         stockOne: "tray of food to cook and sell.",
