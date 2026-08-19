@@ -208,6 +208,11 @@ thing a teacher cannot recover from in a debrief.
 3. Open `/educator/class/<CODE>?key=<KEY>` and read "When did they commit to the course?" and
    "After Week 5 · What moved" together.
 
+Receipts: `F1-a-reserved-the-seat.png`, `F1-b-what-moved.png`,
+`plan-events-per-student.txt` (every student's `PLAN_SAVED` amounts and
+`COURSE_DEPOSIT_DECIDED`, straight from the API), `30-live-board-during-lesson.png`,
+`73-debrief-print.pdf`.
+
 **The fix is not subtle**: a row the product locked is not a row the student cut.
 `adaptationSummary` has `depositTaken` available in the same snapshot inputs it is reading the
 amounts from.
@@ -260,8 +265,15 @@ class, printed above the line telling me nothing is assessed yet. It is also the
 gets backwards. This is the surface I would have used to decide the class did not need
 re-teaching on repair.
 
+To be fair about the window: once every explanation has been read the caption becomes true —
+it read *"Counts across the 11 of 11 with a usable result"* after my marking pass. So the false
+version is on screen for exactly as long as there is marking left to do, which is the whole
+lesson and the evening after it, and it is the state a teacher is in when they decide what
+Thursday looks like.
+
 **Reproduce.** Turn in five or more runs, mark none of them, open
-`/educator/class/<CODE>?key=<KEY>`, read the caption and the rows beneath it.
+`/educator/class/<CODE>?key=<KEY>`, read the caption and the rows beneath it. Transcript:
+`F2-class-board-before-marking.txt`; screenshot: `30-live-board-during-lesson.png`.
 
 ---
 
