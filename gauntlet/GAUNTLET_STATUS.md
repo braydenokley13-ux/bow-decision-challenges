@@ -159,6 +159,54 @@ critic, a student red team and a product-coherence critic, all running against t
 
 The six-verdict judges and the adversarial synthesis.
 
+## Round 4 — two verifiers sent at the two claims a product cannot make about itself
+
+Both were given the brief and the running artifact and told they were allowed to reject. Both
+reproduced everything they filed; neither was allowed to touch product code.
+
+| Verifier | Verdict | Single largest reason |
+| --- | --- | --- |
+| Security & privacy, round 2 — *"find a reason a district should refuse"* | **REFUSE** | "There is no deployable configuration of this product that is both functional and encrypts children's data the way the product says it does." Round 1's blocker was closed on one of three drivers and reopened, in two new shapes, on the other two. |
+| Standards — NYSED's own text, established before any repo document was opened | **HONEST WITH CORRECTIONS** | NYSED 1.1 was mapped `full` and is not: the objective names goals alongside needs, wants and values, and savings decisions alongside spending ones, and BOW collects none of that. The honest assessable count is **one**, not two. |
+
+### What the security verifier found, and what closed it
+
+The managed deployment — Vercel/Upstash, the exact path the first review signed off as a
+defensible pilot — was broken both ways at once. With a store key set, `command()` sealed the
+whole Upstash command envelope, so every request 400'd: the security-conscious configuration
+was a total outage. Without one it ran, keeping every child's name and evidence as plaintext
+JSON **and** the HMAC that signs every session token in the same store beside them — round 1's
+blocker word for word. On the file store, confidentiality genuinely held and the verifier
+proved it by grepping the whole data directory for planted names, keys and the secret and
+finding nothing; its *tamper-evidence* did not, because `open()` passed any unsealed record
+straight through, so one file write with no key at all forged a teacher account and opened the
+evidence room. Two more: every per-address rate limit was off, because `X-Forwarded-For` was
+read from the end the caller controls — three hundred wrong join-code guesses, none blocked —
+and a rotated key read as an empty store while health reported the deployment ready.
+
+All six closed at `8605d79`, with fourteen tests each proved to fail with its rule removed.
+**None of it counts as closed until the same verifier reproduces it**, which is running now.
+
+### What the standards verifier found
+
+The parts that hold are worth stating as plainly as the correction: all 23 objective codes and
+all 23 sentences are **verbatim exact** against both the official PDF and the official HTML,
+diffed programmatically; topic names, NYSED's own topic definitions, alphabetical order,
+per-topic counts and the Grades 5–8 band are correct; the pinned PDF re-downloaded to exactly
+the recorded sha256, byte count and page count; and *"NYSED has not reviewed or endorsed BOW"*
+is true — BOW appears zero times in NYSED's own instructional resources list.
+
+The correction is that yesterday's claim of two assessable objectives was half right. Building
+a real decision into Basketball's Weeks 1–4 genuinely made `sort-by-need-want-goal` observable.
+The mapping row underneath it claimed `full` coverage of an objective BOW covers in part. It is
+`partial` now, the count is one, and two tests that encoded the wrong claim are corrected with
+the reason written into them. Two silences are also closed: that NYSED's requirement covers all
+five topics taught by a certified teacher while BOW covers part of one, and that **NYSED does
+not assess personal finance at all** — so nothing BOW produces is needed for the attestation a
+district actually makes. Those were the two places a district was most likely to form a wrong
+belief about an assessment product.
+
+
 ## Largest remaining gap
 
 **No longer J1.** The reading load was the largest measured gap for two rounds and it is now
