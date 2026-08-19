@@ -61,40 +61,47 @@ describe("Seat 14, read as competencies", () => {
     expect(corrected?.map((observation) => observation.microSkillId)).toEqual(["C5.1"]);
   });
 
-  it("reads four of the budget competency's five, and waits on the one a person has to mark", () => {
+  it("reads three of the budget competency's five, and will not guess at the savings row", () => {
     // Seat 14 typed a figure into every row of the opening plan, including the course line,
-    // and saved a plan that balanced. Four of the five things `plan-within-income` asks for
-    // are there and strong; the fifth is the written explanation, which BOW never scores.
+    // and saved a plan that balanced. Three of the five things `plan-within-income` asks for
+    // are there and strong. The fifth is the written explanation, which BOW never scores.
     //
-    // **ER3 used to be `null` here, and this test used to say so.** The reason was never
-    // about this student: the board of the day recorded only one thing about savings — which
-    // row a student pressed to dispose of the leftovers — and Seat 14 pressed nothing,
-    // because they typed three figures that balanced exactly. The board now records where
-    // each row's figure came from, and theirs came from them. Nothing about the run changed;
-    // what changed is that the world can see it.
+    // And ER3 is `null`, which is this file's least comfortable line and the right one.
+    // Seat 14 never named a row as taking the last of the money, and on a board where every
+    // dollar must be placed the row a student fills last is arithmetically the leftovers —
+    // so three typed figures that balance are equally consistent with a course figure chosen
+    // first and one worked out at the end. A rule that read the typing as intention scored
+    // **5** here and scored **5** for a student who performed the misconception with the
+    // keyboard, on rendered pages, in a real class. The honest answer is silence, and the
+    // sentence beside it tells the teacher to go and ask.
+    //
+    // What that costs is on the board rather than on this student: the golden run cannot
+    // demonstrate the requirement this product is built around, because the board never asks
+    // the question of a student who types. `plannedSavings.test.ts` says the same thing at
+    // more length.
     expect(byId.get("plan-within-income")?.state).toBe("incomplete");
     expect(levelsOf(byId.get("plan-within-income"))).toEqual({
       "plan-within-income.er1": 5,
       "plan-within-income.er2": 5,
-      "plan-within-income.er3": 5,
+      "plan-within-income.er3": null,
       "plan-within-income.er4": 5,
       "plan-within-income.er5": null,
     });
   });
 
-  it("completes the budget competency once a person has read the writing", () => {
-    // The one thing still missing is a mark only a person can make, and making it finishes
-    // the row. That is the difference between *incomplete* and a low score, said in the one
-    // place it can be demonstrated: nothing about Seat 14's decisions was ever in doubt, and
-    // the paperwork was.
+  it("still waits on the budget competency once a person has read the writing", () => {
+    // Marking the paragraph finishes the one row a person owns and does not finish the
+    // competency, because the savings row was never observed. *Incomplete* is not a low
+    // score: nothing here says Seat 14 failed at anything, and nothing here claims they
+    // demonstrated something the run cannot show.
     const scored = observeCompetencies(
       observeBasketballFromLog(log, { scoredExplanations: { "plan-within-income.er5": 5 } }),
       { submitted: true },
     );
     const planning = scored.find((result) => result.competencyId === "plan-within-income");
-    expect(planning?.state).toBe("demonstrated");
+    expect(planning?.state).toBe("incomplete");
     expect(levelsOf(planning)["plan-within-income.er5"]).toBe(5);
-    expect(levelsOf(planning)["plan-within-income.er3"]).toBe(5);
+    expect(levelsOf(planning)["plan-within-income.er3"]).toBeNull();
   });
 
   it("says nothing at all about the competencies this world cannot observe", () => {

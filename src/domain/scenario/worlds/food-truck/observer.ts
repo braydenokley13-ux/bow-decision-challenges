@@ -9,6 +9,7 @@ import { evidenceRequirementById } from "../../../competency/competencies";
 import type { EvidenceEvent } from "../../../evidence/types";
 import { formatDollars } from "../../../core/money";
 import type { CompetingClaimsSettlement } from "../../../evidence/types";
+import { readPlannedSavings, type SavingsVerdictId } from "../../../evidence/plannedSavings";
 import { isTipClaimReasonId, tipClaimReason, tipClaims, tipsReachAsFarAsTheyGo, type TipClaim } from "./claims";
 import { cashToPlan, owedUpFront, swapBill } from "./economy";
 import { derivePopUpFacts, type PopUpBoardEvidence, type PopUpFacts, type PopUpRemainderChoice, type PopUpSumEvidence } from "./facts";
@@ -350,82 +351,58 @@ function conjoin(parts: readonly Part[]): Part {
 }
 
 /**
- * `plan-within-income.er3`, from the one statement the student makes about it.
+ * `plan-within-income.er3`, in the market's nouns.
  *
- * The rule is the product definition's: savings is a planned amount when the student set it
- * and let something else take the remainder, and is not when the remainder *is* the savings.
+ * The rule itself is `evidence/plannedSavings.ts`, shared with Basketball. It has to be
+ * shared: this world and that one were reading the same requirement off different facts, and
+ * a student who set the two other lines and let their own cut have what was left scored **0**
+ * here and **5** there, in one class, pooled into one percentage on one objective.
  *
- * Only a move that left nothing unassigned counts. A line can take the rest of the money or it
- * can fill up on the way past, and `remaining` is what tells them apart — a student who funds
- * their cut to a figure they chose and then places what is actually left somewhere else has
- * done the thing this requirement is looking for, not the thing it is looking out for.
+ * What the rule reads is which line the student said takes the last of the money, and what
+ * that line was already holding when it did. The second half is what this file used to get
+ * wrong in the student's favour's opposite direction: a cut that already held a figure and
+ * then took the leftovers on top was scored as *"what the arithmetic came to"*, which is the
+ * reverse of what that student did — they set their pay and then chose to add to it.
  *
- * Three things this deliberately does not read: how much is in any line (a student who plans
- * to bank nothing this season has still planned it), the order the steppers were touched in
- * (click sequence is not intention, and this product records no clickstream to read it from),
- * and whether the plan is a good one.
+ * Three things this still deliberately does not read: how much is in any line (a student who
+ * plans to bank nothing this season has still planned it), the order the steppers were touched
+ * in (click sequence is not intention, and this product records no clickstream to read it
+ * from), and whether the plan is a good one.
  *
- * **What it does read, and did not used to.** Sending the rest to the stock line is a
- * statement about the stock line. It is only a statement about *your cut* if your cut holds a
- * figure the student put there — and until the board recorded where each figure came from,
- * this said "your cut held a figure the student set" about a line whose stepper had never been
- * touched. A student red team caught it on three children at once: one click on
- * *"Stock — takes what is left over"* closed the whole opening plan, their cut sat at the
- * board's own zero, and their teacher's page reported **Savings is a planned amount —
- * Independently**.
- *
- * So a cut nobody moved produces no observation at all. Not a low level: this world cannot
- * tell "deliberately banking nothing" from "never opened the line", and §10.4's rule for a
- * question that never came up is silence rather than a zero. A figure the board itself
+ * And a cut nobody moved still produces no observation at all. Not a low level: this world
+ * cannot tell "deliberately banking nothing" from "never opened the line", and §10.4's rule
+ * for a question that never came up is silence rather than a zero. A figure the board itself
  * suggested and the student never went back to is the same silence for the same reason —
- * being handed a split is not planning one.
+ * being handed a split is not planning one. A student red team caught the version of this
+ * file that claimed otherwise, on three children at once.
  */
 function remainderPart(choices: readonly PopUpRemainderChoice[], opening: PopUpBoardEvidence): Part {
   const closings = choices.filter((choice) => choice.remaining === 0);
   const closed = closings.at(-1);
   const cutFigure = opening.lineSources[SAVINGS_LINE];
-  const suggested = cutFigure !== undefined && cutFigure.amountSource === "suggested" && !cutFigure.revised;
-  if (!closed) {
-    return {
-      level: null,
-      supportLevel: "standard_access",
-      evidenceRefs: choices.length > 0 ? choices.map((choice) => choice.evidenceRef) : ["not-observed:popup-remainder"],
-      detail: suggested
-        ? "The board filled in one split that adds up, so the figure on your cut was the one BOW suggested and the student did not change it."
-        : choices.length === 0
-          ? "The student closed the opening plan without saying which line took the rest, so this world saw neither answer."
-          : "The student used the control to place a figure but finished the plan another way, so no line was ever named as taking the last of the money.",
-    };
-  }
-  const everClosedOnCut = closings.some((choice) => choice.line === SAVINGS_LINE);
-  if (closed.line === SAVINGS_LINE) {
-    return {
-      level: 0,
-      supportLevel: closed.supportLevel,
-      evidenceRefs: choices.map((choice) => choice.evidenceRef),
-      detail: "Your cut took what the other lines left over, so what the student is banking is what the arithmetic came to rather than a figure they set.",
-    };
-  }
-  // Another line closed the plan. Whether that says anything about the savings line depends
-  // entirely on whether the student ever set the savings line.
-  const set = cutFigure !== undefined && (cutFigure.amountSource === "typed" || cutFigure.revised);
-  if (!set) {
-    return {
-      level: null,
-      supportLevel: closed.supportLevel,
-      evidenceRefs: choices.map((choice) => choice.evidenceRef),
-      detail: suggested
-        ? "Another line took the last of the money, and the figure on your cut was the one BOW suggested, which the student did not change."
-        : "Another line took the last of the money, and your cut was never moved off the figure the board opened on — so this run cannot say whether banking nothing was the plan or whether the line was never read.",
-    };
-  }
+  const held = opening.plan ? opening.plan[SAVINGS_LINE] : 0;
+  const read = readPlannedSavings({
+    closings: closings.map((choice) => ({ toSavings: choice.line === SAVINGS_LINE, amount: Number(choice.amount) })),
+    savingsHeld: Number(held),
+    ...(cutFigure ? { origin: { source: cutFigure.amountSource, revised: cutFigure.revised } } : {}),
+  });
+  const before = Number(held) - Number(closed?.amount ?? 0);
+  const detail: Record<SavingsVerdictId, string> = {
+    "never-opened": "Another line took the last of the money, and your cut was never moved off the figure the board opened on — so this run cannot say whether banking nothing was the plan or whether the line was never read.",
+    supplied: "The board filled in one split that adds up, so the figure on your cut was the one BOW suggested and the student did not change it.",
+    "no-statement": choices.length === 0
+      ? "The student closed the opening plan without saying which line took the rest, so this world saw neither answer."
+      : "The student used the control to place a figure but finished the plan another way, so no line was ever named as taking the last of the money.",
+    leftovers: "Your cut took what the other lines left over, so what the student is banking is what the arithmetic came to rather than a figure they set.",
+    "topped-up": `Your cut was already holding $${before} when the student sent the last $${Number(closed?.amount ?? 0)} to it as well, so what they are banking is a figure they set and then added to rather than what the arithmetic left.`,
+    "set-and-closed-elsewhere": "Your cut held a figure the student set, and another line took the last of the money.",
+    "took-it-back": "The leftovers landed on your cut first and the student took them back off it and closed somewhere else, with nothing on screen but the board.",
+  };
   return {
-    level: everClosedOnCut ? 4 : 5,
-    supportLevel: closed.supportLevel,
-    evidenceRefs: choices.map((choice) => choice.evidenceRef),
-    detail: everClosedOnCut
-      ? "The leftovers landed on your cut first and the student took them back off it and closed somewhere else, with nothing on screen but the board."
-      : "Your cut held a figure the student set, and another line took the last of the money.",
+    level: read.level,
+    supportLevel: closed?.supportLevel ?? "standard_access",
+    evidenceRefs: choices.length > 0 ? choices.map((choice) => choice.evidenceRef) : ["not-observed:popup-remainder"],
+    detail: detail[read.verdict],
   };
 }
 

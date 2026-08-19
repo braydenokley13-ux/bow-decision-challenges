@@ -9,9 +9,10 @@ import type {
 } from "../../../competency/types";
 import { evidenceRequirementById } from "../../../competency/competencies";
 import type { CategoryId } from "../../../core/ids";
-import { formatDollars } from "../../../core/money";
+import { dollars, formatDollars } from "../../../core/money";
 import { deriveFacts } from "../../../evidence/facts";
 import { observeStructured } from "../../../evidence/observe";
+import { readPlannedSavings, type SavingsOrigin, type SavingsVerdictId } from "../../../evidence/plannedSavings";
 import type { CompetingClaimsSettlement, EvidenceEvent, MicroSkillObservation, PlanAmountSources, RemainderChoice } from "../../../evidence/types";
 import { SCENARIO_NUMBERS } from "../../numbers";
 import type { ScenarioNumbers } from "../../types";
@@ -283,9 +284,11 @@ export interface BasketballObserverInput {
 /**
  * The opening plan, as much of it as this requirement is allowed to see.
  *
- * `savingsAmount` is here for one branch and one only — an attempt with no provenance whose
- * savings row finished at $0, where the amount is what says the log cannot settle the
- * question. Nothing else reads it, and `neutrality.test.ts` is what keeps it that way.
+ * `savingsAmount` is read for two things and neither of them is how much was saved: whether
+ * the row finished at $0 in a log that carries no provenance, and — the comparison
+ * `plannedSavings.ts` turns on — whether a row that took the last of the money was already
+ * holding a figure before it did. Both are about where a figure came from rather than about
+ * its size, and `neutrality.test.ts` is what keeps it that way.
  */
 export interface OpeningPlan {
   sources?: PlanAmountSources;
@@ -312,56 +315,31 @@ export interface SettledClaims {
 const SAVINGS_ROW: CategoryId = "goal";
 
 /**
- * `plan-within-income.er3` — savings as a planned amount, read off where the figure came from.
+ * `plan-within-income.er3` — savings as a planned amount, in Avery's nouns.
  *
- * The rule is the product definition's, unaltered: savings is a planned amount when the
- * student set it and let something else take the remainder, and is not when the remainder
- * *is* the savings. What changed is what the world reads it off.
+ * The rule itself is `evidence/plannedSavings.ts`, shared with the market so that identical
+ * behaviour cannot be *Showed it* in one story and *Not yet* in the other — which is exactly
+ * what it was: a student who set the two discretionary rows and let the savings row have what
+ * was left scored **5** here and **0** at the market, in the same class, pooled into one
+ * percentage. `worldJudgementParity.test.ts` is what now holds the two together.
  *
- * **It used to read the closing statement alone, and that statement cannot carry it.** "Which
- * row took the last of the money" answers only half the question. A student who pressed one
- * card marked *"Backup money — put $1,600 in"* had named a row that was not the course line,
- * and this file told their teacher *"the course line held a figure the student set"* about a
- * run in which the course line was never touched and sat at $0. Three students in one red-team
- * session were reported that way. The product could not tell "deliberately put nothing toward
- * the course" from "never looked at the course row", and it resolved the ambiguity as a
- * demonstrated skill.
+ * **This file used to read the provenance of the savings row and nothing else, and that
+ * inverted the judgement in both directions.** An assessment-validity review reproduced both
+ * on rendered pages:
  *
- * So the board records where each row's figure came from, and this reads the savings row:
+ * - Filling the two discretionary rows to the figures you want and typing the arithmetic
+ *   leftover into the course line — the misconception, in the order the rule names — scored
+ *   **5**, under a sentence saying *"another row took the last of the money"* about a run in
+ *   which no row did.
+ * - Typing $1,000 into the course line first and then choosing to send the last $100 there as
+ *   well scored **0** and put that child in the reteach group for *"Savings is leftover
+ *   money"* — the one misconception she had demonstrably not got.
  *
- * - **`typed`** — the student produced the figure, with the steppers, the keyboard, or by
- *   moving a number that arrived some other way. The amount is theirs, whatever it is. **5**,
- *   and **4** where they got there by taking back a figure that had been the leftovers, which
- *   is §10.3 self-correction: got it wrong, saw the raw state, fixed it with nothing but the
- *   board.
- * - **`remainder`** — the course line took whatever the other rows left. That is the
- *   misconception this competency exists to catch, named out loud. **0**.
- * - **`suggested`** — BOW produced the figure and the student accepted it whole. They chose
- *   the line and not the amount, and the requirement is about the amount. **0**, which is
- *   where the support cap puts it anyway: the only control in this world that suggests a
- *   whole plan is the third-attempt scaffold, and every event it writes carries
- *   `answer_supplied`.
- * - **nothing at all** — the row was never touched. **`null`**. Neither "they planned it" nor
- *   "they failed to plan it" is supported by a row nobody acted on, and `null` is the word
- *   this product already has for a judgement it will not make. The opening board no longer
- *   lets a plan close in that state, so a run recorded today reaches it only by being
- *   abandoned before the plan was saved.
- *
- * Three things this deliberately does not read, all unchanged:
- *
- * - **How much is in any row.** A student who plans $0 for the course this season has still
- *   planned it, and says so with one press. Reading the size of the line would score a
- *   priority, which is the mistake `balance.ts` and `neutrality.test.ts` exist to prevent.
- * - **The order the steppers were touched in.** Click sequence is not intention, and this
- *   product records no clickstream to read it from even if it were.
- * - **Whether the plan is a good one.** A plan that sends the leftovers to Avery's week
- *   scores here exactly as one that sends them to the backup money.
- *
- * **An attempt saved before any of this was recorded** carries no provenance at all, and it
- * is not re-read through the new rule — re-reading a finished attempt would change what a
- * student's permanent record means. It falls back to the closing statement it was scored on,
- * with the one correction the ruling requires: a course line sitting at $0 in a log that
- * cannot say whether anybody touched it produces no positive observation.
+ * What the world reads now is two facts about the saved plan: which row the student said
+ * takes the last of the money, and what the savings row was already holding when it did.
+ * Where nobody said — a board typed to balance, where one of three rows is always the
+ * residual of the other two — this world says `null` and says why. That is not a zero, and
+ * the sentence beside it is the one a teacher can act on: go and ask them.
  */
 function savingsObservation(
   route: BasketballEvidenceRoute,
@@ -380,76 +358,54 @@ function savingsObservation(
   if (!opening) {
     return said(null, "standard_access", [], "The opening plan was never saved, so this world saw neither answer.");
   }
-  if (!opening.sources) return legacySavingsObservation(said, opening, choices);
-
-  const provenance = opening.sources[SAVINGS_ROW];
-  if (!provenance) {
+  const closings = choices.filter((choice) => choice.remaining === 0);
+  const closed = closings.at(-1);
+  const origin = savingsOrigin(opening);
+  const read = readPlannedSavings({
+    closings: closings.map((choice) => ({ toSavings: choice.category === SAVINGS_ROW, amount: Number(choice.amount) })),
+    savingsHeld: opening.savingsAmount,
+    ...(origin ? { origin } : {}),
+  });
+  const refs = [...opening.evidenceRefs, ...choices.map((choice) => choice.evidenceRef)];
+  const held = opening.savingsAmount - Number(closed?.amount ?? 0);
+  const detail: Record<SavingsVerdictId, string> = {
     // Said as a fact about the screen and a silence in the run, never as a choice and never
     // as a failure to make one. The student's own read-back of their run says the same thing
     // in the same shape — *the screen opened that way, you carried on, and this run cannot
     // tell whether that was the call you meant to make* — and the two surfaces agree exactly
     // as long as neither of them claims the student decided. "Go and ask them" is the move
     // this sentence is for.
-    return said(
-      null,
-      opening.supportLevel,
-      opening.evidenceRefs,
-      "The course line was at $0 when the screen opened and nothing was ever put into it or said about it, so this run cannot tell whether saving nothing toward the course was the call the student meant to make.",
-    );
-  }
-  if (provenance.source === "remainder") {
-    return said(0, opening.supportLevel, opening.evidenceRefs, "The course line took what the other rows left over, so the amount saved is what the arithmetic came to rather than a figure the student set.");
-  }
-  if (provenance.source === "suggested") {
-    return said(0, opening.supportLevel, opening.evidenceRefs, "The figure on the course line is one BOW put there, and the student did not change it, so no amount here was set by them.");
-  }
-  return provenance.revised
-    ? said(4, opening.supportLevel, opening.evidenceRefs, "The course line first held a figure the student had not chosen, and they moved it themselves, with nothing on screen but the board.")
-    : said(5, opening.supportLevel, opening.evidenceRefs, "The course line held a figure the student set, and another row took the last of the money.");
+    "never-opened": "The course line was at $0 when the screen opened and nothing was ever put into it or said about it, so this run cannot tell whether saving nothing toward the course was the call the student meant to make.",
+    supplied: "The figure on the course line is one BOW put there and the student did not change it, so this run cannot tell whether they can set one themselves.",
+    "no-statement": choices.length === 0
+      ? "Every row was given a figure and the plan was typed until it balanced, so no row was ever named as taking the last of the money — and one of three rows always holds what the other two left. This run cannot tell whether the course figure was the amount the student meant to save or what the other two rows left."
+      : "The student used the control to place a figure but finished the plan another way, so no row was ever named as taking the last of the money, and this run cannot tell whether the course figure was the amount the student meant to save or what the other two rows left.",
+    leftovers: "The course line took what the other rows left over, so the amount saved is what the arithmetic came to rather than a figure the student set.",
+    "topped-up": `The course line was already holding ${formatDollars(dollars(held))} when the student sent the last ${formatDollars(dollars(Number(closed?.amount ?? 0)))} to it as well, so the savings figure was one they set and then added to rather than what the arithmetic left.`,
+    "set-and-closed-elsewhere": "The course line held a figure the student set, and another row took the last of the money.",
+    "took-it-back": "The leftovers landed on the course line first and the student took them back off it and closed somewhere else, with nothing on screen but the board.",
+  };
+  return said(read.level, opening.supportLevel, refs, detail[read.verdict]);
 }
 
 /**
- * The same requirement, on a log written before the board recorded where a figure came from.
+ * Where the savings figure came from, including on a log written before the board kept it.
  *
- * It is the rule those attempts were scored under — which row took the last of the money —
- * with one thing removed. A course line sitting at $0 used to read as "a figure the student
- * set" and it cannot: $0 in a log with no provenance is exactly the ambiguity the record was
- * added to settle, and claiming the good half of it is how three students who never opened
- * that row came to be reported as having planned their savings. Those runs read `null` now,
- * which is the honest thing a log that cannot say should produce.
+ * An attempt saved before the record exists carries no provenance at all, and it is not left
+ * unreadable: in that era the only two ways money reached a row were the steppers and a
+ * declaration, and the declarations are in the log. So a row holding something with no
+ * declaration behind it is a figure the student typed, and a row at $0 is the ambiguity the
+ * record was added to settle — *deliberately nothing* and *never opened* look identical, and
+ * claiming the good half of it is how three students who never opened that row came to be
+ * reported as having planned their savings. Those runs read `null`, which is the honest thing
+ * a log that cannot say should produce.
  */
-function legacySavingsObservation(
-  said: (level: RubricLevel | null, supportLevel: SupportLevel, evidenceRefs: readonly string[], detail: string) => EvidenceRequirementObservation,
-  opening: OpeningPlan,
-  choices: readonly RemainderChoice[],
-): EvidenceRequirementObservation {
-  const closings = choices.filter((choice) => choice.remaining === 0);
-  const closed = closings.at(-1);
-  if (!closed) {
-    return said(
-      null,
-      "standard_access",
-      choices.map((choice) => choice.evidenceRef),
-      choices.length === 0
-        ? "The student closed the opening plan without saying which row took the rest, so this world saw neither answer."
-        : "The student used the control to place a figure but finished the plan another way, so no row was ever named as taking the last of the money.",
-    );
+function savingsOrigin(opening: OpeningPlan): SavingsOrigin | undefined {
+  if (opening.sources) {
+    const provenance = opening.sources[SAVINGS_ROW];
+    return provenance ? { source: provenance.source, revised: provenance.revised } : undefined;
   }
-  const refs = choices.map((choice) => choice.evidenceRef);
-  if (closed.category === SAVINGS_ROW) {
-    return said(0, closed.supportLevel, refs, "The course line took what the other rows left over, so the amount saved is what the arithmetic came to rather than a figure the student set.");
-  }
-  if (opening.savingsAmount === 0) {
-    return said(
-      null,
-      closed.supportLevel,
-      refs,
-      "Another row took the last of the money and the course line finished at $0. This attempt was recorded before the board kept where a figure came from, so it cannot say whether that was a decision or a row nobody opened, and it will not claim either.",
-    );
-  }
-  return closings.some((choice) => choice.category === SAVINGS_ROW)
-    ? said(4, closed.supportLevel, refs, "The leftovers landed on the course line first and the student took them back off it and closed somewhere else, with nothing on screen but the board.")
-    : said(5, closed.supportLevel, refs, "The course line held a figure the student set, and another row took the last of the money.");
+  return opening.savingsAmount === 0 ? undefined : { source: "typed", revised: false };
 }
 
 /** What a conjunction of micro-skills came to, and which one decided it. */

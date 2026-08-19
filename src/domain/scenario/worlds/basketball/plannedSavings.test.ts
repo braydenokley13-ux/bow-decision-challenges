@@ -17,34 +17,40 @@ import { seat14Log } from "../../../evidence/seat14.golden";
 /**
  * `plan-within-income.er3` — savings is a planned amount, not what was left.
  *
- * This is the requirement the whole multiple-world thesis is meant to be proven on. It is
- * read off one fact: where the figure on the course line came from when the opening plan was
- * closed.
+ * This is the requirement the whole multiple-world thesis is meant to be proven on, and the
+ * one carrying the "and savings" half of the only NYSED objective this product claims. It is
+ * read off two facts about the saved plan: which row the student said takes the last of the
+ * money, and what that row was already holding when it took it. The rule is
+ * `evidence/plannedSavings.ts` and the market obeys the same one.
  *
- * **This file used to say something else, and it was wrong.** Its title was "only a statement
- * can say so", and the statement it meant was the board's *"One of these takes what is left
- * over. Which one?"* — three cards, one press, always shown, and the requirement read from
- * that press alone. Two of the claims it pinned were not pedagogy but a limitation of the
- * board wearing pedagogy's clothes:
+ * **This file has argued for two different rules before this one, and an assessment-validity
+ * review showed both of them inverting the judgement on real children.**
  *
- * - *"says nothing at all about a plan closed without the statement"* — asserted that a
- *   student who typed $1,200 into the course line, then filled the other two rows and saved a
- *   balanced plan, had told this world **nothing** about their savings. The observable rule is
- *   "savings is set to a deliberate figure … not as the remainder after them", and typing a
- *   figure is setting one. The board could not see it; that was never a fact about the child.
+ * The first read the closing statement alone and claimed nothing about a plan closed without
+ * one. The second — the one these tests were rewritten for — read the *provenance* of the
+ * savings row: which control put the figure there, `typed` → 5 and `remainder` → 0. Its
+ * argument was that "typing a figure is setting one". That is where it came apart, in both
+ * directions and on rendered pages in one class:
  *
- * - *"does not read hitting the course cap on the way past as savings taking the leftovers"* —
- *   pinned a card reading **"Sports-media course $1,200 — all it can hold"** as *demonstrating*
- *   the requirement. That card was BOW printing the exact savings figure on the screen whose
- *   entire job is to find out whether the student can produce it, and one press of it scored 5.
- *   The card is gone; the steppers still reach $1,200, and reaching it is now something the
- *   student did.
+ * - **Bea** filled the two discretionary rows to the figures she wanted and then typed the
+ *   arithmetic leftover, $100, into the course line — the misconception, in the exact order
+ *   the rule names — and read **Right first time**, under a sentence saying another row took
+ *   the last of the money on a run where no row did.
+ * - **Fay** typed $1,000 into the course line first, set the other two, and then chose to send
+ *   the last $100 there as well. She read **Did not do it**, was named in the class reteach
+ *   under *"Savings is leftover money"*, and left in the export as **Not yet**.
  *
- * What replaced them is the thing the requirement always asked for and the board could not
- * previously record: the difference between a figure a student set, a figure the arithmetic
- * set, a figure BOW set, and a row nobody opened. The fourth is the one that did real damage —
- * a red team found three students reported to their teachers as having *"set a figure"* on a
- * line none of them had touched.
+ * The mistake both share is that which control a twelve-year-old reaches for is a fact about
+ * touch targets and keyboard confidence, not about budgeting. Typing does not distinguish "I
+ * decided $100 for the course" from "3,100 − 1,500 − 1,500": on a board where every dollar
+ * must be placed, one of the three rows is always the residual of the other two, and nothing
+ * in the log says which row the student filled last. So a plan typed to balance now reads
+ * `null` and says so — not a zero, and a sentence a teacher can act on — and the pair of
+ * amounts on a row that took the leftovers is what separates savings-as-remainder from a
+ * savings figure the student set and then chose to add to.
+ *
+ * What is unchanged is what this may never read: how much is in any row, the order the
+ * steppers were touched in, and whether the plan is a good one.
  */
 
 const START = 1_760_000_000_000;
@@ -145,14 +151,51 @@ describe("savings is a planned amount, and only the student can set one", () => 
     expect(er3(log)?.reason).not.toMatch(/chose|decided|failed/i);
   });
 
-  it("hears a figure the student typed, with no closing press anywhere in the run", () => {
-    // The case the old rule refused to read, because the board had no record of it. Three
-    // deliberate figures that balance exactly is a plan, and the course line in it is a
-    // planned amount however the other two rows were filled.
+  it("claims nothing about a plan typed to balance, because one row is always the residual", () => {
+    // The case the rule before this one answered **5**, on the argument that typing a figure
+    // is setting one. It is not enough: every dollar has to be placed, so whichever row the
+    // student fills last necessarily holds what the other two left, and no event in the log
+    // says which row that was. The same three amounts are consistent with a course figure
+    // chosen first and with one worked out at the end, and BOW cannot tell them apart.
     const log = opening({ set: { goal: 1200, reserve: 400, flexibleCash: spendable() - 1600 }, closes: [] });
     expect(deriveFacts(log).remainderChoices).toEqual([]);
-    expect(er3(log)?.level).toBe(5);
-    expect(standingEr3(log)).toBe(5);
+    expect(er3(log)?.level).toBeNull();
+    expect(standingEr3(log)).toBeNull();
+    expect(er3(log)?.reason).toMatch(/cannot tell/i);
+    // Silence, not an accusation: nothing here may read as the student having failed.
+    expect(er3(log)?.reason).not.toMatch(/chose|decided|failed/i);
+  });
+
+  it("says the same thing about the student who typed the leftovers into savings", () => {
+    // Bea, reproduced. She set the two discretionary rows to the figures she wanted and typed
+    // what was left into the course line — the misconception performed with the keyboard —
+    // and read **Right first time** under a sentence saying another row took the last of the
+    // money. No row did. Her run and the careful one above are the same three events, and
+    // this is the whole reason the level is `null` rather than either verdict.
+    const bea = opening({ set: { reserve: 1500, flexibleCash: 1500, goal: spendable() - 3000 }, closes: [] });
+    const careful = opening({ set: { goal: 1200, reserve: 400, flexibleCash: spendable() - 1600 }, closes: [] });
+    expect(er3(bea)?.level).toBeNull();
+    expect(er3(bea)?.reason).toBe(er3(careful)?.reason);
+    expect(er3(bea)?.reason).not.toMatch(/took the last of the money\./);
+  });
+
+  it("reads a savings row that was already holding a figure when the leftovers went to it", () => {
+    // Fay, reproduced. She typed $1,000 into the course line, set the other two rows, and
+    // then chose to send the last of the money there as well — savings planned, and then
+    // added to. The old rule scored this **0** and named her in the reteach for "savings is
+    // leftover money", because one press overwrote the record of the figure she had set.
+    // What separates her from the student below is not a control; it is that her row was
+    // already holding something.
+    const rest = 100;
+    const other = spendable() - 1000 - rest;
+    const toppedUp = opening({ set: { goal: 1000, reserve: other - 600, flexibleCash: 600 }, closes: ["goal"] });
+    expect(er3(toppedUp)?.level).toBe(5);
+    expect(standingEr3(toppedUp)).toBe(5);
+    expect(er3(toppedUp)?.reason).toMatch(/already holding \$1,000/);
+    // The same closing press, the same final amounts, and the opposite verdict — because this
+    // student's savings row was empty when it took them.
+    const leftovers = opening({ set: { reserve: other - 600, flexibleCash: 600 }, closes: ["goal"] });
+    expect(er3(leftovers)?.level).toBe(0);
   });
 
   it("awards it when the student set the course line and let another row take the rest", () => {
@@ -177,15 +220,18 @@ describe("savings is a planned amount, and only the student can set one", () => 
     expect(er3(log)?.reason).toContain("what the arithmetic came to");
   });
 
-  it("withholds it when BOW filled the plan in and the student left it alone", () => {
+  it("says nothing when BOW filled the plan in and the student left it alone", () => {
     // What "Fill in one plan that balances" produces. The student chose to press it and chose
-    // nothing else; there is no amount here that came from them.
+    // nothing else; there is no amount here that came from them. That is a silence and not a
+    // zero — §10.4's answer to a question that never came up — and it is what the market has
+    // always said about its own fill-in. A zero would be BOW reporting the misconception on
+    // the strength of a scaffold the product itself offered.
     const log = opening({
       set: { goal: 1200, reserve: 400, flexibleCash: spendable() - 1600 },
       closes: [],
       supplied: true,
     });
-    expect(er3(log)?.level).toBe(0);
+    expect(er3(log)?.level).toBeNull();
     expect(er3(log)?.reason).toMatch(/one BOW put there/i);
   });
 
@@ -204,7 +250,7 @@ describe("savings is a planned amount, and only the student can set one", () => 
       ],
     });
     expect(er3(corrected)?.level).toBe(4);
-    expect(er3(corrected)?.reason).toMatch(/moved it themselves/i);
+    expect(er3(corrected)?.reason).toMatch(/took them back off it/i);
   });
 
   it("holds the same level whatever the figure is, including nothing", () => {
@@ -268,14 +314,20 @@ describe("the record changes nothing that was already true", () => {
     expect(assigned(saved!.snapshot.inputs.amounts)).toBe(spendable());
   });
 
-  it("reads Seat 14 as the planned-savings run it always was", () => {
+  it("will not say what Seat 14 did about savings, and Seat 14 is the golden run", () => {
     // Seat 14 is a run, not a frozen log — it is replayed through the shipping reducer every
     // time it is asked for. Its student typed $1,200 into the course line and then filled the
-    // other two rows, and used to score `null` here for the single reason that the board of
-    // the day recorded no closing press. The plan is unchanged and so is every micro-skill in
-    // it; what changed is that the world can now see the figure was theirs.
+    // other two rows, and never named a row as taking the last of the money.
     //
-    // A *frozen* log from before the record exists too, and it must not move:
+    // This is the cost of the honest rule, stated where it will be noticed rather than left
+    // for somebody to discover on a class page: the product's own best-case run does not
+    // produce evidence for the requirement the product is built around, because the board it
+    // was played on lets a plan close without ever asking the question. That is a finding
+    // about the board and not about the child, and the fix for it is on the board — an
+    // opening plan that asked which row is the one being protected would make this run
+    // readable. Until then, silence is the true answer and a 5 was not.
+    //
+    // A *frozen* log from before the provenance record exists too, and it must not move:
     // `oldLogs.regression.test.ts` holds three of them to exactly the levels they were scored
     // at, through the fallback path this rule keeps for them.
     const log = seat14Log();
@@ -283,7 +335,7 @@ describe("the record changes nothing that was already true", () => {
     expect(deriveFacts(log).opening?.snapshot.inputs.amounts.goal).toBe(1200);
     const result = observeCompetencies(observeBasketballFromLog(log), { submitted: true })
       .find((entry) => entry.competencyId === "plan-within-income");
-    expect(result?.levels.find((level) => level.evidenceRequirementId === "plan-within-income.er3")?.level).toBe(5);
+    expect(result?.levels.find((level) => level.evidenceRequirementId === "plan-within-income.er3")?.level).toBeNull();
   });
 });
 

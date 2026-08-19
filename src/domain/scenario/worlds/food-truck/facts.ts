@@ -1,6 +1,6 @@
 import { dollars, type Dollars } from "../../../core/money";
 import type { CompetingClaimsSettlement, EvidenceEvent, SupportLevel } from "../../../evidence/types";
-import type { PopUpBoardId, PopUpLineId, PopUpSourceId, PopUpSumId, SpotId } from "./types";
+import { POP_UP_LINES, type PopUpBoardId, type PopUpLineId, type PopUpPlan, type PopUpSourceId, type PopUpSumId, type SpotId } from "./types";
 
 /**
  * What a Run the Pop-Up log says happened, without saying what any of it is worth.
@@ -35,6 +35,15 @@ export interface PopUpBoardEvidence {
    * students were reported as having planned a savings figure on a line they never opened.
    */
   lineSources: Partial<Record<PopUpLineId, PopUpLineOrigin>>;
+  /**
+   * What each line held in the plan that was saved, or `null` where none ever was.
+   *
+   * Read for one comparison and not for its size: a line that took the last of the money and
+   * a line that was already holding a figure when it did are different facts about a student,
+   * and the difference is exactly the amount standing on the line beforehand. `plannedSavings.ts`
+   * carries the argument.
+   */
+  plan: PopUpPlan | null;
   /** How the board stood at the first save the student asked for, before anything was fixed. */
   firstSaveBalance: Dollars;
   balance: Dollars;
@@ -85,6 +94,14 @@ export interface PopUpFacts {
   writeUp: { submitted: boolean; evidenceRefs: string[] };
 }
 
+/** The three lines off a saved snapshot, or `null` where the payload does not carry them. */
+function planFrom(value: unknown): PopUpPlan | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  if (POP_UP_LINES.some((line) => typeof record[line] !== "number")) return null;
+  return { stock: dollars(record.stock as number), cushion: dollars(record.cushion as number), cut: dollars(record.cut as number) };
+}
+
 function emptyBoard(): PopUpBoardEvidence {
   return {
     entered: false,
@@ -97,6 +114,7 @@ function emptyBoard(): PopUpBoardEvidence {
     residual: dollars(0),
     residualAcknowledged: false,
     lineSources: {},
+    plan: null,
     savesBeforeAcceptable: 0,
     lockedMoveAttempts: 0,
     support: "standard_access",
@@ -218,6 +236,10 @@ export function derivePopUpFacts(log: readonly EvidenceEvent[]): PopUpFacts {
         const board = boards[payload.board as PopUpBoardId];
         if (!board) break;
         board.saved = true;
+        // The last saved plan is the plan the student went with, and the only place the
+        // amounts on the lines are recorded rather than re-derived.
+        const plan = planFrom((payload.snapshot as { plan?: unknown } | undefined)?.plan);
+        if (plan) board.plan = plan;
         board.evidenceRefs.push(event.id);
         break;
       }

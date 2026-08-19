@@ -186,25 +186,32 @@ describe("what each answer produces downstream", () => {
     return observeBasketballFromLog(log).find((observation) => observation.evidenceRequirementId === "plan-within-income.er3");
   }
 
-  it("hears a figure the student set, whatever the figure is", () => {
-    const state = runClosing((send, mode) => {
-      for (const [category, amount] of [["goal", 1200], ["reserve", 1000], ["flexibleCash", 900]] as const) {
-        send({ type: "PLAN_AMOUNT_CHANGED", mode, category, amount: dollars(amount) });
-      }
-    });
-    expect(er3(state.log)?.level).toBe(5);
-  });
-
-  it("hears nothing this season as a figure the student set, because it is one", () => {
-    // The answer that is not an amount, and the case D14 was written for: a plan that balances
-    // exactly with $0 on the course line. Said out loud it is a decision; left untouched it is
-    // not, and this product must be able to tell the two apart.
-    const state = runClosing((send, mode) => {
+  it("will not read a plan typed to balance either way, and says which silence it is", () => {
+    // These two used to score **5** each, on the rule that typing a figure is setting one.
+    // An assessment-validity review found that rule scoring 5 for a student who filled the
+    // two discretionary rows and typed what was left into savings — the misconception,
+    // performed with the keyboard. On a board where every dollar must be placed, the row a
+    // student fills last always holds what the other two left, and nothing in the log says
+    // which row that was, so the honest reading is no reading. `plannedSavings.ts` carries
+    // the argument.
+    //
+    // What this board still has to keep apart is *which* silence it is, because the sentences
+    // are what a teacher acts on: a row spoken for at $0 and a row nobody opened are different
+    // facts about a child, and only one of them is worth going to ask about.
+    const spoken = runClosing((send, mode) => {
       for (const [category, amount] of [["reserve", 2200], ["flexibleCash", 900], ["goal", 0]] as const) {
         send({ type: "PLAN_AMOUNT_CHANGED", mode, category, amount: dollars(amount) });
       }
     });
-    expect(er3(state.log)?.level).toBe(5);
+    const funded = runClosing((send, mode) => {
+      for (const [category, amount] of [["goal", 1200], ["reserve", 1000], ["flexibleCash", 900]] as const) {
+        send({ type: "PLAN_AMOUNT_CHANGED", mode, category, amount: dollars(amount) });
+      }
+    });
+    expect(er3(spoken.log)?.level).toBeNull();
+    expect(er3(funded.log)?.level).toBeNull();
+    expect(er3(spoken.log)?.reason).toMatch(/typed until it balanced/i);
+    expect(er3(spoken.log)?.reason).not.toMatch(/never opened|was at \$0 when the screen opened/i);
   });
 
   it("names the misconception when the course line takes the leftovers", () => {
