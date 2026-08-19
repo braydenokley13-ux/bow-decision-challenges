@@ -169,6 +169,30 @@ const CHECKED: { path: string; sentence: string; why: string }[] = [
     why: "`localOnlyTransport.deliver` resolves without I/O, and a transport's promise is only ever "
       + "shown by the transport that makes it",
   },
+  // The three absolute claims the published data inventory at `/privacy` makes. It is the one
+  // surface in this product written for a district's vendor review, so every clause of it is
+  // already read against the handler and a real sealed store by
+  // `src/legal/dataInventory.test.ts` — these rows say which assertion, so that the register
+  // stays the one place a reader can see all of them at once.
+  {
+    path: "src/legal/notice.ts",
+    sentence: "Nothing is sent to a model, and there is no model client",
+    why: "no model client is declared in `package.json` and `connect-src 'self'` forbids the browser "
+      + "reaching one — both asserted in `src/legal/dataInventory.test.ts`, as they are below",
+  },
+  {
+    path: "src/legal/notice.ts",
+    sentence: "the teacher and is never sent to the child",
+    why: "`GET /me/classes` maps a note to `{id, body, at, sessionId, editedAt}` and drops `flagged` "
+      + "— asserted against the handler in `src/legal/dataInventory.test.ts`",
+  },
+  {
+    path: "src/legal/notice.ts",
+    sentence: "how many classes that sweep deleted",
+    why: "`GET /health` reports `retention.lastSweepDeleted` from `lastSweepResult()`, and "
+      + "`sweepExpiredClasses` calls `store.deleteClass` on every expired code — both asserted in "
+      + "`src/legal/dataInventory.test.ts`",
+  },
 ];
 
 // ---------------------------------------------------------------------------

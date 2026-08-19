@@ -1,0 +1,59 @@
+/*
+ * The vendor-review surface.
+ *
+ * Set narrow and quiet on purpose. Every other page in this product is a room a twelve-year-old
+ * or a teacher is standing in; this one is a document somebody reads in an office with a
+ * colleague on the phone, and it borrows nothing from the worlds. It uses the shared tokens and
+ * adds no colour of its own, so it stays in step with the rest of the product without the
+ * design system having to know it exists.
+ */
+
+.legal { min-height: 100vh; display: grid; grid-template-rows: auto 1fr; background: var(--canvas); color: var(--ink-1); }
+.legal__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-5); padding: var(--s-4) clamp(20px, 4vw, 56px); background: var(--surface-raised); border-bottom: 3px solid var(--bow-brand); }
+.legal__bar > a { color: var(--ink-2); font: var(--t-ui); text-underline-offset: 5px; }
+
+/* `min-width: 0` because `.legal` is a grid and a grid item's default `min-width: auto` is its
+   content's minimum — which is the 720px inventory table. Without it the whole page grew to the
+   table's width and a 390px phone scrolled the document sideways by 330px while the table's own
+   scroller sat there unused. Measured at four widths; the table scrolls inside its box and the
+   page does not move. */
+.legal__page { width: min(var(--w-read), calc(100% - 2 * var(--gutter))); min-width: 0; margin: 0 auto; padding: var(--s-7) 0 var(--s-10); }
+
+.legal__head { padding-bottom: var(--s-6); border-bottom: 2px solid var(--ink-1); }
+.legal__head h1 { max-width: 32ch; margin: 0 0 var(--s-5); font: var(--t-display2); letter-spacing: var(--display-tracking); text-transform: uppercase; text-wrap: balance; }
+.legal__deck { max-width: var(--measure); margin: 0; font: var(--t-body-lg); }
+.legal__note { max-width: var(--measure); margin: var(--s-5) 0 0; padding: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); border-left: 4px solid var(--bow-brand); font: var(--t-body); }
+
+.legal__section { margin-top: var(--s-8); }
+.legal__section h2 { margin: 0 0 var(--s-4); padding-bottom: var(--s-3); border-bottom: 1px solid var(--border-ink); font: var(--t-display3); letter-spacing: var(--display-tracking); text-transform: uppercase; }
+.legal__section h3 { margin: var(--s-6) 0 var(--s-3); font: var(--t-title3); }
+.legal__lede { max-width: var(--measure); margin: 0 0 var(--s-5); color: var(--ink-2); font: var(--t-body); }
+
+/* The three sections that say what is missing. Marked, because a reviewer skimming for the
+   gaps should not have to read the good news to find them. */
+.legal__section--gap h2 { border-bottom-color: var(--fin-over); }
+
+.legal__list { max-width: var(--measure); display: grid; gap: var(--s-4); margin: 0; padding: 0; list-style: none; }
+.legal__list--tight { gap: var(--s-2); }
+.legal__list li { padding-left: var(--s-5); border-left: 2px solid var(--border-subtle); font: var(--t-body); }
+
+.legal__doors { display: grid; gap: var(--s-5); margin: 0; }
+.legal__doors > div { padding: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); }
+.legal__doors dt { margin: 0 0 var(--s-3); font: var(--t-title3); }
+.legal__doors dd { max-width: var(--measure); margin: 0 0 var(--s-2); color: var(--ink-2); font: var(--t-body); }
+.legal__doors dd:last-child { margin-bottom: 0; }
+.legal__doors dd b { color: var(--ink-1); }
+
+/* Wide content scrolls inside its own box. A table of five columns on a 1024px Chromebook is
+   the one thing on this page that cannot be made to fit, and a page that scrolls sideways is
+   worse than a table that does. */
+.legal__scroll { overflow-x: auto; }
+.legal__table { width: 100%; min-width: 720px; border-collapse: collapse; font: var(--t-sm); }
+.legal__table th, .legal__table td { padding: var(--s-4); text-align: left; vertical-align: top; border-bottom: 1px solid var(--border-subtle); }
+.legal__table thead th { color: var(--ink-3); font: var(--t-label); letter-spacing: var(--stamp-tracking); text-transform: uppercase; border-bottom: 2px solid var(--border-ink); }
+.legal__table tbody th { width: 22%; color: var(--ink-1); font: var(--t-ui); font-weight: 700; }
+.legal__table tbody td { color: var(--ink-2); }
+
+@media (max-width: 720px) {
+  .legal__page { padding-top: var(--s-6); }
+}
