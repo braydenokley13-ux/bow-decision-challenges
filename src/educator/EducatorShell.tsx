@@ -96,6 +96,7 @@ export function EducatorShell({ children, measure = "evidence" }: PropsWithChild
         {/* Four items, and the first one is the room a teacher is running. */}
         <nav aria-label="Educator navigation">
           <NavLink to="/educator/classes">My classes</NavLink>
+          <NavLink to="/educator/assignments/new">New assignment</NavLink>
           <NavLink to="/educator/objectives">{NAV_LABELS.objectives}</NavLink>
           <NavLink to="/educator/guide">Guide</NavLink>
           {/* The one way to a password change, and to the sentence that says what signing out

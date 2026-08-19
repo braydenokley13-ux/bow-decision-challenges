@@ -143,6 +143,20 @@ export interface Assignment {
   closingQuestion?: ClosingQuestion;
   /** The assignment this one is a reassessment of. Absent unless it is one. */
   attemptOf?: string;
+  /**
+   * When the teacher wants this finished, in epoch ms. Absent means no due date was set —
+   * which is a real, common answer, not a missing one: a class that runs an assignment
+   * open-ended until the class itself closes has not skipped a step.
+   *
+   * There is deliberately no reminder, no late flag and no lock at this date; nothing in the
+   * service reads it back to change what a student can do. It is stored so the builder can
+   * show a teacher what they set and nothing more — a control that wrote to a field nobody
+   * ever read back would be indistinguishable from a control that wrote nowhere at all, and
+   * the assignment builder's own reference is explicit that a date picker must not be drawn
+   * over a field that does not exist. This is the honest alternative to that: the field is
+   * real, it round-trips, and what it does not yet do is enforce anything.
+   */
+  dueAt?: number;
 }
 
 /**

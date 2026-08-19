@@ -6,6 +6,7 @@ import { StudentChallenge } from "./stages/StudentChallenge";
 import { EducatorGuide } from "./educator/EducatorPages";
 import { SampleRun } from "./educator/SampleRun";
 import { MyClasses } from "./educator/MyClasses";
+import { AssignmentBuilder } from "./educator/AssignmentBuilder";
 import { TeacherSignIn } from "./educator/SignIn";
 import { AssignFlow, ObjectiveDetail, ObjectiveList } from "./educator/ObjectivePages";
 import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPages";
@@ -148,6 +149,10 @@ export function App() {
           a year-planning surface, not the thing a teacher opens mid-week. */}
       <Route path="/educator" element={<Navigate to="/educator/classes" replace />} />
       <Route path="/educator/classes" element={<MyClasses />} />
+      {/* The real builder: pick a learning goal, and BOW shows only the stories it can prove
+          are compatible — §0 of the ruling, made into a screen. Reachable with an objective
+          already chosen (`?objective=`) or a class already chosen (`?classCode=`), or neither. */}
+      <Route path="/educator/assignments/new" element={<AssignmentBuilder />} />
       {/* The door a teacher did not have. A class used to be a code and a key in one browser,
           so a reimaged laptop destroyed a term of assessed work — and every endpoint behind
           this screen had been answering correctly for hours with nothing calling them. */}

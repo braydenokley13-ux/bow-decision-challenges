@@ -156,6 +156,7 @@ export interface AssignmentRequest {
   assignedStudentIds: readonly string[] | null;
   closingQuestion?: ClosingQuestion;
   attemptOf?: string;
+  dueAt?: number;
 }
 
 /**
@@ -236,6 +237,9 @@ export function readAssignmentRequest(body: unknown, existing: readonly Assignme
   const closingQuestion = readClosingQuestion(candidate.closingQuestion);
   if (closingQuestion === undefined) return null;
 
+  const dueAt = readDueAt(candidate.dueAt);
+  if (dueAt === undefined) return null;
+
   return {
     objectiveRef,
     competencyIds: objectiveRef ? competenciesAssessedBy(objectiveRef) : competenciesMeasuredBy(DEFAULT_WORLD_ID),
@@ -249,7 +253,22 @@ export function readAssignmentRequest(body: unknown, existing: readonly Assignme
     assignedStudentIds,
     ...(closingQuestion ? { closingQuestion } : {}),
     ...(typeof attemptOf === "string" ? { attemptOf } : {}),
+    ...(dueAt !== null ? { dueAt } : {}),
   };
+}
+
+/**
+ * The builder's due date, or `null` for "the teacher set none" — a real and common answer.
+ *
+ * `undefined` is the malformed reply, matching every other reader in this file: a string, a
+ * negative number or a `NaN` is not a date nobody set, it is a client sending something this
+ * service does not understand, and the whole request is refused rather than silently dropping
+ * the one field that was wrong.
+ */
+function readDueAt(value: unknown): number | null | undefined {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return undefined;
+  return value;
 }
 
 /**

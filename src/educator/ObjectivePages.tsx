@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { EducatorShell, StateKey } from "./EducatorShell";
 import { competencyById } from "../domain/competency/competencies";
-import type { CompetencyId, CompetencyResultState } from "../domain/competency/types";
+import type { Competency, CompetencyId, CompetencyResultState } from "../domain/competency/types";
 import {
   alsoFullyCovered,
   competenciesFor,
@@ -39,16 +39,21 @@ import { TeachNext } from "./TeachNext";
 /** The framework this deployment sets work against. One today; a second is a row in FRAMEWORKS. */
 const FRAMEWORK_ID: FrameworkId = "nysed-pf-2026";
 
-function refOf(standard: Standard): StandardRef {
+/**
+ * Exported alongside the pages that used to be its only callers: the assignment builder
+ * needs the same objective-to-code join, the same route, the same search and the same "why
+ * can BOW not see this yet" reasoning, and none of the four is worth a second copy.
+ */
+export function refOf(standard: Standard): StandardRef {
   return { frameworkId: standard.frameworkId, code: standard.code };
 }
 
-function objectivePath(ref: StandardRef): string {
+export function objectivePath(ref: StandardRef): string {
   return `/educator/objectives/${ref.frameworkId}/${ref.code}`;
 }
 
 /** Matches on the code, BOW's handle, the official wording and the topic — whichever a teacher types. */
-function matches(standard: Standard, query: string): boolean {
+export function matches(standard: Standard, query: string): boolean {
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
   return [standard.code, standard.shortLabel, standard.text, standard.topicName]
@@ -62,7 +67,7 @@ function matches(standard: Standard, query: string): boolean {
  * printed without that band reads as the whole document to a reviewer who opens the source
  * and counts 70.
  */
-function Attribution({ frameworkId }: { frameworkId: FrameworkId }) {
+export function Attribution({ frameworkId }: { frameworkId: FrameworkId }) {
   const framework = FRAMEWORKS[frameworkId];
   if (!framework) return null;
   return (
@@ -72,6 +77,22 @@ function Attribution({ frameworkId }: { frameworkId: FrameworkId }) {
       · {gradeBandLabel(frameworkId)} · wording checked {framework.verifiedOn}
     </p>
   );
+}
+
+/**
+ * Which skills this objective rests on that no story can produce yet, named rather than
+ * left as a bare "coming".
+ *
+ * Extracted so the assignment builder can give the exact same reason for the exact same
+ * objective, rather than a second guess at what "coming" means for it. Order matches
+ * `demandFor`'s own: every part of a completion rule first, then any full mapping's own
+ * candidates — nothing here re-sorts or re-derives what that function already decided.
+ */
+export function waitingCompetenciesFor(ref: StandardRef): readonly Competency[] {
+  const demand = demandFor(ref);
+  return [...demand.allOf, ...demand.anyOf]
+    .filter((competencyId) => !isCompetencyAvailable(competencyId))
+    .flatMap((competencyId) => competencyById(competencyId) ?? []);
 }
 
 // ---------------------------------------------------------------------------
@@ -408,10 +429,7 @@ export function ObjectiveDetail() {
   const alsoCovered = alsoFullyCovered(ref);
   // Which skills this objective rests on that neither story can produce yet. Named, because
   // "coming" without a reason is a promise and this is a fact.
-  const demand = demandFor(ref);
-  const waiting = [...demand.allOf, ...demand.anyOf]
-    .filter((competencyId) => !isCompetencyAvailable(competencyId))
-    .flatMap((competencyId) => competencyById(competencyId) ?? []);
+  const waiting = waitingCompetenciesFor(ref);
 
   /**
    * Every objective BOW cannot assess is here, and there is nothing to report about any of
@@ -467,7 +485,7 @@ export function ObjectiveDetail() {
             paints its back-link in muted ink, and a primary button that inherited it failed
             contrast against its own dark fill. */}
         <p className="objective-actions">
-          <Link className="button button--primary" to={`/educator/classes?objective=${standard.code}`}>Assign this</Link>
+          <Link className="button button--primary" to={`/educator/assignments/new?objective=${standard.code}`}>Assign this</Link>
         </p>
       </header>
 

@@ -76,7 +76,19 @@ p { color: var(--ink-2); }
  * consistently for the title of a thing rather than the name of a section.
  */
 .section-heading, .section-head { max-width: 720px; margin-bottom: var(--gap-block); }
-.section-heading h2, .section-head h2, .debrief__section h2 { margin: 0; font: var(--t-display3); letter-spacing: var(--display-tracking); text-transform: uppercase; }
+
+/*
+ * Sentence case, not caps.
+ *
+ * The display voice sets short headlines in caps the way a sports page does, and that is
+ * right for the front door and for a world's establishing shot. It was also applied to every
+ * section heading on every teacher surface, so a page a teacher scans in a hurry shouted
+ * eight times before it said anything — and caps stop being a voice and start being an
+ * obstacle at the length these actually run to ("Where the class is on each skill").
+ *
+ * `.display-caps` still exists for the places that want it. This is the calm one.
+ */
+.section-heading h2, .section-head h2, .debrief__section h2 { margin: 0; font: var(--t-section); letter-spacing: var(--display-tracking); }
 .section-heading > p:not(.eyebrow), .section-head > p:not(.eyebrow) { max-width: var(--measure); margin: var(--s-3) 0 0; color: var(--ink-2); font: var(--t-body); }
 
 /* The debrief opens each numbered section with a bare heading rather than a block, so the
@@ -491,7 +503,37 @@ p { color: var(--ink-2); }
 .teach-next > p:not(.eyebrow) { max-width: 820px; font: var(--t-body-lg); }
 .teach-next > div { display: flex; gap: var(--s-3); margin-top: var(--s-5); }
 .teach-next .standard-chip { position: absolute; right: var(--s-6); top: var(--s-6); }
-.dashboard-section { padding: 0; }
+
+/*
+ * A teacher's page is made of sections, and until now a section was a margin.
+ *
+ * `.dashboard-section { padding: 0 }` was the whole rule, so every surface in the educator
+ * product was one uninterrupted column of headings, tables and paragraphs on the page
+ * ground — which is what made a product carrying real evidence read as a printed handout of
+ * it. The substance was never the problem; nothing had ever drawn a boundary round it.
+ *
+ * A section is a surface now: its own ground, a soft edge, one step of elevation. The
+ * heading sits inside it rather than floating above a table, so a teacher scanning for
+ * "where the class is on each skill" has something to land on.
+ */
+.dashboard-section {
+  padding: var(--s-6) var(--s-6) var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+}
+
+/* A table inside a card has the card's ground already; a second one reads as a box in a box.
+   The rules stay, because they are what makes a dense table readable. */
+.dashboard-section .concept-matrix,
+.dashboard-section .micro-table,
+.dashboard-section .grade-ledger { background: transparent; }
+
+/* Wide evidence tables scroll inside their own card rather than pushing the page sideways —
+   `gridFloors.test.ts` guards the grids, and this is the same failure for a table. */
+.dashboard-section > .micro-table,
+.dashboard-section > .concept-matrix { display: block; overflow-x: auto; }
 .concept-matrix, .micro-table, .grade-ledger { width: 100%; border-collapse: collapse; background: var(--surface); }
 
 /* Every caption in the educator surface, not just the one table that happened to have a
@@ -1698,7 +1740,10 @@ p { color: var(--ink-2); }
 .builder-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); align-items: start; gap: var(--s-7); }
 .builder-main { display: grid; gap: var(--gap-block); min-width: 0; }
 .builder-section { margin: 0; padding: var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--r-lg); box-shadow: var(--shadow-card); }
-.builder-section legend { padding-inline: var(--s-2); color: var(--ink-1); font: var(--t-display3); letter-spacing: var(--display-tracking); text-transform: uppercase; }
+
+/* Sentence case, for the same reason every other teacher heading is: five numbered sections
+   shouting in caps is a page arguing with the person reading it. */
+.builder-section legend { padding-inline: var(--s-2); color: var(--ink-1); font: var(--t-title1); letter-spacing: var(--display-tracking); }
 .builder-section > p { max-width: var(--measure); margin: 0 0 var(--s-4); color: var(--ink-2); font: var(--t-body); }
 
 /* 1. Learning goal */
@@ -1768,9 +1813,40 @@ p { color: var(--ink-2); }
 .builder-preview { position: sticky; top: var(--s-6); align-self: start; padding: var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--r-lg); box-shadow: var(--shadow-card); }
 .builder-preview h2 { margin: 0 0 var(--s-4); font: var(--t-title2); }
 .builder-preview > p { margin: 0; color: var(--ink-2); font: var(--t-sm); }
+
+/* The rail is 280-360px and the table inside it has one text column plus one per story, so
+   the story headings were folding onto three lines each while the first column wrapped to
+   match. The head cells stop wrapping and the whole table scrolls sideways inside its own
+   card instead — the row a teacher is reading stays on one line, and nothing pushes the page
+   sideways. */
+
+/* The preview is a list of skills, each a list of the parts it needs. See
+   `AssignmentBuilder.tsx` for why it stopped being a table. */
+.builder-preview__skills { display: grid; gap: var(--s-5); margin: 0 0 var(--s-4); padding: 0; list-style: none; }
+.builder-preview__skills > li > h3 { margin: 0 0 var(--s-3); color: var(--ink-2); font: var(--t-sm); font-weight: 700; }
+.builder-preview__rows { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+
+.builder-preview__rows > li {
+  display: grid;
+  gap: 2px;
+  padding-left: var(--s-4);
+  border-left: 2px solid var(--fin-balanced);
+  color: var(--ink-2);
+  font: var(--t-sm);
+}
+
+/* The only thing on this panel a teacher has to act on. */
+.builder-preview__rows > li[data-gap="true"] { border-left-color: var(--fin-conditional); }
+.builder-preview__row small { color: var(--ink-4); }
+.builder-preview__gap { color: var(--fin-conditional-ink); font: var(--t-micro); font-weight: 700; }
+.builder-preview__every { margin: 0 0 var(--s-4); color: var(--ink-2); font: var(--t-sm); }
+
 .builder-preview__scroll { overflow-x: auto; margin-bottom: var(--s-4); }
 .builder-preview__scroll .micro-table { min-width: 100%; font: var(--t-sm); }
-.builder-preview__scroll th, .builder-preview__scroll td { padding: var(--s-3); }
+.builder-preview__scroll th, .builder-preview__scroll td { padding: var(--s-3) var(--s-2); vertical-align: top; }
+.builder-preview__scroll thead th { white-space: nowrap; font: var(--t-micro); font-weight: 700; letter-spacing: 0.04em; }
+.builder-preview__scroll tbody td { text-align: center; font-feature-settings: var(--num); }
+.builder-preview__scroll tbody th { text-align: left; font: var(--t-sm); font-weight: 500; }
 .builder-preview__skill th { padding-top: var(--s-5); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.04em; text-transform: uppercase; border-bottom: none; }
 .builder-preview__scroll thead th[data-included="false"] { color: var(--ink-4); font-weight: 400; }
 .builder-preview__note { margin-top: var(--s-4); color: var(--ink-3); font: var(--t-micro); }

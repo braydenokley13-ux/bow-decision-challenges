@@ -53,7 +53,7 @@ const NO_OBJECTIVE = "";
  * the list entirely — none of them is BOW's question once it is sent, and the text stored on
  * the assignment is whatever is in the box.
  */
-const SUGGESTED_CLOSING: readonly string[] = [
+export const SUGGESTED_CLOSING: readonly string[] = [
   "Which decision would you change if you played again?",
   "Which piece of information changed your decision most?",
   "Where did your plan become vulnerable?",
