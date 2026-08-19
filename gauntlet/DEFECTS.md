@@ -278,3 +278,28 @@ student did the arithmetic in both. A rule that had punished the whole competenc
 a blunter instrument, not a better one.
 
 Checked at HEAD by the lead, on the domain the educator surfaces read from, not on a screenshot.
+
+
+**N7 — BLOCKER-2 verified closed by the lead.** The coherence critic's second blocker was that
+one world reaches the teacher in English and the other in code: a pop-up student's evidence page
+printed `popup-spot`, `POPUP_SUM_SUBMITTED` and `event-5` where a basketball student's printed
+sentences. A fix landed and its author's verification was destroyed by the restart, so I
+rendered the real panel over a real market run and read what a teacher gets:
+
+> *"Working out what the market wants before a single plate is sold — the permit and the booth
+> for the spot the student chose — and then building the plan on what is left rather than on the
+> whole account. The total owed before the first Saturday came out right at the first attempt."*
+>
+> *"Closing the opening plan by sending the last of the money to a named line. Your cut is the
+> money the student is banking for themselves, so a student who sends the leftovers there has let
+> the arithmetic set their pay… **Your cut held a figure the student set, and another line took
+> the last of the money.**"*
+
+No event type, no stage id and no `event-N` anywhere in the rendered trail. And the second
+sentence is the provenance rule from N6 working in the *other* world — the same rule, the same
+words, on a run in the market rather than the season, which is what "one product" was supposed to
+mean.
+
+**N8 — the unit suite at HEAD: 1,315 passing, 0 failing, 1 skipped**, across 107 files, with
+`npx tsc -b` clean and `scripts/verify-head.sh` confirming the commit builds from a clean
+checkout rather than only the working tree.
