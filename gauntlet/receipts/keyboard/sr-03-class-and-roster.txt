@@ -1,0 +1,98 @@
+# MAKE A CLASS, PASTE A ROSTER, PRINT CARDS — KEYBOARD ONLY. Snapshot 074ec2f.
+# Nothing clicked. Tab / Shift+Tab / Enter / Space / arrows / Escape only.
+
+==================== CREATE A CLASS ====================
+  FOCUS ON ARRIVAL (fresh load of /educator/classes) → "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+  Tab ×6 from the top of the document → "NAME THIS CLASS", textbox, desc="Students need the class code and the card you print for them. They never type an"
+  typed the class name — ANNOUNCED: []
+  Tab ×1 → "OBJECTIVE", combobox, value=1.3 · Create a budget, desc="NYSED has not reviewed or endorsed BOW."
+  (arrow keys inside the select)
+     ArrowDown → "OBJECTIVE", combobox, value=Run the challenge without one, desc="Students still play the challenge and you still see everything they did. Nothing"
+     ArrowUp   → "OBJECTIVE", combobox, value=1.3 · Create a budget, desc="NYSED has not reviewed or endorsed BOW."
+  Tab ×1 → the radio group. Its accessible name is the whole sentence:
+     "Students pick Eight Weeks to the Showcase or Run the Pop-Up. Both stories collect the same evidence, so the results pool either way.", radio, checked=true
+     ArrowDown → "One for everyone Eight Weeks to the Showcase.", radio, checked=true
+     ArrowUp   → "Students pick Eight Weeks to the Showcase or Run the Pop-Up. Both stories collect the same evidence, so the results pool either way.", radio, checked=true
+     ANNOUNCED while changing the story choice: []
+  Tab ×1 → "Create the class", button
+  PRESS Enter — create the class
+     FOCUS LOST TO BODY from div#root > div.educator-shell > main.educator-main > section.class-form > button.button.button--primary
+     FOCUS NOW → "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+
+######## SCREEN — the class, just created
+  url             http://127.0.0.1:6473/educator/classes
+  document.title  Plan Under Pressure — BOW Decision Challenges
+  landmarks       banner (unnamed) | navigation "Educator navigation" | main (unnamed)
+  headings        h1"Here is the code." h2"Period 3 Financial Literacy"
+  --- what a blind student hears reading this screen top to bottom ---
+   "Plan Under Pressure — BOW Decision Challenges", RootWebArea
+  ····· banner
+  ······ "BOW Decision Challenges home", link
+  ········· "BOW", StaticText
+  ········· "DECISION CHALLENGES", StaticText
+  ······ "Educator navigation", navigation
+  ······· "My classes", link
+  ········ "My classes", StaticText
+  ······· "Objectives", link
+  ········ "Objectives", StaticText
+  ······· "Guide", link
+  ········ "Guide", StaticText
+  ······ "SIGN OUT", button
+  ······· "SIGN OUT", StaticText
+  ····· main
+  ······ sectionheader
+  ······· paragraph
+  ········ "PERIOD 3 FINANCIAL LITERACY", StaticText
+  ······· "Here is the code.", heading, level 1
+  ········ "Here is the code.", StaticText
+  ········ paragraph
+  ········· "CLASS CODE", StaticText
+  ········ strong
+  ········· "N7M3U", StaticText
+  ········ paragraph
+  ········· "Not case sensitive.", StaticText
+  ········ "Period 3 Financial Literacy", heading, level 2
+  ········· "Period 3 Financial Literacy", StaticText
+  ········ list
+  ········· listitem, level 1
+  ·········· "1.", ListMarker
+  ·········· "Paste your class list", link
+  ··········· "Paste your class list", StaticText
+  ·········· "and print the cards — one per student, with their name and their own code on it.", StaticText
+  ········· listitem, level 1
+  ·········· "2.", ListMarker
+  ·········· "Put the code above on the board and send students to", StaticText
+  ·········· code
+  ··········· "http://127.0.0.1:6473", StaticText
+  ··········· "/join", StaticText
+  ·········· ". They type the class code, then the code on their card. Nothing asks them for an email address or a password.", StaticText
+  ········· listitem, level 1
+  ·········· "3.", ListMarker
+  ·········· "Allow about", StaticText
+  ·········· "20–28 minutes", StaticText
+  ·········· ". Do not coach a financial strategy.", StaticText
+  ········· listitem, level 1
+  ·········· "4.", ListMarker
+  ·········· "Open the evidence with your private link when they are finished.", StaticText
+  ········ paragraph
+  ········· "No list to hand? Skip the cards: students type the class code and their own first name, and BOW files their work under that.", StaticText
+  ········· paragraph
+  ·········· "YOUR PRIVATE LINK", StaticText
+  ········· code
+  ·········· "http://127.0.0.1:6473", StaticText
+  ·········· "/educator/class/N7M3U?key=WM9KJCP9X9MCW6EUYT9CK4KC", StaticText
+  ········· paragraph
+  ·········· "Bookmark this. It is saved in this browser, it is the only thing that opens this class’s evidence, and it is not shown again — the class code alone will not open it, which is what stops students reading each other’s work.", StaticText
+  ········ "Open this class", link
+  ········· "Open this class", StaticText
+  --- every Tab stop on the new class screen ---
+  Tab  1 → "Paste your class list", link
+  Tab  2 → "Open this class", link
+  Tab  3 → *** DOCUMENT BODY — nothing is spoken ***
+  Tab  4 → "BOW Decision Challenges home", link
+  Tab  5 → "My classes", link
+  Tab  6 → "Objectives", link
+  Tab  7 → "Guide", link
+  Tab  8 → "SIGN OUT", button
+  Tab  9 → "Paste your class list", link   (ring closed here)
+  class codes visible in the text: ["CLASS","N7M3U","N7M3U"]

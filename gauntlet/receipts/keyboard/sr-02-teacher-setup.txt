@@ -36,7 +36,7 @@
   url             http://127.0.0.1:6473/educator/sign-in
   document.title  Plan Under Pressure — BOW Decision Challenges
   landmarks       banner (unnamed) | navigation "Educator navigation" | main (unnamed)
-  headings        h1"Your recovery code. It is not shown again." h2"JHHXJ1ETAXFQMGGFAZ8"
+  headings        h1"Your recovery code. It is not shown again." h2"JWDVGZ4H8ZPSV1WRP0R"
   --- what a blind student hears reading this screen top to bottom ---
    "Plan Under Pressure — BOW Decision Challenges", RootWebArea
   ····· banner
@@ -62,8 +62,8 @@
   ········ "It is the only way back into this account without your password. Write it down or put it wherever you keep passwords — BOW cannot send it to you and cannot look it up.", StaticText
   ········· paragraph
   ·········· "RECOVERY CODE", StaticText
-  ········· "JHHXJ1ETAXFQMGGFAZ8", heading, level 2
-  ·········· "JHHXJ1ETAXFQMGGFAZ8", StaticText
+  ········· "JWDVGZ4H8ZPSV1WRP0R", heading, level 2
+  ·········· "JWDVGZ4H8ZPSV1WRP0R", StaticText
   ········· "I have written it down", button
   ·········· "I have written it down", StaticText
   --- every Tab stop on this screen ---

@@ -1,17 +1,19 @@
-class_code=X96XP
-teacher_key=PGMAGK3X3DYF6VRFC3NK37JJ
-private_link=http://127.0.0.1:4187/educator/class/X96XP?key=PGMAGK3X3DYF6VRFC3NK37JJ
-api_port=4186 app_port=4187
-store=file durable=true classroomReady=true
---- roster cards (class X96XP) ---
-Ana R.=QWTRD
-Mohamed A.=NHGWY  (seat 2)
-Mohamed A.=JEV73  (seat 3, duplicate display name)
-Xiùyīng L.=URTGP
-Md. Rakib H.=3N77C
-D'Angelo W.=JWM7N
-Yusra A.=URT9R
-José-María G.=PH6YW
-Анастасия К.=3ENMW
-কবির র.=XVCFQ
-Table 6 (new 9/14)=(seat 11)
+D26 round 2 — live class used for this review
+app=http://127.0.0.1:4187  api=http://127.0.0.1:4186 (file store, durable, classroomReady)
+class_label=D26 · Period 3 · Grade 7
+class_code=FREH9
+teacher_key=3VMKDCEDNRYJA3D3UJWP3R3C
+private_link=http://127.0.0.1:4187/educator/class/FREH9?key=3VMKDCEDNRYJA3D3UJWP3R3C
+roster cap = 60
+--- cards (name = seat code) ---
+Ana R. = D6TKP
+Mohamed A. = UFVPK          (seat 2)
+Mohamed A. = 69MDA          (seat 3 — identical display name)
+Xiùyīng L. = Q3GYY
+Md. Rakib H. = CRHAT
+D'Angelo W. = J3UD3
+Yusra A. = HK9UU
+José-María G. = Q3VTX
+Анастасия К. = KPVM7
+কবির র. = 3AHC7
+Table 6 (new 9/14) = WNNY6
