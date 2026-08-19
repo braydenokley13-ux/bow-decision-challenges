@@ -157,7 +157,11 @@ function TrayOrder({ saturday, nights, max, trays, onTrays, pricing = "settled",
         </div>
         <p className="tray-order__hint">{COPY.saturday.trayHint}</p>
         <p className="tray-order__cost">
-          <span>{pricing === "settled" ? `${formatDollars(orderCost(N, trays * nights))}${nights === 2 ? ` ${COPY.saturday.bothNights}` : ""}` : ""}</span>
+          {/* No empty element while the sum is open: a flex row with a blank first child pushes
+              the note that is on it across the screen for no reason. */}
+          {pricing === "settled" && (
+            <span>{formatDollars(orderCost(N, trays * nights))}{nights === 2 ? ` ${COPY.saturday.bothNights}` : ""}</span>
+          )}
           {/* Where the money comes off, once a line other than the stock line is on the hook
               for part of it. The old note — "N is all your stock line pays for" — stops being
               true the moment the student names one, so it is replaced rather than kept beside
