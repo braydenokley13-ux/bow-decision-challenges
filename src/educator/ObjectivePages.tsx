@@ -4,6 +4,7 @@ import { EducatorShell, StateKey } from "./EducatorShell";
 import { competencyById } from "../domain/competency/competencies";
 import type { CompetencyId, CompetencyResultState } from "../domain/competency/types";
 import {
+  alsoFullyCovered,
   competenciesFor,
   FRAMEWORKS,
   demandFor,
@@ -400,6 +401,11 @@ export function ObjectiveDetail() {
   }
 
   const covering = competenciesFor(frameworkId, standard.code);
+  // What a teacher gets without asking. One skill can cover two state objectives in full, and
+  // when it does, work assigned against one settles the other — which reads as the product
+  // losing track of itself unless the page says so first. Two pairs exist today; the mapping
+  // suite pins the list so a third arrives on purpose.
+  const alsoCovered = alsoFullyCovered(ref);
   // Which skills this objective rests on that neither story can produce yet. Named, because
   // "coming" without a reason is a promise and this is a fact.
   const demand = demandFor(ref);
@@ -464,6 +470,20 @@ export function ObjectiveDetail() {
           <Link className="button button--primary" to={`/educator/classes?objective=${standard.code}`}>Assign this</Link>
         </p>
       </header>
+
+      {alsoCovered.length > 0 && (
+        <p className="objective-companion">
+          The same {alsoCovered.length === 1 ? "skill covers" : "skills cover"}{" "}
+          {alsoCovered.map((entry, index) => (
+            <span key={entry.code}>
+              {index > 0 ? ", " : ""}
+              <Link to={`/educator/objectives/${entry.code}`}>{entry.code} {entry.shortLabel}</Link>
+            </span>
+          ))}{" "}
+          in full. Work you set for this one settles {alsoCovered.length === 1 ? "that one" : "those"} too — the
+          same student decisions answer both, so you do not assign it twice.
+        </p>
+      )}
 
       <section className="dashboard-section">
         <div className="section-heading">

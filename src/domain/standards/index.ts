@@ -173,6 +173,41 @@ export function standardsFor(competencyId: CompetencyId): readonly CoveredStanda
   });
 }
 
+/**
+ * The other objectives a teacher gets for free by assigning this one.
+ *
+ * A competency can cover more than one state objective *in full*. Two do: `how-savings-grow`
+ * covers NYSED 5.2 and 5.5, and `keep-credit-costs-down` covers 2.3 and 2.4. So a teacher who
+ * assigns 2.3 also gets a settled result on 2.4, from the same student work, without having
+ * asked for it.
+ *
+ * **That is a gift and it reads as a fault.** `mappingIntegrity.test.ts` has said so in a
+ * comment for as long as the function beside this one has existed — *"it has to be labelled on
+ * screen or it looks like a mistake"* — and nothing labelled it. An objective a teacher did not
+ * assign moving on the objectives page is, to a reasonable person, a product that has confused
+ * itself.
+ *
+ * Only `full` counts, and only from a competency that covers **this** objective in full. A
+ * `partial` companion would be BOW claiming a second objective off the back of the first, which
+ * is the over-claim the whole standards layer exists to prevent. And the objective's own code is
+ * never in the result — a teacher does not need telling they get what they asked for.
+ */
+export function alsoFullyCovered(ref: StandardRef): readonly Standard[] {
+  const here = mappingsForStandard(ref).filter((mapping) => mapping.coverage === "full");
+  const codes = new Set<string>();
+  const found: Standard[] = [];
+  for (const mapping of here) {
+    for (const covered of standardsFor(mapping.competencyId)) {
+      if (covered.coverage !== "full") continue;
+      if (covered.standard.code === ref.code || covered.standard.frameworkId !== ref.frameworkId) continue;
+      if (codes.has(covered.standard.code)) continue;
+      codes.add(covered.standard.code);
+      found.push(covered.standard);
+    }
+  }
+  return found;
+}
+
 /** One competency, joined to the coverage claim that reached it. */
 export interface CoveringCompetency {
   competency: Competency;

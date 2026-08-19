@@ -1205,6 +1205,10 @@ p { color: var(--ink-2); }
 .objective-result[data-state="needs-attention"] strong { color: var(--fin-over-ink); }
 .objective-actions { margin: 0; }
 
+/* The companion note sits above the skills table rather than inside it: it is a fact about
+   what a teacher has already been given, not another row of what BOW measures. */
+.objective-companion { max-width: 60ch; margin: var(--s-5) 0 0; padding: var(--s-4); background: var(--surface-raised); border-left: 3px solid var(--border-strong); color: var(--ink-1); font: var(--t-sm); font-weight: 400; }
+
 /* The step rules used to stop at 640 while the commit bar under them ran the full
    width, which put three unrelated right edges on one short page. */
 .assign-steps { margin: 0; padding: 0; list-style: none; }
