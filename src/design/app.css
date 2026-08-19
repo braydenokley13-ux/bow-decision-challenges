@@ -1222,7 +1222,7 @@ p { color: var(--ink-2); }
 .row-list > a { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s-4); padding: var(--s-5); background: var(--surface); color: var(--ink-1); text-decoration: none; }
 .row-list > a:hover { background: var(--surface-raised); }
 .row-list > a::after { content: "→"; color: var(--ink-3); font: var(--t-title2); }
-.row-list h3 { margin: var(--s-1) 0 0; font: var(--t-title3); }
+.row-list :is(h2, h3) { margin: var(--s-1) 0 0; font: var(--t-title3); }
 .row-list small { color: var(--ink-3); font: var(--t-micro); font-feature-settings: var(--num); }
 
 .objective-coming { display: grid; gap: var(--s-4); max-width: var(--measure); }

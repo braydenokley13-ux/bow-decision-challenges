@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from "react";
+import { useEffect, useRef, type PropsWithChildren } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { AppMark } from "../components/primitives/AppMark";
 import { forgetTeacher, teacherToken } from "./teacherSession";
@@ -37,6 +37,37 @@ function isSampleClassRoute(pathname: string): boolean {
 
 export function EducatorShell({ children, measure = "evidence" }: PropsWithChildren<{ measure?: EducatorMeasure }>) {
   const { pathname } = useLocation();
+  const main = useRef<HTMLElement>(null);
+  /**
+   * Where focus goes when a teacher follows a link in the top bar.
+   *
+   * Nowhere, before this. A client-side route change swaps the whole of `<main>` and leaves
+   * focus on a link that no longer exists, so the browser drops it to `<body>`: a keyboard user
+   * tabs from the top of the document again on every page, and a screen-reader user is told
+   * nothing at all — the page they asked for arrives in silence. Measured at 1366×768 with
+   * axe's own browser, `document.activeElement` after **My classes → Guide** and after
+   * **Guide → Objectives** was `BODY` both times.
+   *
+   * The heading is the target rather than the landmark, because the first thing a person wants
+   * to know is which page they landed on and the `<h1>` is the page saying its own name.
+   * `src/stages/WorldChoice.tsx` and `src/student/Join.tsx` already do exactly this with a ref
+   * on their own `<h1>`; this shell cannot, because the heading belongs to whichever page it is
+   * wrapping. So it finds the one inside its own `<main>` and makes it focusable — the same
+   * three lines, reaching one element further.
+   *
+   * It runs on mount as well as on a change, and that is deliberate rather than overlooked:
+   * every educator page renders its own `EducatorShell`, so a route change unmounts this
+   * component and mounts a new one, and a guard that skipped the first effect would skip every
+   * navigation there is. `Join.tsx` focuses on mount for the same reason.
+   */
+  useEffect(() => {
+    const landing = main.current?.querySelector("h1") ?? main.current;
+    if (!landing) return;
+    // A heading is not focusable on its own. Set here rather than in the markup of a dozen
+    // pages, which is the same reason this lives in the shell at all.
+    if (!landing.hasAttribute("tabindex")) landing.setAttribute("tabindex", "-1");
+    landing.focus();
+  }, [pathname]);
   return (
     <div className="educator-shell">
       <header className="educator-topbar">
@@ -64,7 +95,7 @@ export function EducatorShell({ children, measure = "evidence" }: PropsWithChild
           : <NavLink className="educator-topbar__session" to="/educator/sign-in">Sign in</NavLink>}
         {isSampleClassRoute(pathname) && <span className="demo-pill">Sample class — not a real class</span>}
       </header>
-      <main className="educator-main" data-measure={measure}>{children}</main>
+      <main className="educator-main" ref={main} tabIndex={-1} data-measure={measure}>{children}</main>
     </div>
   );
 }

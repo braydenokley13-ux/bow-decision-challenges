@@ -338,7 +338,12 @@ export function MyClasses() {
             <Link key={record.code} to={evidencePath(record)}>
               <div>
                 <small>{record.code} · created {new Date(record.createdAt).toLocaleDateString()}</small>
-                <h3>{record.label}</h3>
+                {/* An `<h2>`, not the `<h3>` this was: the only heading above it on this page
+                    is the `<h1>`, so the level skipped one and axe said so — the last
+                    `heading-order` finding left in the product. It looks exactly the same,
+                    because `.row-list :is(h2, h3)` in `app.css` styles the row rather than
+                    the tag. A class is a section of this page and reads as one. */}
+                <h2>{record.label}</h2>
               </div>
             </Link>
           ))}
