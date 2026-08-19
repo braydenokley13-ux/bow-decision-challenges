@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { plainVault, readStoreKey, STORE_KEY_HELP, vault, type Vault } from "./vault";
+import { readStoreKey, STORE_KEY_HELP, vault, type Vault } from "./vault";
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { CLASS_RETENTION_DAYS, type Assignment, type ClassRecord, type SubmissionRecord } from "../src/platform/classes/types";
@@ -263,7 +263,6 @@ export function memoryStore(): ClassStore {
   // A process-lifetime secret. Correct for a store that keeps nothing: a test that restarted
   // and kept signing tokens with the same key would be testing something no deployment does.
   const secret = randomBytes(32).toString("base64url");
-  void plainVault;
 
   const bucket = <T>(map: Map<string, Map<string, T>>, code: string) => {
     const existing = map.get(code);

@@ -35,6 +35,14 @@ import { createCipheriv, createDecipheriv, createHmac, randomBytes } from "node:
  * The session secret is derived from the same key rather than stored, so it exists in memory
  * and in the operator's secret manager and nowhere else. A file nobody writes is a file
  * nobody can steal.
+ *
+ * **There is one vault factory in this file and there is meant to be one.** There were two: a
+ * `plainVault` that stringified instead of sealing, written for the memory store and then not
+ * used by it — the memory store keeps records in a `Map` and never asks a vault for anything.
+ * It survived a release as dead code kept alive by a `void plainVault;` in `store.ts`, which is
+ * the shape a security review notices: an exported function named like the real one, in the
+ * file the next engineer opens to find out how records are protected, that returns them in the
+ * clear. `vaultSealsEverything.test.ts` is why a second one cannot arrive quietly.
  */
 
 const SEALED = 1;
@@ -129,14 +137,5 @@ export function vault(key: Buffer, options: { acceptLegacyPlaintext?: boolean } 
     derive(purpose) {
       return createHmac("sha256", key).update(`bow.derive.v1.${purpose}`).digest("base64url");
     },
-  };
-}
-
-/** A vault that seals nothing, for the memory store, where there is no disk to protect. */
-export function plainVault(secret: string): Vault {
-  return {
-    seal: (value) => JSON.stringify(value),
-    open: <T,>(raw: string): T | null => { try { return JSON.parse(raw) as T; } catch { return null; } },
-    derive: (purpose) => createHmac("sha256", secret).update(`bow.derive.v1.${purpose}`).digest("base64url"),
   };
 }
