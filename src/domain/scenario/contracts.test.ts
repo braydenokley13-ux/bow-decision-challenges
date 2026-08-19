@@ -4,11 +4,10 @@ import { parityBreaches, parityBreachesAcrossChoices, type DemandProfile } from 
 import type { WorldId } from "../core/ids";
 import { PLAYABLE_WORLDS, scenarioFor, usesSharedBoard, numbersFor } from "./registry";
 import { requiredEvidenceRequirementsFor } from "../competency/competencies";
-import { buildSubmission } from "../../test/runChallenge";
 import { buildPopUpSubmission } from "../../test/runPopUp";
+import { WORLD_RUNS } from "../../test/worldRuns";
 import { SCENARIO_NUMBERS } from "./numbers";
 import { REASONING_CRITERIA, type ReasoningScores } from "../blueprint/reasoning";
-import type { SubmissionRecord } from "../../platform/classes/types";
 
 /**
  * §7.2 and §9.2 — what a world owes the product, checked rather than trusted.
@@ -28,11 +27,12 @@ const READ_AND_STRONG: ReasoningScores = Object.fromEntries(REASONING_CRITERIA.m
  * means each world's own headless harness. Driving both contracts from one world's log would
  * be the exact mistake the contract exists to prevent: observing one world's decisions with
  * another world's rules and publishing the result under a child's name.
+ *
+ * The map moved to `src/test/worldRuns.ts` so that three test files stopped keeping three
+ * copies of it, and so that a world added without a harness is a compile error rather than
+ * an `undefined()` in whichever of them ran first.
  */
-const RUNS: Record<WorldId, () => SubmissionRecord> = {
-  basketball: () => buildSubmission({}),
-  "food-truck": () => buildPopUpSubmission({}),
-};
+const RUNS = WORLD_RUNS;
 
 describe("the world contract", () => {
   it("gives every playable world one, and nothing a contract without a story", () => {

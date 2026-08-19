@@ -40,6 +40,45 @@ const TOKEN_KEY = "bow.student.v1.token";
  */
 const WHO_KEY = "bow.student.v1.id";
 
+/**
+ * The code an open class handed back once, kept for the account it belongs to.
+ *
+ * An open class has no roster and prints no card, so the join code minted at
+ * `POST /classes/:code/join` (`server/identity.ts`) is the only credential that account will
+ * ever have — and the service hands it back exactly once, in the response to the join that
+ * mints it. A student whose session dies (a shared-device token lasts ten hours; there is no
+ * refresh route) and who was never shown that code has no way back in except retyping their
+ * name, which mints a second seat and a second account and leaves the first one's work
+ * orphaned under it. `Join.tsx` now shows the code the moment it is issued; this is what lets
+ * the *same browser* skip straight back to it rather than making a child who wrote it down
+ * retype eight characters from a scrap of paper.
+ *
+ * Keyed by class code because a student account is not: `RULING.md` §5 keeps a student on
+ * several rosters, and a browser that remembered only the last open class it joined would stop
+ * recognising every other one the moment a second was joined on it.
+ *
+ * **Why recognising it is safe on a shared cart.** Reading this back is not enough on its own
+ * — `Join.tsx` also checks the stored `studentId` against `studentIdHeld()` (`WHO_KEY`, above)
+ * before it will act on it. `WHO_KEY` already answers "whose work is on this device", updated
+ * on every successful join; a different child sitting down and joining the same open class
+ * fresh overwrites it with their own account the moment *they* sign in, which is the same
+ * mechanism `sharedDevice.test.tsx` holds for clearing a stranger's draft. So a stored code is
+ * only ever offered back to the account this browser already believes is sitting at it — never
+ * displayed, and never usable, for anybody else's.
+ *
+ * Not a new exposure: a browser trusted with this is already trusted with `TOKEN_KEY`, the
+ * bearer credential that authenticates outright, for up to forty-five days on a device a
+ * student called their own. This is a narrower, revocable credential kept for a case the token
+ * cannot cover — the token having already expired.
+ */
+const JOIN_CODE_KEY = "bow.student.v1.joincode";
+
+/** One class's worth of what `JOIN_CODE_KEY` remembers. */
+interface RememberedJoin {
+  studentId: string;
+  joinCode: string;
+}
+
 /** Storage that is not there — a locked-down browser profile, or a test — reads as signed out. */
 function storage(): Storage | null {
   try {
@@ -76,6 +115,41 @@ export function rememberStudentId(id: string, store: Pick<Storage, "setItem"> | 
   try {
     store?.setItem(WHO_KEY, id);
   } catch { /* see above */ }
+}
+
+/** What this browser was told to get back into `classCode`, and which account it was told for. */
+export function joinCodeHeld(classCode: string, store: Pick<Storage, "getItem"> | null = storage()): RememberedJoin | null {
+  try {
+    const raw = store?.getItem(JOIN_CODE_KEY);
+    if (!raw) return null;
+    const held = JSON.parse(raw) as Record<string, RememberedJoin>;
+    return held[classCode] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Keeps one class's join code, replacing whatever this browser held for that class before.
+ *
+ * Overwriting rather than refusing a second write is what keeps this in step with `WHO_KEY`: if
+ * a different child later joins the same open class fresh on this machine, their join both
+ * raises `WHO_KEY` to their own account and lands here under the same `classCode`, so the first
+ * child's code stops being offered back the moment somebody else's does exist for that class —
+ * without this function needing to know that is why.
+ */
+export function rememberJoinCode(
+  classCode: string,
+  joinCode: string,
+  studentId: string,
+  store: Pick<Storage, "getItem" | "setItem"> | null = storage(),
+): void {
+  try {
+    const raw = store?.getItem(JOIN_CODE_KEY);
+    const held = raw ? (JSON.parse(raw) as Record<string, RememberedJoin>) : {};
+    held[classCode] = { studentId, joinCode };
+    store?.setItem(JOIN_CODE_KEY, JSON.stringify(held));
+  } catch { /* a full or blocked store loses the shortcut, not the account it is a shortcut to */ }
 }
 
 /**

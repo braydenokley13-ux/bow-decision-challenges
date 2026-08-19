@@ -3,6 +3,7 @@ import type { CompetencyId } from "../../domain/competency/types";
 import type { WorldId } from "../../domain/core/ids";
 import { DEFAULT_WORLD_ID } from "../../domain/scenario/registry";
 import { completionRuleFor, FRAMEWORKS, mappingsForStandard, standardByRef } from "../../domain/standards";
+import { compatibleWorldsFor as offerableWorlds } from "./worldCompatibility";
 import type { FrameworkId, StandardRef } from "../../domain/standards/types";
 import { CODE_ALPHABET } from "./codes";
 import type { Assignment, AssignmentFormat, ClassRecord, ClosingQuestion } from "./types";
@@ -173,6 +174,18 @@ const FORMATS: readonly AssignmentFormat[] = ["quick-check", "decision-challenge
 export const BUILT_WORLD_IDS: readonly WorldId[] = [...new Set(BUILT_WORLD_COVERAGE.map((claim) => claim.worldId))];
 
 /**
+ * The worlds a teacher may legitimately be offered for one objective, in this class.
+ *
+ * A thin binding over `worldCompatibility.ts`, which holds the join between an objective's
+ * demand, the coverage worlds claim, and what a student can actually open. It is bound here
+ * because `BUILT_WORLD_IDS` is this module's fact — the set of worlds that claim anything —
+ * and it is the honest answer only for a class that was never given an objective.
+ */
+export function compatibleWorldsFor(objectiveRef: StandardRef | null): readonly WorldId[] {
+  return offerableWorlds(objectiveRef, BUILT_WORLD_IDS);
+}
+
+/**
  * What a teacher sent, checked into something the service will store — or `null`.
  *
  * The competencies are resolved here rather than accepted from the request. They are the
@@ -186,10 +199,17 @@ export function readAssignmentRequest(body: unknown, existing: readonly Assignme
   const objectiveRef = readStandardRef(candidate.objectiveRef);
   if (objectiveRef === undefined) return null;
 
+  // The set this request is allowed to draw from. Not `BUILT_WORLD_IDS`: a world that cannot
+  // evidence the objective the teacher picked is not an option for this assignment, and the
+  // service is the last place that can say so — a client asserting its own compatibility is a
+  // client asserting what a district will later read as an assessment claim.
+  const offerable = compatibleWorldsFor(objectiveRef);
+  if (offerable.length === 0) return null;
+
   const worlds = candidate.allowedWorldIds;
   const allowedWorldIds = worlds === undefined
-    ? BUILT_WORLD_IDS
-    : Array.isArray(worlds) && worlds.length > 0 && worlds.every((id): id is WorldId => BUILT_WORLD_IDS.includes(id as WorldId))
+    ? offerable
+    : Array.isArray(worlds) && worlds.length > 0 && worlds.every((id): id is WorldId => offerable.includes(id as WorldId))
       ? [...new Set(worlds)]
       : null;
   if (!allowedWorldIds) return null;
@@ -220,8 +240,10 @@ export function readAssignmentRequest(body: unknown, existing: readonly Assignme
     objectiveRef,
     competencyIds: objectiveRef ? competenciesAssessedBy(objectiveRef) : competenciesMeasuredBy(DEFAULT_WORLD_ID),
     allowedWorldIds,
-    // One world exists, so "let them choose" is not yet a thing a teacher can be given: a
-    // choice of one is a screen that asks a question with one answer (§17.2).
+    // A choice of one is a screen that asks a question with one answer (§17.2). This is now
+    // reachable — two worlds produce all three built competencies — but it stays derived from
+    // the list rather than trusted from the request, because the list is what the objective
+    // allows and the request is what a client asked for.
     studentChoosesWorld: chooses === true && allowedWorldIds.length > 1,
     format: format as AssignmentFormat,
     assignedStudentIds,
