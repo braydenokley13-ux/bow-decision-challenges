@@ -33,7 +33,7 @@ teachers review or test parts of the platform."*
 | 10 | *"teachers … monitor where students are … and review important decisions and responses"* | **holds** | `ProgressRow` drives a live class view; the reading queue and evidence trail carry the decisions and the writing. |
 | 11 | *"in-class, homework, and multi-day assignments"* | **holds** | Follows from 9. Resume is across devices and across days. |
 | 12 | *"review student work, provide feedback, use simulation results as part of an assessment, select examples for class discussion"* | **holds** | Reading queue, teacher→student feedback, an exportable gradebook line, and a share-out that anonymises and sequences. All four exist and are tested. |
-| 13 | *"teachers review or test parts of the platform before October"* | **not started** | No user-test packet exists. §81 asks for onboarding script, task, no-coaching instructions, observation sheet, confusion markers, interview questions. This is the only commitment with a **deadline before October** and it is the cheapest of them to meet. |
+| 13 | *"teachers review or test parts of the platform before October"* | **not started** | No user-test packet exists. §81 asks for onboarding script, task, no-coaching instructions, observation sheet, confusion markers, interview questions. This is the only commitment with a **deadline before October**, it is the cheapest of them to meet, and it is now the only one with no work behind it. |
 
 ---
 
@@ -65,30 +65,38 @@ from the letter is the one about logging in and seeing what their students appli
 
 ### What closes it
 
-Four worlds, one per uncovered topic, each already specified and judged in this run:
+Computed by running the real mapping table and completion rules against each hypothetical
+availability set, not summed by hand — the last count in this file was wrong by two and was
+corrected the same way.
 
-| World | Objectives it lights | Status |
-| --- | --- | --- |
-| Saving · *The Kiln Fund* | 5.1, 5.2, 5.3, 5.5 | **BUILD WITH CHANGES** |
-| Paycheck · *Every Other Friday* | 3.2, 3.3 | **BUILD WITH CHANGES** |
-| Credit · *The Tab at Ferro's* | 2.1, 2.2 | **BUILD WITH CHANGES** |
-| Risk · *Six Kits, One Fund* | **4.2 only** | **BUILD WITH CHANGES**, and see below |
+| World | Objectives it lights | Running total | Status |
+| --- | --- | --- | --- |
+| Today | 1.3 | **1 / 23** | ships |
+| Paycheck · *Every Other Friday* | 3.2, 3.3 | 3 | **BUILD WITH CHANGES** |
+| Saving · *The Kiln Fund* | 5.1, 5.2, 5.3, 5.5 | 7 | **BUILD WITH CHANGES** |
+| Credit · *The Tab at Ferro's* | 2.1, 2.2, **2.3, 2.4** | 11 | **BUILD WITH CHANGES**, and heavier than it was |
+| Risk · a `use-insurance` world | 4.2 only | **12 / 23** | see below |
 
-**All four take the product to 10 of 23 objectives, not 12**, and this file said twelve until
-the portfolio court checked it. `PORTFOLIO_COURT.md` found that the four module courts did not
-apply the same test: three scored their winners against the rows in `competencies.ts`, and
-**Module 4's court scored Six Kits against the rubric its own designer had written.** Four of
-Six Kits' twelve rows belong to `plan-for-the-unexpected`, whose requirements array in shipped
-code is empty — so 4.1's completion rule can never pass — and it is one required row short on
-`is-the-add-on-worth-it`, which carries five. Scored against the spine, Module 4 lights 4.2 and
-nothing else.
+**Twelve, and the two that moved it are worth naming honestly.** This file said ten. 2.3 and 2.4
+were mapped `partial` because their verbs are *Explain* and *Describe* and
+`keep-credit-costs-down` asked the student to say nothing. The competency now carries two
+required explanation rows and the mappings are `full`. That decision is written up in
+`decisions/04-two-written-rows-on-credit.md`, including the part that is not good news: the
+competency is all-or-none, so **Ferro's now has to produce six rows for it rather than four,
+on 2.1 as well as on 2.3 and 2.4**, and Ferro's was already the heaviest build in the field.
+Two more objectives on a build that got harder is a trade, not a gift.
 
-Every topic still gets a live objective. The count is ten.
+**Module 4 is not a content task and this file used to imply it was.** `MODULE_4_REAUDIT.md`
+re-ran it under the fixed methodology: every objective in Topic 4 sits behind a world that does
+not exist, and no amount of rubric authoring moves it. 4.1 needs `plan-for-the-unexpected` *and*
+`use-insurance`; 4.3 needs all five rows of `is-the-add-on-worth-it` including its explanation;
+4.4 is capped by its own verb. The cheapest honest Topic 4 is a `use-insurance` world at one
+objective.
 
-What remains is the worlds themselves, at roughly ten thousand lines each once the twenty-one
-integration points outside a world's own directory are counted — and the portfolio court's
-capacity note, which is not softened here: *"Three production Worlds by October is not a plan I
-would sign."*
+Every topic still gets a live objective, and the count is twelve — **on all four worlds
+shipping**, which the portfolio court would not sign: *"Three production Worlds by October is not
+a plan I would sign."* That sentence has not been softened and the arithmetic above does not
+soften it.
 
 **One world is not the floor and should not be described as one.** Saving alone reaches 5 of 23
 and 2 of 5 topics — a real improvement and not the sentence in the letter.
@@ -101,10 +109,13 @@ and 2 of 5 topics — a real improvement and not the sentence in the letter.
    pre-October deadline,
    it costs a day rather than a fortnight, and the letter offers it unprompted. It also
    converts every *heuristic* judgement in this run into something a real teacher can falsify.
-2. **The custom end-of-simulation question is now a named deliverable**, not a §37 design idea.
-   It is cheap — it belongs to the assignment, never to the immutable challenge version, and
-   the product definition already says so — and it is the one thing in the letter with no code
-   behind it at all.
+2. **The custom end-of-simulation question is built and walked end to end.** It belongs to the
+   assignment and never to the immutable challenge version; a required one holds the turn-in
+   button; the answer survives a reload and a re-delivery; the teacher reads it under the
+   canonical writing and outside the rubric, over the line *"You asked this, not BOW. It is not
+   scored."* `golden 1b` asserts the boundary as well as the path — the answer is in neither the
+   evidence log nor the scoring panel. The letter says *building toward*, which is now the
+   modest description.
 3. **Fashion and "running a store" are not October scope** and the letter does not make them so.
    They should stay out of it. The union deliberately has no seat for a world nobody has built.
 4. **February is in the letter**, which makes the February hypotheses section of the final
