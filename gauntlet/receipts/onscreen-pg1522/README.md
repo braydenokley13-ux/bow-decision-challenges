@@ -99,6 +99,11 @@ cells: **84 → 0** on the student's evidence page, **5 → 0** on the reading q
 goes from 0px wide — Playwright reports it as *hidden* — to 240px. No page scrolled sideways
 either before or after, which is why an overflow check never saw any of it.
 
+`before-05-educator-320.png` / `after-05-educator-320.png` are the same page: one student's
+evidence, where the child's name goes from a two-letter-wide column of fragments under the
+judgement panel to a heading, and the summary line beside it becomes a sentence. The arrival
+ring is visible in the before shot as well, around the fragments.
+
 ## 6. Every control on a roster row now says whose row it is
 
 Six students is eighteen buttons with three distinct accessible names between them. After:
