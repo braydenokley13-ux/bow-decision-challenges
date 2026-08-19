@@ -285,6 +285,58 @@ that is not what gets pushed — and it turns out to be the same discipline.
 - **Read-aloud and a glossary**, built and tested, not yet wired into a screen.
 
 
+## Round 6 — eighteen at once
+
+The instruction was to stop capping parallelism, so the loop is now as wide as the work
+allows: **five builders and thirteen critics running simultaneously**, on a tree that is green
+at 1,315 unit tests and builds from a clean checkout.
+
+The critics are read-only and write only their own report and receipt directory, so they never
+collide with each other or with a builder. The builders hold non-overlapping territory and have
+each been told to commit and push in small increments — the lesson from the restart, which cost
+six agents' reasoning and nothing of their code.
+
+### The five builders
+
+| | |
+| --- | --- |
+| **The market must come back on a second device** | The one known-open blocker: the server hands the browser the whole run and the browser starts the market from Saturday zero. Plus Saturday 4's crowd becoming a stated range rather than a number, which is my ruling on MAJOR-39. |
+| **A run must survive the school day** | The same seat on two devices diverging permanently with neither screen mentioning the other; *Leave this run* meaning nothing since the server became the source of truth; and a refused submission whose two offered actions both destroy the retry queue. |
+| **Reading tools, wired** | Read-aloud and a glossary onto every screen of both stories, and three accessibility repairs an audit specified and nobody took — including an erase confirmation that lands focus on the safe button by positional luck. |
+| **The browser suite, run for real** | Nobody has yet had an honest number from it. |
+| **The season stops contradicting itself** | Six coherence findings about Basketball that were orphaned when the restart killed the agent they were routed to — including a Week 5 that may charge a student for a plan they did not build. |
+
+### The thirteen critics, and the ground each is on that nobody has walked
+
+Three replay the whole product with fresh eyes on current HEAD: a **student red team** of five
+children, a **teacher** running five sections, and **District 26** answering their own five
+questions from the software rather than from the documentation.
+
+The other ten are on ground no round has touched:
+
+- **Keyboard and screen reader** — nobody has ever completed a run without a mouse, or written
+  down what a blind student actually hears in order.
+- **Economics and pedagogy** — nobody has attacked the money. Whether the arithmetic reconciles,
+  whether the financial concepts are *true*, whether it is age-right, and how it reads to a child
+  whose family is short this week.
+- **Assessment validity** — the question the whole product rests on. Not "does it work" but
+  whether a mark out of it means what it claims about a child.
+- **Engineering** — would the second engineer survive here, and which of the claimed boundaries
+  are enforced rather than asserted in a comment.
+- **School hardware** — a throttled Chromebook on loaded school wifi, and the print output nobody
+  has looked at.
+- **World-class product** — the reader with no constituency, asked where it stops being designed
+  and starts being assembled.
+- **Copy and voice, round two** — told to go and find the fifth thing this product says that is
+  not true.
+- **Resilience** — breaking it the way a Tuesday breaks it, on a durable store, with the disk
+  full and the clock moved.
+- **Cold clone and data officer** — following the documentation as a stranger, and then answering
+  a parent who asks for their child's work to be deleted, proving it on the bytes.
+- **Security, round five** — sent back at the key-rotation command and the enumeration limit that
+  answered their round-four findings.
+
+
 ## Largest remaining gap
 
 **No longer J1.** The reading load was the largest measured gap for two rounds and it is now
