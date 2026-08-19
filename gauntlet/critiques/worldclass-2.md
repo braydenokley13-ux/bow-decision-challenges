@@ -138,11 +138,13 @@ the navy court, the four decisions they made, their own words in italic, and *"A
 writing, not software. Nothing here has been read yet."* — which is exactly the right last
 sentence.
 
-And then the only control on the page is **"Try a different plan."** No "Done". No route back to
-`/home`. No link to the run report the product builds for them at `/run/:classCode/:sessionId`. No
-acknowledgement that twenty minutes of work just finished. A child who has just spent a full
-lesson on this is offered one button, and it starts the lesson again — which is also the one thing
-a teacher with four minutes of class left does not want thirty children doing.
+And then the only labelled control on the page is **"Try a different plan."** No "Done". No link to
+their own class page at `/home`, and none to the run report the product builds for them at
+`/run/:classCode/:sessionId`. The only other way off the screen is the BOW wordmark, which goes to
+the marketing front door. No acknowledgement that twenty minutes of work just finished. A child
+who has spent a full lesson on this is offered one button, and it starts the lesson again — which
+is also the one thing a teacher with four minutes of class left does not want thirty children
+doing.
 
 If this shipped tomorrow, this is the absence a reviewer would name. The run *stops*; it does not
 *close*.
