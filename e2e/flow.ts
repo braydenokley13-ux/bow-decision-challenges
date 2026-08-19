@@ -7,6 +7,7 @@ import { buildSubmission } from "../src/test/runChallenge";
 import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
 import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
 import { STUDENT_COPY } from "../src/content/studentCopy";
+import { POP_UP_SCENARIO } from "../src/domain/scenario/worlds/food-truck/scenario";
 
 /**
  * One driver for both the assertion suite and the screenshot walkthrough.
@@ -111,6 +112,22 @@ export async function seedRuns(
 }
 
 /**
+ * What a seeded roster calls the student in seat *n*.
+ *
+ * There were three of these and two of them disagreed: the server-seeded path wrote
+ * "Seeded Student 3" and the browser-driven path wrote "Test Student 3", for no reason either
+ * of them recorded, and `pilot.spec.ts` documented the second in prose as though it were the
+ * rule. Nothing downstream can tell the two apart — a roster label is a roster label — so the
+ * only thing the difference ever did was decide which assertions were wrong, and two tests
+ * were asserting a name their own helper does not produce.
+ *
+ * One function, so a test asserting a name and a helper writing one cannot drift again.
+ */
+export function rosterName(seat: number): string {
+  return `Test Student ${seat}`;
+}
+
+/**
  * A seat on the roster and a session holding it, without a browser.
  *
  * The same two calls the join screen makes, in the same order, with the same bodies — so a
@@ -125,7 +142,7 @@ async function seatAndSignIn(request: APIRequestContext, classCode: string, seat
   const already = ((await listed.json()) as { roster?: readonly { seatCode: string }[] }).roster ?? [];
   let card = already.find((row) => row.seatCode === String(wanted)) as JoinCard | undefined;
   if (!card) {
-    const names = Array.from({ length: wanted - already.length }, (_, index) => `Seeded Student ${already.length + index + 1}`);
+    const names = Array.from({ length: wanted - already.length }, (_, index) => rosterName(already.length + index + 1));
     const created = await request.post(`${API}/classes/${classCode}/roster`, {
       headers: { "X-BOW-Teacher-Key": key },
       data: { names },
@@ -208,7 +225,7 @@ export async function seatOnRoster(page: Page, classCode: string, seatCode: stri
   const already = ((await existing.json()) as { roster?: readonly { seatCode: string }[] }).roster ?? [];
   const seated = already.find((entry) => entry.seatCode === String(wanted));
   if (seated) throw new Error(`Seat ${seatCode} in ${classCode} is already on the roster.`);
-  const names = Array.from({ length: wanted - already.length }, (_, index) => `Test Student ${already.length + index + 1}`);
+  const names = Array.from({ length: wanted - already.length }, (_, index) => rosterName(already.length + index + 1));
   const response = await page.request.post(`${API}/classes/${classCode}/roster`, {
     headers: { "X-BOW-Teacher-Key": createClassKeyFor(classCode) },
     data: { names },
@@ -296,7 +313,14 @@ export async function startIfConfirmAsked(page: Page) {
   const picker = page.getByRole("heading", { name: STUDENT_COPY.choose.title });
   const contract = page.getByRole("button", { name: "Find Avery a place" });
   const ranking = page.getByRole("heading", { name: /Which place costs the least/i });
-  await expect(confirm.or(picker).or(contract).or(ranking).first()).toBeVisible();
+  // The market's own first screen. Every alternative above is one of Basketball's, which was
+  // true when this was written and stopped being true when a second world shipped: a class set
+  // to the market only lands a student here, correctly, and this helper then waited five
+  // minutes for a basketball screen that was never coming. Two tests died on that line for a
+  // reason neither of them was about, which is the exact failure the note above records
+  // happening once already.
+  const market = page.getByRole("heading", { name: POP_UP_SCENARIO.screens.spot.title });
+  await expect(confirm.or(picker).or(contract).or(ranking).or(market).first()).toBeVisible();
   if (await confirm.count()) await confirm.click();
 }
 

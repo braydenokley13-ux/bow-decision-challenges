@@ -399,9 +399,13 @@ test.describe("Run the Pop-Up", () => {
     const start = page.getByRole("link", { name: /^(Start|Carry on)$/ });
     await start.focus();
     await page.keyboard.press("Enter");
-    const enter = page.getByRole("button", { name: /Start the eight weeks|Go in/ });
-    await enter.focus();
-    await enter.press("Enter");
+    // Whatever screen the build puts between the door and the choice, pressed where it is
+    // offered. This named a button — "Start the eight weeks" / "Go in" — that the product has
+    // stopped drawing, and then waited the full five minutes for it. `startIfConfirmAsked` is
+    // the shared tolerance for exactly this, and its own note records the lesson: clicking a
+    // screen the product no longer shows hangs the journey on one line for a reason the test
+    // was not about. Arrival is asserted by the two cards below.
+    await startIfConfirmAsked(page);
 
     // Both cards are reachable by tabbing forward from the top of the document.
     await expect(page.locator(".worldcard")).toHaveCount(2);

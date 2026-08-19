@@ -751,9 +751,16 @@ test("golden 9: a teacher's classes survive their laptop", async ({ page, browse
 
     // The promise, and the whole reason the journey is written: the child's work and the mark a
     // person gave it, both still there on a machine that has never seen either.
-    const key = new URL(after.url()).searchParams.get("key") ?? "";
-    expect(key.length).toBeGreaterThan(16);
-    await after.goto(`/educator/class/${code}/students/1?key=${key}`);
+    //
+    // This read the key out of the address bar and put it back into the next URL, and it has
+    // been failing since `ae47cf2` took it out of there — on a suite nobody could run, because
+    // the tree it ran against did not build. The key opens every child's name and every child's
+    // writing, and it used to sit in the address bar of the roster and in the history of
+    // whatever machine a teacher was on; it is filed in this browser on arrival now and goes to
+    // the service as a header. So the assertion is the opposite one, and it is the stronger of
+    // the two: the address bar is clean, and the work is reachable anyway.
+    expect(new URL(after.url()).searchParams.get("key"), "the teacher key is back in the address bar").toBeNull();
+    await after.goto(`/educator/class/${code}/students/1`);
     await after.getByRole("tab", { name: "The explanation" }).click();
     await expect(after.locator(".student-response")).toContainText("I kept the course money where I set it");
     await expect(after.locator(".rubric-panel footer strong")).toContainText("10/10");

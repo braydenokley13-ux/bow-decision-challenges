@@ -35,13 +35,15 @@ import {
   setAmount,
   submitDefense,
   API,
+  rosterName,
 } from "./flow";
 import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
-import { CLASS_STATE_LABELS, COVERAGE_LABELS, LEVEL_LABELS, TERMS, skillStateInSentence } from "../src/educator/labels";
+import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
+import { CLASS_STATE_LABELS, COVERAGE_LABELS, LEVEL_LABELS, SKILL_STATE_LABELS, TERMS, skillStateInSentence } from "../src/educator/labels";
 import { PLAYABLE_WORLDS } from "../src/domain/scenario/registry";
 import { STUDENT_COPY } from "../src/content/studentCopy";
 import { isAssessable, labelsFor, standardsIn, type FrameworkId } from "../src/domain/standards";
-import { DEMO_CLASS_LABEL } from "../src/fixtures/demoClass";
+import { DEMO_CLASS_CODE, DEMO_CLASS_LABEL } from "../src/fixtures/demoClass";
 
 /** The one framework this deployment carries, named once so the tests below compose its refs. */
 const FRAMEWORK_ID: FrameworkId = "nysed-pf-2026";
@@ -655,18 +657,35 @@ studentTest("key screens have no serious or critical accessibility violations", 
 //     same four weeks read differently depending on where Avery was put.
 // ---------------------------------------------------------------------------
 
-studentTest("the weeks Avery plays are narrated differently for each housing choice", async ({ page, classCode }) => {
+studentTest("the weeks Avery plays read differently for each housing choice", async ({ page, classCode }) => {
   // Two runs, two seats. A seat is a person on a roster now, so the same class cannot be
   // entered twice as the same student — which is the product being right, not the test.
-  for (const [index, line, seat] of [[0, /first one in the building/i, "3"], [2, /5:40/, "4"]] as const) {
+  //
+  // This asserted two narrated sentences inside `.feed`, and both the element and the copy were
+  // deleted by the season rework: weeks 1–4 resolve together now and the deposit is its own
+  // screen "rather than a panel under a feed". The test has been failing ever since, on a suite
+  // nobody could run because the tree it runs against did not build.
+  //
+  // The property it was written for is still there and is now carried by numbers rather than
+  // prose — `SeasonWeeks` says so in its own margin: "different seasons off the same four bars,
+  // and neither is being punished". So this reads the bars. Asserting the whole block differs
+  // rather than one figure, because which figures move is the world's business and this test's
+  // question is only whether the choice reached the season at all.
+  const seasons: string[] = [];
+  for (const [index, seat] of [[0, "3"], [2, "4"]] as const) {
     await gotoFreshChallenge(page);
     await enterChallenge(page, { classCode, seatCode: seat });
     await completeSetupStage(page, index);
     await completeWorkingCalcs(page);
     await savePlan(page, "working", { setupId: SETUP_ORDER[index] });
     await expect(page.getByRole("heading", { name: SEASON_HEADING })).toBeVisible();
-    await expect(page.locator(".feed")).toContainText(line);
+    const season = page.locator(".season-run");
+    await expect(season).toBeVisible();
+    // Every played week carries a figure, so an empty block cannot pass this by differing.
+    expect(await season.locator("li .money").count()).toBeGreaterThan(1);
+    seasons.push((await season.innerText()).trim());
   }
+  expect(seasons[0], "both housing choices played the same season").not.toBe(seasons[1]);
 });
 
 // ---------------------------------------------------------------------------
@@ -1024,7 +1043,7 @@ studentTest("a real class shows what its own students did, and never a fixture",
   // Every student who turned in, led by what their evidence shows rather than by a score.
   const rows = page.locator(".row-list > a");
   await expect(rows).toHaveCount(3);
-  for (const run of runs) await expect(page.locator(".row-list")).toContainText(`Test Student ${run.seat}`);
+  for (const run of runs) await expect(page.locator(".row-list")).toContainText(rosterName(Number(run.seat)));
   await expect(rows.first()).not.toContainText("/100");
 
   // Nothing from the sample class may appear on a real one.
@@ -1132,8 +1151,11 @@ studentTest("a teacher reads and scores a whole class from one keyboard-operable
   await expect(page.locator(".page-header")).toContainText("3 still to read");
 
   // Unread first, in seat order, and the position always carries its denominator.
-  await expect(page.locator(".reading-queue__bar p")).toContainText("1 of 3 · Seat 3 · still to read");
-  await expect(page.getByRole("heading", { name: "Seat 3" })).toBeVisible();
+  // `Seat 3` here until rosters shipped. A class may carry a roster now, and every seat these
+  // helpers create has a label its own teacher typed — so the queue shows the name, which is
+  // the product being right. `Seat 3` is what a seat with no label still reads as.
+  await expect(page.locator(".reading-queue__bar p")).toContainText(`1 of 3 · ${rosterName(3)} · still to read`);
+  await expect(page.getByRole("heading", { name: rosterName(3) })).toBeVisible();
   await expect(page.locator(".student-response blockquote")).toContainText("Seat 3:");
   await noSeriousAxeViolations(page);
 
@@ -1156,12 +1178,12 @@ studentTest("a teacher reads and scores a whole class from one keyboard-operable
   await save.focus();
   await page.keyboard.press("Enter");
 
-  await expect(page.locator(".reading-queue__bar p")).toContainText("2 of 3 · Seeded Student 5");
-  await expect(page.locator("h2:focus")).toHaveText("Seeded Student 5");
+  await expect(page.locator(".reading-queue__bar p")).toContainText(`2 of 3 · ${rosterName(5)}`);
+  await expect(page.locator("h2:focus")).toHaveText(rosterName(5));
 
   // Previous goes back to the seat just scored, and its marks are the ones recorded.
   await page.getByRole("button", { name: "← Previous" }).click();
-  await expect(page.locator(".reading-queue__bar p")).toContainText("1 of 3 · Seeded Student 3 · scored 8/10");
+  await expect(page.locator(".reading-queue__bar p")).toContainText(`1 of 3 · ${rosterName(3)} · scored 8/10`);
   await expect(page.locator(".rubric-panel footer strong")).toContainText("8/10");
 
   // And it is on the record rather than in this tab.
@@ -1194,7 +1216,7 @@ studentTest("an educator reads one student's evidence and scores their writing",
   // The page is about a student, and it leads with what their evidence shows. The points
   // total used to be the largest thing here, two hundred pixels above a red "Not
   // demonstrated" it never reconciled with; it is one labelled line at the bottom now.
-  await expect(page.getByRole("heading", { name: "Seeded Student 5", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: rosterName(5), exact: true })).toBeVisible();
   const lead = page.locator(".student-lead");
   await expect(lead).toBeVisible();
   await expect(lead).toContainText("What the evidence shows");
@@ -1209,18 +1231,34 @@ studentTest("an educator reads one student's evidence and scores their writing",
   await expect(lead).not.toContainText("/100");
   await expect(lead).not.toContainText("90");
   // Nobody has read the writing, so the evidence is not all in and the page says which piece.
-  await expect(lead).toContainText("Not assessed yet");
+  // `SKILL_STATE_LABELS.incomplete`, not the string. This read "Not assessed yet", which
+  // `labels.ts` records renaming — *"still incomplete against Not assessed yet"* — because a
+  // teacher reads "not assessed" as "nobody looked at this child" when what it means is that
+  // one piece is outstanding. Read from the product so the next rename moves the test with it.
+  await expect(lead).toContainText(SKILL_STATE_LABELS.incomplete);
   await expect(lead).toContainText("written explanation has not been read");
-  await expect(page.locator(".gradebook")).toContainText("structured");
+  // The gradebook line, not the word "structured" — which belonged to
+  // `STRUCTURED 90/90 · REASONING 10/10 · TOGETHER 100/100`, the composite this product
+  // removed and whose absence three other tests exist to protect. Asserting the line that
+  // replaced it, and asserting the composite is still gone: a test naming a deleted concept
+  // is the one that goes quiet when the concept comes back.
+  await expect(page.locator(".gradebook")).toContainText(`Gradebook line · ${TERMS.requirement}`);
+  await expect(page.locator(".gradebook")).toContainText("Asked of this run");
+  await expect(page.locator(".gradebook")).not.toContainText("of 100");
 
   // §19.2. The page opens on the trail, because the reason to open one student is to check a
   // conclusion — and every judgement on it points at a moment in this student's own log.
   await expect(page.getByRole("tab", { name: "Evidence trail" })).toHaveAttribute("aria-selected", "true");
   const judgements = page.locator(".judgement");
   await expect(judgements.first()).toBeVisible();
-  const anchors = await page.locator(".trail__when code").allInnerTexts();
-  expect(anchors.length).toBeGreaterThan(0);
-  for (const anchor of anchors) expect(anchor).toMatch(/^event-\d+$/);
+  // Each moment carries its own reference. This read the `<code>event-5</code>` that used to
+  // close every row, which `EvidenceTrailPanel` records deleting on the grounds that "an
+  // anchor nobody can read is decoration" — the moments are in the order they happened, so
+  // the position in that order is the reference and it is written in words now. Same
+  // property, asserted on the thing a teacher can actually read out to a colleague.
+  const anchors = await page.locator(".trail__when .trail__step").allInnerTexts();
+  expect(anchors.length, "no moment in the trail carries its own reference").toBeGreaterThan(0);
+  for (const anchor of anchors) expect(anchor).toMatch(new RegExp(`^Step \\d+ of ${anchors.length}$`));
   // Every judgement carries BOW's reading. None of them is a bare number.
   await expect(judgements.first()).toContainText("BOW");
   await noSeriousAxeViolations(page);
@@ -1241,13 +1279,28 @@ studentTest("an educator reads one student's evidence and scores their writing",
   await expect(page.getByText("Saved.")).toBeVisible();
 
   await page.reload();
-  // The together-figure only exists once a person has read the writing, and it is a
-  // gradebook line at the bottom of the page that says what it counts.
-  await expect(page.locator(".gradebook")).toContainText("of 100");
-  await expect(page.locator(".gradebook")).toContainText("It is a mark for a gradebook.");
-  // Same dead class, same rule, after a person has scored the writing: the together-figure
-  // exists now, and it belongs to the gradebook line asserted directly above, not to the lead.
-  await expect(page.locator(".student-lead")).not.toContainText("of 100");
+
+  // **This asserted the composite.** It required the gradebook to read "of 100" once a person
+  // had scored the writing — the `STRUCTURED 90/90 · REASONING 10/10 · TOGETHER 100/100`
+  // together-figure — and that number was removed, deliberately, and replaced with a
+  // world-neutral line. The previous run's assessment judge wrote that finding a composite
+  // anywhere in this product "would be `NO-GO` and it would not be close."
+  //
+  // So for as long as the browser suite could not run, this repository contained a test
+  // demanding the defect its own release gate treats as disqualifying. That is the strongest
+  // argument in this run for a suite that runs: a green test is a claim, and an unrunnable one
+  // is a claim nobody is checking.
+  //
+  // Inverted. What the page carries after scoring is two numbers that are never added: what
+  // the run asked of the work, and the reasoning mark a person recorded. Both are asserted,
+  // and so is the absence of anything that puts them together.
+  await expect(page.locator(".gradebook")).toContainText("Asked of this run");
+  await expect(page.locator(".gradebook")).toContainText(`Reasoning 8 of ${REASONING_MAXIMUM}`);
+  await expect(page.locator(".gradebook")).toContainText("BOW adds nothing to it");
+  for (const surface of [".gradebook", ".student-lead"]) {
+    await expect(page.locator(surface), `${surface} carries a composite`).not.toContainText("of 100");
+    await expect(page.locator(surface), `${surface} carries a composite`).not.toContainText(/together/i);
+  }
   await noSeriousAxeViolations(page);
 });
 
@@ -1380,8 +1433,16 @@ test("the demo evidence is reachable only under a route that says it is a demo",
   await expect(page.locator(".demo-pill")).toContainText("Sample class — not a real class");
 
   // The route the demo shipped on still works, and lands on the demo.
+  //
+  // `/educator/demo` is a waypoint now rather than a destination: it redirects on to the
+  // demo's own class code, so the sample class is read through exactly the surface a real
+  // class is read through instead of a parallel set of demo screens. This asserted the
+  // waypoint and has been failing since, which nobody saw because the suite could not run.
+  // The property in this test's title is unchanged and is what is asserted — the URL the
+  // teacher ends on still says, in the address bar, that this is not a real class.
   await page.goto("/educator/class");
-  await expect(page).toHaveURL(/\/educator\/demo$/);
+  await expect(page).toHaveURL(new RegExp(`/educator/class/${DEMO_CLASS_CODE}$`));
+  await expect(page.locator(".demo-pill")).toContainText("Sample class — not a real class");
 });
 
 // ---------------------------------------------------------------------------
@@ -1491,7 +1552,17 @@ studentTest("the challenge runs with animation turned off and on a short Chromeb
     await completeWorkingCalcs(page);
     await savePlan(page, "working", plan);
 
-    // The season and the deadline are both reachable without a mouse wheel fight.
+    // The season, the week that pays in cash, and the deadline: all three reachable without a
+    // mouse wheel fight, and each measured on the short screen rather than only the last one.
+    //
+    // This clicked straight from the season to the deposit, and the season rework put Week 3's
+    // three claims in between — so it had been landing on "Week 3 pays Avery in cash." and
+    // waiting for a heading two screens further on. Settling the claims is what the season
+    // now is, so the test plays it rather than stepping over it.
+    await expect(page.locator(".claims__list button").first()).toBeVisible();
+    await noHorizontalOverflow(page);
+    await page.locator(".claims__list button").first().click();
+    await page.locator(".claims__why button").first().click();
     await page.getByRole("button", { name: TO_DEPOSIT }).click();
     await expect(page.getByRole("heading", { name: "Hold the seat now, or pay full price later?" })).toBeVisible();
     await noHorizontalOverflow(page);
@@ -1605,7 +1676,7 @@ async function enterChallengeWithKey(page: Page, options: { classCode: string; t
   const already = ((await listed.json()) as { roster?: readonly { seatCode: string }[] }).roster ?? [];
   let card = already.find((row) => row.seatCode === options.seatCode) as JoinCard | undefined;
   if (!card) {
-    const names = Array.from({ length: wanted - already.length }, (_, index) => `Test Student ${already.length + index + 1}`);
+    const names = Array.from({ length: wanted - already.length }, (_, index) => rosterName(already.length + index + 1));
     const created = await page.request.post(`${API}/classes/${options.classCode}/roster`, { headers, data: { names } });
     expect(created.status(), await created.text()).toBe(201);
     card = ((await created.json()) as { cards: JoinCard[] }).cards.at(-1);
@@ -2176,7 +2247,13 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   // only one of them is about this class, and `classLead.test.ts` holds the other.
   await expect(page.locator(".page-header h1")).toContainText(`${SEATS.length} of ${Number(SEATS.at(-1))} turned in`);
   await expect(page.locator(".page-header h1")).toContainText("Every explanation read");
-  await expect(page.locator(".page-header")).toContainText("3 of the 3 with a usable result showed it");
+  // The headline says *showed what*. It read "…showed it" here, which is the sentence
+  // `classLead.ts` records replacing: a teacher-experience review read the largest sentence on
+  // the page and could not say what the share had shown, so the objective's own words go in the
+  // subject slot. Asserting the shape and the subject rather than the whole line, because the
+  // denominator wording belongs to the class and the subject is the fix.
+  await expect(page.locator(".page-header")).toContainText("with a usable result showed");
+  await expect(page.locator(".page-header")).toContainText("1.3 asks for");
 
   const room = await request.get(`${API}/classes/${code}/submissions`, {
     headers: { "X-BOW-Teacher-Key": teacherKey },

@@ -14,6 +14,7 @@ import {
   submitDefense,
   waitForDelivery,
   API_ORIGIN,
+  rosterName,
 } from "./flow";
 import { DEMO_CLASS_LABEL } from "../src/fixtures/demoClass";
 
@@ -50,11 +51,12 @@ const STUDENTS: Student[] = [
  * What the teacher's list calls the student in a seat.
  *
  * `seatOnRoster` fills a class up to the seat it is asked for, naming each row in order, so the
- * student in seat N is "Test Student N". The educator surface shows that name rather than the
- * seat number, which is the right way round — a teacher reads a room by who is in it.
+ * student in seat N is whatever `rosterName` says. The educator surface shows that name rather
+ * than the seat number, which is the right way round — a teacher reads a room by who is in it.
+ * The name is not spelled out here: it was, in two forms, and the pair of them cost two tests.
  */
 function nameFor(seat: string): string {
-  return `Test Student ${seat}`;
+  return rosterName(Number(seat));
 }
 
 async function runStudent(page: Page, classCode: string, student: Student): Promise<number> {
