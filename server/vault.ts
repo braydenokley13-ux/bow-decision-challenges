@@ -80,7 +80,8 @@ export const STORE_KEY_HELP =
   "Set BOW_STORE_KEY to 32 random bytes, base64 or hex — `openssl rand -base64 32`. "
   + "It encrypts every record this store writes and derives the session-signing secret, so keep it "
   + "in the same place as your other secrets, keep a copy, and do not put it in the data directory. "
-  + "Losing it means losing every class; changing it means every existing class becomes unreadable.";
+  + "Losing it loses every class. Changing it does not have to: stop the service and run `npm run rekey` to "
+  + "re-seal the store under a new key, which never touches the old directory.";
 
 /**
  * `acceptLegacyPlaintext` exists for tests and for an offline converter, and there is no way to

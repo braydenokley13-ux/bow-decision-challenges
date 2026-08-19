@@ -15,7 +15,9 @@
     "balance": "BALANCE_REPORT=balance-report.txt vitest run src/domain/scenario/balance.test.ts",
     "build:server": "vite build --ssr server/index.ts --outDir dist-server",
     "api": "npm run build:server && node dist-server/index.js",
-    "api:dev": "npm run build:server && BOW_CLASS_STORE=memory node dist-server/index.js"
+    "api:dev": "npm run build:server && BOW_CLASS_STORE=memory node dist-server/index.js",
+    "rekey": "npm run build:rekey && node dist-server/rekey.js",
+    "build:rekey": "vite build --ssr server/rekey.ts --outDir dist-server --emptyOutDir false"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",

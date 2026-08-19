@@ -196,9 +196,25 @@ already wrote? A rotated or mistyped `BOW_STORE_KEY` is indistinguishable from
 an empty store — every record fails to authenticate and every read answers "no such class" —
 so the store keeps one sealed record of its own and reports `mismatch` with a `503` rather than
 letting a health check go green over a term of classes nobody can open. Nothing is deleted when
-that happens. Put the original key back. It fails **closed**: deleting the store's own sealed
+that happens. Put the original key back, or convert the store — see below. It fails **closed**: deleting the store's own sealed
 record does not turn a mismatch back into a clean bill of health, because a restore that skips
 dotfiles would otherwise disarm the check.
+
+**Changing the key: `npm run rekey`.** With the service stopped:
+
+```
+node dist-server/rekey.js --from .bow-classes --to .bow-classes.new --old-key "$OLD" --new-key "$NEW"
+```
+
+It takes both keys explicitly, never mutates the source, reads back and verifies **every**
+record under the new key rather than a sample, refuses to finish if one fails, plants the
+canary last so a half-finished directory cannot look complete, and is resumable — a crash
+mid-run leaves a directory that is behind, never one that neither key opens. Point the service
+at the new directory and the new key when it finishes; if anything looks wrong, point it back
+at the old one. `--from-plaintext` converts a directory written before sealing existed.
+
+This exists because "what do you do if that key is compromised?" had one honest answer before
+it, and the answer was that a term of children's work would be deleted.
 
 **There is no way to read an unsealed record.** A keyed store refuses one, because an attacker
 who can write a single file in the data directory would otherwise replace a teacher's sealed
