@@ -357,3 +357,153 @@ it — your teacher sees both"* (`24-carlos-home-after-turnin.png`), and the cla
 students and attempts separately. What is missing is the one check that would stop it: the
 running tab is never told its own session was superseded.
 
+
+---
+
+## F6 — [MEDIUM] I overruled BOW on one child, and the same page still prints BOW's verdict without saying I disagreed
+
+Nina D. wrote `a b c. d e f.` and put $1,200 on the course row. BOW read that row as *Savings
+is a planned amount — Right first time*. I disagreed and recorded it, which the product makes
+easy and handles well:
+
+* the control is on the judgement itself, labelled *"I read this differently"*;
+* it asks for a reason and refuses to record without one — *"A judgement with no reason is a
+  number nobody can check later."*;
+* it keeps **both** readings side by side (`62-override-recorded.png`):
+
+```
+Savings is a planned amount
+BOW   Right first time
+YOU   Never came up
+      "Nina put $1,200 on the course row because it was the first row on the screen …"
+```
+
+* and the headline at the top of her page recomputed from *Evidence not all in* to **Not yet**.
+
+That is a good override. The defect is 130 lines further down **the same page**. The section
+*"In the order it happened — What this student did"* replays the run step by step and prints:
+
+```
+Savings is a planned amount
+Right first time
+Where the figure on the course line came from when the opening plan was closed. …
+```
+
+No *YOU*, no note, no marker that a person overruled this exact requirement forty seconds ago.
+The two lists are on one scroll. If I print this page for a file, or turn the screen to a
+parent, the bottom half of it still says the thing I formally disagreed with, in the same words
+and at the same level.
+
+`src/educator/studentSummary.test.tsx` proves the *summary* honours a standing override. The
+chronological trail does not, and it is the longer of the two.
+
+**Reproduce.** Mark a student, open `/educator/class/<CODE>/students/<SEAT>?key=<KEY>`, use
+*I read this differently* on any judgement, then scroll to "In the order it happened".
+
+
+---
+
+## F7 — [HIGH] The printed debrief tells me to read a named child's worst work aloud to the room
+
+`71-debrief.png`, `73-debrief-print.pdf`, section 5, verbatim:
+
+> ### 5 · Read these explanations aloud
+>
+> *"I left both bonuses out of the first plan because Avery cannot spend money that might not
+> arrive…"* — **Ana R.**
+>
+> *"I counted both bonuses at the start because the plan would not reach the course without
+> them…"* — **Devon P.**
+>
+> *"I put most of the money on the course because that is the thing Avery actually wants…"* —
+> **Leila H.**
+>
+> *"i put the money on the course. it worked out fine i think. the rent went up but whatever.
+> idk what else to say here."* — **Marcus T.**
+
+Marcus is on that list for one reason. `src/educator/analysis.ts:226`:
+
+```ts
+function quotesOf(rows: StudentRow[]): { seatCode: string; text: string }[] {
+  return rows
+    .flatMap((row) => (row.defense?.text.trim() ? [{ seatCode: row.seatCode, text: … }] : []))
+    .sort((a, b) => Number(a.seatCode) - Number(b.seatCode));   // seat order
+}
+```
+
+…and `Debrief.tsx:208` takes `world.quotes.slice(0, 4)`. **The first four in seat order, with
+their names, under an imperative heading.** No quality filter, no teacher choice, no way to
+drop one. Marcus is seat 4.
+
+The product knows this is wrong. `src/educator/shareOut.ts` opens with the rule, in its own
+words:
+
+> **Nothing is shared unless a teacher chose it.** There is no default selection, no automatic
+> spotlight on the room's screen, and no "top answers."
+>
+> **A seat number is not anonymity.** … Projected work is labelled `Plan A`, `Plan B` … unless
+> a teacher deliberately turns names on.
+
+Both rules are correct and both are broken by the page beside it — and it is the *printed* one,
+which is the artefact a teacher actually carries to the front of the room. Section 2, "Put two
+real plans side by side", has the same problem in the milder form: it labels the pair **SEAT 4**
+and **SEAT 5** on a page meant for the board, which the same codebase says out loud is not
+anonymity in a class of fourteen.
+
+I would not have caught this until I was standing up. This is the finding most likely to end a
+teacher's use of the product on the first run, and it is the one a principal hears about.
+
+**Reproduce.** Turn in five or more runs, one of them with weak writing from a low seat number,
+mark them, open `/educator/class/<CODE>/debrief?key=<KEY>` and read section 5.
+
+---
+
+## F8 — [MEDIUM] The debrief opens by telling the room every plan worked, and says on the same sheet that one did not
+
+Section 1, first prompt (`71-debrief.png`):
+
+> "You put Avery in 3 different places and **the plans all worked**. What was each one buying?"
+
+Section 3, same page, eleven lines later:
+
+> 1 of 11 finished with something uncovered.
+
+`analysis.ts:695` prints the sentence unconditionally whenever more than one setup was chosen:
+
+```ts
+if (usedPlaces.length > 1) {
+  prompts.push({ id: "housing-split",
+    prompt: `You put Avery in ${usedPlaces.length} different places and the plans all worked. …` });
+}
+```
+
+It never looks at whether they worked. The prompt is the first thing out of my mouth in the
+debrief, and one of the children in front of me knows it is not true of them.
+
+---
+
+## F9 — [MEDIUM] The share-out offers the two worst pieces of writing in the class as "a good way into" the skill
+
+`72-share-out.png`. Two of the eight candidates:
+
+> **Ibrahim K.** — *Their writing is a good way into "says what made one claim matter more",
+> which 3 of the 11 who ran this story did not show.*
+> *"The plan works. It works because it works."*
+>
+> **Nina D.** — *Their writing is a good way into "says what made one claim matter more",
+> which 3 of the 11 who ran this story did not show.*
+> *"a b c. d e f."*
+
+The intent is visible and it is a real pedagogical move — a shortfall is a good thing to teach
+into. But the sentence a hurried teacher reads is *"their writing is a good way into"*, which
+parses as praise, and pressing *Show this* puts `a b c. d e f.` on the projector. The
+mitigations are real and I credit them — names are off by default, nothing shows unless I
+choose it, and the reason is attached — but the reason itself has to say what it means:
+*"Their writing is where this gap is easiest to see"*, not *"a good way into"*.
+
+The rest of this surface is the best-designed thing in the product. The suppression line is
+exactly right and I have never seen another tool do it:
+
+> Not offered as reasons — true of too much of the class to single anybody out:
+> *"Went wrong here and fixed it themselves, with nothing on screen helping."* — 5 of the 11.
+
