@@ -437,3 +437,52 @@ describe("guessing at class codes", () => {
     }
   }, 30_000);
 });
+
+describe("a student who sends a session id shaped like a path", () => {
+  it("cannot write outside their own class, and is refused at the door", async () => {
+    const store = memoryStore();
+    const options = { store, now: () => NOW };
+    const call = (method: string, path: string, body?: unknown, headers: Record<string, string | undefined> = {}) =>
+      handleApiRequest({ method, path, headers, ...(body !== undefined ? { body } : {}) }, options);
+    const mine = (await call("POST", "/classes", { label: "Mine", challengeId: PLAN_UNDER_PRESSURE.id })).body as ClassCreation;
+    const theirs = (await call("POST", "/classes", { label: "Theirs", challengeId: PLAN_UNDER_PRESSURE.id })).body as ClassCreation;
+    const built = buildSubmission({ seatCode: "4" });
+    const { token } = await signedInSeat(store, mine, built.seatCode, NOW);
+
+    // The whole exploit: a student session anybody can self-serve with a class code off a
+    // whiteboard, and a session id that walks up out of the submissions directory. The file
+    // store built a filename from `${seatCode}:${sessionId}`, so this landed on another
+    // teacher's `class.json` and answered 202 — a term of children's evidence permanently
+    // unreachable by the teacher who owned it, with no key and no disk access.
+    const attack = await call("POST", `/classes/${mine.code}/submissions`, {
+      classCode: mine.code, seatCode: built.seatCode,
+      sessionId: `aaaaaaaa/../../../${theirs.code}/class`,
+      challengeId: built.challengeId, challengeVersion: built.challengeVersion, log: built.log,
+    }, { authorization: `Bearer ${token}` });
+    expect(attack.status).toBe(400);
+
+    // And the class it was aimed at is exactly as it was.
+    const victim = await call("GET", `/classes/${theirs.code}`);
+    expect(victim.status).toBe(200);
+    expect((victim.body as { label: string }).label).toBe("Theirs");
+  });
+
+  it("is refused by the store as well, so the door is not the only guard", async () => {
+    const root = await mkdtemp(join(tmpdir(), "bow-traversal-"));
+    const store = fileStore(root, vault(KEY));
+    await store.putClass(CLASS);
+    // The validator at the door is the first line and is not the guarantee. This is the
+    // guarantee: nothing a client can influence becomes part of a path without being refused
+    // if it is not a plain name. It throws rather than sanitising, because a silently corrected
+    // filename is a record written somewhere nobody expects.
+    // Thrown rather than rejected, because the path is built before the write is attempted —
+    // which is the right moment to refuse.
+    expect(() => store.putSubmission({
+      classCode: "H4KVW", seatCode: "1", sessionId: "../../escape",
+      challengeId: "plan-under-pressure", challengeVersion: "1", log: [], submittedAt: NOW, reasoningPoints: null,
+    })).toThrow(/unsafe/);
+    expect(() => store.getClass("../..")).toThrow(/unsafe/);
+    // And the class it was aimed at is untouched.
+    expect(await store.getClass("H4KVW")).toMatchObject({ code: "H4KVW" });
+  });
+});

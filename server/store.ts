@@ -354,6 +354,28 @@ export function memoryStore(): ClassStore {
   };
 }
 
+
+/**
+ * One path segment, or a refusal.
+ *
+ * The validator at the door is the first line and it is not the guarantee. A signed-in student
+ * sent `aaaaaaaa/../../../<somebody-else's-class>/class` as a session id, this store joined it
+ * into a filename, and the submission landed on another teacher's `class.json` — a whole
+ * class's evidence permanently unreachable, from a session anybody can self-serve with a class
+ * code off a whiteboard, with no key and no disk access. The door now rejects that shape. This
+ * exists so that the next gap in the door is not the same catastrophe: nothing a client can
+ * influence becomes part of a path without passing through here.
+ *
+ * It throws rather than sanitising. A silently-corrected filename is a record written somewhere
+ * nobody expects, which is the same class of bug wearing a helpful expression.
+ */
+function segment(value: string, what: string): string {
+  if (!/^[A-Za-z0-9._:-]{1,96}$/.test(value) || value === "." || value === "..") {
+    throw new Error(`Refusing to build a path from an unsafe ${what}.`);
+  }
+  return value;
+}
+
 /** Seats are numbers a teacher reads down a list, so they sort as numbers. */
 function bySeat(a: { seatCode: string }, b: { seatCode: string }): number {
   return Number(a.seatCode) - Number(b.seatCode);
@@ -366,7 +388,7 @@ function bySeat(a: { seatCode: string }, b: { seatCode: string }): number {
  * not an edge one.
  */
 export function fileStore(root: string, keeper: Vault): ClassStore {
-  const classPath = (code: string) => join(root, code, "class.json");
+  const classPath = (code: string) => join(root, segment(code, "class code"), "class.json");
   // Sealed with the same key as everything else, and the only record here whose contents
   // nobody cares about: what it proves is that the key still opens this directory.
   const canaryPath = join(root, "_vault-check.json");
@@ -390,9 +412,9 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
       await writeFile(canaryPath, keeper.seal(VAULT_CANARY), "utf8");
     }
   }
-  const assignmentPath = (code: string, id: string) => join(root, code, "assignments", `${id}.json`);
+  const assignmentPath = (code: string, id: string) => join(root, segment(code, "class code"), "assignments", `${segment(id, "assignment id")}.json`);
   const submissionPath = (code: string, record: Pick<SubmissionRecord, "seatCode" | "sessionId">) =>
-    join(root, code, "submissions", `${submissionKey(record)}.json`);
+    join(root, segment(code, "class code"), "submissions", `${segment(submissionKey(record), "submission key")}.json`);
 
   async function writeAtomic(path: string, value: unknown): Promise<void> {
     await mkdir(dirname(path), { recursive: true });
@@ -428,8 +450,9 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
   }
 
   /** Everything outside a class's own directory: accounts, and the indexes into classes. */
-  const accountPath = (kind: string, id: string) => join(root, "_accounts", kind, `${id}.json`);
-  const indexPath = (kind: string, owner: string, name: string) => join(root, "_index", kind, owner, `${name}.json`);
+  const accountPath = (kind: string, id: string) => join(root, "_accounts", segment(kind, "account kind"), `${segment(id, "account id")}.json`);
+  const indexPath = (kind: string, owner: string, name: string) =>
+    join(root, "_index", segment(kind, "index kind"), segment(owner, "index owner"), `${segment(name, "index name")}.json`);
 
   async function readIndex<T>(kind: string, owner: string): Promise<T[]> {
     let names: string[];
@@ -519,7 +542,7 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
           await rm(accountPath("students", entry.studentId), { force: true });
         }
       }
-      await rm(join(root, code, "roster", `${seatCode}.json`), { force: true });
+      await rm(join(root, segment(code, "class code"), "roster", `${segment(seatCode, "seat code")}.json`), { force: true });
       for (const folder of ["submissions", "checkpoints", "feedback"] as const) {
         let names: string[];
         try {
@@ -534,7 +557,7 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
       }
       const chosen = await readJson<ShareOutSelection>(join(root, code, "shareout.json"));
       if (chosen) {
-        await writeAtomic(join(root, code, "shareout.json"), { ...chosen, items: chosen.items.filter((item) => item.seatCode !== seatCode) });
+        await writeAtomic(join(root, segment(code, "class code"), "shareout.json"), { ...chosen, items: chosen.items.filter((item) => item.seatCode !== seatCode) });
       }
     },
 
@@ -566,14 +589,16 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
     },
 
     listRoster: async (code) => (await readFolder<StoredRosterEntry>(code, "roster")).sort(bySeat),
-    putRosterEntry: (record) => writeAtomic(join(root, record.classCode, "roster", `${record.seatCode}.json`), record),
+    putRosterEntry: (record) =>
+      writeAtomic(join(root, segment(record.classCode, "class code"), "roster", `${segment(record.seatCode, "seat code")}.json`), record),
     listCheckpoints: async (code) => (await readFolder<AttemptCheckpoint>(code, "checkpoints")).sort(bySeat),
     putCheckpoint: (record) =>
-      writeAtomic(join(root, record.classCode, "checkpoints", `${checkpointKey(record)}.json`), record),
+      writeAtomic(join(root, segment(record.classCode, "class code"), "checkpoints", `${segment(checkpointKey(record), "checkpoint key")}.json`), record),
     listFeedback: async (code) => (await readFolder<TeacherFeedback>(code, "feedback")).map(withFeedbackId).sort(byWhenWritten),
-    putFeedback: (record) => writeAtomic(join(root, record.classCode, "feedback", `${feedbackKey(record)}.json`), record),
-    getShareOut: (code) => readJson<ShareOutSelection>(join(root, code, "shareout.json")),
-    putShareOut: (record) => writeAtomic(join(root, record.classCode, "shareout.json"), record),
+    putFeedback: (record) =>
+      writeAtomic(join(root, segment(record.classCode, "class code"), "feedback", `${segment(feedbackKey(record), "feedback id")}.json`), record),
+    getShareOut: (code) => readJson<ShareOutSelection>(join(root, segment(code, "class code"), "shareout.json")),
+    putShareOut: (record) => writeAtomic(join(root, segment(record.classCode, "class code"), "shareout.json"), record),
   };
 }
 

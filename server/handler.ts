@@ -84,14 +84,30 @@ function fail(status: number, error: ClassErrorCode, message: string): ApiRespon
  * before it is stored: the event vocabulary is closed, and an event type this build does
  * not know would poison every educator view derived from the log.
  */
+/**
+ * What an identifier a client chose is allowed to look like.
+ *
+ * Letters, digits, dot, dash, underscore. No slash, no backslash, no colon, nothing that means
+ * anything to a filesystem. Deliberately narrower than the ids this product generates, so the
+ * rule can be read without knowing how they are generated.
+ */
+const SAFE_ID = /^[A-Za-z0-9._-]{8,64}$/;
+
 function readSubmission(body: unknown): EvidenceSubmission | null {
   if (!body || typeof body !== "object") return null;
   const candidate = body as Partial<EvidenceSubmission>;
   if (typeof candidate.seatCode !== "string" || !isWellFormedSeatCode(candidate.seatCode)) return null;
-  if (typeof candidate.sessionId !== "string" || candidate.sessionId.length < 8 || candidate.sessionId.length > 64) return null;
+  // Checked against a character set, not only a length. A signed-in student sent
+  // `aaaaaaaa/../../../<somebody-else's-class>/class` as a session id, and the file store —
+  // which builds a filename out of `${seatCode}:${sessionId}` — wrote their submission over
+  // another teacher's `class.json`. Two hundred and two, and a whole class's evidence
+  // permanently unreachable by the teacher who owned it, from a student session anybody can
+  // self-serve with a class code off a whiteboard.
+  if (typeof candidate.sessionId !== "string" || !SAFE_ID.test(candidate.sessionId)) return null;
   if (typeof candidate.challengeId !== "string" || !challengeById(candidate.challengeId)) return null;
   if (typeof candidate.challengeVersion !== "string" || candidate.challengeVersion.length > 32) return null;
-  if (candidate.assignmentId !== undefined && (typeof candidate.assignmentId !== "string" || candidate.assignmentId.length > 64)) return null;
+  // Same rule, and for the same reason: an assignment id becomes a filename too.
+  if (candidate.assignmentId !== undefined && (typeof candidate.assignmentId !== "string" || !SAFE_ID.test(candidate.assignmentId))) return null;
   if (!Array.isArray(candidate.log) || candidate.log.length === 0 || candidate.log.length > 5000) return null;
   const known = new Set<string>(EVIDENCE_EVENT_TYPES);
   for (const event of candidate.log) {
