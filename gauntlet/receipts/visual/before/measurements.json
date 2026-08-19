@@ -1,0 +1,310 @@
+{
+  "front-door": {
+    "h1": {
+      "text": "Somebody has to decide where the money goes.",
+      "left": 54.6,
+      "top": 194.7,
+      "h": 321.7,
+      "size": "87.424px",
+      "weight": "700",
+      "tt": "none"
+    },
+    "h2": null,
+    "mark": {
+      "glyph": "rgb(11, 37, 96)",
+      "tile": "rgb(255, 253, 246)",
+      "ground": "rgb(240, 233, 219)",
+      "contrast": 14.25
+    },
+    "deckGap": 16,
+    "scrollW": 1366,
+    "scrollW390": 390
+  },
+  "join": {
+    "h1": {
+      "text": "What is your class code?",
+      "left": 411,
+      "top": 207.6,
+      "h": 83.2,
+      "size": "41.6px",
+      "weight": "800",
+      "tt": "none"
+    },
+    "h2": null,
+    "mark": {
+      "glyph": "rgb(255, 255, 255)",
+      "tile": "rgb(18, 58, 143)",
+      "ground": "rgb(240, 233, 219)",
+      "contrast": 10.36
+    },
+    "deckGap": 12,
+    "scrollW": 1366,
+    "scrollW390": 390
+  },
+  "student-home": {
+    "h1": {
+      "text": "What is your class code?",
+      "left": 411,
+      "top": 207.6,
+      "h": 83.2,
+      "size": "41.6px",
+      "weight": "800",
+      "tt": "none"
+    },
+    "h2": null,
+    "mark": {
+      "glyph": "rgb(255, 255, 255)",
+      "tile": "rgb(18, 58, 143)",
+      "ground": "rgb(240, 233, 219)",
+      "contrast": 10.36
+    },
+    "deckGap": 12,
+    "scrollW": 1366,
+    "scrollW390": 390
+  },
+  "educator-guide": {
+    "h1": {
+      "text": "Plan Under Pressure",
+      "left": 93,
+      "top": 155.6,
+      "h": 41.6,
+      "size": "41.6px",
+      "weight": "800",
+      "tt": "none"
+    },
+    "h2": {
+      "text": "The whole resource in one minute.",
+      "left": 93,
+      "top": 397.8,
+      "h": 26.9,
+      "size": "25.6px",
+      "weight": "800",
+      "tt": "uppercase"
+    },
+    "mark": {
+      "glyph": "rgb(255, 255, 255)",
+      "tile": "rgb(18, 58, 143)",
+      "ground": "rgb(250, 246, 236)",
+      "contrast": 10.36
+    },
+    "deckGap": 12,
+    "scrollW": 1366,
+    "scrollW390": 390
+  },
+  "educator-classes": {
+    "h1": {
+      "text": "Create your first class.",
+      "left": 93,
+      "top": 155.6,
+      "h": 41.6,
+      "size": "41.6px",
+      "weight": "800",
+      "tt": "none"
+    },
+    "h2": null,
+    "mark": {
+      "glyph": "rgb(255, 255, 255)",
+      "tile": "rgb(18, 58, 143)",
+      "ground": "rgb(250, 246, 236)",
+      "contrast": 10.36
+    },
+    "deckGap": 12,
+    "scrollW": 1366,
+    "scrollW390": 390
+  },
+  "educator-objectives": {
+    "h1": {
+      "text": "What do you want to assess?",
+      "left": 93,
+      "top": 155.6,
+      "h": 41.6,
+      "size": "41.6px",
+      "weight": "800",
+      "tt": "none"
+    },
+    "h2": null,
+    "mark": {
+      "glyph": "rgb(255, 255, 255)",
+      "tile": "rgb(18, 58, 143)",
+      "ground": "rgb(250, 246, 236)",
+      "contrast": 10.36
+    },
+    "deckGap": 12,
+    "scrollW": 1366,
+    "scrollW390": 390
+  },
+  "class-overview": {
+    "h1": {
+      "text": "18 of the 18 students BOW has seen turned in",
+      "left": 125,
+      "top": 195.5,
+      "h": 101.9,
+      "size": "52px",
+      "weight": "800",
+      "tt": "none"
+    },
+    "h2": {
+      "text": "Where the room is",
+      "left": 93,
+      "top": 532.8,
+      "h": 26.9,
+      "size": "25.6px",
+      "weight": "800",
+      "tt": "uppercase"
+    },
+    "mark": {
+      "glyph": "rgb(255, 255, 255)",
+      "tile": "rgb(18, 58, 143)",
+      "ground": "rgb(250, 246, 236)",
+      "contrast": 10.36
+    },
+    "deckGap": 0,
+    "scrollW": 1366,
+    "scrollW390": 390
+  },
+  "student-evidence": {
+    "h1": {
+      "text": "Seat 1",
+      "left": 125,
+      "top": 190.1,
+      "h": 57.1,
+      "size": "60.104px",
+      "weight": "600",
+      "tt": "none"
+    },
+    "h2": {
+      "text": "Every judgement on this attempt",
+      "left": 93,
+      "top": 777.8,
+      "h": 26.9,
+      "size": "25.6px",
+      "weight": "800",
+      "tt": "uppercase"
+    },
+    "mark": {
+      "glyph": "rgb(255, 255, 255)",
+      "tile": "rgb(18, 58, 143)",
+      "ground": "rgb(250, 246, 236)",
+      "contrast": 10.36
+    },
+    "deckGap": 8,
+    "scrollW": 1366,
+    "scrollW390": 390
+  },
+  "debrief": {
+    "h1": {
+      "text": "Debrief",
+      "left": 303,
+      "top": 135.1,
+      "h": 51,
+      "size": "52px",
+      "weight": "800",
+      "tt": "none"
+    },
+    "h2": {
+      "text": "1 · Open with the disagreement",
+      "left": 303,
+      "top": 350.4,
+      "h": 27.6,
+      "size": "24px",
+      "weight": "700",
+      "tt": "none"
+    },
+    "mark": {
+      "glyph": "rgb(255, 255, 255)",
+      "tile": "rgb(18, 58, 143)",
+      "ground": "rgb(250, 246, 236)",
+      "contrast": 10.36
+    },
+    "deckGap": 12,
+    "scrollW": 1366,
+    "scrollW390": 390
+  },
+  "reading-queue": {
+    "h1": {
+      "text": "Read and score the explanations.",
+      "left": 93,
+      "top": 208.9,
+      "h": 83.2,
+      "size": "41.6px",
+      "weight": "800",
+      "tt": "none"
+    },
+    "h2": {
+      "text": "Seat 4",
+      "left": 150,
+      "top": 576.8,
+      "h": 27.6,
+      "size": "24px",
+      "weight": "700",
+      "tt": "none"
+    },
+    "mark": {
+      "glyph": "rgb(255, 255, 255)",
+      "tile": "rgb(18, 58, 143)",
+      "ground": "rgb(250, 246, 236)",
+      "contrast": 10.36
+    },
+    "deckGap": 12,
+    "scrollW": 1366,
+    "scrollW390": 390
+  },
+  "share-out": {
+    "h1": {
+      "text": "Pick what the room sees.",
+      "left": 93,
+      "top": 208.9,
+      "h": 41.6,
+      "size": "41.6px",
+      "weight": "800",
+      "tt": "none"
+    },
+    "h2": {
+      "text": "What you will show, in order",
+      "left": 93,
+      "top": 424.8,
+      "h": 26.9,
+      "size": "25.6px",
+      "weight": "800",
+      "tt": "uppercase"
+    },
+    "mark": {
+      "glyph": "rgb(255, 255, 255)",
+      "tile": "rgb(18, 58, 143)",
+      "ground": "rgb(250, 246, 236)",
+      "contrast": 10.36
+    },
+    "deckGap": 12,
+    "scrollW": 1366,
+    "scrollW390": 390
+  },
+  "teaching-companion": {
+    "h1": {
+      "text": "A two-day mini-unit: budgeting under uncerta",
+      "left": 80,
+      "top": 207.6,
+      "h": 83.2,
+      "size": "41.6px",
+      "weight": "800",
+      "tt": "none"
+    },
+    "h2": {
+      "text": "Build a plan from dependable money",
+      "left": 57,
+      "top": 635.8,
+      "h": 83.2,
+      "size": "41.6px",
+      "weight": "800",
+      "tt": "none"
+    },
+    "mark": {
+      "glyph": "rgb(255, 255, 255)",
+      "tile": "rgb(18, 58, 143)",
+      "ground": "rgb(250, 246, 236)",
+      "contrast": 10.36
+    },
+    "deckGap": 12,
+    "scrollW": 1366,
+    "scrollW390": 390
+  }
+}

@@ -207,6 +207,39 @@ district actually makes. Those were the two places a district was most likely to
 belief about an assessment product.
 
 
+## Round 5 — three verifiers sent at three claims the product makes about itself
+
+| Verifier | Verdict | Single largest reason |
+| --- | --- | --- |
+| Security & privacy, round 3 — sent back to **break the round-2 fixes** | **DEPLOY WITH CONDITIONS** (up from REFUSE) | Both HIGH holes closed on the bytes and could not be reopened. Three new MEDIUMs, all fixed since: a submission limiter keyed on an address, which one device on the school network emptied with junk posts until a real child's turn-in got a 429; a key canary that failed open when the file was deleted; and a sign-in that answered in 385ms for a real account and 5ms for an absent one, which is a directory of every teacher in the district. |
+| Cross-device resume — twelve browser profiles as twelve devices, a real class, cards typed in like a child | **HALF** | *Eight Weeks to the Showcase* resumes on a second device exactly and reliably. **Run the Pop-Up does not resume at all** — the server hands the browser the whole run, eighteen events and her booth, and the browser throws it away and starts the market from Saturday zero with **NO SEAT YET** in the top bar. |
+| Standards — NYSED's own text, established before any repo document was opened | **HONEST WITH CORRECTIONS** | See Round 4. |
+
+### The finding that mattered most, and it was mine
+
+The resume verifier pressed the teacher's **SIGN EVERYBODY OUT** control — offered under the
+sentence *"One press ends every student session in this class, on every device. Nothing they did
+is lost."* — with a student mid-run. The next morning that child typed her own class code and
+her own card code on her own laptop, and every attempt and every draft on the device had been
+deleted before she reached the screen.
+
+The cause was the shared-device rule added a day earlier: it compares who is signing in with who
+this browser last held, and signing out was removing the record of who was here along with the
+session. Ending a session says *this session is over*; it does not say *somebody else is about
+to sit down*, and only the second is a reason to throw work away. Fixed at `b54148b`, with the
+test that asserted the old behaviour corrected and the reasoning behind the mistake written into
+it rather than deleted.
+
+### Still open from that verification, and routed
+
+The same seat open on two devices diverges permanently and neither screen mentions the other —
+one browser ends holding *"Only if a bonus rule is met $800"* and the other *"No bonus money
+counted $0"*, both online, both refreshed, and whichever device the child finishes on is the
+plan the teacher grades. *Leave this run* stopped meaning anything when the server became the
+source of truth. And after a refused submission, both actions the product offers destroy the
+retry queue, under a sentence saying the work is with the teacher.
+
+
 ## Largest remaining gap
 
 **No longer J1.** The reading load was the largest measured gap for two rounds and it is now

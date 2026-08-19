@@ -1,0 +1,32 @@
+# SHA de6207c19559a0e3a741a9fa0809fba9b8001ab8.  FINDING: the fail-closed canary still fails
+# OPEN on a store that holds teacher accounts but no class — and a boot under the wrong key in
+# that state destroys account access irreversibly.
+#
+# Cause: plantCanary() is called ONLY from putClass(). A store where teachers have signed up but
+# no class exists yet has no canary. keyCheck()'s absent-canary branch does:
+#     readdir(root).some(n => !n.startsWith("_") && !n.endsWith(".json")) ? "mismatch" : "fresh"
+# `_accounts` and `_index` both start with "_", so the store looks empty and answers "fresh".
+
+## 1. Teacher signs up; NO class created. Correct key.
+   signup HTTP 201
+   root entries: _accounts
+   canary present? NO
+   health with CORRECT key:   storeKey=fresh ok=true classroomReady=true
+
+## 2. Restart with a WRONG key. Data is unreadable, but health does not say so:
+   health with WRONG key:     storeKey=fresh ok=true classroomReady=true     <== FAILS OPEN
+   teacher sign-in:           HTTP 401  (their account cannot be opened)
+
+## 3. Health said "fresh/ok", so the operator proceeds. The teacher signs up again:
+   re-signup HTTP 201  -> allowed; the original account is invisible
+   teachers on disk now: 2   (two accounts for one email; the email pointer is now
+                              sealed with the WRONG key, overwriting the original pointer)
+
+## 4. The operator realises and restores the CORRECT key:
+   health:                    storeKey=fresh ok=true
+   ORIGINAL teacher sign-in:  HTTP 401     <== PERMANENT. The pointer no longer opens.
+
+# Net: in the accounts-only state the guard added for exactly this failure does not fire, and a
+# single boot under a mistyped key silently and irreversibly severs every teacher account (and
+# with it every class those accounts own). Fix: plant the canary on first write of ANY record,
+# and/or treat a non-empty _accounts tree as "classes present" for the fail-closed judgement.

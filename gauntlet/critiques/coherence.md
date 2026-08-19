@@ -460,3 +460,67 @@ It is one voice, one palette and one very good idea, assembled by hands that did
 **Single largest reason:** the teacher's surfaces do not reliably describe the run the student had. The share-out asserts a repair that did not happen — printed directly over the student's own words saying the opposite — one of the two worlds arrives on the teacher's desk as `POPUP_SUM_SUBMITTED / event-5`, and the sample class that exists to demonstrate this product's honesty about counting cannot make its own four numbers agree. That is the one promise this product sells, and it is the one that is broken.
 
 **What this product is for, in one sentence:** BOW Decision Challenges is a twenty-minute, after-you-have-taught-it assessment in which a middle-schooler handles somebody else's money through a plan, a shock and a repair, and hands their teacher a readable account of what they actually decided and why.
+
+---
+
+# ADDENDUM — MAJOR-39: the two worlds disagree about what a decision is
+
+**Added 2026-08-19 by the coherence-fix agent**, not by the original reviewer, after closing BLOCKER-1, BLOCKER-2, BLOCKER-6 and the LMS drift. It is filed here rather than in a fix report because it is a finding, it outlived the fixes, and it goes at the claim the whole design rests on.
+
+**Severity: MAJOR — incoherence.** I first wrote this as though it were the largest thing in the product. Checking it against the code rather than against my own sentence knocked two of its four supports out, and one of them was closed by the Pop-Up's own owner before I looked. What is left is real, is narrower than I claimed, and is the last structural disagreement between the two worlds.
+
+## The claim
+
+Basketball's premise is deciding **before** you know. Run the Pop-Up prints the exact number of plates each crowd will buy **before** the student commits money to stock, four times. Both worlds then hand the teacher a written explanation scored on one rubric row — *Tradeoff / opportunity cost* — as though the same question had been asked.
+
+## What I checked, and what it cost my own argument
+
+**Conceded: the narration incoherence is closed.** MAJOR-9 says the Pop-Up "narrates the same nights as weather nobody can predict". That was true when it was walked and it is not true now. `worlds/food-truck/scenario.ts` carries the fix and the reasoning: *"Nothing here is uncertain — the organiser has run this market for years and tells every stall what each Saturday will be — so the prose says it the way the organiser would, and the words that performed doubt are gone."* Saturday 3 now reads "a third of the usual crowd **stays** home", stated by someone who knows, not "stayed home" in the past tense about a night that had not happened. Half of MAJOR-9 should be marked closed.
+
+**Conceded: Basketball is not uniformly a decide-before-you-know world.** Its housing comparison ranks three fully printed prices, and the Week 4 course seat is $1,000 now against $1,200 later — both numbers on screen. Disclosed-input arithmetic is a normal beat in both worlds.
+
+**Conceded: the Pop-Up is not uniformly a decide-after-you-know world.** It carries two pieces of conditional money the student must accept or refuse before any Saturday is played, and it makes them name the line that gives the money back if it does not come (`POPUP_COVER_LINE_NAMED`) — a contingency commitment Basketball reaches by a different route.
+
+**Conceded: the printed crowds are a defended choice, not an oversight.** `worlds/food-truck/balance.ts` argues it at length and the argument is sound on its own terms: hiding the crowds would score a child's stocking partly on luck, break the replay a teacher needs, and make the strategy sweep impossible. Its best line is one I cannot answer directly — *"An evening that turns out colder than the last one is a surprise; an evening you were told would be colder is a decision."* The position is now in teacher-facing copy on the educator guide: *"Every crowd figure is printed before the student orders, so what is assessed is planning against known demand rather than predicting it."*
+
+## The beat inventory — one beat out of step, not a whole theory apart
+
+Read off the two worlds' event tables in `domain/scenario/registry.ts`, which is the closest thing the repository has to a declaration of what each world asks. Seven constructs map:
+
+| Construct | Basketball | Run the Pop-Up |
+|---|---|---|
+| Arithmetic gate | `CALCULATION_SUBMITTED` | `POPUP_SUM_SUBMITTED` |
+| Conditional income, accepted or refused | `INCOME_SOURCE_TOGGLED` | `POPUP_CONDITIONAL_MONEY_DECIDED` |
+| Contingency named in advance | `fallback-version` stage | `POPUP_COVER_LINE_NAMED` |
+| Allocate, and name the line that takes the rest | `PLAN_REMAINDER_ASSIGNED` | `POPUP_REMAINDER_ASSIGNED` |
+| Competing claims on windfall cash, with a reason | `COMPETING_CLAIMS_SETTLED` | `COMPETING_CLAIMS_SETTLED` |
+| Pay for capacity you may not need | `OPTIONAL_WORK_DECIDED` | `POPUP_HELPER_DECIDED` |
+| Repair after a shock, without moving spent money | `LOCKED_MOVE_ATTEMPTED` | `POPUP_LOCKED_MOVE_ATTEMPTED` |
+
+The tips jar and Week 3's cash are not analogues — they are **the same event type with the same payload**, written by two worlds. That is proof the two can share a construct when somebody intends them to.
+
+Two constructs do not map. Basketball-only: `COURSE_DEPOSIT_DECIDED` — commit early and cheap, or late and dear, against money you do not yet have. Pop-Up-only: `POPUP_STOCK_ORDERED` — commit money to inventory against a quantity you have already been told.
+
+**So the honest statement is narrower than my first one.** It is not two theories across the board. It is one beat — and it is the beat the Pop-Up repeats four times and Basketball never asks at all, while Basketball's own most-repeated money interaction is allocating against income that might not arrive. The disagreement is concentrated in each world's *central repeated interaction*, which is why it reads as a theory apart even though the inventory mostly agrees.
+
+## What is actually broken, after all the concessions
+
+**One rubric row, two constructs.** `/educator/class/:code/reading` scores every student out of 2 on *Tradeoff / opportunity cost*. In Basketball that reads a student who gave something up because they could not have everything and did not know what was coming. In the Pop-Up, at the stock order, it reads a student doing arithmetic against a printed number. Those are different constructs under one label, and the guide sells the sameness as the reason to have two: *"Do the two give me the same thing back? Yes, and that is the point of having two… judged on the same rubric."* That claim is now weaker than the page makes it sound, and it is a measurement-validity problem rather than a matter of taste — the product's whole proposition is that a mixed class produces **one** answer about the class.
+
+This is compounded by MAJOR-4, still open: the two written prompts ask different questions. Basketball asks why the plan holds and forbids "it was the cheapest". The Pop-Up asks how the student would run it again. A reflection prompt and a defence prompt, one rubric.
+
+## Where I think the Pop-Up's owner is wrong
+
+Their case is that determinism is required — for replay, for the sweep, and to keep luck out of a child's score — and that printing the crowds is how you get it. **Determinism does not require disclosure, and Basketball is the proof.** Week 5 is scripted, not rolled: it replays identically, it is swept identically, and no child is scored on luck — and the student is not told what is coming while they build the plan it breaks. Basketball gets determinism from *scripted but undisclosed*; the Pop-Up takes it from *scripted and disclosed*. Both are deterministic. The printed crowd is therefore a free choice, not one the replay requirement forces, and the strongest argument in `balance.ts` is load-bearing for a conclusion it does not reach.
+
+The rest of their case I accept, including the part I like least: their own red team found that a student who wants to optimise the market can do it with arithmetic before it opens, and they wrote that down rather than arguing with it.
+
+## What it would take to close
+
+- **Cheapest, and it closes the measurement problem without touching either world (recommended first).** Stop scoring two constructs on one row. Either split *Tradeoff / opportunity cost* per story, or state on the reading screen what that row means in the story the student played. Also closes the visible half of MAJOR-4.
+- **Smallest change that makes the two worlds ask the same *kind* of question at least once (recommended second).** Do not hide all four crowds — that would break the sweep, the replay and the owner's case. Make **one** Saturday's crowd a stated range instead of a number, and the obvious candidate is Saturday 4, after the generator, where the stakes are already highest and the student has just had to repair the plan. The realised value stays scripted, so replay and the sweep survive untouched; the student orders against a range, which is exactly what Basketball asks of the bonus; and `observer.ts` scores the reasoning rather than the outcome, so nobody is scored on luck. One number in `numbers.ts` and one screen's copy.
+- **Not recommended.** Disclosing Basketball's Week 5 to match. It would make the two worlds agree by removing the thing Basketball is for.
+
+## Why this is filed as a disagreement rather than a decision
+
+The Pop-Up's owner and I both walked the product and reached different conclusions, and neither of us is obviously right. They are defending a coherent world; I am reporting an incoherent pair. Their argument is written into `balance.ts` and into the educator guide, mine is written here, and whoever resolves it should read both rather than take the one that was reported last.
