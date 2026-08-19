@@ -1,104 +1,167 @@
 /*
- * Platform primitives: the ground, the ink, the financial colour semantics, the type
- * scale, and the ticket geometry every surface is cut from.
+ * BOW platform primitives: the ground, the ink, the financial colour semantics, the type
+ * scale, elevation, and the two grounds the product is built on.
  *
- * The palette is BOW's own — deep athletic blue on warm cream, set in near-black ink. It
- * is deliberately small. Money that arrives is blue, money that might not is amber, a plan
- * that balances is green, a plan that is short is rust, and nothing else is coloured at
- * all. A student who learns those four in the first thirty seconds can read every screen
- * after it without a legend.
+ * ## The identity
+ *
+ * BOW is violet. The mark's star, every primary action, every active state and every focus
+ * ring is drawn from one indigo-violet ramp, and nothing else in the product is allowed to
+ * be violet — so the colour always means *this is BOW, and this is the thing to press*.
+ *
+ * This replaces the warm-cream and athletic-blue "admissions pass" identity the product
+ * shipped through V4. That system had real craft in it and three of its rules are kept
+ * verbatim, because they were never about the hue:
+ *
+ *   1. **The palette is deliberately small.** Money that arrives is one colour, money with a
+ *      condition on it is another, a plan that balances is a third, a plan that is short is a
+ *      fourth, and nothing else is coloured at all. A student who learns four colours in the
+ *      first thirty seconds reads every screen after it without a legend.
+ *   2. **Colour is never the only carrier.** Conditional money keeps its stripe, so the
+ *      difference survives greyscale and colour blindness alike.
+ *   3. **No webfont request.** A district pilot runs on Chromebook carts over a school
+ *      network, and a font request that hangs is a blank headline in front of a class.
+ *
+ * ## Two grounds, one system
+ *
+ * A teacher and a student are doing different jobs and the product should say so.
+ *
+ *   - **Light ground** (`:root`, and anything inside `.ground-light`) — the teacher product.
+ *     White cards on a faint violet-grey page, near-black navy ink, restrained semantic
+ *     colour, high information density. Premium SaaS, fintech precision, calm.
+ *   - **Dark ground** (`.ground-dark`) — the student product. Deep navy-violet, luminous
+ *     surfaces, world art, depth. Entering a world, not opening school software.
+ *
+ * The semantic token names are identical on both grounds. A component written against
+ * `--surface` and `--ink-1` renders correctly on either without knowing which it is on,
+ * which is what stops the two products drifting into two component libraries.
+ *
+ * Every ink/surface pair below is checked to at least 4.5:1, and the ramps are chosen so
+ * that the check holds on `--surface-sunken` and `--surface-inset` too, not just on the
+ * lightest one.
  */
+
 :root {
   color-scheme: light;
 
-  /* Warm cream, not grey. The product is printed on card, not rendered in a dashboard. */
-  --canvas: #f0e9db;
-  --surface: #faf6ec;
-  --surface-raised: #fffdf6;
-  --surface-sunken: #e7dfcd;
-  --surface-inset: #ded5c0;
+  /* ---------------------------------------------------------------------
+     The violet ramp. One ramp, referenced by everything that is "BOW".
+     `--violet-600` on white is 6.5:1, so it carries white text at any size.
+     --------------------------------------------------------------------- */
+  --violet-50: #f5f3ff;
+  --violet-100: #ece7ff;
+  --violet-200: #d9cfff;
+  --violet-300: #b9a8ff;
+  --violet-400: #9678ff;
+  --violet-500: #7c52fa;
+  --violet-600: #6733e8;
+  --violet-700: #5522c4;
+  --violet-800: #451d9c;
+  --violet-900: #2e1470;
 
-  --ink-1: #12151b;
-  --ink-2: #383e47;
+  /* The navy the dark ground and the darkest ink are cut from. Violet-tinted, so a
+     dark screen and a light one look like the same product rather than two. */
+  --navy-50: #f5f5fa;
+  --navy-100: #ebebf4;
+  --navy-200: #d8d8e8;
+  --navy-300: #b4b4cd;
+  --navy-400: #8a8aac;
+  --navy-500: #5a5a78;
+  --navy-600: #3d3d5c;
+  --navy-700: #262643;
+  --navy-800: #17163a;
+  --navy-900: #0c0b1f;
 
-  /* Meets AA against every surface token, including surface-sunken and surface-inset. */
-  --ink-3: #4e545d;
-  --ink-4: #565c66;
+  /* ---------------------------------------------------------------------
+     Light ground — the teacher product.
+     --------------------------------------------------------------------- */
+  --canvas: #f5f5fa;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #efeff7;
+  --surface-inset: #e6e6f1;
 
-  /* Muted text on the dark panels. One token cannot clear AA against both a near-white
-     surface and a near-black one, so the dark scenes get their own. */
-  --ink-muted-invert: #b6c1d6;
+  --ink-1: #14142b;
+  --ink-2: #3d3d5c;
+
+  /* Meets AA against every surface token above, including sunken and inset. */
+  --ink-3: #5a5a78;
+  --ink-4: #616180;
+
+  /* Muted text on dark panels. One token cannot clear AA against both a near-white
+     surface and a near-black one, so the dark grounds get their own. */
+  --ink-muted-invert: #a8aacb;
   --ink-invert: #ffffff;
 
-  --border-subtle: #e2d9c7;
-  --border-default: #cfc4ac;
-  --border-strong: #a89a7c;
-  --border-ink: #12151b;
+  --border-subtle: #ebebf4;
+  --border-default: #ddddec;
+  --border-strong: #b4b4cd;
+  --border-ink: #14142b;
 
-  /*
-   * Money that arrives is BOW blue. Money that has a condition on it is amber and carries
-   * a stripe, so the difference survives greyscale and colour blindness alike.
-   */
-  --fin-reliable: #123a8f;
-  --fin-reliable-soft: #e0e7f6;
-  --fin-reliable-ink: #0d2c6d;
-  --fin-conditional: #b8801b;
-  --fin-conditional-soft: #f7ecd3;
-  --fin-conditional-ink: #563a06;
-  --fin-conditional-stripe: #8f6210;
-  --fin-locked: #c6bda8;
-  --fin-locked-ink: #474d55;
+  /* ---------------------------------------------------------------------
+     Money. Four colours and a stripe, exactly as before — re-cut so they sit
+     inside the violet identity instead of fighting it.
+     --------------------------------------------------------------------- */
 
-  /* What the student can move. Same blue as money that arrives, because a dollar the
-     student has placed is a dollar that is certainly going somewhere. */
-  --fin-adjustable: #123a8f;
-  --fin-adjustable-soft: #e0e7f6;
-  --fin-adjustable-ink: #0d2c6d;
+  /* Money that arrives. BOW's own indigo, so "certain money" and "the product"
+     read as the same confident thing. */
+  --fin-reliable: #3949c4;
+  --fin-reliable-soft: #e7e9fa;
+  --fin-reliable-ink: #26308c;
 
-  /*
-   * The three jobs a dollar can take. They are not a ramp of one hue: each is the colour
-   * of what it protects — the course is BOW blue, the buffer is the green of a plan that
-   * holds, and Avery's week is the brown the time meter already uses.
-   */
-  --choice-1: #123a8f;
-  --choice-2: #1c6b45;
-  --choice-3: #8a5a2b;
+  /* Money with a condition on it. Amber, and it always carries the stripe. */
+  --fin-conditional: #a8720c;
+  --fin-conditional-soft: #fbf0d9;
+  --fin-conditional-ink: #6b4703;
+  --fin-conditional-stripe: #82580a;
 
-  --fin-balanced: #1c6b45;
-  --fin-balanced-soft: #dcece2;
-  --fin-balanced-ink: #14512f;
-  --fin-over: #a8321f;
-  --fin-over-soft: #f8e2dd;
-  --fin-over-ink: #7d2113;
+  --fin-locked: #c2c2d4;
+  --fin-locked-ink: #4e4e68;
+
+  /* What the student can move. The same indigo as money that arrives, because a
+     dollar the student has placed is a dollar that is certainly going somewhere. */
+  --fin-adjustable: #3949c4;
+  --fin-adjustable-soft: #e7e9fa;
+  --fin-adjustable-ink: #26308c;
+
+  /* The three jobs a dollar can take. Not a ramp of one hue: each is the colour of
+     what it protects. */
+  --choice-1: #3949c4;
+  --choice-2: #15704a;
+  --choice-3: #9a5b2d;
+
+  --fin-balanced: #15704a;
+  --fin-balanced-soft: #dcefe5;
+  --fin-balanced-ink: #0e5335;
+  --fin-over: #b3301f;
+  --fin-over-soft: #fbe4e0;
+  --fin-over-ink: #832014;
 
   --pat-conditional: repeating-linear-gradient(45deg, var(--fin-conditional) 0 6px, var(--fin-conditional-stripe) 6px 10px);
   --pat-over: repeating-linear-gradient(45deg, var(--fin-over-soft) 0 4px, var(--fin-over) 4px 8px);
   --pat-ghost: repeating-linear-gradient(45deg, var(--surface-inset) 0 3px, var(--surface-sunken) 3px 6px);
 
-  /* Avery's week. Time is the second currency, so it gets its own family rather than
-     borrowing one of the money colours. */
-  --time-commute: #8a5a2b;
-  --time-rehab: #a8321f;
-  --time-clinics: #b8801b;
-  --time-bought: #d7cdb8;
-  --time-over: #a8321f;
+  /* The student's week. Time is the second currency, so it gets its own family
+     rather than borrowing one of the money colours. */
+  --time-commute: #9a5b2d;
+  --time-rehab: #b3301f;
+  --time-clinics: #a8720c;
+  --time-bought: #d8d8e8;
+  --time-over: #b3301f;
 
-  /*
-   * Ticket geometry. The identity is an admissions pass, so the product has one cut edge,
-   * one perforation and one notch — used where a surface genuinely is a stub or a pass,
-   * never as decoration on everything that happens to be rectangular.
-   */
-  --rule-perf: repeating-linear-gradient(90deg, var(--border-strong) 0 5px, transparent 5px 11px);
-  --rule-perf-v: repeating-linear-gradient(180deg, var(--border-strong) 0 5px, transparent 5px 11px);
-  --notch: 13px;
+  /* Retired geometry, kept as no-ops so the ticket rules in `brand.css` and any
+     stylesheet still referencing them resolve rather than painting garbage. The
+     identity is no longer an admissions pass; see `brand.css`. */
+  --rule-perf: linear-gradient(90deg, var(--border-default) 0 100%);
+  --rule-perf-v: linear-gradient(180deg, var(--border-default) 0 100%);
+  --notch: 0px;
 
-  /* Chapter grounds. The five parts of the story sit on visibly different air. The grounds
-     move only a few percent — enough that a student feels the room change, not enough to
-     put any text on a surface its contrast was not checked against. */
-  --ground-plan: #f0e9db;
-  --ground-season: #eee9de;
-  --ground-pressure: #eae2d3;
-  --ground-resolution: #f2ecdf;
+  /* Chapter grounds. The parts of a story sit on visibly different air — a few
+     percent, enough that a student feels the room change and not enough to put text
+     on a surface its contrast was not checked against. */
+  --ground-plan: #f5f5fa;
+  --ground-season: #f2f2f9;
+  --ground-pressure: #edecf6;
+  --ground-resolution: #f6f5fb;
 
   /* Print. A debrief on paper has no surfaces to sit on, so it gets its own ink and
      rules rather than borrowing screen tokens that assume a coloured ground. */
@@ -106,12 +169,22 @@
   --print-rule: #999999;
   --print-rule-strong: #333333;
 
-  --focus-ring: #123a8f;
+  --focus-ring: var(--violet-600);
   --focus-halo: #ffffff;
-  --shadow-rail: 0 1px 0 var(--border-default), 0 8px 18px -16px rgb(12 21 40 / 45%);
-  --shadow-card: 0 1px 2px rgb(12 21 40 / 7%), 0 12px 28px -20px rgb(12 21 40 / 40%);
-  --shadow-lift: 0 2px 4px rgb(12 21 40 / 9%), 0 22px 44px -28px rgb(12 21 40 / 50%);
-  --shadow-overlay: 0 24px 48px -24px rgb(12 21 40 / 34%), 0 2px 6px -3px rgb(12 21 40 / 16%);
+
+  /* ---------------------------------------------------------------------
+     Elevation. Two-part shadows — a tight contact shadow that seats the element,
+     and a wide soft one that lifts it. Tinted navy rather than black, because a
+     grey shadow on a violet-grey page reads as dirt.
+     --------------------------------------------------------------------- */
+  --shadow-rail: 0 1px 0 var(--border-subtle), 0 8px 24px -20px rgb(20 20 43 / 30%);
+  --shadow-card: 0 1px 2px rgb(20 20 43 / 5%), 0 8px 20px -12px rgb(20 20 43 / 14%);
+  --shadow-lift: 0 2px 4px rgb(20 20 43 / 5%), 0 20px 40px -20px rgb(20 20 43 / 22%);
+  --shadow-overlay: 0 8px 16px rgb(20 20 43 / 6%), 0 32px 64px -28px rgb(20 20 43 / 32%);
+
+  /* The violet glow under a primary action. */
+  --shadow-violet: 0 1px 2px rgb(46 20 112 / 16%), 0 12px 28px -14px rgb(103 51 232 / 45%);
+
   --s-1: 2px;
   --s-2: 4px;
   --s-3: 8px;
@@ -122,60 +195,145 @@
   --s-8: 40px;
   --s-9: 56px;
   --s-10: 72px;
-  --r-xs: 3px;
-  --r-sm: 4px;
-  --r-md: 5px;
+
+  /* Radii. The old set topped out at 5px, which is what made every surface in the
+     product read as a document rather than as software. */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 22px;
   --r-pill: 999px;
+
   --w-board: 1200px;
   --measure: 62ch;
   --actionbar-h: 64px;
   --gutter: 24px;
 
-  /* Two measures, and only two. Dense evidence pages get the first; anything a person
-     reads in sentences gets the second, and owns its margins rather than stranding a
-     400px column of nothing beside them. */
+  /* Two measures, and only two. Dense evidence pages get the first; anything a
+     person reads in sentences gets the second, and owns its margins rather than
+     stranding a 400px column of nothing beside them. */
   --w-evidence: 1180px;
   --w-read: 760px;
 
-  /* One vertical rhythm for every educator surface: between sections, between blocks
-     inside one, and between elements inside a block. */
+  /* One vertical rhythm for every educator surface: between sections, between
+     blocks inside one, and between elements inside a block. */
   --gap-section: 56px;
   --gap-block: 28px;
   --gap-element: 14px;
   --tap: 44px;
 
-  /* System stacks only. Chromebooks, Windows lab machines, and Macs each resolve a
-     high-quality grotesque locally, so the product needs no webfont request and cannot
-     flash or fall back to Times on a school network. */
+  /* System stacks only. Chromebooks, Windows lab machines and Macs each resolve a
+     high-quality grotesque locally, so the product needs no webfont request and
+     cannot flash or fall back to Times on a school network. */
   --font-ui: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Consolas, monospace;
   --font-display: var(--font-ui);
 
   /* Numbers carry the product, so they always align in columns and never read as letters. */
   --num: "tnum" 1, "lnum" 1, "zero" 1, "ss01" 1;
-  --t-scene: 800 clamp(2.5rem, 4.8vw, 4.2rem)/0.92 var(--font-display);
-  --t-display1: 800 clamp(2.4rem, 4vw, 3.25rem)/0.98 var(--font-display);
-  --t-display2: 800 clamp(2rem, 3.2vw, 2.6rem)/1 var(--font-display);
-  --t-display3: 800 1.6rem/1.05 var(--font-display);
+  --t-scene: 800 clamp(2.5rem, 4.8vw, 4.2rem)/0.94 var(--font-display);
+  --t-display1: 800 clamp(2.4rem, 4vw, 3.25rem)/1 var(--font-display);
+  --t-display2: 800 clamp(2rem, 3.2vw, 2.6rem)/1.02 var(--font-display);
+  --t-display3: 800 1.6rem/1.08 var(--font-display);
 
-  /* The step between a page's headline and its section headings. Without it every page
-     read as one giant display line dropping straight to 15px body, which is why nothing
-     could be *second* most important. */
-  --t-section: 700 clamp(1.5rem, 2.2vw, 1.875rem)/1.15 var(--font-display);
-  --t-title1: 700 1.5rem/1.15 var(--font-ui);
-  --t-title2: 700 1.25rem/1.2 var(--font-ui);
-  --t-title3: 700 1.0625rem/1.3 var(--font-ui);
-  --t-body-lg: 400 1.0625rem/1.55 var(--font-ui);
-  --t-body: 400 1rem/1.55 var(--font-ui);
+  /* The step between a page's headline and its section headings. Without it every
+     page reads as one giant display line dropping straight to body, which is why
+     nothing could be *second* most important. */
+  --t-section: 700 clamp(1.5rem, 2.2vw, 1.875rem)/1.18 var(--font-display);
+  --t-title1: 700 1.5rem/1.18 var(--font-ui);
+  --t-title2: 700 1.25rem/1.24 var(--font-ui);
+  --t-title3: 700 1.0625rem/1.32 var(--font-ui);
+  --t-body-lg: 400 1.0625rem/1.6 var(--font-ui);
+  --t-body: 400 1rem/1.6 var(--font-ui);
   --t-ui: 500 0.9375rem/1.45 var(--font-ui);
   --t-sm: 500 0.875rem/1.45 var(--font-ui);
   --t-label: 700 0.75rem/1.3 var(--font-ui);
   --t-micro: 500 0.75rem/1.4 var(--font-ui);
-  --m-hero: 700 2.75rem/1 var(--font-ui);
-  --m-lg: 700 1.75rem/1.1 var(--font-ui);
+  --m-hero: 800 2.75rem/1 var(--font-ui);
+  --m-lg: 800 1.75rem/1.1 var(--font-ui);
   --m-md: 700 1.25rem/1.2 var(--font-ui);
   --m-sm: 700 1rem/1.2 var(--font-ui);
   --m-xs: 700 0.875rem/1.2 var(--font-ui);
+}
+
+/*
+ * The dark ground — the student product.
+ *
+ * Same semantic names, different values, so a component does not have to know which
+ * ground it is on. Applied by adding `ground-dark` to a wrapper; everything inside it
+ * inherits.
+ *
+ * The inks are checked against `--surface`, which is the *lightest* thing text sits on
+ * here, so anything that clears it clears the page behind it too.
+ */
+.ground-dark {
+  color-scheme: dark;
+
+  --canvas: #0c0b1f;
+  --surface: #17163a;
+  --surface-raised: #1e1d47;
+  --surface-sunken: #121130;
+  --surface-inset: #0f0e28;
+
+  --ink-1: #ffffff;
+  --ink-2: #dcdcec;
+  --ink-3: #a8aacb;
+  --ink-4: #9698ba;
+  --ink-invert: #14142b;
+  --ink-muted-invert: #5a5a78;
+
+  --border-subtle: #262550;
+  --border-default: #322f66;
+  --border-strong: #4a4690;
+  --border-ink: #ffffff;
+
+  /* Money on a dark ground. The hues are the same four; the lightness is inverted so
+     they read as luminous rather than muddy, and each clears 4.5:1 on `--surface`. */
+  --fin-reliable: #8fa2ff;
+  --fin-reliable-soft: #23255c;
+  --fin-reliable-ink: #c2ccff;
+  --fin-conditional: #f0b64a;
+  --fin-conditional-soft: #3a2d10;
+  --fin-conditional-ink: #f8d99a;
+  --fin-conditional-stripe: #c98f28;
+  --fin-locked: #3b3a68;
+  --fin-locked-ink: #a8aacb;
+  --fin-adjustable: #8fa2ff;
+  --fin-adjustable-soft: #23255c;
+  --fin-adjustable-ink: #c2ccff;
+  --fin-balanced: #4ecf95;
+  --fin-balanced-soft: #10331f;
+  --fin-balanced-ink: #9fe9c4;
+  --fin-over: #ff8574;
+  --fin-over-soft: #3c1712;
+  --fin-over-ink: #ffb5a9;
+
+  --choice-1: #8fa2ff;
+  --choice-2: #4ecf95;
+  --choice-3: #d59a63;
+
+  --time-commute: #d59a63;
+  --time-rehab: #ff8574;
+  --time-clinics: #f0b64a;
+  --time-bought: #3b3a68;
+  --time-over: #ff8574;
+
+  --ground-plan: #0c0b1f;
+  --ground-season: #0e0d24;
+  --ground-pressure: #120f2b;
+  --ground-resolution: #0b0a1c;
+
+  --focus-ring: #b9a8ff;
+  --focus-halo: #0c0b1f;
+
+  /* Shadows on a dark ground do almost nothing — depth here is carried by the
+     surface ramp and by light. What is left is a black seat and a violet bloom. */
+  --shadow-rail: 0 1px 0 var(--border-subtle), 0 12px 32px -24px rgb(0 0 0 / 80%);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 40%), 0 12px 28px -16px rgb(0 0 0 / 70%);
+  --shadow-lift: 0 2px 6px rgb(0 0 0 / 45%), 0 28px 56px -24px rgb(0 0 0 / 80%);
+  --shadow-overlay: 0 12px 24px rgb(0 0 0 / 45%), 0 48px 88px -32px rgb(0 0 0 / 85%);
+  --shadow-violet: 0 1px 2px rgb(0 0 0 / 50%), 0 16px 40px -16px rgb(124 82 250 / 60%);
 }
 
 @media (max-height: 760px) {

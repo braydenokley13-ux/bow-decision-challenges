@@ -1,30 +1,29 @@
 /*
- * The BOW / Decision Challenges brand layer.
+ * The BOW brand layer.
  *
  * This is the layer that stays the same when the challenge changes. It owns the mark, the
- * chrome a facilitator and an educator move through, the display voice, and the ticket
- * geometry the whole product is cut from. Anything that belongs to Avery's world lives in
- * `worlds.css`, and anything that is a platform primitive (spacing, financial colour
- * semantics, the numeric type scale) lives in `tokens.css`.
+ * chrome a teacher and a student move through, and the display voice. Anything that belongs
+ * to a particular world lives in `worlds.css`; anything that is a platform primitive
+ * (spacing, financial colour semantics, the type scale, elevation) lives in `tokens.css`.
  *
- * Keeping them apart matters as soon as there are two challenges: Challenge #2 will need
- * its own art direction, and it must be able to have one without editing the brand.
+ * Keeping them apart matters as soon as there are several worlds: each needs its own art
+ * direction, and it must be able to have one without editing the brand.
  */
+
 :root {
-  /* BOW blue. The mark's own colour, and the only chrome colour the product uses. */
-  --bow-brand: #123a8f;
-  --bow-brand-strong: #0b2560;
+  /* BOW violet. The mark's own colour, every primary action, every active state, and
+     every focus ring — and nothing else in the product. */
+  --bow-brand: var(--violet-600);
+  --bow-brand-strong: var(--violet-700);
   --bow-brand-ink: #ffffff;
 
-  /* Muted text on the brand panel. A single muted token cannot clear AA against both a
+  /* Muted text on a violet panel. A single muted token cannot clear AA against both a
      near-white surface and this one, so the brand ground carries its own. */
-  --bow-brand-ink-muted: #ccd8f0;
+  --bow-brand-ink-muted: #d9cfff;
 
-  /* The marker colour on a brand panel. `--fin-conditional` is tuned to be read on cream
-     and clears 4.24:1 on this blue — close enough to look deliberate and still a failure.
-     Educator panels moved from near-black to BOW blue in this pass, which is exactly the
-     kind of ground change that quietly breaks a colour nobody re-checked. */
-  --bow-accent-on-brand: #e8b33d;
+  /* The marker colour on a violet panel. `--fin-conditional` is tuned to be read on
+     white and would fail here, so the brand ground re-points it to a lighter amber. */
+  --bow-accent-on-brand: #f5c56a;
 
   /*
    * One family, differentiated by treatment.
@@ -35,20 +34,30 @@
    * devices, so the display voice is carried by weight, tracking, case and optical size
    * instead of by a stack that would resolve to something different on every machine.
    */
-  --display-tracking: -0.03em;
-  --display-tracking-tight: -0.045em;
-  --stamp-tracking: 0.16em;
+  --display-tracking: -0.035em;
+  --display-tracking-tight: -0.05em;
+  --stamp-tracking: 0.14em;
+}
+
+/* The violet ramp is the same on both grounds, but a violet tuned to carry white text on
+   a white page is too dark to read *as text* on a near-black one. The dark ground lifts
+   the chrome violet and keeps the action violet, so a button stays saturated and a link
+   becomes legible. */
+.ground-dark {
+  --bow-brand: var(--violet-500);
+  --bow-brand-strong: var(--violet-400);
+  --bow-brand-ink: #ffffff;
+  --bow-brand-ink-muted: #c9bcff;
 }
 
 /* ---------------------------------------------------------------------------
-   The display voice. Short headlines are set in caps, heavy and tight — the way
-   a sports page sets them. Anything longer than a line stays sentence case,
-   because caps stop being a voice and start being an obstacle at that length.
+   The display voice. Short headlines are set tight and heavy. Caps are reserved
+   for the small letterspaced markers that name a block — at headline length caps
+   stop being a voice and start being an obstacle.
    --------------------------------------------------------------------------- */
 
 .display-caps {
-  text-transform: uppercase;
-  letter-spacing: var(--display-tracking);
+  letter-spacing: var(--display-tracking-tight);
   font-weight: 800;
 }
 
@@ -65,7 +74,7 @@
 
 .stamp--ink { color: var(--ink-3); }
 
-/* The BOW star. One glyph, used as a divider and as the mark's own punctuation. */
+/* The BOW star as a rule: the mark's own punctuation, used to open a section. */
 .star-rule {
   display: flex;
   align-items: center;
@@ -74,90 +83,63 @@
   color: var(--bow-brand);
 }
 
-.star-rule::before, .star-rule::after { content: ""; height: 1px; flex: 1; background: currentcolor; opacity: 0.35; }
+.star-rule::before, .star-rule::after { content: ""; height: 1px; flex: 1; background: currentcolor; opacity: 0.28; }
 .star-rule::after { flex: 6; }
 
 /* ---------------------------------------------------------------------------
-   Ticket geometry.
+   Surfaces.
 
-   The identity is an admissions pass, so the product has one cut edge and one
-   perforation. They are used where a surface genuinely is a pass or a stub —
-   the challenge card, the plan, the class code — and nowhere else. A ticket
-   border on every box would be a gimmick rather than an identity.
+   The identity used to be an admissions pass, and the product carried a cut edge,
+   a perforation and a notch to say so. That geometry has been retired: it made
+   every surface read as a printed document, which is the single loudest reason
+   the teacher product looked like a handout rather than software.
+
+   `.ticket` survives as the product's card, because a hundred call sites use it.
+   It is now simply the card: a real surface, a soft edge, and elevation.
    --------------------------------------------------------------------------- */
 
 .ticket {
   position: relative;
   background: var(--surface);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
   box-shadow: var(--shadow-card);
 }
 
-/* The notch: two half-circles bitten out of the sides where a stub tears off. */
-.ticket--notched::before, .ticket--notched::after {
-  content: "";
-  position: absolute;
-  top: var(--notch-y, 50%);
-  width: var(--notch);
-  height: var(--notch);
-  background: var(--chapter-ground, var(--canvas));
-  border: 1px solid var(--border-default);
-  border-radius: 50%;
-  transform: translateY(-50%);
-}
+/* The notch and the perforation are gone. The modifiers remain as no-ops so the
+   markup that still asks for them renders a clean card instead of nothing. */
+.ticket--notched::before, .ticket--notched::after { content: none; }
 
-.ticket--notched::before { left: calc(var(--notch) / -2 - 1px); clip-path: inset(0 0 0 50%); }
-.ticket--notched::after { right: calc(var(--notch) / -2 - 1px); clip-path: inset(0 50% 0 0); }
-
-/* The tear line itself. */
-.perf-rule { height: 1px; border: 0; margin: 0; background: var(--rule-perf); }
-.perf-rule--vertical { width: 1px; height: auto; background: var(--rule-perf-v); }
+.perf-rule { height: 1px; border: 0; margin: 0; background: var(--border-subtle); }
+.perf-rule--vertical { width: 1px; height: auto; }
 
 /*
- * The mark. One rendering, and it carries its own ground.
+ * The mark, and the one rule about it: it paints itself.
  *
- * It used to be four inherited custom properties — `--mark-ground`, `--mark-plate-ink`,
- * `--mark-ink`, `--mark-note` — which meant the mark did not decide how it looked: whatever
- * element happened to wrap it did. `.scene, .home__bar` set all four, for dark scenes that no
- * longer exist. Measured on the live pages, the result was two marks on the *same* cream
- * ground `rgb(240,233,219)`: the front door drew an outlined cream plate with a navy letter
- * and a black product name, and every other surface in the product drew a solid navy plate
- * with a white letter and the product name in BOW blue. A third rendering — a near-navy
- * letter on the navy plate at 1.05:1 on `/join`, i.e. no letter at all — came from the same
- * cause one level down, `.join-shell__bar span` beating `.app-mark__monogram` on specificity.
+ * It used to inherit four custom properties from whatever element wrapped it, which meant
+ * the mark did not decide how it looked — its ancestor did. Measured on the live pages that
+ * produced three different renderings of the same logo, one of them a near-invisible letter
+ * at 1.05:1. A logo whose colours any ancestor may set is not a component.
  *
- * A logo whose colours any ancestor may set is not a component, and none of the three
- * renderings was a decision anybody made. So the plate is opaque and paints itself: navy
- * ground, white letter, wordmark in ink, product name in BOW blue, on cream, on tan, on
- * white. There is no tone switch, because there is no surface that needs one — every bar
- * that carries the mark is light chrome. A dark bar arriving later is a decision for the
- * person who adds it, taken once, here, rather than guessed at per page.
- *
- * `.app-mark .app-mark__monogram` rather than `.app-mark__monogram`: the monogram is a
- * `<span>`, and a bar rule of the form `.some-bar span` is (0,1,1) and beats (0,1,0). The
- * two bars that did this have been narrowed to their own children in `app.css`; this is the
- * floor under that, so the next bar cannot repaint the letter by accident.
+ * So: the wordmark is ink, the star is violet, on every ground. `--ink-1` inverts on the
+ * dark ground and the star is legible on both, so no tone switch is needed.
  */
-.app-mark .app-mark__monogram {
-  border-color: var(--bow-brand);
-  background: var(--bow-brand);
-  color: var(--bow-brand-ink);
-}
-
 .app-mark b { color: var(--ink-1); }
-.app-mark small { color: var(--bow-brand); }
+.app-mark small { color: var(--ink-3); }
+.app-mark__star { fill: var(--violet-500); }
 
-/* Educator chrome is brand surface, not world surface — a teacher is in BOW, not in Avery's
-   season, and the navigation should say so. */
+/* Educator chrome is brand surface, not world surface — a teacher is in BOW, not inside a
+   student's story, and the navigation should say so. */
 .educator-topbar nav a[aria-current="page"] {
   color: var(--bow-brand-strong);
   box-shadow: inset 0 -2px 0 var(--bow-brand);
 }
 
 /*
- * Every surface painted in BOW blue re-points the conditional marker at the lighter amber.
- * Doing it as a token override on the ground rather than per-element means a component
- * moved onto a brand panel later inherits a colour that has been checked against it.
+ * Every surface painted in BOW violet re-points the conditional marker at the lighter
+ * amber. Doing it as a token override on the ground rather than per-element means a
+ * component moved onto a brand panel later inherits a colour that has been checked
+ * against it.
  */
 .guide-hero aside,
 .guide-section--dark,

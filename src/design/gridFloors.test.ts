@@ -43,8 +43,8 @@ describe("responsive grids never floor a track wider than the screen", () => {
     const css = sourceWithoutComments(join(DESIGN, name), { lines: true });
     const offences: string[] = [];
     for (const match of css.matchAll(RESPONSIVE_TRACK)) {
-      const floor = match[1].trim();
-      if (floor.startsWith("min(") || floor === "0") continue;
+      const floor = match[1]?.trim();
+      if (!floor || floor.startsWith("min(") || floor === "0") continue;
       const line = css.slice(0, match.index).split("\n").length;
       offences.push(`${name}:${line} — minmax(${floor}, …) cannot collapse below ${floor}`);
     }
