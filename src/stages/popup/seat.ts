@@ -34,6 +34,15 @@ import type { PopUpSeed } from "./PopUpContext";
  * to look up, and the answer is settled during render rather than after a request. This only
  * costs a round trip on the path that was broken.
  *
+ * **What that fast path is, and what it is not.** It is a cache of the answer, checked against
+ * the arrival before it is used — the class on the URL is what `/home` handed this run, and a
+ * seat filed under any other class is not an answer to it. It is deliberately not "trust the
+ * other reducer whenever it happens to be populated": that reducer is restored from whatever
+ * this browser played last, not from this arrival, so a market that took its word for it would
+ * be right by coincidence and would file a student's work under the wrong class the first time
+ * the coincidence failed. Where the two disagree, or where there is nothing to disagree with,
+ * the session is asked and the session wins.
+ *
  * **The half of this that is not mine.** Basketball reads the same three facts out of
  * `readMyClasses()` in `StudentChallenge.tsx`, forty lines of nearly the same code, and the two
  * should be one helper in the student layer rather than one here and one there. Both files are
@@ -43,9 +52,12 @@ import type { PopUpSeed } from "./PopUpContext";
 export function useSessionSeat(fromRun: PopUpSeed): PopUpSeed | null {
   const [params] = useSearchParams();
   const named = (params.get("class") ?? "").toUpperCase();
-  // A run that can already say which class and which seat it belongs to. Nothing to ask, and
-  // asking anyway would put a request between a student and a screen they are already on.
-  const known = fromRun.classCode !== "" && fromRun.seatCode !== "";
+  // A run that can already say which class and which seat it belongs to, *and* says the class
+  // this arrival named. Nothing to ask, and asking anyway would put a request between a
+  // student and a screen they are already on. A seat filed under some other class is not an
+  // answer to this arrival, so it is not taken as one — see above.
+  const known = fromRun.classCode !== "" && fromRun.seatCode !== ""
+    && (named === "" || fromRun.classCode === named);
   const nothingToAsk = !named || !studentToken();
   const [found, setFound] = useState<PopUpSeed | null>(null);
 
