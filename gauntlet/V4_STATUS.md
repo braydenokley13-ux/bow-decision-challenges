@@ -1,5 +1,11 @@
 # V4 gauntlet — what this run established
 
+> **Read `D26_COMMITMENTS.md` first.** A letter went to District 26 on 19 August 2026 setting
+> out what BOW will do, six weeks before the October Professional Learning session. Every
+> promise in it is checked there against what the product actually does. Twelve of the thirteen
+> hold or are honestly framed as future. The thirteenth — *teachers see which concepts students
+> applied* — is built, works, and has **one objective's worth of evidence to carry**.
+
 **Branch:** `claude/bow-decision-challenges-oct-h2ngg8` · **Lead:** Opus 5
 **Rule inherited from the last run, and kept:** this file is not evidence. The running
 artifact is evidence, and every number below names the command that produced it.
