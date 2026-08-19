@@ -154,6 +154,22 @@ not exist.
 Evidence is mapped to the NYSED Grades 5–8 Personal Finance Education Learning Objectives.
 BOW publishes the mapping as its own claim: **NYSED has not reviewed or endorsed BOW.**
 
+## Checking that a commit builds
+
+`scripts/verify-head.sh` exports a commit to a clean directory and runs the real build
+against it. Use it before pushing anything, and always after a commit that **deletes** a file.
+
+```
+scripts/verify-head.sh          # HEAD
+scripts/verify-head.sh <ref>    # any commit
+```
+
+It exists because `tsc -b`, `eslint` and `vitest` all run against the working tree, which is
+not what gets pushed. A tree that holds both a deleted module and the edit removing its import
+type-checks and tests green while the commit — which took the deletion and left the import —
+will not load a single page. Adding a file and forgetting to stage it fails loudly for the next
+person; deleting one does not fail for anybody until they check out.
+
 ## Deployment
 
 A Vite SPA plus a small class service. `vercel.json` keeps `/api/*` off the SPA rewrite and
