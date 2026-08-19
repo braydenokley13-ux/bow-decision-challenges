@@ -1,7 +1,7 @@
 # run-F-basketball-savings-topped-up
-# recorded 2026-08-19T05:41:13.040Z against http://127.0.0.1:5011
+# recorded 2026-08-19T05:45:29.638Z against http://127.0.0.1:5011
 
---- class PG7UE seat 10 — Fay — sets savings first, then adds the 
+--- class PG7UE seat 11 — Fay — sets savings first, then adds the 
 
 
 ===== [01] reading help, opened on the opening board  (315 words on screen)
@@ -22,7 +22,7 @@ Before the season. Part 2 of 5: The plan.
 
 THE FOUR PAYMENTS
 ▾
-PG7UE · SEAT 10
+PG7UE · SEAT 11
 
 BUILD AVERY’S PLAN · QUESTION 4 OF 4
 
@@ -131,7 +131,7 @@ Before the season. Part 2 of 5: The plan.
 
 THE FOUR PAYMENTS
 ▾
-PG7UE · SEAT 10
+PG7UE · SEAT 11
 
 BUILD AVERY’S PLAN · QUESTION 4 OF 4
 
@@ -248,7 +248,7 @@ Before the season. Part 2 of 5: The plan.
 
 THE FOUR PAYMENTS
 ▾
-PG7UE · SEAT 10
+PG7UE · SEAT 11
 
 BUILD AVERY’S PLAN · QUESTION 4 OF 4
 
@@ -357,7 +357,7 @@ Season over. Part 5 of 5: Week 8.
 
 THE FOUR PAYMENTS
 ▾
-PG7UE · SEAT 10
+PG7UE · SEAT 11
 
 WEEK 8
 
@@ -400,3 +400,7 @@ Read this screen
 Words
 Read every screen to me
 Hide
+
+--- PARAGRAPH: I decided the course line first and put $1,200 into it, and when there was money still to place at the end I put that into the course too rather than into anything else, because the course is the thing Avery is actually saving for. The plan was built on $5,000 and what I gave up was the rides money, which is why Avery spent the whole season short of hours.
+
+--- seat 11
