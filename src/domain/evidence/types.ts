@@ -291,6 +291,17 @@ export interface AssessmentFacts {
    */
   remainderChoices?: readonly RemainderChoice[];
   optionalDecision?: { accepted: boolean; sequence: number; evidenceRef: string };
+  /**
+   * What the student said about each piece of conditional income while building the opening
+   * plan, in the order they said it.
+   *
+   * The bonus screen will not advance until both cards have been answered, so a run recorded
+   * today always carries one of these per source. Absent means *this log predates the record*
+   * — not *no decision was made* — which is the same rule `sources` follows on the plan
+   * snapshot, and for the same reason: a finished attempt must not be re-read under a rule
+   * that did not exist when it was saved.
+   */
+  conditionalIncomeDecisions?: readonly { sourceId: string; included: boolean; sequence: number; evidenceRef: string }[];
   /** Whether the student decided about the still-conditional payment, and when. */
   completionDecision?: { included: boolean; sequence: number; evidenceRef: string };
   finalPlanSequence?: number;

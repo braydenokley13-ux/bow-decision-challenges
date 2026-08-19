@@ -103,8 +103,12 @@ export function runChallenge(options: RunOptions = {}): ChallengeState {
 
   send({ type: "CALCULATION_SUBMITTED", calcId: "reliable-floor", raw: String(N.reliableFloor), value: N.reliableFloor, correct: true });
   send({ type: "CALCULATION_SUBMITTED", calcId: "essentials-total", raw: String(N.essentialsTotal), value: N.essentialsTotal, correct: true });
-  if (opts.countCompletion) send({ type: "INCOME_SOURCE_TOGGLED", sourceId: "completion-800", included: true });
-  if (opts.countOutcome) send({ type: "INCOME_SOURCE_TOGGLED", sourceId: "outcome-1000", included: true });
+  // Both cards, always, because the board will not advance until both have been answered and
+  // *"No — leave it out"* is an answer. This used to send an event only when a bonus was
+  // counted, which made the headless log the one shape a browser cannot produce: a plan built
+  // with no conditional money and no record of anybody deciding that.
+  send({ type: "INCOME_SOURCE_TOGGLED", sourceId: "completion-800", included: opts.countCompletion });
+  send({ type: "INCOME_SOURCE_TOGGLED", sourceId: "outcome-1000", included: opts.countOutcome });
 
   const savePlan = (mode: PlanMode) => {
     const amounts = planFor(state, mode, opts.split);

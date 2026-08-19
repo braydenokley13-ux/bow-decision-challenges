@@ -191,6 +191,14 @@ export function deriveFacts(log: EvidenceEvent[], n: ScenarioNumbers = SCENARIO_
     };
   }
   if (optional) facts.optionalDecision = { accepted: eventPayload<{ accepted: boolean }>(optional).accepted, sequence: optional.sequence, evidenceRef: optional.id };
+  // Set only where the log actually holds decisions, so that a log written before the bonus
+  // screen recorded them keeps `undefined` — "this log cannot say" — rather than an empty
+  // list, which would read as "the student answered nothing".
+  const income = eventsOf(log, "INCOME_SOURCE_TOGGLED").map((event) => {
+    const payload = eventPayload<{ sourceId: string; included: boolean }>(event);
+    return { sourceId: payload.sourceId, included: payload.included, sequence: event.sequence, evidenceRef: event.id };
+  });
+  if (income.length > 0) facts.conditionalIncomeDecisions = income;
   const completion = eventsOf(log, "COMPLETION_INCOME_DECIDED").at(-1);
   if (completion) facts.completionDecision = { included: eventPayload<{ included: boolean }>(completion).included, sequence: completion.sequence, evidenceRef: completion.id };
   if (finalSaved) facts.finalPlanSequence = finalSaved.event.sequence;

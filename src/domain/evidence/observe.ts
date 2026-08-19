@@ -3,7 +3,7 @@ import { STRUCTURED_MICRO_SKILLS } from "../blueprint/microSkills";
 import { SCENARIO_NUMBERS } from "../scenario/numbers";
 import type { ScenarioNumbers } from "../scenario/types";
 import { chosenSetupExpectation, essentialsExpectation, reliableFloorExpectation, week5ChangeExpectation } from "../scenario/expectations";
-import { dollars } from "../core/money";
+import { dollars, formatDollars } from "../core/money";
 import type { AssessmentFacts, MicroSkillObservation, SupportLevel, C4ObservationContext, AlternateStateEvidence } from "./types";
 import { scoreOf, type Quality } from "./support";
 
@@ -73,6 +73,54 @@ function calcObservation(id: StructuredMicroSkillId, facts: AssessmentFacts, cal
   return observation(id, quality, calc.support, calc.attempts.map((attempt) => attempt.eventRef), reason);
 }
 
+/**
+ * The two payments this world will not promise. Both are asked about on the same screen, and
+ * the screen does not advance until both have an answer, so a run either carries a decision
+ * for each of them or predates the record.
+ */
+const CONDITIONAL_SOURCES = ["completion-800", "outcome-1000"] as const;
+
+/**
+ * C1.2's other branch: what a plan that counted no conditional income actually shows.
+ *
+ * The branch used to be a bare `exposure === 0` and 5/5 — no fallback required, no evidence
+ * of any kind, and nothing anywhere that rewards counting a bonus. That made "count neither
+ * payment" five free points plus one fewer instrument to fail on, which is a weakly dominant
+ * strategy in the scoring of a challenge whose README promises the opposite, and it is the
+ * one axis `neutrality.test.ts` never tested.
+ *
+ * It is the same defect C5.5 was fixed for, one row up: *"the exclusion branch used to reuse
+ * C5.4's own predicate verbatim, so declining the bonus granted a free micro-skill."* The fix
+ * is the same fix. The branch now rests on the decision events the bonus screen records — two
+ * answers, both given before the plan they describe was saved — which is evidence proper to
+ * this micro-skill and to no other. Answering both cards and then building on the reliable
+ * floor is a demonstration; a plan that simply happens to hold no conditional money, with no
+ * decision behind it, is not, and reads `partial` exactly as C5.5's does.
+ *
+ * A log with no decisions at all is not that case. The screen has not been able to advance
+ * without both answers since it was fixed, so an empty record means the log predates it, and
+ * re-reading a finished attempt through a rule that did not exist when it was saved would
+ * change what a student's permanent record means.
+ */
+function conditionalIncomeDeclined(facts: AssessmentFacts): { quality: Quality; reason: string } {
+  const decisions = facts.conditionalIncomeDecisions;
+  if (!decisions) {
+    return {
+      quality: "first_opportunity",
+      reason: "The saved Working Plan counted no conditional income. This attempt was recorded before the bonus screen kept the two answers, so what is read is the plan.",
+    };
+  }
+  const savedAt = facts.opening?.snapshot.sequence ?? Number.POSITIVE_INFINITY;
+  const answered = CONDITIONAL_SOURCES.filter((sourceId) =>
+    decisions.some((decision) => decision.sourceId === sourceId && decision.sequence < savedAt));
+  return answered.length === CONDITIONAL_SOURCES.length
+    ? { quality: "first_opportunity", reason: "Both payments that might not arrive were answered before the plan was saved, and the plan was built without either of them." }
+    : {
+      quality: "partial",
+      reason: `The saved Working Plan counted no conditional income, but ${answered.length === 0 ? "neither payment was" : "only one of the two payments was"} answered before it was saved.`,
+    };
+}
+
 function primaryC4(facts: AssessmentFacts): { evidence?: AlternateStateEvidence; context?: C4ObservationContext } {
   const conditional = (facts.opening?.conditionalExposure ?? 0) > 0;
   return conditional
@@ -84,7 +132,20 @@ export function observeStructured(facts: AssessmentFacts, n: ScenarioNumbers = S
   const observations: MicroSkillObservation[] = [];
   observations.push(calcObservation("C1.1", facts, "reliable-floor", reliableFloorExpectation(n)));
   if (!facts.opening) observations.push(notObserved("C1.2", "The Working Plan was not saved."));
-  else if (facts.opening.conditionalExposure === 0) observations.push(observation("C1.2", "first_opportunity", "standard_access", facts.opening.evidenceRefs, "The saved Working Plan counted no conditional income."));
+  else if (facts.opening.conditionalExposure === 0) {
+    const declined = conditionalIncomeDeclined(facts);
+    observations.push(observation(
+      "C1.2",
+      declined.quality,
+      // The bonus cards carry no scaffold and no answer to supply, so the support that stands
+      // over this observation is the screen's own. The plan board's support belongs to the
+      // amounts, and capping a decision by help given with arithmetic would price the wrong
+      // thing.
+      "standard_access",
+      [...facts.opening.evidenceRefs, ...(facts.conditionalIncomeDecisions ?? []).map((decision) => decision.evidenceRef)],
+      declined.reason,
+    ));
+  }
   else {
     const fallback = facts.fallback;
     const quality: Quality = fallback?.saved ? (fallback.savesBeforeAcceptable > 0 ? "corrected" : "first_opportunity") : "none";
@@ -213,7 +274,7 @@ export function observeStructured(facts: AssessmentFacts, n: ScenarioNumbers = S
       response.evidenceRefs,
       response.absorbTarget === 0
         ? "There was no shortfall to absorb at the first response."
-        : `The first response freed ${response.amountFreed} of the ${response.absorbTarget} that could be freed from existing resources.`,
+        : `The first response freed ${formatDollars(response.amountFreed)} of the ${formatDollars(response.absorbTarget)} that could be freed from existing resources.`,
     ));
   }
   return observations;
