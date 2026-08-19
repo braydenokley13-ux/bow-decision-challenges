@@ -37,7 +37,16 @@ const ALLOWED_IMPORTS = [
   // One domain import, and it is the reading ruler: the voice and the word count have to
   // agree about what is on a screen. It is pure, and it carries no evidence of anything.
   /^\.\.\/\.\.\/domain\/scenario\/readability$/,
+  // One primitive, and it is a focus hook: opening the tools removes the pill and closing them
+  // removes the panel, and both were dropping focus on `<body>` — on the control a student
+  // presses because they are having trouble with the screen. Named exactly rather than by its
+  // directory, and the test below holds it to importing nothing but React, so this allowance
+  // cannot widen into a door.
+  /^\.\.\/\.\.\/components\/primitives\/useInPlaceArrival$/,
 ];
+
+/** The one module outside this directory that is allowed in, and all it may reach for. */
+const BORROWED = "src/components/primitives/useInPlaceArrival.ts";
 
 describe("nothing about who used this goes anywhere", () => {
   it("imports nothing that could carry it off the device", () => {
@@ -49,6 +58,15 @@ describe("nothing about who used this goes anywhere", () => {
       }
     }
     expect(strays, "an import that could reach the evidence log, the class service or a teacher's screen").toEqual([]);
+  });
+
+  it("holds the one borrowed primitive to importing nothing but React", () => {
+    // The allowance above is only as good as what it lets in. A focus hook that grew an import
+    // of the challenge context would be a reading control that knows which stage a student is
+    // on, which is the first half of a record of who used it.
+    const borrowed = readFileSync(BORROWED, "utf8");
+    const specifiers = [...borrowed.matchAll(/^\s*import\s[^;]*?from\s*["']([^"']+)["']/gm)].map((match) => match[1]);
+    expect(specifiers, `what ${BORROWED} reaches for`).toEqual(["react"]);
   });
 
   it("makes no request of any kind", () => {

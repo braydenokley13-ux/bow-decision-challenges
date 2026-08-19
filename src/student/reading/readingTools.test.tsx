@@ -235,3 +235,49 @@ describe("looking a word up", () => {
     expect(screen.getByRole("button", { name: /^words$/i })).toHaveFocus();
   });
 });
+
+/**
+ * Opening the tools removes the pill and closing them removes the panel, and neither of those
+ * is a screen change — the URL, the stage and the heading all stay exactly where they were.
+ * That is the shape a keyboard-only accessibility pass found dropping focus onto `<body>` all
+ * over this product, and it was doing it here too: `activeElement = BODY (nothing focused)`
+ * after pressing *Reading help*, on the control a student presses **because** they are having
+ * trouble with the screen in front of them.
+ */
+describe("where the student stands when the tools open and close", () => {
+  it("puts the student on the first thing in the panel", async () => {
+    const speech = recordingVoice();
+    render(<Screen><ReadingTools screenKey="a" voice={speech.voice} /></Screen>);
+    await userEvent.click(screen.getByRole("button", { name: /reading help/i }));
+    expect(screen.getByRole("button", { name: /read this screen/i })).toHaveFocus();
+  });
+
+  it("puts the student on Words where this machine has no voice to offer", async () => {
+    // No `voice` prop and no speech synthesis in jsdom, so the read control is not drawn and
+    // Words is the first thing there is.
+    render(<Screen><ReadingTools screenKey="a" /></Screen>);
+    await userEvent.click(screen.getByRole("button", { name: /reading help/i }));
+    expect(screen.queryByRole("button", { name: /read this screen/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^words$/i })).toHaveFocus();
+  });
+
+  it("puts the student back on the pill when they hide the panel", async () => {
+    const speech = recordingVoice();
+    render(<Screen><ReadingTools screenKey="a" voice={speech.voice} /></Screen>);
+    await userEvent.click(screen.getByRole("button", { name: /reading help/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^hide$/i }));
+    expect(screen.getByRole("button", { name: /reading help/i })).toHaveFocus();
+  });
+
+  it("takes no focus on a new screen that opens with the tools already open", async () => {
+    const speech = recordingVoice();
+    const { unmount } = render(<Screen><ReadingTools screenKey="a" voice={speech.voice} /></Screen>);
+    await userEvent.click(screen.getByRole("button", { name: /reading help/i }));
+    unmount();
+
+    // The preference is per device and survives every screen, so every screen after the first
+    // mounts with the panel already there. The screen's own arrival owns focus on those.
+    render(<Screen><ReadingTools screenKey="b" voice={speech.voice} /></Screen>);
+    expect(document.body).toHaveFocus();
+  });
+});

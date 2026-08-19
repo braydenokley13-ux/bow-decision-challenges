@@ -18,13 +18,19 @@ import { useEffect, useRef, type RefObject } from "react";
  * a question that is done — leaves focus wherever that screen's own arrival put it. It is the
  * same first-render exemption `useStageArrival` makes, for the same reason: taking focus on
  * arrival at something that was already there moves the reader away from where they were.
+ *
+ * `target` is for the caller who already holds a ref to what should be stood on, or who has to
+ * choose between two of them — the reading tools put a student on *Read this screen*, unless
+ * this machine has no voice, in which case that control is not drawn and *Words* is the first
+ * thing in the panel. Everyone else takes the ref this returns and attaches it.
  */
-export function useInPlaceArrival<T extends HTMLElement>(present: boolean): RefObject<T> {
-  const target = useRef<T>(null);
+export function useInPlaceArrival<T extends HTMLElement>(present: boolean, target?: RefObject<T>): RefObject<T> {
+  const own = useRef<T>(null);
+  const stand = target ?? own;
   const was = useRef(present);
   useEffect(() => {
-    if (present && !was.current) target.current?.focus();
+    if (present && !was.current) stand.current?.focus();
     was.current = present;
-  }, [present]);
-  return target;
+  }, [present, stand]);
+  return stand;
 }

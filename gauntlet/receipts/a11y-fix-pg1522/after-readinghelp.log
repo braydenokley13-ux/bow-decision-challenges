@@ -1,0 +1,18 @@
+/join (class code)           .reading-tools=0  pill=0
+/join (card code)            .reading-tools=0  pill=0
+/home                        .reading-tools=1  pill=1
+  /home — can the keyboard reach it? yes, 3 tabs
+  after opening: focus = button.reading-tools__button "Read this screen"
+  what is in the panel: ["Read this screen","Words","Read every screen to me","Hide"]
+  after Hide: focus = button.reading-tools__pill "Reading help"
+  re-opened: focus = button.reading-tools__button "Read this screen"
+  landmark:   complementary "Reading help"
+the world picker             .reading-tools=1  pill=0
+  picker — pill open already (device preference carried across)? 1
+  picker — what the voice would read is the <main>: PICK A WORLD. MAKE IT COUNT.
+
+-- what this container can actually say out loud --
+{
+ "hasSpeechSynthesis": true,
+ "voices": 0
+}

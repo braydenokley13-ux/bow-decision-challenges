@@ -8,6 +8,7 @@ import { STUDENT_COPY } from "../content/studentCopy";
 import type { WorldId } from "../domain/core/ids";
 import { DEFAULT_WORLD_ID, PLAYABLE_WORLDS, WORLD_CHOICE_UI_READY, WORLD_REGISTRY } from "../domain/scenario/registry";
 import { worldOffer } from "./worldOffer";
+import { ReadingTools } from "../student/reading";
 
 const COPY = STUDENT_COPY.choose;
 const PLAYABLE = PLAYABLE_WORLDS.map((world) => world.id);
@@ -147,6 +148,13 @@ export function WorldChoice() {
           })}
         </ul>
       </main>
+      {/* The same reading help every screen of a run carries, on the screen before the run.
+          It was the one screen in the student's path that asked them to read in order to
+          decide — two stories, a role each, a length each, and a commitment to one of them for
+          the next twenty-odd minutes — and the accommodation did not exist until after the
+          choice was made. Outside `<main>` on the same terms as both shells, so the voice
+          reads the two cards and not the control offering to read them. */}
+      <ReadingTools screenKey="choose-world" />
     </div>
   );
 }

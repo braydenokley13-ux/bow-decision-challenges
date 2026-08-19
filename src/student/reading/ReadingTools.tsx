@@ -5,6 +5,7 @@ import {
 } from "./readAloud";
 import { GlossaryPanel } from "./GlossaryPanel";
 import { useReadingPreference } from "./preference";
+import { useInPlaceArrival } from "../../components/primitives/useInPlaceArrival";
 import "../../design/reading.css";
 
 /**
@@ -43,11 +44,25 @@ export function ReadingTools({ screenKey, region, voice, marker }: {
   // A machine that has `speechSynthesis` and no voice behind it. Found by pressing the button:
   // the control was there, the screen did nothing, and nothing said why.
   const [voiceless, setVoiceless] = useState(false);
-  const opener = useRef<HTMLButtonElement>(null);
+  /**
+   * Opening the tools removes the pill, and closing them removes the panel — an in-place swap
+   * with nothing else on the screen changing, which is the shape that was dropping focus onto
+   * `<body>` everywhere else in this product. Measured here too: pressing *Reading help* left
+   * `activeElement = BODY`, on the control a student presses precisely because they are having
+   * trouble reading the screen. So each half takes focus when it arrives — and only when it
+   * arrives, so a new screen opening with the tools already open (the preference is per device
+   * and survives every screen) leaves focus on that screen's own heading.
+   */
   const wordsButton = useRef<HTMLButtonElement>(null);
+  const readButton = useRef<HTMLButtonElement>(null);
+  const opener = useInPlaceArrival<HTMLButtonElement>(!preference.toolsOpen);
   const box = useRef<HTMLElement>(null);
 
   const canSpeak = (voice !== undefined || speechAvailable()) && !voiceless;
+  // The other half of the same swap. Which control the panel opens on depends on whether this
+  // machine has a voice at all: without one, *Read this screen* is not drawn and *Words* is
+  // the first thing there is.
+  useInPlaceArrival<HTMLButtonElement>(preference.toolsOpen, canSpeak ? readButton : wordsButton);
   const reader = useMemo(
     () => createReader({
       voice: voice ?? browserVoice(() => setVoiceless(true)),
@@ -113,7 +128,7 @@ export function ReadingTools({ screenKey, region, voice, marker }: {
         <div className="reading-tools__panel">
           <div className="reading-tools__row">
             {canSpeak && (
-              <button type="button" className="reading-tools__button" data-reading={state === "reading"} onClick={toggleReading}>
+              <button type="button" className="reading-tools__button" ref={readButton} data-reading={state === "reading"} onClick={toggleReading}>
                 <SpeakerIcon />
                 {state === "reading" ? "Stop reading" : "Read this screen"}
               </button>

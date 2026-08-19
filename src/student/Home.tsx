@@ -9,6 +9,7 @@ import { NOT_A_RUN_IN_PROGRESS, readClasses, unfinishedRunHere } from "./complet
 import { PLAYABLE_WORLDS, DEFAULT_WORLD_ID } from "../domain/scenario/registry";
 import { clearAttemptFor } from "../domain/io/persistence";
 import { worldOffer } from "../stages/worldOffer";
+import { ReadingTools } from "./reading";
 import type { WorldId } from "../domain/core/ids";
 
 /**
@@ -108,6 +109,7 @@ function Ready({ classes, signedInAs, onSignOut }: {
   useEffect(() => { title.current?.focus(); }, []);
 
   return (
+    <>
     <main className="student-home">
       <header className="student-home__bar">
         <AppMark />
@@ -143,6 +145,12 @@ function Ready({ classes, signedInAs, onSignOut }: {
         </footer>
       )}
     </main>
+    {/* Reading help, on the screen a student comes back to. It lived inside the run only, so
+        the page that says what a student has done and what is left to do — and which of two
+        stories they are being offered — was one of three screens in the student's path where
+        the accommodation did not exist. Outside `<main>` on the same terms as both shells. */}
+    <ReadingTools screenKey="student-home" />
+    </>
   );
 }
 
