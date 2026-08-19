@@ -1,5 +1,5 @@
 import { requiredEvidenceRequirementsFor } from "./competencies";
-import type { CompetencyId } from "./types";
+import type { CompetencyId, EvidenceRequirement } from "./types";
 
 /**
  * A fingerprint of what a competency currently requires.
@@ -29,7 +29,17 @@ import type { CompetencyId } from "./types";
  * decision into an explanation all move it, because all three change what the world must do.
  */
 export function competencyContract(id: CompetencyId): string {
-  const required = requiredEvidenceRequirementsFor(id);
+  return contractOf(id, requiredEvidenceRequirementsFor(id));
+}
+
+/**
+ * The same fingerprint, over rows handed in rather than looked up.
+ *
+ * It is separate so the claim in the paragraph above — *rewording a rule does not move the
+ * fingerprint, changing a kind does* — can be tested by handing this two versions of the same
+ * rows, instead of by a test that reads the digest and guesses at what went into it.
+ */
+export function contractOf(id: CompetencyId, required: readonly EvidenceRequirement[]): string {
   if (required.length === 0) return `${id}:none`;
   // Sorted, so the order rows happen to be written in is not part of the contract.
   const rows = [...required]
