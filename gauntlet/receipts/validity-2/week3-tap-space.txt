@@ -1,0 +1,25 @@
+Week 3 competing claims: every affordable funding set x every reason chip.
+cash=$150  costs={"team-shoes":120,"away-travel":60,"sister-present":45}
+
+funded=[nothing] reason=only-wanted      er1=0 er2=5 er3=2  -> not-yet
+funded=[nothing] reason=no-one-counting  er1=0 er2=5 er3=2  -> not-yet
+funded=[nothing] reason=can-wait         er1=0 er2=5 er3=2  -> not-yet
+funded=[nothing] reason=cheapest         er1=0 er2=0 er3=0  -> not-yet
+funded=[team-shoes] reason=only-wanted      er1=5 er2=5 er3=5  -> demonstrated(dec)
+funded=[team-shoes] reason=no-one-counting  er1=5 er2=5 er3=2  -> developing
+funded=[team-shoes] reason=can-wait         er1=5 er2=5 er3=0  -> not-yet
+funded=[team-shoes] reason=cheapest         er1=5 er2=0 er3=0  -> not-yet
+funded=[away-travel] reason=only-wanted      er1=2 er2=5 er3=5  -> developing
+funded=[away-travel] reason=no-one-counting  er1=2 er2=5 er3=5  -> developing
+funded=[away-travel] reason=can-wait         er1=2 er2=5 er3=5  -> developing
+funded=[away-travel] reason=cheapest         er1=2 er2=0 er3=0  -> not-yet
+funded=[sister-present] reason=only-wanted      er1=2 er2=5 er3=0  -> not-yet
+funded=[sister-present] reason=no-one-counting  er1=2 er2=5 er3=2  -> developing
+funded=[sister-present] reason=can-wait         er1=2 er2=5 er3=5  -> developing
+funded=[sister-present] reason=cheapest         er1=2 er2=0 er3=0  -> not-yet
+funded=[away-travel,sister-present] reason=only-wanted      er1=5 er2=5 er3=0  -> not-yet
+funded=[away-travel,sister-present] reason=no-one-counting  er1=5 er2=5 er3=2  -> developing
+funded=[away-travel,sister-present] reason=can-wait         er1=5 er2=5 er3=5  -> demonstrated(dec)
+funded=[away-travel,sister-present] reason=cheapest         er1=5 er2=0 er3=0  -> not-yet
+
+2 of 20 tap combinations clear all three decision requirements = 10.0%

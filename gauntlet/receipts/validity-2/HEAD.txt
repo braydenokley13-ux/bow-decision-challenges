@@ -1,0 +1,21 @@
+8685d0bafef7f9c4ba27db31b803fef222050fdf
+ M src/domain/blueprint/reasoning.ts
+ M src/domain/scenario/worlds/food-truck/balance.test.ts
+ M src/domain/scenario/worlds/food-truck/balance.ts
+ M src/domain/scenario/worlds/food-truck/economy.ts
+ M src/domain/scenario/worlds/food-truck/numbers.ts
+ M src/domain/scenario/worlds/food-truck/scenario.ts
+ M src/domain/scenario/worlds/food-truck/types.ts
+ M src/educator/EducatorPages.tsx
+ M src/stages/popup/PopUpScreens.tsx
+ M src/stages/popup/lastSaturday.test.tsx
+ M src/student/reading/glossary.ts
+?? .scratch-ignore.json
+?? gauntlet/receipts/a11y-3/
+?? gauntlet/receipts/d26-3/
+?? gauntlet/receipts/econ-2/
+?? gauntlet/receipts/student-3/
+?? gauntlet/receipts/teacher-3/
+?? gauntlet/receipts/validity-2/
+?? gauntlet/receipts/worldclass-2/
+?? src/educator/zzscratch.test.tsx
