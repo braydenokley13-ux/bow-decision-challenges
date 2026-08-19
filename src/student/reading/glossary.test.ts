@@ -1,0 +1,298 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+import { CHOICE_LABELS } from "../../components/financial/choices";
+import { BASKETBALL_SCENARIO } from "../../domain/scenario/worlds/basketball";
+import { POP_UP_SCENARIO } from "../../domain/scenario/worlds/food-truck";
+import { GLOSSARY, formAppearsIn, termsOnScreen } from "./glossary";
+
+/**
+ * The glossary against the product's own words.
+ *
+ * Three questions, and none of them can be answered by reading the glossary on its own.
+ *
+ * 1. **Did anybody make these words up?** Every form has to appear in copy a student actually
+ *    reads. A glossary written from a curriculum document rather than from the screens is the
+ *    normal way this goes wrong, and it goes wrong invisibly: the definitions are all correct
+ *    and none of them is for a word the child is looking at.
+ * 2. **Does it cover the words the run is built out of?** The two worlds declare their money
+ *    vocabulary in data — the pop-up's three lines, the plan's three rows, every figure a
+ *    student is asked to work out. Each of those has to be findable. Adding a fourth line or a
+ *    fifth sum to either world fails this until somebody has said what it means.
+ * 3. **Can a hard word get in without anybody deciding?** No: every word in the run's copy is
+ *    either defined below or listed in `PLAIN_ENOUGH`, and a word that is in neither fails the
+ *    suite by name. That list is long because the run is long. It is the record of a person
+ *    having looked at each word and judged that a Grade 5 reader working in their second
+ *    language does not stop at it — which is a judgement, and one worth being able to argue
+ *    with, rather than an absence of one.
+ *
+ * The source scan is the same instrument `pricing.test.ts` and `wordLadders.test.ts` use, and
+ * for the reason `pricing.test.ts` gives: the drift it catches is invisible to a behavioural
+ * test, because the glossary and the screens agree right up until somebody edits the copy.
+ * Its known limit is that it reads sources rather than rendered screens, so a sentence
+ * composed at run time out of fragments is seen fragment by fragment. Checked against two
+ * complete playthroughs at the time of writing: of 717 distinct words on the screens of both
+ * worlds, this scan sees every one except a handful assembled at render time, and none of the
+ * words it misses is in the glossary or would want to be.
+ */
+
+/** Files a student reads sentences out of during a run. Educator surfaces are not in scope. */
+const RUN_COPY = [
+  "src/content/studentCopy.ts",
+  "src/stages/StudentChallenge.tsx",
+  "src/stages/SeasonWeeks.tsx",
+  "src/stages/Week8Resolution.tsx",
+  "src/stages/WorldChoice.tsx",
+  "src/stages/popup/PopUpScreens.tsx",
+  "src/stages/popup/PopUpBoard.tsx",
+  "src/stages/popup/PopUpShell.tsx",
+  "src/stages/popup/PopUpChallenge.tsx",
+  "src/app/StageShell.tsx",
+  "src/components/financial/AdjustPanel.tsx",
+  "src/components/financial/AllocationControl.tsx",
+  "src/components/financial/PlanBoard.tsx",
+  "src/components/financial/PlanLedger.tsx",
+  "src/components/financial/PlanScene.tsx",
+  "src/components/financial/WeekMeter.tsx",
+  "src/components/financial/choices.ts",
+  "src/components/primitives/CalculationInput.tsx",
+  "src/components/story/RosterCard.tsx",
+  "src/components/story/SeasonStrip.tsx",
+  "src/domain/scenario/expectations.ts",
+  "src/domain/scenario/worlds/basketball/scenario.ts",
+  "src/domain/scenario/worlds/basketball/claims.ts",
+  "src/domain/scenario/worlds/basketball/writtenDefense.ts",
+  "src/domain/scenario/worlds/food-truck/scenario.ts",
+  "src/domain/scenario/worlds/food-truck/claims.ts",
+  "src/domain/scenario/worlds/food-truck/resolution.ts",
+  "src/domain/scenario/worlds/food-truck/ledger.ts",
+  "src/domain/evidence/writingGate.ts",
+  "src/domain/finance/consequences.ts",
+  "src/domain/finance/resolution.ts",
+];
+
+/** A comment explaining why a word was chosen is not a word on a screen. */
+function withoutComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+}
+
+/**
+ * Whether a run of text is prose a student reads rather than machinery.
+ *
+ * Two or more words, or one capitalised word — `"Takings"` and `"Booked"` are labels on a
+ * screen and `"working"` is a plan mode. A BEM modifier, a path, a template hole or a
+ * camelCase identifier is none of a student's business and is thrown away by shape, which is
+ * what lets `data-line` and `POP_UP_SCENARIO` live in the same files as the copy.
+ */
+function isProse(raw: string): boolean {
+  const text = raw.trim();
+  if (!/[A-Za-z]/.test(text)) return false;
+  if (/[_{}/\\<>|=]/.test(text)) return false;
+  if (/--/.test(text)) return false;
+  if (/[a-z][A-Z]/.test(text)) return false;
+  const tokens = text.split(/\s+/).filter(Boolean);
+  if (tokens.length === 1) return /^[A-Z][A-Za-z'’]+$/.test(tokens[0] ?? "");
+  return tokens.length > 1;
+}
+
+/**
+ * The English in one file: quoted strings and JSX text, with module specifiers removed.
+ *
+ * The import strip is anchored to a module statement rather than written as "anything up to
+ * the next `from`", which is the shape `wordLadders.test.ts` uses and which quietly ate seven
+ * hundred lines of this repository's copy the first time it was pointed at a file containing
+ * the sentence *"Where the swap money came from"*.
+ */
+function readableText(source: string, jsx: boolean): string[] {
+  const stripped = withoutComments(source)
+    .replace(/^\s*(?:import|export)\s+(?:type\s+)?(?:\{[^{}]*\}|[\w*\s,]+)\s+from\s*["'][^"'\n]*["'];?/gm, " ")
+    .replace(/\$\{[^{}]*\}/g, " ");
+  const quoted = [...stripped.matchAll(/"([^"\n]*)"|'([^'\n]*)'|`([^`]*)`/g)].map((match) => match[1] ?? match[2] ?? match[3] ?? "");
+  const between = jsx
+    ? [...stripped.matchAll(/(?<![=!<>])[>}]([^<>{}]*[A-Za-z][^<>{}]*)[<{]/g)]
+      .map((match) => match[1] ?? "")
+      .filter((text) => !/[=;`()]/.test(text))
+    : [];
+  return [...quoted, ...between].filter(isProse);
+}
+
+const RUN_CHUNKS: readonly string[] = RUN_COPY.flatMap((path) => readableText(readFileSync(path, "utf8"), path.endsWith(".tsx")));
+const RUN_TEXT = RUN_CHUNKS.join("\n");
+const RUN_WORDS: readonly string[] = [...new Set((RUN_TEXT.toLowerCase().match(/[a-z][a-z'’-]*/g) ?? []))].sort();
+
+describe("every word the glossary defines is a word the run says", () => {
+  it("finds every form on a screen", () => {
+    const missing = GLOSSARY.flatMap((entry) =>
+      entry.forms.filter((form) => !formAppearsIn(form, RUN_TEXT)).map((form) => `${entry.term} → “${form}”`));
+    expect(missing, "forms no student ever reads").toEqual([]);
+  });
+
+  it("lists each word once, so the panel cannot show two answers to one question", () => {
+    const terms = GLOSSARY.map((entry) => entry.term);
+    expect(new Set(terms).size).toBe(terms.length);
+  });
+
+  it("spells no amount the scenario owns, so re-pricing a world cannot make it lie", () => {
+    const priced = GLOSSARY.filter((entry) => /\d/.test(entry.meaning)).map((entry) => entry.term);
+    expect(priced, "definitions carrying a figure").toEqual([]);
+  });
+
+  it("says what a word means without saying it is a hard word", () => {
+    const talkingDown = GLOSSARY.filter((entry) => /\b(?:just|simply|don't worry|remember|easy|tricky|difficult|of course)\b/i.test(entry.meaning));
+    expect(talkingDown.map((entry) => entry.term)).toEqual([]);
+  });
+});
+
+/* ---------------------------------------------------------------------------
+   The vocabulary the two worlds are built out of, read off the worlds themselves.
+   --------------------------------------------------------------------------- */
+
+/** A figure the student is asked to work out. Found by shape, so a new one cannot hide. */
+interface SumCopy { label: string; scaffold: string }
+
+function sumsIn(node: unknown, found: SumCopy[] = []): SumCopy[] {
+  if (!node || typeof node !== "object") return found;
+  const record = node as Record<string, unknown>;
+  if (typeof record.label === "string" && typeof record.scaffold === "string") found.push(record as unknown as SumCopy);
+  for (const value of Object.values(record)) sumsIn(value, found);
+  return found;
+}
+
+describe("the money vocabulary of both worlds is covered", () => {
+  const covered = (label: string) => GLOSSARY.some((entry) => entry.forms.some((form) => formAppearsIn(form, label)));
+
+  it("defines a word in the name of every line the market plans on", () => {
+    const lines = Object.values(POP_UP_SCENARIO.lines).map((line) => line.label);
+    expect(lines.filter((label) => !covered(label))).toEqual([]);
+  });
+
+  it("defines a word in the name of every row the season plans on", () => {
+    expect(Object.values(CHOICE_LABELS).filter((label) => !covered(label))).toEqual([]);
+  });
+
+  it("defines a word in the name of every payment the season counts", () => {
+    const labels = Object.values(BASKETBALL_SCENARIO.incomeCopy).map((source) => source.label);
+    expect(labels.filter((label) => !covered(label))).toEqual([]);
+  });
+
+  it("defines a word in every figure the market asks a student to work out", () => {
+    const sums = sumsIn(POP_UP_SCENARIO.screens).map((sum) => sum.label);
+    expect(sums.length).toBeGreaterThan(0);
+    expect(sums.filter((label) => !covered(label))).toEqual([]);
+  });
+});
+
+/* ---------------------------------------------------------------------------
+   Nothing hard gets in unnoticed.
+   --------------------------------------------------------------------------- */
+
+describe("every word the run says has been looked at", () => {
+  it("has no word that is neither defined nor judged plain", () => {
+    const defined = new Set(
+      GLOSSARY.flatMap((entry) => entry.forms).flatMap((form) => form.toLowerCase().split(/[^a-z'’-]+/)).filter(Boolean),
+    );
+    const unreviewed = RUN_WORDS.filter((word) => !defined.has(word) && !PLAIN_ENOUGH.has(word));
+    expect(
+      unreviewed,
+      "new words in the run. Define each one in glossary.ts, or add it to PLAIN_ENOUGH if a Grade 5 reader working in their second language would not stop at it.",
+    ).toEqual([]);
+  });
+});
+
+describe("the panel shows the words on the screen a student is on", () => {
+  it("orders them the way the screen says them", () => {
+    const screen = "How much is gone before Avery chooses anything? Money already spoken for. Backup money covers the rest.";
+    expect(termsOnScreen(screen).map((entry) => entry.term)).toEqual(["spoken for", "backup money", "cover"]);
+  });
+
+  it("does not fire a term on a longer word that happens to contain it", () => {
+    expect(termsOnScreen("The stockroom is full.").map((entry) => entry.term)).toEqual([]);
+    expect(termsOnScreen("Nothing here.")).toEqual([]);
+  });
+
+  it("keeps the two meanings of cut apart", () => {
+    expect(termsOnScreen("Making the cut bonus").map((entry) => entry.term)).not.toContain("your cut");
+    expect(termsOnScreen("Your cut, banked").map((entry) => entry.term)).toContain("your cut");
+  });
+});
+
+/**
+ * Every other word the run says.
+ *
+ * Read once, in one pass, against the question "would a Grade 5 reader working in their second
+ * language stop here". Anything that got a yes is in `glossary.ts` instead. This list is the
+ * record of the ones that got a no, and the reason it is a list rather than a rule is that no
+ * rule available here can tell *cushion* from *counter*: syllables cannot, length cannot, and
+ * a frequency table would need shipping a corpus and would still miss every idiom in the run.
+ */
+const PLAIN_ENOUGH = new Set<string>([
+  "stands", "when",
+  "about", "above", "account", "across", "actually", "add", "added", "adds", "again", "against",
+  "age", "all", "almost", "alone", "along", "amount", "amounts", "an", "another", "answer",
+  "answered", "any", "anybody", "anything", "anyway", "are", "arena", "around", "arrive", "arrived",
+  "arrives", "as", "aside", "ask", "asked", "asks", "at", "automatically", "avery's", "avery’s",
+  "away", "away-game", "back", "balances", "ball", "band", "bank", "bar", "basketball", "be",
+  "because", "been", "before", "being", "below", "beside", "between", "biggest", "bill", "bills",
+  "birthday", "block", "blocks", "body", "book", "booked", "booking", "both", "bottom", "bought",
+  "bow", "box", "break", "breaks", "bridge", "brings", "brought", "build", "building", "built",
+  "bus", "busy", "but", "button", "buy", "buying", "buys", "by", "call", "calling",
+  "calls", "came", "can", "cancelled", "cannot", "card", "cards", "carry", "case", "cash",
+  "certain", "chalkboard", "change", "changed", "changes", "charged", "charges", "cheaper", "cheapest", "check",
+  "choices", "choose", "chooses", "claims", "class", "cleaner", "close", "closed", "closing", "coach",
+  "coaching", "code", "cold", "come", "comes", "coming", "commas", "committed", "committing", "community",
+  "comparison", "computer", "confirm", "confirmed", "connection", "continue", "cook", "cooked", "cooking", "cooks",
+  "cool", "corner", "cost", "costs", "could", "counter", "court", "cousin", "cousin’s", "damage",
+  "dark", "day", "dead", "deadline", "decision", "decrease", "definitely", "delivers", "depends", "detail",
+  "did", "didn’t", "died", "difference", "different", "differently", "district", "do", "does", "dollars", "done",
+  "doors", "down", "drives", "drop", "each", "earlier", "early", "earned", "eats", "effect",
+  "eight", "eight-week", "either", "eleven", "else", "email", "emptied", "end", "ending", "ends",
+  "enough", "enter", "even", "evening", "evenly", "everybody", "everyone", "everywhere", "exactly", "expected",
+  "explain", "extra", "far", "feedback", "fewer", "fictional", "fifth", "figure", "fill", "filling",
+  "fills", "final", "finding", "fine", "fireworks", "first", "five", "fixing", "flight", "food",
+  "foods", "four", "free", "from", "gains", "game", "games", "gas", "gate", "gave",
+  "get", "gets", "getting", "give", "gives", "glad", "go", "goes", "going", "gone",
+  "got", "groceries", "guard", "gym", "had", "haddad", "half", "halfway", "halves", "handed",
+  "handed-in", "handle", "hands", "happen", "happens", "harbor", "hard", "has", "have", "held",
+  "help", "her", "here", "hide", "high", "hint", "his", "hold", "holding", "holds",
+  "hole", "home", "hour", "hours", "how", "however", "hurts", "i", "if", "increase",
+  "instead", "into", "its", "jar", "just", "keep", "keeping", "kept", "knew", "land",
+  "landed", "lands", "lane", "last", "late", "later", "laundry", "league", "leaning", "least",
+  "leave", "leaves", "leaving", "length", "less", "lesson", "letters", "lid", "lights", "like",
+  "lines", "list", "lived", "lives", "living", "long", "looked", "loose", "lost", "low",
+  "made", "main", "make", "makes", "man", "many", "marisol", "marisol's", "market", "match",
+  "matter", "max-width", "me", "means", "message", "middle", "midnight", "might", "min", "minus",
+  "miss", "missed", "missing", "mo", "moment", "mon", "monday", "more", "morning", "most",
+  "movable", "move", "moved", "moves", "much", "multiply", "must", "my", "nadia", "name",
+  "named", "need", "needed", "needing", "needs", "neither", "never", "new", "next", "night",
+  "nights", "nine", "nobody", "none", "not", "nothing", "nowhere", "number", "numbers", "of",
+  "offering", "office", "okafor", "once", "one", "ones", "only", "open", "opened", "opening",
+  "opens", "option", "or", "ordered", "ordinary", "other", "outside", "over", "own", "packed",
+  "page", "painted", "pair", "part", "pass", "past", "paying", "payment", "payments", "pays",
+  "people", "per", "performs", "person", "phone", "pick", "place", "places", "plain", "planned",
+  "planning", "plate", "plates", "play", "played", "player", "players", "playing", "plays", "plus",
+  "pm", "pockets", "pop-up", "pos", "practice", "prefers-reduced-motion", "present", "press", "pressure", "priced",
+  "prices", "progress", "promised", "prompt", "proper", "properly", "protect", "protected", "protects", "put",
+  "puts", "putting", "px", "question", "questions", "quiet", "rains", "ramos", "ran", "rather",
+  "reach", "reachable", "reaches", "reaching", "read", "reads", "ready", "real", "reason", "reduce",
+  "regional", "rentals", "rented", "repeat", "replaced", "replacement", "response", "review", "reyes", "right",
+  "riverside", "road", "roster", "round", "row", "rows", "rubber", "run", "running", "runs",
+  "s", "safe", "safety", "said", "salt", "sat", "saturday", "saturdays", "save", "say",
+  "says", "scenario", "scene", "schedule", "school", "screen", "season", "second", "see", "selected",
+  "sell-out", "sells", "send", "sending", "sent", "sentence", "sentences", "session", "sessions", "set",
+  "setup", "setups", "she", "shoes", "shop", "shortcut", "show", "shown", "side", "sign",
+  "signed", "single", "sister", "size", "skills", "smoke", "so", "software", "some", "something",
+  "somewhere", "spend", "spending", "split", "splitting", "spot", "spreads", "standing", "start", "started",
+  "starting", "starts", "stayed", "stays", "step", "step-by-step", "stood", "stopped", "stops", "storm",
+  "straight", "strings", "stuck", "studio", "summers", "sunday", "sunrise", "sweeps", "take", "taken",
+  "takes", "tap", "taped", "tapped", "teacher", "team", "teammate", "teammate’s", "tell", "term",
+  "than", "that", "that's", "that’s", "their", "them", "then", "there", "these", "they",
+  "thing", "things", "thinking", "third", "this", "those", "three", "threw", "thu", "time",
+  "tips", "tired", "tiredness", "today", "together", "told", "too", "took", "top", "total",
+  "toward", "town", "transfer", "trip", "truck", "truck's", "trucks", "try", "turn", "turned",
+  "turning", "turns", "twice", "two", "type", "under", "unpaid", "untap", "until", "update",
+  "us", "use", "usual", "usually", "version", "wait", "waiting", "walk", "walked", "walks",
+  "want", "wanted", "wants", "was", "watch", "way", "ways", "week", "weeks", "were",
+  "wet", "what", "whatever", "wheel", "where", "whether", "which", "whichever", "while", "who",
+  "whole", "whose", "why", "will", "willing", "window", "without", "wk", "won’t", "work",
+  "worked", "working", "works", "world", "worse", "worth", "would", "wrist", "write", "writes",
+  "writing", "wrong", "wrote", "yes", "yet", "yoga", "you", "younger", "yours", "yourself",
+]);
