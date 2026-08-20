@@ -371,6 +371,38 @@ p { color: var(--ink-2); }
 .educator-topbar nav a.active { color: var(--ink-1); border-bottom: 2px solid var(--ink-1); }
 .demo-pill, .standard-chip, .tag-row span { padding: var(--s-2) var(--s-3); background: var(--surface-sunken); border-radius: var(--r-pill); color: var(--ink-2); font: var(--t-micro); }
 
+/* ── "Try it as a student" ────────────────────────────────────────────────────────────────
+   D8. `SampleRun.tsx` renders `.sample-run` and `.sample-run__bar`, and neither had a rule at
+   any of its class names in any stylesheet — so the banner that says *"Sample run — nothing
+   here reaches a teacher"*, the sentence explaining it and the way back to the guide all
+   arrived as raw text in the top-left corner, above the product's own app bar, measured at
+   `padding: 0px` and a transparent ground. It is on the path a district evaluator takes from
+   the educator guide to see what students see, which is the worst place in the product for
+   the first thing on screen to look unfinished.
+
+   So it is a band rather than page content: its own sunken ground, a strong rule under it,
+   and the whole student product framed inside it. The wrapper takes the viewport height so
+   the band sits over a full screen instead of over whatever the run happens to be tall.
+   Reading order is what it says — the disclaimer, then why, then the way out — and the way
+   out is pushed to the far end at any width that has room for it. */
+.sample-run { min-height: 100vh; display: grid; grid-template-rows: auto minmax(0, 1fr); background: var(--canvas); }
+.sample-run__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3) var(--s-5);
+  padding: var(--s-4) var(--s-6);
+  background: var(--surface-sunken);
+  border-bottom: 2px solid var(--border-strong);
+}
+
+/* The disclaimer is the sentence a teacher is being asked to trust, so it is not set at the
+   size of a caption: 14px is this product's floor for anything an adult reads on a working
+   surface, and the pill is the one word of it that has to be unmissable. */
+.sample-run__bar .demo-pill { font: var(--tt-meta); font-weight: 700; color: var(--ink-1); background: var(--surface); border: 1px solid var(--border-strong); }
+.sample-run__bar > p { flex: 1 1 32ch; max-width: var(--measure); margin: 0; color: var(--ink-2); font: var(--tt-meta); font-weight: 400; }
+.sample-run__bar > a { display: inline-block; padding-block: 4px; color: var(--ink-1); font: var(--tt-meta); font-weight: 600; text-underline-offset: 5px; }
+
 /*
  * One spine for the whole educator surface.
  *
@@ -1619,6 +1651,39 @@ p { color: var(--ink-2); }
 .home__worlds span { color: var(--ink-2); font: var(--t-sm); }
 .home__worlds-length { font-feature-settings: var(--num); }
 
+/* ── The front door's footer ──────────────────────────────────────────────────────────────
+   D4. `.home__foot` had no rule anywhere, so the browser laid its three children out in the
+   default inline flow with nothing between them: measured at 1366 the wordmark ran 0–206px,
+   *Data protection* 206–331 and *Teacher's guide* 331–456, printing
+   `BOW Decision ChallengesData protectionTeacher's guide` as one unbroken string on the first
+   screen a district evaluator meets. At 360 it overlapped itself.
+
+   A wrapping row on the same gutter the bar and the hero above it already use, with a
+   hairline over it so the page ends rather than stopping. `scenes.css` owns the rest of this
+   screen; this rule stays here because `app.css` is where the element's own name belongs and
+   nothing in `scenes.css` claims it. The links keep the 4px of block padding every standalone
+   link in this product carries — at this size they measure 19px, under the 24px 2.5.8 asks
+   for — and the name is pushed away from them so the two are never read as one list. */
+.home__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2) var(--s-5);
+  padding: var(--s-5) clamp(20px, 4vw, 56px) var(--s-6);
+  border-top: 1px solid var(--border-subtle);
+  color: var(--ink-3);
+  font: var(--t-sm);
+}
+.home__foot > span { margin-inline-end: auto; }
+.home__foot a { display: inline-block; padding-block: 4px; color: var(--ink-2); text-underline-offset: 5px; }
+.home__foot a:hover { color: var(--ink-1); }
+
+/* On a phone the name takes its own line: with all three sharing one it wrapped between the
+   two links, which reads as a list whose first item is the product's name. */
+@media (max-width: 560px) {
+  .home__foot > span { flex: 1 0 100%; }
+}
+
 /* ── Share-out ────────────────────────────────────────────────────────────────────────────
    Select and sequence, then project. Nothing reaches a room that a teacher did not choose. */
 .shareout-chosen { display: grid; gap: var(--s-3); margin: 0 0 var(--s-4); padding: 0; list-style: none; counter-reset: shareout; }
@@ -2351,9 +2416,16 @@ p { color: var(--ink-2); }
 .judgement-rows { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
 .judgement-rows > li { padding: var(--s-4) 0; border-bottom: 1px solid var(--border-subtle); }
 .judgement-rows > li[data-short="true"] { background: var(--fin-over-soft); border-left: 4px solid var(--fin-over); padding-left: var(--s-4); border-radius: var(--r-xs); }
+
+/* A row that is waiting on a person rather than on the student — a paragraph turned in and
+   not yet read. It is neither a shortfall nor an absence, so it takes neither of their
+   grounds: a dashed edge, because the judgement has not arrived, in the ink this product
+   already uses for a reading that is still open. */
+.judgement-rows > li[data-level="unread"] { padding-left: var(--s-4); border-left: 4px dashed var(--fin-adjustable); }
+.judgement-rows > li[data-level="unread"] > .judgement-line > span { color: var(--fin-adjustable-ink); }
 .judgement-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-2) var(--s-4); align-items: baseline; }
 .judgement-line b { font: var(--tt-body); font-weight: 700; }
-.judgement-line > span { white-space: nowrap; font: var(--tt-meta); font-weight: 700; }
+.judgement-line > span { font: var(--tt-meta); font-weight: 700; white-space: nowrap; }
 .judgement-rule { grid-column: 1 / -1; margin: var(--s-2) 0 0; color: var(--ink-2); font: var(--tt-meta); font-weight: 400; }
 .judgement-mine { grid-column: 1 / -1; margin: var(--s-2) 0 0; color: var(--fin-adjustable-ink); font: var(--tt-meta); font-weight: 600; }
 .judgement-rows details > summary { display: flex; align-items: center; color: var(--ink-2); font: var(--tt-meta); font-weight: 600; cursor: pointer; }

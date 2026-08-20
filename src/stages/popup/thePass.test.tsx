@@ -158,10 +158,16 @@ describe("the person at the pass", () => {
     // An empty counter is somebody who reached the window and found nothing; a serve cap is
     // somebody who never reached the window. Bridge Gate on five trays alone is the only
     // reference run that produces the second, and the figure has to be a different picture.
-    const stock = serve({ spotId: "middle-row", trays: 3, dealt: 24 }).view.container;
+    //
+    // Both are read one press before the end of their run — 23 of 24 and 32 of 33 — because at
+    // the last press the night is over and the window is empty by design. The outcomes are
+    // unaffected: Middle Row on three trays runs out at #19 and every order from there is
+    // `no-stock`; Bridge Gate on five trays hits the serve cap at #29 and every order from
+    // there is `no-hands`.
+    const stock = serve({ spotId: "middle-row", trays: 3, dealt: 23 }).view.container;
     const stockPose = stock.querySelector(".pass-customer")?.getAttribute("data-pose");
     cleanup();
-    const hands = serve({ spotId: "bridge-gate", trays: 5, dealt: 33 }).view.container;
+    const hands = serve({ spotId: "bridge-gate", trays: 5, dealt: 32 }).view.container;
     const handsFigure = hands.querySelector(".pass-customer");
 
     expect(stockPose).toBe("no-stock");

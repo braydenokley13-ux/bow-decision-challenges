@@ -1027,7 +1027,9 @@ export function RealClassOverview() {
                 demoted rather than cut — a teacher mid-lesson who wants "how many chose the
                 sublet" has to have a path to it, and the seats behind every count are one
                 native disclosure away rather than inline under every row. */}
-            {spine.narratable && worldSections(roll.rows).map((world) => (
+            {spine.narratable && (
+            <div className="record-pair">
+            {worldSections(roll.rows).map((world) => (
               <section className="surface-record" key={world.worldId} aria-labelledby={`decided-${world.worldId}`}>
                 <div className="record__head">
                   <h2 id={`decided-${world.worldId}`}>What they decided</h2>
@@ -1071,6 +1073,8 @@ export function RealClassOverview() {
                 )}
               </section>
             ))}
+            </div>
+            )}
 
             {/* R6 · margin. The key once, behind one disclosure, and the ways out of the
                 page. Three boxed keys at section weight used to be repeated down the page. */}

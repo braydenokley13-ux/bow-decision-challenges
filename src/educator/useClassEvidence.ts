@@ -115,51 +115,81 @@ export function useClassEvidence(code: string | undefined): {
         ? { status: "error", message: educatorClassError("not_authorised") }
         : null;
 
-  useEffect(() => {
+  /**
+   * One reading of the class, as a promise.
+   *
+   * It is a function rather than only an effect body because **a mutation has to be able to
+   * wait for it**. A teacher who sends a note used to get the confirmation and the refusal on
+   * screen together — *"Sent."* under the button, *"Nothing has been written back about this
+   * run yet."* above the box — for as long as the refetch took: measured at 215 ms on a
+   * laptop beside the service and 2.7 s with the class read throttled to a school network.
+   * The note really had reached the child; the screen said it had not (`DEFECTS.md` D13).
+   *
+   * The cure is not a second copy of the note held optimistically in this hook. It is that
+   * `sendFeedback` and its neighbours do not resolve until the class they changed has been
+   * read back, so every caller's `await` already means "the screen agrees with the service".
+   */
+  const readClass = useCallback(async (): Promise<ClassEvidenceState | null> => {
     // The one line that keeps the promise in the comment above true at runtime: this branch
     // returns before the fetch is even constructed, so the demo's code and key are never
     // formatted into a URL and `fetch` is never called with them. Nothing about a class
     // opened this way touches the network, in either direction.
+    if (isDemo || !code || !teacherKey) return null;
+    try {
+      const response = await fetch(`${CLASS_API_BASE}/classes/${code}/submissions`, {
+        headers: { "X-BOW-Teacher-Key": teacherKey },
+      });
+      const body: unknown = await response.json();
+      if (!response.ok) {
+        return { status: "error", message: isClassError(body) ? educatorClassError(body.error) : educatorClassError("unavailable") };
+      }
+      const payload = body as {
+        class: ClassRecord;
+        assignments: Assignment[];
+        submissions: AttributedSubmission[];
+        roster?: RosterRow[];
+        progress?: ProgressRow[];
+        feedback?: TeacherFeedback[];
+      };
+      // Opening a class from a link is how a teacher on a second device gets it back.
+      rememberClass({ code: payload.class.code, label: payload.class.label, teacherKey, createdAt: payload.class.createdAt });
+      return {
+        status: "ready",
+        record: payload.class,
+        assignments: payload.assignments,
+        submissions: payload.submissions,
+        analysis: analyseClass(payload.submissions),
+        roster: payload.roster ?? [],
+        progress: payload.progress ?? [],
+        feedback: payload.feedback ?? [],
+        loadedAt: Date.now(),
+      };
+    } catch {
+      return { status: "error", message: educatorClassError("unavailable") };
+    }
+  }, [code, teacherKey, isDemo]);
+
+  useEffect(() => {
     if (isDemo || !code || !teacherKey) return;
     let cancelled = false;
     void (async () => {
-      try {
-        const response = await fetch(`${CLASS_API_BASE}/classes/${code}/submissions`, {
-          headers: { "X-BOW-Teacher-Key": teacherKey },
-        });
-        const body: unknown = await response.json();
-        if (cancelled) return;
-        if (!response.ok) {
-          setFetched({ status: "error", message: isClassError(body) ? educatorClassError(body.error) : educatorClassError("unavailable") });
-          return;
-        }
-        const payload = body as {
-          class: ClassRecord;
-          assignments: Assignment[];
-          submissions: AttributedSubmission[];
-          roster?: RosterRow[];
-          progress?: ProgressRow[];
-          feedback?: TeacherFeedback[];
-        };
-        // Opening a class from a link is how a teacher on a second device gets it back.
-        rememberClass({ code: payload.class.code, label: payload.class.label, teacherKey, createdAt: payload.class.createdAt });
-        setFetched({
-          status: "ready",
-          record: payload.class,
-          assignments: payload.assignments,
-          submissions: payload.submissions,
-          analysis: analyseClass(payload.submissions),
-          roster: payload.roster ?? [],
-          progress: payload.progress ?? [],
-          feedback: payload.feedback ?? [],
-          loadedAt: Date.now(),
-        });
-      } catch {
-        if (!cancelled) setFetched({ status: "error", message: educatorClassError("unavailable") });
-      }
+      const next = await readClass();
+      if (!cancelled && next) setFetched(next);
     })();
     return () => { cancelled = true; };
-  }, [code, teacherKey, nonce, isDemo]);
+  }, [readClass, isDemo, code, teacherKey, nonce]);
+
+  /**
+   * Read the class again and wait for it. What every mutation below returns through.
+   *
+   * A failed read after a successful write lands the page on its error state, which is the
+   * same thing the nonce path did and is the honest answer: the write went in and this
+   * browser can no longer see the class, so it must not go on drawing a class it cannot read.
+   */
+  const refresh = useCallback(async (): Promise<void> => {
+    const next = await readClass();
+    if (next) setFetched(next);
+  }, [readClass]);
 
   const reload = useCallback(() => setNonce((value) => value + 1), []);
 
@@ -175,13 +205,13 @@ export function useClassEvidence(code: string | undefined): {
           headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
           body: JSON.stringify({ reasoningPoints: scores ? reasoningTotal(scores) : null, reasoningCriteria: scores, sessionId }),
         });
-        if (response.ok) reload();
+        if (response.ok) await refresh();
         return response.ok;
       } catch {
         return false;
       }
     },
-    [code, teacherKey, reload],
+    [code, teacherKey, refresh],
   );
 
   /**
@@ -206,13 +236,13 @@ export function useClassEvidence(code: string | undefined): {
           headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
           body: JSON.stringify({ seatCode, sessionId, body, flagged }),
         });
-        if (response.ok) reload();
+        if (response.ok) await refresh();
         return response.ok;
       } catch {
         return false;
       }
     },
-    [code, teacherKey, reload],
+    [code, teacherKey, refresh],
   );
 
   /**
@@ -231,13 +261,13 @@ export function useClassEvidence(code: string | undefined): {
           headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
           body: JSON.stringify({ ...override, sessionId }),
         });
-        if (response.ok) reload();
+        if (response.ok) await refresh();
         return response.ok;
       } catch {
         return false;
       }
     },
-    [code, teacherKey, reload],
+    [code, teacherKey, refresh],
   );
 
   /**
@@ -258,13 +288,13 @@ export function useClassEvidence(code: string | undefined): {
           headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
           body: JSON.stringify({ body, flagged }),
         });
-        if (response.ok) reload();
+        if (response.ok) await refresh();
         return response.ok;
       } catch {
         return false;
       }
     },
-    [code, teacherKey, reload],
+    [code, teacherKey, refresh],
   );
 
   const withdrawFeedback = useCallback(
@@ -275,13 +305,13 @@ export function useClassEvidence(code: string | undefined): {
           method: "DELETE",
           headers: { "X-BOW-Teacher-Key": teacherKey },
         });
-        if (response.ok) reload();
+        if (response.ok) await refresh();
         return response.ok;
       } catch {
         return false;
       }
     },
-    [code, teacherKey, reload],
+    [code, teacherKey, refresh],
   );
 
   return { state: demo ?? blocked ?? fetched, teacherKey, reload, scoreReasoning, recordOverride, sendFeedback, reviseFeedback, withdrawFeedback };

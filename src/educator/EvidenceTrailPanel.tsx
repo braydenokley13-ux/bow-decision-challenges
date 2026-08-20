@@ -9,7 +9,7 @@ import type { RubricLevel } from "../domain/competency/types";
 import type { SubmissionRecord, TeacherOverride } from "../platform/classes/types";
 import { machineObservationsFor, worldOfSubmission } from "./objectiveResults";
 import { eventLabel, stageLabel } from "../domain/scenario/registry";
-import { levelDescription, levelKey, levelLabel, levelMark, LEVEL_ORDER, SUPPORT_LABELS } from "./labels";
+import { levelDescription, levelKey, levelLabel, levelMark, levelReading, LEVEL_ORDER, SUPPORT_LABELS } from "./labels";
 import { StateKey, WordKey } from "./EducatorShell";
 import type { OverrideRequest } from "./useClassEvidence";
 
@@ -60,16 +60,20 @@ function JudgementRow({ judgement, overrides, onOverride, openByDefault }: {
   const mine = overrides.filter((entry) => entry.evidenceRequirementId === judgement.evidenceRequirementId);
   const standing = mine.at(-1);
   const short = isShortfall(judgement.level);
+  // How this row reads: the rubric level where there is one, and otherwise the row's own
+  // evidence deciding whether nothing was written or nothing has been read. The row used to
+  // print *Never came up* over a reason sentence saying the writing was submitted.
+  const reading = levelReading(judgement);
 
   return (
-    <li data-short={short} data-level={judgement.level === null ? "none" : judgement.level}>
+    <li data-short={short} data-level={reading === "awaiting-reading" ? "unread" : judgement.level === null ? "none" : judgement.level}>
       <div className="judgement-line">
         <b>{judgement.label}</b>
         {/* Word, mark and colour — three signals, so the state survives greyscale and a
-            reader who has any one of them can still tell the six apart. */}
+            reader who has any one of them can still tell the seven apart. */}
         <span>
-          <span className="mark-glyph" aria-hidden="true">{levelMark(judgement.level)}</span>{"\u00a0"}
-          {levelLabel(judgement.level)}
+          <span className="mark-glyph" aria-hidden="true">{levelMark(reading)}</span>{"\u00a0"}
+          {levelLabel(reading)}
         </span>
         <p className="judgement-rule">{judgement.observableRule} · {judgement.reason}</p>
         {/* The cap is the rubric's doing, not the student's, and saying which is which is the
@@ -200,7 +204,7 @@ export function JudgementRecord({ submission, onOverride }: {
           </ul>
         </section>
       ))}
-      <WordKey title="What these words mean" entries={levelKey(standing.map((judgement) => judgement.level))} />
+      <WordKey title="What these words mean" entries={levelKey(standing.map(levelReading))} />
     </div>
   );
 }
@@ -234,7 +238,7 @@ export function TrailRecord({ submission }: { submission: SubmissionRecord }) {
               {moment.judgements.map((judgement) => (
                 <li key={`${judgement.evidenceRequirementId}-${judgement.reason}`} data-superseded={judgement.superseded}>
                   <b>{judgement.label}</b>
-                  <span className="trail__level">{levelLabel(judgement.level)}</span>
+                  <span className="trail__level">{levelLabel(levelReading(judgement))}</span>
                   <span>{judgement.reason}</span>
                   {judgement.superseded && <em>Revisited later. The reading below stands.</em>}
                 </li>

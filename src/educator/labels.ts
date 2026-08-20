@@ -1,4 +1,4 @@
-import type { CompetencyResultState, SupportLevel } from "../domain/competency/types";
+import type { CompetencyResultState, EvidenceKind, RubricLevel, SupportLevel } from "../domain/competency/types";
 import {
   DEVELOPING_THRESHOLD_PERCENT,
   MINIMUM_ASSESSED_FOR_A_STATE,
@@ -188,18 +188,85 @@ export const LEVEL_MARKS: Record<0 | 2 | 3 | 4 | 5 | "null", string> = {
   null: "\u2014",
 };
 
-export function levelMark(level: 0 | 2 | 3 | 4 | 5 | null): string {
-  return level === null ? LEVEL_MARKS.null : LEVEL_MARKS[level];
-}
-
 /** Strongest first. The order every level list in the product is offered in. */
 export const LEVEL_ORDER: readonly (0 | 2 | 3 | 4 | 5 | "null")[] = [5, 4, 3, 2, 0, "null"];
 
-export function levelLabel(level: 0 | 2 | 3 | 4 | 5 | null): string {
+// ---------------------------------------------------------------------------
+// Ladder 2's seventh word — the state a rubric level cannot carry
+// ---------------------------------------------------------------------------
+
+/**
+ * *Waiting to be read* — a child wrote it, and nobody has read it yet.
+ *
+ * `explanationObservation` (`basketball/observer.ts`, `food-truck/observer.ts`) sets
+ * `level: scored ?? null`, and that one `null` is emitted for two different facts about a
+ * child: **nothing was written**, and **something was written and no person has read it
+ * yet**. Rendered through Ladder 2 both arrive as *Never came up*, with the glossary line
+ * *"This run never asked it of them."* — so on the seeded class the row for *Explains the
+ * trade-off made* printed `Never came up` directly above its own reason text, which reads
+ * *"The defense was submitted and is waiting for a person to read it."* A child who wrote an
+ * answer was shown to their teacher as a child who was never asked (`DEFECTS.md` D11).
+ *
+ * The observers are the domain's and are not edited for this. They do not have to be: the
+ * distinction is already at the row. Every observation cites its evidence, and a world that
+ * never presented the opportunity cites the `not-observed:` sentinel instead of an event —
+ * which is the same fact `evidenceTrail` already splits its `notObserved` list on. So a
+ * `null` explanation whose evidence anchors a real moment in the student's own log is a
+ * piece of writing that exists and is unread, and it is named as one.
+ *
+ * It is a seventh word rather than a level because it is not a point on the ramp — the same
+ * argument Ladder 3 makes for *Evidence not all in* one level up, and it carries Ladder 3's
+ * ellipsis for the same reason: a judgement that has not arrived, not a low one. It is
+ * deliberately narrower than Ladder 3's phrase, because at the row there is no ambiguity
+ * about *why* the evidence is not in. Somebody has to read it.
+ */
+export const AWAITING_READING = {
+  label: "Waiting to be read",
+  description: "They wrote it and turned it in. Nobody has read it yet — BOW does not score student writing.",
+  mark: "\u2026",
+} as const;
+
+/**
+ * A level as a page reads it: the six rubric levels, the absence, and the unread writing.
+ *
+ * Every function below takes this rather than `RubricLevel | null`, so a screen that has a
+ * judgement in its hand cannot render the absence word over a child's unread paragraph
+ * without going out of its way to.
+ */
+export type LevelReading = 0 | 2 | 3 | 4 | 5 | null | "awaiting-reading";
+
+/** The `evidenceRefs` sentinel a world writes when it never presented the opportunity. */
+const NOT_OBSERVED_REF = "not-observed:";
+
+/**
+ * How to read one judgement's level — the row's own evidence deciding between two `null`s.
+ *
+ * Only an explanation can be waiting on a person: BOW does not score student writing and
+ * scores everything else, so a `decision` with no level is a decision the run never asked
+ * for. Nothing here guesses; both inputs are on the row already.
+ */
+export function levelReading(judgement: {
+  kind: EvidenceKind;
+  level: RubricLevel | null;
+  evidenceRefs: readonly string[];
+}): LevelReading {
+  if (judgement.level !== null) return judgement.level;
+  if (judgement.kind !== "explanation") return null;
+  return judgement.evidenceRefs.some((ref) => !ref.startsWith(NOT_OBSERVED_REF)) ? "awaiting-reading" : null;
+}
+
+export function levelMark(level: LevelReading): string {
+  if (level === "awaiting-reading") return AWAITING_READING.mark;
+  return level === null ? LEVEL_MARKS.null : LEVEL_MARKS[level];
+}
+
+export function levelLabel(level: LevelReading): string {
+  if (level === "awaiting-reading") return AWAITING_READING.label;
   return level === null ? LEVEL_LABELS.null : LEVEL_LABELS[level];
 }
 
-export function levelDescription(level: 0 | 2 | 3 | 4 | 5 | null): string {
+export function levelDescription(level: LevelReading): string {
+  if (level === "awaiting-reading") return AWAITING_READING.description;
   return level === null ? LEVEL_DESCRIPTIONS.null : LEVEL_DESCRIPTIONS[level];
 }
 
@@ -391,10 +458,18 @@ export interface KeyEntry { label: string; description: string; mark?: string }
  * They are here rather than in a component so that no screen can build a key out of words
  * it invented.
  */
-export function levelKey(levels: Iterable<0 | 2 | 3 | 4 | 5 | null>): KeyEntry[] {
-  const present = new Set<0 | 2 | 3 | 4 | 5 | "null">([...levels].map((level) => (level === null ? "null" : level)));
-  return LEVEL_ORDER.filter((level) => present.has(level))
+export function levelKey(levels: Iterable<LevelReading>): KeyEntry[] {
+  const read = [...levels];
+  const present = new Set<0 | 2 | 3 | 4 | 5 | "null">(
+    read.filter((level): level is 0 | 2 | 3 | 4 | 5 | null => level !== "awaiting-reading")
+      .map((level) => (level === null ? "null" : level)),
+  );
+  const entries: KeyEntry[] = LEVEL_ORDER.filter((level) => present.has(level))
     .map((level) => ({ label: LEVEL_LABELS[level], description: LEVEL_DESCRIPTIONS[level], mark: LEVEL_MARKS[level] }));
+  // Last, the way Ladder 3 puts *Evidence not all in* after *Never came up*: a judgement that
+  // has not arrived is not a point on the ramp, so it does not sit inside it.
+  if (read.includes("awaiting-reading")) entries.push({ ...AWAITING_READING });
+  return entries;
 }
 
 export function skillStateKey(states: Iterable<CompetencyResultState>): KeyEntry[] {

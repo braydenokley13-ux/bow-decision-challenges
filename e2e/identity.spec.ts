@@ -165,3 +165,184 @@ test("a run picked up on a genuinely different machine is the same run", async (
     await elsewhere.close();
   }
 });
+
+/* ==========================================================================
+   Four boundaries the brief names, walked in the browser a child is sitting at
+   rather than asserted against the handler. Each one is the cheapest thing
+   that would actually catch its failure.
+   ========================================================================== */
+
+test("a reissued card lets the same child in, and the old card lets nobody in", async ({ page, request }) => {
+  test.setTimeout(120_000);
+  const created = await createClass(request, "Period 3");
+  const classCode = created.code;
+  const old = await seatOnRoster(page, classCode, "1");
+
+  // The child is in, and has something to lose.
+  await gotoFreshChallenge(page);
+  await signIn(page, { ...old, classCode });
+  await expect(page.getByRole("heading", { level: 1, name: old.displayName })).toBeVisible();
+
+  // The card is lost, so the teacher prints another. The seat is the same seat.
+  const reissued = await request.post(`${API}/classes/${classCode}/roster/1/code`, {
+    headers: { "X-BOW-Teacher-Key": createClassKeyFor(classCode) },
+  });
+  expect(reissued.status(), await reissued.text()).toBe(200);
+  const fresh = ((await reissued.json()) as { card: { joinCode: string; displayName: string } }).card;
+  expect(fresh.joinCode).not.toBe(old.joinCode);
+  expect(fresh.displayName, "the same child, not a new one").toBe(old.displayName);
+
+  // The browser that was holding the old session is not left claiming to be somebody: the
+  // page is honest about there being nothing here, and offers the way out rather than a name.
+  await page.goto("/home");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("You are not in a class yet.");
+  await expect(page.locator("body")).not.toContainText(old.displayName);
+  await expect(page.getByRole("button", { name: "Not you? Sign out" })).toBeVisible();
+
+  // The old card is refused at the door, and refused the same way a card that never existed is.
+  await gotoFreshChallenge(page);
+  await page.goto("/join");
+  await page.getByLabel("Class code").fill(classCode);
+  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByLabel("Your code").fill(old.joinCode);
+  await page.getByRole("button", { name: "Go in" }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page).toHaveURL(/\/join$/);
+  await expect(page.locator("body"), "and it does not name the child it used to belong to")
+    .not.toContainText(old.displayName);
+
+  // The new card gets the same child back in, with their work where they left it — the half
+  // of "reissuing a card invalidates the old one" that is easy to break by deleting the seat.
+  await signIn(page, { ...fresh, seatCode: old.seatCode, classCode });
+  await expect(page.getByRole("heading", { level: 1, name: old.displayName })).toBeVisible();
+  await expect(page.locator("body")).toContainText("Seat 1");
+});
+
+test("a seat taken off the list loses its way in, and its work stays with the teacher", async ({ page, request }) => {
+  test.setTimeout(180_000);
+  const created = await createClass(request, "Period 3");
+  const classCode = created.code;
+  const card = await seatOnRoster(page, classCode, "1");
+
+  await gotoFreshChallenge(page);
+  await signIn(page, { ...card, classCode });
+  const checkpointed = page.waitForResponse((response) =>
+    response.url().includes("/me/attempt") && response.request().method() === "PUT" && response.status() === 200);
+  await page.getByRole("link", { name: "Start" }).click();
+  await startIfConfirmAsked(page);
+  await chooseSeasonIfOffered(page);
+  await expect(page.locator(".challenge-shell")).toBeVisible();
+  await checkpointed;
+
+  // The teacher takes the seat off the list — the ordinary case, not the erasure.
+  const removed = await request.delete(`${API}/classes/${classCode}/roster/1`, {
+    headers: { "X-BOW-Teacher-Key": createClassKeyFor(classCode) },
+  });
+  expect(removed.status(), await removed.text()).toBe(200);
+
+  // The session in the child's hand stops opening anything, and says so rather than showing
+  // an empty version of somebody's page.
+  await page.goto("/home");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("You are not in a class yet.");
+  await expect(page.locator(".work-card")).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText(card.displayName);
+
+  // Their card is answered truthfully — not "that did not match", which would send a child
+  // off to re-check a code that is perfectly correct.
+  await gotoFreshChallenge(page);
+  await page.goto("/join");
+  await page.getByLabel("Class code").fill(classCode);
+  await page.getByRole("button", { name: "Next" }).click();
+  await page.getByLabel("Your code").fill(card.joinCode);
+  await page.getByRole("button", { name: "Go in" }).click();
+  await expect(page.getByRole("alert")).toContainText(/not on this class list any more/i);
+
+  // And what they did is still the teacher's, which is the whole reason removal is not erasure.
+  const room = await request.get(`${API}/classes/${classCode}/submissions`, {
+    headers: { "X-BOW-Teacher-Key": createClassKeyFor(classCode) },
+  });
+  const held = (await room.json()) as { roster: { seatCode: string; displayName: string; removedAt?: number }[] };
+  const seat = held.roster.find((entry) => entry.seatCode === "1");
+  expect(seat?.displayName, "the teacher still knows whose row this was").toBe(card.displayName);
+  expect(seat?.removedAt, "and that it is off the list").toBeTruthy();
+});
+
+test("a class that has been deleted leaves nobody holding it", async ({ page, request }) => {
+  test.setTimeout(120_000);
+  const created = await createClass(request, "Period 3");
+  const classCode = created.code;
+  const card = await seatOnRoster(page, classCode, "1");
+
+  await gotoFreshChallenge(page);
+  await signIn(page, { ...card, classCode });
+  await expect(page.getByRole("heading", { level: 1, name: card.displayName })).toBeVisible();
+
+  const gone = await request.delete(`${API}/classes/${classCode}`, {
+    headers: { "X-BOW-Teacher-Key": createClassKeyFor(classCode) },
+  });
+  expect(gone.status(), await gone.text()).toBe(200);
+
+  await page.goto("/home");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("You are not in a class yet.");
+  await expect(page.locator(".work-card")).toHaveCount(0);
+
+  // And the code on the whiteboard opens nothing, without saying what used to be behind it.
+  await gotoFreshChallenge(page);
+  await page.goto("/join");
+  await page.getByLabel("Class code").fill(classCode);
+  await page.getByRole("button", { name: "Next" }).click();
+  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.locator("body")).not.toContainText(card.displayName);
+});
+
+test("twenty wrong cards against a real class say one thing, and take one time", async ({ page, request }) => {
+  test.setTimeout(120_000);
+  /**
+   * The roster-enumeration guard, measured rather than asserted from the handler.
+   *
+   * A door that answers *differently* for a card that is nearly right — a different message,
+   * a different status, or measurably more work — hands an attacker holding a class code off
+   * a whiteboard a way to walk the roster. So this presents twenty wrong cards against a real
+   * class that has three real ones on it, and requires the twenty answers to be **one string**
+   * and one status, with no timing spread a person could sort by.
+   */
+  const created = await createClass(request, "Period 3");
+  const classCode = created.code;
+  const real = await seatOnRoster(page, classCode, "1");
+  await seatOnRoster(page, classCode, "2");
+  await seatOnRoster(page, classCode, "3");
+
+  const wrong = [
+    "ZZZZZ", "AAAAA", "11111", "QQQQ9", "X7X7X", "00000", "ABCDE", "FGHIJ", "KLMNO", "PQRST",
+    "UVWXY", "12345", "67890", "A1B2C", "9Z8Y7", "MMMMM", "NNNNN", "5555Z", "Q1W2E", "R3T4Y",
+  ];
+  // A near-miss on the real card is in the set on purpose: one character out is the shape an
+  // enumerating script actually sends.
+  wrong.push(`${real.joinCode.slice(0, -1)}${real.joinCode.at(-1) === "Z" ? "Y" : "Z"}`);
+
+  const answers: { status: number; body: string; ms: number }[] = [];
+  for (const joinCode of wrong) {
+    const at = Date.now();
+    const response = await request.post(`${API}/classes/${classCode}/join`, {
+      data: { classCode, seatCode: "1", joinCode, device: "shared" },
+    });
+    answers.push({ status: response.status(), body: await response.text(), ms: Date.now() - at });
+  }
+
+  // One status and one body, byte for byte, for all of them.
+  expect(new Set(answers.map((answer) => answer.status)), "one status for every wrong card").toEqual(new Set([401]));
+  expect(new Set(answers.map((answer) => answer.body)).size, "one message for every wrong card").toBe(1);
+  // And nothing in any of them is a name or a seat.
+  for (const answer of answers) {
+    expect(answer.body).not.toContain(real.displayName);
+    expect(answer.body).not.toMatch(/seat/i);
+  }
+
+  // No timing oracle. The bar is deliberately loose — this is a real machine under a real test
+  // run — but a door that hashed against the roster only for near-misses would separate by far
+  // more than this, and a door that did nothing at all separates by nothing.
+  const times = answers.map((answer) => answer.ms).sort((a, b) => a - b);
+  const median = times[Math.floor(times.length / 2)];
+  expect(times[times.length - 1] - times[0], `spread across twenty wrong cards: ${times.join(",")}`)
+    .toBeLessThan(Math.max(120, median * 8 + 60));
+});

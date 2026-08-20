@@ -60,7 +60,12 @@ export default tseslint.config(
   // reviewer's `dist-validity2`, an SSR bundle — became a parse error in a lint run that had
   // nothing to do with them. The two lists are answering the same question and should not
   // disagree about it.
-  { ignores: ["dist", "dist-*", ".bow-classes", "coverage", "playwright-report", "test-results", "screens", "scripts", ".scratch", "gauntlet", "eslint.config.js", "stylelint.config.js"] },
+  //
+  // `.a11y-scratch` joins `.scratch` for the same reason both exist: a reviewer measuring the
+  // running product writes throwaway drivers somewhere, and a lint run that fails on those is a
+  // lint run reporting on the reviewer rather than on the product. It went red on thirteen parse
+  // errors in a directory that had existed for twenty minutes and contained no shipped code.
+  { ignores: ["dist", "dist-*", ".bow-classes", "coverage", "playwright-report", "test-results", "screens", "scripts", ".scratch", ".a11y-scratch", "gauntlet", "eslint.config.js", "stylelint.config.js"] },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {

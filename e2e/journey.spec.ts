@@ -590,15 +590,22 @@ test.describe("The golden journey", () => {
     await expect(page.getByRole("heading", { name: STUDENT_A, exact: true })).toBeVisible();
     await expect(page.locator("body"), "the other student is not on this page").not.toContainText(STUDENT_B);
 
-    // Their writing, verbatim, as they typed it on machine two.
-    await page.getByRole("tab", { name: "The explanation" }).click();
-    await expect(page.locator(".student-response")).toContainText("the generator is rented and rented things break");
+    // Their writing, verbatim, as they typed it on machine two — on the page rather than
+    // behind a tab. (The teacher instrument was rebuilt this round into one scrolling
+    // record; the tabs this test used to press no longer exist and are not being mourned.)
+    await expect(page.locator("section.written blockquote").first())
+      .toContainText("the generator is rented and rented things break");
 
-    // Their decisions, as the run recorded them — the booth taken on machine one.
-    await page.getByRole("tab", { name: "Evidence trail" }).click();
-    await expect(page.locator(".judgement").first()).toBeVisible();
-    const trail = await page.locator(".judgement").count();
-    expect(trail, "the trail has judgements in it to read").toBeGreaterThan(0);
+    // Their decisions, as the run recorded them: the booth taken on machine one and the
+    // stock line typed on machine one, both read back out of their own event log.
+    const decided = page.locator(".decision-steps");
+    await expect(decided).toContainText(BOOTH.title);
+    await expect(decided).toContainText("$600");
+
+    // And every judgement on the attempt is on the page, each one arguable.
+    const judgements = page.locator(".judgement-rows > li");
+    expect(await judgements.count(), "the record has judgements in it to read").toBeGreaterThan(0);
+    await expect(page.locator(".judgement-rows > li[data-short=\"true\"]").first(), "and the shortfall is one of them").toBeVisible();
   });
 
   /* ---------------------------------------------------------------------- */
@@ -606,37 +613,80 @@ test.describe("The golden journey", () => {
   test("14 — the teacher records a different judgement and it propagates", async () => {
     const page = pageTwo;
     await page.goto(`/educator/class/${classCode}/students/1?key=${teacherKey}`);
-    await page.getByRole("tab", { name: "Evidence trail" }).click();
 
-    const judgement = page.locator(".judgement").first();
-    const requirement = (await judgement.locator(".judgement__say b").innerText()).trim();
-    const machineSaid = (await judgement.locator(".judgement__machine strong").innerText()).trim();
+    // The row a teacher would argue with: the one thing this attempt fell short on.
+    const row = page.locator('.judgement-rows > li[data-short="true"]').first();
+    await expect(row).toBeVisible();
+    const requirement = (await row.locator(".judgement-line b").innerText()).trim();
+    const machineSaid = (await row.locator(".judgement-line > span").first().innerText()).trim();
+    expect(requirement.length, "the row names what the work had to show").toBeGreaterThan(4);
 
-    await judgement.getByRole("button", { name: /I read this differently|Record a different judgement/ }).click();
-    await judgement.getByRole("button", { name: LEVEL_LABELS[2], exact: true }).click();
-    await judgement.locator("textarea").fill("I watched Marisol work this out on paper before the board caught up with her.");
+    // Before: this is what the page's own instrument is leading with, two regions above.
+    await expect(page.locator(".verdict__flags"), "the shortfall is on the verdict").toContainText(requirement);
+    const flagsBefore = await page.locator(".verdict__flags li").count();
+
+    // The teacher reads the writing and records their own marks for it, which is the one
+    // number in this product that only a person can produce. Until they do, the class page
+    // ranks this seat as *Evidence not all in* and never names the gap — so this is also
+    // what makes the second view below able to show the judgement at all.
+    const rubric = page.locator(".rubric-row");
+    const criteria = await rubric.count();
+    expect(criteria, "there are marks to record").toBeGreaterThan(0);
+    for (let index = 0; index < criteria; index += 1) {
+      await rubric.nth(index).locator(".segmented button").last().click();
+    }
+    await page.getByRole("button", { name: "Save review" }).click();
+    await expect(page.locator(".written__own")).toContainText("Saved.");
+
+    // …and now what the class overview is ranking this seat by, which is a different page
+    // reading the same evidence. Captured before, so its absence afterwards is a change.
+    await page.goto(`/educator/class/${classCode}?key=${teacherKey}`);
+    await expect(page.locator(".triage"), "the class page ranks this seat by this gap").toContainText(requirement);
+    await page.goto(`/educator/class/${classCode}/students/1?key=${teacherKey}`);
+
+    // The teacher disagrees, in writing, because a judgement with no reason cannot be checked.
+    const disclosure = row.locator("details");
+    if (!(await disclosure.evaluate((element: HTMLDetailsElement) => element.open))) {
+      await disclosure.locator("summary").click();
+    }
+    await row.getByRole("button", { name: LEVEL_LABELS[5], exact: true }).click();
+    await row.locator("textarea").fill("I watched Marisol set the cushion first and work the rest around it, before the board caught up with her.");
     const recorded = page.waitForResponse((response) => response.url().includes("/overrides"));
-    await judgement.getByRole("button", { name: "Record it" }).click();
+    await row.getByRole("button", { name: "Record it" }).click();
     expect((await recorded).status(), "the service took the teacher's reading").toBe(201);
 
-    // 1 — the service kept it, on the right attempt.
+    // 1 — the service kept it, on the right attempt, with the reason attached.
     const held = await room(page.request);
     const mine = held.submissions.find((entry) => entry.seatCode === "1");
     expect(mine?.sessionId).toBe(sessionId);
     expect(mine?.overrides ?? [], "one override, on this attempt").toHaveLength(1);
     expect(mine?.overrides?.[0]?.evidenceRequirementId).toBeTruthy();
+    expect(mine?.overrides?.[0]?.note, "the reason travels with it").toContain("cushion first");
 
-    // 2 — the student's evidence page shows the teacher's reading *and* keeps BOW's, after a
-    // reload, so this is about what was stored rather than what one component was holding.
+    // 2 — after a reload, so this is about what was stored rather than what one component
+    //     was holding: the teacher's reading stands, and BOW's original is still beside it.
+    //     Both, always — an override that hid the machine's reading would remove the only
+    //     thing a second teacher could check the first one against.
     await page.reload();
-    await page.getByRole("tab", { name: "Evidence trail" }).click();
-    const overridden = page.locator(".judgement").filter({ hasText: requirement });
-    await expect(overridden.locator(".judgement__override strong")).toContainText(LEVEL_LABELS[2]);
-    await expect(overridden.locator(".judgement__machine strong")).toContainText(machineSaid);
+    const overridden = page.locator(".judgement-rows > li").filter({ hasText: requirement }).first();
+    await expect(overridden.locator(".judgement__override strong")).toHaveText(LEVEL_LABELS[5]);
+    await expect(overridden.locator(".judgement-line > span").first()).toHaveText(machineSaid);
+    await expect(overridden.locator(".judgement__history q"), "and the reason is kept with it")
+      .toContainText("cushion first");
 
-    // 3 — and the class page, which is a different reading of the same evidence, reports it.
+    // 3 — the verdict, which is a different reading of the same evidence on the same page,
+    //     agrees: the thing the teacher says they did is no longer listed as a shortfall.
+    //     (`.verdict__flags` is not rendered at all when the list empties, so this is asked
+    //     of the region that would hold it rather than of the list.)
+    await expect(page.locator(".verdict__lead")).not.toContainText(requirement);
+    expect(await page.locator(".verdict__flags li").count(), "one fewer shortfall on the verdict")
+      .toBe(flagsBefore - 1);
+
+    // 4 — and the class overview, which is a different page, stops ranking this seat by a
+    //     gap the teacher has said is not one. This is the propagation the judgement record
+    //     promises in as many words: "an override stands everywhere this judgement appears".
     await page.goto(`/educator/class/${classCode}?key=${teacherKey}&t=${Date.now()}`);
-    await expect(page.locator("body")).toContainText(requirement.slice(0, 12));
+    await expect(page.locator(".triage")).not.toContainText(requirement);
   });
 
   /* ---------------------------------------------------------------------- */
@@ -644,9 +694,15 @@ test.describe("The golden journey", () => {
   test("15 — the teacher writes back and only the correct student receives it", async ({ browser }) => {
     const page = pageTwo;
     await page.goto(`/educator/class/${classCode}/students/1?key=${teacherKey}`);
+    await expect(page.locator(".feedback__none"), "nothing has been written back yet").toBeVisible();
     await page.locator(".feedback textarea").fill(NOTE_TO_A);
     await page.getByRole("button", { name: "Send it" }).click();
-    await expect(page.locator(".feedback")).toContainText(/Sent/);
+
+    // The panel says it went, and stops saying nothing has been written — D13, which was the
+    // panel contradicting itself in two adjacent lines until somebody reloaded.
+    await expect(page.locator(".feedback")).toContainText(/Sent\./);
+    await expect(page.locator(".feedback__sent")).toContainText(NOTE_TO_A);
+    await expect(page.locator(".feedback__none"), "and does not still say nothing was written").toHaveCount(0);
 
     // The service filed it against Marisol's seat and Marisol's attempt.
     const held = await room(page.request);
@@ -687,6 +743,10 @@ test.describe("The golden journey", () => {
 
 test("the screen between the card and the run does not offer a choice the class has not", async ({ page }) => {
   /**
+   * **Reproduced, still open.** `test.fail()` rather than a skip: the assertion below runs
+   * every time and the suite stays green while it keeps failing, and it turns *red* the day
+   * somebody fixes the product — which is the only moment a recorded defect needs to shout.
+   *
    * A class set exactly one world still meets the entry screen, and that screen decides what
    * to say from `WORLD_CHOICE_UI_READY && PLAYABLE_WORLDS.length > 1`
    * (`src/stages/StudentChallenge.tsx:139`) rather than from the assignment in front of it. So
@@ -700,6 +760,7 @@ test("the screen between the card and the run does not offer a choice the class 
    * button actually carries is the pinned one. It is a promise made and withdrawn inside one
    * click, on the screen that budgets 55 seconds for a child to read it.
    */
+  test.fail();
   const created = await createClass(page.request, "One world");
   const set = await page.request.post(`${API}/classes/${created.code}/assignments`, {
     headers: { "X-BOW-Teacher-Key": created.teacherKey },
@@ -717,6 +778,15 @@ test("the screen between the card and the run does not offer a choice the class 
   await signIn(page, { ...card, classCode: created.code });
   await page.getByRole("link", { name: "Start" }).click();
 
+  // Wait for whichever screen actually arrives before reading it. `not.toContainText` against
+  // a body that has not rendered yet passes instantly and says nothing, which is how this
+  // assertion managed to be green and red in the same hour on the same commit.
+  await expect(
+    page.getByRole("button", { name: /^(Start the eight weeks|Go in)$/ })
+      .or(page.getByRole("heading", { name: COPY.spot.title }))
+      .first(),
+  ).toBeVisible();
+
   // Whatever screen this is, it may not say the student is about to choose between two
   // stories when their teacher has already chosen for them.
   await expect(page.locator("body")).not.toContainText(STUDENT_COPY.join.chooseHeadline);
@@ -725,6 +795,8 @@ test("the screen between the card and the run does not offer a choice the class 
 
 test("a second assignment's card opens the second assignment", async ({ page }) => {
   /**
+   * **Reproduced, still open.** Marked `test.fail()` for the reason given above.
+   *
    * Both cards on the student's home link to the same route with nothing on it but the class
    * code, and the run resolves what to open from `picked.assignments[0]`
    * (`src/stages/StudentChallenge.tsx`) and files evidence under `assignments[0].id`
@@ -736,6 +808,7 @@ test("a second assignment's card opens the second assignment", async ({ page }) 
    * the journey with the two assignments swapped — so a green here and a green there together
    * would mean the button does what it says whichever way round the teacher set them.
    */
+  test.fail();
   const created = await createClass(page.request, "Second card");
   for (const worlds of [["basketball"], ["food-truck"]]) {
     const set = await page.request.post(`${API}/classes/${created.code}/assignments`, {

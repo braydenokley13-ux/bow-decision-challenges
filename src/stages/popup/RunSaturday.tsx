@@ -160,6 +160,11 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
    * makes the button decorative and hands the student the model's answer ahead of their own
    * action. There is no timer and no beat machinery anywhere — the whole picture is a pure
    * function of `dealt`.
+   *
+   * `focus` never clears, and it must not: the ticket, the stamp and the sentence under it all
+   * go on describing the last group after the night is over, which is right — that is the
+   * record of what happened. What clears is the *person at the window*, and that is decided at
+   * the element below, not here. See the note beside `<PassCustomer>`.
    */
   const focus: ServiceOrder | undefined = run.orders[Math.max(0, dealt - 1)];
   const resolved = dealt > 0;
@@ -229,7 +234,25 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
       {/* ------------------------------------------------------------------ the hatch, full bleed */}
       <div className="pass-hatch" data-grade={gradeFor(minute)}>
         <div className="pass-hatch__plate" role="img" aria-label={plateAlt} />
-        <PassCustomer order={focus} resolved={resolved} />
+        {/*
+          The pass is empty when the lane is empty, and it is empty at close.
+
+          It used to draw unconditionally, so the last group stood full-height in the hatch light
+          under a pill reading "Nobody is waiting." and a line reading "You are closed." The
+          scene contradicted the text on the same screen, which is worse than a missing picture:
+          the whole demonstration rests on the student believing what the window shows them.
+
+          The gate is on the element and not on its props on purpose. `poseFor` answers
+          "waiting" for an undefined order — an unknown person is somebody who has not been
+          served yet — so `order={undefined}` would still put a figure at the window. The only
+          way to have nobody there is to draw nobody.
+
+          Every beat: before the first press, order #1 is waiting and the lane count says so;
+          between presses, the group just dealt with is standing in its outcome and there are
+          more people behind them; at the last press `done` goes true, the lane count becomes
+          "Nobody is waiting." and the window goes empty in the same render.
+        */}
+        {!done && <PassCustomer order={focus} resolved={resolved} />}
         <div className="pass-valance" aria-hidden="true" />
 
         <h2 id="service-heading" ref={headline} tabIndex={-1} className="pass-tag pass-tag--status">
