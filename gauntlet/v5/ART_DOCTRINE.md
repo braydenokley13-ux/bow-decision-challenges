@@ -107,10 +107,23 @@ in an entire evening at 4× throttle, and the peak heap is under 8 MB. The machi
 struggling. This is what makes the art ambition affordable, and it is also the number that must
 not move: if art lands and the worst task doubles, the art is wrong, not the budget.
 
-**One defect is already visible.** The 0.024 shift when the night closes exceeds the 0.02 ceiling
-below, before a single image exists. It is small and it is real — something appearing at close
-moves the layout under the student's hands. It is recorded in `QUALITY_DEBT.md`; art must not be
-allowed to hide it or inherit it.
+**One defect was already visible, and it was not what it looked like.** The first run reported a
+0.024 shift over the 0.02 ceiling before a single image existed. I wrote that up as "something
+appearing at close moves the layout under the student's hands," which was an inference and was
+wrong. Capturing the `sources` of every `layout-shift` entry named the real cause: about thirty
+sub-0.001 shifts, almost all of them `LI` elements in the waiting lane. The queue was keyed by
+ticket, so every order served made each order behind it a DOM node that moved up a row — and
+during auto-serve no input causes it, so the browser scores every one.
+
+Keying the lane by *slot* instead — four fixed positions whose text changes — says exactly the
+same thing to a reader and moves nothing. With a `min-width` on the till so the takings stop
+resizing their own row as they pass a power of ten: **0.024 → 0.015**, inside the ceiling.
+
+The lesson is the one the doctrine keeps having to relearn. The metric was right that something
+was wrong and useless about what; a plausible story about the cause survived being written into a
+canonical document because nobody had asked the browser. Art will make this worse, not better:
+a late-decoding image is exactly the kind of shift that invites a confident wrong explanation.
+Capture the sources.
 
 ## 4. Budgets
 

@@ -896,7 +896,12 @@
 .service__till div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
 .service__till dt { color: var(--ink-3); font: var(--t-sm); }
 .service__till dd { margin: 0; font: var(--m-sm); font-feature-settings: var(--num); }
-.service__till dd.money { font: var(--m-md); color: var(--fin-balanced); }
+
+/* Wide enough for the largest takings any night can reach, so the row does not resize each
+   time the till passes a power of ten. The digits are already tabular; it is the *count* of
+   them that moves, and a number that jumps sideways while a student watches it climb reads as
+   a glitch rather than as money coming in. */
+.service__till dd.money { min-width: 5ch; font: var(--m-md); color: var(--fin-balanced); text-align: right; }
 .service__till dd[data-loss="true"] { color: var(--fin-over); }
 
 /* Something a student needs to notice, said once, without saying what to do about it. */

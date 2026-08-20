@@ -116,9 +116,15 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
           {stillWaiting > 0 ? (
             <>
               <p className="service__waiting"><strong>{stillWaiting}</strong> {stillWaiting === 1 ? "person is waiting" : "people are waiting"}</p>
+              {/* Keyed by *slot*, not by ticket.
+                  Keying by ticket makes each order its own DOM node, so when the front of the
+                  lane is served every node behind it moves up a row — thirty of those in an
+                  auto-served night, and the browser scores every one of them as a layout shift
+                  because nothing the student did caused it. Four fixed slots whose text changes
+                  say exactly the same thing to a reader and move nothing. */}
               <ul>
-                {upcoming.map((order) => (
-                  <li key={order.ticket}>
+                {upcoming.map((order, slot) => (
+                  <li key={slot}>
                     <span className="service__ticket">#{order.ticket}</span>
                     <span>{order.wanted} {order.wanted === 1 ? "plate" : "plates"}</span>
                   </li>
