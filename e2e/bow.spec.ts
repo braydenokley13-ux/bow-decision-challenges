@@ -55,6 +55,8 @@ import { STUDENT_COPY } from "../src/content/studentCopy";
  * it reports it as a broken product, and it stops checking the things it was there to check.
  */
 const DISRUPTION = BASKETBALL_SCENARIO.disruption.title;
+/** The board's verdict when nothing is left over. Was "Every dollar has a job." in five places. */
+const ALL_PLACED = STUDENT_COPY.plan.balance.balanced;
 const LEAVE_BONUS_OUT = STUDENT_COPY.plan.steps.bonuses.no;
 import { isAssessable, labelsFor, standardsIn, type FrameworkId } from "../src/domain/standards";
 import { DEMO_CLASS_CODE, DEMO_CLASS_LABEL } from "../src/fixtures/demoClass";
@@ -148,7 +150,7 @@ studentTest("full conditional path completes through fallback, Week 5, remaining
 
   const context: PlanContext = { setupId: "cousin-room", countCompletion: true, countOutcome: true };
   await fillPlanToBalance(page, "working", context);
-  await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
+  await expect(page.getByText(ALL_PLACED, { exact: true })).toBeVisible();
   await saveOpeningPlan(page);
 
   await expect(page.getByRole("heading", { name: BACKUP_HEADING })).toBeVisible();
@@ -1623,7 +1625,7 @@ studentTest("the opening plan can be closed by naming the row that takes the res
   await noSeriousAxeViolations(page);
   await intoWeek.click();
 
-  await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
+  await expect(page.getByText(ALL_PLACED, { exact: true })).toBeVisible();
   // Read off `aria-valuenow`, which is the figure, rather than off the box, which is how the
   // figure is written. The row prints "$1,600" and holds 1600, and a test pinned to the
   // printed form reports "the money did not move" the day somebody adds a comma to it.
@@ -1660,7 +1662,7 @@ studentTest("naming the row is operable from the keyboard and never names the sa
   await restCard(page, "reserve").focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("spinbutton", { name: CHOICE_LABELS.reserve })).toHaveAttribute("aria-valuenow", String(spendable));
-  await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
+  await expect(page.getByText(ALL_PLACED, { exact: true })).toBeVisible();
 
   // Take some back off, and now the leftovers do fit inside what the course can hold — so the
   // course row is offered, at exactly what is unassigned and never at its cap.
@@ -1669,7 +1671,7 @@ studentTest("naming the row is operable from the keyboard and never names the sa
   await expect(restCard(page, "goal")).toHaveAccessibleName(new RegExp(money(leftOver).replace("$", "\\$")));
   await restCard(page, "goal").click();
   await expect(page.getByRole("spinbutton", { name: CHOICE_LABELS.goal })).toHaveAttribute("aria-valuenow", String(leftOver));
-  await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
+  await expect(page.getByText(ALL_PLACED, { exact: true })).toBeVisible();
   await noSeriousAxeViolations(page);
 });
 
@@ -1773,7 +1775,7 @@ studentTest("an opening plan that balances exactly is still not closed over a ro
   // Two rows, balancing exactly. The third is left where the board started it.
   await setAmount(page, CHOICE_LABELS.goal, String(N.course.fullPrice));
   await setAmount(page, CHOICE_LABELS.reserve, String(spendable - N.course.fullPrice));
-  await expect(page.getByText("Every dollar has a job.", { exact: true })).toBeVisible();
+  await expect(page.getByText(ALL_PLACED, { exact: true })).toBeVisible();
 
   // The primary button says what is missing rather than offering to save, and pressing it
   // answers rather than doing nothing at all — a press that produces no response is the
