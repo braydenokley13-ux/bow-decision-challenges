@@ -44,7 +44,43 @@ that allocates them. Read the instruction, then fill the field: a worksheet.
 **Cause:** explanation sits in the layout at the same level as interaction. It belongs behind
 disclosure, beside on demand, or on first use only. **Show, then explain.**
 
-## E · Large headlines — mostly correct, and not the problem
+## D-bis · The text problem is placement, not writing — and this changes the fix
+
+A separate audit swept every student and educator string against the copy standard, expecting
+bloat. It found the opposite, and the finding is load-bearing enough to record against the
+temptation to "cut the copy":
+
+- `src/content/studentCopy.ts` states five rules at the top and actually follows them. Choices
+  are framed as questions rather than commands. Sentences name what happened rather than a
+  category. The source comments record which specific defect each line was written to fix.
+- `src/educator/labels.ts` holds one table per ladder, refuses to reuse a word across ladders,
+  and **fails the build** if it does — written after six different words for *supported* appeared
+  on one screen.
+- Prices are read from `numbers.ts` rather than typed into sentences, so copy cannot drift from
+  the model.
+- `readingLoad.test.tsx` already prices every screen's word count against a reading-speed budget
+  and fails on an overage.
+
+So "too much text describing what is happening" is true of the **layout** and false of the
+**writing**. Excellent prose is sitting at the same visual weight as the controls it explains,
+and being read in full on every run by a student who read it last week.
+
+**The fix is demotion and disclosure, not the delete key.** Rewriting this copy would destroy
+work that is better than the interface around it.
+
+## E · Twelve-pixel type carrying the teacher product
+
+`--t-label` and `--t-micro` are both 0.75rem and appear 112+ times. On the dense teacher
+surfaces — `16-demo-class-objective` worst, then `08-demo-class` — three of the four readable
+sizes cluster between 12px and 14px, so the page has no rhythm: metadata, captions, counts and
+status all arrive at once at the same volume.
+
+Student screens escape it by carrying fewer labels per screen, not by being designed better.
+
+**Cause:** density is being solved by shrinking. The director's rule is the opposite — solve it
+with information architecture and move non-critical metadata behind disclosure.
+
+## F · Large headlines — mostly correct, and not the problem
 
 `01-front-door`, `19-try-entry`, `20-world-choice` use a display headline as the dominant object
 and are right to: they are entry moments where the headline *is* the content. Recorded here so
