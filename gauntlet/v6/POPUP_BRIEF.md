@@ -237,3 +237,70 @@ for a room.
 **Whichever direction wins, the customer figure is the gating risk.** It is the hero object on the
 most important screen in the product, and a weak figure will sink a correct composition. Budget
 the iterations there.
+
+---
+
+# The geometry to lift, and the one thing the plate says about our job
+
+Read `gauntlet/v5/art/pass/lane-master.html` at the block commented **NEAR PASSERS-BY** (around
+line 758). It contains two figures authored at final size for exactly the distance the customer at
+the pass stands at, and its comment anticipates this build:
+
+> DELIBERATE: nobody in the near field faces our window. They are passing through, sides and
+> backs to us, so the plate can never read as a queue at our pass (**the queue is the DOM's job,
+> and it is real**).
+
+The plate was drawn expecting the customer to arrive from the application. Do not redraw what is
+already there — lift it.
+
+## What the two near figures actually are, structurally
+
+Both are a handful of primitives, at ~150 units from shin to crown:
+
+| part | how it is drawn |
+| --- | --- |
+| legs | two strokes, `stroke-width="14"`, `stroke-linecap="round"`, one trailing and one reaching |
+| coat | **one closed path**: sloped shoulders, pinched waist, hem flaring with the stride |
+| near arm | a `#181009` stroke at width 11, separated from the coat by a `#0c0805` shadow edge at width 4 |
+| neck | a 12×12 `<rect>` |
+| head | `<ellipse rx="13" ry="14.6">`, rotated a few degrees off vertical |
+| hair / cap | a small `<circle>` or a shape in the same fill |
+| light | three or four thin strokes — `#ffbe74`, `#ffb864`, `#e8a052` — at widths 1.8–2 and opacity .45–.6, through `filter="url(#b1)"`, along the jaw, the shoulder, the near arm's edge |
+| ground | one soft `#8a5630` scuff at opacity .3 |
+
+Fills are `#130d08`, `#14100c`, `#17100a`. **No blur on the bodies** — the master notes that
+near-field softness reads as smearing at this scale.
+
+## The two ways the customer differs from a passer-by
+
+1. **They face us.** The passers-by are sides and backs on purpose. The customer is front-on,
+   because they came to the window. That is the whole difference between a lane and a pass.
+2. **They are cropped higher.** The master crops the passers-by at the **shin** and says why —
+   *"a waist crop reads as someone leaning over our counter; a shin crop reads as someone passing
+   beyond it."* For the customer, leaning over our counter is precisely the reading we want. Crop
+   them at the waist or lower chest on the counter's near lip.
+
+## The lighting argument for dominance, which is better than a size argument
+
+A passer-by gets a *graze* from the hatch lamp because they are turned away from it. **A customer
+facing the window is facing our lamp**, so their front is the brightest thing in the frame — warm
+key across the chest and face-mass, cool market rim down the outside edges from behind.
+
+That is why the customer dominates: not because they are drawn big, but because they are the only
+thing in the picture standing in our own light. Get the lighting right and the dominance is free.
+Get it backwards and no amount of size will stop them reading as a sticker.
+
+## The four outcomes, as posture
+
+The figure has no face, so `outcome` is carried by the silhouette and by the sentence beside it:
+
+| outcome | what the body does |
+| --- | --- |
+| `served` | square to the window, weight even, near arm rising to take the plate |
+| `short` | still square, but the arm lowered and the shoulders dropped a little — they got some |
+| `no-stock` | shoulders turned a few degrees away, head angled down; they are beginning to leave |
+| `no-hands` | **never reaches the light.** Drawn smaller and further back at the edge of the hatch-light pool, already turning. This is the serve-cap loss and it must be visibly a different event from an empty counter — a person who never got to the window, not a person who got there and found nothing. |
+
+A group of two or three is the main figure plus one or two companions a step behind and a step out
+of the light, drawn at the same rules. Never a row of equal figures — that is a queue, and the
+plate spent its own care making sure the picture could not read as one.
