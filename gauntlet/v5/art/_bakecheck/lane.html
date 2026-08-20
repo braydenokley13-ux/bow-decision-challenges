@@ -1,0 +1,31 @@
+<!doctype html><meta charset="utf-8"><style>
+  html,body{margin:0;width:1600px;height:900px;overflow:hidden;background:#0a0a16}
+  .lane{position:relative;width:1600px;height:900px;
+    background:
+      radial-gradient(120% 70% at 50% 108%, rgba(255,176,84,.42) 0%, rgba(255,140,50,.14) 34%, transparent 62%),
+      radial-gradient(80% 50% at 18% 96%, rgba(255,150,70,.30), transparent 60%),
+      radial-gradient(70% 46% at 84% 94%, rgba(255,120,90,.24), transparent 62%),
+      linear-gradient(179deg,#1b2244 0%,#141a35 26%,#0e1128 52%,#0a0a17 78%,#07060f 100%);
+    filter:saturate(1.04)}
+  .haze{position:absolute;inset:0;background:radial-gradient(90% 44% at 50% 78%, rgba(150,180,255,.10), transparent 66%);filter:blur(38px)}
+  .stall{position:absolute;bottom:150px;border-radius:5px 5px 0 0;filter:blur(1.1px)}
+  .bulb{position:absolute;width:8px;height:8px;border-radius:50%;background:#ffe0a8;
+    box-shadow:0 0 14px 5px rgba(255,196,110,.62),0 0 46px 18px rgba(255,168,74,.26)}
+  .fig{position:absolute;bottom:132px;border-radius:44% 44% 12% 12%/60% 60% 8% 8%;background:#05050c;opacity:.9}
+  .wet{position:absolute;left:0;right:0;bottom:0;height:150px;
+    background:linear-gradient(180deg,rgba(255,170,90,.20),rgba(10,10,22,.96) 72%);filter:blur(3px)}
+  .grain{position:absolute;inset:0;opacity:.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+</style><div class="lane"><div class="haze"></div>
+<script>
+  const d=document.querySelector('.lane');
+  const rnd=(s=>()=>((s=s*16807%2147483647)/2147483647))(7);
+  for(let i=0;i<14;i++){const s=document.createElement('div');s.className='stall';
+    const w=90+rnd()*150,h=100+rnd()*130,x=rnd()*1600-60;
+    s.style.cssText+=`width:${w}px;height:${h}px;left:${x}px;background:linear-gradient(180deg,#2b2135,#141020);opacity:${.5+rnd()*.4}`;d.append(s)}
+  for(let i=0;i<52;i++){const b=document.createElement('div');b.className='bulb';
+    b.style.left=(rnd()*1600)+'px';b.style.top=(210+rnd()*260)+'px';d.append(b)}
+  for(let i=0;i<26;i++){const f=document.createElement('div');f.className='fig';
+    const h=110+rnd()*90;f.style.cssText+=`width:${h*0.36}px;height:${h}px;left:${rnd()*1600}px;bottom:${118+rnd()*40}px;opacity:${.55+rnd()*.4}`;d.append(f)}
+</script>
+<div class="wet"></div><div class="grain"></div></div>
