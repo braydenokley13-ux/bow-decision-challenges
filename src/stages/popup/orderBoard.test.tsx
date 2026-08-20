@@ -135,15 +135,23 @@ describe("the order board asks the question instead of answering it", () => {
     }
   });
 
-  it("draws the plates it is cooking and says nothing about which of them sell", () => {
+  it("draws the trays it is buying, never one mark per plate, and says nothing about which sell", () => {
     shell.popUp = {
       state: stateAfter(OPENING), dispatch: () => {}, transport: TRANSPORT,
       delivery: { status: "idle" }, deliver: async () => {}, reset: () => {}, handOver: () => {},
     };
     const view = render(<MemoryRouter><FirstSaturdayStage /></MemoryRouter>);
-    const plates = [...view.container.querySelectorAll(".tray-plates i")];
-    expect(plates.length).toBeGreaterThan(0);
-    const states = new Set(plates.map((plate) => plate.getAttribute("data-state")));
+    // The order preview draws what is being *bought* — trays — and never one mark per plate.
+    // Plates and people are the same unit, so a run of plate marks beside `THE CROWD WILL BUY
+    // 38` is a ruler a student can read the answer off without doing the arithmetic. The
+    // dominant order is `floor(sellCap / 10)`; at the back lane, missing it costs $186 of a
+    // possible $270. This is the assertion that stops the shared unit coming back.
+    const units = [...view.container.querySelectorAll(".tray-stack i")];
+    const onTheStepper = Number(view.container.querySelector(".tray-order output")?.textContent ?? "0");
+    expect(onTheStepper, "the stepper is showing an order").toBeGreaterThan(0);
+    expect(units.length, "one mark per tray, never per plate").toBe(onTheStepper);
+    expect(view.container.querySelectorAll(".tray-plates i").length, "plate-unit marks are banned here").toBe(0);
+    const states = new Set(units.map((unit) => unit.getAttribute("data-state")));
     expect(states, "the order preview still colours plates sold and binned").toEqual(new Set(["cooking"]));
   });
 

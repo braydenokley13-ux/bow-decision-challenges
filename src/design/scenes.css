@@ -310,7 +310,10 @@
    point of keeping them on screen instead of moving to a fresh board. */
 .bet[data-struck="true"] { background: var(--fin-over-soft); border: 1px solid var(--fin-over); border-left: 6px solid var(--fin-over); }
 .bet[data-struck="true"] .bet__head strong { color: var(--fin-over-ink); text-decoration: line-through; text-decoration-thickness: 3px; }
-.bets[data-settled="true"] .bet[data-counted="false"] { opacity: 0.6; }
+
+/* Money the plan did not count on, after the plan is settled. Colour, not opacity — see
+   `worlds.css` for the compositing rule this is the second instance of. */
+.bets[data-settled="true"] .bet[data-counted="false"] { color: var(--ink-3); }
 .bet__verdict { margin: 0; font: var(--t-ui); }
 .bet[data-struck="true"] .bet__verdict { color: var(--fin-over-ink); font-weight: 700; }
 
@@ -916,7 +919,10 @@
 .week-meter[data-state="over"] .week-meter__state { color: var(--fin-over-ink); }
 
 /* A committed row cannot be moved, so it does not pretend to be a control. */
-.choice-row--locked { grid-template-columns: 6px minmax(0, 1fr) auto; opacity: 0.9; }
+
+/* A row the plan can no longer move. Quieter by ground and ink, not by fade — the figure on
+   it is money the student still has to read to understand what is left. */
+.choice-row--locked { grid-template-columns: 6px minmax(0, 1fr) auto; background: var(--surface-sunken); }
 .choice-row--locked .choice-row__label { margin: 0; font: var(--t-ui); }
 .choice-row--locked .choice-row__value { color: var(--ink-2); }
 
@@ -1144,7 +1150,12 @@
 .claims__list button em { color: var(--ink-3); font-style: normal; }
 .claims__list button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); border-color: var(--ink-1); }
 .claims__list button[aria-pressed="true"] .claims__detail { color: var(--surface-sunken); }
-.claims__list button[aria-disabled="true"] { cursor: default; opacity: 0.55; }
+
+/* A claim the money will not stretch to. Muted in colour rather than faded: `opacity: 0.55`
+   composited this button's text down to about 3.37:1 from a token that measures 7.77:1, and
+   it is not a disabled control — it is a priced option the student cannot afford, which they
+   still have to be able to read in order to understand why. */
+.claims__list button[aria-disabled="true"] { cursor: default; color: var(--ink-3); background: var(--surface-sunken); }
 
 /* Deliberately the same square as `.gap-tiles__mark` and `.interview__mark`, which is the
    mark this product already uses to say "you can press this". It is restated rather than

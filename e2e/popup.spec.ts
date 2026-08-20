@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { STUDENT_COPY } from "../src/content/studentCopy";
 import { API, createClass, startIfConfirmAsked, createClassKeyFor, gotoFreshChallenge, noHorizontalOverflow, noSeriousAxeViolations, seatOnRoster, signIn } from "./flow";
 import { PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 import { POP_UP_NUMBERS as N } from "../src/domain/scenario/worlds/food-truck/numbers";
@@ -63,7 +64,7 @@ async function join(page: Page, classCode: string, seatCode: string) {
 }
 
 async function pickPopUp(page: Page) {
-  await expect(page.getByRole("heading", { name: "Pick a world. Make it count." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: STUDENT_COPY.choose.title })).toBeVisible();
   await page.getByRole("button", { name: `Start this one: ${POP_UP_SCENARIO.title}` }).click();
 }
 
@@ -405,7 +406,7 @@ test.describe("Run the Pop-Up", () => {
     await expect(page.locator(".worldcard")).toHaveCount(2);
 
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Pick a world. Make it count." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: STUDENT_COPY.choose.title })).toBeVisible();
     await pickPopUp(page);
     await page.getByRole("button", { name: `${COPY.spot.take}: ${SPOT.title}` }).click();
 

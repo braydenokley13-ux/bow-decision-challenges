@@ -1037,7 +1037,10 @@ p { color: var(--ink-2); }
 .trail__judgements { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
 .trail__judgements li { display: grid; gap: 2px; padding-left: var(--s-4); border-left: 3px solid var(--border-default); }
 .trail__judgements b, .trail__judgements span, .trail__judgements em { overflow-wrap: anywhere; }
-.trail__judgements li[data-superseded="true"] { border-left-style: dotted; opacity: 0.75; }
+
+/* Superseded, not unreadable: a teacher reading an evidence trail still has to be able to
+   read the judgement that was replaced. Dotted edge and muted ink, never a fade. */
+.trail__judgements li[data-superseded="true"] { border-left-style: dotted; color: var(--ink-3); }
 .trail__judgements b { font: var(--t-ui); }
 .trail__judgements span { color: var(--ink-2); font: var(--t-sm); }
 .trail__level { font-weight: 700; }
@@ -1603,7 +1606,7 @@ p { color: var(--ink-2); }
 .student-feedback { display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-5); background: var(--bow-brand); border-radius: var(--r-sm); color: var(--bow-brand-ink); }
 .student-feedback .field-label { color: var(--bow-brand-ink-muted); }
 .student-feedback blockquote { margin: 0; font: var(--t-title2); }
-.student-feedback cite { display: block; margin-top: var(--s-2); font: var(--t-sm); font-style: normal; opacity: 0.8; }
+.student-feedback cite { display: block; margin-top: var(--s-2); font: var(--t-sm); font-style: normal; color: var(--ink-3); }
 
 .home__worlds { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
 .home__worlds li { display: grid; gap: 2px; padding: var(--s-4); background: var(--surface); border-radius: var(--r-sm); }

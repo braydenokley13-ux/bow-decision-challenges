@@ -217,11 +217,19 @@ function TrayOrder({ saturday, nights, max, trays, onTrays, pricing = "settled",
           </small>
         </p>
       </div>
-      {/* The plates, drawn in one colour. How many of them sell is what the student is here
-          to work out, and colouring them in advance would be the screen doing it for them. */}
+      {/* What is being bought, drawn in the unit it is bought in: trays.
+          This used to draw one mark per *plate* — thirty small squares in a row, directly above
+          `THE CROWD WILL BUY 38`. Plates and people are the same unit, so a student could line
+          the run of marks up against the crowd figure and read the answer off by eye without
+          doing any arithmetic at all. The dominant order is `floor(sellCap / 10)`, and at the
+          back lane getting it wrong costs $186 of a possible $270 — so a perceptual shortcut is
+          worth most exactly where a cautious student is likeliest to be standing.
+          Trays are the unit the student pays in and the crowd is never counted in, so the two
+          quantities can no longer be matched by eye. `orderBoard.test.tsx` pins the count to
+          `trays` so this cannot drift back. Still one colour: how many sell is the question. */}
       <div className="tray-order__read">
-        <p className="tray-plates" aria-hidden="true">
-          {Array.from({ length: Math.min(cooked, 120) }, (_, index) => <i key={index} data-state="cooking" />)}
+        <p className="tray-stack" aria-hidden="true">
+          {Array.from({ length: Math.min(trays, 12) }, (_, index) => <i key={index} data-state="cooking" />)}
         </p>
         <dl className="tray-order__facts">
           <div><dt>{COPY.saturday.cooked}</dt><dd>{cooked}</dd></div>
