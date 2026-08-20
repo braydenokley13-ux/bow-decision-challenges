@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useChallenge } from "../app/ChallengeContext";
 import { useDraft } from "../app/attemptStore";
@@ -776,13 +776,23 @@ function BoardForMode({ mode, variant, commitLabel, lead, change }: {
 }
 
 /** The compact instrument. Every moment after the first plan that is only an adjustment. */
-function AdjustForMode({ mode, eyebrow, headline, lead, changes, commitLabel }: {
+function AdjustForMode({ mode, eyebrow, headline, lead, changes, commitLabel, scene }: {
   mode: PlanMode;
   eyebrow: string;
   headline: string;
   lead: string;
   changes: readonly SupplyChange[];
   commitLabel: string;
+  /**
+   * What the screen says before the panel, handed to the panel rather than placed beside it.
+   *
+   * The panel's commit bar is sticky, and a sticky box travels only inside its containing
+   * block — so anything a screen stacks above the panel *outside* the panel's own column is
+   * height the bar cannot rise over. On the safety check that came to 344px at 1024×600 and
+   * put *Check this plan* twelve pixels under the fold. `AdjustPanel`'s `AS_A_COLUMN` carries
+   * the measurement.
+   */
+  scene?: ReactNode;
 }) {
   const wiring = usePlanWiring(mode);
   const { input, notes, baseline } = wiring;
@@ -798,6 +808,7 @@ function AdjustForMode({ mode, eyebrow, headline, lead, changes, commitLabel }: 
       notes={notes}
       commitLabel={commitLabel}
       attempts={wiring.attempts}
+      {...(scene ? { scene } : {})}
       onAmountChange={wiring.setAmount}
       onCommit={wiring.commit}
       onRestore={() => wiring.restore()}
@@ -970,11 +981,12 @@ function WorkingStage() {
          different one, and was asked for a total that matched neither. */
       <StageShell stage="fallback-version" kicker={`A check · the same plan without ${removed.length > 1 ? "the bonuses" : "the bonus"}`} title={`What if ${removed.length > 1 ? "they never arrive" : "it never arrives"}?`}>
         <PlanScene ledger={<PlanLedgerFor mode="fallback" />}>
-          <p className="stage-deck">
-            Take out the {formatDollars(removed.reduce((sum, item) => sum + item.amount, 0))} you were counting on and see whether the plan still
-            holds. Everything Avery owes is exactly where it was. Only your three amounts can move.
-          </p>
-          {bonusCards}
+          {/* The deck and the struck-through cards go *through* the panel rather than above
+              it. They are 344px tall at 1024×600 and they used to stand between the top of
+              the column and the panel that owns the sticky commit bar — which is height the
+              bar could not travel over, so *Check this plan* arrived twelve pixels below the
+              fold on the older school Chromebook. Nothing about what is on the screen changes;
+              what changes is which box the bar is allowed to move inside. */}
           <AdjustForMode
             mode="fallback"
             eyebrow="Safety check"
@@ -982,6 +994,15 @@ function WorkingStage() {
             lead="Rent, the weekly basics and where Avery lives do not change. This is a check, not a new plan — the season runs on the plan you saved."
             changes={removed}
             commitLabel="Save this check"
+            scene={
+              <>
+                <p className="stage-deck">
+                  Take out the {formatDollars(removed.reduce((sum, item) => sum + item.amount, 0))} you were counting on and see whether the plan still
+                  holds. Everything Avery owes is exactly where it was. Only your three amounts can move.
+                </p>
+                {bonusCards}
+              </>
+            }
           />
         </PlanScene>
       </StageShell>

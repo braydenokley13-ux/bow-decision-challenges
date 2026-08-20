@@ -23,3 +23,8 @@ dist-*/
 
 # Working screenshots. Curated receipts live in gauntlet/receipts/.
 gauntlet/screens/
+
+# Throwaway probe artifacts written by gauntlet agents while measuring the running product.
+.probe/
+e2e/zzprobe.spec.ts
+scripts-tmp-*.mjs

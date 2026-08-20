@@ -545,7 +545,60 @@ export async function decideOpportunity(page: Page, opts: { clinics: boolean; co
 /** Week 8 resolves the season before the student explains it. */
 export async function readWeek8Resolution(page: Page) {
   await expect(page.getByRole("heading", { name: "The season ends." })).toBeVisible();
+  // DIAGNOSTIC — temporary
+  await page.evaluate(() => {
+    const w = window as unknown as { __bowEv?: unknown[] };
+    w.__bowEv = [];
+    const rec = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      (w.__bowEv as unknown[]).push({
+        type: event.type,
+        tag: target?.tagName ?? "?",
+        cls: typeof target?.className === "string" ? target.className.slice(0, 40) : "",
+        txt: (target?.textContent ?? "").trim().slice(0, 24),
+        y: Math.round(window.scrollY),
+        at: Math.round(performance.now()),
+        btn: (() => {
+          const b = [...document.querySelectorAll("button")].find((each) => each.textContent?.includes("Explain my plan"));
+          if (!b) return "gone";
+          const r = b.getBoundingClientRect();
+          const cx = Math.round((r.left + r.right) / 2);
+          const cy = Math.round((r.top + r.bottom) / 2);
+          const at = document.elementFromPoint(cx, cy);
+          return `${Math.round(r.left)},${Math.round(r.top)}-${Math.round(r.right)},${Math.round(r.bottom)} @${cx},${cy}=${at === b || b.contains(at) ? "SELF" : (at?.tagName ?? "null") + "." + (typeof at?.className === "string" ? at.className.slice(0, 24) : "")}`;
+        })(),
+      });
+    };
+    for (const type of ["pointerdown", "mousedown", "mouseup", "pointerup", "click", "focusin", "scroll", "animationstart", "animationend", "transitionrun"]) {
+      window.addEventListener(type, rec, true);
+    }
+  });
+  const before = await page.evaluate(() => ({ y: Math.round(window.scrollY), at: Math.round(performance.now()) }));
   await page.getByRole("button", { name: "Explain my plan" }).click();
+  const arrived = await page.getByRole("heading", { name: "Explain your plan." })
+    .waitFor({ state: "visible", timeout: 8_000 }).then(() => true, () => false);
+  if (!arrived) {
+    const dump = await page.evaluate(() => {
+      const w = window as unknown as { __bowEv?: unknown[] };
+      const button = [...document.querySelectorAll("button")].find((b) => b.textContent?.includes("Explain my plan")) ?? null;
+      const rect = button?.getBoundingClientRect();
+      return {
+        heading: document.querySelector("main h1")?.textContent ?? "",
+        active: document.activeElement?.textContent?.trim().slice(0, 30) ?? "",
+        activeTag: document.activeElement?.tagName ?? "",
+        buttonRect: rect ? { top: Math.round(rect.top), bottom: Math.round(rect.bottom), left: Math.round(rect.left), right: Math.round(rect.right) } : null,
+        atCentre: rect ? (document.elementFromPoint(Math.round((rect.left + rect.right) / 2), Math.round((rect.top + rect.bottom) / 2))?.outerHTML.slice(0, 120) ?? "none") : "no button",
+        scrollY: Math.round(window.scrollY),
+        viewport: window.innerHeight,
+        events: w.__bowEv ?? [],
+      };
+    });
+    console.log("WEEK8-STUCK " + JSON.stringify({ before, ...dump }));
+    // Press it again so the run can carry on and the loop keeps measuring.
+    await page.getByRole("button", { name: "Explain my plan" }).click();
+    await page.getByRole("heading", { name: "Explain your plan." }).waitFor({ state: "visible", timeout: 8_000 });
+    console.log("WEEK8-STUCK second press worked");
+  }
 }
 
 /**
