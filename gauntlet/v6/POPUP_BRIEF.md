@@ -162,3 +162,78 @@ inventing economy.
 A student should feel they are standing behind their own window in a night market, serving
 people, and should understand without being told why the counter went bare and who that cost.
 A District 26 visitor should see a product, not a form.
+
+---
+
+# Director's note, added after seeing the first mocks rendered
+
+Two directions came back and both made the same mistake, so it is being ruled on here rather than
+left to be discovered again: **the customer was drawn in a different art language from the plate.**
+
+One rendered a large green cloaked figure with a pale featureless face standing in the hatch-light
+pool; the other rendered a flat cartoon avatar with visible eyes and a mouth, over a plate faded
+almost to nothing. Neither belongs to the picture behind it, and "belongs visually to the same
+lighting and environment as the plate" is a stated requirement of this brief, not a preference.
+
+## The plate already specifies how a person is drawn
+
+`gauntlet/v5/art/pass/lane-master.html` carries the recipe in its own words, at the head of the
+`<defs>` figure block:
+
+> Origin at the feet, adults ~140 tall before scaling. Every figure: **neck under the head, ears
+> implied by the skull ellipse, sloping shoulders, jacket hem, weight-bearing leg, one warm rim
+> stroke. Colors live in the #12–#1f range — never pure black.**
+
+Read the six symbols there — `fig-wait`, `fig-hood`, `fig-lean`, `fig-walk`, `fig-kid`,
+`fig-vendor` — before drawing anything. They are near-silhouettes: dark shapes against a lit
+ground, with a single `#ffb864` rim stroke at 0.5–0.6 opacity down the lamp-side edge and a soft
+contact shadow under the feet. **No faces. No local colour. No skin tone reading as a highlight.**
+
+That is not a stylistic accident; it is what makes the lane read as a lane at night, and it is why
+a figure with a lit face and a saturated coat looks pasted on.
+
+## What that means for the customer at the pass
+
+1. **Same language, nearer.** The customer is drawn to the same rules, larger, because they are
+   three feet away rather than thirty. The master file records that the mid-distance symbols do
+   **not** survive being scaled up — *"the mid-distance figure symbols do NOT survive"* — which is
+   why the plate's own near passers-by were authored at final size. The customer must be authored
+   at final size too. Scaling `fig-wait` up is the failure this note exists to prevent.
+2. **Cropped by the counter.** The plate's near figures are cut at the shin by the drawn counter.
+   The customer at the pass is cut at the chest or waist by the counter's near lip, which is what
+   puts the student behind their own window rather than across from it.
+3. **Lit from behind the camera.** The hatch lamp is the dominant source and it is on the student's
+   side, so the customer's key is on their front and the market behind them is the cool fill. The
+   rim stroke runs down the lamp side. Get this backwards and the figure reads as a cut-out.
+4. **Faces stay out of it, and that is also a child-safety decision.** These people have no
+   features to make expressions with, so the product cannot manipulate a student through a
+   disappointed face. What happened to somebody is carried by **posture and words** — a turn of the
+   shoulders, a head angle, and a sentence — never by an expression, and never by anything a
+   student could read as "you upset this person."
+5. **Outcome must be visible as posture, not only as text.** `served`, `short`, `no-stock` and
+   `no-hands` are four different things happening to a person. Stock loss and capacity loss must
+   be tellable apart without reading the sentence, because a screen where prose is the only
+   difference has not made the causal model visible — it has described it.
+
+## The technique this points at
+
+Inline SVG in a React component, authored in the plate's own vocabulary, seeded deterministically
+by ticket number so a returning customer is the same person on a replay. That keeps the figure out
+of the raster pipeline, keeps it crisp at 400% zoom, adds no fetch, and — most importantly — lets
+it be drawn by the same hand as the plate.
+
+Baked sprites are not forbidden. If a direction argues for them, it must argue on measured grounds
+and it must still meet rules 1–5 above.
+
+## The composition ruling that comes with it
+
+Of the compositions rendered, the one that put the chrome **into the room** — a single shallow
+awning strip carrying the demoted `h1`, a full-bleed hatch with the status and clock hung as tags
+in the sky, and the counter below carrying the ticket, the plates board, the till and the controls
+— is the correct architecture, and the one that kept three stacked bands over a faded plate inside
+a bordered box is not. A bordered box under a heading band is a picture on a page. The brief asked
+for a room.
+
+**Whichever direction wins, the customer figure is the gating risk.** It is the hero object on the
+most important screen in the product, and a weak figure will sink a correct composition. Budget
+the iterations there.
