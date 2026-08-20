@@ -35,6 +35,8 @@ const NEW_CARD = process.env.BOW_DEMO_NEW_CARD ?? "";
 const SECOND_CARD = process.env.BOW_DEMO_SECOND_CARD ?? "";
 /** Seat 1's card — the student the teacher has already written back to. */
 const FED_BACK_CARD = process.env.BOW_DEMO_FEEDBACK_CARD ?? "";
+/** Seat 4's card — the student whose writing is marked and answered live. */
+const UNREAD_CARD = process.env.BOW_DEMO_UNREAD_CARD ?? "";
 
 const notes = [];
 let stepNumber = 0;
@@ -74,6 +76,18 @@ async function main() {
   const record = teaching.classes.find((entry) => entry.code === CLASS);
   if (!record) throw new Error(`${CLASS} is not on this teacher's list. Seed it first.`);
   const KEY = record.teacherKey;
+
+  // A walk that has already been walked leaves the two live seats mid-run, and every step from
+  // the world picker on then waits for a screen the product is right not to show. Said here,
+  // once, rather than discovered as a timeout thirty steps in.
+  const room = await (await fetch(`${API}/classes/${CLASS}/submissions`, { headers: { "X-BOW-Teacher-Key": KEY } })).json();
+  const busy = room.progress.filter((entry) => ["15", "16"].includes(entry.seatCode));
+  if (busy.length > 0) {
+    throw new Error(
+      `Seats ${busy.map((entry) => entry.seatCode).join(" and ")} are already mid-run, so this class has been walked before.\n`
+      + "  Re-seed first:  npm run seed:demo -- --reset   (and use the new card codes it prints)",
+    );
+  }
 
   const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH });
   const laptop = await browser.newContext({ viewport: { width: 1366, height: 900 } });
@@ -250,12 +264,31 @@ async function main() {
     await expectText(teacher, "WORKING RIGHT NOW", "the board moved");
     await shot(teacher, "the board moved");
 
-    // -- 11. The reading queue: writing nobody has read yet. ----------------
+    // -- 11. The reading queue: writing nobody has read yet, marked live. ---
     await teacher.goto(`${APP}/educator/class/${CLASS}/reading`);
     await teacher.locator(".reading-queue__bar").waitFor();
+    await expectText(teacher, "Elowen Marchbanks", "the reading queue");
     await shot(teacher, "the reading queue");
 
-    // -- 12. One student's evidence, and the pair that matters. -------------
+    // Marked in front of the room, criterion by criterion, exactly as the runbook says.
+    for (const [label, max] of [["Workability", 2], ["Protected priority", 2], ["Trade-off", 2], ["Numerical evidence", 4]]) {
+      await teacher.getByRole("button", { name: `${label}: ${max} of ${max}` }).click();
+    }
+    // The button renames itself: it reads *Save and read the next* until the last item in the
+    // queue, and *Save review* on it. A runbook that names only one of them sends a presenter
+    // looking for a button that is not on their screen.
+    //
+    // And *Save and read the next* does not say "Saved." — it moves on, which is the point of
+    // it. The confirmation a presenter should point at is on the way back: the bar for the seat
+    // just marked reads **scored 10/10** where it read *still to read* a moment ago.
+    await teacher.getByRole("button", { name: /^(Save review|Save and read the next)$/ }).click();
+    await teacher.locator(".reading-queue__bar p").filter({ hasText: "Ivo Pennygate" }).waitFor();
+    await shot(teacher, "the queue moves on");
+    await teacher.getByRole("button", { name: "← Previous" }).click();
+    await teacher.locator(".reading-queue__bar p").filter({ hasText: /scored 10\/10/ }).waitFor();
+    await shot(teacher, "a person marks the writing");
+
+    // -- 12. The pair. The whole argument against a composite score. --------
     await teacher.goto(`${APP}/educator/class/${CLASS}/students/1`);
     await teacher.getByRole("heading", { level: 1 }).waitFor();
     await expectText(teacher, "Aster Ninebark", "student evidence");
@@ -279,7 +312,7 @@ async function main() {
     await expectText(teacher, "Funded", "cormac season ending");
     await shot(teacher, "cormac how the season ended");
 
-    // -- 13. The override, already recorded, showing both readings. ---------
+    // -- 13. An override already on the record, showing both readings. ------
     await teacher.goto(`${APP}/educator/class/${CLASS}/students/3`);
     await teacher.getByRole("heading", { level: 1 }).waitFor();
     await teacher.getByRole("tab", { name: "Evidence trail" }).click();
@@ -287,28 +320,62 @@ async function main() {
     await teacher.locator(".judgement__override").first().scrollIntoViewIfNeeded();
     await shot(teacher, "a teacher overruled bow");
 
-    // -- 14. Feedback a person wrote, and the student reading it. -----------
-    await teacher.goto(`${APP}/educator/class/${CLASS}/students/7`);
+    // -- 13b. And one recorded live, which is the beat that actually lands. -
+    await teacher.goto(`${APP}/educator/class/${CLASS}/students/1`);
+    await teacher.getByRole("heading", { level: 1 }).waitFor();
+    await teacher.getByRole("tab", { name: "Evidence trail" }).click();
+    const row = teacher.locator(".judgement").filter({ hasText: "Savings is a planned amount" }).first();
+    await row.scrollIntoViewIfNeeded();
+    await row.getByRole("button", { name: /I read this differently|Record a different judgement/ }).click();
+    await row.scrollIntoViewIfNeeded();
+    await shot(teacher, "recording a different judgement");
+    await row.getByRole("button", { name: "Part of it", exact: true }).click();
+    await row.locator("textarea").fill("She set the figure first on the whiteboard with me and then typed it in the other order. Recording what I watched her do.");
+    const recorded = teacher.waitForResponse((response) => response.url().includes("/overrides"));
+    await row.getByRole("button", { name: "Record it" }).click();
+    if ((await recorded).status() !== 201) throw new Error("the service refused the override recorded live");
+    await teacher.reload();
+    await teacher.getByRole("tab", { name: "Evidence trail" }).click();
+    const after = teacher.locator(".judgement").filter({ hasText: "Savings is a planned amount" }).first();
+    await after.locator(".judgement__override").waitFor();
+    await after.scrollIntoViewIfNeeded();
+    await shot(teacher, "both readings on the record");
+
+    // -- 14. A note written live, and the student who reads it. -------------
+    await teacher.goto(`${APP}/educator/class/${CLASS}/students/4`);
     await teacher.getByRole("heading", { level: 1 }).waitFor();
     await teacher.getByRole("tab", { name: "The plan" }).click();
-    await teacher.getByRole("heading", { name: "What they hear from you" }).scrollIntoViewIfNeeded();
-    await teacher.evaluate(() => window.scrollBy(0, -120));
-    await shot(teacher, "feedback a person wrote");
+    const note = "You held the completion payment out of the plan until it actually arrived, and that is the whole skill. Next time say what it cost you to wait.";
+    await teacher.locator(".feedback textarea").fill(note);
+    await teacher.locator(".feedback").scrollIntoViewIfNeeded();
+    await shot(teacher, "writing back to a student");
+    await teacher.getByRole("button", { name: "Send it" }).click();
+    await teacher.locator(".feedback").filter({ hasText: /Sent/ }).waitFor();
+    await shot(teacher, "the note is sent");
 
-    if (FED_BACK_CARD) {
+    if (UNREAD_CARD) {
       const theirs = await browser.newContext({ viewport: { width: 1366, height: 900 } });
       const reader = await theirs.newPage();
       reader.on("pageerror", (error) => { throw new Error(`Uncaught page error on the student's screen: ${error.message}`); });
       await reader.goto(`${APP}/join`);
       await reader.getByLabel("Class code").fill(CLASS);
       await reader.getByRole("button", { name: "Next" }).click();
-      await reader.getByLabel("Your code").fill(FED_BACK_CARD);
+      await reader.getByLabel("Your code").fill(UNREAD_CARD);
       await reader.getByRole("button", { name: "Go in" }).click();
       await reader.locator(".student-home__bar").waitFor();
-      await expectText(reader, "This is the clearest explanation in the class", "the student reads it");
+      await expectText(reader, "You held the completion payment out of the plan", "the student reads it");
       await shot(reader, "the student reads it");
       await theirs.close();
     }
+
+    // -- 14b. The teacher's own closing question, answered and unscored. ----
+    await teacher.goto(`${APP}/educator/class/${CLASS}/students/7`);
+    await teacher.getByRole("heading", { level: 1 }).waitFor();
+    await teacher.getByRole("tab", { name: "The explanation" }).click();
+    await expectText(teacher, "Which decision would you make differently", "the closing question");
+    await teacher.getByText("Which decision would you make differently", { exact: false }).first().scrollIntoViewIfNeeded();
+    await teacher.evaluate(() => window.scrollBy(0, -160));
+    await shot(teacher, "the teachers own question");
 
     // -- 15. The debrief. ----------------------------------------------------
     await teacher.goto(`${APP}/educator/class/${CLASS}/debrief`);

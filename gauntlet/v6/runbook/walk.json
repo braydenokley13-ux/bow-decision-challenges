@@ -105,7 +105,7 @@
     "step": 18,
     "title": "the board moved",
     "file": "step-18-the-board-moved.png",
-    "url": "http://127.0.0.1:4361/educator/class/PFDEM?t=1787249577755"
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM?t=1787251070381"
   },
   {
     "step": 19,
@@ -115,74 +115,110 @@
   },
   {
     "step": 20,
-    "title": "aster the evidence",
-    "file": "step-20-aster-the-evidence.png",
-    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/1"
+    "title": "the queue moves on",
+    "file": "step-20-the-queue-moves-on.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/reading"
   },
   {
     "step": 21,
-    "title": "aster how the season ended",
-    "file": "step-21-aster-how-the-season-ended.png",
-    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/1"
+    "title": "a person marks the writing",
+    "file": "step-21-a-person-marks-the-writing.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/reading"
   },
   {
     "step": 22,
-    "title": "aster ten out of ten",
-    "file": "step-22-aster-ten-out-of-ten.png",
+    "title": "aster the evidence",
+    "file": "step-22-aster-the-evidence.png",
     "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/1"
   },
   {
     "step": 23,
-    "title": "cormac the evidence",
-    "file": "step-23-cormac-the-evidence.png",
-    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/2"
+    "title": "aster how the season ended",
+    "file": "step-23-aster-how-the-season-ended.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/1"
   },
   {
     "step": 24,
-    "title": "cormac how the season ended",
-    "file": "step-24-cormac-how-the-season-ended.png",
-    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/2"
+    "title": "aster ten out of ten",
+    "file": "step-24-aster-ten-out-of-ten.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/1"
   },
   {
     "step": 25,
-    "title": "a teacher overruled bow",
-    "file": "step-25-a-teacher-overruled-bow.png",
-    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/3"
+    "title": "cormac the evidence",
+    "file": "step-25-cormac-the-evidence.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/2"
   },
   {
     "step": 26,
-    "title": "feedback a person wrote",
-    "file": "step-26-feedback-a-person-wrote.png",
-    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/7"
+    "title": "cormac how the season ended",
+    "file": "step-26-cormac-how-the-season-ended.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/2"
   },
   {
     "step": 27,
-    "title": "the student reads it",
-    "file": "step-27-the-student-reads-it.png",
-    "url": "http://127.0.0.1:4361/home"
+    "title": "a teacher overruled bow",
+    "file": "step-27-a-teacher-overruled-bow.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/3"
   },
   {
     "step": 28,
-    "title": "the debrief",
-    "file": "step-28-the-debrief.png",
-    "url": "http://127.0.0.1:4361/educator/class/PFDEM/debrief"
+    "title": "recording a different judgement",
+    "file": "step-28-recording-a-different-judgement.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/1"
   },
   {
     "step": 29,
-    "title": "revocation controls",
-    "file": "step-29-revocation-controls.png",
-    "url": "http://127.0.0.1:4361/educator/class/PFDEM/roster"
+    "title": "both readings on the record",
+    "file": "step-29-both-readings-on-the-record.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/1"
   },
   {
     "step": 30,
-    "title": "data protection",
-    "file": "step-30-data-protection.png",
-    "url": "http://127.0.0.1:4361/privacy"
+    "title": "writing back to a student",
+    "file": "step-30-writing-back-to-a-student.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/4"
   },
   {
     "step": 31,
+    "title": "the note is sent",
+    "file": "step-31-the-note-is-sent.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/4"
+  },
+  {
+    "step": 32,
+    "title": "the student reads it",
+    "file": "step-32-the-student-reads-it.png",
+    "url": "http://127.0.0.1:4361/home"
+  },
+  {
+    "step": 33,
+    "title": "the teachers own question",
+    "file": "step-33-the-teachers-own-question.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/7"
+  },
+  {
+    "step": 34,
+    "title": "the debrief",
+    "file": "step-34-the-debrief.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/debrief"
+  },
+  {
+    "step": 35,
+    "title": "revocation controls",
+    "file": "step-35-revocation-controls.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/roster"
+  },
+  {
+    "step": 36,
+    "title": "data protection",
+    "file": "step-36-data-protection.png",
+    "url": "http://127.0.0.1:4361/privacy"
+  },
+  {
+    "step": 37,
     "title": "standards coverage",
-    "file": "step-31-standards-coverage.png",
+    "file": "step-37-standards-coverage.png",
     "url": "http://127.0.0.1:4361/educator/objectives"
   }
 ]
