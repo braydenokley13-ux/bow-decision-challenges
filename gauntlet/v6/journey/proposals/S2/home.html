@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>S2 — The Threshold — student home</title>
+<style>
+  :root {
+    --violet-50: #f5f3ff; --violet-100: #ece7ff; --violet-500: #7c52fa; --violet-600: #6733e8; --violet-700: #5522c4;
+    --canvas: #f5f5fa; --surface: #ffffff; --surface-sunken: #efeff7; --surface-inset: #e6e6f1;
+    --ink-1: #14142b; --ink-2: #3d3d5c; --ink-3: #5a5a78;
+    --border-subtle: #ebebf4; --border-default: #ddddec; --border-strong: #b4b4cd; --border-ink: #14142b;
+    --fin-balanced: #15704a; --fin-balanced-soft: #dcefe5; --fin-balanced-ink: #0e5335;
+    --bow-brand: var(--violet-600); --bow-brand-fill: var(--violet-600); --bow-brand-ink: #ffffff; --bow-brand-ink-muted:#e0d9ff;
+    --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --t-scene: 800 clamp(2.5rem,4.8vw,4.2rem)/0.94 var(--font-ui);
+    --t-title1: 700 1.5rem/1.18 var(--font-ui);
+    --t-title2: 700 1.25rem/1.24 var(--font-ui);
+    --t-body: 400 1rem/1.6 var(--font-ui);
+    --t-body-lg: 400 1.0625rem/1.6 var(--font-ui);
+    --t-ui: 500 0.9375rem/1.45 var(--font-ui);
+    --t-sm: 500 0.875rem/1.45 var(--font-ui);
+    --t-label: 700 0.75rem/1.3 var(--font-ui);
+    --t-micro: 500 0.75rem/1.4 var(--font-ui);
+    --s-2: 4px; --s-3: 8px; --s-4: 12px; --s-5: 16px; --s-6: 24px; --s-7: 32px; --s-8: 40px; --s-9: 56px;
+    --r-sm: 8px; --r-md: 12px; --tap: 44px;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --canvas: #0c0b1f; --surface: #17163a; --surface-sunken: #1b1a42; --surface-inset: #211f4c;
+      --ink-1: #f5f5fa; --ink-2: #cfcfe6; --ink-3: #a8aacb;
+      --border-subtle: #262643; --border-default: #322f60; --border-strong: #453f80; --border-ink: #f5f5fa;
+      --bow-brand: var(--violet-500); --bow-brand-fill: var(--violet-600); --bow-brand-ink: #ffffff; --bow-brand-ink-muted:#e0d9ff;
+      --fin-balanced: #37b787; --fin-balanced-soft: #123829; --fin-balanced-ink: #8fe3c3;
+    }
+  }
+  :root[data-theme="dark"] {
+    --canvas: #0c0b1f; --surface: #17163a; --surface-sunken: #1b1a42; --surface-inset: #211f4c;
+    --ink-1: #f5f5fa; --ink-2: #cfcfe6; --ink-3: #a8aacb;
+    --border-subtle: #262643; --border-default: #322f60; --border-strong: #453f80; --border-ink: #f5f5fa;
+    --bow-brand: var(--violet-500); --bow-brand-fill: var(--violet-600); --bow-brand-ink: #ffffff; --bow-brand-ink-muted:#e0d9ff;
+    --fin-balanced: #37b787; --fin-balanced-soft: #123829; --fin-balanced-ink: #8fe3c3;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: var(--canvas); color: var(--ink-1); font: var(--t-body); }
+  a { color: var(--bow-brand); }
+  .wrap { max-width: 100%; overflow-x: auto; }
+  .state-label {
+    max-width: 52rem; margin: var(--s-9) auto var(--s-3); padding: 0 var(--s-5);
+    font: var(--t-label); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3);
+  }
+  .state-label:first-of-type { margin-top: var(--s-6); }
+  .student-home {
+    display: grid; align-content: start; gap: var(--s-6); width: 100%; max-width: 52rem;
+    margin: 0 auto var(--s-9); padding: var(--s-5); background: var(--canvas);
+    border: 1px dashed var(--border-strong); border-radius: var(--r-md);
+  }
+
+  /* -- identity strip -- */
+  .id-strip {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: var(--s-4); padding-bottom: var(--s-4); border-bottom: 1px solid var(--border-default);
+  }
+  .id-strip__who { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); min-width: 0; }
+  .id-strip__mark { font: 800 1.05rem/1 var(--font-ui); letter-spacing: -0.02em; color: var(--ink-1); white-space: nowrap; }
+  .id-strip__mark sup { color: var(--bow-brand); }
+  .id-strip__name { font: var(--t-title2); color: var(--ink-1); }
+  .id-strip__class { font: var(--t-ui); color: var(--ink-3); }
+  .id-strip__controls { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+
+  .btn {
+    min-height: var(--tap); display: inline-flex; align-items: center; justify-content: center; gap: var(--s-3);
+    padding: 0 var(--s-6); border: 1.5px solid var(--border-ink); border-radius: var(--r-sm);
+    cursor: pointer; font: var(--t-ui); font-weight: 700; text-decoration: none; background: var(--surface); color: var(--ink-1);
+  }
+  .btn--quiet { border-color: var(--border-default); font-weight: 600; padding: 0 var(--s-5); min-height: 38px; }
+  .btn--primary { background: var(--bow-brand); border-color: var(--bow-brand); color: #fff; }
+  .btn--primary:hover { background: var(--violet-700); }
+  .btn--link { border: none; background: none; padding: 0; min-height: auto; color: var(--bow-brand); font-weight: 700; text-decoration: underline; }
+
+  /* -- the one thing (dominant card) -- */
+  .now {
+    position: relative; padding: var(--s-7) var(--s-6) var(--s-6); background: var(--surface);
+    border: 1.5px solid var(--border-ink); border-radius: var(--r-md);
+    box-shadow: 0 1px 2px rgb(20 20 43 / 5%), 0 8px 20px -12px rgb(20 20 43 / 14%);
+  }
+  .now--start { box-shadow: 0 1px 2px rgb(20 20 43 / 5%), 0 8px 20px -12px rgb(20 20 43 / 14%); }
+  .now--resume { border-color: var(--bow-brand); }
+  .now--feedback { border-color: var(--bow-brand); }
+  .now__tag {
+    position: absolute; top: 0; right: var(--s-6); transform: translateY(-50%);
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px var(--s-4);
+    background: var(--bow-brand); color: #fff; border-radius: 999px; font: var(--t-micro); font-weight: 800; letter-spacing: .04em;
+  }
+  .now__eyebrow { margin: 0 0 var(--s-2); font: var(--t-label); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  .now h1 { margin: 0 0 var(--s-3); font: 800 clamp(1.4rem,2.6vw,1.9rem)/1.16 var(--font-ui); letter-spacing: -0.01em; color: var(--ink-1); }
+  .now p { margin: 0 0 var(--s-4); max-width: 62ch; color: var(--ink-2); font: var(--t-body-lg); }
+  .now__quote {
+    margin: 0 0 var(--s-4); padding: var(--s-4) var(--s-5); background: var(--surface-sunken);
+    border-radius: var(--r-sm); font: var(--t-body-lg); color: var(--ink-1);
+  }
+  .now__quote cite { display: block; margin-top: var(--s-2); font: var(--t-sm); font-style: normal; color: var(--ink-3); }
+  .now__meta { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); margin: 0 0 var(--s-5); font: var(--t-sm); color: var(--ink-3); }
+  .now__meta strong { color: var(--ink-2); }
+
+  /* -- everything else: rows -- */
+  .rows { display: grid; gap: 0; background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--r-md); overflow: hidden; }
+  .row {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-3);
+    padding: var(--s-4) var(--s-5); border-top: 1px solid var(--border-subtle);
+  }
+  .row:first-child { border-top: none; }
+  .row__main { display: grid; gap: 4px; min-width: 0; }
+  .row__title { font: 700 0.9375rem/1.3 var(--font-ui); color: var(--ink-1); }
+  .row__due { font: var(--t-micro); color: var(--ink-3); }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font: var(--t-sm); font-weight: 600; white-space: nowrap; }
+  .chip--not-started { color: var(--ink-3); }
+  .chip--progress { color: var(--bow-brand); }
+  .chip--done { color: var(--ink-2); }
+  .chip--feedback { color: var(--bow-brand); font-weight: 800; }
+  .chip svg { width: 14px; height: 14px; flex: none; }
+  .row__action { font: var(--t-sm); font-weight: 700; text-decoration: underline; white-space: nowrap; }
+
+  .again { margin-top: -4px; padding-left: var(--s-5); }
+  .again summary { cursor: pointer; font: var(--t-sm); color: var(--ink-3); }
+  .again p { margin: var(--s-2) 0 0; font: var(--t-sm); color: var(--ink-3); max-width: 58ch; }
+
+  .empty { display: grid; justify-items: start; gap: var(--s-4); padding: var(--s-6) 0; }
+  .empty h1 { margin: 0; font: var(--t-title1); }
+
+  .footnote { padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); font: var(--t-sm); }
+
+  @media (max-width: 420px) {
+    .id-strip { flex-direction: column; align-items: flex-start; }
+    .now__tag { position: static; transform: none; margin-bottom: var(--s-3); }
+    .row { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- STATE 1 — one assignment, not started                          -->
+<!-- ============================================================ -->
+<p class="state-label">State 1 — one assignment, not started</p>
+<main class="student-home">
+  <header class="id-strip">
+    <div class="id-strip__who">
+      <span class="id-strip__mark">BOW<sup>+</sup></span>
+      <span class="id-strip__name">Marisol Ortiz</span>
+      <span class="id-strip__class">· Ms. Alvarez, Period 3</span>
+    </div>
+    <div class="id-strip__controls">
+      <button class="btn btn--quiet" type="button">🔊 Reading help</button>
+      <button class="btn btn--quiet" type="button">Not you?</button>
+    </div>
+  </header>
+
+  <section class="now now--start">
+    <p class="now__eyebrow">Assigned by Ms. Alvarez</p>
+    <h1>Start Eight Weeks to the Showcase</h1>
+    <p>You handle the money for eight weeks. Avery plays.</p>
+    <div class="now__meta"><span><strong>18–24 min</strong></span><span>Due <strong>Thursday</strong></span></div>
+    <a class="btn btn--primary" href="#">Start</a>
+  </section>
+
+  <footer class="footnote"><a href="#">Join another class</a></footer>
+</main>
+
+<!-- ============================================================ -->
+<!-- STATE 2 — one assignment, in progress                          -->
+<!-- ============================================================ -->
+<p class="state-label">State 2 — one assignment, in progress (resumed differently from started)</p>
+<main class="student-home">
+  <header class="id-strip">
+    <div class="id-strip__who">
+      <span class="id-strip__mark">BOW<sup>+</sup></span>
+      <span class="id-strip__name">Marisol Ortiz</span>
+      <span class="id-strip__class">· Ms. Alvarez, Period 3</span>
+    </div>
+    <div class="id-strip__controls">
+      <button class="btn btn--quiet" type="button">🔊 Reading help</button>
+      <button class="btn btn--quiet" type="button">Not you?</button>
+    </div>
+  </header>
+
+  <section class="now now--resume">
+    <span class="now__tag">◐ In progress</span>
+    <p class="now__eyebrow">Assigned by Ms. Alvarez</p>
+    <h1>Carry on with Eight Weeks to the Showcase</h1>
+    <p>You stopped at <strong>Choosing where to live.</strong> Pick up exactly where you left off — nothing about your plan has changed.</p>
+    <a class="btn btn--primary" href="#">Carry on</a>
+  </section>
+
+  <footer class="footnote"><a href="#">Join another class</a></footer>
+</main>
+
+<!-- ============================================================ -->
+<!-- STATE 3 — completed run, teacher feedback arrived               -->
+<!-- ============================================================ -->
+<p class="state-label">State 3 — completed, with teacher feedback (unread, in the dominant slot)</p>
+<main class="student-home">
+  <header class="id-strip">
+    <div class="id-strip__who">
+      <span class="id-strip__mark">BOW<sup>+</sup></span>
+      <span class="id-strip__name">Devon Blake</span>
+      <span class="id-strip__class">· Ms. Alvarez, Period 3</span>
+    </div>
+    <div class="id-strip__controls">
+      <button class="btn btn--quiet" type="button">🔊 Reading help</button>
+      <button class="btn btn--quiet" type="button">Not you?</button>
+    </div>
+  </header>
+
+  <section class="now now--feedback">
+    <span class="now__tag">✉ Your teacher wrote back</span>
+    <p class="now__eyebrow">Eight Weeks to the Showcase · turned in Aug 20</p>
+    <h1>Read what Ms. Alvarez said</h1>
+    <blockquote class="now__quote">
+      “You covered the trip and the present without touching the course money — nice use of the reserve.
+      Say a bit more next time about what you'd do differently if Week 3 hit before Week 5's paycheck.”
+      <cite>Ms. Alvarez, Aug 20</cite>
+    </blockquote>
+    <a class="btn btn--primary" href="#">See what your run shows</a>
+  </section>
+
+  <div class="rows">
+    <div class="row">
+      <div class="row__main">
+        <span class="row__title">Eight Weeks to the Showcase</span>
+      </div>
+      <span class="chip chip--done">✓ Turned in Aug 20</span>
+    </div>
+  </div>
+
+  <details class="again">
+    <summary>Want to run it again?</summary>
+    <p>Different decisions make a different ending, and there's no score here to beat. Starting again
+      does not take the last one back — what you turned in stays with your teacher, and a new run goes
+      in <em>as well as</em> it, not instead of it. <a class="btn--link" href="#">Play it again</a></p>
+  </details>
+
+  <footer class="footnote"><a href="#">Join another class</a></footer>
+</main>
+
+<!-- ============================================================ -->
+<!-- STATE 4 — three assignments, three different states             -->
+<!-- ============================================================ -->
+<p class="state-label">State 4 — three assignments in three states (the risk case for this direction)</p>
+<main class="student-home">
+  <header class="id-strip">
+    <div class="id-strip__who">
+      <span class="id-strip__mark">BOW<sup>+</sup></span>
+      <span class="id-strip__name">Priya Nandan</span>
+      <span class="id-strip__class">· Ms. Alvarez, Period 3</span>
+    </div>
+    <div class="id-strip__controls">
+      <button class="btn btn--quiet" type="button">🔊 Reading help</button>
+      <button class="btn btn--quiet" type="button">Not you?</button>
+    </div>
+  </header>
+
+  <!-- Priority: unread feedback beats in-progress beats not-started. -->
+  <section class="now now--feedback">
+    <span class="now__tag">✉ Your teacher wrote back</span>
+    <p class="now__eyebrow">Unit Test Prep · Run the Pop-Up · turned in Aug 18</p>
+    <h1>Read what Ms. Alvarez said</h1>
+    <blockquote class="now__quote">
+      “Your Saturday 1 price covered the generator, but Saturday 3's rain call needed a sentence
+      about what you'd have done with less cash on hand. Otherwise this is careful work.”
+      <cite>Ms. Alvarez, Aug 19</cite>
+    </blockquote>
+    <a class="btn btn--primary" href="#">See what your run shows</a>
+  </section>
+
+  <div class="rows">
+    <div class="row">
+      <div class="row__main">
+        <span class="row__title">Extra Credit: Run the Pop-Up</span>
+      </div>
+      <span class="chip chip--progress">◐ In progress — stopped at Setting the price</span>
+      <a class="row__action" href="#">Carry on</a>
+    </div>
+    <div class="row">
+      <div class="row__main">
+        <span class="row__title">Week 3 Homework</span>
+        <span class="row__due">Due Thursday</span>
+      </div>
+      <span class="chip chip--not-started">○ Not started</span>
+      <a class="row__action" href="#">Start</a>
+    </div>
+    <div class="row">
+      <div class="row__main">
+        <span class="row__title">Unit Test Prep</span>
+      </div>
+      <span class="chip chip--done">✓ Turned in Aug 18</span>
+      <a class="row__action" href="#">See what your run shows</a>
+    </div>
+  </div>
+
+  <footer class="footnote"><a href="#">Join another class</a></footer>
+</main>
+
+<!-- ============================================================ -->
+<!-- STATE 5 (bonus, for completeness) — no assignments             -->
+<!-- ============================================================ -->
+<p class="state-label">State 5 — no classes joined (unchanged from current build; least broken today)</p>
+<main class="student-home">
+  <header class="id-strip">
+    <div class="id-strip__who">
+      <span class="id-strip__mark">BOW<sup>+</sup></span>
+    </div>
+    <div class="id-strip__controls">
+      <button class="btn btn--quiet" type="button">🔊 Reading help</button>
+      <button class="btn btn--quiet" type="button">Not you?</button>
+    </div>
+  </header>
+  <section class="empty">
+    <h1>You are not in a class yet.</h1>
+    <p style="margin:0;color:var(--ink-2)">Ask your teacher for the class code, then come back.</p>
+    <a class="btn btn--primary" href="#">Type a class code</a>
+  </section>
+</main>
+
+</body>
+</html>

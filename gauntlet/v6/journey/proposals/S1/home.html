@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>S1 — The Desk — student home</title>
+<style>
+  :root{
+    color-scheme: light;
+    --canvas:#f5f5fa; --surface:#ffffff; --surface-sunken:#efeff7; --surface-inset:#e6e6f1;
+    --ink-1:#14142b; --ink-2:#3d3d5c; --ink-3:#5a5a78; --ink-4:#616180;
+    --border-subtle:#ebebf4; --border-default:#ddddec; --border-strong:#b4b4cd;
+    --violet-600:#6733e8; --violet-700:#5522c4; --violet-100:#ece7ff; --violet-50:#f5f3ff;
+    --brand-fill:#f1ecff; --brand-ink:#3a2496;
+    --balanced:#15704a; --balanced-soft:#dcefe5; --balanced-ink:#0e5335;
+    --conditional:#a8720c; --conditional-soft:#fbf0d9; --conditional-ink:#6b4703;
+    --r-sm:8px; --r-md:12px; --r-lg:16px; --r-pill:999px;
+    --s-2:4px; --s-3:8px; --s-4:12px; --s-5:16px; --s-6:24px; --s-7:32px; --s-8:40px; --s-9:56px;
+    --font-ui: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --focus-ring:#6733e8;
+    --shadow-card: 0 1px 2px rgb(20 20 43 / 5%), 0 8px 20px -12px rgb(20 20 43 / 14%);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--canvas); color:var(--ink-1); font:400 1rem/1.6 var(--font-ui);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,p,ul{ margin:0; }
+  .num{ font-feature-settings:"tnum" 1,"lnum" 1; }
+  a{ color:var(--violet-700); }
+  button{ font:inherit; }
+  :focus-visible{ outline:3px solid var(--focus-ring); outline-offset:2px; }
+
+  /* ---------- gallery scaffold: not part of the product, just this page ---------- */
+  .gallery{ display:grid; gap:64px; max-width:1180px; margin:0 auto; padding:40px 20px 120px; }
+  .gallery__intro{ max-width:70ch; display:grid; gap:8px; padding-bottom:8px; }
+  .gallery__intro h1{ font:800 1.9rem/1.15 var(--font-ui); letter-spacing:-0.01em; }
+  .gallery__intro p{ color:var(--ink-2); }
+  .state{ display:grid; gap:14px; }
+  .state__label{
+    display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;
+  }
+  .state__label b{ font:700 0.7rem/1 var(--font-ui); letter-spacing:0.08em; text-transform:uppercase; color:var(--violet-700); background:var(--violet-100); padding:5px 10px; border-radius:var(--r-pill); }
+  .state__label span{ color:var(--ink-3); font:500 0.85rem/1.4 var(--font-ui); }
+  .frame{
+    background:var(--surface); border:1px solid var(--border-default); border-radius:var(--r-lg);
+    box-shadow:var(--shadow-card); overflow:hidden;
+  }
+
+  /* ---------- the actual screen: student-home ---------- */
+  .home{ background:var(--canvas); padding: 28px clamp(20px,4vw,40px) 60px; display:grid; gap:var(--s-7); }
+  .home__bar{
+    display:flex; align-items:center; justify-content:space-between; gap:var(--s-4); flex-wrap:wrap;
+    padding-bottom:var(--s-5); border-bottom:1px solid var(--border-default);
+  }
+  .mark{ display:flex; align-items:center; gap:8px; text-decoration:none; color:var(--ink-1); }
+  .mark b{ font:800 1.05rem/1 var(--font-ui); letter-spacing:-0.01em; }
+  .mark svg{ width:14px; height:14px; fill:var(--violet-600); }
+  .mark small{ display:block; font:600 0.6rem/1 var(--font-ui); letter-spacing:0.09em; text-transform:uppercase; color:var(--ink-4); margin-top:2px; }
+  .mark-col{ display:grid; }
+
+  .bar-tools{ display:flex; align-items:center; gap:10px; }
+  .pill-btn{
+    display:inline-flex; align-items:center; gap:7px; border:1px solid var(--border-default);
+    background:var(--surface); color:var(--ink-2); font:600 0.85rem/1 var(--font-ui);
+    padding:9px 14px; border-radius:var(--r-pill); cursor:pointer;
+  }
+  .pill-btn:hover{ border-color:var(--border-strong); }
+
+  /* ---- the nameplate: identity + class/teacher context in one glance ---- */
+  .nameplate{
+    display:flex; align-items:center; justify-content:space-between; gap:var(--s-5); flex-wrap:wrap;
+    padding:var(--s-6) var(--s-6); background:var(--surface); border:1px solid var(--border-default);
+    border-radius:var(--r-lg); box-shadow:var(--shadow-card);
+  }
+  .nameplate__who{ display:flex; align-items:center; gap:16px; min-width:0; }
+  .nameplate__initial{
+    flex:none; width:52px; height:52px; border-radius:50%; background:var(--violet-100); color:var(--violet-700);
+    display:grid; place-items:center; font:800 1.25rem/1 var(--font-ui);
+  }
+  .nameplate__text{ display:grid; gap:3px; min-width:0; }
+  .nameplate__text h1{ font:800 1.5rem/1.15 var(--font-ui); letter-spacing:-0.01em; color:var(--ink-1); }
+  .nameplate__meta{ color:var(--ink-3); font:500 0.9rem/1.4 var(--font-ui); }
+  .nameplate__meta b{ color:var(--ink-2); font-weight:700; }
+  .nameplate__actions{ display:flex; align-items:center; gap:10px; flex:none; }
+  .signout-btn{
+    display:inline-flex; align-items:center; gap:8px; border:1px solid var(--border-strong);
+    background:var(--surface); color:var(--ink-1); font:700 0.85rem/1 var(--font-ui);
+    padding:11px 16px; border-radius:var(--r-md); cursor:pointer;
+  }
+  .signout-btn:hover{ background:var(--surface-sunken); }
+  .signout-btn svg{ width:14px; height:14px; }
+
+  /* ---- section head for the work list ---- */
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .section-head h2{ font:800 1.05rem/1.2 var(--font-ui); letter-spacing:-0.005em; }
+  .section-head .count{ color:var(--ink-3); font:600 0.85rem/1.4 var(--font-ui); }
+
+  /* ---- work list ---- */
+  .work-list{ display:grid; gap:var(--s-5); }
+  .work{
+    display:grid; gap:var(--s-4); padding:var(--s-6); background:var(--surface);
+    border:1px solid var(--border-default); border-radius:var(--r-lg); box-shadow:var(--shadow-card);
+    position:relative;
+  }
+  .work::before{ content:""; position:absolute; inset:0 auto 0 0; width:4px; border-radius:var(--r-lg) 0 0 var(--r-lg); background:var(--border-default); }
+  .work--progress::before{ background:var(--violet-600); }
+  .work--done::before{ background:var(--balanced); }
+
+  .work__top{ display:flex; align-items:flex-start; justify-content:space-between; gap:var(--s-4); flex-wrap:wrap; }
+  .work__title{ display:grid; gap:4px; }
+  .work__title h3{ font:700 1.2rem/1.3 var(--font-ui); letter-spacing:-0.005em; }
+  .status{
+    display:inline-flex; align-items:center; gap:6px; font:700 0.72rem/1 var(--font-ui);
+    letter-spacing:0.04em; text-transform:uppercase; padding:6px 10px; border-radius:var(--r-pill);
+    white-space:nowrap;
+  }
+  .status svg{ width:9px; height:9px; flex:none; }
+  .status--todo{ background:var(--surface-sunken); color:var(--ink-3); }
+  .status--todo svg{ fill:var(--ink-4); }
+  .status--progress{ background:var(--violet-100); color:var(--brand-ink); }
+  .status--progress svg{ fill:var(--violet-600); }
+  .status--done{ background:var(--balanced-soft); color:var(--balanced-ink); }
+  .status--done svg{ fill:var(--balanced); }
+  .status--note{ background:var(--balanced-soft); color:var(--balanced-ink); }
+  .status--note svg{ fill:var(--balanced); }
+
+  .work__meta{ color:var(--ink-3); font:500 0.92rem/1.5 var(--font-ui); }
+  .work__meta b{ color:var(--ink-2); font-weight:600; }
+
+  /* progress steps */
+  .steps{ display:flex; align-items:center; gap:5px; margin-top:2px; }
+  .steps i{ display:block; width:20px; height:5px; border-radius:3px; background:var(--border-default); }
+  .steps i.done{ background:var(--violet-600); }
+  .steps + .steps-label{ margin-top:6px; }
+  .steps-label{ color:var(--ink-3); font:600 0.78rem/1.4 var(--font-ui); }
+
+  .work__actions{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .btn{
+    display:inline-flex; align-items:center; gap:8px; font:700 0.92rem/1 var(--font-ui);
+    padding:12px 20px; border-radius:var(--r-md); border:1px solid transparent; cursor:pointer;
+    text-decoration:none;
+  }
+  .btn--primary{ background:var(--violet-600); color:#fff; }
+  .btn--primary:hover{ background:var(--violet-700); }
+  .btn--ghost{ background:transparent; color:var(--ink-1); border-color:var(--border-strong); }
+  .btn--ghost:hover{ background:var(--surface-sunken); }
+  .btn--link{ color:var(--violet-700); font-weight:700; padding:0; border:0; text-decoration:underline; text-underline-offset:3px; }
+
+  /* teacher note, attached to the work it belongs to */
+  .note{
+    display:grid; gap:8px; padding:var(--s-5); background:var(--brand-fill); border-radius:var(--r-md);
+    border:1px solid var(--violet-100);
+  }
+  .note__label{ display:flex; align-items:center; gap:8px; font:800 0.72rem/1 var(--font-ui); letter-spacing:0.06em; text-transform:uppercase; color:var(--brand-ink); }
+  .note__label svg{ width:13px; height:13px; fill:var(--violet-600); }
+  .note p{ color:var(--ink-1); font:500 1.02rem/1.5 var(--font-ui); }
+  .note cite{ display:block; font:600 0.82rem/1.4 var(--font-ui); font-style:normal; color:var(--ink-3); }
+
+  /* empty state */
+  .empty{ display:grid; gap:var(--s-4); justify-items:start; padding:var(--s-8) var(--s-6); background:var(--surface); border:1px dashed var(--border-strong); border-radius:var(--r-lg); }
+  .empty h2{ font:800 1.3rem/1.25 var(--font-ui); }
+  .empty p{ color:var(--ink-2); max-width:48ch; }
+
+  .foot{ padding-top:var(--s-4); border-top:1px solid var(--border-subtle); }
+  .foot a{ font:600 0.9rem/1 var(--font-ui); text-decoration:none; }
+  .foot a:hover{ text-decoration:underline; }
+
+  .join-another{ color:var(--violet-700); font-weight:700; text-decoration:none; }
+  .join-another:hover{ text-decoration:underline; }
+
+  @media (max-width: 640px){
+    .home{ padding:18px 14px 48px; gap:var(--s-6); }
+    .nameplate{ padding:var(--s-5); }
+    .nameplate__actions{ width:100%; justify-content:flex-end; }
+    .work{ padding:var(--s-5); }
+  }
+</style>
+</head>
+<body>
+<main class="gallery">
+
+  <div class="gallery__intro">
+    <h1>S1 — The Desk</h1>
+    <p>Four states of the same screen: the desk a Grade 6–8 student signs in to and comes back to.
+    Fictional names only. Real product tokens (colour, type, radii) carried over from
+    <code>src/design/tokens.css</code>; layout and every piece of copy below are proposed.</p>
+  </div>
+
+  <!-- STATE 1 — not started -->
+  <section class="state" id="state-not-started">
+    <div class="state__label"><b>State 1</b><span>One assignment, not started</span></div>
+    <div class="frame">
+      <div class="home">
+        <header class="home__bar">
+          <a class="mark" href="#"><span class="mark-col"><b>BOW</b><small>Decision Challenges</small></span></a>
+          <div class="bar-tools">
+            <button class="pill-btn" type="button">🔊 Reading help</button>
+          </div>
+        </header>
+
+        <div class="nameplate">
+          <div class="nameplate__who">
+            <div class="nameplate__initial" aria-hidden="true">M</div>
+            <div class="nameplate__text">
+              <h1>Maya Chen</h1>
+              <p class="nameplate__meta"><b>Ms. Alvarez</b> · Period 3 · Seat 4</p>
+            </div>
+          </div>
+          <div class="nameplate__actions">
+            <button class="signout-btn" type="button">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 3H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h3M13 14l4-4-4-4M17 10H7" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Not you? Sign out
+            </button>
+          </div>
+        </div>
+
+        <div class="work-list">
+          <div class="section-head"><h2>Your work</h2><span class="count">1 assignment</span></div>
+
+          <article class="work">
+            <div class="work__top">
+              <div class="work__title">
+                <h3>Eight Weeks to the Showcase</h3>
+                <p class="work__meta">You handle the money. <b class="num">20–28 min</b></p>
+              </div>
+              <span class="status status--todo"><svg viewBox="0 0 8 8"><circle cx="4" cy="4" r="4"/></svg>Not started</span>
+            </div>
+            <div class="work__actions">
+              <a class="btn btn--primary" href="#">Start</a>
+            </div>
+          </article>
+        </div>
+
+        <footer class="foot"><a class="join-another" href="#">Join another class</a></footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATE 2 — in progress -->
+  <section class="state" id="state-in-progress">
+    <div class="state__label"><b>State 2</b><span>One assignment, in progress — resume reads differently from start</span></div>
+    <div class="frame">
+      <div class="home">
+        <header class="home__bar">
+          <a class="mark" href="#"><span class="mark-col"><b>BOW</b><small>Decision Challenges</small></span></a>
+          <div class="bar-tools"><button class="pill-btn" type="button">🔊 Reading help</button></div>
+        </header>
+
+        <div class="nameplate">
+          <div class="nameplate__who">
+            <div class="nameplate__initial" aria-hidden="true">D</div>
+            <div class="nameplate__text">
+              <h1>Devon Ross</h1>
+              <p class="nameplate__meta"><b>Ms. Alvarez</b> · Period 3 · Seat 2</p>
+            </div>
+          </div>
+          <div class="nameplate__actions">
+            <button class="signout-btn" type="button">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 3H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h3M13 14l4-4-4-4M17 10H7" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Not you? Sign out
+            </button>
+          </div>
+        </div>
+
+        <div class="work-list">
+          <div class="section-head"><h2>Your work</h2><span class="count">1 assignment</span></div>
+
+          <article class="work work--progress">
+            <div class="work__top">
+              <div class="work__title">
+                <h3>Eight Weeks to the Showcase</h3>
+                <p class="work__meta">You stopped at <b>Choosing where to live</b>.</p>
+              </div>
+              <span class="status status--progress"><svg viewBox="0 0 8 8"><circle cx="4" cy="4" r="4"/></svg>In progress</span>
+            </div>
+            <div>
+              <div class="steps" aria-hidden="true">
+                <i class="done"></i><i class="done"></i><i class="done"></i><i></i><i></i><i></i><i></i><i></i>
+              </div>
+              <p class="steps-label">Step 3 of 8</p>
+            </div>
+            <div class="work__actions">
+              <a class="btn btn--primary" href="#">Carry on</a>
+            </div>
+          </article>
+        </div>
+
+        <footer class="foot"><a class="join-another" href="#">Join another class</a></footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATE 3 — completed with feedback -->
+  <section class="state" id="state-feedback">
+    <div class="state__label"><b>State 3</b><span>Completed run, teacher feedback attached</span></div>
+    <div class="frame">
+      <div class="home">
+        <header class="home__bar">
+          <a class="mark" href="#"><span class="mark-col"><b>BOW</b><small>Decision Challenges</small></span></a>
+          <div class="bar-tools"><button class="pill-btn" type="button">🔊 Reading help</button></div>
+        </header>
+
+        <div class="nameplate">
+          <div class="nameplate__who">
+            <div class="nameplate__initial" aria-hidden="true">P</div>
+            <div class="nameplate__text">
+              <h1>Priya Natarajan</h1>
+              <p class="nameplate__meta"><b>Ms. Alvarez</b> · Period 3 · Seat 3</p>
+            </div>
+          </div>
+          <div class="nameplate__actions">
+            <button class="signout-btn" type="button">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 3H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h3M13 14l4-4-4-4M17 10H7" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Not you? Sign out
+            </button>
+          </div>
+        </div>
+
+        <div class="work-list">
+          <div class="section-head"><h2>Your work</h2><span class="count">1 assignment</span></div>
+
+          <article class="work work--done">
+            <div class="work__top">
+              <div class="work__title">
+                <h3>Eight Weeks to the Showcase</h3>
+                <p class="work__meta">Turned in <b class="num">Aug 18</b>.</p>
+              </div>
+              <span class="status status--note"><svg viewBox="0 0 8 8"><circle cx="4" cy="4" r="4"/></svg>Teacher wrote back</span>
+            </div>
+
+            <div class="note">
+              <p class="note__label">
+                <svg viewBox="0 0 20 20"><path d="M2 4l8 6 8-6M3 4h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+                From Ms. Alvarez
+              </p>
+              <p>“Strong reasoning on the Week 5 repair — you explained why you moved money out of the
+              reserve instead of the course fee. Next time, say more about what you’d do if attendance
+              dropped further.”</p>
+              <cite>Aug 19</cite>
+            </div>
+
+            <div class="work__actions">
+              <a class="btn btn--ghost" href="#">See what your run shows</a>
+            </div>
+          </article>
+        </div>
+
+        <footer class="foot"><a class="join-another" href="#">Join another class</a></footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATE 4 — three assignments, three states -->
+  <section class="state" id="state-multi">
+    <div class="state__label"><b>State 4</b><span>A class with three assignments, three different states</span></div>
+    <div class="frame">
+      <div class="home">
+        <header class="home__bar">
+          <a class="mark" href="#"><span class="mark-col"><b>BOW</b><small>Decision Challenges</small></span></a>
+          <div class="bar-tools"><button class="pill-btn" type="button">🔊 Reading help</button></div>
+        </header>
+
+        <div class="nameplate">
+          <div class="nameplate__who">
+            <div class="nameplate__initial" aria-hidden="true">J</div>
+            <div class="nameplate__text">
+              <h1>Jamal Whitfield</h1>
+              <p class="nameplate__meta"><b>Mr. Osei</b> · Period 5 · Seat 11</p>
+            </div>
+          </div>
+          <div class="nameplate__actions">
+            <button class="signout-btn" type="button">
+              <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M7 3H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h3M13 14l4-4-4-4M17 10H7" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Not you? Sign out
+            </button>
+          </div>
+        </div>
+
+        <div class="work-list">
+          <div class="section-head"><h2>Your work</h2><span class="count">3 assignments</span></div>
+
+          <!-- in progress: surfaces first — it is the most actionable -->
+          <article class="work work--progress">
+            <div class="work__top">
+              <div class="work__title">
+                <h3>Run the Pop-Up</h3>
+                <p class="work__meta">You stopped at <b>Where do you set up?</b></p>
+              </div>
+              <span class="status status--progress"><svg viewBox="0 0 8 8"><circle cx="4" cy="4" r="4"/></svg>In progress</span>
+            </div>
+            <div>
+              <div class="steps" aria-hidden="true">
+                <i class="done"></i><i class="done"></i><i></i><i></i><i></i>
+              </div>
+              <p class="steps-label">Week 2 of 4 Saturdays</p>
+            </div>
+            <div class="work__actions">
+              <a class="btn btn--primary" href="#">Carry on</a>
+            </div>
+          </article>
+
+          <!-- done with feedback -->
+          <article class="work work--done">
+            <div class="work__top">
+              <div class="work__title">
+                <h3>Eight Weeks to the Showcase</h3>
+                <p class="work__meta">Turned in <b class="num">Aug 12</b>.</p>
+              </div>
+              <span class="status status--note"><svg viewBox="0 0 8 8"><circle cx="4" cy="4" r="4"/></svg>Teacher wrote back</span>
+            </div>
+            <div class="note">
+              <p class="note__label">
+                <svg viewBox="0 0 20 20"><path d="M2 4l8 6 8-6M3 4h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+                From Mr. Osei
+              </p>
+              <p>“You priced the sublet correctly, but say more about why you counted on the
+              tournament bonus before you knew about it.”</p>
+              <cite>Aug 13</cite>
+            </div>
+            <div class="work__actions">
+              <a class="btn btn--ghost" href="#">See what your run shows</a>
+            </div>
+          </article>
+
+          <!-- not started: a second attempt at an assignment already turned in once —
+               `attemptOf` in the data model, not a fresh title, so the card says so in words -->
+          <article class="work">
+            <div class="work__top">
+              <div class="work__title">
+                <h3>Eight Weeks to the Showcase <span style="font-weight:600;color:var(--ink-3);">— second attempt</span></h3>
+                <p class="work__meta">Your teacher set this again. <b class="num">20–28 min</b></p>
+              </div>
+              <span class="status status--todo"><svg viewBox="0 0 8 8"><circle cx="4" cy="4" r="4"/></svg>Not started</span>
+            </div>
+            <div class="work__actions">
+              <a class="btn btn--primary" href="#">Start</a>
+            </div>
+          </article>
+        </div>
+
+        <footer class="foot"><a class="join-another" href="#">Join another class</a></footer>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATE 5 (bonus, referenced in DIRECTION.md) — no assignments -->
+  <section class="state" id="state-empty">
+    <div class="state__label"><b>State 5</b><span>No classes — simulated; not reachable through today's join flow</span></div>
+    <div class="frame">
+      <div class="home">
+        <header class="home__bar">
+          <a class="mark" href="#"><span class="mark-col"><b>BOW</b><small>Decision Challenges</small></span></a>
+          <div class="bar-tools"><button class="pill-btn" type="button">🔊 Reading help</button></div>
+        </header>
+        <div class="empty">
+          <h2>You are not in a class yet.</h2>
+          <p>Ask your teacher for the class code, then come back.</p>
+          <a class="btn btn--primary" href="#">Type a class code</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+</body>
+</html>

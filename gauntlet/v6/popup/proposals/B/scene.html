@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Run the Pop-Up — Direction B: The person is the screen</title>
+<!--
+  DIRECTION B — a runnable static mock, not a screenshot mockup.
+
+  This is a real, working copy of "Run the Pop-Up"'s service screen: pressing the two
+  buttons inside .stage actually advances real ServiceOrder data (the exact 24-order,
+  3-tray, Middle Row, Saturday 1 run computed from src/domain/scenario/worlds/food-truck).
+  Everything inside .stage is what ships; everything outside it (the "JUDGING HARNESS"
+  block) is scaffolding for this review only, styled to be obviously not-the-product, and
+  it never appears in the screenshots (they crop to .stage).
+
+  Read DIRECTION.md alongside this file — it explains every deletion and every measured
+  claim made here.
+-->
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #0c0b1f;
+    color: #dcdcec;
+    font-family: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  :root {
+    /* ---- BOW platform tokens, copied verbatim from src/design/tokens.css .ground-dark
+             so this mock is provably the same palette the shipped screen uses, not a
+             new one invented for the pitch. ---- */
+    --canvas: #0c0b1f;
+    --surface: #17163a;
+    --surface-raised: #1e1d47;
+    --surface-sunken: #121130;
+    --ink-1: #ffffff;
+    --ink-2: #dcdcec;
+    --ink-3: #a8aacb;
+    --ink-4: #9698ba;
+    --border-subtle: #262550;
+    --border-default: #322f66;
+    --border-strong: #4a4690;
+    --focus-ring: #b9a8ff;
+
+    /* ---- [data-world="food-truck"] tokens, copied verbatim from src/design/worlds.css ---- */
+    --world-accent: #f0a94a;
+    --world-accent-soft: #38220f;
+    --world-accent-ink: #ffcf8a;
+    --world-hero-bg: #241713;
+    --world-deep: #140d0b;
+    --world-panel: #33201a;
+    --world-panel-edge: #4d332a;
+    --world-hero-line: #4d332a;
+    --world-hero-edge: #6d4a3a;
+    --world-hero-ink: #fbf3e4;
+    --world-hero-body: #e4d5c4;
+    --world-hero-muted: #bda795;
+    --world-hero-second: #f0b352;
+    --world-flare: #f0b352;
+    --plate-sold: #f0a94a;
+    --plate-binned: #6b5a45;
+
+    --gutter: 24px;
+    --t-micro: 500 0.75rem/1.4 system-ui, sans-serif;
+    --t-label: 700 0.75rem/1.3 system-ui, sans-serif;
+    --r-pill: 999px;
+  }
+
+  /* ===================== judging-harness chrome (NOT the product) ===================== */
+  .harness { max-width: 1180px; margin: 0 auto; padding: 18px var(--gutter) 0; }
+  .harness__note {
+    margin: 0 0 12px; padding: 10px 14px; color: #cfd0e6; font: 13px/1.5 system-ui, sans-serif;
+    background: #1c1a3d; border: 1px dashed #4a4690; border-radius: 8px;
+  }
+  .harness__note b { color: #fff; }
+  .moment-switch { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 20px; }
+  .moment-switch button {
+    padding: 8px 14px; color: #dcdcec; font: 600 13px/1 system-ui, sans-serif; letter-spacing: .01em;
+    background: #17163a; border: 1px solid #4a4690; border-radius: 999px; cursor: pointer;
+  }
+  .moment-switch button[aria-current="true"] { color: #14142b; background: #b9a8ff; border-color: #b9a8ff; }
+  .moment-switch button:focus-visible, .stage :is(button, a):focus-visible {
+    outline: 3px solid var(--focus-ring); outline-offset: 2px;
+  }
+
+  /* ================================ THE PRODUCT ========================================= */
+  .stage-wrap { max-width: 1180px; margin: 0 auto 40px; padding: 0 var(--gutter) 40px; }
+  .stage { background: var(--canvas); border-radius: 14px; overflow: hidden; border: 1px solid var(--border-subtle); }
+
+  /* ---- topbar: unchanged shape from PopUpShell.tsx, condensed for this mock ---- */
+  .topbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: var(--gutter);
+    min-height: 56px; padding: 10px var(--gutter);
+    background: var(--surface-raised); border-bottom: 3px solid var(--world-accent);
+  }
+  .bow { font: 800 18px/1 ui-monospace, "SF Mono", Consolas, monospace; color: var(--ink-1); }
+  .bow i { font-style: normal; color: #9678ff; font-size: 10px; vertical-align: top; }
+  .world-identity { display: flex; flex-direction: column; gap: 1px; }
+  .world-identity p { margin: 0; }
+  .world-identity__title { color: var(--ink-4); font: var(--t-micro); letter-spacing: .1em; text-transform: uppercase; }
+  .world-identity__place { display: flex; align-items: center; gap: 4px; color: var(--ink-1); font: 700 13px/1.3 system-ui, sans-serif; }
+  .world-identity__place svg { width: 11px; height: 11px; color: var(--world-accent); }
+  .motif-hud { display: flex; flex-wrap: wrap; gap: 20px; margin: 0 0 0 auto; padding: 0; list-style: none; }
+  .motif-hud li { display: flex; flex-direction: column; gap: 1px; }
+  .motif-hud span:first-child { color: var(--ink-4); font: var(--t-micro); letter-spacing: .05em; text-transform: uppercase; }
+  .motif-hud span:last-child { color: var(--ink-1); font: 700 13.5px/1.3 ui-monospace, monospace; }
+  .motif-hud span:last-child small { margin-left: 4px; color: var(--ink-3); font-weight: 500; }
+  .topbar__end { display: flex; align-items: center; gap: 10px; }
+  .topbar__end button { padding: 7px 13px; color: var(--ink-2); font: 600 12.5px/1 system-ui, sans-serif; background: transparent; border: 1px solid var(--border-strong); border-radius: 999px; cursor: pointer; }
+
+  /* ---- the demoted h1: headingVariant="order" precedent ---- */
+  .heading { padding: 10px var(--gutter); background: var(--world-hero-bg); border-bottom: 1px solid var(--world-hero-line); }
+  .heading .eyebrow { margin: 0; color: var(--world-hero-second); font: var(--t-micro); letter-spacing: .18em; text-transform: uppercase; }
+  .heading h1 { margin: 2px 0 0; color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: .1em; text-transform: uppercase; font-weight: 700; }
+
+  /* ================================ THE PASS ============================================= */
+  main.pass { position: relative; background: var(--world-hero-bg); }
+
+  .pass__bar { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 12px var(--gutter) 0; }
+  .pass__bar h2 { margin: 0; color: var(--world-hero-ink); font: 800 15px/1.3 system-ui, sans-serif; letter-spacing: .01em; }
+  .pass__clock { margin: 0; padding: 5px 12px; color: var(--world-flare); font: 700 13px/1 ui-monospace, monospace; letter-spacing: .05em; background: #0d0704; border-radius: 6px; box-shadow: inset 0 1px 4px rgb(0 0 0 / 70%); }
+
+  /* ---- the scene: plate demoted to context, figures dominant ---- */
+  .scene {
+    position: relative;
+    height: clamp(360px, 52vh, 480px);
+    margin: 10px var(--gutter) 0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--world-deep);
+  }
+  .scene__plate {
+    position: absolute; inset: 0; z-index: 0;
+    background-size: cover; background-position: center 30%; background-repeat: no-repeat;
+    opacity: .82;
+  }
+  /* Fades the plate to the dark ground across its lower two-thirds, so it recedes into
+     context rather than competing with the figures standing in front of it. */
+  .scene__fade {
+    position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background:
+      linear-gradient(180deg, rgb(20 13 11 / 0%) 0%, rgb(20 13 11 / 55%) 38%, var(--world-deep) 78%),
+      radial-gradient(60% 70% at 50% 100%, rgb(240 169 74 / 14%), transparent 70%);
+  }
+  .scene__sill {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; height: 14px;
+    background: linear-gradient(180deg, #7a5a3c 0%, #4a3521 45%, #241713 100%);
+    box-shadow: inset 0 1.5px 0 rgb(255 218 158 / 65%);
+  }
+
+  .scene__figures {
+    position: absolute; z-index: 3; left: 0; right: 0; bottom: 14px;
+    display: flex; align-items: flex-end; justify-content: center;
+    height: 92%;
+    pointer-events: none;
+  }
+  .cluster { position: relative; display: flex; align-items: flex-end; justify-content: center; height: 100%; }
+  .cluster__shadow {
+    position: absolute; bottom: -4px; left: 50%;
+    height: clamp(10px, 2.4vh, 16px);
+    background: radial-gradient(closest-side, rgb(0 0 0 / 45%), transparent 75%);
+    transform: translateX(-50%);
+  }
+  .figure { position: relative; height: 100%; display: flex; align-items: flex-end; }
+  .figure svg { height: 100%; width: auto; display: block; overflow: visible; }
+  .figure--back { z-index: 1; }
+  .figure--front { z-index: 2; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .figure[data-enter="true"] { animation: figure-in 260ms ease-out both; }
+    @keyframes figure-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  }
+
+  /* ---- the ticket chit: pinned to the figure, never a separate panel ---- */
+  .chit {
+    position: absolute; z-index: 4; left: 50%; top: 14px; transform: translateX(-50%);
+    display: flex; align-items: baseline; gap: 7px;
+    padding: 7px 14px; white-space: nowrap;
+    color: var(--world-deep); font: 700 13.5px/1 system-ui, sans-serif;
+    background: linear-gradient(160deg, #f4e8cc 0%, #e8dcc0 55%, #d9c9a6 100%);
+    border-radius: 3px;
+    box-shadow: 0 2px 3px rgb(10 5 2 / 55%), 0 10px 18px -10px rgb(0 0 0 / 80%);
+  }
+  .chit b { font: 800 15px/1 ui-monospace, monospace; }
+  .chit--empty { color: var(--world-hero-muted); background: transparent; box-shadow: none; border: 1px dashed var(--world-hero-line); }
+
+  /* ---- the outcome caption: text, anchored under the figure ---- */
+  .caption {
+    position: absolute; z-index: 4; left: 50%; bottom: 26px; transform: translateX(-50%);
+    max-width: min(86%, 46ch); margin: 0; padding: 8px 16px; text-align: center;
+    color: var(--world-hero-ink); font: 600 13.5px/1.4 system-ui, sans-serif;
+    background: rgb(20 13 11 / 78%); border: 1px solid var(--world-hero-line); border-radius: 8px;
+    backdrop-filter: blur(2px);
+  }
+  .caption[hidden] { display: none; }
+  .caption strong { color: var(--world-accent-ink); }
+  .caption[data-tone="short"] strong, .caption[data-tone="loss"] strong { color: #ffb5a9; }
+
+  /* ---- the instrument strip: small, secondary, below the person ---- */
+  .periphery {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+    margin: 14px var(--gutter) 0; padding: 10px 0 0; border-top: 1px solid var(--world-hero-line);
+  }
+  .periphery dt { margin: 0; color: var(--world-hero-muted); font: var(--t-micro); letter-spacing: .08em; text-transform: uppercase; }
+  .periphery dd { margin: 3px 0 0; color: var(--world-hero-ink); font: 700 16px/1.15 ui-monospace, monospace; }
+  .periphery dd[data-loss="true"] { color: #ffb5a9; }
+  .periphery .meter { margin-top: 6px; height: 5px; border-radius: 999px; background: rgb(255 255 255 / 12%); overflow: hidden; }
+  .periphery .meter > i { display: block; height: 100%; background: var(--world-accent); border-radius: 999px; transition: none; }
+  @media (prefers-reduced-motion: no-preference) { .periphery .meter > i { transition: width 260ms ease-out; } }
+
+  .waiting { margin: 10px var(--gutter) 0; color: var(--world-hero-body); font: 600 13px/1.4 system-ui, sans-serif; }
+  .waiting strong { color: var(--world-hero-ink); }
+
+  .alert { margin: 10px var(--gutter) 0; padding: 10px 14px; color: var(--world-hero-ink); font: 600 13.5px/1.5 system-ui, sans-serif; background: rgb(255 133 116 / 12%); border-left: 3px solid #ff8574; border-radius: 4px; }
+  .alert strong { color: #ffb5a9; }
+
+  /* ---- controls ---- */
+  .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 14px var(--gutter) 0; padding-bottom: var(--gutter); }
+  .btn { padding: 12px 20px; font: 700 14px/1 system-ui, sans-serif; border-radius: 8px; cursor: pointer; }
+  .btn--primary { color: #241403; border: 0; background: linear-gradient(180deg, #ffc46e 0%, var(--world-accent) 48%, #d98a2e 100%); box-shadow: 0 1px 0 rgb(255 230 180 / 70%) inset, 0 3px 6px rgb(0 0 0 / 50%); }
+  .btn--ghost { color: var(--ink-1); background: transparent; border: 1.5px solid var(--border-strong); }
+  .btn[hidden] { display: none; }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .hint { margin: 0; color: var(--world-hero-second); font: 600 12.5px/1.4 system-ui, sans-serif; }
+  .progress { margin: 0 0 0 auto; color: var(--world-hero-muted); font: 600 13px/1 system-ui, sans-serif; }
+
+  /* ================================ RESPONSIVE ============================================ */
+  @media (max-width: 720px) {
+    .periphery { grid-template-columns: repeat(2, 1fr); }
+    .motif-hud { gap: 12px 16px; }
+    .scene { height: clamp(300px, 46vh, 420px); }
+  }
+  @media (max-width: 420px) {
+    .topbar { gap: 10px; }
+    .motif-hud { flex-basis: 100%; order: 3; justify-content: space-between; gap: 8px; }
+    .topbar__end button span.txt { display: none; }
+    .chit { top: 10px; padding: 6px 10px; font-size: 12px; }
+    .caption { bottom: 12px; font-size: 12.5px; padding: 7px 12px; }
+    .scene { margin: 8px 12px 0; height: clamp(260px, 42vh, 360px); }
+    .heading, .pass__bar, .periphery, .waiting, .alert, .controls { padding-left: 12px; padding-right: 12px; margin-left: 0; margin-right: 0; }
+    .periphery { margin-left: 12px; margin-right: 12px; }
+    .controls { margin-left: 12px; margin-right: 12px; }
+    .progress { flex-basis: 100%; margin-left: 0; }
+  }
+
+  /* ================================ FORCED COLORS ========================================= */
+  @media (forced-colors: active) {
+    .chit, .caption, .alert, .harness__note { border: 1px solid CanvasText; background: Canvas; }
+    .periphery .meter { border: 1px solid CanvasText; background: Canvas; }
+    .scene { border: 1px solid CanvasText; }
+    .btn--primary { forced-color-adjust: none; background: Highlight; color: HighlightText; border: 1px solid CanvasText; }
+  }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+</style>
+</head>
+<body>
+
+<div class="harness">
+  <p class="harness__note">
+    <b>Judging harness — not the product.</b> Everything below this line is scaffolding
+    for this review. The bordered panel underneath it is the actual screen: press its own
+    <b>Serve the next order</b> / <b>Serve automatically</b> buttons to drive it for real,
+    or jump straight to one of the three moments the brief asked for. Screenshots crop to
+    the bordered panel only.
+  </p>
+  <div class="moment-switch" role="group" aria-label="Jump to a moment (harness only)">
+    <button type="button" data-jump="0">Window opens — 38 waiting, 30 on the counter</button>
+    <button type="button" data-jump="16">Counter runs short — 5 plates, next order wants 3</button>
+    <button type="button" data-jump="24">Window closes — 8 never got a plate</button>
+  </div>
+</div>
+
+<div class="stage-wrap">
+<div class="stage" data-world="food-truck">
+  <header class="topbar">
+    <span class="bow">BOW<i>&#9670;</i></span>
+    <div class="world-identity">
+      <p class="world-identity__title">Run the pop-up</p>
+      <p class="world-identity__place">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 18.4S3.6 12.2 3.6 7.8a6.4 6.4 0 1 1 12.8 0c0 4.4-6.4 10.6-6.4 10.6Z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="10" cy="7.8" r="2.2" fill="currentColor"/></svg>
+        Riverside Night Market
+      </p>
+    </div>
+    <ul class="motif-hud" aria-label="This run's own numbers, right now">
+      <li><span>Cash</span><span id="hud-cash">$1,510</span></li>
+      <li><span>Stock</span><span>$200 <small>3 trays</small></span></li>
+      <li><span>Sold</span><span id="hud-sold">0 <small>plates</small></span></li>
+      <li><span>Where you are</span><span>Saturday 1 of 4</span></li>
+    </ul>
+    <div class="topbar__end">
+      <button type="button">The market</button>
+      <button type="button" aria-label="Reading help"><svg viewBox="0 0 20 20" aria-hidden="true" width="14" height="14" style="vertical-align:-2px;margin-right:5px"><path d="M3 7v6h3.2L11 17V3L6.2 7H3Z" fill="currentColor"/><path d="M14.5 6.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg><span class="txt">Reading help</span></button>
+    </div>
+  </header>
+
+  <div class="heading">
+    <p class="eyebrow">Saturday 1</p>
+    <h1>Your window is open</h1>
+  </div>
+
+  <main class="pass" aria-labelledby="pass-h2">
+    <div class="pass__bar">
+      <h2 id="pass-h2">You are serving customers.</h2>
+      <p class="pass__clock" id="clock">17:00</p>
+    </div>
+
+    <div class="scene">
+      <div class="scene__plate" id="plate" role="img" aria-label="The market lane at night: stalls trading across the wet lane, string lights overhead, your own counter at the window."></div>
+      <div class="scene__fade"></div>
+      <div class="scene__figures" id="figures"></div>
+      <p class="chit" id="chit"></p>
+      <p class="caption" id="caption" role="status" hidden></p>
+      <div class="scene__sill"></div>
+    </div>
+
+    <p class="waiting" id="waiting">38 people are waiting.</p>
+
+    <dl class="periphery">
+      <div>
+        <dt>Plates left</dt>
+        <dd id="platesLeft">30</dd>
+        <div class="meter" aria-hidden="true"><i id="platesMeter" style="width:100%"></i></div>
+      </div>
+      <div><dt>Money taken</dt><dd id="till">$0</dd></div>
+      <div><dt>Plates sold</dt><dd id="sold">0</dd></div>
+      <div><dt>Left without buying</dt><dd id="turnedAway" data-loss="false">0</dd></div>
+    </dl>
+
+    <p class="alert" id="alert" hidden role="status"></p>
+
+    <div class="controls">
+      <button type="button" class="btn btn--primary" id="serveBtn">Serve the next order</button>
+      <button type="button" class="btn btn--ghost" id="autoBtn" aria-pressed="false">Serve automatically</button>
+      <button type="button" class="btn btn--primary" id="closeBtn" hidden>Close up and see how the night went</button>
+      <p class="hint" id="hint" hidden></p>
+      <p class="progress" id="progress" aria-live="polite">Order 0 of 24.</p>
+    </div>
+  </main>
+</div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* =====================================================================
+     The real run. These 24 orders are exactly what
+     serviceRun(POP_UP_NUMBERS, "middle-row", 1, 3, false) produces —
+     printed via the tsx command in POPUP_BRIEF.md and copied in verbatim,
+     not re-derived here. cooked=30, crowd=38, cap=45.
+     ===================================================================== */
+  var COOKED = 30, CROWD = 38, CAP = 45;
+  var ORDERS = [
+    {t:1,min:0,w:1,r:1,s:1,o:"served",left:29,till:12},
+    {t:2,min:2,w:2,r:2,s:2,o:"served",left:27,till:36},
+    {t:3,min:6,w:1,r:1,s:1,o:"served",left:26,till:48},
+    {t:4,min:14,w:1,r:1,s:1,o:"served",left:25,till:60},
+    {t:5,min:24,w:3,r:3,s:3,o:"served",left:22,till:96},
+    {t:6,min:36,w:2,r:2,s:2,o:"served",left:20,till:120},
+    {t:7,min:51,w:1,r:1,s:1,o:"served",left:19,till:132},
+    {t:8,min:66,w:2,r:2,s:2,o:"served",left:17,till:156},
+    {t:9,min:84,w:1,r:1,s:1,o:"served",left:16,till:168},
+    {t:10,min:102,w:1,r:1,s:1,o:"served",left:15,till:180},
+    {t:11,min:121,w:2,r:2,s:2,o:"served",left:13,till:204},
+    {t:12,min:140,w:3,r:3,s:3,o:"served",left:10,till:240},
+    {t:13,min:160,w:1,r:1,s:1,o:"served",left:9,till:252},
+    {t:14,min:179,w:2,r:2,s:2,o:"served",left:7,till:276},
+    {t:15,min:198,w:1,r:1,s:1,o:"served",left:6,till:288},
+    {t:16,min:216,w:1,r:1,s:1,o:"served",left:5,till:300},
+    {t:17,min:234,w:3,r:3,s:3,o:"served",left:2,till:336},
+    {t:18,min:249,w:2,r:2,s:2,o:"served",left:0,till:360},
+    {t:19,min:264,w:1,r:1,s:0,o:"no-stock",left:0,till:360},
+    {t:20,min:276,w:2,r:2,s:0,o:"no-stock",left:0,till:360},
+    {t:21,min:286,w:1,r:1,s:0,o:"no-stock",left:0,till:360},
+    {t:22,min:294,w:1,r:1,s:0,o:"no-stock",left:0,till:360},
+    {t:23,min:298,w:2,r:2,s:0,o:"no-stock",left:0,till:360},
+    {t:24,min:300,w:1,r:1,s:0,o:"no-stock",left:0,till:360}
+  ];
+  var BASE_CASH = 1510; // cash on hand before tonight's till, matching the shipped screen's own numbers
+
+  function marketClock(min) {
+    var total = 17 * 60 + Math.max(0, Math.min(300, Math.round(min)));
+    var hour = Math.floor(total / 60) % 24;
+    var m = total % 60;
+    return (hour < 10 ? "0" + hour : hour) + ":" + (m < 10 ? "0" + m : m);
+  }
+  function grade(min) { return min < 90 ? "early" : (min < 210 ? "peak" : "late"); }
+  function plateWord(n) { return n === 1 ? "plate" : "plates"; }
+  function personWord(n) { return n === 1 ? "person" : "people"; }
+
+  /* =====================================================================
+     The figure: parametric inline SVG, seeded on ticket number.
+     Six trait tables, one tiny PRNG, no image, no network request.
+     ===================================================================== */
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  var SKIN = ["#f2c8a0", "#d9a56f", "#a86f43", "#6e4526"];
+  var OUTFIT = ["#4d7a72", "#8a5a44", "#5a5a8a", "#6a7a45", "#7a4a68", "#3f4c5c"];
+  var HAIR = [
+    {c: "#241713", d: "M20 34 A22 22 0 0 1 64 34 L64 22 A22 18 0 0 0 20 22 Z"},
+    {c: "#3a2416", d: "M18 33 A24 24 0 0 1 66 33 L67 18 Q42 6 17 18 Z"},
+    {c: "#171012", d: "M22 32 A20 20 0 0 1 62 32 L62 24 A20 16 0 0 0 22 24 Z M60 20 a6 6 0 1 1 -12 0 a6 6 0 0 1 12 0 Z"},
+    {c: null, d: null}
+  ];
+  var ACCESSORY = ["none", "tote", "scarf"];
+
+  function traitsFor(seed) {
+    var rng = mulberry32(seed);
+    function pick(arr) { return arr[Math.floor(rng() * arr.length)]; }
+    var kid = rng() < 0.22;
+    return {
+      kid: kid,
+      skin: pick(SKIN),
+      outfit: pick(OUTFIT),
+      hair: pick(HAIR),
+      accessory: pick(ACCESSORY),
+      wave: rng() < 0.3
+    };
+  }
+
+  function figureSVG(traits) {
+    // The raised-arm ("wave") pose is a single curved stroke from shoulder to hand —
+    // deliberately not a rotated rect, so the hand circle's endpoint can share the exact
+    // same coordinate the path ends on instead of two numbers that have to be kept in
+    // sync by hand.
+    var arm = traits.wave
+      ? '<path d="M76 63 Q89 54 92 39" stroke="' + traits.outfit + '" stroke-width="12.5" fill="none" stroke-linecap="round"/>'
+      : '<rect x="71" y="60" width="12.5" height="42" rx="6.2" fill="' + traits.outfit + '"/>';
+    var hand2 = traits.wave
+      ? '<circle cx="92" cy="39" r="6" fill="' + traits.skin + '"/>'
+      : '<circle cx="77.25" cy="102" r="6" fill="' + traits.skin + '"/>';
+    var accessory = "";
+    if (traits.accessory === "tote") {
+      accessory = '<path d="M32 60 L44 84" stroke="#e8dcc0" stroke-width="2.6" fill="none" opacity=".85" stroke-linecap="round"/><rect x="29" y="80" width="17" height="15" rx="3" fill="#e8dcc0" opacity=".92"/>';
+    } else if (traits.accessory === "scarf") {
+      accessory = '<rect x="37" y="43" width="26" height="9" rx="4.5" fill="#c9484f"/><rect x="41" y="50" width="8" height="16" rx="3" fill="#b03d43"/>';
+    }
+    var hair = traits.hair.d ? '<path d="' + traits.hair.d + '" fill="' + traits.hair.c + '"/>' : "";
+    return (
+      '<svg viewBox="0 0 100 176" aria-hidden="true" focusable="false">' +
+      '<rect x="33" y="116" width="14" height="46" rx="6.5" fill="#2c2018"/>' +
+      '<rect x="53" y="116" width="14" height="46" rx="6.5" fill="#2c2018"/>' +
+      '<rect x="31" y="157" width="18" height="9" rx="3.5" fill="#171012"/>' +
+      '<rect x="51" y="157" width="18" height="9" rx="3.5" fill="#171012"/>' +
+      '<rect x="16.5" y="60" width="12.5" height="42" rx="6.2" fill="' + traits.outfit + '"/>' +
+      '<circle cx="23" cy="102" r="6" fill="' + traits.skin + '"/>' +
+      arm + hand2 +
+      '<rect x="26" y="52" width="48" height="66" rx="17" fill="' + traits.outfit + '"/>' +
+      '<rect x="26" y="100" width="48" height="18" rx="15" fill="#f0a94a" opacity=".2"/>' +
+      '<rect x="26" y="52" width="48" height="17" rx="15" fill="#232a5c" opacity=".16"/>' +
+      accessory +
+      '<rect x="44" y="41" width="12" height="15" rx="4" fill="' + traits.skin + '"/>' +
+      '<circle cx="50" cy="28" r="19" fill="' + traits.skin + '"/>' +
+      hair +
+      '<circle cx="44.2" cy="29" r="1.6" fill="#241713"/>' +
+      '<circle cx="55.8" cy="29" r="1.6" fill="#241713"/>' +
+      '<path d="M45.5 36 Q50 38 54.5 36" stroke="#241713" stroke-width="1.5" fill="none" stroke-linecap="round"/>' +
+      '</svg>'
+    );
+  }
+
+  function renderGroup(container, ticket, wanted, enter) {
+    container.innerHTML = "";
+    if (!wanted) return;
+    var cluster = document.createElement("div");
+    cluster.className = "cluster";
+    var shadow = document.createElement("div");
+    var shadowW = wanted === 1 ? 46 : wanted === 2 ? 70 : 92;
+    shadow.className = "cluster__shadow";
+    shadow.style.width = shadowW + "px";
+    cluster.appendChild(shadow);
+
+    // Visual left-to-right DOM order, so overlap comes from negative margins pulling
+    // members toward the front figure rather than from transforms fighting flex layout.
+    // The front figure (largest, highest z-index) always sits in the middle of the row.
+    var config = {
+      1: { order: [0], front: [true], scale: [1], margin: [0], z: [2] },
+      2: { order: [0, 1], front: [false, true], scale: [0.84, 1], margin: [0, -30], z: [1, 2] },
+      3: { order: [0, 1, 2], front: [false, true, false], scale: [0.8, 1, 0.8], margin: [0, -32, -32], z: [1, 2, 1] }
+    }[wanted];
+
+    config.order.forEach(function (i, pos) {
+      var traits = traitsFor(ticket * 7 + i + 1);
+      var wrap = document.createElement("div");
+      wrap.className = "figure " + (config.front[pos] ? "figure--front" : "figure--back");
+      if (enter) wrap.setAttribute("data-enter", "true");
+      var scale = (traits.kid ? 0.86 : 1) * config.scale[pos];
+      wrap.style.transform = "scale(" + scale + ")";
+      wrap.style.transformOrigin = "bottom center";
+      wrap.style.marginLeft = config.margin[pos] + "px";
+      wrap.style.zIndex = String(config.z[pos]);
+      wrap.innerHTML = figureSVG(traits);
+      cluster.appendChild(wrap);
+    });
+    container.appendChild(cluster);
+  }
+
+  /* =========================== state & render =========================== */
+  var dealt = 0;
+  var auto = false;
+  var autoTimer = null;
+  var seenNoStock = false;
+
+  var els = {
+    clock: document.getElementById("clock"),
+    plate: document.getElementById("plate"),
+    figures: document.getElementById("figures"),
+    chit: document.getElementById("chit"),
+    caption: document.getElementById("caption"),
+    waiting: document.getElementById("waiting"),
+    platesLeft: document.getElementById("platesLeft"),
+    platesMeter: document.getElementById("platesMeter"),
+    till: document.getElementById("till"),
+    sold: document.getElementById("sold"),
+    turnedAway: document.getElementById("turnedAway"),
+    alert: document.getElementById("alert"),
+    serveBtn: document.getElementById("serveBtn"),
+    autoBtn: document.getElementById("autoBtn"),
+    closeBtn: document.getElementById("closeBtn"),
+    hint: document.getElementById("hint"),
+    progress: document.getElementById("progress"),
+    hudCash: document.getElementById("hud-cash"),
+    hudSold: document.getElementById("hud-sold"),
+    h2: document.getElementById("pass-h2")
+  };
+
+  function render(justAdvanced) {
+    var done = dealt >= ORDERS.length;
+    var last = dealt > 0 ? ORDERS[dealt - 1] : null;
+    var platesLeft = last ? last.left : COOKED;
+    var till = last ? last.till : 0;
+    var sold = COOKED - platesLeft;
+    var minute = last ? last.min : 0;
+    var dealtOrders = ORDERS.slice(0, dealt);
+    var turnedAway = dealtOrders.reduce(function (a, o) { return a + (o.w - o.s); }, 0);
+    var noStock = dealtOrders.reduce(function (a, o) { return a + Math.max(0, o.r - o.s); }, 0);
+    var noHands = dealtOrders.reduce(function (a, o) { return a + Math.max(0, o.w - o.r); }, 0);
+    var stillWaiting = ORDERS.slice(dealt).reduce(function (a, o) { return a + o.w; }, 0);
+
+    els.h2.textContent = done ? "You are closed for the night." : "You are serving customers.";
+    els.clock.textContent = marketClock(minute);
+    els.plate.style.backgroundImage = 'url("../../../../v5/art/pass/lane-' + grade(minute) + '.webp")';
+
+    els.platesLeft.textContent = platesLeft;
+    els.platesMeter.style.width = Math.max(0, Math.min(100, (platesLeft / COOKED) * 100)) + "%";
+    els.till.textContent = "$" + till;
+    els.sold.textContent = sold;
+    els.turnedAway.textContent = turnedAway;
+    els.turnedAway.setAttribute("data-loss", turnedAway > 0 ? "true" : "false");
+    els.hudCash.textContent = "$" + (BASE_CASH + till).toLocaleString();
+    els.hudSold.innerHTML = sold + " <small>plates</small>";
+
+    els.waiting.innerHTML = stillWaiting > 0
+      ? "<strong>" + stillWaiting + "</strong> " + (stillWaiting === 1 ? "person is waiting" : "people are waiting") + "."
+      : "Nobody is waiting.";
+
+    if (!done) {
+      var current = ORDERS[dealt];
+      els.chit.hidden = false;
+      els.chit.className = "chit";
+      els.chit.innerHTML = "<b>#" + current.t + "</b> " + current.w + " " + plateWord(current.w);
+      renderGroup(els.figures, current.t, current.w, !!justAdvanced);
+    } else {
+      els.chit.className = "chit chit--empty";
+      els.chit.textContent = "Window closed";
+      renderGroup(els.figures, 0, 0, false);
+    }
+
+    if (justAdvanced && last) {
+      els.caption.hidden = false;
+      if (last.o === "served") {
+        els.caption.removeAttribute("data-tone");
+        els.caption.innerHTML = "Served — <strong>" + last.s + " " + plateWord(last.s) + "</strong>.";
+      } else if (last.o === "short") {
+        els.caption.setAttribute("data-tone", "short");
+        els.caption.innerHTML = "Got <strong>" + last.s + " of " + last.w + "</strong>. The counter ran out partway through.";
+      } else if (last.o === "no-stock") {
+        els.caption.setAttribute("data-tone", "loss");
+        els.caption.innerHTML = "<strong>No plates left</strong> for them.";
+      } else {
+        els.caption.setAttribute("data-tone", "loss");
+        els.caption.innerHTML = "<strong>Never reached</strong> the window before you moved on.";
+      }
+    } else if (dealt === 0) {
+      els.caption.hidden = true;
+    }
+
+    var bare = platesLeft === 0 && stillWaiting > 0;
+    var quiet = done && platesLeft > 0;
+    if (bare) {
+      els.alert.hidden = false;
+      els.alert.innerHTML = "You have no plates left. <strong>" + stillWaiting + "</strong> " + (stillWaiting === 1 ? "person is" : "people are") + " still waiting.";
+    } else if (quiet) {
+      els.alert.hidden = false;
+      els.alert.innerHTML = "Nobody is waiting any more. You still have <strong>" + platesLeft + "</strong> " + plateWord(platesLeft) + ".";
+    } else if (done && turnedAway > 0) {
+      els.alert.hidden = false;
+      if (noHands > 0 && noStock > 0) {
+        els.alert.innerHTML = "<strong>" + noStock + "</strong> " + personWord(noStock) + " wanted a plate after you ran out. Another <strong>" + noHands + "</strong> waited too long and left.";
+      } else if (noHands > 0) {
+        els.alert.innerHTML = "<strong>" + noHands + "</strong> " + personWord(noHands) + " waited too long and left. One person can serve " + CAP + " plates in an evening.";
+      } else {
+        els.alert.innerHTML = "<strong>" + noStock + "</strong> " + personWord(noStock) + " wanted a plate after you ran out.";
+      }
+    } else {
+      els.alert.hidden = true;
+    }
+
+    els.serveBtn.hidden = done;
+    els.autoBtn.hidden = done;
+    els.closeBtn.hidden = !done;
+    els.progress.textContent = done ? ("You are closed. You sold " + sold + " " + plateWord(sold) + ".") : ("Order " + dealt + " of " + ORDERS.length + ".");
+
+    if (!done && platesLeft === 0 && stillWaiting > 0 && !seenNoStock) {
+      seenNoStock = true;
+    }
+    els.hint.hidden = !(seenNoStock && !done && !auto);
+    els.hint.textContent = "The rest tell the same story — want to see how many are left?";
+  }
+
+  function advance() {
+    if (dealt >= ORDERS.length) return;
+    dealt += 1;
+    render(true);
+    if (dealt >= ORDERS.length) stopAuto();
+  }
+
+  function stopAuto() {
+    auto = false;
+    els.autoBtn.textContent = "Serve automatically";
+    els.autoBtn.setAttribute("aria-pressed", "false");
+    if (autoTimer) { window.clearTimeout(autoTimer); autoTimer = null; }
+  }
+
+  function startAuto() {
+    auto = true;
+    els.autoBtn.textContent = "Stop";
+    els.autoBtn.setAttribute("aria-pressed", "true");
+    tick();
+  }
+
+  function tick() {
+    if (!auto || dealt >= ORDERS.length) { stopAuto(); return; }
+    advance();
+    autoTimer = window.setTimeout(tick, 420);
+  }
+
+  els.serveBtn.addEventListener("click", function () { advance(); });
+  els.autoBtn.addEventListener("click", function () { auto ? stopAuto() : startAuto(); });
+  els.closeBtn.addEventListener("click", function () {
+    els.closeBtn.disabled = true;
+    els.closeBtn.textContent = "Closed.";
+  });
+
+  document.querySelectorAll(".moment-switch button").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      stopAuto();
+      dealt = parseInt(btn.getAttribute("data-jump"), 10);
+      seenNoStock = dealt >= 18;
+      document.querySelectorAll(".moment-switch button").forEach(function (b) { b.removeAttribute("aria-current"); });
+      btn.setAttribute("aria-current", "true");
+      render(false);
+    });
+  });
+
+  /* initial state: read ?dealt=N for scripted screenshotting, default to the open moment */
+  var params = new URLSearchParams(location.search);
+  var initial = params.has("dealt") ? Math.max(0, Math.min(24, parseInt(params.get("dealt"), 10))) : 0;
+  dealt = initial;
+  seenNoStock = dealt >= 18;
+  render(false);
+  var matchBtn = document.querySelector('.moment-switch button[data-jump="' + initial + '"]');
+  if (matchBtn) matchBtn.setAttribute("aria-current", "true");
+})();
+</script>
+</body>
+</html>

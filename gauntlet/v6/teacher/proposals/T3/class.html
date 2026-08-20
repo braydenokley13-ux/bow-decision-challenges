@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sample class — BOW (T3 mock)</title>
+<style>
+/* ============================================================
+   T3 — MATERIAL AND HIERARCHY
+   A surface vocabulary the design system does not have yet:
+     .s1  the instrument — raised, roomy. ONE per screen.
+     .s2  the record     — flat, quiet, bordered.
+     .s3  the margin     — barely a surface: whitespace + rule.
+     .inset              — sunken quote/key inside a surface.
+   A teacher type scale with a raised floor:
+     display 32 · title 20 · body 16 · meta 14. Nothing smaller.
+   Tokens are copied verbatim from src/design/tokens.css.
+   ============================================================ */
+:root{
+  --canvas:#f5f5fa; --surface:#fff; --surface-sunken:#efeff7; --surface-inset:#e6e6f1;
+  --ink-1:#14142b; --ink-2:#3d3d5c; --ink-3:#5a5a78; --ink-4:#616180;
+  --border-subtle:#ebebf4; --border-default:#ddddec; --border-strong:#b4b4cd;
+  --violet-600:#6733e8; --violet-700:#5522c4; --violet-800:#451d9c; --violet-100:#ece7ff; --violet-50:#f5f3ff;
+  --ok:#15704a; --ok-soft:#dcefe5; --warn:#a8720c; --warn-soft:#fbf0d9; --short:#b3301f; --short-soft:#fbe4e0;
+  --shadow-card:0 1px 2px rgb(20 20 43 / 5%), 0 8px 20px -12px rgb(20 20 43 / 14%);
+  --shadow-lift:0 2px 4px rgb(20 20 43 / 5%), 0 20px 40px -20px rgb(20 20 43 / 22%);
+  --shadow-violet:0 1px 2px rgb(46 20 112 / 16%), 0 12px 28px -14px rgb(103 51 232 / 45%);
+  --font-ui:system-ui,-apple-system,"Segoe UI Variable Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  /* The teacher scale. Four sizes. The floor is 14px and nothing on a teacher
+     surface may set type below it — --t-label and --t-micro (both 12px) are banned here. */
+  --tt-display:700 2rem/1.15 var(--font-ui);
+  --tt-title:700 1.25rem/1.25 var(--font-ui);
+  --tt-body:400 1rem/1.55 var(--font-ui);
+  --tt-meta:500 0.875rem/1.5 var(--font-ui);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--canvas);color:var(--ink-1);font:var(--tt-body);-webkit-font-smoothing:antialiased}
+a{color:var(--violet-700)}
+a:focus-visible,button:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--violet-600);outline-offset:2px;border-radius:4px}
+.shell{max-width:1180px;margin:0 auto;padding:0 24px 72px}
+
+/* -- chrome ------------------------------------------------- */
+.topbar{display:flex;align-items:center;gap:16px;height:52px;border-bottom:1px solid var(--border-subtle);background:var(--surface);padding:0 24px;position:sticky;top:0;z-index:5}
+.topbar .brand{font:800 1.0625rem/1 var(--font-ui);letter-spacing:.02em}
+.topbar .brand span{color:var(--violet-600)}
+.topbar nav{margin-left:auto;display:flex;gap:20px;font:var(--tt-meta);font-weight:600}
+.topbar nav a{color:var(--ink-2);text-decoration:none}
+.badge-sample{font:var(--tt-meta);font-weight:600;color:var(--violet-800);background:var(--violet-100);border-radius:999px;padding:3px 12px;white-space:nowrap}
+
+/* -- page header (margin material) --------------------------- */
+.pagehead{display:flex;flex-wrap:wrap;gap:8px 24px;align-items:baseline;padding:20px 0 16px}
+.eyebrow{font:600 .875rem/1.3 var(--font-ui);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-4)}
+.pagehead .meta{margin-left:auto}
+.meta{font:var(--tt-meta);color:var(--ink-3)}
+.quiet{background:none;border:0;padding:0;font:var(--tt-meta);font-weight:600;color:var(--violet-700);text-decoration:underline;cursor:pointer}
+
+/* -- surfaces ------------------------------------------------ */
+.s1{background:var(--surface);border:1px solid var(--border-subtle);border-radius:16px;padding:28px 32px;box-shadow:var(--shadow-lift)}
+.s2{background:var(--surface);border:1px solid var(--border-default);border-radius:12px;padding:22px 24px;box-shadow:none}
+.s3{padding:0}
+.inset{background:var(--surface-sunken);border-radius:8px;padding:14px 18px}
+section{margin:0 0 36px}
+.s3 + .s3{border-top:1px solid var(--border-subtle)}
+
+/* -- type roles ---------------------------------------------- */
+h1{font:var(--tt-display);letter-spacing:-.01em;margin:0 0 10px}
+h2{font:var(--tt-title);margin:0 0 4px}
+h3{font:600 1rem/1.4 var(--font-ui);margin:0 0 6px}
+p{margin:0 0 10px}
+.num{font-variant-numeric:tabular-nums lining-nums}
+
+/* -- buttons ------------------------------------------------- */
+.btn{display:inline-flex;align-items:center;gap:8px;font:600 1rem/1 var(--font-ui);border-radius:10px;padding:13px 22px;text-decoration:none;cursor:pointer;border:1px solid transparent;min-height:44px}
+.btn-primary{background:var(--violet-600);color:#fff;box-shadow:var(--shadow-violet)}
+.btn-secondary{background:var(--surface);border-color:var(--border-strong);color:var(--ink-1)}
+
+/* -- state chips: word + glyph, never colour alone ------------ */
+.state{display:inline-flex;align-items:center;gap:7px;font:var(--tt-meta);font-weight:700;white-space:nowrap}
+.state::before{font-weight:400;font-size:.8125rem;line-height:1}
+.state[data-s="demonstrated"]{color:var(--ok)} .state[data-s="demonstrated"]::before{content:"●"}
+.state[data-s="with-support"]{color:var(--ok)} .state[data-s="with-support"]::before{content:"◐"}
+.state[data-s="developing"]{color:var(--warn)} .state[data-s="developing"]::before{content:"◔"}
+.state[data-s="not-yet"]{color:var(--short)} .state[data-s="not-yet"]::before{content:"○"}
+.state[data-s="incomplete"]{color:var(--ink-2)} .state[data-s="incomplete"]::before{content:"…"}
+.state[data-s="never"]{color:var(--ink-3)} .state[data-s="never"]::before{content:"—"}
+
+/* -- the instrument: lead + triage ---------------------------- */
+.lead-grid{display:grid;grid-template-columns:5fr 6fr;gap:36px}
+.lead .classword{display:inline-flex;align-items:center;gap:8px;font:var(--tt-meta);font-weight:700;color:var(--ink-2);background:var(--surface-sunken);border-radius:999px;padding:5px 14px;margin:2px 0 14px}
+.lead .actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:18px}
+.lead .aside{margin-top:16px}
+.triage h2{font:600 .875rem/1.3 var(--font-ui);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-4);margin:0 0 2px}
+.tri-group{border-top:1px solid var(--border-subtle);padding:10px 0 12px}
+.tri-group:first-of-type{border-top:0;padding-top:0}
+.tri-head{display:flex;align-items:baseline;gap:10px;margin:0 0 2px}
+.tri-head .n{font:700 1.25rem/1 var(--font-ui);min-width:1.4em}
+.tri-head .why{font:var(--tt-meta);color:var(--ink-3);margin-left:auto;text-align:right}
+.tri-rows{list-style:none;margin:6px 0 0;padding:0}
+.tri-rows li{border-top:1px solid var(--border-subtle)}
+.tri-rows a{display:flex;align-items:center;gap:12px;min-height:42px;padding:5px 2px;text-decoration:none;color:inherit}
+.tri-rows a:hover{background:var(--violet-50)}
+.tri-rows .seat{font:600 1rem/1.2 var(--font-ui);min-width:64px}
+.tri-rows .short{font:var(--tt-meta);color:var(--ink-2);flex:1;min-width:0}
+.tri-rows .go{color:var(--ink-4)}
+.tri-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.tri-chips a{font:var(--tt-meta);font-weight:600;color:var(--ink-1);text-decoration:none;border:1px solid var(--border-default);border-radius:999px;padding:7px 14px;min-height:32px}
+.tri-chips a:hover{border-color:var(--violet-600);color:var(--violet-700)}
+.room-line{display:flex;flex-wrap:wrap;gap:6px 22px;border-top:1px solid var(--border-subtle);margin-top:20px;padding-top:14px}
+
+/* -- teach next ----------------------------------------------- */
+.teach .gap{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px}
+.teach .gap>b{font:700 1.25rem/1.3 var(--font-ui)}
+.teach .gap .meta b{font:600 .875rem/1.5 var(--font-ui);color:var(--ink-1)}
+.quote{border-left:3px solid var(--border-strong);margin:8px 0 0;padding:2px 0 2px 14px;font:var(--tt-meta);color:var(--ink-2)}
+.quote cite{font-style:normal;font-weight:600;color:var(--ink-3)}
+
+/* -- skills --------------------------------------------------- */
+.skill{display:grid;grid-template-columns:minmax(280px,5fr) 6fr;gap:8px 32px;padding:16px 0;border-top:1px solid var(--border-subtle)}
+.skill:first-of-type{border-top:0;padding-top:4px}
+.skill .statement{font:600 1rem/1.45 var(--font-ui)}
+.bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--surface-sunken);margin:6px 0 8px}
+.bar i{display:block;height:100%}
+.bar .b-dem{background:var(--ok)} .bar .b-sup{background:var(--ok);opacity:.55} .bar .b-dev{background:var(--warn)}
+.bar .b-not{background:var(--short)} .bar .b-inc{background:repeating-linear-gradient(45deg,#c6c6da 0 4px,#e6e6f1 4px 8px)}
+.skill .counts{font:var(--tt-meta);color:var(--ink-2)}
+
+/* -- decisions ------------------------------------------------ */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.dist{border-top:1px solid var(--border-subtle);padding:12px 0}
+.dist:first-of-type{border-top:0;padding-top:0}
+.dist h3{font:600 1rem/1.4 var(--font-ui);margin:0 0 6px}
+.dist ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.dist li{display:flex;gap:10px;align-items:baseline;font:var(--tt-meta);color:var(--ink-2)}
+.dist li b{font:700 1rem/1.2 var(--font-ui);color:var(--ink-1);min-width:1.4em;text-align:right}
+.dist li[data-empty="true"]{color:var(--ink-4)}
+details.demote>summary{cursor:pointer;font:var(--tt-meta);font-weight:600;color:var(--violet-700);list-style:none;display:inline-flex;gap:6px;align-items:center;min-height:32px}
+details.demote>summary::before{content:"▸";transition:transform .12s}
+details.demote[open]>summary::before{transform:rotate(90deg)}
+details.demote>summary::-webkit-details-marker{display:none}
+.moved{display:flex;flex-wrap:wrap;gap:6px 24px;border-top:1px solid var(--border-subtle);margin-top:12px;padding-top:10px}
+.moved span{font:var(--tt-meta);color:var(--ink-2)}
+.moved b{color:var(--ink-1)}
+
+/* -- key + foot (margin) -------------------------------------- */
+.key dl{margin:8px 0 0;display:grid;grid-template-columns:max-content 1fr;gap:4px 18px}
+.key dt{font:var(--tt-meta);font-weight:700}
+.key dd{margin:0;font:var(--tt-meta);color:var(--ink-3)}
+.foot{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:center;border-top:1px solid var(--border-default);padding-top:22px}
+.foot .meta{margin-left:auto}
+
+@media (max-width:1080px){
+  .lead-grid{grid-template-columns:1fr;gap:24px}
+  .duo{grid-template-columns:1fr}
+  .skill{grid-template-columns:1fr;gap:4px}
+}
+@media (max-width:620px){
+  .shell{padding:0 14px 56px}
+  .s1{padding:20px 16px}.s2{padding:16px 14px}
+  h1{font-size:1.625rem}
+  .topbar{padding:0 14px}
+  .topbar nav{display:none}
+  .badge-sample{white-space:normal;line-height:1.3}
+  .tri-head .why{flex-basis:100%;text-align:left}
+  .pagehead .meta{margin-left:0}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <span class="brand">BOW<span>◆</span> <span style="font:600 .875rem/1 var(--font-ui);color:var(--ink-3);letter-spacing:.06em">DECISION CHALLENGES</span></span>
+  <span class="badge-sample">Sample class — not a real class</span>
+  <nav><a href="#">My classes</a><a href="#">Objectives</a><a href="#">Guide</a><a href="#">Sign in</a></nav>
+</header>
+
+<div class="shell">
+
+  <div class="pagehead s3">
+    <span class="eyebrow">Sample class · Eight Weeks to the Showcase · Run the Pop-Up</span>
+    <button class="quiet" type="button">Rename</button>
+    <span class="meta num">18 students · 18 attempts · As at 9:34 PM · <button class="quiet" type="button">Check again</button></span>
+  </div>
+
+  <!-- ══════════ THE INSTRUMENT — the one raised surface ══════════ -->
+  <section class="s1 lead-wrap" aria-label="Where this class is, and who needs you">
+    <div class="lead-grid">
+      <div class="lead">
+        <h1 class="num">5 of 18 explanations still to read.</h1>
+        <p class="num">18 of the 18 students BOW has seen turned in. 69% of the 13 with a usable
+          result so far showed everything 1.3 asks for — 9 of 13.</p>
+        <p class="classword num">Half the class or more · 9 of 13</p>
+        <div class="actions">
+          <a class="btn btn-primary" href="#reading">Read the 5 explanations →</a>
+          <a class="btn btn-secondary" href="#debrief">Run the debrief</a>
+        </div>
+        <p class="meta aside">This class has no student list, so BOW cannot say who has not
+          started — only who has. <a href="#roster">Add one</a> and every seat gets a name.</p>
+      </div>
+
+      <div class="triage" aria-label="Every student, ranked by what they need">
+        <h2>Who needs you — all 18, ranked</h2>
+
+        <div class="tri-group">
+          <p class="tri-head"><span class="n num" style="color:var(--short)">4</span>
+            <span class="state" data-s="not-yet">Not yet</span>
+            <span class="why">Open these first — each row names the gap</span></p>
+          <ul class="tri-rows">
+            <li><a href="#s3"><span class="seat">Seat 3</span><span class="short">Savings is a planned amount — Did not do it</span><span class="go">→</span></a></li>
+            <li><a href="#s6"><span class="seat">Seat 6</span><span class="short">Savings is a planned amount — Did not do it</span><span class="go">→</span></a></li>
+            <li><a href="#s12"><span class="seat">Seat 12</span><span class="short">Savings is a planned amount — Did not do it</span><span class="go">→</span></a></li>
+            <li><a href="#s14"><span class="seat">Seat 14</span><span class="short">Explains the trade-off made — Part of it · 1 more</span><span class="go">→</span></a></li>
+          </ul>
+        </div>
+
+        <div class="tri-group">
+          <p class="tri-head"><span class="n num" style="color:var(--ink-2)">5</span>
+            <span class="state" data-s="incomplete">Evidence not all in</span>
+            <span class="why">Their writing is unread — the queue reads all five</span></p>
+          <div class="tri-chips">
+            <a href="#s4">Seat 4</a><a href="#s9">Seat 9</a><a href="#s13">Seat 13</a>
+            <a href="#s16">Seat 16</a><a href="#s18">Seat 18</a>
+          </div>
+        </div>
+
+        <div class="tri-group">
+          <p class="tri-head"><span class="n num" style="color:var(--ok)">9</span>
+            <span class="state" data-s="demonstrated">Showed it</span>
+            <span class="why">Everything the work had to show — one after a hint</span></p>
+          <div class="tri-chips">
+            <a href="#s1">Seat 1</a><a href="#s2">Seat 2</a><a href="#s5">Seat 5</a>
+            <a href="#s7">Seat 7</a><a href="#s8">Seat 8</a><a href="#s10">Seat 10</a>
+            <a href="#s11">Seat 11</a><a href="#s17">Seat 17</a>
+            <a href="#s15">Seat 15 <span class="state" data-s="with-support" style="font-weight:600">after a hint</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="room-line">
+      <span class="meta num"><b>Turned in</b> 18 of 18</span>
+      <span class="meta num"><b>Working right now</b> 0 of 18</span>
+      <span class="meta num"><b>Not started</b> —</span>
+    </div>
+  </section>
+
+  <!-- ══════════ THE RECORD — flat, quiet, ranked below the instrument ══════════ -->
+
+  <section class="s2 teach" aria-label="What should I teach next">
+    <p class="eyebrow">What should I teach next?</p>
+    <p class="gap num"><b>One gap stands out: Savings is a planned amount.</b>
+      <span class="meta">3 of the 13 with a usable result missed it — the other four parts of
+      this skill held. The misconception behind it: <b>savings is leftover money.</b></span></p>
+    <p class="meta num">Seats <a href="#s3">3</a>, <a href="#s6">6</a> and <a href="#s12">12</a> —
+      in both stories, savings took whatever remained after everything else was filled.</p>
+    <details class="demote">
+      <summary>A 12-minute reteach: set the savings figure before anything else</summary>
+      <ol style="margin:10px 0 4px;padding-left:22px">
+        <li style="margin-bottom:6px">Show two plans that balance at the same total — one where savings was set first, one where it took what was left. Ask which student is more likely to hit the goal.</li>
+        <li style="margin-bottom:6px">Give one income and one list of costs. Everyone writes the savings line before touching any other line.</li>
+        <li>Change one cost by a small amount and ask what has to move. The savings line is the one that must not.</li>
+      </ol>
+    </details>
+    <details class="demote">
+      <summary>What those three wrote</summary>
+      <blockquote class="quote">“The sublet costs more, so I protected the reserve first and let the goal line absorb what changed in Week 5.” <cite>— Seat 3</cite></blockquote>
+      <blockquote class="quote">“Kept the seat undecided and put the difference toward the goal, since that was the number I could still move.” <cite>— Seat 6</cite></blockquote>
+      <blockquote class="quote">“Only the guaranteed cash went into the plan, so the generator bill came out of my own cut instead of the stock.” <cite>— Seat 12</cite></blockquote>
+    </details>
+  </section>
+
+  <section class="s2" aria-label="Where the class is on each skill">
+    <h2>Where the class is on each skill</h2>
+    <p class="meta num">Counts across all 18 who turned in. 13 have a usable result — nothing the
+      work had to show is missing from their run. The rest are still short of something, and the
+      rows below name that as an absence rather than a zero.</p>
+
+    <div class="skill">
+      <p class="statement">Build a plan that fits the money actually available, covers required
+        costs, and gives savings a planned amount rather than whatever is left over.</p>
+      <div>
+        <div class="bar" aria-hidden="true"><i class="b-dem" style="width:50%"></i><i class="b-dev" style="width:5.6%"></i><i class="b-not" style="width:16.7%"></i><i class="b-inc" style="width:27.7%"></i></div>
+        <p class="counts num"><span class="state" data-s="demonstrated">9 showed it</span> ·
+          <span class="state" data-s="developing">1 part way</span> ·
+          <span class="state" data-s="not-yet">3 not yet</span> ·
+          <span class="state" data-s="incomplete">5 evidence not all in</span></p>
+      </div>
+    </div>
+    <div class="skill">
+      <p class="statement">Repair a plan after income or costs change, using only the money that
+        can still move, and protect what was already committed.</p>
+      <div>
+        <div class="bar" aria-hidden="true"><i class="b-dem" style="width:83.3%"></i><i class="b-sup" style="width:5.6%"></i><i class="b-not" style="width:5.6%"></i><i class="b-inc" style="width:5.6%"></i></div>
+        <p class="counts num"><span class="state" data-s="demonstrated">15 showed it</span> ·
+          <span class="state" data-s="with-support">1 after a hint</span> ·
+          <span class="state" data-s="not-yet">1 not yet</span> ·
+          <span class="state" data-s="incomplete">1 evidence not all in</span></p>
+      </div>
+    </div>
+    <div class="skill">
+      <p class="statement">Separate what a person needs, wants, values and is saving toward, and
+        use that separation to make a spending decision when there is not enough money for everything.</p>
+      <div>
+        <div class="bar" aria-hidden="true"><i class="b-dem" style="width:72.2%"></i><i class="b-inc" style="width:27.8%"></i></div>
+        <p class="counts num"><span class="state" data-s="demonstrated">13 showed it</span> ·
+          <span class="state" data-s="incomplete">5 evidence not all in</span></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="duo" aria-label="What they decided, by story">
+    <div class="s2">
+      <p class="eyebrow">Eight Weeks to the Showcase · 10 students</p>
+      <h2>What they decided</h2>
+      <div class="dist"><h3>Where did they put Avery?</h3>
+        <ul>
+          <li><b class="num">4</b><span>Cousin’s Spare Room</span></li>
+          <li><b class="num">3</b><span>Gym District Sublet</span></li>
+          <li><b class="num">3</b><span>Teammate Share</span></li>
+        </ul>
+        <details class="demote"><summary>Which seats</summary>
+          <p class="meta num">Cousin’s Spare Room — Seats 1, 2, 5, 8 · Gym District Sublet — Seats 3, 6, 9 · Teammate Share — Seats 4, 7, 10</p>
+        </details>
+      </div>
+      <div class="dist"><h3>Which income did they plan around?</h3>
+        <ul>
+          <li><b class="num">5</b><span>Counted the Making the cut bonus in the opening plan</span></li>
+          <li><b class="num">5</b><span>Left it out from the start</span></li>
+        </ul>
+        <details class="demote"><summary>Which seats</summary>
+          <p class="meta num">Counted it — Seats 1, 3, 6, 7, 9 · Left it out — Seats 2, 4, 5, 8, 10</p>
+        </details>
+      </div>
+      <div class="dist"><h3>When did they commit to the course?</h3>
+        <ul>
+          <li><b class="num">4</b><span>Reserved the seat at Week 4</span></li>
+          <li><b class="num">5</b><span>Waited and paid the full price</span></li>
+        </ul>
+        <details class="demote"><summary>Which seats</summary>
+          <p class="meta num">Reserved at Week 4 — Seats 1, 5, 7, 9 · Waited — Seats 2, 4, 6, 8, 10</p>
+        </details>
+      </div>
+      <div class="dist"><h3>Did they take the paid Saturdays?</h3>
+        <ul>
+          <li><b class="num">6</b><span>Took the Saturday clinics</span></li>
+          <li><b class="num">3</b><span>Kept the Saturdays</span></li>
+        </ul>
+        <details class="demote"><summary>Which seats</summary>
+          <p class="meta num">Took the clinics — Seats 1, 4, 5, 6, 9, 10 · Kept the Saturdays — Seats 2, 7, 8</p>
+        </details>
+      </div>
+      <div class="dist"><h3>Did the final plan still count the attendance bonus?</h3>
+        <ul>
+          <li><b class="num">5</b><span>Built the final plan around the Perfect attendance bonus</span></li>
+          <li><b class="num">4</b><span>Planned without it</span></li>
+        </ul>
+        <details class="demote"><summary>Which seats</summary>
+          <p class="meta num">Counted it — Seats 1, 5, 6, 9, 10 · Planned without it — Seats 2, 4, 7, 8</p>
+        </details>
+      </div>
+      <div class="moved">
+        <span class="eyebrow" style="flex-basis:100%">After Week 5 — what moved</span>
+        <span class="num"><b>3</b> of 10 cut <b>backup money</b> first</span>
+        <span class="num"><b>5</b> of 10 cut <b>rides and rest</b> first</span>
+        <span class="num">Backup money absorbed a loss — <b>1</b> of 10</span>
+        <span class="num">Finished with something uncovered — <b>2</b> of 10</span>
+        <span class="num">Landed a plan they never changed — <b>0</b> of 10</span>
+      </div>
+    </div>
+
+    <div class="s2">
+      <p class="eyebrow">Run the Pop-Up · 8 students</p>
+      <h2>What they decided</h2>
+      <div class="dist"><h3>Which booth did they take?</h3>
+        <ul>
+          <li><b class="num">3</b><span>Back Lane</span></li>
+          <li><b class="num">3</b><span>Middle Row</span></li>
+          <li><b class="num">2</b><span>Bridge Gate</span></li>
+        </ul>
+        <details class="demote"><summary>Which seats</summary>
+          <p class="meta num">Back Lane — Seats 12, 15, 18 · Middle Row — Seats 11, 14, 17 · Bridge Gate — Seats 13, 16</p>
+        </details>
+      </div>
+      <div class="dist"><h3>Did they plan around the catering job?</h3>
+        <ul>
+          <li><b class="num">4</b><span>Counted the catering job</span></li>
+          <li><b class="num">4</b><span>Left it out</span></li>
+        </ul>
+        <details class="demote"><summary>Which seats</summary>
+          <p class="meta num">Counted it — Seats 11, 13, 15, 17 · Left it out — Seats 12, 14, 16, 18</p>
+        </details>
+      </div>
+      <div class="dist"><h3>Did they plan around the sell-out rebate?</h3>
+        <ul>
+          <li><b class="num">4</b><span>Counted the sell-out rebate</span></li>
+          <li><b class="num">4</b><span>Left it out</span></li>
+        </ul>
+        <details class="demote"><summary>Which seats</summary>
+          <p class="meta num">Counted it — Seats 11, 14, 15, 18 · Left it out — Seats 12, 13, 16, 17</p>
+        </details>
+      </div>
+      <div class="dist"><h3>How did the generator end?</h3>
+        <ul>
+          <li><b class="num">8</b><span>Covered the generator in full</span></li>
+          <li data-empty="true"><b class="num">0</b><span>Finished still short, and said so</span></li>
+          <li data-empty="true"><b class="num">0</b><span>Never settled the repair</span></li>
+        </ul>
+        <details class="demote"><summary>Which seats</summary>
+          <p class="meta num">Covered in full — Seats 11, 12, 13, 14, 15, 16, 17, 18</p>
+        </details>
+      </div>
+      <div class="moved">
+        <span class="eyebrow" style="flex-basis:100%">After the generator broke — what moved</span>
+        <span class="num">Covered the replacement in full — <b>8</b> of 8</span>
+        <span class="num">Reached for money already spent — <b>1</b> of 8</span>
+        <span class="num">Finished still short, and said so — <b>0</b> of 8</span>
+        <span class="num">Never settled the repair — <b>0</b> of 8</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ THE MARGIN — barely a surface ══════════ -->
+
+  <section class="s3 key">
+    <details class="demote">
+      <summary>What these words mean — the key for every word on this page</summary>
+      <dl>
+        <dt><span class="state" data-s="demonstrated">Showed it</span></dt><dd>Showed every part the work had to show, with no hint.</dd>
+        <dt><span class="state" data-s="with-support">Showed it after a hint</span></dt><dd>Showed every part, and BOW named the problem for at least one of them.</dd>
+        <dt><span class="state" data-s="developing">Part way</span></dt><dd>Showed part of at least one, and missed none of them outright.</dd>
+        <dt><span class="state" data-s="not-yet">Not yet</span></dt><dd>At least one part was not shown.</dd>
+        <dt><span class="state" data-s="incomplete">Evidence not all in</span></dt><dd>Some of it has no judgement yet — usually because nobody has read the writing.</dd>
+        <dt>Did not do it</dt><dd>None of it — or BOW supplied the answer, which shows nothing about the student.</dd>
+        <dt>Part of it</dt><dd>Some of it, not all of it.</dd>
+        <dt>Half the class or more</dt><dd>50% or more of the assessed students showed it, and under 80%.</dd>
+      </dl>
+    </details>
+  </section>
+
+  <section class="s3 foot" style="margin-top:28px">
+    <a class="btn btn-secondary" href="#export">Copy Sample class for a gradebook</a>
+    <a href="#shareout" class="quiet" style="font-size:1rem">Pick what the room sees</a>
+    <a href="#roster" class="quiet" style="font-size:1rem">Class list — names, join cards, reissue</a>
+    <span class="meta">Every number above is derivable from stored evidence · BOW adds nothing to your gradebook</span>
+  </section>
+
+</div>
+</body>
+</html>
