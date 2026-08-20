@@ -163,7 +163,8 @@ export interface PopUpScreenCopy {
   };
   saturday: {
     trayLabel: string;
-    trayHint: string;
+    /** What a tray is and what it costs, said as a fact rather than a sentence. "10 plates · $60." */
+    terms: string;
     cooked: string;
     /**
      * What the crowd will take, and nothing about what that leaves.
@@ -193,8 +194,6 @@ export interface PopUpScreenCopy {
     /** Said only where one pair of hands, not the crowd, is the ceiling. */
     capped: string;
     order: PopUpSumCopy;
-    /** The ceiling on the order, said as a fact about their own plan. */
-    affordable: string;
     /**
      * What this order leaves on the stock line, printed wherever a Saturday still follows.
      *
@@ -666,7 +665,7 @@ export const POP_UP_SCENARIO: PopUpScenario = {
     },
     saturday: {
       trayLabel: "Trays to cook",
-      trayHint: `One tray is ${N.platesPerTray} plates and costs ${formatDollars(N.trayCost)}.`,
+      terms: `${N.platesPerTray} plates · ${formatDollars(N.trayCost)}`,
       cooked: "Plates you are cooking",
       crowdWillBuy: "The crowd will buy",
       crowdMightBuy: "The crowd could buy",
@@ -681,7 +680,6 @@ export const POP_UP_SCENARIO: PopUpScenario = {
         low: "Too low. Count every tray you ordered.",
         high: "Too high. Check how many trays you actually ordered.",
       },
-      affordable: "is all your stock line pays for.",
       leaves: "Left on the stock line",
       leftTrays: "trays",
       leftTray: "tray",
@@ -746,7 +744,10 @@ export const POP_UP_SCENARIO: PopUpScenario = {
       rebateMissedPlanned: "You did not sell out. The rebate is not coming. Your plan counted on it.",
       rebateMissedFree: "You did not sell out. There is no rebate. Your plan never counted on it.",
       next: "The next two Saturdays",
-      nextNote: "One order covers both nights. The two nights are not the same size. You will cook the same amount on Saturday 2 and Saturday 3.",
+      // Two sentences of this used to say what the order below it now says structurally: one
+      // control, two stamped night figures on it. What is left is the one fact neither of
+      // those figures says on its own — that they are not the same crowd.
+      nextNote: "The two nights are not the same size.",
       helperAsk: "Book her for the last Saturday?",
       helperBooked: "Booked. The money is spent whatever happens.",
       helperAlone: "You work the window on your own.",
@@ -918,8 +919,8 @@ function screenCopy(s: PopUpScreenCopy): readonly string[] {
     s.plan.toPlanLabel, s.plan.placedLabel, s.plan.leftLabel,
     s.plan.balanced, s.plan.unassigned, s.plan.over, s.plan.commit, s.plan.check,
     s.plan.help.open, s.plan.help.steps, s.plan.help.supply, s.plan.help.supplyNote,
-    s.saturday.trayLabel, s.saturday.trayHint, s.saturday.cooked, s.saturday.crowdWillBuy,
-    s.saturday.nightBuys, s.saturday.capped, s.saturday.affordable, s.saturday.bothNights,
+    s.saturday.trayLabel, s.saturday.terms, s.saturday.cooked, s.saturday.crowdWillBuy,
+    s.saturday.nightBuys, s.saturday.capped, s.saturday.bothNights,
     s.saturday.open, s.saturday.gate,
     s.night.cooked, s.night.sold, s.night.binned, s.night.takings, s.night.soldOut,
     s.night.someLeft, s.night.nothingCooked, s.night.nothingBinned, s.night.binnedTrays, s.night.turnedAway,

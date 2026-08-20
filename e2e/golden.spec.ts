@@ -172,9 +172,11 @@ async function setLine(page: Page, label: string, value: number) {
 }
 
 async function orderTrays(page: Page, trays: number) {
-  const shown = page.locator(".tray-order output");
+  // The order control is a real spinbutton now — `role="spinbutton"` and `aria-valuenow`,
+  // not an `<output>` a script had to read the text of.
+  const shown = page.locator('.tray-order [role="spinbutton"]');
   for (let guard = 0; guard < 12; guard += 1) {
-    const current = Number(await shown.innerText());
+    const current = Number(await shown.getAttribute("aria-valuenow"));
     if (current === trays) break;
     await page.getByRole("button", { name: current < trays ? "One tray more" : "One tray fewer" }).click();
   }

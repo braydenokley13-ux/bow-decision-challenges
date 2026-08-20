@@ -57,7 +57,9 @@ test("running Saturday 1, short of plates", async ({ page, request }) => {
   await page.waitForTimeout(400);
   const trays = 3;
   for (let guard = 0; guard < 12; guard += 1) {
-    const shown = Number(await page.locator(".tray-order output").innerText());
+    // The order control is a real spinbutton now — `role="spinbutton"` and `aria-valuenow`,
+    // not an `<output>` a script had to read the text of.
+    const shown = Number(await page.locator('.tray-order [role="spinbutton"]').getAttribute("aria-valuenow"));
     if (shown === trays) break;
     await page.getByRole("button", { name: shown < trays ? "One tray more" : "One tray fewer" }).click();
   }

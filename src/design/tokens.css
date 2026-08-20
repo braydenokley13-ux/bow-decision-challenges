@@ -251,6 +251,10 @@
   --t-label: 700 0.75rem/1.3 var(--font-ui);
   --t-micro: 500 0.75rem/1.4 var(--font-ui);
   --m-hero: 800 2.75rem/1 var(--font-ui);
+
+  /* The one control this size on the product: a quantity a student types into, not a figure
+     read off a report. `.tray-order`'s spinbutton is the only thing that uses it. */
+  --m-xl: 800 clamp(2.75rem, 6vw, 3.5rem)/1 var(--font-ui);
   --m-lg: 800 1.75rem/1.1 var(--font-ui);
   --m-md: 700 1.25rem/1.2 var(--font-ui);
   --m-sm: 700 1rem/1.2 var(--font-ui);

@@ -254,6 +254,11 @@
 .popup-heading--dark h1 { max-width: 16ch; color: var(--world-hero-ink); font: var(--t-scene); letter-spacing: var(--display-tracking-tight); }
 .popup-shell .eyebrow { color: var(--world-accent); }
 
+/* The three screens that hand the order the weight a headline usually carries. The `<h1>`
+   stays — `e2e/popup.spec.ts` still finds it by role and name — and drops to the same scale as
+   a `dt` label: an eyebrow above the lit slab, not competing with the number on it. */
+.popup-heading--order h1 { max-width: none; color: var(--ink-4); font: var(--t-micro); letter-spacing: var(--stamp-tracking); }
+
 /* ---------------------------------------------------------------------------
    The hub: the market as a place, opened over whichever of the ten screens the
    student is standing on (`PopUpHub.tsx`). It reuses `popup-heading--dark` for its
@@ -493,24 +498,85 @@
 .lines-held dl > div[data-line="cut"] { border-left-color: var(--choice-3); }
 .lines-held dt { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.08em; text-transform: uppercase; }
 .lines-held dd { margin: 0; font: var(--m-sm); font-feature-settings: var(--num); }
-.tray-order { display: grid; grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.2fr); gap: var(--s-5); padding: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); box-shadow: var(--shadow-card); }
-.tray-order__set { display: grid; align-content: start; gap: var(--s-3); }
-.tray-order__keys { display: grid; grid-template-columns: var(--tap) minmax(64px, 1fr) var(--tap); align-items: stretch; }
-.tray-order__keys button { min-height: 56px; background: var(--surface); border: 1px solid var(--border-strong); cursor: pointer; font: var(--t-title1); }
-.tray-order__keys button:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
-.tray-order__keys button:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
-.tray-order__keys output { display: grid; place-items: center; border: 1px solid var(--border-strong); border-right: 0; border-left: 0; background: var(--surface); font: var(--m-lg); font-feature-settings: var(--num); }
-.tray-order__hint { margin: 0; color: var(--ink-3); font: var(--t-micro); }
-.tray-order__cost { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); margin: 0; padding-top: var(--s-3); border-top: 2px solid var(--border-ink); }
-.tray-order__cost span { font: var(--m-md); font-feature-settings: var(--num); }
-.tray-order__cost small { color: var(--ink-3); font: var(--t-micro); }
-.tray-order__read { display: grid; align-content: start; gap: var(--s-3); }
+
+/* ---------------------------------------------------------------------------
+   The Counter — Ramos's slab, and the one order written on it.
+
+   One lit object: the supplier's counter, carrying the trays being bought, the terms he sells
+   on, and the crowd figures the organiser gave, above the one number the student writes. What
+   separates it from the canvas behind it is light and elevation, never a border — a contact
+   shadow beneath it, a lantern highlight along its top edge, the same amber a bulb on the
+   wire would throw. `box-shadow`, not `border: 1px`, doing the work a line was doing before.
+   --------------------------------------------------------------------------- */
+.tray-order {
+  display: grid;
+  gap: var(--s-4);
+  max-width: 720px;
+  padding: var(--s-6);
+  background: var(--surface-raised);
+  border: 0;
+  box-shadow: 0 24px 60px -28px rgb(0 0 0 / 85%), inset 0 1px 0 rgb(240 179 82 / 14%);
+}
+
+/* What a tray is and what it costs, read once at the top of the slab rather than argued for
+   in a sentence: "10 plates · $60." replaces "One tray is 10 plates and costs $60." */
+.tray-order__terms { margin: 0; color: var(--ink-3); font: var(--t-sm); }
+
+/* The facts, told before the control that spends against them — Court 3's point, kept without
+   moving `orderBoard.test.tsx`'s pinned `dt` list, which reads every `dt` under this element
+   regardless of how deep the standing order's two nights nest inside it. */
 .tray-order__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr)); gap: var(--s-3); margin: 0; }
 .tray-order__facts > div { display: grid; gap: 2px; padding: var(--s-3); background: var(--surface); }
 .tray-order__facts dt { color: var(--ink-3); font: var(--t-micro); letter-spacing: 0.06em; text-transform: uppercase; }
 .tray-order__facts dd { margin: 0; font: var(--m-md); font-feature-settings: var(--num); }
 .tray-order__facts > div[data-alert="true"] { color: var(--fin-over-ink); background: var(--fin-over-soft); }
-.tray-order__crowd { margin: 0; color: var(--ink-2); font: var(--t-sm); }
+
+/* The figure the order is weighed against, a step larger than what is cooked or left on the
+   stock line — it is the number the student has to read before the control makes sense, not
+   one readout among several. */
+.tray-order__facts > div[data-figure="crowd"] dd { color: var(--world-accent-ink); font: var(--m-lg); }
+
+/* The standing order's two unequal nights, stamped side by side above the one control that
+   answers to both, rather than a footnote saying they differ. */
+.tray-order__nights { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(120px, 100%), 1fr)); gap: var(--s-3); }
+.tray-order__nights > div { padding-top: var(--s-2); border-top: 2px solid var(--world-flare); }
+.tray-order__nights dd { color: var(--world-accent-ink); font: var(--m-lg); }
+
+/* The control: the largest thing on the screen, on purpose. The quality verdict's ruling was
+   that the headline outweighed the control; making the control the largest object on the page
+   is the fix, not a KPI tile wearing a bigger font. */
+.tray-order__control { display: grid; justify-items: start; gap: var(--s-3); padding: var(--s-2) 0; }
+.tray-order__control .field-label { margin: 0; }
+.count-control { display: grid; grid-template-columns: var(--tap) minmax(140px, 1fr) var(--tap); align-items: stretch; width: 100%; max-width: 360px; }
+.count-control button { min-height: 64px; background: var(--surface); border: 1px solid var(--border-strong); cursor: pointer; font: var(--t-title1); color: var(--ink-2); }
+.count-control button:hover { color: var(--world-accent-ink); border-color: var(--world-accent); }
+.count-control button:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
+.count-control button:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+
+/* A visible field, not a figure: a border, a sunken ground and a caret say this number can be
+   typed into, which is what a 56px numeral with nothing around it stops looking like. */
+.count-control input {
+  min-width: 0;
+  padding: 0 var(--s-2);
+  color: var(--ink-1);
+  text-align: center;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-strong);
+  border-right: 0;
+  border-left: 0;
+  font: var(--m-xl);
+  font-feature-settings: var(--num);
+  caret-color: var(--world-accent);
+}
+.count-control input:focus-visible { position: relative; z-index: 1; outline: 3px solid var(--focus-ring); outline-offset: -3px; }
+
+.tray-order__cost { margin: 0; padding-top: var(--s-3); border-top: 2px solid var(--border-ink); }
+.tray-order__cost span { font: var(--m-md); font-feature-settings: var(--num); }
+
+/* A third the weight of the control, measured: the split note, the hands-bound warning and
+   the band note are all read here, and none of them is the answer to the sum on the screen. */
+.tray-order__fine { display: grid; gap: var(--s-2); }
+.tray-order__note, .tray-order__crowd { margin: 0; color: var(--ink-4); font: var(--t-micro); }
 
 /* One square, one plate. Sold is filled; binned is hollow and hatched, so the
    difference survives greyscale and a printout. */
@@ -650,7 +716,9 @@
    Narrow: one column everywhere, and the dominant action stays in the viewport.
    --------------------------------------------------------------------------- */
 @media (max-width: 900px) {
-  .pitch, .tray-order, .helper-card, .writeup { grid-template-columns: minmax(0, 1fr); }
+  /* `.tray-order` is one column at every width already — it is not in this list because
+     nothing here needs collapsing. */
+  .pitch, .helper-card, .writeup { grid-template-columns: minmax(0, 1fr); }
   .popup-main { padding-top: var(--s-5); }
 }
 

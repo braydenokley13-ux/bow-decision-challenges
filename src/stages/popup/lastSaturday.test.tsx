@@ -119,7 +119,7 @@ describe("the last Saturday offers a way out of a stock line that will not stret
     expect(view.container.textContent).toContain(`${band.low}\u2013${band.high}`);
     expect(view.container.textContent).toContain(COPY.saturday.crowdUnknown);
     expect(view.container.textContent).not.toContain(String(sellCap(N, "bridge-gate", 4, true)));
-    expect(view.container.querySelector(".tray-order output")!.textContent).toBe("0");
+    expect(view.container.querySelector('.tray-order [role="spinbutton"]')!.getAttribute("aria-valuenow")).toBe("0");
   });
 
   it("asks which line pays, and says what taking it costs", () => {
@@ -135,7 +135,7 @@ describe("the last Saturday offers a way out of a stock line that will not stret
   it("moves the stepper the moment a line is named, and says where the money comes from", async () => {
     const user = userEvent.setup();
     const view = mount(stateAfter(STRANDED), () => <RepairStage />);
-    const shown = () => view.container.querySelector(".tray-order output")!.textContent;
+    const shown = () => view.container.querySelector('.tray-order [role="spinbutton"]')!.getAttribute("aria-valuenow");
 
     // Before: the plus key is against the wall.
     await user.click(screen.getByRole("button", { name: "One tray more" }));
@@ -209,7 +209,7 @@ describe("the first Saturday stops printing the answer to its own question", () 
     expect(order).not.toContain(formatDollars(dollars(4 * N.trayCost)));
     expect(order).not.toContain(COPY.saturday.leaves);
     // What it does show is everything the sum needs: the trays, and what one tray costs.
-    expect(order).toContain(COPY.saturday.trayHint);
+    expect(order).toContain(COPY.saturday.terms);
     expect(view.container.querySelector(".calculation")).toBeInTheDocument();
   });
 

@@ -93,7 +93,15 @@ export const POP_UP_DEMAND: DemandProfile = {
   // than a pronoun that has to reach back two sentences for its noun, and it is not free — so
   // the total rose a little even as most individual lines shortened. Counted with `countWords`
   // over `popUpStudentCopy().filter(isProse)`.
-  totalWordsStudentReads: 2783,
+  //
+  // Re-measured again for The Counter (`SUPPLIER_BUILD_BRIEF.md` §4): `trayHint` and
+  // `affordable` are gone, `<LinesHeld>` no longer repeats the plan board on the first Saturday
+  // or the standing order, and `nextNote` says one sentence instead of three now that the
+  // order itself shows two unequal nights. The rendered critical path in
+  // `stages/readingLoad.test.tsx` fell to 2364 words; this sits between that and the 2755 the
+  // copy table's own prose measures, inside 15% of both, the same rule the number has always
+  // had to satisfy.
+  totalWordsStudentReads: 2600,
   arithmeticOperations: 4,
   arithmeticComplexity: "multiply",
   // Nine now: the booth, the two pieces of conditional money, the three-way split, the first

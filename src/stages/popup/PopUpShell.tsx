@@ -35,7 +35,7 @@ function chapterFor(stage: StageId): string {
  * it, so a phone-width viewport spends its pixels on the decision rather than on two bars
  * repeating figures the page already shows.
  */
-export function PopUpShell({ stage, kicker, title, tone = "standard", banner, ledger, live, focusKey, children }: PropsWithChildren<{
+export function PopUpShell({ stage, kicker, title, tone = "standard", banner, ledger, live, focusKey, headingVariant, children }: PropsWithChildren<{
   stage: StageId;
   kicker: string;
   title: string;
@@ -47,6 +47,13 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
   /** When this changes the screen opens at the top and the heading takes focus, so nobody —
    *  keyboard, screen reader or eyes — meets the new question from below it. */
   focusKey?: string | number;
+  /**
+   * Demotes the headline on the three screens that hand the biggest thing on screen to a
+   * control instead: the h1 stays in the DOM — `e2e/popup.spec.ts` still finds it by role and
+   * name — and drops to eyebrow scale, `--t-micro`, sitting in the dark above the order.
+   * Nothing else about the heading moves; no other screen in the world takes this prop.
+   */
+  headingVariant?: "order" | undefined;
 }>) {
   const { state, delivery, handOver } = usePopUp();
   const hub = usePopUpHubTrigger();
@@ -107,7 +114,11 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
         </div>
       </header>
       <main className="popup-main" data-tone={tone}>
-        <header ref={heading} className={`popup-heading${tone === "dark" ? " popup-heading--dark scene" : ""}`} tabIndex={-1}>
+        <header
+          ref={heading}
+          className={`popup-heading${tone === "dark" ? " popup-heading--dark scene" : ""}${headingVariant === "order" ? " popup-heading--order" : ""}`}
+          tabIndex={-1}
+        >
           {tone === "dark" && <MarketBackdrop variant="lane" />}
           <div className="popup-heading__say">
             <p className="eyebrow">{kicker}</p>
