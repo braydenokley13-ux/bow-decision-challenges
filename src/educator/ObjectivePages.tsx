@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Link, Navigate, useParams, useSearchParams } from "react-router-dom";
 import { EducatorShell, StateKey } from "./EducatorShell";
 import { competencyById } from "../domain/competency/competencies";
-import type { CompetencyId, CompetencyResultState } from "../domain/competency/types";
+import type { Competency, CompetencyId, CompetencyResultState } from "../domain/competency/types";
 import {
+  alsoFullyCovered,
   competenciesFor,
   FRAMEWORKS,
   demandFor,
@@ -13,6 +14,7 @@ import {
   labelsFor,
   standardByRef,
   standardsIn,
+  topicsIn,
   type FrameworkId,
   type Standard,
   type StandardRef,
@@ -37,16 +39,21 @@ import { TeachNext } from "./TeachNext";
 /** The framework this deployment sets work against. One today; a second is a row in FRAMEWORKS. */
 const FRAMEWORK_ID: FrameworkId = "nysed-pf-2026";
 
-function refOf(standard: Standard): StandardRef {
+/**
+ * Exported alongside the pages that used to be its only callers: the assignment builder
+ * needs the same objective-to-code join, the same route, the same search and the same "why
+ * can BOW not see this yet" reasoning, and none of the four is worth a second copy.
+ */
+export function refOf(standard: Standard): StandardRef {
   return { frameworkId: standard.frameworkId, code: standard.code };
 }
 
-function objectivePath(ref: StandardRef): string {
+export function objectivePath(ref: StandardRef): string {
   return `/educator/objectives/${ref.frameworkId}/${ref.code}`;
 }
 
 /** Matches on the code, BOW's handle, the official wording and the topic — whichever a teacher types. */
-function matches(standard: Standard, query: string): boolean {
+export function matches(standard: Standard, query: string): boolean {
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
   return [standard.code, standard.shortLabel, standard.text, standard.topicName]
@@ -60,7 +67,7 @@ function matches(standard: Standard, query: string): boolean {
  * printed without that band reads as the whole document to a reviewer who opens the source
  * and counts 70.
  */
-function Attribution({ frameworkId }: { frameworkId: FrameworkId }) {
+export function Attribution({ frameworkId }: { frameworkId: FrameworkId }) {
   const framework = FRAMEWORKS[frameworkId];
   if (!framework) return null;
   return (
@@ -70,6 +77,22 @@ function Attribution({ frameworkId }: { frameworkId: FrameworkId }) {
       · {gradeBandLabel(frameworkId)} · wording checked {framework.verifiedOn}
     </p>
   );
+}
+
+/**
+ * Which skills this objective rests on that no story can produce yet, named rather than
+ * left as a bare "coming".
+ *
+ * Extracted so the assignment builder can give the exact same reason for the exact same
+ * objective, rather than a second guess at what "coming" means for it. Order matches
+ * `demandFor`'s own: every part of a completion rule first, then any full mapping's own
+ * candidates — nothing here re-sorts or re-derives what that function already decided.
+ */
+export function waitingCompetenciesFor(ref: StandardRef): readonly Competency[] {
+  const demand = demandFor(ref);
+  return [...demand.allOf, ...demand.anyOf]
+    .filter((competencyId) => !isCompetencyAvailable(competencyId))
+    .flatMap((competencyId) => competencyById(competencyId) ?? []);
 }
 
 // ---------------------------------------------------------------------------
@@ -97,6 +120,19 @@ function Attribution({ frameworkId }: { frameworkId: FrameworkId }) {
  * with the search box stranded inside the second one, which is how a teacher looking for an
  * objective they can set ended up typing into the section headed with what BOW cannot do.
  */
+/**
+ * "A, B, and C" — the framework's own topic names, in the framework's own order.
+ *
+ * An Oxford comma because these are New York's names and two of them contain the word "and"
+ * already: *Credit and Debt Management, Earning Income, Risk Management and Saving and
+ * Investing* reads as five topics on the first pass.
+ */
+function listSentence(names: readonly string[]): string {
+  if (names.length <= 1) return names[0] ?? "";
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+}
+
 export function ObjectiveList() {
   const [query, setQuery] = useState("");
   const labels = labelsFor(FRAMEWORK_ID);
@@ -104,6 +140,11 @@ export function ObjectiveList() {
   // here stops the React Compiler optimising the whole component for no measurable gain.
   const standards = standardsIn(FRAMEWORK_ID);
   const readyTotal = standards.filter((standard) => isAssessable(refOf(standard))).length;
+  // Derived from the same predicate as the column, so the sentence and the rows can never
+  // disagree — a topic is empty exactly when every row under it says BOW cannot assess it.
+  const emptyTopics = topicsIn(FRAMEWORK_ID).filter(
+    (topic) => !standards.some((standard) => standard.topicCode === topic.code && isAssessable(refOf(standard))),
+  );
   const unit = labels?.unitNounShort.toLowerCase() ?? "objective";
   // One list, and the ones a teacher can act on today at the top of it. Not two sections —
   // that was the shape that stranded the search box inside the half headed with what BOW
@@ -127,6 +168,24 @@ export function ObjectiveList() {
           matched to a {TERMS.skill} and waiting for a {TERMS.story} that can show it. They report as coming,
           never as nobody having shown them.
         </p>
+        {/* The question a teacher asks before any of the twenty-three, and the one this page
+            could not answer: *is there anything here for the unit I am teaching next month?*
+            A scheme of work is built out of topics, and a flat list of objectives makes that
+            answerable only by opening every row in a topic and counting.
+
+            Deliberately a sentence and not the topic filter that used to be on `/educator/map`.
+            That filter came with a status filter, a class filter and a teacher-maintained
+            "MARKED TAUGHT" flag, and the reason it is gone is that asking a teacher to keep a
+            record inside BOW about instruction BOW did not deliver is a planbook. This adds no
+            state, no control and no route: it is the same derived column, said once, grouped
+            the way the teacher's own year is grouped. */}
+        {emptyTopics.length > 0 && (
+          <p className="objective-topics-empty">
+            Nothing in {listSentence(emptyTopics.map((topic) => topic.name))} yet
+            — {emptyTopics.length === 1 ? "that topic has" : "those topics have"} no {unit} BOW can
+            assess, so there is nothing to set from {emptyTopics.length === 1 ? "it" : "them"} this term.
+          </p>
+        )}
       </header>
 
       <section className="dashboard-section">
@@ -363,12 +422,14 @@ export function ObjectiveDetail() {
   }
 
   const covering = competenciesFor(frameworkId, standard.code);
+  // What a teacher gets without asking. One skill can cover two state objectives in full, and
+  // when it does, work assigned against one settles the other — which reads as the product
+  // losing track of itself unless the page says so first. Two pairs exist today; the mapping
+  // suite pins the list so a third arrives on purpose.
+  const alsoCovered = alsoFullyCovered(ref);
   // Which skills this objective rests on that neither story can produce yet. Named, because
   // "coming" without a reason is a promise and this is a fact.
-  const demand = demandFor(ref);
-  const waiting = [...demand.allOf, ...demand.anyOf]
-    .filter((competencyId) => !isCompetencyAvailable(competencyId))
-    .flatMap((competencyId) => competencyById(competencyId) ?? []);
+  const waiting = waitingCompetenciesFor(ref);
 
   /**
    * Every objective BOW cannot assess is here, and there is nothing to report about any of
@@ -424,9 +485,23 @@ export function ObjectiveDetail() {
             paints its back-link in muted ink, and a primary button that inherited it failed
             contrast against its own dark fill. */}
         <p className="objective-actions">
-          <Link className="button button--primary" to={`/educator/classes?objective=${standard.code}`}>Assign this</Link>
+          <Link className="button button--primary" to={`/educator/assignments/new?objective=${standard.code}`}>Assign this</Link>
         </p>
       </header>
+
+      {alsoCovered.length > 0 && (
+        <p className="objective-companion">
+          The same {alsoCovered.length === 1 ? "skill covers" : "skills cover"}{" "}
+          {alsoCovered.map((entry, index) => (
+            <span key={entry.code}>
+              {index > 0 ? ", " : ""}
+              <Link to={`/educator/objectives/${entry.code}`}>{entry.code} {entry.shortLabel}</Link>
+            </span>
+          ))}{" "}
+          in full. Work you set for this one settles {alsoCovered.length === 1 ? "that one" : "those"} too — the
+          same student decisions answer both, so you do not assign it twice.
+        </p>
+      )}
 
       <section className="dashboard-section">
         <div className="section-heading">

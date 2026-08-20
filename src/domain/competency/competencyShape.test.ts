@@ -131,6 +131,35 @@ describe("competency shape", () => {
     for (const id of mustExplain) expect(competencyById(id).explanationRequired, id).toBe(true);
   });
 
+  it("makes the explanation flag agree with the array it describes", () => {
+    /**
+     * `explanationRequired` is a promise that a written explanation is *required evidence*, and
+     * `isCompetencyAvailable` only ever checks required rows — so a competency carrying the flag
+     * over an array with no required explanation in it promises something no world can be held
+     * to. `save-toward-a-goal` records the rule in its own margin: the flag "has to agree with
+     * the array it describes."
+     *
+     * Nothing checked it. `is-the-add-on-worth-it` was written in this run with four decision
+     * rows under a docstring asserting the flag was `false`, and it is `true`; the suite was
+     * green either way. The test above holds six named competencies to carrying the flag, which
+     * is the other half of the same rule and was the half that existed.
+     *
+     * Only one direction is asserted. A `false` flag over an *optional* explanation row is
+     * `adapt-a-plan`, deliberately: the writing is worth having and the competency does not
+     * stand or fall on it.
+     */
+    for (const competency of WITH_EVIDENCE_WRITTEN) {
+      if (!competency.explanationRequired) continue;
+      const written = competency.evidenceRequirements.filter(
+        (requirement) => requirement.kind === "explanation" && requirement.required,
+      );
+      expect(
+        written.map((requirement) => requirement.id).length,
+        `${competency.id} requires an explanation and has no required explanation row`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
   it("names a misconception on an evidence requirement only from its own competency's list", () => {
     // `misconceptionIfNot` becomes a reteach card on a teacher's screen. One that names a
     // misconception the competency does not claim to catch is a diagnosis nobody decided.

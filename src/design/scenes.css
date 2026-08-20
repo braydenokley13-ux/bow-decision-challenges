@@ -38,20 +38,147 @@
 .roster-card__note { margin: var(--s-4) 0 0; color: var(--world-hero-muted); font: var(--t-micro); }
 
 /* --- Public entry --------------------------------------------------------- */
-.home { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
-.home__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-5); padding: var(--s-4) clamp(20px, 4vw, 56px); border-bottom: 1px solid var(--world-hero-line); }
 
-/* The mark is not repainted here. The front door used to give it `--world-hero-ink` and
-   `--world-hero-muted` and, through `.scene`, a cream plate with a navy letter — so the one
-   page a district administrator opens first carried a mark nothing else in the product
-   carried, on the same cream ground everything else sits on. */
-.home__bar > a { color: var(--world-hero-ink); font: var(--t-ui); text-underline-offset: 5px; }
-.home__grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr); align-items: center; gap: clamp(28px, 5vw, 80px); width: min(1440px, 100%); margin: auto; padding: clamp(28px, 5vw, 72px) clamp(20px, 4vw, 56px); }
-.home h1 { max-width: 13ch; margin: var(--s-3) 0 var(--s-5); font: 700 clamp(3rem, 6.4vw, 5.6rem)/0.92 var(--font-display); letter-spacing: var(--display-tracking-tight); }
-.home__deck { max-width: 50ch; margin: 0; font: 400 clamp(1.02rem, 1.4vw, 1.22rem)/1.5 var(--font-ui); }
+/* ---------------------------------------------------------------------------
+   The front door.
+
+   The first screen a district evaluator meets, and the only one that has to be
+   true of the whole product rather than of one world inside it. It is dark
+   because the student product is dark: the door should feel like the thing it
+   opens, not like a brochure about it.
+
+   Nothing here starts a run. A run that is not attached to a class produces
+   evidence nobody can read, so the only way in is a class code.
+   --------------------------------------------------------------------------- */
+
+.home {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  overflow: clip;
+  background: var(--canvas);
+  color: var(--ink-1);
+}
+
+/* Two blooms and a grain-free vignette. Painted on one absolutely-positioned
+   layer rather than on `.home` itself so the page can scroll past them. */
+.home__aurora {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 70% at 18% 6%, rgb(124 82 250 / 30%) 0%, transparent 62%),
+    radial-gradient(90% 60% at 88% 22%, rgb(57 73 196 / 26%) 0%, transparent 60%),
+    radial-gradient(140% 80% at 50% 108%, rgb(232 117 42 / 12%) 0%, transparent 58%);
+}
+
+.home > *:not(.home__aurora) { position: relative; z-index: 1; }
+
+.home__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-5);
+  padding: var(--s-5) clamp(20px, 4vw, 56px);
+}
+
+.home__bar > a { color: var(--ink-2); font: var(--t-ui); text-underline-offset: 5px; }
+.home__bar > a:hover { color: var(--ink-1); }
+
+.home__hero {
+  width: min(1200px, 100%);
+  margin: 0 auto;
+  padding: clamp(28px, 6vw, 88px) clamp(20px, 4vw, 56px) clamp(24px, 4vw, 56px);
+}
+
+.home__eyebrow {
+  margin: 0;
+  color: var(--violet-300);
+  font: var(--t-label);
+  letter-spacing: var(--stamp-tracking);
+  text-transform: uppercase;
+}
+
+.home h1 {
+  max-width: 15ch;
+  margin: var(--s-4) 0 var(--s-5);
+  font: 800 clamp(2.75rem, 6.6vw, 5.4rem)/0.94 var(--font-display);
+  letter-spacing: var(--display-tracking-tight);
+  text-wrap: balance;
+}
+
+.home__deck {
+  max-width: 56ch;
+  margin: 0;
+  color: var(--ink-2);
+  font: 400 clamp(1.02rem, 1.35vw, 1.22rem)/1.6 var(--font-ui);
+}
+
 .home__actions { display: flex; flex-wrap: wrap; gap: var(--s-3); margin-top: clamp(24px, 4vw, 40px); }
-.home__actions .button--secondary { color: var(--world-hero-ink); background: transparent; border-color: var(--world-hero-edge); }
-.home__foot { display: flex; flex-wrap: wrap; gap: var(--s-3) clamp(16px, 3vw, 48px); align-items: center; padding: var(--s-4) clamp(20px, 4vw, 56px); color: var(--world-hero-muted); border-top: 1px solid var(--world-hero-line); font: var(--t-micro); letter-spacing: 0.1em; text-transform: uppercase; }
+.home__actions .button--secondary { color: var(--ink-1); background: transparent; border-color: var(--border-strong); }
+
+/* --- The worlds -------------------------------------------------------- */
+
+.home__worlds-section {
+  width: min(1200px, 100%);
+  margin: 0 auto;
+  padding: clamp(8px, 2vw, 24px) clamp(20px, 4vw, 56px) clamp(32px, 5vw, 72px);
+}
+
+.home__worlds-section .stamp { color: var(--violet-300); }
+
+.home__worlds {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  gap: var(--s-5);
+  margin: var(--s-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home__worlds-note {
+  max-width: 62ch;
+  margin: var(--s-6) 0 0;
+  color: var(--ink-3);
+  font: var(--t-body);
+}
+
+/* The world card. Art on top under a scrim so the title always has a ground,
+   body beneath. The card owns its own accent from `[data-world]`. */
+.world-card {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.world-card__art { position: relative; aspect-ratio: 20 / 9; }
+
+.world-card__art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 45%, var(--surface) 100%);
+}
+
+.world-art { display: block; width: 100%; height: 100%; }
+
+.world-card__body { display: grid; align-content: start; gap: var(--s-2); padding: var(--s-5); }
+.world-card__body h3 { margin: 0; font: var(--t-title1); letter-spacing: -0.02em; }
+.world-card__body p { margin: 0; color: var(--ink-3); font: var(--t-body); }
+
+.world-card__length {
+  margin-top: var(--s-2);
+  color: var(--ink-4);
+  font: var(--t-sm);
+  font-feature-settings: var(--num);
+}
+
 
 /* ---------------------------------------------------------------------------
    Scene 1: the invitation.
@@ -183,7 +310,10 @@
    point of keeping them on screen instead of moving to a fresh board. */
 .bet[data-struck="true"] { background: var(--fin-over-soft); border: 1px solid var(--fin-over); border-left: 6px solid var(--fin-over); }
 .bet[data-struck="true"] .bet__head strong { color: var(--fin-over-ink); text-decoration: line-through; text-decoration-thickness: 3px; }
-.bets[data-settled="true"] .bet[data-counted="false"] { opacity: 0.6; }
+
+/* Money the plan did not count on, after the plan is settled. Colour, not opacity — see
+   `worlds.css` for the compositing rule this is the second instance of. */
+.bets[data-settled="true"] .bet[data-counted="false"] { color: var(--ink-3); }
 .bet__verdict { margin: 0; font: var(--t-ui); }
 .bet[data-struck="true"] .bet__verdict { color: var(--fin-over-ink); font-weight: 700; }
 
@@ -313,7 +443,7 @@
 .closer-choice button[data-category="goal"] { border-left-color: var(--choice-1); }
 .closer-choice button[data-category="reserve"] { border-left-color: var(--choice-2); }
 .closer-choice button[data-category="flexibleCash"] { border-left-color: var(--choice-3); }
-.closer-choice button:hover { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); }
+.closer-choice button:hover { color: var(--bow-brand-ink); background: var(--bow-brand-fill); border-color: var(--bow-brand-fill); }
 .closer-choice button:hover small { color: inherit; }
 
 /* -------------------------------------------------------------------------
@@ -474,7 +604,7 @@
 /* Four Saturdays, and they wrap rather than squeeze. Beside the money rail the column is
    narrower than it was, and `minmax(0, 1fr)` let each block shrink until its own date ran
    out of the side of it. */
-.saturdays { display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.saturdays { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(68px, 100%), 1fr)); gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
 .saturdays li { display: grid; gap: var(--s-2); padding: var(--s-3); text-align: center; background: var(--surface-raised); border: 1px solid var(--border-default); border-radius: var(--r-sm); transition: background var(--dur-state) var(--ease-standard), border-color var(--dur-state) var(--ease-standard); }
 .saturdays li span { color: var(--ink-3); font: var(--t-micro); overflow-wrap: anywhere; }
 .saturdays li b { font: var(--t-ui); overflow-wrap: anywhere; }
@@ -789,7 +919,10 @@
 .week-meter[data-state="over"] .week-meter__state { color: var(--fin-over-ink); }
 
 /* A committed row cannot be moved, so it does not pretend to be a control. */
-.choice-row--locked { grid-template-columns: 6px minmax(0, 1fr) auto; opacity: 0.9; }
+
+/* A row the plan can no longer move. Quieter by ground and ink, not by fade — the figure on
+   it is money the student still has to read to understand what is left. */
+.choice-row--locked { grid-template-columns: 6px minmax(0, 1fr) auto; background: var(--surface-sunken); }
 .choice-row--locked .choice-row__label { margin: 0; font: var(--t-ui); }
 .choice-row--locked .choice-row__value { color: var(--ink-2); }
 
@@ -1017,7 +1150,12 @@
 .claims__list button em { color: var(--ink-3); font-style: normal; }
 .claims__list button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); border-color: var(--ink-1); }
 .claims__list button[aria-pressed="true"] .claims__detail { color: var(--surface-sunken); }
-.claims__list button[aria-disabled="true"] { cursor: default; opacity: 0.55; }
+
+/* A claim the money will not stretch to. Muted in colour rather than faded: `opacity: 0.55`
+   composited this button's text down to about 3.37:1 from a token that measures 7.77:1, and
+   it is not a disabled control — it is a priced option the student cannot afford, which they
+   still have to be able to read in order to understand why. */
+.claims__list button[aria-disabled="true"] { cursor: default; color: var(--ink-3); background: var(--surface-sunken); }
 
 /* Deliberately the same square as `.gap-tiles__mark` and `.interview__mark`, which is the
    mark this product already uses to say "you can press this". It is restated rather than
@@ -1093,4 +1231,49 @@
 @media (min-width: 640px) {
   .claims__list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); }
   .claims__why ul { grid-template-columns: 1fr 1fr; }
+}
+
+/* ---------------------------------------------------------------------------
+   Short windows: the chrome stops floating.
+   --------------------------------------------------------------------------- */
+
+/* At 400% zoom a browser makes a 1280×1024 window into 320×256 CSS pixels, and this product
+   pins something to both edges of it. Measured there, on the ranking screen, a student cannot
+   press *Move earlier* at all: Playwright reports `<button>Check the order</button>` from
+   `.stage-action` intercepting the click, then — with that one unpinned — `.challenge-topbar`
+   and `.plan-rail` intercepting it in turn. Three bars, one window, nothing reachable between
+   them. The market fails the same way one screen in: *Take this booth* is visible, enabled, and
+   *"outside of the viewport"* after scrolling.
+
+   It is not any one bar and that is why it is fixed in one place. Each of these is a good idea
+   at 768px of height and they are the same idea at 256px, where together they are most of the
+   window. `.plan-rail` has been here before, at a narrow *width*, and the note at line 618
+   records what that cost: *"325px of it, 63.5 % of the viewport, covering the question, the
+   money field and both steppers."* The rule that fixed it pinned it to the bottom, which is
+   exactly what fails now on the other axis.
+
+   So below this height every one of them becomes what it already is in flow — content, in
+   order, that a student scrolls through. Nothing is lost that a 256px window had room to keep.
+   480px rather than 256px because a landscape phone and a short Chromebook window are the same
+   problem with more headroom.
+
+   Here, at the end of the last stylesheet `main.tsx` loads, because `scenes.css` is what makes
+   `.plan-rail` a bottom bar and a rule in `app.css` cannot reach past it. The selectors match
+   the ones they override — `.popup-main > .popup-action` does not yield to a bare
+   `.popup-action`, whatever order the files are in.
+
+   What actually guards this now is the `chromium-zoom` project in `playwright.config.ts`,
+   which is where the defect was found and which runs with the rest of the suite.
+   `visual/occlusion.spec.ts` has the 320×256 row too, but it is a manual instrument — its own
+   config, no `webServer`, nothing invoking it — so it is the second pair of eyes rather than
+   the gate. Its five viewports bottomed out at 600px of height, which is why this shipped: it
+   varies width, and this is a height defect. */
+@media (max-height: 480px) {
+  .challenge-topbar,
+  .popup-topbar,
+  .stage-action,
+  .plan-commit,
+  .plan-rail,
+  .popup-main > .popup-action,
+  .popup-board > .popup-commit { position: static; }
 }

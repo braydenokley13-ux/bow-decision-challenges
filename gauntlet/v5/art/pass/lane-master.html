@@ -1,0 +1,869 @@
+<!doctype html>
+<meta charset="utf-8">
+<!--
+  THE PASS — lane plate, authoring master (synthesis build).
+  ============================================================================
+
+  This is the environment the student sees THROUGH their own service window on
+  Saturday night. It descends from Direction A's lane-master (the best drawing
+  in the war — its stall recipe, figure recipe and wet-ground recipe are kept)
+  recomposed for Direction C's chassis and for the fiction the brief demands:
+
+    THE STUDENT IS BEHIND THEIR OWN WINDOW LOOKING OUT.  The bottom of the
+    frame is our own counter surface, foreshortened, with a hot bullnose where
+    it drops away to the lane. Our own hatch light is the dominant pool on the
+    wet ground beyond it. The other stalls recede across the lane. Near
+    passers-by are cropped by our counter's edge, the way close people are
+    cropped by any real window.
+
+  WHAT THIS FILE IS FOR
+    Authoring only. Deliberately expensive (large blurs, dozens of layers) —
+    a Chromebook never runs it. It is baked once per grade with:
+
+      source scripts/browser-env.sh
+      node scripts/bake-art.mjs gauntlet/v5/art/pass/lane-master.html \
+           gauntlet/v5/art/pass/lane-<grade>.webp \
+           --width 1920 --height 520 --scale 2 --quality 0.82
+
+    bake-art.mjs cannot pass a query string, so ./regen.sh flips the
+    data-grade attribute with sed into a temp copy per grade and bakes all
+    three. In a browser you can preview any grade with ?grade=early|peak|late.
+
+  THE RULES THIS DRAWING IS UNDER (do not "improve" past them)
+    1. THE PLATE IS CONSTANT. It never varies with stock, crowd, or any world
+       state. The drawn people are atmosphere, not information: the SAME
+       figures appear in all three grades, so nothing about the crowd can be
+       read off the plate. (Direction A varied crowd density per grade; that
+       is deliberately dropped here — a student comparing two screenshots must
+       find only light changed.)
+    2. NO QUANTITIES. No plates, no trays, no stock, nothing countable that
+       could track anything. Other vendors' counters carry produce and pans,
+       never dishware in rows. No walker carries a plate.
+    3. THE ONLY VARIATION IS LIGHT, keyed to the clock, which is public
+       (the market runs 17:00-22:00). Three grades of one geometry:
+         early — still blue, light in the sky, lamps just winning
+         peak  — full dark, lamps dominant
+         late  — thinning: cooler, some stalls dark, far lights out
+    4. FIGURES follow A's recipe or they don't ship: necks, ears, sloping
+       shoulders, jacket hems, a weight-bearing leg, no face, never pure
+       black, one warm rim where a real light would put it. Anything added
+       later without this recipe will read as pawns while passing every byte
+       budget silently.
+
+  GEOMETRY MAP (canvas 1920x520 — used by PLATE.md; keep in sync if you move
+  anything, because the chassis positions DOM instruments against these zones)
+    y   0- 54   our awning underside + occlusion (the chassis valance overlays this)
+    y  54-268   sky; near string of our own bulbs sags to y~196 at centre
+    y 250-300   far skyline + market glow, hazed
+    x  90- 470  STALL 1 (nearest, warm red canopy), base ~y378, customers to y~376
+    x 850-1130  STALL 2 (mid, teal canopy), base ~y340
+    x1400-1580  STALL 3 (far, hazed; DARK in the late grade), base ~y326
+    x1620-1840  bridge gate, far right, in haze
+    x 640- 730  standing barrel table, two people eating
+    x 470- 640  big cool puddle;  x1150-1240 far puddle;  manhole x~880
+    cx 960      OUR hatch-light pool on the lane, the dominant source
+    x 380- 470  near walker (cropped by our counter);  x1240-1420 near pair
+    y 462-470   dark seam: the lane disappearing behind our counter
+    y 470-479   BULLNOSE — the counter's far edge, hottest specular on the plate
+    y 479-520   OUR COUNTER SURFACE, foreshortened, lit by our own pass lamp
+    Safe zone (measured in the chassis mimic, not estimated): at 1366x768 the
+    view band is 1258x335 — cover-fit shows the full width and shaves ~6px
+    vertically. At 1024x600 the band is 916x259 — the full height shows and
+    ~40px is cropped from EACH SIDE. Keep essential content inside
+    x in [48,1872]; the vertical extent is safe everywhere measured.
+
+  WHY 1920x520 (not C's 1920x420):
+    C's chassis fits the plate with background-size:cover into a view band of
+    ~1258x335 at 1366x768 — aspect 3.75:1. A 420-tall plate covers by HEIGHT
+    and throws ~170px of drawing off each side. 520 tall matches the band's
+    aspect (3.69:1), so at 1366 the full width survives with ~6px of vertical
+    crop — and the extra 100px is exactly where the fiction fix lives: the
+    near sill and our light pool at the bottom of the frame.
+-->
+<html data-grade="peak">
+<script>
+  /* Preview switch: lane-master.html?grade=early|peak|late.
+     The bake goes through regen.sh, which rewrites data-grade instead,
+     because bake-art.mjs resolves a bare file path (no query string). */
+  (function () {
+    var g = new URLSearchParams(location.search).get("grade");
+    if (g === "early" || g === "peak" || g === "late") {
+      document.documentElement.dataset.grade = g;
+    }
+  })();
+</script>
+<style>
+  html, body { margin: 0; width: 1920px; height: 520px; overflow: hidden; background: #000; }
+
+  /* ------------------------------------------------------------------ grade knobs
+     Everything a grade may touch is a light value. No geometry, no figures.
+     --sky-*      the four sky stops
+     --haze-op    horizon haze density (thick early, thin late)
+     --bulb-op    string bulbs (barely winning early, full after dark)
+     --pool-op    our own hatch pool (we are open 17:00-22:00, so never off)
+     --stall-glow lit stall interiors (stalls 1 & 2)
+     --c-lit      stall 3's light ONLY — 0 in late ("some stalls dark")
+     --farstring  the deep string behind the stalls — dims late
+     --far-borough  lit windows on the far skyline
+     --stars-op / --moths-d   full-dark dressing
+     --amb        cool ambient lift on the ground (blue-hour light early)
+     --sheen-op   the sky mirrored in the wet lane (bright early, dim late)
+     --cool-grade late-night cool wash over everything beyond the counter   */
+  html[data-grade="early"] {
+    --sky-top: #2a3d68; --sky-mid: #44547a; --sky-hor: #8a6547; --sky-ground: #4a3421;
+    --haze-op: .32; --bulb-op: .78; --pool-op: .9; --stall-glow: .85;
+    --c-lit: .9; --farstring: .8; --far-borough: .5;
+    --stars-op: 0; --moths-d: none;
+    --amb: .11; --sheen-op: .08; --cool-grade: 0; --c-dark: 0; --pool-rewarm: 0;
+  }
+  html[data-grade="peak"] {
+    --sky-top: #081026; --sky-mid: #131f3e; --sky-hor: #543823; --sky-ground: #2e1d11;
+    --haze-op: .2; --bulb-op: 1; --pool-op: 1; --stall-glow: 1;
+    --c-lit: 1; --farstring: 1; --far-borough: 1;
+    --stars-op: .55; --moths-d: block;
+    --amb: .05; --sheen-op: .06; --cool-grade: 0; --c-dark: 0; --pool-rewarm: 0;
+  }
+  html[data-grade="late"] {
+    --sky-top: #04070f; --sky-mid: #0c1226; --sky-hor: #2e2130; --sky-ground: #1c1418;
+    --haze-op: .13; --bulb-op: 1; --pool-op: 1; --stall-glow: .92;
+    --c-lit: 0; --farstring: .35; --far-borough: .6;
+    --stars-op: 1; --moths-d: block;
+    --amb: .09; --sheen-op: .05; --cool-grade: .12; --c-dark: .34; --pool-rewarm: .5;
+  }
+
+  .bulbs      { opacity: var(--bulb-op); }
+  .pool       { opacity: var(--pool-op); }
+  .stall-glow { opacity: var(--stall-glow); }
+  .c-lit      { opacity: var(--c-lit); }
+  .farstring  { opacity: var(--farstring); }
+  .stars      { opacity: var(--stars-op); }
+  .moths      { display: var(--moths-d); }
+  /* steam reads strongest against the blue hour, almost gone late */
+  html[data-grade="early"] .steam { opacity: 1.25; }
+  html[data-grade="late"]  .steam { opacity: .6; }
+</style>
+<body>
+<svg width="1920" height="520" viewBox="0 0 1920 520" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- ============================== gradients ============================== -->
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" style="stop-color:var(--sky-top)"/>
+      <stop offset=".42" style="stop-color:var(--sky-mid)"/>
+      <stop offset=".78" style="stop-color:var(--sky-hor)"/>
+      <stop offset="1" style="stop-color:var(--sky-ground)"/>
+    </linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#241812"/>
+      <stop offset=".3" stop-color="#14100c"/>
+      <stop offset="1" stop-color="#0a0807"/>
+    </linearGradient>
+    <!-- our own hatch light thrown onto the lane from behind the camera -->
+    <radialGradient id="warmpool" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#ffc267" stop-opacity=".5"/>
+      <stop offset=".55" stop-color="#e8752a" stop-opacity=".14"/>
+      <stop offset="1" stop-color="#e8752a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="stallglow" cx=".5" cy=".4" r=".65">
+      <stop offset="0" stop-color="#ffc677" stop-opacity=".72"/>
+      <stop offset="1" stop-color="#ffb060" stop-opacity="0"/>
+    </radialGradient>
+    <!-- ends of the counter fall out of our lamp's throw -->
+    <linearGradient id="bullfade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#000" stop-opacity=".55"/>
+      <stop offset=".26" stop-color="#000" stop-opacity="0"/>
+      <stop offset=".74" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".55"/>
+    </linearGradient>
+    <linearGradient id="counterwood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#553318"/>
+      <stop offset="1" stop-color="#26140b"/>
+    </linearGradient>
+    <!-- vertical mirror smear: how every light pays twice on wet asphalt -->
+    <linearGradient id="streak" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd48a" stop-opacity=".34"/>
+      <stop offset=".7" stop-color="#ffd48a" stop-opacity=".08"/>
+      <stop offset="1" stop-color="#ffd48a" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="lantern" cx=".5" cy=".42" r=".6">
+      <stop offset="0" stop-color="#ffe3ae"/>
+      <stop offset=".7" stop-color="#f08a3c"/>
+      <stop offset="1" stop-color="#c2551e"/>
+    </radialGradient>
+    <radialGradient id="vig" cx=".5" cy=".46" r=".75">
+      <stop offset=".6" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".38"/>
+    </radialGradient>
+    <!-- warm market glow rising behind the whole stall row -->
+    <linearGradient id="citumglow" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#a8501e" stop-opacity=".3"/>
+      <stop offset="1" stop-color="#c96a2e" stop-opacity="0"/>
+    </linearGradient>
+    <!-- awning occlusion at the very top of the frame -->
+    <linearGradient id="topshade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#000" stop-opacity="0"/>
+    </linearGradient>
+    <!-- OUR counter surface: far side (top) catches the lane's warmth,
+         near side (bottom) falls into our own under-counter shadow -->
+    <linearGradient id="sillface" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8f5c2e"/>
+      <stop offset=".4" stop-color="#5c3a1c"/>
+      <stop offset="1" stop-color="#2b1a0c"/>
+    </linearGradient>
+    <linearGradient id="bullnose" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f2c184"/>
+      <stop offset=".5" stop-color="#c98a44"/>
+      <stop offset="1" stop-color="#7e4c20"/>
+    </linearGradient>
+
+    <!-- ============================== blurs ============================== -->
+    <filter id="b1" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="1"/></filter>
+    <filter id="b2" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2"/></filter>
+    <filter id="b4" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="4"/></filter>
+    <filter id="b8" x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="8"/></filter>
+    <filter id="b16" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="16"/></filter>
+    <filter id="b28" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="28"/></filter>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".05"/></feComponentTransfer>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+
+    <!-- ============================== bulbs ==============================
+         Three-layer bloom: wide halo, tight glow, hot core. One dead bulb is
+         placed inline on the near string (a market truth: one always is). -->
+    <g id="bulb">
+      <line x1="0" y1="-14" x2="0" y2="0" stroke="#1a100a" stroke-width="1.6"/>
+      <circle r="18" fill="#ffb347" opacity=".15" filter="url(#b8)"/>
+      <circle r="8" fill="#ffcf74" opacity=".6" filter="url(#b2)"/>
+      <circle r="3.2" fill="#fff4d6"/>
+    </g>
+    <g id="bulb-s">
+      <line x1="0" y1="-10" x2="0" y2="0" stroke="#150d08" stroke-width="1.2"/>
+      <circle r="10" fill="#ffb347" opacity=".14" filter="url(#b4)"/>
+      <circle r="5" fill="#ffcf74" opacity=".55" filter="url(#b1)"/>
+      <circle r="2" fill="#ffefc9"/>
+    </g>
+
+    <!-- ============================== figures ==============================
+         Direction A's silhouette recipe, kept verbatim where possible.
+         Origin at the feet, adults ~140 tall before scaling. Every figure:
+         neck under the head, ears implied by the skull ellipse, sloping
+         shoulders, jacket hem, weight-bearing leg, one warm rim stroke.
+         Colors live in the #12-#1f range — never pure black. -->
+
+    <!-- standing, back three-quarter, hands in pockets -->
+    <g id="fig-wait">
+      <path d="M-8,-2 L-10,-6 -3,-8 -1,-2 Z" fill="#0e0805"/>
+      <path d="M4,-2 L3,-7 10,-8 11,-3 Z" fill="#0e0805"/>
+      <path d="M-5,-58 L-7,-8" stroke="#150d09" stroke-width="9" stroke-linecap="round"/>
+      <path d="M5,-58 C8,-40 4,-22 7,-8" stroke="#150d09" stroke-width="9" stroke-linecap="round"/>
+      <path d="M-14,-112 C-17,-92 -16,-72 -12,-56 L13,-56 C16,-76 16,-96 12,-112 C5,-117 -7,-117 -14,-112 Z" fill="#171009"/>
+      <path d="M-13,-107 C-19,-92 -17,-80 -9,-71" stroke="#171009" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <path d="M13,-107 C19,-92 17,-80 9,-71" stroke="#171009" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <rect x="-4" y="-121" width="8" height="9" fill="#171009"/>
+      <ellipse cx="0" cy="-128" rx="8.6" ry="10" fill="#171009"/>
+      <path d="M-14,-110 C-17,-92 -16,-74 -13,-58" stroke="#ffb864" stroke-width="1.6" opacity=".55" fill="none" filter="url(#b1)"/>
+      <path d="M-8,-136 C-12,-131 -13,-124 -11,-119" stroke="#ffb864" stroke-width="1.6" opacity=".6" fill="none" filter="url(#b1)"/>
+    </g>
+
+    <!-- hood up, shoulder bag -->
+    <g id="fig-hood">
+      <path d="M-8,-2 L-10,-6 -3,-8 -1,-2 Z" fill="#0e0805"/>
+      <path d="M4,-2 L3,-7 10,-8 11,-3 Z" fill="#0e0805"/>
+      <path d="M-5,-56 L-7,-8" stroke="#120b07" stroke-width="9" stroke-linecap="round"/>
+      <path d="M5,-56 C8,-40 4,-22 7,-8" stroke="#120b07" stroke-width="9" stroke-linecap="round"/>
+      <path d="M-15,-110 C-18,-90 -17,-70 -12,-54 L13,-54 C16,-74 17,-94 13,-110 C5,-116 -8,-116 -15,-110 Z" fill="#140d08"/>
+      <path d="M13,-96 C17,-92 18,-80 15,-70 L4,-70 C3,-80 5,-90 8,-96 Z" fill="#0f0a06"/>
+      <path d="M8,-108 C6,-100 5,-88 6,-72" stroke="#2b1c10" stroke-width="1.6" fill="none" opacity=".8"/>
+      <path d="M-10,-118 C-12,-132 -2,-140 6,-138 C13,-136 16,-128 14,-118 C10,-112 -5,-112 -10,-118 Z" fill="#140d08"/>
+      <path d="M-9,-134 C-4,-139 6,-140 11,-134" stroke="#ffb864" stroke-width="1.5" opacity=".55" fill="none" filter="url(#b1)"/>
+      <path d="M-15,-108 C-18,-90 -17,-72 -14,-56" stroke="#ffb864" stroke-width="1.5" opacity=".5" fill="none" filter="url(#b1)"/>
+    </g>
+
+    <!-- leaning on a counter, weight forward -->
+    <g id="fig-lean">
+      <path d="M-9,-2 L-11,-7 -4,-9 -2,-2 Z" fill="#0e0805"/>
+      <path d="M7,-2 L5,-7 12,-8 13,-2 Z" fill="#0e0805"/>
+      <path d="M-6,-56 L-8,-8" stroke="#140c08" stroke-width="9" stroke-linecap="round"/>
+      <path d="M8,-56 C12,-38 8,-20 10,-8" stroke="#140c08" stroke-width="9" stroke-linecap="round"/>
+      <path d="M-12,-104 C-17,-88 -15,-68 -11,-54 L14,-56 C18,-78 19,-98 14,-110 C6,-116 -5,-113 -12,-104 Z" fill="#161008"/>
+      <path d="M12,-102 C20,-96 26,-90 30,-84" stroke="#161008" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <path d="M-12,-100 C-18,-88 -15,-76 -8,-68" stroke="#161008" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <rect x="-1" y="-118" width="8" height="9" fill="#161008"/>
+      <ellipse cx="5" cy="-124" rx="8.4" ry="9.7" fill="#161008" transform="rotate(8 5 -124)"/>
+      <path d="M13,-104 C19,-97 24,-91 29,-86" stroke="#ffb864" stroke-width="1.5" opacity=".5" fill="none" filter="url(#b1)"/>
+      <path d="M1,-132 C-3,-127 -4,-121 -2,-116" stroke="#ffb864" stroke-width="1.6" opacity=".55" fill="none" filter="url(#b1)"/>
+    </g>
+
+    <!-- walking, mid stride. A's original carried a plate; the plate is
+         REMOVED here on purpose — nothing on this plate may be dishware. -->
+    <g id="fig-walk">
+      <path d="M-16,-2 L-18,-6 -10,-9 -8,-3 Z" fill="#0d0805"/>
+      <path d="M12,-1 L14,-7 21,-6 20,-1 Z" fill="#0d0805"/>
+      <path d="M-2,-56 C-8,-38 -12,-22 -14,-6" stroke="#130c08" stroke-width="9" stroke-linecap="round" fill="none"/>
+      <path d="M2,-56 C8,-40 14,-20 17,-4" stroke="#130c08" stroke-width="9" stroke-linecap="round" fill="none"/>
+      <path d="M-11,-108 C-14,-90 -13,-72 -9,-54 L11,-54 C14,-74 14,-94 10,-108 C4,-113 -5,-113 -11,-108 Z" fill="#150e08"/>
+      <path d="M10,-104 C16,-99 21,-93 24,-86" stroke="#150e08" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <path d="M-10,-102 C-14,-94 -15,-86 -13,-78" stroke="#150e08" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <rect x="-3.5" y="-117" width="7" height="9" fill="#150e08"/>
+      <ellipse cx="0" cy="-124" rx="8.2" ry="9.6" fill="#150e08" transform="rotate(-5 0 -124)"/>
+      <path d="M9,-106 C15,-101 20,-95 23,-88" stroke="#ffb864" stroke-width="1.5" opacity=".5" fill="none" filter="url(#b1)"/>
+    </g>
+
+    <!-- kid, ~80 tall, pointing up at something -->
+    <g id="fig-kid">
+      <path d="M-7,-1 L-8,-5 -2,-6 -1,-1 Z" fill="#0d0805"/>
+      <path d="M3,-1 L3,-5 9,-5 9,-1 Z" fill="#0d0805"/>
+      <path d="M-3,-34 L-4,-5" stroke="#140d08" stroke-width="7" stroke-linecap="round"/>
+      <path d="M3,-34 L5,-5" stroke="#140d08" stroke-width="7" stroke-linecap="round"/>
+      <path d="M-9,-62 C-11,-50 -10,-40 -7,-32 L8,-32 C11,-42 11,-54 8,-62 C3,-66 -4,-66 -9,-62 Z" fill="#160f09"/>
+      <path d="M8,-60 C14,-64 20,-70 24,-77" stroke="#160f09" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      <path d="M-8,-58 C-11,-50 -10,-44 -7,-40" stroke="#160f09" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      <ellipse cx="0" cy="-70" rx="7.6" ry="8.4" fill="#160f09"/>
+      <path d="M8,-61 C14,-66 19,-71 23,-77" stroke="#ffb864" stroke-width="1.5" opacity=".55" fill="none" filter="url(#b1)"/>
+    </g>
+
+    <!-- vendor, waist-up behind their own counter, working, flat cap -->
+    <g id="fig-vendor">
+      <path d="M-14,0 C-16,-16 -15,-32 -11,-44 C-4,-50 8,-50 14,-44 C17,-30 17,-14 15,0 Z" fill="#1f150c"/>
+      <path d="M-9,0 C-10,-14 -9,-28 -6,-38 L7,-38 C10,-28 10,-12 9,0 Z" fill="#6b5940" opacity=".55"/>
+      <path d="M14,-42 C22,-38 28,-32 32,-24" stroke="#1f150c" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <path d="M-14,-40 C-20,-34 -22,-28 -21,-22" stroke="#1f150c" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <rect x="-4" y="-51" width="8" height="8" fill="#1f150c"/>
+      <ellipse cx="1" cy="-57" rx="7.8" ry="8.8" fill="#1f150c" transform="rotate(6 1 -57)"/>
+      <path d="M-7,-61 C-4,-66 7,-66 9,-60 L10,-58 -8,-58 Z" fill="#120b06"/>
+      <path d="M-6,-64 C-1,-67 6,-67 9,-62" stroke="#ffb864" stroke-width="1.6" opacity=".6" fill="none" filter="url(#b1)"/>
+      <path d="M-13,-44 C-8,-47 0,-49 8,-47" stroke="#ffcf8a" stroke-width="1.5" opacity=".45" fill="none" filter="url(#b1)"/>
+    </g>
+
+    <!-- contact shadow under standing figures -->
+    <g id="shadow"><ellipse rx="24" ry="4.5" fill="#000" opacity=".38" filter="url(#b2)"/></g>
+  </defs>
+
+  <!-- =============================================================== SKY -->
+  <rect width="1920" height="310" fill="url(#sky)"/>
+  <g class="stars" fill="#cfd8ef">
+    <circle cx="180" cy="40" r="1" opacity=".5"/><circle cx="410" cy="24" r=".8" opacity=".4"/>
+    <circle cx="640" cy="52" r=".7" opacity=".35"/><circle cx="860" cy="30" r="1" opacity=".45"/>
+    <circle cx="1080" cy="46" r=".8" opacity=".4"/><circle cx="1310" cy="22" r=".7" opacity=".35"/>
+    <circle cx="1520" cy="54" r="1" opacity=".45"/><circle cx="1730" cy="34" r=".8" opacity=".4"/>
+    <circle cx="1870" cy="58" r=".7" opacity=".3"/><circle cx="520" cy="14" r=".6" opacity=".3"/>
+  </g>
+
+  <!-- warm market glow rising behind the whole stall row -->
+  <rect x="60" y="228" width="1800" height="82" fill="url(#citumglow)" filter="url(#b16)" opacity=".55"/>
+
+  <!-- far skyline across the river, cool, hazed; lit windows dim with the grade -->
+  <g filter="url(#b4)">
+    <path d="M0,270 L70,266 70,252 150,252 150,262 240,258 300,244 302,258 440,256 560,264 720,258 760,246 830,246 830,260 1010,256 1180,264 1310,258 1470,262 1560,250 1620,250 1620,262 1780,258 1920,264 1920,310 0,310 Z"
+          fill="#0e1526" opacity=".6"/>
+    <g fill="#6e86b8" opacity="var(--far-borough)">
+      <rect x="84" y="256" width="4" height="5" opacity=".35"/>
+      <rect x="288" y="250" width="3" height="4" opacity=".3"/>
+      <rect x="781" y="252" width="4" height="4" opacity=".28"/>
+      <rect x="1180" y="258" width="3" height="4" opacity=".3"/>
+      <rect x="1585" y="254" width="4" height="4" opacity=".26"/>
+    </g>
+  </g>
+
+  <!-- deep string of lights, behind the stalls; dims in the late grade -->
+  <path d="M180,116 C620,178 1240,172 1760,112" stroke="#0b0704" stroke-width="1.1" fill="none" opacity=".8"/>
+  <g class="bulbs"><g class="farstring" opacity=".7">
+    <use href="#bulb-s" x="360" y="148"/>
+    <use href="#bulb-s" x="560" y="162"/>
+    <use href="#bulb-s" x="800" y="172"/>
+    <use href="#bulb-s" x="1010" y="174"/>
+    <use href="#bulb-s" x="1230" y="168"/>
+    <use href="#bulb-s" x="1440" y="154"/>
+    <use href="#bulb-s" x="1620" y="136"/>
+  </g></g>
+
+  <!-- ================================================= BRIDGE GATE, far right
+       Kept from A: a dark arch against its own sodium glow, tiny walkers under
+       it. It is the way out of the market and the deepest thing in the frame. -->
+  <g transform="translate(490,-16)">
+    <ellipse cx="1250" cy="300" rx="150" ry="70" fill="#ff9c4a" opacity=".22" filter="url(#b28)"/>
+    <path d="M1150,320 C1180,180 1320,180 1352,320 L1326,320 C1300,208 1198,208 1176,320 Z"
+          fill="#0a0e19" opacity=".92" filter="url(#b1)"/>
+    <g opacity=".75">
+      <circle cx="1192" cy="252" r="2" fill="#ffd48a"/><circle cx="1192" cy="252" r="6" fill="#ffb347" opacity=".25" filter="url(#b2)"/>
+      <circle cx="1212" cy="228" r="2" fill="#ffd48a"/><circle cx="1212" cy="228" r="6" fill="#ffb347" opacity=".25" filter="url(#b2)"/>
+      <circle cx="1240" cy="216" r="2" fill="#ffd48a"/><circle cx="1240" cy="216" r="6" fill="#ffb347" opacity=".25" filter="url(#b2)"/>
+      <circle cx="1268" cy="220" r="2" fill="#ffd48a"/><circle cx="1268" cy="220" r="6" fill="#ffb347" opacity=".25" filter="url(#b2)"/>
+      <circle cx="1292" cy="238" r="2" fill="#ffd48a"/><circle cx="1292" cy="238" r="6" fill="#ffb347" opacity=".25" filter="url(#b2)"/>
+    </g>
+    <g fill="#0a0a12">
+      <path d="M1238,318 l2,-14 4,0 2,14 -3,0 -1,-8 -1,8 Z"/>
+      <path d="M1258,316 l2,-12 3,0 2,12 -2,0 -1,-7 -2,7 Z" opacity=".8"/>
+      <path d="M1224,317 l2,-13 3,0 2,13 -2,0 -1,-7 -2,7 Z" opacity=".85"/>
+    </g>
+    <ellipse cx="1250" cy="262" rx="170" ry="110" fill="#26344f" opacity=".22" filter="url(#b28)"/>
+  </g>
+
+  <!-- =============================================================== GROUND -->
+  <rect y="296" width="1920" height="224" fill="url(#ground)"/>
+  <!-- blue-hour ambient: the sky lighting the wet ground from above -->
+  <rect y="296" width="1920" height="224" fill="#5a6f9e" style="opacity:var(--amb)"/>
+  <!-- the sky mirrored in the wet lane where no lamp claims it -->
+  <rect x="0" y="330" width="1920" height="80" fill="#46608f" style="opacity:var(--sheen-op)" filter="url(#b16)"/>
+
+  <!-- warm pools under the stalls, seated at each stall's own base line -->
+  <g class="stall-glow">
+    <ellipse cx="280" cy="372" rx="250" ry="32" fill="#ff9c4a" opacity=".22" filter="url(#b8)"/>
+    <ellipse cx="992" cy="334" rx="185" ry="24" fill="#ff9c4a" opacity=".17" filter="url(#b8)"/>
+  </g>
+  <ellipse class="c-lit" cx="1490" cy="322" rx="100" ry="14" fill="#ff9c4a" opacity=".1" filter="url(#b8)"/>
+
+  <!-- contact shadows: each stall sits ON the ground, not near it -->
+  <ellipse cx="280" cy="358" rx="205" ry="10" fill="#000" opacity=".42" filter="url(#b4)"/>
+  <ellipse cx="992" cy="325" rx="150" ry="8" fill="#000" opacity=".38" filter="url(#b4)"/>
+  <ellipse cx="1490" cy="318" rx="85" ry="6" fill="#000" opacity=".3" filter="url(#b4)"/>
+
+  <!-- curb line along the stall side; highlight only where lamplight falls -->
+  <path d="M40,382 C520,364 780,348 940,340 S1300,322 1560,314 L1920,306" stroke="#08050a" stroke-width="3" fill="none" opacity=".75"/>
+  <path d="M120,378 L440,366" stroke="#c98f4a" stroke-width="1" fill="none" opacity=".4"/>
+  <path d="M860,344 L1120,334" stroke="#c98f4a" stroke-width="1" fill="none" opacity=".32"/>
+  <path class="c-lit" d="M1410,320 L1560,315" stroke="#c98f4a" stroke-width="1" fill="none" opacity=".28"/>
+
+  <!-- OUR hatch light thrown onto the lane: the dominant source in the frame.
+       It comes from behind the camera — from the window the student stands at —
+       and it must sit ON the visible lane, not slide under the counter. -->
+  <g class="pool">
+    <ellipse cx="960" cy="468" rx="560" ry="108" fill="url(#warmpool)" filter="url(#b16)"/>
+    <ellipse cx="960" cy="464" rx="340" ry="54" fill="#ffc36a" opacity=".3" filter="url(#b8)"/>
+    <ellipse cx="960" cy="460" rx="170" ry="28" fill="#ffd894" opacity=".22" filter="url(#b8)"/>
+  </g>
+
+  <!-- wet sheen: one long vertical smear under every source, seated at its base -->
+  <g>
+    <rect x="216" y="366" width="9" height="96" fill="url(#streak)" filter="url(#b4)"/>
+    <rect x="298" y="368" width="10" height="108" fill="url(#streak)" filter="url(#b4)"/>
+    <rect x="390" y="364" width="9" height="94" fill="url(#streak)" filter="url(#b4)"/>
+    <rect x="898" y="332" width="8" height="72" fill="url(#streak)" filter="url(#b4)"/>
+    <rect x="988" y="334" width="9" height="86" fill="url(#streak)" filter="url(#b4)"/>
+    <rect x="1078" y="330" width="8" height="66" fill="url(#streak)" filter="url(#b4)"/>
+    <g class="c-lit">
+      <rect x="1432" y="320" width="6" height="40" fill="url(#streak)" filter="url(#b4)" opacity=".7"/>
+      <rect x="1512" y="318" width="6" height="46" fill="url(#streak)" filter="url(#b4)" opacity=".7"/>
+    </g>
+    <!-- faint doubles of our own string bulbs, out in the lane -->
+    <rect x="486" y="408" width="7" height="34" fill="url(#streak)" filter="url(#b4)" opacity=".5"/>
+    <rect x="1626" y="366" width="6" height="26" fill="url(#streak)" filter="url(#b4)" opacity=".45"/>
+    <!-- horizontal ripple shimmer across the wet lane -->
+    <g stroke="#ffcf8a" opacity=".09">
+      <line x1="300" y1="404" x2="480" y2="402" stroke-width="1.4"/>
+      <line x1="640" y1="428" x2="880" y2="426" stroke-width="1.6"/>
+      <line x1="820" y1="456" x2="1080" y2="454" stroke-width="1.8"/>
+      <line x1="1060" y1="402" x2="1230" y2="400" stroke-width="1.2"/>
+      <line x1="430" y1="444" x2="590" y2="443" stroke-width="1.6"/>
+      <line x1="1310" y1="376" x2="1450" y2="374" stroke-width="1.2"/>
+    </g>
+  </g>
+  <!-- broad interior-light smears under the two lit stalls (soft-edged) -->
+  <ellipse cx="280" cy="394" rx="170" ry="28" fill="#ff9c4a" opacity=".14" filter="url(#b16)"/>
+  <ellipse cx="990" cy="354" rx="135" ry="22" fill="#ff9c4a" opacity=".12" filter="url(#b16)"/>
+
+  <!-- puddles: cool mirrors set into a warm ground — the rain that already fell -->
+  <g>
+    <!-- kept OUT of our pool: a puddle mirrors the sky only where no lamp claims it -->
+    <path d="M330,434 C364,427 430,427 460,436 C440,447 364,449 330,441 Z" fill="#131a2c" opacity=".62" filter="url(#b1)"/>
+    <path d="M330,434 C364,427 430,427 460,436" stroke="#46608f" stroke-width="1.2" fill="none" opacity=".35" filter="url(#b1)"/>
+    <rect x="392" y="428" width="6" height="17" fill="#ffd48a" opacity=".4" filter="url(#b1)"/>
+    <path d="M1148,364 C1170,360 1206,361 1220,366 C1206,372 1168,373 1148,369 Z" fill="#131a2a" opacity=".55" filter="url(#b1)"/>
+    <rect x="1180" y="360" width="4" height="11" fill="#ffd48a" opacity=".35" filter="url(#b1)"/>
+  </g>
+
+  <!-- manhole, catching one arc of our light -->
+  <ellipse cx="880" cy="452" rx="38" ry="10" fill="#17100b"/>
+  <ellipse cx="880" cy="452" rx="38" ry="10" fill="none" stroke="#060403" stroke-width="1.4"/>
+  <path d="M844,450 A38,10 0 0 1 916,450" stroke="#f0a94a" stroke-width="1.4" fill="none" opacity=".6"/>
+
+  <!-- power cable running from our truck (bottom-left, off frame) to stall 1,
+       hugging the dark side of the lane so it reads as a cable, not a crack -->
+  <path d="M0,464 C170,448 300,414 424,370" stroke="#070403" stroke-width="2" fill="none"/>
+  <path d="M0,463 C170,447 300,413 424,369" stroke="#8a6a49" stroke-width=".7" fill="none" opacity=".2"/>
+
+  <!-- ======================================================== STALL 1 (nearest, left)
+       A's stall-A recipe, wrapped: translate(-86,-14) scale(1.18).
+       Local coords below are A's originals; global x ~89-471, base ~y378.
+       Customers here are CONSTANT — the same three in every grade. -->
+  <g transform="translate(-86,-14) scale(1.18)">
+    <rect x="176" y="188" width="270" height="122" fill="#1c0e07"/>
+    <ellipse cx="310" cy="238" rx="132" ry="62" fill="url(#stallglow)" filter="url(#b8)" class="stall-glow"/>
+    <rect x="176" y="188" width="270" height="122" fill="url(#stallglow)" opacity=".3" class="stall-glow"/>
+    <!-- back shelf: stacked bowls, jars — wares, never dishware in rows -->
+    <rect x="196" y="222" width="240" height="3" fill="#0f0703"/>
+    <g fill="#7e5a34">
+      <ellipse cx="216" cy="218" rx="9" ry="3"/><ellipse cx="216" cy="214" rx="8" ry="3"/><ellipse cx="216" cy="210" rx="7" ry="3"/>
+      <ellipse cx="240" cy="218" rx="8" ry="3"/><ellipse cx="240" cy="214" rx="7" ry="3"/>
+    </g>
+    <rect x="398" y="204" width="14" height="18" rx="2" fill="#4a2c12"/>
+    <rect x="418" y="208" width="11" height="14" rx="2" fill="#3d2410"/>
+    <!-- hanging onion/garlic bunches, top-lit -->
+    <g>
+      <line x1="358" y1="188" x2="358" y2="200" stroke="#241208" stroke-width="1.2"/>
+      <circle cx="355" cy="205" r="4" fill="#8a6034"/><circle cx="361" cy="206" r="4" fill="#75512c"/><circle cx="358" cy="212" r="4.4" fill="#68482a"/>
+      <line x1="380" y1="188" x2="380" y2="198" stroke="#241208" stroke-width="1.2"/>
+      <circle cx="377" cy="203" r="3.6" fill="#8a6034"/><circle cx="383" cy="204" r="3.6" fill="#6e4c2a"/><circle cx="380" cy="210" r="4" fill="#5f422a"/>
+    </g>
+    <!-- big pot on a side burner, lid catching light -->
+    <ellipse cx="310" cy="263" rx="27" ry="3.5" fill="#000" opacity=".5" filter="url(#b1)"/><rect x="286" y="242" width="48" height="22" rx="4" fill="#100a06"/>
+    <ellipse cx="310" cy="242" rx="24" ry="5" fill="#2b1a0d"/>
+    <path d="M290,240 A24,5 0 0 1 330,240" stroke="#ffcf8a" stroke-width="1.6" fill="none" opacity=".6"/>
+    <!-- stall bulbs under the canopy -->
+    <path d="M196,200 C260,206 380,204 442,198" stroke="#120a05" stroke-width="1.1" fill="none" opacity=".9"/>
+    <g class="bulbs">
+      <use href="#bulb" x="252" y="212"/>
+      <use href="#bulb" x="330" y="210"/>
+      <use href="#bulb" x="408" y="208"/>
+    </g>
+    <use href="#fig-vendor" x="300" y="266"/>
+    <!-- stall counter: a jar and a board on top; no plate stacks anywhere -->
+    <rect x="170" y="262" width="280" height="8" fill="#c9803d"/>
+    <rect x="170" y="262" width="280" height="3" fill="#ffd9a8" opacity=".55"/>
+    <rect x="170" y="270" width="280" height="42" fill="url(#counterwood)"/>
+    <line x1="170" y1="284" x2="450" y2="284" stroke="#120a05" stroke-width="1" opacity=".55"/>
+    <line x1="170" y1="298" x2="450" y2="298" stroke="#120a05" stroke-width="1" opacity=".55"/>
+    <g>
+      <rect x="198" y="250" width="15" height="11" rx="2" fill="#4a2c12"/>
+      <ellipse cx="205.5" cy="250" rx="7.5" ry="2.4" fill="#75512c"/>
+      <rect x="228" y="256" width="34" height="4" rx="1" fill="#5f3d1e"/>
+    </g>
+    <!-- steam off the pot -->
+    <g class="steam">
+      <ellipse cx="308" cy="224" rx="10" ry="16" fill="#ffd9a8" opacity=".3" filter="url(#b4)"/>
+      <ellipse cx="300" cy="190" rx="13" ry="22" fill="#ffd9a8" opacity=".2" filter="url(#b8)"/>
+      <ellipse cx="292" cy="148" rx="18" ry="28" fill="#e8d5c0" opacity=".11" filter="url(#b16)"/>
+    </g>
+    <!-- canopy + scalloped valance, warm edge-light on the scallop lips -->
+    <path d="M148,148 Q310,126 472,144 L472,192 Q310,172 148,196 Z" fill="#63281a"/>
+    <path d="M148,148 Q310,126 472,144 L472,152 Q310,134 148,156 Z" fill="#42506e" opacity=".32"/>
+    <path d="M200,152 Q206,172 202,190 M290,142 Q296,160 293,178 M380,140 Q386,158 383,176" stroke="#4a1409" stroke-width="5" fill="none" opacity=".3" filter="url(#b2)"/>
+    <g>
+      <path d="M148,196 q13,16 27,0 l0,-8 -27,4 Z" fill="#7e3018"/>
+      <path d="M175,190 q13,16 27,0 l0,-7 -27,3 Z" fill="#8f7a5e"/>
+      <path d="M202,187 q13,16 27,0 l0,-7 -27,3 Z" fill="#7e3018"/>
+      <path d="M229,184 q13,16 27,0 l0,-7 -27,3 Z" fill="#8f7a5e"/>
+      <path d="M256,181 q13,16 27,0 l0,-6 -27,2 Z" fill="#7e3018"/>
+      <path d="M283,179 q13,16 27,0 l0,-6 -27,2 Z" fill="#8f7a5e"/>
+      <path d="M310,177 q13,16 27,0 l0,-5 -27,1 Z" fill="#7e3018"/>
+      <path d="M337,176 q13,16 27,0 l0,-5 -27,1 Z" fill="#8f7a5e"/>
+      <path d="M364,175 q13,16 27,0 l0,-5 -27,1 Z" fill="#7e3018"/>
+      <path d="M391,175 q13,16 27,0 l0,-5 -27,1 Z" fill="#8f7a5e"/>
+      <path d="M418,175 q13,16 27,0 l0,-5 -27,1 Z" fill="#7e3018"/>
+      <path d="M445,176 q13,16 27,0 l0,-6 -27,2 Z" fill="#8f7a5e"/>
+      <path d="M148,196 q13,16 27,0 M175,190 q13,16 27,0 M202,187 q13,16 27,0 M229,184 q13,16 27,0 M256,181 q13,16 27,0 M283,179 q13,16 27,0 M310,177 q13,16 27,0 M337,176 q13,16 27,0 M364,175 q13,16 27,0 M391,175 q13,16 27,0 M418,175 q13,16 27,0 M445,176 q13,16 27,0"
+            stroke="#ffb347" stroke-width="1.4" fill="none" opacity=".5"/>
+    </g>
+    <!-- paper lanterns off the canopy edge -->
+    <line x1="214" y1="188" x2="214" y2="204" stroke="#170b06" stroke-width="1.8"/>
+    <ellipse cx="214" cy="217" rx="16" ry="18" fill="#ff9c4a" opacity=".2" filter="url(#b8)"/>
+    <ellipse cx="214" cy="217" rx="11" ry="14" fill="url(#lantern)"/>
+    <path d="M204,211 A11,9 0 0 1 224,211 M203,219 A11,9 0 0 0 225,219 M214,203 L214,231" stroke="#8f3812" stroke-width="1" fill="none" opacity=".75"/>
+    <rect x="211" y="201" width="6" height="3" fill="#3a1a0a"/>
+    <rect x="211" y="229" width="6" height="3" fill="#3a1a0a"/>
+    <line x1="430" y1="182" x2="430" y2="196" stroke="#170b06" stroke-width="1.6"/>
+    <ellipse cx="430" cy="207" rx="13" ry="14" fill="#ff9c4a" opacity=".16" filter="url(#b8)"/>
+    <ellipse cx="430" cy="207" rx="9" ry="11.5" fill="url(#lantern)"/>
+    <path d="M422,202 A9,7 0 0 1 438,202 M421,209 A9,7 0 0 0 439,209 M430,196 L430,218" stroke="#8f3812" stroke-width=".9" fill="none" opacity=".7"/>
+    <rect x="427.5" y="194" width="5" height="2.6" fill="#3a1a0a"/>
+    <rect x="427.5" y="217" width="5" height="2.6" fill="#3a1a0a"/>
+    <!-- posts -->
+    <rect x="166" y="150" width="5" height="162" fill="#170c06"/>
+    <rect x="170.4" y="150" width="1.4" height="162" fill="#8a6a49" opacity=".5"/>
+    <rect x="446" y="146" width="5" height="166" fill="#170c06"/>
+    <rect x="446" y="146" width="1.4" height="166" fill="#8a6a49" opacity=".45"/>
+    <!-- constant customers at this counter: lean, hood, wait — every grade -->
+    <g transform="translate(262,330)"><use href="#shadow"/><use href="#fig-lean"/>
+      <path d="M-4,-108 C-8,-84 -8,-40 -6,-10" stroke="#c96a2e" stroke-width="7" opacity=".14" fill="none" filter="url(#b4)"/></g>
+    <g transform="translate(226,332) scale(-.97,.97)"><use href="#shadow"/><use href="#fig-hood"/></g>
+    <path d="M222,224 C218,248 218,292 220,322" stroke="#c96a2e" stroke-width="7" opacity=".12" fill="none" filter="url(#b4)"/>
+    <g transform="translate(388,330) scale(1.05)"><use href="#shadow"/><use href="#fig-wait"/></g>
+  </g>
+
+  <!-- ======================================================== STALL 2 (centre, a step deeper)
+       A's stall-B recipe, wrapped: translate(216,18). Global x ~852-1128, base ~y340. -->
+  <g transform="translate(216,18)">
+    <rect x="656" y="196" width="240" height="106" fill="#101410"/>
+    <ellipse cx="776" cy="240" rx="112" ry="50" fill="url(#stallglow)" filter="url(#b8)" class="stall-glow"/>
+    <rect x="656" y="196" width="240" height="106" fill="url(#stallglow)" opacity=".26" class="stall-glow"/>
+    <rect x="672" y="226" width="200" height="2.5" fill="#0d0703"/>
+    <g fill="#5f4426">
+      <rect x="686" y="212" width="6" height="14" rx="2"/>
+      <rect x="696" y="210" width="6" height="16" rx="2"/>
+      <rect x="706" y="213" width="6" height="13" rx="2"/>
+    </g>
+    <rect x="820" y="210" width="26" height="16" rx="3" fill="#2e2012"/>
+    <ellipse cx="833" cy="210" rx="13" ry="3" fill="#553a1c"/>
+    <path d="M664,206 C740,212 820,210 888,204" stroke="#100904" stroke-width="1" fill="none" opacity=".85"/>
+    <g class="bulbs">
+      <use href="#bulb-s" x="700" y="212"/>
+      <use href="#bulb-s" x="776" y="214"/>
+      <use href="#bulb-s" x="852" y="212"/>
+    </g>
+    <!-- hanging cloth banner with an abstract bowl mark (unreadable on purpose) -->
+    <rect x="864" y="196" width="26" height="52" fill="#26120a"/>
+    <path d="M868,216 a9,6 0 0 0 18,0 Z" fill="#d8c4a4" opacity=".55"/>
+    <circle cx="877" cy="228" r="3" fill="#d8c4a4" opacity=".45"/>
+    <!-- crates stacked beside -->
+    <rect x="660" y="286" width="34" height="18" fill="#2a1a10"/>
+    <rect x="663" y="270" width="30" height="16" fill="#33200f"/>
+    <rect x="663" y="270" width="30" height="3" fill="#c98f4a" opacity=".5"/>
+    <g transform="translate(792,258) scale(.9)"><use href="#fig-vendor"/></g>
+    <rect x="652" y="256" width="248" height="6" fill="#b5762f"/>
+    <rect x="652" y="256" width="248" height="2" fill="#ffd9a8" opacity=".5"/>
+    <rect x="652" y="262" width="248" height="38" fill="url(#counterwood)"/>
+    <!-- teal canopy + valance -->
+    <path d="M636,158 Q776,140 912,154 L912,198 Q776,182 636,202 Z" fill="#173a37"/>
+    <path d="M636,158 Q776,140 912,154 L912,161 Q776,147 636,165 Z" fill="#3f5570" opacity=".5"/>
+    <g>
+      <path d="M636,202 q11,13 22,0 l0,-6 -22,3 Z" fill="#122b26"/>
+      <path d="M658,199 q11,13 22,0 l0,-6 -22,3 Z" fill="#83704f"/>
+      <path d="M680,196 q11,13 22,0 l0,-5 -22,2 Z" fill="#122b26"/>
+      <path d="M702,194 q11,13 22,0 l0,-5 -22,2 Z" fill="#83704f"/>
+      <path d="M724,192 q11,13 22,0 l0,-5 -22,2 Z" fill="#122b26"/>
+      <path d="M746,190 q11,13 22,0 l0,-4 -22,1 Z" fill="#83704f"/>
+      <path d="M768,189 q11,13 22,0 l0,-4 -22,1 Z" fill="#122b26"/>
+      <path d="M790,188 q11,13 22,0 l0,-4 -22,1 Z" fill="#83704f"/>
+      <path d="M812,188 q11,13 22,0 l0,-4 -22,1 Z" fill="#122b26"/>
+      <path d="M834,188 q11,13 22,0 l0,-4 -22,1 Z" fill="#83704f"/>
+      <path d="M856,189 q11,13 22,0 l0,-5 -22,2 Z" fill="#122b26"/>
+      <path d="M878,190 q11,13 22,0 l0,-5 -22,2 Z" fill="#83704f"/>
+      <path d="M636,202 q11,13 22,0 M658,199 q11,13 22,0 M680,196 q11,13 22,0 M702,194 q11,13 22,0 M724,192 q11,13 22,0 M746,190 q11,13 22,0 M768,189 q11,13 22,0 M790,188 q11,13 22,0 M812,188 q11,13 22,0 M834,188 q11,13 22,0 M856,189 q11,13 22,0 M878,190 q11,13 22,0"
+            stroke="#ffb347" stroke-width="1.2" fill="none" opacity=".45"/>
+    </g>
+    <rect x="650" y="160" width="4" height="142" fill="#150c07"/>
+    <rect x="894" y="156" width="4" height="146" fill="#150c07"/>
+    <g class="steam">
+      <ellipse cx="742" cy="216" rx="9" ry="15" fill="#ffd9a8" opacity=".26" filter="url(#b4)"/>
+      <ellipse cx="736" cy="182" rx="12" ry="20" fill="#ffd9a8" opacity=".16" filter="url(#b8)"/>
+      <ellipse cx="730" cy="142" rx="16" ry="26" fill="#e8d5c0" opacity=".09" filter="url(#b16)"/>
+    </g>
+    <!-- constant customers: a parent, a kid pointing, one leaning -->
+    <g transform="translate(716,324) scale(.92)"><use href="#shadow"/><use href="#fig-wait"/></g>
+    <g transform="translate(748,322)"><use href="#shadow" transform="scale(.6)"/><use href="#fig-kid"/></g>
+    <g transform="translate(842,340) scale(.9)"><use href="#shadow"/><use href="#fig-lean"/></g>
+  </g>
+
+  <!-- ======================================================== STALL 3 (far right, hazed)
+       A's stall-C recipe, wrapped: translate(400,16). Global x ~1402-1576, base ~y326.
+       Everything that is LIGHT here carries class c-lit and goes dark in the
+       late grade — the "some stalls dark" of the brief. Geometry stays. -->
+  <g transform="translate(400,16)">
+    <rect x="1016" y="214" width="150" height="82" fill="#170d08"/>
+    <ellipse cx="1090" cy="248" rx="70" ry="34" fill="url(#stallglow)" opacity=".75" filter="url(#b8)" class="c-lit"/>
+    <g class="bulbs"><g class="c-lit" opacity=".8">
+      <use href="#bulb-s" x="1054" y="230"/>
+      <use href="#bulb-s" x="1120" y="228"/>
+    </g></g>
+    <g transform="translate(1096,262) scale(.7)"><use href="#fig-vendor"/></g>
+    <rect x="1012" y="258" width="158" height="5" fill="#96631f"/>
+    <rect class="c-lit" x="1012" y="258" width="158" height="2" fill="#ffd9a8" opacity=".4"/>
+    <rect x="1012" y="263" width="158" height="30" fill="url(#counterwood)"/>
+    <path d="M1002,182 Q1090,170 1176,180 L1176,214 Q1090,202 1002,220 Z" fill="#3f1f14"/>
+    <path d="M1002,182 Q1090,170 1176,180 L1176,186 Q1090,174 1002,188 Z" fill="#3f5570" opacity=".45"/>
+    <rect x="1008" y="184" width="3.4" height="112" fill="#140b06"/>
+    <rect x="1166" y="182" width="3.4" height="114" fill="#140b06"/>
+    <!-- the bicycle against the post -->
+    <g>
+      <ellipse cx="996" cy="312" rx="26" ry="4" fill="#000" opacity=".35" filter="url(#b2)"/>
+      <g stroke="#0e0906" fill="none">
+        <circle cx="982" cy="300" r="10" stroke-width="2.2"/>
+        <circle cx="1012" cy="300" r="10" stroke-width="2.2"/>
+        <path d="M982,300 L992,282 1008,282 1012,300 M992,282 L998,300 1008,282 M992,282 990,276 M986,276 994,276 M1008,282 1006,276 1002,275 1011,275" stroke-width="2"/>
+      </g>
+      <path class="c-lit" d="M982,290 A10,10 0 0 1 990,300" stroke="#c98f4a" stroke-width="1.2" fill="none" opacity=".5"/>
+    </g>
+    <!-- one constant customer drifting past it -->
+    <g transform="translate(1064,312) scale(.72)"><use href="#shadow"/><use href="#fig-wait"/></g>
+    <!-- distance haze over the whole stall -->
+    <ellipse cx="1092" cy="250" rx="130" ry="90" fill="#26344f" opacity=".18" filter="url(#b28)"/>
+    <!-- late only: with its lamps out, the whole stand falls back into the night -->
+    <ellipse cx="1090" cy="240" rx="120" ry="86" fill="#0d1020" style="opacity:var(--c-dark,0)" filter="url(#b16)"/>
+  </g>
+
+  <!-- ================================================= STANDING BARREL TABLE
+       Two people eating in the middle of the lane; the table edge catches
+       our light. Wrapped from A: translate(60,40) scale(1.1). -->
+  <g transform="translate(60,40) scale(1.1)">
+    <ellipse cx="568" cy="380" rx="36" ry="6" fill="#000" opacity=".4" filter="url(#b2)"/>
+    <rect x="551" y="296" width="36" height="84" rx="4" fill="#190e08"/>
+    <ellipse cx="569" cy="296" rx="22" ry="5" fill="#38230f"/>
+    <path d="M549,295 A22,5 0 0 1 589,295" stroke="#ffcf8a" stroke-width="1.6" fill="none" opacity=".75"/>
+    <g transform="translate(520,382) scale(.95)"><use href="#shadow"/><use href="#fig-lean"/>
+      <!-- our pool catches their lane-side edge -->
+      <path d="M10,-56 C13,-40 10,-22 11,-8" stroke="#e8a052" stroke-width="2" opacity=".3" fill="none" filter="url(#b2)"/></g>
+    <g transform="translate(614,380) scale(-.94,.94)"><use href="#shadow"/><use href="#fig-hood"/>
+      <path d="M-14,-100 C-17,-84 -16,-66 -13,-52" stroke="#e8a052" stroke-width="2" opacity=".28" fill="none" filter="url(#b2)"/></g>
+  </g>
+
+  <!-- ================================================= MID-LANE WALKERS (constant)
+       One silhouetted against our own pool — the strongest depth cue in the
+       frame: a body between the student and their own light. -->
+  <g transform="translate(820,446) scale(1.08)"><use href="#shadow"/><use href="#fig-walk"/></g>
+  <g transform="translate(1210,392) scale(.9)"><use href="#shadow"/><use href="#fig-walk"/></g>
+  <g transform="translate(1256,388) scale(-.85,.85)"><use href="#shadow"/><use href="#fig-wait"/></g>
+  <g transform="translate(1616,332) scale(.55)"><use href="#shadow"/><use href="#fig-walk"/></g>
+
+  <!-- bollards along the quay side, walking out toward the bridge gate -->
+  <g>
+    <ellipse cx="1666" cy="352" rx="9" ry="2.6" fill="#000" opacity=".3" filter="url(#b1)"/>
+    <rect x="1662" y="330" width="8" height="22" rx="3" fill="#0f0a08"/>
+    <path d="M1663,332 L1663,350" stroke="#8a6a49" stroke-width="1.2" opacity=".35"/>
+    <ellipse cx="1762" cy="338" rx="8" ry="2.4" fill="#000" opacity=".28" filter="url(#b1)"/>
+    <rect x="1758" y="318" width="7" height="20" rx="3" fill="#0f0a08"/>
+    <path d="M1759,320 L1759,336" stroke="#8a6a49" stroke-width="1.1" opacity=".3"/>
+    <ellipse cx="1852" cy="326" rx="7" ry="2.2" fill="#000" opacity=".26" filter="url(#b1)"/>
+    <rect x="1848" y="308" width="6" height="18" rx="2.6" fill="#0f0a08"/>
+    <path d="M1849,310 L1849,324" stroke="#8a6a49" stroke-width="1" opacity=".28"/>
+  </g>
+
+  <!-- ================================================= OUR STRING LIGHTS
+       The near catenary — ours, strung from our own awning across the lane.
+       Largest bulbs on the plate; one dead (x=1440), as one always is. -->
+  <path d="M-20,64 C420,192 1200,198 1940,84" stroke="#0d0805" stroke-width="1.8" fill="none"/>
+  <g class="bulbs">
+    <use href="#bulb" transform="translate(120,94) scale(1.2)"/>
+    <use href="#bulb" transform="translate(300,134) scale(1.25)"/>
+    <use href="#bulb" transform="translate(490,163) scale(1.3)"/>
+    <use href="#bulb" transform="translate(680,181) scale(1.3)"/>
+    <use href="#bulb" transform="translate(870,190) scale(1.25)"/>
+    <use href="#bulb" transform="translate(1060,190) scale(1.2)"/>
+    <use href="#bulb" transform="translate(1250,182) scale(1.12)"/>
+    <!-- the dead bulb: wire and glass, no light -->
+    <g transform="translate(1440,166)">
+      <line x1="0" y1="-14" x2="0" y2="0" stroke="#1a100a" stroke-width="1.6"/>
+      <circle r="3.4" fill="#241713"/>
+    </g>
+    <use href="#bulb" transform="translate(1630,140) scale(1.0)"/>
+    <use href="#bulb" transform="translate(1820,108) scale(.92)"/>
+  </g>
+  <g class="moths" fill="#ffdf9e">
+    <circle cx="864" cy="178" r="1.2" opacity=".6"/>
+    <circle cx="878" cy="186" r="1" opacity=".45"/>
+    <circle cx="855" cy="192" r=".8" opacity=".4"/>
+  </g>
+
+  <!-- =============================================================== HAZE -->
+  <ellipse cx="960" cy="296" rx="1040" ry="62" fill="#2a3a5e" style="opacity:var(--haze-op)" filter="url(#b28)"/>
+
+  <!-- late-night cool wash over everything beyond the counter... -->
+  <rect width="1920" height="468" fill="#26365c" style="opacity:var(--cool-grade)"/>
+  <!-- ...except where our own lamp defeats it -->
+  <ellipse cx="960" cy="468" rx="560" ry="108" fill="url(#warmpool)" style="opacity:var(--pool-rewarm,0)" filter="url(#b16)"/>
+
+  <!-- ====================================================== NEAR PASSERS-BY
+       People crossing the lane a couple of metres out, cropped by our own
+       counter — the strongest "you are inside looking out" cue.
+       DELIBERATE: nobody in the near field faces our window. They are
+       passing through, sides and backs to us, so the plate can never read
+       as a queue at our pass (the queue is the DOM's job, and it is real). -->
+  <!-- Two, not a crowd, and cropped at the SHIN, not the waist — a waist crop
+       reads as someone leaning over our counter; a shin crop reads as someone
+       passing beyond it. The mid-distance figure symbols do NOT survive being
+       scaled to the near field (tried it: they render as gumdrops), so these
+       two are authored at final size: crisp closed silhouettes on A's anatomy
+       rules — neck under the head, sloped shoulders, coat hem, stride — with
+       one tight warm edge where our hatch light grazes them. No blur on the
+       bodies; near-field softness reads as smearing at this scale. -->
+
+  <!-- left: a woman with a low bun crossing right, 2-3m beyond our counter -->
+  <g>
+    <!-- stride: back leg trailing, front leg reaching -->
+    <path d="M466,470 C464,456 465,446 469,434" stroke="#17100a" stroke-width="14" stroke-linecap="round" fill="none"/>
+    <path d="M500,470 C501,456 501,446 497,432" stroke="#17100a" stroke-width="14" stroke-linecap="round" fill="none"/>
+    <!-- coat: shoulders, pinched waist, hem flaring with the stride -->
+    <path d="M457,350 C452,366 455,382 453,396 C451,414 448,428 450,438 L456,443 C470,448 487,448 496,440 L502,434 C501,422 503,408 505,396 C506,378 504,362 499,351 C486,340 468,340 457,350 Z" fill="#130d08"/>
+    <!-- near arm in front of the coat, its shadow edge separating it -->
+    <path d="M491,358 C497,376 499,394 495,412" stroke="#0c0805" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M495,360 C501,378 502,396 498,412" stroke="#181009" stroke-width="11" stroke-linecap="round" fill="none"/>
+    <rect x="472" y="330" width="12" height="12" fill="#14100c"/>
+    <ellipse cx="478" cy="320" rx="13" ry="14.6" fill="#14100c" transform="rotate(-4 478 320)"/>
+    <circle cx="465" cy="326" r="5.5" fill="#14100c"/>
+    <!-- our light grazing her: jaw, shoulder, arm edge, one soft sheen -->
+    <path d="M488,308 C492,314 493,322 490,330" stroke="#ffbe74" stroke-width="2" opacity=".6" fill="none" filter="url(#b1)"/>
+    <path d="M497,350 C502,356 505,363 506,371" stroke="#ffb864" stroke-width="2" opacity=".55" fill="none" filter="url(#b1)"/>
+    <path d="M501,368 C505,384 505,398 501,412" stroke="#e8a052" stroke-width="1.8" opacity=".45" fill="none" filter="url(#b1)"/>
+    <path d="M486,360 C490,384 490,410 486,432" stroke="#a05f2c" stroke-width="11" opacity=".15" fill="none" filter="url(#b4)"/>
+    <path d="M498,432 C494,440 486,444 476,445" stroke="#8a5630" stroke-width="2" opacity=".3" fill="none" filter="url(#b1)"/>
+  </g>
+  <!-- right: a man in a flat cap crossing left, the same distance out -->
+  <g>
+    <path d="M1326,470 C1328,456 1327,446 1323,434" stroke="#17100a" stroke-width="14" stroke-linecap="round" fill="none"/>
+    <path d="M1292,470 C1291,456 1291,446 1295,432" stroke="#17100a" stroke-width="14" stroke-linecap="round" fill="none"/>
+    <path d="M1336,352 C1341,368 1338,384 1340,398 C1342,416 1345,428 1343,438 L1337,443 C1323,448 1306,448 1297,440 L1291,434 C1292,422 1290,408 1288,396 C1287,378 1289,362 1294,352 C1307,341 1325,341 1336,352 Z" fill="#130d08"/>
+    <path d="M1301,360 C1295,378 1293,396 1297,414" stroke="#0c0805" stroke-width="4" stroke-linecap="round" fill="none"/>
+    <path d="M1297,362 C1291,380 1290,398 1294,414" stroke="#181009" stroke-width="11" stroke-linecap="round" fill="none"/>
+    <rect x="1310" y="332" width="12" height="12" fill="#14100c"/>
+    <ellipse cx="1315" cy="322" rx="13" ry="14.4" fill="#14100c" transform="rotate(4 1315 322)"/>
+    <path d="M1302,317 C1304,308 1312,303 1320,305 C1326,306.5 1330,311 1330,316 L1298,318.5 L1293,317.5 Z" fill="#0f0a06"/>
+    <!-- our light grazing him: cap edge, shoulder, arm edge, sheen -->
+    <path d="M1298,315 C1301,308.5 1308,304.6 1316,304.8" stroke="#ffbe74" stroke-width="1.8" opacity=".6" fill="none" filter="url(#b1)"/>
+    <path d="M1296,353 C1291,358 1288,365 1287,373" stroke="#ffb864" stroke-width="2" opacity=".55" fill="none" filter="url(#b1)"/>
+    <path d="M1291,370 C1287,386 1287,400 1291,414" stroke="#e8a052" stroke-width="1.8" opacity=".42" fill="none" filter="url(#b1)"/>
+    <path d="M1310,362 C1306,386 1306,410 1310,432" stroke="#a05f2c" stroke-width="11" opacity=".14" fill="none" filter="url(#b4)"/>
+    <path d="M1294,432 C1298,440 1306,444 1316,445" stroke="#8a5630" stroke-width="2" opacity=".28" fill="none" filter="url(#b1)"/>
+  </g>
+
+  <!-- ============================================= OUR AWNING'S UNDERSIDE (top)
+       Only a hint: the chassis hangs its own DOM valance over this zone, so
+       the bake carries the dark canvas above the window and the shadow it
+       drops on the world — not a second scalloped edge. -->
+  <path d="M0,0 L1920,0 1920,28 Q960,52 0,28 Z" fill="#1f0d07"/>
+  <ellipse cx="960" cy="16" rx="720" ry="26" fill="#ff9c4a" opacity=".08" filter="url(#b16)"/>
+  <path d="M0,28 Q960,52 1920,28" stroke="#ffb347" stroke-width="1.3" fill="none" opacity=".25"/>
+  <rect width="1920" height="64" fill="url(#topshade)"/>
+
+  <!-- ====================================================== OUR COUNTER (bottom)
+       The near edge of the frame IS our own counter: the fiction fix.
+       From the top down: the lane vanishing behind the far edge (dark seam),
+       the bullnose catching our pass lamp (the hottest specular on the
+       plate), then the foreshortened surface running under the student's
+       hands and off the bottom of the frame, where the chassis' DOM sill
+       and instrument deck continue the same object. NOTHING sits on it. -->
+  <!-- the lane disappearing behind the counter's far edge -->
+  <rect x="0" y="456" width="1920" height="15" fill="#050302" opacity=".6" filter="url(#b4)"/>
+  <!-- bullnose -->
+  <rect x="0" y="469" width="1920" height="10" fill="url(#bullnose)"/>
+  <!-- the specular runs hotter where our own hatch light is -->
+  <ellipse cx="960" cy="471.5" rx="480" ry="5.5" fill="#ffe9c0" opacity=".55" filter="url(#b4)"/>
+  <!-- chips and dings in the edge: this counter has done four Saturdays -->
+  <g fill="#3a2410" opacity=".5">
+    <rect x="536" y="470" width="7" height="2.4" rx="1"/>
+    <rect x="1129" y="469.5" width="5" height="2" rx="1"/>
+    <rect x="789" y="471" width="4" height="2" rx="1"/>
+    <rect x="1493" y="470.5" width="6" height="2.2" rx="1"/>
+  </g>
+  <rect x="0" y="477.4" width="1920" height="1.6" fill="#120a04"/>
+  <!-- the surface, foreshortened -->
+  <rect x="0" y="479" width="1920" height="41" fill="url(#sillface)"/>
+  <!-- our pass lamp's pool on our own counter -->
+  <ellipse cx="960" cy="514" rx="560" ry="46" fill="#ffc36a" opacity=".22" filter="url(#b16)"/>
+  <!-- wood grain, sparse -->
+  <g stroke="#1b0f08" opacity=".35">
+    <line x1="60" y1="488" x2="700" y2="487" stroke-width="1"/>
+    <line x1="900" y1="492" x2="1660" y2="491" stroke-width="1"/>
+    <line x1="240" y1="503" x2="1100" y2="502" stroke-width="1.2"/>
+    <line x1="1300" y1="508" x2="1880" y2="507" stroke-width="1"/>
+  </g>
+  <!-- sheen: the string bulbs doubled faintly in the varnish -->
+  <g opacity=".8">
+    <rect x="484" y="480" width="8" height="16" fill="url(#streak)" filter="url(#b4)" opacity=".5"/>
+    <rect x="864" y="480" width="9" height="18" fill="url(#streak)" filter="url(#b4)" opacity=".55"/>
+    <rect x="1246" y="480" width="7" height="14" fill="url(#streak)" filter="url(#b4)" opacity=".45"/>
+  </g>
+  <!-- the counter's ends fall out of our lamp's throw -->
+  <rect x="0" y="456" width="1920" height="64" fill="url(#bullfade)"/>
+
+  <!-- unifying grade: cool up top, warm low — one colour story -->
+  <rect width="1920" height="520" fill="#1a2c4e" opacity=".1" style="mix-blend-mode:overlay"/>
+  <rect y="300" width="1920" height="220" fill="#ff9c4a" opacity=".03" style="mix-blend-mode:overlay"/>
+
+  <!-- vignette + grain -->
+  <rect width="1920" height="520" fill="url(#vig)"/>
+  <rect width="1920" height="520" fill="transparent" filter="url(#grain)" opacity=".5"/>
+</svg>
+</body>
+</html>

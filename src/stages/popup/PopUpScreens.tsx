@@ -1,7 +1,10 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useId, useRef, type RefObject, useState} from "react";
 import { useDraft } from "../../app/attemptStore";
+import { RunSaturday } from "./RunSaturday";
+import { serviceRun } from "../../domain/scenario/worlds/food-truck/service";
 import { Button } from "../../components/primitives/Button";
 import { CalculationInput } from "../../components/primitives/CalculationInput";
+import { CountControl } from "../../components/financial/CountControl";
 import { MoneyAmount } from "../../components/primitives/MoneyAmount";
 import { useInPlaceArrival } from "../../components/primitives/useInPlaceArrival";
 import { MarketBackdrop } from "../../components/story/MarketBackdrop";
@@ -114,6 +117,24 @@ function crowdRead(told: CrowdTold): string {
 }
 
 /**
+ * What the spinbutton says instead of the bare number, mode-gated the same way the cost row is.
+ *
+ * A screen reader hears this in place of "3" the moment focus lands on the control, so it is
+ * the one place a price could leak in ahead of the box that is asking for it — the defect a
+ * rejected design shipped, announcing "6 trays · 60 plates · $360" on the very screen that asks
+ * the student to work the price out. While `pricing` is `"asked"` this says what the order is
+ * made of and stops; the price joins it only once the sum is settled, which is exactly what the
+ * visible cost row already does. `describedBy` still points a listener at the crowd figure it
+ * is weighed against — this string is not where that comparison happens.
+ */
+function orderValueText(trays: number, cooked: number, pricing: "asked" | "settled", cost: number): string {
+  const trayWord = trays === 1 ? "tray" : "trays";
+  const plateWord = cooked === 1 ? "plate" : "plates";
+  const said = `${trays} ${trayWord}, ${cooked} ${plateWord}`;
+  return pricing === "settled" ? `${said}, ${formatDollars(cost)}` : said;
+}
+
+/**
  * A figure the student has already worked out, read back where the next screen needs it.
  *
  * Takes a ref because on the four screens where it replaces the box that asked for the figure
@@ -182,85 +203,137 @@ function TrayOrder({ saturday, nights, max, trays, onTrays, pricing = "settled",
     handsBound: spot ? serveCap(N, night, helper) < crowdTold(N, spot, night).high : false,
   }));
   const cooked = trays * N.platesPerTray;
+  const cost = orderCost(N, trays * nights);
+  const id = useId();
+  const labelId = `${id}-label`;
+  const crowdIds = willTake.map((_, index) => `${id}-crowd-${index}`);
+  const fine = (split !== undefined)
+    || willTake.some((night) => night.handsBound)
+    || willTake.some((night) => night.told.high - night.told.low >= N.platesPerTray);
   return (
     <div className="tray-order">
-      <div className="tray-order__set">
-        <p className="field-label" id="tray-label">{COPY.saturday.trayLabel}</p>
-        <div className="tray-order__keys" role="group" aria-labelledby="tray-label">
-          <button type="button" aria-label="One tray fewer" onClick={() => onTrays(Math.max(0, trays - 1))}>−</button>
-          <output aria-live="polite">{trays}</output>
-          <button type="button" aria-label="One tray more" onClick={() => onTrays(Math.min(max, trays + 1))}>+</button>
-        </div>
-        <p className="tray-order__hint">{COPY.saturday.trayHint}</p>
+      {/* What a tray is and what it costs, said once as a fact rather than as a sentence — "One
+          tray is 10 plates and costs $60." used to sit where this does and cost five times the
+          words for the same information. */}
+      <p className="tray-order__terms">{COPY.saturday.terms}</p>
+      <dl className="tray-order__facts">
+        <div><dt>{COPY.saturday.cooked}</dt><dd>{cooked}</dd></div>
+        {/* What is being weighed against the order, told before the order is asked for — Court
+            3's point about this control, kept without moving the `dt` list `orderBoard.test.tsx`
+            pins. The standing order's two nights sit inside their own wrapper so they can be
+            drawn as two stamped figures rather than two rows in a list; the query that pins the
+            list reads every `dt` under `.tray-order__facts` regardless of nesting, so this
+            costs nothing there. */}
+        {nights === 2 ? (
+          <div className="tray-order__nights">
+            {willTake.map(({ night, told }, index) => (
+              <div key={night} data-figure="crowd">
+                <dt>{`${COPY.settle.saturdayLabel} ${night} ${COPY.saturday.nightBuys}`}</dt>
+                <dd id={crowdIds[index]}>{crowdRead(told)}</dd>
+              </div>
+            ))}
+          </div>
+        ) : willTake.map(({ night, told }, index) => (
+          <div key={night} data-figure="crowd">
+            <dt>{told.range ? COPY.saturday.crowdMightBuy : COPY.saturday.crowdWillBuy}</dt>
+            <dd id={crowdIds[index]}>{crowdRead(told)}</dd>
+          </div>
+        ))}
+        {pricing === "settled" && leaves && (
+          <div data-alert={leaves.trays === 0}>
+            <dt>{COPY.saturday.leaves}</dt>
+            <dd className="money">
+              {formatDollars(leaves.amount)} · {leaves.trays} {leaves.trays === 1 ? COPY.saturday.leftTray : COPY.saturday.leftTrays}
+            </dd>
+          </div>
+        )}
+      </dl>
+      {/* The control, and the largest thing on the screen — the quality verdict's own ruling
+          was that the headline outweighed the control, and this is the fix. `CountControl` is
+          the full spinbutton model: type a number, arrow keys move it by one, Page keys by
+          five, Home and End go to the floor and the ceiling. `aria-valuetext` says what the
+          order is made of and, once the sum below is settled, what it costs — never the price
+          while the box beneath is still asking for it. */}
+      <div className="tray-order__control">
+        <p className="field-label" id={labelId}>{COPY.saturday.trayLabel}</p>
+        <CountControl
+          labelledBy={labelId}
+          value={trays}
+          max={max}
+          decreaseLabel="One tray fewer"
+          increaseLabel="One tray more"
+          valueText={orderValueText(trays, cooked, pricing, cost)}
+          describedBy={crowdIds.join(" ")}
+          onChange={onTrays}
+        />
+        {/* What is being bought, drawn in the unit it is bought in: trays.
+            This used to draw one mark per *plate* — thirty small squares in a row, directly
+            above `THE CROWD WILL BUY 38`. Plates and people are the same unit, so a student
+            could line the run of marks up against the crowd figure and read the answer off by
+            eye without doing any arithmetic at all. The dominant order is `floor(sellCap /
+            10)`, and at the back lane getting it wrong costs $186 of a possible $270 — so a
+            perceptual shortcut is worth most exactly where a cautious student is likeliest to
+            be standing. Trays are the unit the student pays in and the crowd is never counted
+            in, so the two quantities can no longer be matched by eye. `orderBoard.test.tsx`
+            pins the count to `trays` so this cannot drift back. Still one colour: how many sell
+            is the question. */}
+        <p className="tray-stack" aria-hidden="true">
+          {Array.from({ length: Math.min(trays, 12) }, (_, index) => <i key={index} data-state="cooking" />)}
+        </p>
+      </div>
+      {/* No empty element while the sum is open: a row with nothing in it still takes up the
+          gap this grid gives every row, and a blank beat where the total belongs reads as the
+          screen having lost its place.
+
+          Once settled, the total stays on the instrument. It does read twice on the screen —
+          here, and in the sum's own settled row below — and I tried removing it, which
+          `lastSaturday.test.tsx` correctly refused: the two are not the same statement. The
+          sum's row is the record that the student worked it out; this is the order's own
+          total, sitting beside what it leaves, where the next decision is made. What was
+          wrong was its weight, not its presence, so it is a readout now rather than a
+          headline. */}
+      {pricing === "settled" && (
         <p className="tray-order__cost">
-          {/* No empty element while the sum is open: a flex row with a blank first child pushes
-              the note that is on it across the screen for no reason. */}
-          {pricing === "settled" && (
-            <span>{formatDollars(orderCost(N, trays * nights))}{nights === 2 ? ` ${COPY.saturday.bothNights}` : ""}</span>
-          )}
+          <span>{formatDollars(cost)}{nights === 2 ? ` ${COPY.saturday.bothNights}` : ""}</span>
+        </p>
+      )}
+      {fine && (
+        <div className="tray-order__fine">
           {/* Where the money comes off, once a line other than the stock line is on the hook
-              for part of it. The old note — "N is all your stock line pays for" — stops being
-              true the moment the student names one, so it is replaced rather than kept beside
-              a cap it no longer describes. */}
-          <small>
-            {split
-              ? split.fromLine > 0
+              for part of it. The old note beside this one — "N is all your stock line pays
+              for" — is gone: the ceiling is the control's own `aria-valuemax` and a `+` key
+              that stops moving at it, not a sentence restating the number already on screen. */}
+          {split && (
+            <p className="tray-order__note">
+              {split.fromLine > 0
                 ? fillCopy(COPY.saturday.foodMoney.split, {
                   stock: formatDollars(split.fromStock),
                   amount: formatDollars(split.fromLine),
                   line: S.lines[split.line].inline,
                 })
-                : COPY.saturday.foodMoney.none
-              : `${max} ${COPY.saturday.affordable}`}
-          </small>
-        </p>
-      </div>
-      {/* The plates, drawn in one colour. How many of them sell is what the student is here
-          to work out, and colouring them in advance would be the screen doing it for them. */}
-      <div className="tray-order__read">
-        <p className="tray-plates" aria-hidden="true">
-          {Array.from({ length: Math.min(cooked, 120) }, (_, index) => <i key={index} data-state="cooking" />)}
-        </p>
-        <dl className="tray-order__facts">
-          <div><dt>{COPY.saturday.cooked}</dt><dd>{cooked}</dd></div>
-          {willTake.map(({ night, told }) => (
-            <div key={night}>
-              <dt>
-                {nights === 2
-                  ? `${COPY.settle.saturdayLabel} ${night} ${COPY.saturday.nightBuys}`
-                  : told.range ? COPY.saturday.crowdMightBuy : COPY.saturday.crowdWillBuy}
-              </dt>
-              <dd>{crowdRead(told)}</dd>
-            </div>
-          ))}
-          {pricing === "settled" && leaves && (
-            <div data-alert={leaves.trays === 0}>
-              <dt>{COPY.saturday.leaves}</dt>
-              <dd className="money">
-                {formatDollars(leaves.amount)} · {leaves.trays} {leaves.trays === 1 ? COPY.saturday.leftTray : COPY.saturday.leftTrays}
-              </dd>
-            </div>
+                : COPY.saturday.foodMoney.none}
+            </p>
           )}
-        </dl>
-        {willTake.some((night) => night.handsBound) && (
-          <p className="tray-order__crowd">{serveCap(N, willTake[0]!.night, helper)} {COPY.saturday.capped}</p>
-        )}
-        {/* What the band means for the order, and only where there is a band to mean it. A
-            wider number printed without this is a market that has gone vague; with it, it is
-            a market asking the student to commit before anybody can know. Same class as the
-            note above, because it is the same kind of fact in the same voice.
+          {willTake.some((night) => night.handsBound) && (
+            <p className="tray-order__crowd">{serveCap(N, willTake[0]!.night, helper)} {COPY.saturday.capped}</p>
+          )}
+          {/* What the band means for the order, and only where there is a band to mean it. A
+              wider number printed without this is a market that has gone vague; with it, it is
+              a market asking the student to commit before anybody can know. Same class as the
+              note above, because it is the same kind of fact in the same voice.
 
-            A tray wide, not a plate wide, and the threshold is the supplier's own tray. The
-            band can be closed from above by the student's own window — one pair of hands at
-            the middle row meets every fireworks crowd the same way — and there the sentence
-            would promise a weighing the stepper cannot express, because both ends of the band
-            want the same order. `analyseLastSaturdayRange` in `balance.ts` draws the line in
-            exactly the same place and certifies that where it *is* a band, both answers are
-            live; this is that harness's own predicate, said to the student. */}
-        {willTake.some((night) => night.told.high - night.told.low >= N.platesPerTray) && (
-          <p className="tray-order__crowd" data-unknown="true">{COPY.saturday.crowdUnknown}</p>
-        )}
-      </div>
+              A tray wide, not a plate wide, and the threshold is the supplier's own tray. The
+              band can be closed from above by the student's own window — one pair of hands at
+              the middle row meets every fireworks crowd the same way — and there the sentence
+              would promise a weighing the stepper cannot express, because both ends of the
+              band want the same order. `analyseLastSaturdayRange` in `balance.ts` draws the
+              line in exactly the same place and certifies that where it *is* a band, both
+              answers are live; this is that harness's own predicate, said to the student. */}
+          {willTake.some((night) => night.told.high - night.told.low >= N.platesPerTray) && (
+            <p className="tray-order__crowd" data-unknown="true">{COPY.saturday.crowdUnknown}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -600,6 +673,21 @@ export function PlanStage() {
 
 export function FirstSaturdayStage() {
   const { state, dispatch } = usePopUp();
+  /**
+   * Whether the window is open.
+   *
+   * The order used to dispatch straight through to the next stage, so the most consequential
+   * thing in the world — the night the order was for — happened between two screens and was
+   * reported back as a card of finished numbers on the one after. The dispatch now waits until
+   * the student has shut the window, and nothing else about it moves: same event, same payload,
+   * same reducer, later.
+   *
+   * Local rather than drafted, deliberately. A reload during service returns the student to the
+   * order with their tray count still in the draft, which is the honest place to come back to —
+   * the run has not been committed and re-serving it would be watching a night twice.
+   */
+  const [open, setOpen] = useState(false);
+  const [dealt, setDealt] = useState(0);
   const ledger = ledgerOf(state);
   const plan = ledger.held;
   const max = affordableTrays(plan.stock, N);
@@ -613,11 +701,44 @@ export function FirstSaturdayStage() {
   const sum = state.sums["first-order"];
   const ready = sum?.correct === true && sum.value === orderCost(N, trays);
   const left = plan.stock - orderCost(N, trays);
+
+  if (open) {
+    const spotId = state.spotId ?? "back-lane";
+    const run = serviceRun(N, spotId, 1, trays, false);
+    const served = run.orders.slice(0, dealt);
+    const till = served.reduce((total, order) => total + order.takings, 0);
+    const soldSoFar = served.reduce((total, order) => total + order.served, 0);
+    return (
+      <PopUpShell
+        stage="popup-first-saturday"
+        kicker={COPY.first.kicker}
+        title="Your window is open"
+        ledger={ledger}
+        live={{ cash: ledger.cashToPlan + till, sold: soldSoFar }}
+      >
+        <RunSaturday
+          saturday={1}
+          spotId={spotId}
+          trays={trays}
+          helper={false}
+          note={S.saturdays[0]?.note}
+          closeLabel="Close up and see how the night went"
+          dealt={dealt}
+          onDealt={setDealt}
+          onClose={() => dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 1, trays })}
+        />
+      </PopUpShell>
+    );
+  }
+
   return (
-    <PopUpShell stage="popup-first-saturday" kicker={COPY.first.kicker} title={COPY.first.title} ledger={ledger}>
+    <PopUpShell stage="popup-first-saturday" kicker={COPY.first.kicker} title={COPY.first.title} ledger={ledger} headingVariant="order">
       <p className="stage-deck">{COPY.first.deck}</p>
-      <LinesHeld plan={plan} label={COPY.plan.placedLabel} />
-      {/* Until the student has priced the order themselves, this control prints no total and
+      {/* The three lines used to be restated here, on their own panel, directly above the
+          control that spends one of them. They belong to the plan board and the HUD — both
+          already on screen — and a figure a student just set is not new information the
+          instant the next screen opens.
+          Until the student has priced the order themselves, this control prints no total and
           no leftover: the stock line is on the screen above it, so either figure hands over
           the subtraction the box underneath is asking for. */}
       <TrayOrder
@@ -634,7 +755,7 @@ export function FirstSaturdayStage() {
       </div>
       <div className="popup-action">
         <p>{S.saturdays[0]?.note}</p>
-        <Button type="button" aria-disabled={!ready} onClick={() => ready && dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 1, trays })}>
+        <Button type="button" aria-disabled={!ready} onClick={() => ready && setOpen(true)}>
           {ready ? COPY.saturday.open : COPY.saturday.gate}
         </Button>
       </div>
@@ -749,6 +870,17 @@ function TipsJar() {
 
 export function StandingOrderStage() {
   const { state, dispatch } = usePopUp();
+  /**
+   * Which of the two middle Saturdays is being served, and how far through it.
+   *
+   * One order covers both nights and the crowds are not the same — 46 walk past on the Saturday
+   * the band plays and 25 on the quiet one — which is the whole trade-off this screen exists to
+   * create. Both used to resolve on the press and surface later as two compact result cards
+   * under the headline "The generator is dead", so the world's central decision was settled
+   * off-screen and reported underneath a catastrophe.
+   */
+  const [serving, setServing] = useState<2 | 3 | null>(null);
+  const [dealt, setDealt] = useState(0);
   const ledger = ledgerOf(state);
   const spot = state.spotId;
   const first = ledger.saturdays.find((day) => day.saturday === 1);
@@ -768,12 +900,63 @@ export function StandingOrderStage() {
   const rebate = earned
     ? state.counted.rebate ? COPY.standing.rebateEarnedPlanned : COPY.standing.rebateEarnedWindfall
     : state.counted.rebate ? COPY.standing.rebateMissedPlanned : COPY.standing.rebateMissedFree;
+  if (serving !== null) {
+    const spotId = spot ?? "back-lane";
+    const run = serviceRun(N, spotId, serving, trays, false);
+    const served = run.orders.slice(0, dealt);
+    const till = served.reduce((total, order) => total + order.takings, 0);
+    const soldSoFar = served.reduce((total, order) => total + order.served, 0);
+    // Saturday 1's takings are already in the ledger; Saturday 2's are not, because the reducer
+    // is told once at the end of both nights. The bar adds what this run has taken so far.
+    const banked = ledger.saturdays.reduce((total, day) => total + day.takings, 0);
+    const earlier = serving === 3
+      ? serviceRun(N, spotId, 2, trays, false).outcome.takings
+      : 0;
+    return (
+      <PopUpShell
+        stage="popup-standing-order"
+        kicker={COPY.standing.kicker}
+        title="Your window is open"
+        ledger={ledger}
+        focusKey={`serving-${serving}`}
+        live={{ cash: ledger.cashToPlan + banked + earlier + till, sold: soldSoFar }}
+      >
+        {/* Keyed by the night, so the second one starts as a night rather than as a continuation.
+            Without this the component survives the change and keeps whatever the student left
+            switched on — press *Serve automatically* on Saturday 2, close up, and Saturday 3
+            begins serving itself before anyone has looked at it. The student never opened that
+            window. A remount also puts focus back on the new night's heading, which is where a
+            screen reader needs it. */}
+        <RunSaturday
+          key={serving}
+          saturday={serving}
+          spotId={spotId}
+          trays={trays}
+          helper={false}
+          note={S.saturdays[serving - 1]?.note}
+          closeLabel={serving === 2 ? "Close up. One more Saturday to go." : "See how both nights went"}
+          dealt={dealt}
+          onDealt={setDealt}
+          onClose={() => {
+            if (serving === 2) {
+              setServing(3);
+              setDealt(0);
+              return;
+            }
+            dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 2, trays });
+          }}
+        />
+      </PopUpShell>
+    );
+  }
+
   return (
     <PopUpShell
       stage="popup-standing-order"
       kicker={COPY.standing.kicker}
       title={COPY.standing.title}
       ledger={ledger}
+      headingVariant="order"
       banner={<NightResult outcome={first} saturday={1} spot={spot} helper={state.helper === true} />}
     >
       <p className="popup-verdict" data-tone={earned ? "good" : "plain"}>{rebate}</p>
@@ -809,8 +992,11 @@ export function StandingOrderStage() {
             </li>
           ))}
         </ol>
-        <LinesHeld plan={held} label={COPY.plan.placedLabel} />
-        {/* What this order leaves for the last Saturday, before it is placed. A student who
+        {/* The three lines used to be restated here too, immediately above a control that only
+            ever spends one of them. See `FirstSaturdayStage` for why it is gone: the HUD and
+            the plan board already carry it, and repeating it here bought nothing this screen's
+            four words of headroom could afford.
+            What this order leaves for the last Saturday, before it is placed. A student who
             cooks to the crowd on all three of the first Saturdays can spend the stock line
             down past a tray without the market ever mentioning it, and then meet the biggest
             crowd of the run with an empty truck. */}
@@ -828,7 +1014,17 @@ export function StandingOrderStage() {
         {/* The two nights' own notes are on the order above, where the decision is, and what a
             tray costs is on the control itself. Anything printed here was the screen saying
             something it had already said. */}
-        <Button type="button" aria-disabled={!ready} onClick={() => ready && dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 2, trays })}>
+        {/* Ordering opens the window; it does not settle the nights.
+            This used to dispatch `POPUP_STOCK_ORDERED` straight from here, which resolved
+            Saturdays 2 and 3 off-screen as arithmetic and stepped to the generator. The
+            consequence was that the `serving !== null` branch above — both nights' service, with
+            its own two close labels and a HUD written to add the un-banked till of a night in
+            progress — was unreachable: nothing in the file ever called `setServing(2)`, so half
+            the market's Saturdays were never run by anybody. A student ran the first Saturday,
+            ran the last, and was told what happened on the two in between.
+            Now it hands over to the counter, and the reducer is told once at the end of night
+            three, which is what the branch below was always written to expect. */}
+        <Button type="button" aria-disabled={!ready} onClick={() => ready && setServing(2)}>
           {ready ? COPY.standing.action : state.tipClaims === null ? COPY.tips.gateClaims : COPY.standing.gate}
         </Button>
       </div>
@@ -911,6 +1107,15 @@ export function GeneratorStage() {
 
 export function RepairStage() {
   const { state, dispatch } = usePopUp();
+  /**
+   * The fireworks Saturday, served rather than reported.
+   *
+   * The biggest crowd of the run and the only night the organiser states as a band rather than
+   * a figure — so it is the one night whose outcome a student genuinely cannot know before it
+   * happens, and the one most worth watching. It resolved on the press like all the others.
+   */
+  const [serving, setServing] = useState<{ trays: number; fromLine?: PopUpLineId } | null>(null);
+  const [dealt, setDealt] = useState(0);
   const ledger = ledgerOf(state);
   const spot = state.spotId;
   const held = ledger.held;
@@ -977,8 +1182,45 @@ export function RepairStage() {
     });
   };
 
+  if (serving !== null) {
+    const spotId = spot ?? "back-lane";
+    const helper = state.helper === true;
+    const run = serviceRun(N, spotId, 4, serving.trays, helper);
+    const served = run.orders.slice(0, dealt);
+    const till = served.reduce((total, order) => total + order.takings, 0);
+    const soldSoFar = served.reduce((total, order) => total + order.served, 0);
+    const banked = ledger.saturdays.reduce((total, day) => total + day.takings, 0);
+    return (
+      <PopUpShell
+        stage="popup-repair"
+        kicker={COPY.repair.kicker}
+        title="The last Saturday"
+        ledger={ledger}
+        focusKey="serving-4"
+        live={{ cash: ledger.cashToPlan + banked + till, sold: soldSoFar }}
+      >
+        <RunSaturday
+          saturday={4}
+          spotId={spotId}
+          trays={serving.trays}
+          helper={helper}
+          note={S.saturdays[3]?.note}
+          closeLabel="See how the four Saturdays went"
+          dealt={dealt}
+          onDealt={setDealt}
+          onClose={() => dispatch({
+            type: "POPUP_STOCK_ORDERED",
+            saturday: 4,
+            trays: serving.trays,
+            ...(serving.fromLine ? { fromLine: serving.fromLine } : {}),
+          })}
+        />
+      </PopUpShell>
+    );
+  }
+
   return (
-    <PopUpShell stage="popup-repair" kicker={COPY.repair.kicker} title={COPY.repair.title} ledger={ledger} focusKey={saved ? "settled" : "open"}>
+    <PopUpShell stage="popup-repair" kicker={COPY.repair.kicker} title={COPY.repair.title} ledger={ledger} focusKey={saved ? "settled" : "open"} headingVariant="order">
       <div className="popup-read">
         <div><span>{COPY.repair.billLabel}</span><strong className="money">{formatDollars(ledger.bill)}</strong></div>
         <div><span>{COPY.repair.freedLabel}</span><strong className="money">{formatDollars(ledger.freed)}</strong></div>
@@ -1053,7 +1295,7 @@ export function RepairStage() {
           </section>
           <div className="popup-action">
             <p>{S.saturdays[3]?.note}</p>
-            <Button type="button" onClick={() => dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 4, trays, fromLine: named })}>{COPY.saturday.open}</Button>
+            <Button type="button" onClick={() => setServing({ trays, ...(named ? { fromLine: named } : {}) })}>{COPY.saturday.open}</Button>
           </div>
         </>
       ) : (
@@ -1061,7 +1303,7 @@ export function RepairStage() {
           <p className="popup-verdict" data-tone="hard">{COPY.repair.noLast}</p>
           <div className="popup-action">
             <p>{S.saturdays[3]?.note}</p>
-            <Button type="button" onClick={() => dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 4, trays: 0 })}>{COPY.repair.noLastAction}</Button>
+            <Button type="button" onClick={() => setServing({ trays: 0 })}>{COPY.repair.noLastAction}</Button>
           </div>
         </>
       )}

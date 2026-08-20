@@ -22,6 +22,23 @@ import { defineConfig, devices } from "@playwright/test";
 const APP_PORT = process.env.BOW_E2E_APP_PORT ?? "4173";
 const API_PORT = process.env.BOW_API_PORT ?? "4180";
 
+/**
+ * The Chromebook court measures the *built* application, not the dev server.
+ *
+ * Its first run reported 14.8 MB of transfer for one evening, which is true of Vite in
+ * development — it serves every module as its own unbundled request — and says nothing whatever
+ * about what a school downloads. The production bundle is 283 kB gzipped. A performance report
+ * off by fifty times in the direction of "looks fine, we have loads of room" is worse than no
+ * report, because somebody will budget art against it.
+ *
+ * So that project builds and serves `dist/`. It is opt-in via `BOW_PERF=1` because the build
+ * costs a minute and no assertion pass needs it.
+ *
+ *     BOW_PERF=1 npx playwright test --project=chromebook
+ */
+const PERF = process.env.BOW_PERF === "1";
+const PREVIEW_PORT = process.env.BOW_PERF_PORT ?? "4176";
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
@@ -93,12 +110,12 @@ export default defineConfig({
     // person to look at, so it runs on its own rather than twice inside the assertion pass.
     {
       name: "chromium-1366",
-      testIgnore: "**/walkthrough.spec.ts",
+      testIgnore: ["**/walkthrough.spec.ts", "**/chromebook.spec.ts"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 768 } },
     },
     {
       name: "chromium-1024",
-      testIgnore: "**/walkthrough.spec.ts",
+      testIgnore: ["**/walkthrough.spec.ts", "**/chromebook.spec.ts"],
       use: { ...devices["Desktop Chrome"], viewport: { width: 1024, height: 600 } },
     },
     /**
@@ -132,6 +149,26 @@ export default defineConfig({
       grep: /@zoom/,
       use: { ...devices["Desktop Chrome"], viewport: { width: 320, height: 256 }, deviceScaleFactor: 4 },
     },
+    /**
+     * The Chromebook court, on its own so it never runs inside an assertion pass.
+     *
+     * It throttles the CPU fourfold and walks a whole evening, which takes minutes and would
+     * make every other suite look slow for reasons that have nothing to do with the product.
+     * It is also a *report* rather than a gate — see the spec for why — and a report that runs
+     * on every commit is a report nobody reads.
+     *
+     *     npx playwright test --project=chromebook
+     */
+    {
+      name: "chromebook",
+      testMatch: "**/chromebook.spec.ts",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1366, height: 768 },
+        deviceScaleFactor: 1,
+        ...(PERF ? { baseURL: `http://127.0.0.1:${PREVIEW_PORT}` } : {}),
+      },
+    },
     {
       name: "walkthrough",
       testMatch: "**/walkthrough.spec.ts",
@@ -142,6 +179,18 @@ export default defineConfig({
   // it: what the browser tests drive is the handler that ships. The store is in memory so
   // a run starts clean and leaves nothing behind.
   webServer: [
+    ...(PERF
+      ? [
+          {
+            // `vite preview` serves `dist/`, so this measures the bundle a school actually gets.
+            command: `npm run build && npx vite preview --port ${PREVIEW_PORT} --strictPort`,
+            url: `http://127.0.0.1:${PREVIEW_PORT}`,
+            reuseExistingServer: false,
+            timeout: 300_000,
+            env: { BOW_API_PORT: API_PORT },
+          },
+        ]
+      : []),
     {
       // Most of this wait is `npm run api` compiling `server/`, not the service coming up.
       command: "npm run api",

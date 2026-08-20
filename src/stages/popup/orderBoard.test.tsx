@@ -8,6 +8,7 @@ import { crowdOn, sellCap } from "../../domain/scenario/worlds/food-truck/econom
 import { createPopUpState, popUpReducer, type PopUpAction, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
 import { POP_UP_NUMBERS as N } from "../../domain/scenario/worlds/food-truck/numbers";
 import { POP_UP_SCENARIO } from "../../domain/scenario/worlds/food-truck/scenario";
+import type { SpotId } from "../../domain/scenario/worlds/food-truck/types";
 import type { EvidenceTransport } from "../../platform/evidence/transport";
 
 /**
@@ -135,15 +136,23 @@ describe("the order board asks the question instead of answering it", () => {
     }
   });
 
-  it("draws the plates it is cooking and says nothing about which of them sell", () => {
+  it("draws the trays it is buying, never one mark per plate, and says nothing about which sell", () => {
     shell.popUp = {
       state: stateAfter(OPENING), dispatch: () => {}, transport: TRANSPORT,
       delivery: { status: "idle" }, deliver: async () => {}, reset: () => {}, handOver: () => {},
     };
     const view = render(<MemoryRouter><FirstSaturdayStage /></MemoryRouter>);
-    const plates = [...view.container.querySelectorAll(".tray-plates i")];
-    expect(plates.length).toBeGreaterThan(0);
-    const states = new Set(plates.map((plate) => plate.getAttribute("data-state")));
+    // The order preview draws what is being *bought* — trays — and never one mark per plate.
+    // Plates and people are the same unit, so a run of plate marks beside `THE CROWD WILL BUY
+    // 38` is a ruler a student can read the answer off without doing the arithmetic. The
+    // dominant order is `floor(sellCap / 10)`; at the back lane, missing it costs $186 of a
+    // possible $270. This is the assertion that stops the shared unit coming back.
+    const units = [...view.container.querySelectorAll(".tray-stack i")];
+    const onTheStepper = Number(view.container.querySelector('.tray-order [role="spinbutton"]')?.getAttribute("aria-valuenow") ?? "0");
+    expect(onTheStepper, "the stepper is showing an order").toBeGreaterThan(0);
+    expect(units.length, "one mark per tray, never per plate").toBe(onTheStepper);
+    expect(view.container.querySelectorAll(".tray-plates i").length, "plate-unit marks are banned here").toBe(0);
+    const states = new Set(units.map((unit) => unit.getAttribute("data-state")));
     expect(states, "the order preview still colours plates sold and binned").toEqual(new Set(["cooking"]));
   });
 
@@ -153,6 +162,57 @@ describe("the order board asks the question instead of answering it", () => {
     for (const spotId of Object.keys(N.spots) as (keyof typeof N.spots)[]) {
       const crowds = [1, 2, 3, 4].map((saturday) => crowdOn(N, spotId, saturday as 1 | 2 | 3 | 4));
       expect(new Set(crowds).size, `${spotId}: ${crowds.join("/")}`).toBe(4);
+    }
+  });
+});
+
+/**
+ * The firewall The Counter is built on: quantity is drawn in trays, demand is written in
+ * numerals, and neither is ever rendered in the other's unit.
+ *
+ * `SUPPLIER_BUILD_BRIEF.md` §4 asks for exactly this, by name, as the one rule the redesign
+ * hangs on and the one that has to ship with a test rather than a convention: the tray stack
+ * counts `trays` and must never count `cooked`, and nothing else inside `.tray-order` may take
+ * a length, a count or a position from `sellCapTold`. The two tests below check both halves —
+ * the mark count against the number actually cooked, and the mark count held fixed while the
+ * crowd figure changes underneath it, at three booths whose Saturday-1 crowds are three
+ * different numbers.
+ */
+describe("the firewall: quantity is drawn in trays, demand is written in numerals", () => {
+  it("draws one mark per tray and never one per plate or one per person in the crowd", () => {
+    shell.popUp = {
+      state: stateAfter(OPENING), dispatch: () => {}, transport: TRANSPORT,
+      delivery: { status: "idle" }, deliver: async () => {}, reset: () => {}, handOver: () => {},
+    };
+    const view = render(<MemoryRouter><FirstSaturdayStage /></MemoryRouter>);
+    const trays = Number(view.container.querySelector('.tray-order [role="spinbutton"]')?.getAttribute("aria-valuenow") ?? "0");
+    const marks = view.container.querySelectorAll(".tray-stack i").length;
+    const crowd = sellCap(N, SPOT, 1, false);
+    expect(trays, "the order is showing a non-zero order").toBeGreaterThan(0);
+    expect(marks, "one mark per tray").toBe(trays);
+    expect(marks, "never one mark per plate cooked").not.toBe(trays * N.platesPerTray);
+    expect(marks, "never one mark per person in the crowd").not.toBe(crowd);
+  });
+
+  it("holds the mark count fixed while the crowd figure changes underneath it", () => {
+    // The order defaults to what the stock line affords, never to what the booth's crowd is,
+    // so the same plan draws the same three trays at Back Lane, Middle Row and Bridge Gate —
+    // whose Saturday-1 crowds are 22, 38 and 45. If a mark were ever drawn per plate or per
+    // person this would be the first place it showed: three different marks lengths for the
+    // one order that stayed the same.
+    const booths: readonly SpotId[] = ["back-lane", "middle-row", "bridge-gate"];
+    const crowds = new Set(booths.map((spotId) => sellCap(N, spotId, 1, false)));
+    expect(crowds.size, "the three booths have to disagree for this test to prove anything").toBe(3);
+    for (const spotId of booths) {
+      const actions = OPENING.map((action) => (action.type === "POPUP_SPOT_SELECTED" ? { ...action, spotId } : action));
+      shell.popUp = {
+        state: stateAfter(actions), dispatch: () => {}, transport: TRANSPORT,
+        delivery: { status: "idle" }, deliver: async () => {}, reset: () => {}, handOver: () => {},
+      };
+      const view = render(<MemoryRouter><FirstSaturdayStage /></MemoryRouter>);
+      const marks = view.container.querySelectorAll(".tray-stack i").length;
+      expect(marks, `${spotId}: crowd is ${sellCap(N, spotId, 1, false)}, marks should stay 3`).toBe(3);
+      cleanup();
     }
   });
 });

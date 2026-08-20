@@ -1,7 +1,7 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { SCENARIO_NUMBERS } from "./numbers";
 import { essentialsExpectation, reliableFloorExpectation } from "./expectations";
+import { sourceWithoutComments } from "../../test/source";
 
 /**
  * No student-facing screen may spell a price the scenario already owns.
@@ -72,6 +72,22 @@ function pricedLiterals(): { value: number; label: string }[] {
 const BARE_SCAN_FLOOR = 200;
 
 /**
+ * Comments are stripped before the scan, so a module may describe the defect it exists to
+ * prevent.
+ *
+ * `resolution.ts` documents the ending that printed *"Week 5 asked for $900"* over a board
+ * that had said $800, quoting both numbers — and this scan read the account of the bug as
+ * seven fresh instances of it. That is the trap `src/test/source.ts` was written for, and
+ * the reasoning that exempts event identifiers below applies unchanged and more strongly
+ * here: **a comment is never rendered, so it cannot tell a student the wrong price.** The
+ * alternative was to stop writing the number down in the one place a person reads before
+ * editing the pricing, which is where it does the most good.
+ *
+ * `lines` because every offence below is reported as `line 103: …`, and a reader sent to the
+ * wrong line by a scan about precision is the same defect on the other side of the message.
+ */
+
+/**
  * Both ways a price gets written: bare in an expression, and formatted in prose. Word
  * boundaries keep `500` from matching inside `4500`, and the written form catches the
  * `$4,500` a writer types by hand.
@@ -96,7 +112,7 @@ function occurrencesOf(source: string, value: number): string[] {
 describe("student screens are priced by the scenario", () => {
   const sources = STUDENT_SOURCES.flatMap((path) => {
     try {
-      return [{ path, text: readFileSync(path, "utf8") }];
+      return [{ path, text: sourceWithoutComments(path, { lines: true }) }];
     } catch {
       // A screen listed here but not yet built is not a failure; a screen that exists and
       // spells its own prices is.

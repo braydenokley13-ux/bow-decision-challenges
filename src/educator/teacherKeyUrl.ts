@@ -54,7 +54,10 @@ export function useTeacherKey(code: string | undefined): string | null {
     const rest = new URLSearchParams(location.search);
     rest.delete("key");
     const search = rest.toString();
-    navigate({ pathname: location.pathname, search: search ? `?${search}` : "" }, { replace: true });
+    // `void` because react-router 7's navigate returns a promise and this is a replace of
+    // the current entry — there is nothing after it to sequence, and nothing to report if
+    // the router declines it. Left floating it failed lint on a green tree.
+    void navigate({ pathname: location.pathname, search: search ? `?${search}` : "" }, { replace: true });
   }, [code, fromUrl, location.pathname, location.search, navigate]);
 
   // The URL's key on the render it arrives on, so the fetch it authorises starts immediately

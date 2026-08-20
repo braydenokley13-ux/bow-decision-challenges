@@ -3,9 +3,10 @@ import type { CompetencyId } from "../../domain/competency/types";
 import type { WorldId } from "../../domain/core/ids";
 import { DEFAULT_WORLD_ID } from "../../domain/scenario/registry";
 import { completionRuleFor, FRAMEWORKS, mappingsForStandard, standardByRef } from "../../domain/standards";
+import { compatibleWorldsFor as offerableWorlds } from "./worldCompatibility";
 import type { FrameworkId, StandardRef } from "../../domain/standards/types";
 import { CODE_ALPHABET } from "./codes";
-import type { Assignment, AssignmentFormat, ClassRecord } from "./types";
+import type { Assignment, AssignmentFormat, ClassRecord, ClosingQuestion } from "./types";
 
 /**
  * Assignments, and what to do about every class that was created before there were any.
@@ -153,13 +154,37 @@ export interface AssignmentRequest {
   studentChoosesWorld: boolean;
   format: AssignmentFormat;
   assignedStudentIds: readonly string[] | null;
+  closingQuestion?: ClosingQuestion;
   attemptOf?: string;
+  dueAt?: number;
 }
+
+/**
+ * The longest closing question this service will store, in characters.
+ *
+ * §37 says *keep it light*. A cap is not squeamishness about teachers: it is the difference
+ * between one question at the end and a second worksheet pasted into a text box, and the
+ * student reading it is eleven. Long enough for the examples the definition gives — *"Which
+ * decision would you change if you played again?"* — with room to spare.
+ */
+export const CLOSING_QUESTION_MAX = 300;
 
 const FORMATS: readonly AssignmentFormat[] = ["quick-check", "decision-challenge"];
 
 /** Every world a student could actually be sent to. Built worlds only, never a mapping. */
 export const BUILT_WORLD_IDS: readonly WorldId[] = [...new Set(BUILT_WORLD_COVERAGE.map((claim) => claim.worldId))];
+
+/**
+ * The worlds a teacher may legitimately be offered for one objective, in this class.
+ *
+ * A thin binding over `worldCompatibility.ts`, which holds the join between an objective's
+ * demand, the coverage worlds claim, and what a student can actually open. It is bound here
+ * because `BUILT_WORLD_IDS` is this module's fact — the set of worlds that claim anything —
+ * and it is the honest answer only for a class that was never given an objective.
+ */
+export function compatibleWorldsFor(objectiveRef: StandardRef | null): readonly WorldId[] {
+  return offerableWorlds(objectiveRef, BUILT_WORLD_IDS);
+}
 
 /**
  * What a teacher sent, checked into something the service will store — or `null`.
@@ -175,10 +200,17 @@ export function readAssignmentRequest(body: unknown, existing: readonly Assignme
   const objectiveRef = readStandardRef(candidate.objectiveRef);
   if (objectiveRef === undefined) return null;
 
+  // The set this request is allowed to draw from. Not `BUILT_WORLD_IDS`: a world that cannot
+  // evidence the objective the teacher picked is not an option for this assignment, and the
+  // service is the last place that can say so — a client asserting its own compatibility is a
+  // client asserting what a district will later read as an assessment claim.
+  const offerable = compatibleWorldsFor(objectiveRef);
+  if (offerable.length === 0) return null;
+
   const worlds = candidate.allowedWorldIds;
   const allowedWorldIds = worlds === undefined
-    ? BUILT_WORLD_IDS
-    : Array.isArray(worlds) && worlds.length > 0 && worlds.every((id): id is WorldId => BUILT_WORLD_IDS.includes(id as WorldId))
+    ? offerable
+    : Array.isArray(worlds) && worlds.length > 0 && worlds.every((id): id is WorldId => offerable.includes(id as WorldId))
       ? [...new Set(worlds)]
       : null;
   if (!allowedWorldIds) return null;
@@ -202,17 +234,64 @@ export function readAssignmentRequest(body: unknown, existing: readonly Assignme
     return null;
   }
 
+  const closingQuestion = readClosingQuestion(candidate.closingQuestion);
+  if (closingQuestion === undefined) return null;
+
+  const dueAt = readDueAt(candidate.dueAt);
+  if (dueAt === undefined) return null;
+
   return {
     objectiveRef,
     competencyIds: objectiveRef ? competenciesAssessedBy(objectiveRef) : competenciesMeasuredBy(DEFAULT_WORLD_ID),
     allowedWorldIds,
-    // One world exists, so "let them choose" is not yet a thing a teacher can be given: a
-    // choice of one is a screen that asks a question with one answer (§17.2).
+    // A choice of one is a screen that asks a question with one answer (§17.2). This is now
+    // reachable — two worlds produce all three built competencies — but it stays derived from
+    // the list rather than trusted from the request, because the list is what the objective
+    // allows and the request is what a client asked for.
     studentChoosesWorld: chooses === true && allowedWorldIds.length > 1,
     format: format as AssignmentFormat,
     assignedStudentIds,
+    ...(closingQuestion ? { closingQuestion } : {}),
     ...(typeof attemptOf === "string" ? { attemptOf } : {}),
+    ...(dueAt !== null ? { dueAt } : {}),
   };
+}
+
+/**
+ * The builder's due date, or `null` for "the teacher set none" — a real and common answer.
+ *
+ * `undefined` is the malformed reply, matching every other reader in this file: a string, a
+ * negative number or a `NaN` is not a date nobody set, it is a client sending something this
+ * service does not understand, and the whole request is refused rather than silently dropping
+ * the one field that was wrong.
+ */
+function readDueAt(value: unknown): number | null | undefined {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) return undefined;
+  return value;
+}
+
+/**
+ * The teacher's own closing question, or `null` for "they did not set one".
+ *
+ * `undefined` is the malformed answer, matching `readStandardRef` above — the two states a
+ * parser has to keep apart are *the teacher deliberately sent nothing* and *the client sent
+ * something wrong*, and collapsing them turns a bug into a silently empty field.
+ *
+ * Whitespace-only text is not a question. It is trimmed and then treated as absent, because a
+ * teacher who tabbed through the box has not written one and a student should not be shown a
+ * blank prompt with a text area under it.
+ */
+function readClosingQuestion(value: unknown): ClosingQuestion | null | undefined {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "object") return undefined;
+  const { text, required } = value as { text?: unknown; required?: unknown };
+  if (typeof text !== "string") return undefined;
+  if (required !== undefined && typeof required !== "boolean") return undefined;
+  const trimmed = text.trim();
+  if (trimmed.length === 0) return null;
+  if (trimmed.length > CLOSING_QUESTION_MAX) return undefined;
+  return { text: trimmed, required: required === true };
 }
 
 /** A framework this deployment actually carries, rather than a string that looks like one. */

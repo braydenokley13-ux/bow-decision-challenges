@@ -14,6 +14,7 @@ import {
   scoreWriting,
   seatOnRoster,
   seedRuns,
+  serveTheNight,
   signIn,
   stepPastTheDeal,
   submitDefense,
@@ -119,7 +120,14 @@ async function pickWorld(page: Page, worldId: "basketball" | "food-truck") {
 }
 
 /** Eight weeks, start to turned in, on the cheapest housing and no bonuses counted. */
-async function playBasketball(page: Page, defence: string) {
+/**
+ * A whole basketball run, and an optional hook on the write-up screen.
+ *
+ * `onWriteUp` runs after the defence is typed and before it is turned in, which is the one
+ * moment anything else on that screen can be looked at — the teacher's own closing question
+ * lives there, under the challenge's own, and a required one holds the turn-in button.
+ */
+async function playBasketball(page: Page, defence: string, onWriteUp?: () => Promise<void>) {
   const plan: PlanContext = { setupId: "cousin-room" };
   await stepPastTheDeal(page);
   await completeSetupStage(page, 2);
@@ -131,7 +139,7 @@ async function playBasketball(page: Page, defence: string) {
   await decideOpportunity(page, { clinics: false, countBonus: false });
   await savePlan(page, "final", { ...plan, clinics: false, countCompletionFinal: false });
   await readWeek8Resolution(page);
-  await submitDefense(page, defence);
+  await submitDefense(page, defence, onWriteUp);
   await waitForDelivery(page);
 }
 
@@ -165,9 +173,11 @@ async function setLine(page: Page, label: string, value: number) {
 }
 
 async function orderTrays(page: Page, trays: number) {
-  const shown = page.locator(".tray-order output");
+  // The order control is a real spinbutton now — `role="spinbutton"` and `aria-valuenow`,
+  // not an `<output>` a script had to read the text of.
+  const shown = page.locator('.tray-order [role="spinbutton"]');
   for (let guard = 0; guard < 12; guard += 1) {
-    const current = Number(await shown.innerText());
+    const current = Number(await shown.getAttribute("aria-valuenow"));
     if (current === trays) break;
     await page.getByRole("button", { name: current < trays ? "One tray more" : "One tray fewer" }).click();
   }
@@ -194,6 +204,7 @@ async function playMarket(page: Page, answer: string) {
   await orderTrays(page, 3);
   await checkSum(page, MARKET_COPY.saturday.order.label, orderCost(MARKET, 3));
   await page.getByRole("button", { name: MARKET_COPY.saturday.open }).click();
+  await serveTheNight(page);
 
   // The tips jar: money that is not the truck's, three things that want it, and a reason for
   // the one left out. The night does not end until both halves are answered, which is the beat
@@ -205,6 +216,9 @@ async function playMarket(page: Page, answer: string) {
   await page.getByRole("button", { name: MARKET_COPY.standing.alone }).click();
   await orderTrays(page, 3);
   await page.getByRole("button", { name: MARKET_COPY.standing.action }).click();
+  // The standing order covers Saturdays 2 and 3, so the window opens twice before the market
+  // asks anything else.
+  await serveTheNight(page, 2);
 
   await checkSum(page, MARKET_COPY.generator.gap.label, swapBill(MARKET));
   await page.getByRole("button", { name: MARKET_COPY.generator.action }).click();
@@ -213,6 +227,7 @@ async function playMarket(page: Page, answer: string) {
   await page.getByRole("button", { name: MARKET_COPY.repair.commit }).click();
 
   await page.getByRole("button", { name: MARKET_COPY.saturday.open }).click();
+  await serveTheNight(page);
   await page.getByRole("button", { name: MARKET_COPY.settle.action }).click();
   await page.locator(".writeup__tiles button").nth(0).click();
   await page.locator(".writeup__tiles button").nth(1).click();
@@ -302,6 +317,72 @@ test("golden 1: a student's work reaches their teacher", async ({ page }) => {
   await expect(page.getByRole("heading", { name: card.displayName, exact: true })).toBeVisible();
   await page.getByRole("tab", { name: "The explanation" }).click();
   await expect(page.locator(".student-response")).toContainText("I kept the course money where I set it");
+});
+
+/* ---------------------------------------------------------------------------
+   1b — the teacher's own question, end to end, and the line it may not cross.
+   --------------------------------------------------------------------------- */
+
+test("golden 1b: a teacher's own question is answered, read, and changes nothing BOW claims", async ({ page }) => {
+  // §37, and the promise made to District 26 in writing: a teacher may attach one question of
+  // their own at the end. The whole design is the line it must not cross — a question one
+  // teacher wrote may not move what BOW claims about a child, or two classes set the same
+  // challenge mean different things and nothing on any screen says so.
+  const created = await createClass(page.request, "Golden 1b");
+  const QUESTION = "Connect one decision to today's lesson.";
+  const ANSWER = "We talked about paying yourself first, and I set the course money before anything else.";
+  const defence = "I kept the course money where I set it and gave up part of the reserve after Week 5, because the seat is the thing Avery is playing for.";
+
+  // The teacher sets it with the assignment, where it belongs — never on the challenge version.
+  const assigned = await page.request.post(`${API}/classes/${created.code}/assignments`, {
+    headers: { "X-BOW-Teacher-Key": created.teacherKey },
+    // Pinned to one world so this journey measures the closing question and not the picker.
+    data: {
+      objectiveRef: null,
+      allowedWorldIds: ["basketball"],
+      studentChoosesWorld: false,
+      closingQuestion: { text: QUESTION, required: true },
+    },
+  });
+  expect(assigned.status(), await assigned.text()).toBe(201);
+
+  const card = await cardFor(page, created.code, "1");
+  await gotoFreshChallenge(page);
+  await signIn(page, card);
+  await openTheRun(page);
+
+  // The run is played as normal. The question arrives on the write-up screen, under the
+  // challenge's own, in the teacher's name.
+  await playBasketball(page, defence, async () => {
+    await expect(page.getByText(QUESTION)).toBeVisible();
+    await expect(page.getByText(/From your teacher/)).toBeVisible();
+    // Marked required, so the run may not be turned in until it is answered.
+    await expect(page.getByRole("button", { name: "Turn in my plan" })).toHaveAttribute("aria-disabled", "true");
+    await page.getByLabel("Your answer").fill(ANSWER);
+    await expect(page.getByRole("button", { name: "Turn in my plan" })).toHaveAttribute("aria-disabled", "false");
+  });
+
+  // The teacher reads it, on the student's own page, under their own writing and outside the
+  // rubric — which is the assertion that matters.
+  await page.goto(`/educator/class/${created.code}/students/${card.seatCode}?key=${created.teacherKey}`);
+  await page.getByRole("tab", { name: "The explanation" }).click();
+  const closing = page.locator(".closing-answer");
+  await expect(closing).toContainText(QUESTION);
+  await expect(closing).toContainText(ANSWER);
+  await expect(closing, "the teacher is not told whose question this was").toContainText(/You asked this, not BOW/);
+  await expect(page.locator(".rubric-panel"), "the answer reached the scoring panel").not.toContainText(ANSWER);
+
+  // And the canonical evidence is untouched: the student's own write-up still reads as it did,
+  // and nothing about the closing answer is in the log the observer sees.
+  await expect(page.locator(".student-response blockquote").first()).toContainText("I kept the course money where I set it");
+  const room = await page.request.get(`${API}/classes/${created.code}/submissions`, {
+    headers: { "X-BOW-Teacher-Key": created.teacherKey },
+  });
+  const body = (await room.json()) as { submissions: { closingAnswer?: { answer: string }; log: unknown[] }[] };
+  expect(body.submissions, "the room holds exactly this student's submission").toHaveLength(1);
+  const mine = body.submissions[0];
+  expect(mine.closingAnswer?.answer, "the answer did not persist").toBe(ANSWER);
+  expect(JSON.stringify(mine.log), "the answer is inside the evidence log").not.toContain("paying yourself first");
 });
 
 /* ---------------------------------------------------------------------------
@@ -751,9 +832,16 @@ test("golden 9: a teacher's classes survive their laptop", async ({ page, browse
 
     // The promise, and the whole reason the journey is written: the child's work and the mark a
     // person gave it, both still there on a machine that has never seen either.
-    const key = new URL(after.url()).searchParams.get("key") ?? "";
-    expect(key.length).toBeGreaterThan(16);
-    await after.goto(`/educator/class/${code}/students/1?key=${key}`);
+    //
+    // This read the key out of the address bar and put it back into the next URL, and it has
+    // been failing since `ae47cf2` took it out of there — on a suite nobody could run, because
+    // the tree it ran against did not build. The key opens every child's name and every child's
+    // writing, and it used to sit in the address bar of the roster and in the history of
+    // whatever machine a teacher was on; it is filed in this browser on arrival now and goes to
+    // the service as a header. So the assertion is the opposite one, and it is the stronger of
+    // the two: the address bar is clean, and the work is reachable anyway.
+    expect(new URL(after.url()).searchParams.get("key"), "the teacher key is back in the address bar").toBeNull();
+    await after.goto(`/educator/class/${code}/students/1`);
     await after.getByRole("tab", { name: "The explanation" }).click();
     await expect(after.locator(".student-response")).toContainText("I kept the course money where I set it");
     await expect(after.locator(".rubric-panel footer strong")).toContainText("10/10");

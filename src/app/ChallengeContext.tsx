@@ -13,6 +13,7 @@ import { deliverWithRetry, type DeliveryState, type EvidenceTransport } from "..
 import { transportFromEnvironment } from "../platform/evidence/transports";
 import type { WorldOffer } from "../stages/worldOffer";
 import { useAttemptCheckpoint } from "../student/useAttemptCheckpoint";
+import { closingAnswerFor, forgetEveryClosingDraft } from "../student/closingQuestion";
 
 interface ChallengeContextValue {
   state: ChallengeState;
@@ -156,6 +157,9 @@ export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT, ini
 
   const handOver = useCallback(() => {
     clearEveryAttempt();
+    // A child's own sentences, which is exactly what the next student at this machine must
+    // not find. The attempt clear does not reach them: they are not in the attempt.
+    forgetEveryClosingDraft();
     run.release();
     // The session goes with the attempt. Clearing one and keeping the other is the shared-cart
     // failure with an extra step: the next student would sit down to a cleared board that was
@@ -188,6 +192,9 @@ export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT, ini
         // assignment this was, and the service is better placed to attribute it than a
         // browser that was never told.
         ...(state.meta.assignmentId ? { assignmentId: state.meta.assignmentId } : {}),
+        // The teacher's own question, answered. Read from its own store rather than from the
+        // reducer, because it is not evidence and there is no path from that store into a log.
+        ...(closingAnswerFor(state.meta.sessionId) ? { closingAnswer: closingAnswerFor(state.meta.sessionId)! } : {}),
         log: state.log,
       },
       setDelivery,

@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Pass — plate in situ</title>
+<!--
+  JUDGING HARNESS, not a deliverable screen. This mimics Direction C's chassis
+  (topbar HUD, window frame + valance, wire + chits, sill, instrument deck)
+  closely enough that the baked plate can be judged in place rather than as a
+  standalone picture. The real integration happens in src/ by another agent.
+
+  Open with ?grade=early | peak | late  (default peak). The clock and the
+  heading change with the grade because they are PUBLIC state (the market
+  runs 17:00-22:00); nothing else varies — that is the whole point.
+
+  C's CSS grade layers (--night/--glow) are set to 0 here: with three baked
+  grades the light lives in the plate itself.
+-->
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:#120b08;color:#f5ead8;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+:root{
+  --ink-1:#f5ead8; --ink-3:#c3ab95; --ink-4:#a98f78;
+  --amber:#f0a94a; --amber-ink:#ffcf8a; --flare:#f0b352;
+  --ground:#1d1310; --steel-hi:#3d2e22; --steel:#2b2018; --steel-lo:#1b130d;
+  --paper:#e8dcc0; --paper-ink:#2a2118;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Consolas,monospace;
+}
+.stage{position:relative;width:100%;max-width:1600px;margin:0 auto;min-height:100vh;
+  display:flex;flex-direction:column;background:var(--ground);overflow:hidden}
+.stage::after{content:"";position:absolute;inset:0;z-index:40;pointer-events:none;
+  background:radial-gradient(130% 105% at 50% 38%, transparent 58%, rgb(8 4 2/.34) 100%)}
+.topbar{position:relative;z-index:30;display:flex;align-items:center;gap:26px;min-height:50px;
+  padding:6px 24px;background:#241a15;border-bottom:2px solid var(--amber);white-space:nowrap}
+.bow{font:800 20px/1 var(--mono)}
+.bow i{font-style:normal;color:#9678ff;font-size:11px;vertical-align:top}
+.ident small,.hud small{display:block;font:500 9.5px/1.3 var(--mono);letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-4)}
+.ident b{font:700 13.5px/1.3 var(--sans)}
+.hud{display:flex;gap:22px;margin:0 0 0 auto;padding:0;list-style:none}
+.hud b{font:700 13.5px/1.3 var(--mono);font-variant-numeric:tabular-nums}
+.hud b span{font-weight:500;color:var(--ink-3);font-size:11.5px}
+.service{position:relative;z-index:10;display:flex;flex-direction:column;flex:1;padding:8px 28px 0}
+.eyebrow{margin:1px 2px 6px;color:var(--ink-4);font:700 11px/1.4 var(--sans);
+  letter-spacing:.18em;text-transform:uppercase}
+.window{position:relative;flex:1;min-height:250px;background:#171009;border-radius:10px 10px 0 0}
+.view{position:absolute;left:26px;right:26px;top:36px;bottom:0;overflow:hidden;background:#1c1018}
+.view__plate{position:absolute;inset:0;background-color:#160d12;
+  background-size:cover;background-position:center 64%;background-repeat:no-repeat}
+.view__occlusion{position:absolute;inset:0;pointer-events:none;
+  box-shadow:inset 0 26px 34px -18px rgb(6 3 1/.95),inset 20px 0 30px -22px rgb(6 3 1/.85),
+    inset -20px 0 30px -22px rgb(6 3 1/.85),inset 0 -18px 26px -20px rgb(6 3 1/.7)}
+.valance{position:absolute;z-index:4;left:26px;right:26px;top:36px;height:16px;
+  background:repeating-linear-gradient(90deg,#8a3324 0 46px,#7a2c1f 46px 52px,#e8d3ae 52px 98px,#d4bd94 98px 104px);
+  -webkit-mask-image:linear-gradient(#000,#000),radial-gradient(26px 8px at 26px 8px,#000 98%,transparent 100%);
+  -webkit-mask-size:100% 8px,52px 16px;-webkit-mask-repeat:repeat-x;
+  mask-image:linear-gradient(#000,#000),radial-gradient(26px 8px at 26px 8px,#000 98%,transparent 100%);
+  mask-size:100% 8px,52px 16px;mask-repeat:repeat-x;
+  filter:drop-shadow(0 5px 5px rgb(6 3 1/.6))}
+.valance::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgb(0 0 0/.42) 0%,rgb(0 0 0/.05) 55%,rgb(255 200 130/.12) 100%)}
+.window::before{content:"";position:absolute;left:0;right:0;top:0;height:36px;z-index:3;
+  background:linear-gradient(180deg,#2e211a 0%,#241812 62%,#120a06 100%);border-radius:10px 10px 0 0;
+  box-shadow:inset 0 1px 0 rgb(255 214 150/.28),inset 0 -1px 0 rgb(0 0 0/.8)}
+.window::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  border-left:26px solid #1d140d;border-right:26px solid #1d140d;border-radius:10px 10px 0 0}
+.status{position:absolute;z-index:5;left:26px;top:0;height:36px;margin:0;display:flex;
+  align-items:center;color:#d8c4ac;font:700 13px/1 var(--sans);letter-spacing:.08em}
+.clock{position:absolute;z-index:5;right:22px;top:5px;margin:0;padding:4px 12px;color:var(--flare);
+  font:700 14px/1.2 var(--mono);font-variant-numeric:tabular-nums;letter-spacing:.08em;
+  background:#0d0704;border-radius:5px;
+  box-shadow:inset 0 1px 4px rgb(0 0 0/.9),0 1px 0 rgb(255 214 150/.14);
+  text-shadow:0 0 10px rgb(240 179 82/.45)}
+.wire{position:absolute;z-index:4;left:26px;right:26px;bottom:22px;height:96px;pointer-events:none}
+.chits{display:flex;gap:14px;margin:0;padding:14px 0 0 3%;list-style:none}
+.chits li{position:relative;min-width:96px;padding:22px 12px 8px;
+  transform:rotate(var(--tilt,0deg)) translateY(var(--drop,0px));
+  background:linear-gradient(175deg,#efe0ba 0%,#e3d3ae 55%,#cdb98d 100%);
+  color:#241a10;border-radius:2px;
+  box-shadow:inset 0 0 18px rgb(140 90 30/.3),inset 0 1px 0 rgb(255 240 200/.7),
+    0 0 16px rgb(255 170 80/.18),0 6px 10px -6px rgb(0 0 0/.6)}
+.chits li::before{content:"";position:absolute;left:50%;top:-9px;width:12px;height:16px;margin-left:-6px;
+  background:linear-gradient(180deg,#8a7358 0%,#4d3a28 100%);
+  clip-path:polygon(15% 0,85% 0,100% 100%,0 100%)}
+.chit__num{display:block;font:800 15px/1.1 var(--mono)}
+.chit__want{display:block;margin-top:2px;font:600 12px/1.2 var(--sans);color:#4d3c22}
+.lane{position:absolute;right:3%;bottom:14px;padding:9px 14px;background:#150d08;
+  color:var(--ink-3);font:600 12px/1.2 var(--sans);border-radius:6px;
+  box-shadow:inset 0 1px 3px rgb(0 0 0/.8),0 1px 0 rgb(255 214 150/.12)}
+.lane strong{color:var(--amber-ink);font:800 16px/1 var(--mono);margin-right:2px}
+.sill{position:relative;height:18px;flex:none;z-index:8;
+  background:linear-gradient(180deg,#8a6a48 0%,#5c4229 42%,#2e2015 100%);
+  box-shadow:inset 0 1.5px 0 rgb(255 218 158/.8),0 2px 4px rgb(0 0 0/.65)}
+.sill::after{content:"";position:absolute;inset:0;
+  background:radial-gradient(42% 260% at 50% -30%,rgb(255 196 110/.42),transparent 70%)}
+.deck{position:relative;flex:none;display:grid;
+  grid-template-columns:minmax(320px,400px) minmax(470px,1fr) minmax(258px,300px);
+  grid-template-areas:"pass channel till" "controls controls controls";
+  gap:6px 30px;padding:18px 36px 14px;
+  background:radial-gradient(58% 120px at 30% 0%,rgb(255 170 80/.17),transparent 72%),
+    linear-gradient(180deg,var(--steel-hi) 0,var(--steel) 110px,#211812 58%,var(--steel-lo) 100%)}
+.deck h3{margin:0 0 6px;color:var(--ink-4);font:700 10.5px/1.4 var(--sans);
+  letter-spacing:.16em;text-transform:uppercase}
+.pass{grid-area:pass}
+.ticket{position:relative;width:100%;max-width:392px;padding:14px 22px 16px;color:var(--paper-ink);
+  background:linear-gradient(160deg,#f4e8cc 0%,var(--paper) 52%,#d9c9a6 100%);
+  transform:rotate(-1.3deg);
+  clip-path:polygon(0 10px,3% 4px,7% 9px,12% 3px,18% 8px,25% 2px,33% 7px,42% 3px,52% 8px,61% 2px,70% 7px,78% 3px,86% 8px,93% 3px,97% 7px,100% 4px,100% 100%,0 100%);
+  box-shadow:0 2px 3px rgb(10 5 2/.55),0 22px 34px -20px rgb(0 0 0/.9)}
+.ticket b{font:800 26px/1 var(--mono)}
+.ticket .n{font:800 44px/1 var(--mono)}
+.ticket small{font:700 12px/1.4 var(--sans);letter-spacing:.12em}
+.channel{grid-area:channel}
+.big{font:800 40px/1 var(--mono);color:var(--ink-1)}
+.muted{color:var(--ink-3);font:600 13px/1.4 var(--sans)}
+.till{grid-area:till;background:#140d08;border-radius:8px;padding:12px 16px;
+  box-shadow:inset 0 1px 5px rgb(0 0 0/.8)}
+.till dl{display:grid;grid-template-columns:1fr auto;gap:4px 12px;margin:0;font:600 13px/1.5 var(--sans);color:var(--ink-3)}
+.till dd{margin:0;font:700 14px/1.5 var(--mono);color:var(--ink-1);text-align:right}
+.till .money{color:var(--amber-ink)}
+.controls{grid-area:controls;display:flex;gap:14px;align-items:center;padding-top:8px}
+button{font:700 15px/1 var(--sans);padding:14px 22px;border-radius:8px;cursor:pointer}
+.primary{color:#241403;border:0;
+  background:linear-gradient(180deg,#ffc46e 0%,var(--amber) 48%,#d98a2e 100%);
+  box-shadow:0 1px 0 rgb(255 230 180/.7) inset,0 3px 6px rgb(0 0 0/.5),0 0 24px rgb(240 169 74/.25)}
+.ghost{color:var(--ink-1);background:transparent;border:1.5px solid #4d372b}
+.order{margin-left:auto;color:var(--ink-3);font:600 13px/1 var(--sans)}
+</style></head>
+<body>
+<div class="stage">
+  <header class="topbar">
+    <span class="bow">BOW<i>&#9670;</i></span>
+    <span class="ident"><small>Run the pop-up</small><b>Riverside Night Market</b></span>
+    <ul class="hud">
+      <li><small>Cash</small><b>$1,666</b></li>
+      <li><small>Stock</small><b>$200 <span>3 trays</span></b></li>
+      <li><small>Sold</small><b>27 <span>plates</span></b></li>
+      <li><small>Where you are</small><b>Saturday 1 of 4</b></li>
+    </ul>
+  </header>
+  <main class="service">
+    <p class="eyebrow">Saturday 1 — your window is open</p>
+    <section class="window">
+      <h2 class="status" id="status">You are serving customers.</h2>
+      <p class="clock" id="clock">19:35</p>
+      <div class="view">
+        <div class="view__plate" id="plate" role="img"
+             aria-label="The market lane at night: stalls trading across the wet lane, string lights overhead, your own counter at the window."></div>
+        <div class="view__occlusion"></div>
+      </div>
+      <div class="valance"></div>
+      <div class="wire">
+        <ul class="chits">
+          <li style="--tilt:-2deg"><span class="chit__num">#22</span><span class="chit__want">3 plates</span></li>
+          <li style="--tilt:1.4deg;--drop:6px"><span class="chit__num">#23</span><span class="chit__want">3 plates</span></li>
+          <li style="--tilt:-1deg;--drop:2px"><span class="chit__num">#24</span><span class="chit__want">2 plates</span></li>
+        </ul>
+        <p class="lane"><strong>11</strong> in the lane</p>
+      </div>
+    </section>
+    <div class="sill"></div>
+    <section class="deck">
+      <div class="pass">
+        <div class="ticket">
+          <b>#21</b> <small style="float:right">ARRIVED 20:40</small>
+          <div><span class="n">3</span> <small>PLATES</small></div>
+        </div>
+      </div>
+      <div class="channel">
+        <h3>Plates on the counter</h3>
+        <div class="big">3 <span class="muted" style="font-size:15px">plates left</span></div>
+      </div>
+      <div class="till">
+        <h3>Tonight so far</h3>
+        <dl>
+          <dt>Money taken</dt><dd class="money">$324</dd>
+          <dt>Plates sold</dt><dd>27</dd>
+          <dt>Turned away</dt><dd>0</dd>
+        </dl>
+      </div>
+      <div class="controls">
+        <button class="primary">Stamp &amp; serve</button>
+        <button class="ghost">Serve automatically</button>
+        <span class="order">Order 21 of 24.</span>
+      </div>
+    </section>
+  </main>
+</div>
+<script>
+  var GRADES = {
+    early: { clock: "17:40", status: "You are serving customers." },
+    peak:  { clock: "19:35", status: "You are serving customers." },
+    late:  { clock: "21:10", status: "You are serving customers." }
+  };
+  var g = new URLSearchParams(location.search).get("grade");
+  if (!(g in GRADES)) g = "peak";
+  document.getElementById("plate").style.backgroundImage = 'url("lane-' + g + '.webp")';
+  document.getElementById("clock").textContent = GRADES[g].clock;
+</script>
+</body></html>

@@ -111,13 +111,20 @@ describe("the competencies Basketball cannot record yet", () => {
   });
 
   it.each(AWAITING_EVIDENCE_REQUIREMENTS)("fails the moment somebody writes %s's requirements", (competencyId: CompetencyId) => {
-    // Deliberately a tripwire. This world already produces the evidence — C4.1 to C4.4 are
-    // exactly "plan for something going wrong, then meet it" — and the only thing missing is
-    // the content: nobody has written what would count, and an implementer inventing it
-    // would be inventing a rubric row, a reteach card and a claim about a student.
+    // Deliberately a tripwire, and its instructions have been corrected once. They used to say
+    // "route them in observer.ts, add the coverage row, and delete the entry," on the strength
+    // of a claim that C4.1–C4.4 are exactly this competency. They are not, for the students who
+    // planned on safe cash only: `reducer.ts` sends a working plan to `fallback-version` only
+    // when conditional income was counted, so `primaryC4` scores everyone else from the Week 5
+    // repair instead. Following the old instruction would have published advance protection
+    // measured from a repair — the class of over-claim `availability.ts` exists to prevent.
     //
-    // When this fails, the requirements now exist. Route them in `observer.ts`, add the
-    // coverage row, and delete the entry from `AWAITING_EVIDENCE_REQUIREMENTS`.
+    // When this fails, the requirements exist. Before routing anything: check that whatever
+    // carries them is reached by **every** student in this world, and that the same is true of
+    // the market, because §9.1 says the story a student picks does not change what is measured
+    // and this world's sibling produces its cushion unconditionally. `observer.ts` names the
+    // candidate — the reserve line and the Week 5 cost — and names what a rubric over it may
+    // not do.
     const competency = competencyById(competencyId);
     expect(
       competency.evidenceRequirements,

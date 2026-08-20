@@ -9,17 +9,17 @@ const CLINIC_SATURDAYS = clinicWeeks(SCENARIO_NUMBERS).length;
 export const BASKETBALL_SCENARIO: WorldScenario = {
   id: "basketball",
   title: "Eight Weeks to the Showcase",
-  subtitle: "Eight weeks with the Harbor City Flight, a course to pay for, and two payments that might not arrive.",
+  subtitle: "Avery joins the Harbor City Flight for eight weeks. A course still needs paying for. Two payments might not arrive.",
   role: {
     name: "Avery Reyes",
     age: 18,
-    description: "Avery is a guard starting an eight-week run with the fictional Harbor City Flight.",
+    description: "Avery is a guard. This is an eight-week season with the fictional Harbor City Flight.",
   },
   goalLabel: "Sports-media course",
   numbers: SCENARIO_NUMBERS,
   incomeCopy: {
     savings: { label: "Already saved", note: "Money Avery already has." },
-    base: { label: "Base pay after taxes", note: "Pay that arrives no matter how the team performs." },
+    base: { label: "Base pay after taxes", note: "This pay always arrives. It does not depend on how the team plays." },
     // The two `ifNot` lines are the only place the cost of a condition not being met is
     // stated, so neither of them may lose its consequence. What they lost is the second
     // sentence: "nothing is paid for missing fewer" restated all-or-nothing in different
@@ -28,7 +28,7 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
     // them is sentence case.
     completion: {
       label: "Perfect attendance bonus",
-      note: "Payment tied to making every practice and game.",
+      note: "You get paid only if Avery makes every practice and every game.",
       // Says what actually decides it. The model has never read Avery's diligence: the payment
       // turns on `load.attendanceHolds`, which is the hours the week already owes — the trip
       // to and from the club, rehab from Week 6, the clinics if they are taken — against the
@@ -38,14 +38,14 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
       // week here does not settle the values objection to pricing a long commute as
       // unreliability — `gauntlet/critiques/econ-2.md` F7, and it wants a curriculum lead —
       // but it does stop the bet being about a quality of Avery's the world never models.
-      rule: "there is room in Avery's week for every practice and every game.",
-      ifNot: "A week too full to get to them all costs the whole payment.",
+      rule: "each week leaves enough time for every practice and every game.",
+      ifNot: "If even one week runs short on time, Avery loses the whole payment.",
     },
     outcome: {
       label: "Making the cut bonus",
-      note: "Payment tied to reaching the showcase.",
-      rule: "The Flight qualifies for the showcase.",
-      ifNot: "Avery cannot decide this one. The rest of the league does.",
+      note: "You get paid only if the Flight reaches the showcase.",
+      rule: "the Flight qualifies for the showcase.",
+      ifNot: "Avery cannot decide this. Other teams in the league decide whether the Flight qualifies.",
     },
     optionalWork: { label: "Saturday clinics", note: "Coaching fee for the last four Saturdays." },
   },
@@ -55,9 +55,9 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
     jersey: "07",
     kicker: "Harbor City Flight · Roster spot",
     headline: "Avery got the call.",
-    body: "The Flight lost a guard to a transfer. Avery Reyes, 18, gets the last roster spot for the eight-week run to the regional showcase. Practice starts Monday.",
+    body: "The Flight lost a guard to a transfer. Avery Reyes, 18, gets the last roster spot. The season lasts eight weeks and ends at the regional showcase. Practice starts Monday.",
     want: "Sports-media course",
-    wantDetail: "Avery wants to call games one day. The course runs right after the season ends, and nobody else is paying for it.",
+    wantDetail: "Avery wants to work in sports-media one day. The course starts right after the season ends. Nobody else is paying for it.",
     facts: [
       { label: "Player", value: "Avery Reyes · 18 · Guard" },
       { label: "Length", value: "8 weeks" },
@@ -67,10 +67,10 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
   invitation: {
     kicker: "Help Avery",
     headline: "Make the season work.",
-    role: "Avery plays. You handle the money — eight weeks of it.",
+    role: "Avery plays. You handle the money for eight weeks.",
     decisions: [
-      { title: "Decide what to protect", detail: "Some of this money needs to be kept for later. Say how much." },
-      { title: "Decide what to spend", detail: "Rent, food and getting to practice all come out of the same pot." },
+      { title: "Decide what to protect", detail: "Some of this money must be saved for later. Decide how much." },
+      { title: "Decide what to spend", detail: "Rent, food, and getting to practice all come out of the same pot." },
       { title: "Decide whether to count on the bonuses", detail: "Two payments might arrive. Neither one is promised." },
     ],
   },
@@ -82,7 +82,7 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
       total: SCENARIO_NUMBERS.setupCosts["gym-sublet"],
       commute: "5 min to the gym",
       commuteMinutes: 5,
-      tradeoff: "Walk to practice, walk home. Costs the most, asks the least of Avery’s week.",
+      tradeoff: "Avery walks to practice and walks home. Costs the most, but takes the least time each week.",
       eventCost: SCENARIO_NUMBERS.setupEventCosts["gym-sublet"],
       eventCostLabel: "No added rehab travel",
     },
@@ -93,7 +93,7 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
       total: SCENARIO_NUMBERS.setupCosts["teammate-share"],
       commute: "30 min by bus",
       commuteMinutes: 30,
-      tradeoff: "A room split with a teammate on the same schedule, half an hour out on the bus.",
+      tradeoff: "Avery shares a room with a teammate who has the same schedule. The bus ride is thirty minutes.",
       eventCost: SCENARIO_NUMBERS.setupEventCosts["teammate-share"],
       eventCostLabel: "Added travel to rehab",
     },
@@ -104,22 +104,22 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
       total: SCENARIO_NUMBERS.setupCosts["cousin-room"],
       commute: "70 min each way",
       commuteMinutes: 70,
-      tradeoff: "Avery’s cousin won’t take rent. The room is across the city, and the trip is Avery’s to pay in time.",
+      tradeoff: "Avery’s cousin will not take rent money. The room is across the city, so the trip there costs Avery time.",
       eventCost: SCENARIO_NUMBERS.setupEventCosts["cousin-room"],
       eventCostLabel: "Late rides to required rehab",
     },
   ],
   disruption: {
     source: "Harbor City Flight · Team update",
-    title: "The showcase is off.",
+    title: "The showcase is cancelled.",
     beats: [
-      { marker: "MON", tag: "Week 5 · Team update", text: "Storm damage closed the arena. The regional showcase is cancelled, so the Flight never qualifies for it." },
-      { marker: "THU", tag: "Week 5 · Same week", text: "Avery lands hard on a loose ball. A wrist brace and off-site rehab, twice a week, until the season ends." },
+      { marker: "MON", tag: "Week 5 · Team update", text: "Storm damage closed the arena. The regional showcase is cancelled. The Flight never qualifies for the showcase." },
+      { marker: "THU", tag: "Week 5 · Same week", text: "Avery lands hard on a loose ball and hurts a wrist. Avery needs a wrist brace. Off-site rehab happens twice a week until the season ends." },
     ],
     voice: {
       "gym-sublet": "Rehab is two blocks from the gym. I can walk to it like everything else.",
-      "teammate-share": "Rehab is the other way across town. That’s a second pass I didn’t plan for.",
-      "cousin-room": "Rehab runs to 8pm, twice a week. My cousin drives out to get me and I cover the gas.",
+      "teammate-share": "Rehab is across town, the other direction from the gym. That is a second bus ride I did not plan for.",
+      "cousin-room": "Rehab does not end until 8pm, twice a week. My cousin drives out to get me, and I cover the gas.",
     },
     requiredCostLabel: "Required brace and off-site rehab",
   },
@@ -127,6 +127,6 @@ export const BASKETBALL_SCENARIO: WorldScenario = {
     from: "Flight community office",
     title: `${CLINIC_SATURDAYS} Saturday clinics. ${formatDollars(SCENARIO_NUMBERS.optionalWorkIncome)}.`,
     body: `The team runs skills clinics for younger players and is short a coach. ${CLINIC_SATURDAYS} Saturdays, the last ${CLINIC_SATURDAYS} of the season, and the money lands before the ${SCENARIO_NUMBERS.weeks} weeks end.`,
-    timeCost: "Avery’s only open block for rest, rehab, and everything that is not basketball.",
+    timeCost: "This is Avery’s only free time each week for rest, rehab, and anything besides basketball.",
   },
 };

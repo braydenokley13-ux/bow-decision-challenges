@@ -27,20 +27,24 @@ export const BASKETBALL_DEMAND: DemandProfile = {
   // through — when the second world shipped its own. The original 5.4 came from an
   // instrument this repository does not contain, and a declared fact §9.2 calls checkable
   // has to come from the ruler that checks it.
-  // Re-measured twice during the density pass. It had already drifted to 3.71 against a
-  // declared 4.2 before a word of this pass was cut — 0.49 of the 0.5 tolerance, spent. It is
-  // 3.87 now, and the move is mostly the retirement of `scenario.season`: 227 words of week
-  // notes and Avery's per-housing voice lines that the rebuilt Week 3 stopped rendering and
-  // that this grade was still being computed from. What is left is prose a student actually
-  // meets, which is the only kind a declared reading grade can honestly be about.
-  readingGradeLevel: 3.87,
+  // Re-measured again for the copy-clarity pass (`COPY_CONTRACT.md`), which rewrote every
+  // student-facing sentence in `scenario.ts` for one idea per sentence, subject before verb,
+  // and no idiom or metaphor in a label. Shorter, more numerous sentences move
+  // `wordsPerSentence` down; the measured grade is 3.72, and 3.87 was still inside the 0.5
+  // tolerance but was a claim about the old prose, not this one.
+  readingGradeLevel: 3.72,
   // Was 1180, asserted on nothing. It counted the world's story — the strings in
   // `scenario.ts` — and not the run: a critic who played the whole thing and counted what was
   // on the glass measured 3,167, and the only test looking at this field was the pop-up's,
   // which filtered through `isProse` and so could not see a button, a table header or a money
   // figure. This number is now the one `stages/readingLoad.test.tsx` renders and counts,
   // screen by screen along the shortest complete path, and that test fails if the two drift.
-  totalWordsStudentReads: 2367,
+  // Re-measured again after the copy-clarity pass: splitting stacked clauses into short,
+  // explicit-subject sentences adds a handful of repeated words ("Avery", "the bonus") back
+  // in, so the rendered count moved from 2,367 to 2,396 — 1.2% of itself, well inside the 15%
+  // the parity test allows, and declared at the number actually rendered rather than left at
+  // a figure that happened to still clear the band.
+  totalWordsStudentReads: 2396,
   arithmeticOperations: 4,
   arithmeticComplexity: "multiply",
   decisionsRequired: 8,

@@ -1,0 +1,646 @@
+<!doctype html>
+<meta charset="utf-8">
+<!--
+  Direction A — the lane plate, authoring master.
+
+  Everything the student sees THROUGH the service window: sky, the stall row across the lane,
+  string lights, wet asphalt, haze, our own awning framing the top. No text, no numbers, no UI —
+  the plate is pure environment and is baked once per time-of-day grade with
+  scripts/bake-art.mjs. The near queue and the counter are NOT here; they are live DOM,
+  composited over this at runtime, because they derive from real world state.
+
+  Grades: <html class="dusk|mid|late"> — 18:05 blue hour / 19:35 full dark peak / 20:40 late.
+-->
+<html class="late">
+<style>
+  html, body { margin: 0; width: 1366px; height: 460px; overflow: hidden; background: #000; }
+
+  /* ------------------------------------------------------------------ grade knobs */
+  html.dusk {
+    --sky-top: #24365e; --sky-mid: #3b4c74; --sky-hor: #8a6547; --sky-ground: #4a3421;
+    --haze-op: .3; --bulb-op: .8; --pool-op: .82; --stall-glow: .85;
+    --stars-d: none; --moths-d: none;
+  }
+  html.mid {
+    --sky-top: #0b1330; --sky-mid: #182848; --sky-hor: #543823; --sky-ground: #2e1d11;
+    --haze-op: .2; --bulb-op: 1; --pool-op: 1; --stall-glow: 1;
+    --stars-d: none; --moths-d: block;
+  }
+  html.late {
+    --sky-top: #050810; --sky-mid: #0d1224; --sky-hor: #3b2517; --sky-ground: #22150c;
+    --haze-op: .15; --bulb-op: 1; --pool-op: 1; --stall-glow: 1;
+    --stars-d: block; --moths-d: block;
+  }
+  /* baked crowd density per grade */
+  html.dusk  .crowd-mid, html.dusk  .crowd-dense { display: none; }
+  html.mid   .crowd-sparse, html.mid  .crowd-mid { display: none; }
+  html.late  .crowd-dense, html.late  .crowd-sparse { display: none; }
+  html.dusk  .steam { opacity: 1.3; }
+  html.dusk  { --amb: .12; }
+  html.mid   { --amb: .05; }
+  html.late  { --amb: .02; }
+
+  .bulbs { opacity: var(--bulb-op); }
+  .pool  { opacity: var(--pool-op); }
+  .stall-glow { opacity: var(--stall-glow); }
+  .stars { display: var(--stars-d); }
+  .moths { display: var(--moths-d); }
+</style>
+<body>
+<svg width="1366" height="460" viewBox="0 0 1366 460" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" style="stop-color:var(--sky-top)"/>
+      <stop offset=".42" style="stop-color:var(--sky-mid)"/>
+      <stop offset=".78" style="stop-color:var(--sky-hor)"/>
+      <stop offset="1" style="stop-color:var(--sky-ground)"/>
+    </linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#221610"/>
+      <stop offset=".35" stop-color="#120c08"/>
+      <stop offset="1" stop-color="#080505"/>
+    </linearGradient>
+    <radialGradient id="warmpool" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#ffc267" stop-opacity=".42"/>
+      <stop offset=".55" stop-color="#e8752a" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#e8752a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="stallglowA" cx=".5" cy=".4" r=".65">
+      <stop offset="0" stop-color="#ffb060" stop-opacity=".6"/>
+      <stop offset="1" stop-color="#ffb060" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="counterwood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#553318"/>
+      <stop offset="1" stop-color="#26140b"/>
+    </linearGradient>
+    <linearGradient id="wash-up" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#ffb347" stop-opacity=".3"/>
+      <stop offset="1" stop-color="#ffb347" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="streak" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd48a" stop-opacity=".26"/>
+      <stop offset=".7" stop-color="#ffd48a" stop-opacity=".07"/>
+      <stop offset="1" stop-color="#ffd48a" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="lantern" cx=".5" cy=".42" r=".6">
+      <stop offset="0" stop-color="#ffe3ae"/>
+      <stop offset=".7" stop-color="#f08a3c"/>
+      <stop offset="1" stop-color="#c2551e"/>
+    </radialGradient>
+    <clipPath id="awnclip">
+      <path d="M0,46 q26,18 52,2 q26,17 52,2 q26,17 52,3 q26,17 52,3 q26,17 52,4 q26,17 52,4 q26,16 52,4 q26,16 52,4 q26,16 52,4 q26,16 52,3 q26,16 52,3 q26,15 52,2 q26,15 52,2 q26,15 52,1 q26,15 52,0 q26,15 52,-1 q26,14 52,-2 q26,14 52,-2 q26,14 52,-3 q26,14 52,-4 q26,13 52,-5 q26,13 52,-5 q26,13 52,-6 q26,12 52,-7 q26,12 52,-7 q22,11 46,-8 L1366,0 0,0 Z"/>
+    </clipPath>
+    <radialGradient id="vig" cx=".5" cy=".46" r=".75">
+      <stop offset=".6" stop-color="#000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".4"/>
+    </radialGradient>
+    <linearGradient id="citumglow" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#a8501e" stop-opacity=".3"/>
+      <stop offset="1" stop-color="#c96a2e" stop-opacity="0"/>
+    </linearGradient>
+
+    <filter id="b1" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="1"/></filter>
+    <filter id="b2" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="2"/></filter>
+    <filter id="b4" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="4"/></filter>
+    <filter id="b8" x="-150%" y="-150%" width="400%" height="400%"><feGaussianBlur stdDeviation="8"/></filter>
+    <filter id="b16" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="16"/></filter>
+    <filter id="b28" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="28"/></filter>
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="saturate" values="0"/>
+      <feComponentTransfer><feFuncA type="linear" slope=".05"/></feComponentTransfer>
+      <feComposite operator="over" in2="SourceGraphic"/>
+    </filter>
+
+    <!-- one hanging bulb: pendant wire, halo, glow, hot core -->
+    <g id="bulb">
+      <line x1="0" y1="-14" x2="0" y2="0" stroke="#1a100a" stroke-width="1.6"/>
+      <circle r="18" fill="#ffb347" opacity=".15" filter="url(#b8)"/>
+      <circle r="8" fill="#ffcf74" opacity=".6" filter="url(#b2)"/>
+      <circle r="3.2" fill="#fff4d6"/>
+    </g>
+    <g id="bulb-s">
+      <line x1="0" y1="-10" x2="0" y2="0" stroke="#150d08" stroke-width="1.2"/>
+      <circle r="10" fill="#ffb347" opacity=".14" filter="url(#b4)"/>
+      <circle r="5" fill="#ffcf74" opacity=".55" filter="url(#b1)"/>
+      <circle r="2" fill="#ffefc9"/>
+    </g>
+
+    <!-- figure: standing, back 3/4, hands in pockets. origin at feet, ~140 tall -->
+    <g id="fig-wait">
+      <path d="M-8,-2 L-10,-6 -3,-8 -1,-2 Z" fill="#0e0805"/>
+      <path d="M4,-2 L3,-7 10,-8 11,-3 Z" fill="#0e0805"/>
+      <path d="M-5,-58 L-7,-8" stroke="#150d09" stroke-width="9" stroke-linecap="round"/>
+      <path d="M5,-58 C8,-40 4,-22 7,-8" stroke="#150d09" stroke-width="9" stroke-linecap="round"/>
+      <path d="M-14,-112 C-17,-92 -16,-72 -12,-56 L13,-56 C16,-76 16,-96 12,-112 C5,-117 -7,-117 -14,-112 Z" fill="#171009"/>
+      <path d="M-13,-107 C-19,-92 -17,-80 -9,-71" stroke="#171009" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <path d="M13,-107 C19,-92 17,-80 9,-71" stroke="#171009" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <rect x="-4" y="-121" width="8" height="9" fill="#171009"/>
+      <ellipse cx="0" cy="-128" rx="8.6" ry="10" fill="#171009"/>
+      <path d="M-14,-110 C-17,-92 -16,-74 -13,-58" stroke="#ffb864" stroke-width="1.6" opacity=".55" fill="none" filter="url(#b1)"/>
+      <path d="M-8,-136 C-12,-131 -13,-124 -11,-119" stroke="#ffb864" stroke-width="1.6" opacity=".6" fill="none" filter="url(#b1)"/>
+    </g>
+
+    <!-- variant: hood up, shoulder bag -->
+    <g id="fig-hood">
+      <path d="M-8,-2 L-10,-6 -3,-8 -1,-2 Z" fill="#0e0805"/>
+      <path d="M4,-2 L3,-7 10,-8 11,-3 Z" fill="#0e0805"/>
+      <path d="M-5,-56 L-7,-8" stroke="#120b07" stroke-width="9" stroke-linecap="round"/>
+      <path d="M5,-56 C8,-40 4,-22 7,-8" stroke="#120b07" stroke-width="9" stroke-linecap="round"/>
+      <path d="M-15,-110 C-18,-90 -17,-70 -12,-54 L13,-54 C16,-74 17,-94 13,-110 C5,-116 -8,-116 -15,-110 Z" fill="#140d08"/>
+      <!-- bag hanging at hip -->
+      <path d="M13,-96 C17,-92 18,-80 15,-70 L4,-70 C3,-80 5,-90 8,-96 Z" fill="#0f0a06"/>
+      <path d="M8,-108 C6,-100 5,-88 6,-72" stroke="#2b1c10" stroke-width="1.6" fill="none" opacity=".8"/>
+      <!-- hood -->
+      <path d="M-10,-118 C-12,-132 -2,-140 6,-138 C13,-136 16,-128 14,-118 C10,-112 -5,-112 -10,-118 Z" fill="#140d08"/>
+      <path d="M-9,-134 C-4,-139 6,-140 11,-134" stroke="#ffb864" stroke-width="1.5" opacity=".55" fill="none" filter="url(#b1)"/>
+      <path d="M-15,-108 C-18,-90 -17,-72 -14,-56" stroke="#ffb864" stroke-width="1.5" opacity=".5" fill="none" filter="url(#b1)"/>
+    </g>
+
+    <!-- figure: leaning on a counter, weight forward -->
+    <g id="fig-lean">
+      <path d="M-9,-2 L-11,-7 -4,-9 -2,-2 Z" fill="#0e0805"/>
+      <path d="M7,-2 L5,-7 12,-8 13,-2 Z" fill="#0e0805"/>
+      <path d="M-6,-56 L-8,-8" stroke="#140c08" stroke-width="9" stroke-linecap="round"/>
+      <path d="M8,-56 C12,-38 8,-20 10,-8" stroke="#140c08" stroke-width="9" stroke-linecap="round"/>
+      <path d="M-12,-104 C-17,-88 -15,-68 -11,-54 L14,-56 C18,-78 19,-98 14,-110 C6,-116 -5,-113 -12,-104 Z" fill="#161008"/>
+      <path d="M12,-102 C20,-96 26,-90 30,-84" stroke="#161008" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <path d="M-12,-100 C-18,-88 -15,-76 -8,-68" stroke="#161008" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <rect x="-1" y="-118" width="8" height="9" fill="#161008"/>
+      <ellipse cx="5" cy="-124" rx="8.4" ry="9.7" fill="#161008" transform="rotate(8 5 -124)"/>
+      <path d="M13,-104 C19,-97 24,-91 29,-86" stroke="#ffb864" stroke-width="1.5" opacity=".5" fill="none" filter="url(#b1)"/>
+      <path d="M1,-132 C-3,-127 -4,-121 -2,-116" stroke="#ffb864" stroke-width="1.6" opacity=".55" fill="none" filter="url(#b1)"/>
+    </g>
+
+    <!-- figure: walking, mid stride, carrying a plate -->
+    <g id="fig-walk">
+      <path d="M-16,-2 L-18,-6 -10,-9 -8,-3 Z" fill="#0d0805"/>
+      <path d="M12,-1 L14,-7 21,-6 20,-1 Z" fill="#0d0805"/>
+      <path d="M-2,-56 C-8,-38 -12,-22 -14,-6" stroke="#130c08" stroke-width="9" stroke-linecap="round" fill="none"/>
+      <path d="M2,-56 C8,-40 14,-20 17,-4" stroke="#130c08" stroke-width="9" stroke-linecap="round" fill="none"/>
+      <path d="M-11,-108 C-14,-90 -13,-72 -9,-54 L11,-54 C14,-74 14,-94 10,-108 C4,-113 -5,-113 -11,-108 Z" fill="#150e08"/>
+      <path d="M10,-104 C18,-98 24,-92 28,-86" stroke="#150e08" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <path d="M-10,-102 C0,-96 16,-90 26,-86" stroke="#150e08" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <ellipse cx="30" cy="-86" rx="7" ry="2.2" fill="#33220f"/>
+      <ellipse cx="30" cy="-87.3" rx="7" ry="2" fill="#c9ab74" opacity=".8"/>
+      <rect x="-3.5" y="-117" width="7" height="9" fill="#150e08"/>
+      <ellipse cx="0" cy="-124" rx="8.2" ry="9.6" fill="#150e08" transform="rotate(-5 0 -124)"/>
+      <path d="M9,-106 C16,-100 23,-93 27,-88" stroke="#ffb864" stroke-width="1.5" opacity=".5" fill="none" filter="url(#b1)"/>
+    </g>
+
+    <!-- kid, ~80 tall, pointing up -->
+    <g id="fig-kid">
+      <path d="M-7,-1 L-8,-5 -2,-6 -1,-1 Z" fill="#0d0805"/>
+      <path d="M3,-1 L3,-5 9,-5 9,-1 Z" fill="#0d0805"/>
+      <path d="M-3,-34 L-4,-5" stroke="#140d08" stroke-width="7" stroke-linecap="round"/>
+      <path d="M3,-34 L5,-5" stroke="#140d08" stroke-width="7" stroke-linecap="round"/>
+      <path d="M-9,-62 C-11,-50 -10,-40 -7,-32 L8,-32 C11,-42 11,-54 8,-62 C3,-66 -4,-66 -9,-62 Z" fill="#160f09"/>
+      <path d="M8,-60 C14,-64 20,-70 24,-77" stroke="#160f09" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      <path d="M-8,-58 C-11,-50 -10,-44 -7,-40" stroke="#160f09" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+      <ellipse cx="0" cy="-70" rx="7.6" ry="8.4" fill="#160f09"/>
+      <path d="M8,-61 C14,-66 19,-71 23,-77" stroke="#ffb864" stroke-width="1.5" opacity=".55" fill="none" filter="url(#b1)"/>
+    </g>
+
+    <!-- vendor, waist-up behind their counter, working -->
+    <g id="fig-vendor">
+      <path d="M-14,0 C-16,-16 -15,-32 -11,-44 C-4,-50 8,-50 14,-44 C17,-30 17,-14 15,0 Z" fill="#1f150c"/>
+      <path d="M-9,0 C-10,-14 -9,-28 -6,-38 L7,-38 C10,-28 10,-12 9,0 Z" fill="#6b5940" opacity=".55"/>
+      <path d="M14,-42 C22,-38 28,-32 32,-24" stroke="#1f150c" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <path d="M-14,-40 C-20,-34 -22,-28 -21,-22" stroke="#1f150c" stroke-width="7" stroke-linecap="round" fill="none"/>
+      <rect x="-4" y="-51" width="8" height="8" fill="#1f150c"/>
+      <ellipse cx="1" cy="-57" rx="7.8" ry="8.8" fill="#1f150c" transform="rotate(6 1 -57)"/>
+      <!-- flat cap -->
+      <path d="M-7,-61 C-4,-66 7,-66 9,-60 L10,-58 -8,-58 Z" fill="#120b06"/>
+      <path d="M-6,-64 C-1,-67 6,-67 9,-62" stroke="#ffb864" stroke-width="1.6" opacity=".6" fill="none" filter="url(#b1)"/>
+      <path d="M-13,-44 C-8,-47 0,-49 8,-47" stroke="#ffcf8a" stroke-width="1.5" opacity=".45" fill="none" filter="url(#b1)"/>
+    </g>
+
+    <!-- contact shadow -->
+    <g id="shadow"><ellipse rx="24" ry="4.5" fill="#000" opacity=".38" filter="url(#b2)"/></g>
+  </defs>
+
+  <!-- ============================================================ SKY -->
+  <rect width="1366" height="330" fill="url(#sky)"/>
+  <g class="stars" fill="#cfd8ef">
+    <circle cx="180" cy="38" r="1" opacity=".5"/><circle cx="420" cy="22" r=".8" opacity=".4"/>
+    <circle cx="760" cy="46" r="1" opacity=".35"/><circle cx="980" cy="30" r=".7" opacity=".45"/>
+    <circle cx="1240" cy="52" r=".9" opacity=".4"/><circle cx="620" cy="18" r=".6" opacity=".3"/>
+  </g>
+
+  <!-- warm market glow rising behind the stall row -->
+  <rect x="80" y="216" width="1100" height="92" fill="url(#citumglow)" filter="url(#b16)" opacity=".55"/>
+
+  <!-- far skyline, cool, hazed -->
+  <g filter="url(#b2)">
+    <path d="M0,262 L60,258 60,246 130,246 130,256 210,252 260,240 262,252 380,250 470,258 610,252 640,242 700,242 700,254 860,250 1010,258 1120,252 1366,258 1366,330 0,330 Z"
+          fill="#0e1526" opacity=".8"/>
+    <rect x="72" y="250" width="4" height="5" fill="#6e86b8" opacity=".35"/>
+    <rect x="248" y="244" width="3" height="4" fill="#6e86b8" opacity=".3"/>
+    <rect x="653" y="246" width="4" height="4" fill="#8ea4cf" opacity=".28"/>
+  </g>
+
+  <!-- deep string of lights, behind the stalls -->
+  <path d="M150,108 C480,168 900,158 1270,104" stroke="#0b0704" stroke-width="1.1" fill="none" opacity=".8"/>
+  <g class="bulbs" opacity=".7">
+    <use href="#bulb-s" x="300" y="140"/>
+    <use href="#bulb-s" x="450" y="156"/>
+    <use href="#bulb-s" x="656" y="164"/>
+    <use href="#bulb-s" x="750" y="162"/>
+    <use href="#bulb-s" x="900" y="152"/>
+    <use href="#bulb-s" x="1050" y="134"/>
+  </g>
+
+  <!-- ============================================================ BRIDGE GATE, far right, in haze -->
+  <g>
+    <ellipse cx="1250" cy="300" rx="150" ry="70" fill="#ff9c4a" opacity=".22" filter="url(#b28)"/>
+    <path d="M1150,320 C1180,180 1320,180 1352,320 L1326,320 C1300,208 1198,208 1176,320 Z"
+          fill="#0a0e19" opacity=".92" filter="url(#b1)"/>
+    <g opacity=".75">
+      <circle cx="1192" cy="252" r="2" fill="#ffd48a"/><circle cx="1192" cy="252" r="6" fill="#ffb347" opacity=".25" filter="url(#b2)"/>
+      <circle cx="1212" cy="228" r="2" fill="#ffd48a"/><circle cx="1212" cy="228" r="6" fill="#ffb347" opacity=".25" filter="url(#b2)"/>
+      <circle cx="1240" cy="216" r="2" fill="#ffd48a"/><circle cx="1240" cy="216" r="6" fill="#ffb347" opacity=".25" filter="url(#b2)"/>
+      <circle cx="1268" cy="220" r="2" fill="#ffd48a"/><circle cx="1268" cy="220" r="6" fill="#ffb347" opacity=".25" filter="url(#b2)"/>
+      <circle cx="1292" cy="238" r="2" fill="#ffd48a"/><circle cx="1292" cy="238" r="6" fill="#ffb347" opacity=".25" filter="url(#b2)"/>
+    </g>
+    <g fill="#0a0a12">
+      <path d="M1238,318 l2,-14 4,0 2,14 -3,0 -1,-8 -1,8 Z"/>
+      <path d="M1258,316 l2,-12 3,0 2,12 -2,0 -1,-7 -2,7 Z" opacity=".8"/>
+      <path d="M1224,317 l2,-13 3,0 2,13 -2,0 -1,-7 -2,7 Z" opacity=".85"/>
+    </g>
+    <ellipse cx="1250" cy="262" rx="170" ry="110" fill="#26344f" opacity=".22" filter="url(#b28)"/>
+  </g>
+
+  <!-- ============================================================ GROUND -->
+  <rect y="300" width="1366" height="160" fill="url(#ground)"/>
+  <rect y="300" width="1366" height="160" fill="#5a6f9e" style="opacity:var(--amb)"/>
+  <rect x="0" y="306" width="220" height="70" fill="#3a4d74" opacity=".1" filter="url(#b16)"/>
+
+  <!-- warm pools under the stalls (before the curb so the curb edge reads) -->
+  <g class="stall-glow">
+    <ellipse cx="310" cy="332" rx="210" ry="30" fill="#ff9c4a" opacity=".22" filter="url(#b8)"/>
+    <ellipse cx="795" cy="322" rx="170" ry="24" fill="#ff9c4a" opacity=".17" filter="url(#b8)"/>
+    <ellipse cx="1090" cy="314" rx="90" ry="14" fill="#ff9c4a" opacity=".1" filter="url(#b8)"/>
+  </g>
+
+  <ellipse cx="310" cy="315" rx="170" ry="9" fill="#000" opacity=".42" filter="url(#b4)"/>
+  <ellipse cx="776" cy="306" rx="140" ry="8" fill="#000" opacity=".38" filter="url(#b4)"/>
+  <ellipse cx="1090" cy="300" rx="90" ry="6" fill="#000" opacity=".3" filter="url(#b4)"/>
+  <!-- curb line along the stall side: highlight only where light falls -->
+  <path d="M130,314 L980,306 1240,308" stroke="#08050a" stroke-width="3" fill="none" opacity=".75"/>
+  <path d="M180,312.6 L450,310.2" stroke="#c98f4a" stroke-width="1" fill="none" opacity=".4"/>
+  <path d="M660,308.6 L900,306.6" stroke="#c98f4a" stroke-width="1" fill="none" opacity=".32"/>
+
+  <!-- our own hatch light thrown onto the lane: the dominant source -->
+  <g class="pool">
+    <ellipse cx="600" cy="452" rx="430" ry="110" fill="url(#warmpool)" filter="url(#b16)"/>
+    <ellipse cx="600" cy="458" rx="230" ry="58" fill="#ffc36a" opacity=".2" filter="url(#b16)"/>
+  </g>
+
+  <!-- wet sheen: long faint mirror smears under every source, seated at the curb -->
+  <g>
+    <rect x="240" y="316" width="8" height="76" fill="url(#streak)" filter="url(#b4)"/>
+    <rect x="336" y="318" width="9" height="88" fill="url(#streak)" filter="url(#b4)"/>
+    <rect x="426" y="320" width="8" height="80" fill="url(#streak)" filter="url(#b4)"/>
+    <rect x="588" y="318" width="10" height="102" fill="url(#streak)" filter="url(#b4)"/>
+    <rect x="716" y="312" width="9" height="88" fill="url(#streak)" filter="url(#b4)"/>
+    <rect x="828" y="310" width="8" height="72" fill="url(#streak)" filter="url(#b4)"/>
+    <rect x="1046" y="308" width="6" height="48" fill="url(#streak)" filter="url(#b4)" opacity=".7"/>
+    <!-- horizontal ripple shimmer across the wet lane -->
+    <g stroke="#ffcf8a" opacity=".07">
+      <line x1="260" y1="352" x2="420" y2="350" stroke-width="1.4"/>
+      <line x1="500" y1="382" x2="700" y2="380" stroke-width="1.6"/>
+      <line x1="620" y1="410" x2="840" y2="408" stroke-width="1.8"/>
+      <line x1="740" y1="356" x2="880" y2="354" stroke-width="1.2"/>
+      <line x1="330" y1="396" x2="470" y2="395" stroke-width="1.6"/>
+    </g>
+  </g>
+  <!-- broad interior-light smears -->
+  <rect x="210" y="314" width="210" height="52" fill="#ff9c4a" opacity=".12" filter="url(#b8)"/>
+  <rect x="690" y="308" width="190" height="42" fill="#ff9c4a" opacity=".1" filter="url(#b8)"/>
+
+  <!-- puddles: cool mirrors in a warm ground -->
+  <g>
+    <path d="M452,412 C486,405 552,405 580,414 C560,424 488,426 452,419 Z" fill="#141c2e" opacity=".65" filter="url(#b1)"/>
+    <path d="M452,412 C486,405 552,405 580,414" stroke="#54709e" stroke-width="1.2" fill="none" opacity=".4" filter="url(#b1)"/>
+    <rect x="512" y="406" width="6" height="18" fill="#ffd48a" opacity=".42" filter="url(#b1)"/>
+    <path d="M888,372 C908,368 940,369 952,374 C940,380 906,381 888,377 Z" fill="#131a2a" opacity=".55" filter="url(#b1)"/>
+    <rect x="916" y="368" width="4" height="11" fill="#ffd48a" opacity=".35" filter="url(#b1)"/>
+  </g>
+
+  <!-- manhole, subtle -->
+  <ellipse cx="742" cy="418" rx="34" ry="9" fill="#17100b"/>
+  <ellipse cx="742" cy="418" rx="34" ry="9" fill="none" stroke="#060403" stroke-width="1.4"/>
+  <path d="M710,416 A34,9 0 0 1 774,416" stroke="#f0a94a" stroke-width="1.3" fill="none" opacity=".4"/>
+
+  <!-- power cable from our truck across to stall A -->
+  <path d="M60,452 C240,428 340,368 408,316" stroke="#070403" stroke-width="2.6" fill="none"/>
+  <path d="M60,451 C240,427 340,367 408,315" stroke="#8a6a49" stroke-width=".8" fill="none" opacity=".25"/>
+
+  <!-- ============================================================ STALL A (left, nearest) -->
+  <g>
+    <!-- interior back wall -->
+    <rect x="176" y="188" width="270" height="122" fill="#1c0e07"/>
+    <ellipse cx="310" cy="238" rx="132" ry="62" fill="url(#stallglowA)" filter="url(#b8)" class="stall-glow"/>
+    <!-- back shelf with stacked bowls and jars -->
+    <rect x="196" y="222" width="240" height="3" fill="#0f0703"/>
+    <g fill="#7e5a34">
+      <ellipse cx="216" cy="218" rx="9" ry="3"/><ellipse cx="216" cy="214" rx="8" ry="3"/><ellipse cx="216" cy="210" rx="7" ry="3"/>
+      <ellipse cx="240" cy="218" rx="8" ry="3"/><ellipse cx="240" cy="214" rx="7" ry="3"/>
+    </g>
+    <rect x="398" y="204" width="14" height="18" rx="2" fill="#4a2c12"/>
+    <rect x="418" y="208" width="11" height="14" rx="2" fill="#3d2410"/>
+    <!-- hanging strings of onion/garlic bunches, top-lit -->
+    <g>
+      <line x1="358" y1="188" x2="358" y2="200" stroke="#241208" stroke-width="1.2"/>
+      <circle cx="355" cy="205" r="4" fill="#8a6034"/><circle cx="361" cy="206" r="4" fill="#75512c"/><circle cx="358" cy="212" r="4.4" fill="#68482a"/>
+      <line x1="380" y1="188" x2="380" y2="198" stroke="#241208" stroke-width="1.2"/>
+      <circle cx="377" cy="203" r="3.6" fill="#8a6034"/><circle cx="383" cy="204" r="3.6" fill="#6e4c2a"/><circle cx="380" cy="210" r="4" fill="#5f422a"/>
+    </g>
+    <!-- big pot on a side burner, lid catching light -->
+    <ellipse cx="310" cy="263" rx="27" ry="3.5" fill="#000" opacity=".5" filter="url(#b1)"/><rect x="286" y="242" width="48" height="22" rx="4" fill="#100a06"/>
+    <ellipse cx="310" cy="242" rx="24" ry="5" fill="#2b1a0d"/>
+    <path d="M290,240 A24,5 0 0 1 330,240" stroke="#ffcf8a" stroke-width="1.6" fill="none" opacity=".6"/>
+    <!-- stall bulbs under the canopy -->
+    <path d="M196,200 C260,206 380,204 442,198" stroke="#120a05" stroke-width="1.1" fill="none" opacity=".9"/>
+    <g class="bulbs">
+      <use href="#bulb" x="252" y="212"/>
+      <use href="#bulb" x="330" y="210"/>
+      <use href="#bulb" x="408" y="208"/>
+    </g>
+    <!-- vendor -->
+    <use href="#fig-vendor" x="300" y="266"/>
+    <!-- counter: plate stack + board on top -->
+    <rect x="170" y="262" width="280" height="8" fill="#c9803d"/>
+    <rect x="170" y="262" width="280" height="3" fill="#ffd9a8" opacity=".55"/>
+    <rect x="170" y="270" width="280" height="42" fill="url(#counterwood)"/>
+    <line x1="170" y1="284" x2="450" y2="284" stroke="#120a05" stroke-width="1" opacity=".55"/>
+    <line x1="170" y1="298" x2="450" y2="298" stroke="#120a05" stroke-width="1" opacity=".55"/>
+    <g>
+      <ellipse cx="206" cy="260" rx="11" ry="2.4" fill="#a88c60"/>
+      <ellipse cx="206" cy="257" rx="10" ry="2.2" fill="#bfa070"/>
+      <ellipse cx="206" cy="254" rx="9" ry="2" fill="#d0b381"/>
+      <rect x="228" y="256" width="34" height="4" rx="1" fill="#5f3d1e"/>
+    </g>
+    <!-- steam off the pot -->
+    <g class="steam">
+      <ellipse cx="308" cy="224" rx="10" ry="16" fill="#ffd9a8" opacity=".3" filter="url(#b4)"/>
+      <ellipse cx="300" cy="190" rx="13" ry="22" fill="#ffd9a8" opacity=".2" filter="url(#b8)"/>
+      <ellipse cx="292" cy="148" rx="18" ry="28" fill="#e8d5c0" opacity=".11" filter="url(#b16)"/>
+    </g>
+    <!-- canopy -->
+    <path d="M148,148 Q310,126 472,144 L472,192 Q310,172 148,196 Z" fill="#63281a"/>
+    <path d="M148,148 Q310,126 472,144 L472,152 Q310,134 148,156 Z" fill="#42506e" opacity=".5"/>
+    <path d="M200,152 Q206,172 202,190 M290,142 Q296,160 293,178 M380,140 Q386,158 383,176" stroke="#4a1409" stroke-width="5" fill="none" opacity=".3" filter="url(#b2)"/>
+    <!-- valance -->
+    <g>
+      <path d="M148,196 q13,16 27,0 l0,-8 -27,4 Z" fill="#7e3018"/>
+      <path d="M175,190 q13,16 27,0 l0,-7 -27,3 Z" fill="#8f7a5e"/>
+      <path d="M202,187 q13,16 27,0 l0,-7 -27,3 Z" fill="#7e3018"/>
+      <path d="M229,184 q13,16 27,0 l0,-7 -27,3 Z" fill="#8f7a5e"/>
+      <path d="M256,181 q13,16 27,0 l0,-6 -27,2 Z" fill="#7e3018"/>
+      <path d="M283,179 q13,16 27,0 l0,-6 -27,2 Z" fill="#8f7a5e"/>
+      <path d="M310,177 q13,16 27,0 l0,-5 -27,1 Z" fill="#7e3018"/>
+      <path d="M337,176 q13,16 27,0 l0,-5 -27,1 Z" fill="#8f7a5e"/>
+      <path d="M364,175 q13,16 27,0 l0,-5 -27,1 Z" fill="#7e3018"/>
+      <path d="M391,175 q13,16 27,0 l0,-5 -27,1 Z" fill="#8f7a5e"/>
+      <path d="M418,175 q13,16 27,0 l0,-5 -27,1 Z" fill="#7e3018"/>
+      <path d="M445,176 q13,16 27,0 l0,-6 -27,2 Z" fill="#8f7a5e"/>
+      <path d="M148,196 q13,16 27,0 M175,190 q13,16 27,0 M202,187 q13,16 27,0 M229,184 q13,16 27,0 M256,181 q13,16 27,0 M283,179 q13,16 27,0 M310,177 q13,16 27,0 M337,176 q13,16 27,0 M364,175 q13,16 27,0 M391,175 q13,16 27,0 M418,175 q13,16 27,0 M445,176 q13,16 27,0"
+            stroke="#ffb347" stroke-width="1.4" fill="none" opacity=".5"/>
+    </g>
+    <!-- lanterns hang from the canopy edge, in front -->
+    <line x1="214" y1="188" x2="214" y2="204" stroke="#170b06" stroke-width="1.8"/>
+    <ellipse cx="214" cy="217" rx="16" ry="18" fill="#ff9c4a" opacity=".2" filter="url(#b8)"/>
+    <ellipse cx="214" cy="217" rx="11" ry="14" fill="url(#lantern)"/>
+    <path d="M204,211 A11,9 0 0 1 224,211 M203,219 A11,9 0 0 0 225,219 M214,203 L214,231" stroke="#8f3812" stroke-width="1" fill="none" opacity=".75"/>
+    <rect x="211" y="201" width="6" height="3" fill="#3a1a0a"/>
+    <rect x="211" y="229" width="6" height="3" fill="#3a1a0a"/>
+    <line x1="430" y1="182" x2="430" y2="196" stroke="#170b06" stroke-width="1.6"/>
+    <ellipse cx="430" cy="207" rx="13" ry="14" fill="#ff9c4a" opacity=".16" filter="url(#b8)"/>
+    <ellipse cx="430" cy="207" rx="9" ry="11.5" fill="url(#lantern)"/>
+    <path d="M422,202 A9,7 0 0 1 438,202 M421,209 A9,7 0 0 0 439,209 M430,196 L430,218" stroke="#8f3812" stroke-width=".9" fill="none" opacity=".7"/>
+    <rect x="427.5" y="194" width="5" height="2.6" fill="#3a1a0a"/>
+    <rect x="427.5" y="217" width="5" height="2.6" fill="#3a1a0a"/>
+    <!-- posts -->
+    <rect x="166" y="150" width="5" height="162" fill="#170c06"/>
+    <rect x="170.4" y="150" width="1.4" height="162" fill="#8a6a49" opacity=".5"/>
+    <rect x="446" y="146" width="5" height="166" fill="#170c06"/>
+    <rect x="446" y="146" width="1.4" height="166" fill="#8a6a49" opacity=".45"/>
+    <!-- customers at the counter, backs to us, varied -->
+    <g class="crowd-mid">
+      <g transform="translate(262,330)"><use href="#shadow"/><use href="#fig-lean"/>
+        <path d="M-4,-108 C-8,-84 -8,-40 -6,-10" stroke="#c96a2e" stroke-width="7" opacity=".14" fill="none" filter="url(#b4)"/></g>
+      <g transform="translate(226,332) scale(-.97,.97)"><use href="#shadow"/><use href="#fig-hood"/></g>
+      <path d="M222,224 C218,248 218,292 220,322" stroke="#c96a2e" stroke-width="7" opacity=".12" fill="none" filter="url(#b4)"/>
+    </g>
+    <g class="crowd-dense">
+      <g transform="translate(262,330)"><use href="#shadow"/><use href="#fig-lean"/></g>
+      <g transform="translate(226,332) scale(-.97,.97)"><use href="#shadow"/><use href="#fig-hood"/></g>
+      <g transform="translate(388,330) scale(1.05)"><use href="#shadow"/><use href="#fig-wait"/></g>
+    </g>
+    <g class="crowd-sparse">
+      <g transform="translate(368,332)"><use href="#shadow"/><use href="#fig-wait"/></g>
+    </g>
+  </g>
+
+  <!-- ============================================================ STALL B (center-right, a step deeper) -->
+  <g>
+    <rect x="656" y="196" width="240" height="106" fill="#101410"/>
+    <ellipse cx="776" cy="240" rx="112" ry="50" fill="url(#stallglowA)" filter="url(#b8)" class="stall-glow"/>
+    <!-- back shelf: bottles and a squat cooker -->
+    <rect x="672" y="226" width="200" height="2.5" fill="#0d0703"/>
+    <g fill="#5f4426">
+      <rect x="686" y="212" width="6" height="14" rx="2"/>
+      <rect x="696" y="210" width="6" height="16" rx="2"/>
+      <rect x="706" y="213" width="6" height="13" rx="2"/>
+    </g>
+    <rect x="820" y="210" width="26" height="16" rx="3" fill="#2e2012"/>
+    <ellipse cx="833" cy="210" rx="13" ry="3" fill="#553a1c"/>
+    <path d="M664,206 C740,212 820,210 888,204" stroke="#100904" stroke-width="1" fill="none" opacity=".85"/>
+    <g class="bulbs">
+      <use href="#bulb-s" x="700" y="212"/>
+      <use href="#bulb-s" x="776" y="214"/>
+      <use href="#bulb-s" x="852" y="212"/>
+    </g>
+    <!-- hanging cloth banner with an abstract bowl mark -->
+    <rect x="864" y="196" width="26" height="52" fill="#26120a"/>
+    <path d="M868,216 a9,6 0 0 0 18,0 Z" fill="#d8c4a4" opacity=".55"/>
+    <circle cx="877" cy="228" r="3" fill="#d8c4a4" opacity=".45"/>
+    <!-- crates stacked beside -->
+    <rect x="660" y="286" width="34" height="18" fill="#2a1a10"/>
+    <rect x="663" y="270" width="30" height="16" fill="#33200f"/>
+    <rect x="663" y="270" width="30" height="3" fill="#c98f4a" opacity=".5"/>
+    <!-- vendor -->
+    <g transform="translate(792,258) scale(.9)"><use href="#fig-vendor"/></g>
+    <!-- counter -->
+    <rect x="652" y="256" width="248" height="6" fill="#b5762f"/>
+    <rect x="652" y="256" width="248" height="2" fill="#ffd9a8" opacity=".5"/>
+    <rect x="652" y="262" width="248" height="38" fill="url(#counterwood)"/>
+    <!-- canopy -->
+    <path d="M636,158 Q776,140 912,154 L912,198 Q776,182 636,202 Z" fill="#173a37"/>
+    <path d="M636,158 Q776,140 912,154 L912,161 Q776,147 636,165 Z" fill="#3f5570" opacity=".5"/>
+    <g>
+      <path d="M636,202 q11,13 22,0 l0,-6 -22,3 Z" fill="#122b26"/>
+      <path d="M658,199 q11,13 22,0 l0,-6 -22,3 Z" fill="#83704f"/>
+      <path d="M680,196 q11,13 22,0 l0,-5 -22,2 Z" fill="#122b26"/>
+      <path d="M702,194 q11,13 22,0 l0,-5 -22,2 Z" fill="#83704f"/>
+      <path d="M724,192 q11,13 22,0 l0,-5 -22,2 Z" fill="#122b26"/>
+      <path d="M746,190 q11,13 22,0 l0,-4 -22,1 Z" fill="#83704f"/>
+      <path d="M768,189 q11,13 22,0 l0,-4 -22,1 Z" fill="#122b26"/>
+      <path d="M790,188 q11,13 22,0 l0,-4 -22,1 Z" fill="#83704f"/>
+      <path d="M812,188 q11,13 22,0 l0,-4 -22,1 Z" fill="#122b26"/>
+      <path d="M834,188 q11,13 22,0 l0,-4 -22,1 Z" fill="#83704f"/>
+      <path d="M856,189 q11,13 22,0 l0,-5 -22,2 Z" fill="#122b26"/>
+      <path d="M878,190 q11,13 22,0 l0,-5 -22,2 Z" fill="#83704f"/>
+      <path d="M636,202 q11,13 22,0 M658,199 q11,13 22,0 M680,196 q11,13 22,0 M702,194 q11,13 22,0 M724,192 q11,13 22,0 M746,190 q11,13 22,0 M768,189 q11,13 22,0 M790,188 q11,13 22,0 M812,188 q11,13 22,0 M834,188 q11,13 22,0 M856,189 q11,13 22,0 M878,190 q11,13 22,0"
+            stroke="#ffb347" stroke-width="1.2" fill="none" opacity=".45"/>
+    </g>
+    <rect x="650" y="160" width="4" height="142" fill="#150c07"/>
+    <rect x="894" y="156" width="4" height="146" fill="#150c07"/>
+    <g class="steam">
+      <ellipse cx="742" cy="216" rx="9" ry="15" fill="#ffd9a8" opacity=".26" filter="url(#b4)"/>
+      <ellipse cx="736" cy="182" rx="12" ry="20" fill="#ffd9a8" opacity=".16" filter="url(#b8)"/>
+      <ellipse cx="730" cy="142" rx="16" ry="26" fill="#e8d5c0" opacity=".09" filter="url(#b16)"/>
+    </g>
+    <!-- customers: parent and kid -->
+    <g class="crowd-mid">
+      <g transform="translate(716,324) scale(.92)"><use href="#shadow"/><use href="#fig-wait"/></g>
+      <g transform="translate(748,322)"><use href="#shadow" transform="scale(.6)"/><use href="#fig-kid"/></g>
+    </g>
+    <g class="crowd-dense">
+      <g transform="translate(716,324) scale(.92)"><use href="#shadow"/><use href="#fig-wait"/></g>
+      <g transform="translate(748,322)"><use href="#shadow" transform="scale(.6)"/><use href="#fig-kid"/></g>
+      <g transform="translate(842,340) scale(.9)"><use href="#shadow"/><use href="#fig-lean"/></g>
+    </g>
+  </g>
+
+  <!-- ============================================================ STALL C (right, hazed) -->
+  <g>
+    <rect x="1016" y="214" width="150" height="82" fill="#170d08"/>
+    <ellipse cx="1090" cy="248" rx="70" ry="34" fill="url(#stallglowA)" opacity=".75" filter="url(#b8)" class="stall-glow"/>
+    <g class="bulbs" opacity=".8">
+      <use href="#bulb-s" x="1054" y="230"/>
+      <use href="#bulb-s" x="1120" y="228"/>
+    </g>
+    <!-- vendor hinted -->
+    <g transform="translate(1096,262) scale(.7)"><use href="#fig-vendor"/></g>
+    <rect x="1012" y="258" width="158" height="5" fill="#96631f"/>
+    <rect x="1012" y="263" width="158" height="30" fill="url(#counterwood)"/>
+    <path d="M1002,182 Q1090,170 1176,180 L1176,214 Q1090,202 1002,220 Z" fill="#3f1f14"/>
+    <path d="M1002,182 Q1090,170 1176,180 L1176,186 Q1090,174 1002,188 Z" fill="#3f5570" opacity=".45"/>
+    <rect x="1008" y="184" width="3.4" height="112" fill="#140b06"/>
+    <rect x="1166" y="182" width="3.4" height="114" fill="#140b06"/>
+    <g>
+      <ellipse cx="996" cy="312" rx="26" ry="4" fill="#000" opacity=".35" filter="url(#b2)"/>
+      <g stroke="#0e0906" fill="none">
+        <circle cx="982" cy="300" r="10" stroke-width="2.2"/>
+        <circle cx="1012" cy="300" r="10" stroke-width="2.2"/>
+        <path d="M982,300 L992,282 1008,282 1012,300 M992,282 L998,300 1008,282 M992,282 990,276 M986,276 994,276 M1008,282 1006,276 1002,275 1011,275" stroke-width="2"/>
+      </g>
+      <path d="M982,290 A10,10 0 0 1 990,300" stroke="#c98f4a" stroke-width="1.2" fill="none" opacity=".5"/>
+    </g>
+    <g class="crowd-mid">
+      <g transform="translate(1064,312) scale(.72)"><use href="#shadow"/><use href="#fig-wait"/></g>
+    </g>
+    <g class="crowd-dense">
+      <g transform="translate(1064,312) scale(.72)"><use href="#fig-wait"/></g>
+      <g transform="translate(1102,310) scale(.7)"><use href="#fig-lean"/></g>
+    </g>
+    <ellipse cx="1092" cy="250" rx="130" ry="90" fill="#26344f" opacity=".18" filter="url(#b28)"/>
+  </g>
+
+  <!-- ============================================================ CENTER LANE: standing table, people eating -->
+  <g class="crowd-mid">
+    <ellipse cx="568" cy="380" rx="36" ry="6" fill="#000" opacity=".4" filter="url(#b2)"/>
+    <rect x="551" y="296" width="36" height="84" rx="4" fill="#190e08"/>
+    <ellipse cx="569" cy="296" rx="22" ry="5" fill="#38230f"/>
+    <path d="M549,295 A22,5 0 0 1 589,295" stroke="#ffcf8a" stroke-width="1.5" fill="none" opacity=".55"/>
+    <g transform="translate(528,382) scale(.95)"><use href="#shadow"/><use href="#fig-lean"/></g>
+    <g transform="translate(608,380) scale(-.94,.94)"><use href="#shadow"/><use href="#fig-hood"/></g>
+  </g>
+  <g class="crowd-dense">
+    <ellipse cx="568" cy="380" rx="36" ry="6" fill="#000" opacity=".4" filter="url(#b2)"/>
+    <rect x="551" y="296" width="36" height="84" rx="4" fill="#190e08"/>
+    <ellipse cx="569" cy="296" rx="22" ry="5" fill="#38230f"/>
+    <path d="M549,295 A22,5 0 0 1 589,295" stroke="#ffcf8a" stroke-width="1.5" fill="none" opacity=".55"/>
+    <g transform="translate(528,382) scale(.95)"><use href="#shadow"/><use href="#fig-lean"/></g>
+    <g transform="translate(608,380) scale(-.94,.94)"><use href="#shadow"/><use href="#fig-hood"/></g>
+    <use href="#shadow" x="640" y="349" transform="scale(.9)"/>
+    <g transform="translate(640,350) scale(.84)"><use href="#fig-hood"/></g>
+  </g>
+
+  <!-- ============================================================ MID-LANE WALKERS -->
+  <g class="crowd-mid">
+    <g transform="translate(972,372) scale(.82)"><use href="#shadow"/><use href="#fig-walk"/></g>
+    <g transform="translate(1120,340) scale(.6)"><use href="#shadow"/><use href="#fig-wait"/></g>
+  </g>
+  <g class="crowd-dense">
+    <g transform="translate(972,372) scale(.82)"><use href="#shadow"/><use href="#fig-walk"/></g>
+    <g transform="translate(1054,352) scale(-.7,.7)"><use href="#shadow"/><use href="#fig-walk"/></g>
+    <g transform="translate(1120,340) scale(.6)"><use href="#shadow"/><use href="#fig-wait"/></g>
+    <g transform="translate(452,392) scale(-.95,.95)"><use href="#shadow"/><use href="#fig-walk"/></g>
+  </g>
+  <g class="crowd-sparse">
+    <g transform="translate(1080,346) scale(.62)"><use href="#shadow"/><use href="#fig-walk"/></g>
+  </g>
+
+  <!-- ============================================================ NEAR STRING LIGHTS: ours, over the lane -->
+  <path d="M40,84 C300,196 520,200 700,158 C860,122 1000,100 1090,92" stroke="#0d0805" stroke-width="1.8" fill="none"/>
+  <g class="bulbs">
+    <use href="#bulb" x="140" y="136"/>
+    <use href="#bulb" x="250" y="168"/>
+    <use href="#bulb" x="368" y="188"/>
+    <!-- one dead bulb -->
+    <g transform="translate(482,196)">
+      <line x1="0" y1="-14" x2="0" y2="0" stroke="#1a100a" stroke-width="1.6"/>
+      <circle r="3.2" fill="#241713"/>
+    </g>
+    <use href="#bulb" x="596" y="192"/>
+    <use href="#bulb" x="712" y="170"/>
+    <use href="#bulb" x="828" y="140"/>
+    <use href="#bulb" x="944" y="114"/>
+  </g>
+  <g class="moths" fill="#ffdf9e">
+    <circle cx="590" cy="181" r="1.1" opacity=".6"/>
+    <circle cx="602" cy="188" r=".9" opacity=".45"/>
+  </g>
+
+  <!-- ============================================================ HORIZON HAZE -->
+  <ellipse cx="683" cy="282" rx="820" ry="60" fill="#2a3a5e" style="opacity:var(--haze-op)" filter="url(#b28)"/>
+
+  <!-- ============================================================ OUR AWNING (foreground frame, top) -->
+  <g>
+    <path d="M0,0 L1366,0 1366,46 Q683,68 0,46 Z" fill="#26100a"/>
+    <g opacity=".45" filter="url(#b2)">
+      <path d="M120,0 Q126,26 122,46" stroke="#0d0503" stroke-width="8" fill="none"/>
+      <path d="M360,0 Q368,28 364,52" stroke="#0d0503" stroke-width="9" fill="none"/>
+      <path d="M640,0 Q648,30 644,56" stroke="#0d0503" stroke-width="8" fill="none"/>
+      <path d="M920,0 Q928,28 924,52" stroke="#0d0503" stroke-width="9" fill="none"/>
+      <path d="M1180,0 Q1186,24 1182,44" stroke="#0d0503" stroke-width="8" fill="none"/>
+    </g>
+    <g clip-path="url(#awnclip)"><ellipse cx="640" cy="70" rx="560" ry="58" fill="url(#wash-up)" filter="url(#b16)"/></g>
+    <!-- scalloped edge, one system, sagging with the canvas -->
+    <g>
+      <path d="M0,46 q26,18 52,2 q26,17 52,2 q26,17 52,3 q26,17 52,3 q26,17 52,4 q26,17 52,4 q26,16 52,4 q26,16 52,4 q26,16 52,4 q26,16 52,3 q26,16 52,3 q26,15 52,2 q26,15 52,2 q26,15 52,1 q26,15 52,0 q26,15 52,-1 q26,14 52,-2 q26,14 52,-2 q26,14 52,-3 q26,14 52,-4 q26,13 52,-5 q26,13 52,-5 q26,13 52,-6 q26,12 52,-7 q26,12 52,-7 q22,11 46,-8 L1366,0 0,0 Z"
+            fill="#26100a"/>
+      <path d="M0,46 q26,18 52,2 q26,17 52,2 q26,17 52,3 q26,17 52,3 q26,17 52,4 q26,17 52,4 q26,16 52,4 q26,16 52,4 q26,16 52,4 q26,16 52,3 q26,16 52,3 q26,15 52,2 q26,15 52,2 q26,15 52,1 q26,15 52,0 q26,15 52,-1 q26,14 52,-2 q26,14 52,-2 q26,14 52,-3 q26,14 52,-4 q26,13 52,-5 q26,13 52,-5 q26,13 52,-6 q26,12 52,-7 q26,12 52,-7 q22,11 46,-8"
+            stroke="#ffb347" stroke-width="1.5" fill="none" opacity=".5"/>
+    </g>
+  </g>
+
+  <!-- window jambs: we are inside, looking out -->
+  <rect x="0" width="18" height="460" fill="#0d0604"/>
+  <rect x="16" width="3" height="460" fill="#c98f4a" opacity=".28"/>
+  <rect x="1348" width="18" height="460" fill="#0d0604"/>
+  <rect x="1347" width="3" height="460" fill="#c98f4a" opacity=".22"/>
+
+  <!-- unifying grade: cool in the top, warm low -->
+  <rect width="1366" height="460" fill="#1a2c4e" opacity=".1" style="mix-blend-mode:overlay"/>
+  <rect y="300" width="1366" height="160" fill="#ff9c4a" opacity=".03" style="mix-blend-mode:overlay"/>
+
+  <!-- vignette + grain -->
+  <rect width="1366" height="460" fill="url(#vig)"/>
+  <rect width="1366" height="460" fill="transparent" filter="url(#grain)" opacity=".5"/>
+</svg>
+</body>
+</html>

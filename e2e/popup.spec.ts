@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
-import { API, createClass, startIfConfirmAsked, createClassKeyFor, gotoFreshChallenge, noHorizontalOverflow, noSeriousAxeViolations, seatOnRoster, signIn } from "./flow";
+import { STUDENT_COPY } from "../src/content/studentCopy";
+import { API, createClass, startIfConfirmAsked, createClassKeyFor, gotoFreshChallenge, noHorizontalOverflow, noSeriousAxeViolations, seatOnRoster, serveTheNight, signIn } from "./flow";
 import { PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 import { POP_UP_NUMBERS as N } from "../src/domain/scenario/worlds/food-truck/numbers";
 import { parseDollars } from "../src/domain/core/money";
@@ -63,7 +64,7 @@ async function join(page: Page, classCode: string, seatCode: string) {
 }
 
 async function pickPopUp(page: Page) {
-  await expect(page.getByRole("heading", { name: "Pick a world. Make it count." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: STUDENT_COPY.choose.title })).toBeVisible();
   await page.getByRole("button", { name: `Start this one: ${POP_UP_SCENARIO.title}` }).click();
 }
 
@@ -162,10 +163,37 @@ async function settleTheTips(page: Page) {
   await page.getByRole("button", { name: COPY.tips.title }).click();
 }
 
+/**
+ * The window, run to closing.
+ *
+ * Ordering trays used to advance the stage on the press. It now opens the evening the order
+ * was for — the student watches their own counter empty against the crowd the booth card
+ * stated — and the stage advances when they shut the window. `serviceRun` guarantees the
+ * night adds up to exactly what `playSaturday` always computed, so nothing downstream of this
+ * helper changes: same event, same payload, later.
+ *
+ * It is tolerant of the service not being there, because only Saturday 1 opens the window so
+ * far and the other three still resolve on the press.
+ */
+/**
+ * Serve whatever window is in front of us, however many nights it turns out to be.
+ *
+ * This used to be a local loop that returned silently when no window was offered — written,
+ * as its own comment said, for a standing order that "serves two nights in a row" that no
+ * student could reach, because nothing in the product ever opened those two windows. When
+ * they were finally opened, the loop was in the wrong place and this suite failed looking for
+ * the generator two screens early.
+ *
+ * It now calls `serveTheNight` from `flow.ts`, which every market journey shares and which
+ * takes the night count explicitly: a helper that passes whether it served two nights or none
+ * is a helper that will go on passing after the nights disappear again.
+ */
 async function orderTrays(page: Page, trays: number) {
-  const shown = page.locator(".tray-order output");
+  // The order control is a real spinbutton now — `role="spinbutton"` and `aria-valuenow`,
+  // not an `<output>` a script had to read the text of.
+  const shown = page.locator('.tray-order [role="spinbutton"]');
   for (let guard = 0; guard < 12; guard += 1) {
-    const current = Number(await shown.innerText());
+    const current = Number(await shown.getAttribute("aria-valuenow"));
     if (current === trays) break;
     await page.getByRole("button", { name: current < trays ? "One tray more" : "One tray fewer" }).click();
   }
@@ -259,6 +287,7 @@ test.describe("Run the Pop-Up", () => {
     await orderTrays(page, 3);
     await checkSum(page, COPY.saturday.order.label, orderCost(N, 3));
     await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await serveTheNight(page);
 
     // 7 — the night resolves, and the rebate answers itself from what they cooked.
     await expect(page.getByRole("heading", { name: COPY.standing.title })).toBeVisible();
@@ -272,6 +301,8 @@ test.describe("Run the Pop-Up", () => {
     await page.getByRole("button", { name: COPY.standing.alone }).click();
     await orderTrays(page, 3);
     await page.getByRole("button", { name: COPY.standing.action }).click();
+    // The standing order covers Saturdays 2 and 3, and the student runs both of them.
+    await serveTheNight(page, 2);
 
     // 8 — the generator dies. The takeover, then the sum it leaves behind.
     await expect(page.getByRole("heading", { name: POP_UP_SCENARIO.breakdown.title })).toBeVisible();
@@ -294,6 +325,7 @@ test.describe("Run the Pop-Up", () => {
     // 10 — the last Saturday, then the settle-up.
     await expect(page.getByRole("heading", { name: COPY.repair.lastTitle })).toBeVisible();
     await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await serveTheNight(page);
     await expect(page.getByRole("heading", { name: POP_UP_SCENARIO.settle.title })).toBeVisible();
     // The ending names decisions rather than restating a table of nights already watched.
     //
@@ -376,7 +408,7 @@ test.describe("Run the Pop-Up", () => {
     await expect(page.locator(".worldcard")).toHaveCount(2);
 
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Pick a world. Make it count." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: STUDENT_COPY.choose.title })).toBeVisible();
     await pickPopUp(page);
     await page.getByRole("button", { name: `${COPY.spot.take}: ${SPOT.title}` }).click();
 
@@ -399,9 +431,13 @@ test.describe("Run the Pop-Up", () => {
     const start = page.getByRole("link", { name: /^(Start|Carry on)$/ });
     await start.focus();
     await page.keyboard.press("Enter");
-    const enter = page.getByRole("button", { name: /Start the eight weeks|Go in/ });
-    await enter.focus();
-    await enter.press("Enter");
+    // Whatever screen the build puts between the door and the choice, pressed where it is
+    // offered. This named a button — "Start the eight weeks" / "Go in" — that the product has
+    // stopped drawing, and then waited the full five minutes for it. `startIfConfirmAsked` is
+    // the shared tolerance for exactly this, and its own note records the lesson: clicking a
+    // screen the product no longer shows hangs the journey on one line for a reason the test
+    // was not about. Arrival is asserted by the two cards below.
+    await startIfConfirmAsked(page);
 
     // Both cards are reachable by tabbing forward from the top of the document.
     await expect(page.locator(".worldcard")).toHaveCount(2);
@@ -457,10 +493,12 @@ test.describe("Run the Pop-Up", () => {
     await orderTrays(page, 3);
     await checkSum(page, COPY.saturday.order.label, orderCost(N, 3));
     await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await serveTheNight(page);
     await settleTheTips(page);
     await page.getByRole("button", { name: COPY.standing.alone }).click();
     await orderTrays(page, 3);
     await page.getByRole("button", { name: COPY.standing.action }).click();
+    await serveTheNight(page, 2);
 
     // The takeover is the one animated moment in the world. With motion off the beats are
     // simply there — present, opaque, and not mid-transition.
@@ -505,10 +543,12 @@ test.describe("Run the Pop-Up", () => {
       await orderTrays(page, 3);
       await checkSum(page, COPY.saturday.order.label, orderCost(N, 3));
       await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await serveTheNight(page);
       await settleTheTips(page);
       await page.getByRole("button", { name: COPY.standing.alone }).click();
       await orderTrays(page, 3);
       await page.getByRole("button", { name: COPY.standing.action }).click();
+      await serveTheNight(page, 2);
       await expect(page.getByRole("heading", { name: POP_UP_SCENARIO.breakdown.title })).toBeVisible();
       await noHorizontalOverflow(page);
     }
@@ -535,12 +575,17 @@ test.describe("reflow", () => {
     await orderTrays(page, 3);
     await checkSum(page, COPY.saturday.order.label, orderCost(N, 3));
     await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await serveTheNight(page);
     await noHorizontalOverflow(page);
 
     await settleTheTips(page);
     await page.getByRole("button", { name: COPY.standing.alone }).click();
     await orderTrays(page, 3);
     await page.getByRole("button", { name: COPY.standing.action }).click();
+    // Both middle Saturdays are served at whatever width this pass is running, because a screen
+    // that only reflows when nobody looks at it is not reflowing.
+    await noHorizontalOverflow(page);
+    await serveTheNight(page, 2);
     await noHorizontalOverflow(page);
 
     await checkSum(page, COPY.generator.gap.label, swapBill(N));
@@ -553,6 +598,7 @@ test.describe("reflow", () => {
     await noHorizontalOverflow(page);
 
     await page.getByRole("button", { name: COPY.saturday.open }).click();
+    await serveTheNight(page);
     await noHorizontalOverflow(page);
     await page.getByRole("button", { name: COPY.settle.action }).click();
     await noHorizontalOverflow(page);

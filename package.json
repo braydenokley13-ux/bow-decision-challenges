@@ -13,6 +13,7 @@
     "test:e2e": "playwright test --project=chromium-1366 --project=chromium-1024",
     "walkthrough": "playwright test --project=walkthrough",
     "balance": "BALANCE_REPORT=balance-report.txt vitest run src/domain/scenario/balance.test.ts",
+    "budget": "npm run build && node scripts/asset-budget.mjs",
     "build:server": "vite build --ssr server/index.ts --outDir dist-server",
     "api": "npm run build:server && node dist-server/index.js",
     "api:dev": "npm run build:server && BOW_CLASS_STORE=memory node dist-server/index.js",

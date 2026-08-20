@@ -39,6 +39,8 @@ import { DEFAULT_WORLD_ID, PLAYABLE_WORLDS, WORLD_CHOICE_UI_READY } from "../dom
 import { PopUpChallenge } from "./popup/PopUpChallenge";
 import type { StageId } from "../domain/evidence/types";
 import { checkWriting, NUMBERS_WANTED } from "../domain/evidence/writingGate";
+import { closingAnswerOutstanding, rememberClosingQuestion } from "../student/closingQuestion";
+import { ClosingQuestionCard } from "../student/ClosingQuestionCard";
 
 const BONUS_WEEKS = bonusWeeks(SCENARIO_NUMBERS);
 const CLINIC_WEEKS = clinicWeeks(SCENARIO_NUMBERS);
@@ -188,9 +190,15 @@ function OpeningStage() {
       pickerReady: WORLD_CHOICE_UI_READY,
       defaultWorldId: DEFAULT_WORLD_ID,
     }));
+    // The teacher's own closing question, filed against this run before the first screen.
+    // It belongs to the assignment rather than to the world, so it is kept outside both
+    // reducers — see `student/closingQuestion.ts` — and asking for it later would mean every
+    // surface that could show it needing the assignment threaded to it.
+    const sessionId = crypto.randomUUID();
+    rememberClosingQuestion(sessionId, seat.assignment?.closingQuestion);
     dispatch({
       type: "SESSION_STARTED",
-      sessionId: crypto.randomUUID(),
+      sessionId,
       classCode: seat.classCode,
       seatCode: seat.seatCode,
       ...(seat.assignment ? { assignmentId: seat.assignment.id } : {}),
@@ -198,31 +206,35 @@ function OpeningStage() {
   };
 
   /**
-   * A student who is already signed in does not meet a screen asking them to confirm it.
+   * A student who is already signed in does not meet a *second* screen asking them to confirm
+   * it — that much of the old reasoning here was right. They came from their own home page,
+   * which shows their name, offers "Not you?" and has a button reading *Start*, and a panel
+   * that only repeated "You are signed in as · Ada L. · Period 2" back at them, with a button
+   * reading *Go in* and nothing else on it, was one of four screens between the door and the
+   * game that a red team counted as confirming what the student had just done.
    *
-   * They came from their own home page, which shows their name, offers "Not you?" and has a
-   * button reading *Start*. Pressing it used to land them here, on a panel headed **"You are
-   * signed in as · Ada L. · Period 2"** with a button reading *Go in* — and, where the class
-   * offers a choice, on the world picker after that. Two critics and a student red team
-   * counted the same thing: four screens between the door and the game, two of which only
-   * confirm what the student just did.
+   * What used to live here did more than that, and firing `start()` from an effect the moment
+   * `seat` resolved skipped all of it along with the confirmation: `entry` budgets 55 seconds
+   * in `pacing.ts` for "read the offer and the roster card, **then start the run**", and the
+   * offer and the roster card are drawn below, in this same component, for a signed-in
+   * student and the no-service preview alike. An effect that dispatches `SESSION_STARTED`
+   * before the first paint moves `state.meta.stage` off `entry` (`reducer.ts`) before any of
+   * that is ever on screen — so a real student who chose a world card promising "Eight Weeks to
+   * the Showcase" landed straight in the setup comparison having never met Avery, the roster
+   * card or the goal, and `RosterCard` was dead code for every real class this product has ever
+   * run. `startIfConfirmAsked` (`e2e/flow.ts`) already tolerated either outcome, which is the
+   * reason no browser test caught it: it waits for whichever screen actually turns up and
+   * presses the confirm button — *Start* or *Go in* — only when one is drawn.
    *
-   * The branch under it stays exactly as it is, and it is not an accident. A build with no
-   * class service resolves a seat during render and draws this screen for real — no session,
-   * no card, no roster — which is how the guide's "Try it as a student" lets a teacher play
-   * the actual run. That path has a story to show and a button worth pressing. A signed-in
-   * student has already pressed it.
+   * So the button is what starts the run, for a real class exactly as it already did for the
+   * no-service preview below — there is no longer a second code path to keep in step. Resume is
+   * unaffected: a returning student's initial state is read from a checkpoint or this device's
+   * own draft (`ResumeGate.tsx`, `ChallengeContext.tsx`) with `meta.stage` already past `entry`,
+   * so this component is never mounted on that stage for a run in progress — only a session
+   * that has never dispatched `SESSION_STARTED` starts on `entry` at all.
    */
-  useEffect(() => {
-    if (!transport.requiresClass || !seat || started.current) return;
-    start();
-    // `start` closes over `seat` and `setOffer`, and re-running on either is exactly what the
-    // ref guards against: the session is started once per arrival, and the reducer moves the
-    // stage off `entry` the moment it is.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seat, transport.requiresClass]);
 
-  if (!seat || transport.requiresClass) {
+  if (!seat) {
     return (
       <div className="opening opening--waiting" data-world={state.meta.worldId}>
         <div className="opening__bar"><AppMark /><span>Plan Under Pressure</span></div>
@@ -1489,7 +1501,7 @@ function FinalRepairStage() {
             </ol>
             <div className="binary-choice">
               <button type="button" aria-pressed={completionDecided && state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: true })}>{PLAN_COPY.steps.bonuses.yes}</button>
-              <button type="button" aria-pressed={completionDecided && !state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: false })}>No — plan without it</button>
+              <button type="button" aria-pressed={completionDecided && !state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: false })}>{PLAN_COPY.steps.bonuses.no}</button>
             </div>
             <p className="decision-note">Say yes and you will be asked to show the plan still works if it never comes.</p>
           </section>
@@ -1543,6 +1555,9 @@ function DefenseStage() {
   // typed, and the screen comes back with the student's own words in it.
   const [selected, setSelected] = useDraft<string[]>(state.meta.worldId, "defense-tiles", state.defense.tileIds);
   const [text, setText] = useDraft(state.meta.worldId, "defense-text", state.defense.text);
+  // Read once for the first render, then kept in step by the card's own callback. The card
+  // owns the text; this screen owns the button; neither re-renders the other for free.
+  const [closingOutstanding, setClosingOutstanding] = useState(() => closingAnswerOutstanding(state.meta.sessionId));
   const final = amountsFor(state, "final");
   const finalInput = snapshotForMode(state, "final");
   // Every chip is derived from the student's own saved plan, and any chip worth $0
@@ -1629,9 +1644,22 @@ function DefenseStage() {
                 </p>
               ))}
             </div>
-            <Button aria-disabled={!gate.ready} onClick={() => gate.ready && dispatch({ type: "DEFENSE_SUBMITTED", tileIds: selected, text })}>Turn in my plan</Button>
+            <Button aria-disabled={!gate.ready || closingOutstanding} onClick={() => gate.ready && !closingOutstanding && dispatch({ type: "DEFENSE_SUBMITTED", tileIds: selected, text })}>Turn in my plan</Button>
+            {/* Named rather than left as a disabled button with no reason on it. A student who
+                cannot see why the control is off can only get past it by guessing. */}
+            {closingOutstanding && (
+              <p className="writing-rules" aria-live="polite">
+                <span aria-hidden="true">◦</span> Your teacher’s question needs an answer too.
+              </p>
+            )}
           </footer>
         </section>
+        {/* The teacher's own question, after the challenge's own. Its own card, in their name,
+            because a student has to be able to tell which one BOW is going to score. */}
+        <ClosingQuestionCard
+          sessionId={state.meta.sessionId}
+          onAnswered={() => setClosingOutstanding(closingAnswerOutstanding(state.meta.sessionId))}
+        />
       </div>
     </StageShell>
   );

@@ -377,3 +377,104 @@ rewritten underneath them.**
   class-creation form now offers **one** objective — *1.3 · Create a budget* — where it offered
   two this morning. The count is derived from `isAssessable` rather than restated, so correcting
   the mapping corrected the form without anybody editing the form.
+
+
+## §O — found while ruling on the Module 2 contract
+
+**O1 · MEDIUM · educator surface.** **A competency that fully covers two objectives is never
+labelled as such on any screen, and there are two of them now.**
+
+`standardsFor(competencyId)` returns each objective a competency covers and how fully. It has
+**no caller outside tests.** `mappingIntegrity.test.ts` has carried a comment about this for as
+long as the function has existed — *"A teacher who assigns 5.5 gets evidence for 5.2 as well.
+That is a gift, and it has to be labelled on screen or it looks like a mistake"* — and the
+labelling was never built.
+
+It was a one-competency gap. Promoting NYSED 2.3 and 2.4 to `full` made `keep-credit-costs-down`
+the second, so a teacher who assigns 2.3 now also gets 2.4 and will not be told. The failure
+mode is not a wrong number; it is a teacher seeing an objective they did not assign move on the
+objectives page and reasonably concluding the product is confused.
+
+Filed rather than fixed at the point of discovery: it is a teacher-surface build and it was
+found inside a mapping-integrity suite. It belongs with the teacher assessment work, and the
+test now pins the list of two so a third arrives on purpose rather than by a mapping edit.
+
+**O2 · INFORMATIONAL · both shipped worlds.** Two observer files asserted a routing claim that
+shipped code does not support — Basketball's `AWAITING_EVIDENCE_REQUIREMENTS` note said building
+a lower-resource plan before knowing what goes wrong *"is exactly what C4.1 to C4.4 observe,"*
+and about half of Basketball's students never build one. Both notes and both tripwires are
+corrected; the full finding is in `MODULE_4_REAUDIT.md`.
+
+Recorded here because of what it was: **a false claim about the product, sitting in the product,
+written in good faith, and load-bearing.** The tripwire it sat above instructed the next person
+to route the competency on the strength of it. Nothing in the build could have caught this —
+prose is not typechecked — and the only reason it was caught is that the Module 4 re-audit was
+run against shipped code rather than against the note. That is the whole argument for the
+verification protocol in `COVERAGE_COURT_CONTRACT.md` §3, and it is worth one entry in this file
+as the case that made it.
+
+## §P — what one interrupted browser run found
+
+The golden paths had not been run since the copy rewrite. Running them turned up nineteen
+failures across `bow`, `golden` and `popup`, and none of them was the thing being looked for.
+All nineteen are closed; the three suites are **74/74**, and the run time fell from 28.7 minutes
+to 8.3 because tests had been spending five minutes each timing out on buttons that no longer
+existed.
+
+**P1 · SERIOUS · the student product.** `.button--primary` painted `--ink-invert` on
+`--bow-brand`: **3.81:1 on the front door**, the first screen anybody sees. "Invert" means the
+ink that sits on `--ink-1` — white on the light ground, near-black on the dark one — while the
+brand is a saturated violet on both. On the dark ground the brand had been lifted for legibility
+*as text* (violet-600 → violet-500) at the same moment the invert ink went dark. Two defensible
+changes moved toward each other and met below AA, and nothing connected them.
+
+`RULING.md` claimed "AA on every ink/surface pair including sunken and inset". **There was no
+contrast test in the repository.** The claim was a sentence, not a gate, which is why a browser
+scan found this and the palette never did. `src/design/brandContrast.test.ts` now reads the
+stylesheets and checks every ink-on-fill pair per ground; it found two more the moment it ran —
+`--bow-brand-ink-muted` at 4.45:1 on the light ground, failing by five hundredths *directly
+beneath a comment explaining that the brand ground carries its own muted token so that it would
+pass*, and 2.73:1 on the dark one.
+
+The underlying fault was one token doing two jobs: `--bow-brand` served as an accent *on* a dark
+canvas and as a ground *under* text, which want opposite lightness. Named apart as
+`--bow-brand-fill`. The ramp does not resolve in one direction — white is 4.73 on violet-500 and
+3.27 on violet-400, near-black is 3.82 and 5.52 — so adjacent brand tokens genuinely want
+opposite inks, and inside the market both brand grounds are light amber where white is 2.00:1.
+
+**P2 · SERIOUS · the market.** **Saturdays 2 and 3 could not be played by anybody.** The
+standing-order screen dispatched `POPUP_STOCK_ORDERED` straight from its commit button, resolving
+both middle nights off-screen as arithmetic. The service screens for those nights existed — with
+their own two close labels, and a HUD written to add the un-banked till of a night in progress —
+and nothing in the file ever called `setServing(2)`. A student ran the first Saturday, ran the
+last, and was told what happened in between. Half the market's evenings were built and
+unreachable.
+
+Fixing it exposed a second: with the component surviving the change of night, pressing *Serve
+automatically* on Saturday 2 meant Saturday 3 began serving itself before anyone had looked at
+it. Keyed by night now.
+
+**P3 · SERIOUS · the test suite's architecture.** Seven separate stale-copy instances, all one
+bug. The suite kept its own copies of the product's sentences, and the copy rewrite — which
+changed em dashes to colons and reworded four labels — broke every one. The worst was not a red
+test: **the accessibility sweep was among the tests waiting on a dead string, so it had silently
+stopped scanning three screens while still looking like a passing suite.**
+
+A suite holding its own copy of the words does not report a rewrite as a rewrite. It reports it
+as a broken product, and it stops checking. Every one now derives from `STUDENT_COPY` or the
+scenario, so a rename follows and a removal fails to compile.
+
+One hid from the sweep that found the other six: `COUNT_BONUS_BUTTON` was a named constant in
+`plan.ts` rather than an inline literal, and the sweep looked for strings sitting after `name:`.
+
+**P4 · MINOR · the student product.** One `binary-choice` pair maintained by two different means:
+`{PLAN_COPY.steps.bonuses.yes}` beside the literal `"No — plan without it"`. The rewrite moved the
+half that read from the copy system and left its sibling carrying an em dash. Both halves derive
+now, which also gives the student the same words for the same act on both screens.
+
+**P5 · OPEN · a product decision, not a defect.** Two live screens both create a class and set it
+an objective, under a comment in `ObjectivePages.tsx` insisting there is one path and explaining
+why two would be bad. See `v5/QUALITY_DEBT.md`; it is written up rather than settled because
+which screen wins is not the lead's call to make silently.
+
+**What none of this was visible from.** 2110 unit tests passed throughout.

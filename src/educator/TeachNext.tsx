@@ -4,6 +4,7 @@ import { GAP_THRESHOLD_PERCENT, type RequirementGap, type TeachNextReading } fro
 import type { MisconceptionSpotlight } from "./misconceptions";
 import { levelLabel, LEVEL_BUCKET_LABELS, studentsWho, TERMS } from "./labels";
 import { useSeatLabel } from "./names";
+import { disclosureEscape } from "../components/primitives/disclosureEscape";
 
 /**
  * "What should I teach next?" — §18, rendered in the order §18.1 fixes and in no other.
@@ -281,7 +282,7 @@ export function TeachNext({ reading, spotlight, classCode, teacherKey }: {
       <p className="eyebrow">What should I teach next?</p>
       {spotlight && <Spotlight spotlight={spotlight} classCode={classCode} teacherKey={teacherKey} />}
       <Action reading={reading} spotlight={spotlight} classCode={classCode} teacherKey={teacherKey} />
-      <details className="next-lesson__working">
+      <details className="next-lesson__working" onKeyDown={disclosureEscape()}>
         {/* Named in plain English rather than in the vocabulary the table below exists to
             explain. A teacher clicking into an audit trail should not have to already know
             what BOW calls the rows in it. */}

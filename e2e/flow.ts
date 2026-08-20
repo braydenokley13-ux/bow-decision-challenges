@@ -7,6 +7,7 @@ import { buildSubmission } from "../src/test/runChallenge";
 import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
 import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
 import { STUDENT_COPY } from "../src/content/studentCopy";
+import { POP_UP_SCENARIO } from "../src/domain/scenario/worlds/food-truck/scenario";
 
 /**
  * One driver for both the assertion suite and the screenshot walkthrough.
@@ -111,6 +112,22 @@ export async function seedRuns(
 }
 
 /**
+ * What a seeded roster calls the student in seat *n*.
+ *
+ * There were three of these and two of them disagreed: the server-seeded path wrote
+ * "Seeded Student 3" and the browser-driven path wrote "Test Student 3", for no reason either
+ * of them recorded, and `pilot.spec.ts` documented the second in prose as though it were the
+ * rule. Nothing downstream can tell the two apart — a roster label is a roster label — so the
+ * only thing the difference ever did was decide which assertions were wrong, and two tests
+ * were asserting a name their own helper does not produce.
+ *
+ * One function, so a test asserting a name and a helper writing one cannot drift again.
+ */
+export function rosterName(seat: number): string {
+  return `Test Student ${seat}`;
+}
+
+/**
  * A seat on the roster and a session holding it, without a browser.
  *
  * The same two calls the join screen makes, in the same order, with the same bodies — so a
@@ -125,7 +142,7 @@ async function seatAndSignIn(request: APIRequestContext, classCode: string, seat
   const already = ((await listed.json()) as { roster?: readonly { seatCode: string }[] }).roster ?? [];
   let card = already.find((row) => row.seatCode === String(wanted)) as JoinCard | undefined;
   if (!card) {
-    const names = Array.from({ length: wanted - already.length }, (_, index) => `Seeded Student ${already.length + index + 1}`);
+    const names = Array.from({ length: wanted - already.length }, (_, index) => rosterName(already.length + index + 1));
     const created = await request.post(`${API}/classes/${classCode}/roster`, {
       headers: { "X-BOW-Teacher-Key": key },
       data: { names },
@@ -208,7 +225,7 @@ export async function seatOnRoster(page: Page, classCode: string, seatCode: stri
   const already = ((await existing.json()) as { roster?: readonly { seatCode: string }[] }).roster ?? [];
   const seated = already.find((entry) => entry.seatCode === String(wanted));
   if (seated) throw new Error(`Seat ${seatCode} in ${classCode} is already on the roster.`);
-  const names = Array.from({ length: wanted - already.length }, (_, index) => `Test Student ${already.length + index + 1}`);
+  const names = Array.from({ length: wanted - already.length }, (_, index) => rosterName(already.length + index + 1));
   const response = await page.request.post(`${API}/classes/${classCode}/roster`, {
     headers: { "X-BOW-Teacher-Key": createClassKeyFor(classCode) },
     data: { names },
@@ -296,7 +313,14 @@ export async function startIfConfirmAsked(page: Page) {
   const picker = page.getByRole("heading", { name: STUDENT_COPY.choose.title });
   const contract = page.getByRole("button", { name: "Find Avery a place" });
   const ranking = page.getByRole("heading", { name: /Which place costs the least/i });
-  await expect(confirm.or(picker).or(contract).or(ranking).first()).toBeVisible();
+  // The market's own first screen. Every alternative above is one of Basketball's, which was
+  // true when this was written and stopped being true when a second world shipped: a class set
+  // to the market only lands a student here, correctly, and this helper then waited five
+  // minutes for a basketball screen that was never coming. Two tests died on that line for a
+  // reason neither of them was about, which is the exact failure the note above records
+  // happening once already.
+  const market = page.getByRole("heading", { name: POP_UP_SCENARIO.screens.spot.title });
+  await expect(confirm.or(picker).or(contract).or(ranking).or(market).first()).toBeVisible();
   if (await confirm.count()) await confirm.click();
 }
 
@@ -330,6 +354,36 @@ export async function chooseSeasonIfOffered(page: Page) {
   await expect(picker.or(contract)).toBeVisible();
   if (await picker.isVisible()) {
     await page.getByRole("button", { name: /Start this one/ }).first().click();
+  }
+}
+
+/**
+ * Serve a Saturday to the end and close up.
+ *
+ * The window used to open straight onto the next decision. It now opens onto the evening the
+ * student ordered for — the counter emptying, the lane still there, the till climbing — and
+ * that screen sits between every `saturday.open` and whatever follows it.
+ *
+ * `golden.spec.ts` was written before that screen existed and nobody added it, so the market's
+ * golden path pressed *open the window* and then spent three minutes waiting for a tips jar
+ * that was two screens away. The suite reported a timeout; the product was working perfectly.
+ * That is the whole reason this lives in `flow.ts` instead of being pasted into a second spec:
+ * a click sequence kept in two places is a click sequence that will be updated in one.
+ *
+ * `nights` is required rather than inferred because the standing order serves **two** Saturdays
+ * back to back. A loop that just kept closing whatever it found would pass whether it served
+ * two nights or none, which is how a helper starts quietly skipping the thing it is named for.
+ */
+export async function serveTheNight(page: Page, nights = 1) {
+  for (let night = 0; night < nights; night += 1) {
+    await expect(
+      page.getByRole("button", { name: "Serve automatically" }),
+      `night ${night + 1} of ${nights}: the window opened but no evening was there to run`,
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Serve automatically" }).click();
+    const closeUp = page.getByRole("button", { name: /^(Close up|See how)/ });
+    await closeUp.waitFor({ state: "visible", timeout: 120_000 });
+    await closeUp.click();
   }
 }
 
@@ -374,15 +428,33 @@ export async function completeSetupStage(page: Page, chosenIndex: 0 | 1 | 2, onC
 }
 
 /** What the planning screen calls each of its four questions, and how it moves between them. */
+/**
+ * The plan's four screens, named by the product rather than by this file.
+ *
+ * These were eight hard-copied strings, and the copy rewrite that made both worlds readable
+ * changed four of them — three em dashes became colons and "Yes — count on it" became
+ * "Yes, count on it". Every one of those is a better sentence and not one of them is a
+ * behaviour change, but the suite was looking for buttons that no longer existed, so the two
+ * golden paths sat waiting three minutes for a click that could never land and then reported
+ * a timeout. A student would have been fine. The evidence that a student is fine was gone.
+ *
+ * A test suite that keeps its own copy of the words is a suite that reports a rewrite as a
+ * regression, which is worse than useless: it trains everyone to distrust it precisely when
+ * the product is being improved. So the words come from the one place that defines them. If a
+ * button is renamed again, this follows it; if a button is *removed*, this fails to compile,
+ * which is the failure that was actually wanted.
+ */
+const PLAN_COPY = STUDENT_COPY.plan.steps;
+
 export const PLAN_STEP = {
-  countOn: "What Avery can count on",
-  bonuses: "Bonuses that might happen",
-  committed: "Money already spoken for",
-  countBonus: "Yes — count on it",
-  leaveBonus: "No — leave it out",
-  toBonuses: "Next — the two bonuses",
-  toCommitted: "Next — what Avery already owes",
-  toPlan: "Now decide what Avery protects",
+  countOn: PLAN_COPY.countOn.name,
+  bonuses: PLAN_COPY.bonuses.name,
+  committed: PLAN_COPY.committed.name,
+  countBonus: PLAN_COPY.bonuses.yes,
+  leaveBonus: PLAN_COPY.bonuses.no,
+  toBonuses: PLAN_COPY.countOn.next,
+  toCommitted: PLAN_COPY.bonuses.next,
+  toPlan: PLAN_COPY.committed.next,
 } as const;
 
 /**
@@ -467,7 +539,7 @@ export async function passWeek5Calculation(page: Page, total: string) {
 
 export async function decideOpportunity(page: Page, opts: { clinics: boolean; countBonus: boolean }) {
   await page.getByRole("button", { name: opts.clinics ? "Take the clinics" : "Keep the Saturdays" }).click();
-  await page.getByRole("button", { name: opts.countBonus ? COUNT_BONUS_BUTTON : "Plan without it" }).click();
+  await page.getByRole("button", { name: opts.countBonus ? COUNT_BONUS_BUTTON : PLAN_STEP.leaveBonus }).click();
 }
 
 /** Week 8 resolves the season before the student explains it. */
@@ -491,7 +563,19 @@ export async function readWeek8Resolution(page: Page) {
  * than restating an amount: `numbers.ts` owns those, the tile prints them, and a suite with its
  * own copy of a price is the thing `pricing.test.ts` exists to stop.
  */
-export async function submitDefense(page: Page, text: string, tileIndices: number[] = [0, 2]) {
+/**
+ * The write-up, and anything else that screen is carrying.
+ *
+ * `onWriteUp` runs after the defence is typed and before it is turned in. It is the one moment
+ * the rest of that screen can be inspected — the teacher's own closing question sits under the
+ * challenge's own, and a required one holds the turn-in button until it is answered.
+ */
+export async function submitDefense(
+  page: Page,
+  text: string,
+  onWriteUp?: () => Promise<void>,
+  tileIndices: number[] = [0, 2],
+) {
   const figures: string[] = [];
   for (const index of tileIndices) {
     const tile = page.locator(".interview__stats button").nth(index);
@@ -499,6 +583,7 @@ export async function submitDefense(page: Page, text: string, tileIndices: numbe
     figures.push((await tile.locator(".money").innerText()).trim());
   }
   await page.getByLabel("Two to four sentences").fill(`${text} The numbers I stood on are ${figures.join(" and ")}.`);
+  if (onWriteUp) await onWriteUp();
   await page.getByRole("button", { name: "Turn in my plan" }).click();
 }
 

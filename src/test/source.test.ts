@@ -85,6 +85,23 @@ describe("the rule is written once", () => {
    * its own stripper is a scan enforcing its own private idea of what a comment is, and the
    * whole point of these tests is that they agree.
    */
+  /**
+   * The coordinate half of the rule. `pricing.test.ts` prints `line N:` beside every price it
+   * objects to, and a block comment collapsing to one space moved every line after the file
+   * header — so the scan that exists to stop a student being shown the wrong number was
+   * sending its reader to the wrong line.
+   */
+  it("keeps line numbers when asked, and still separates the tokens it stood between", () => {
+    const source = ["const a = 1;", "/* two", "   lines */", "const b = 2;"].join("\n");
+    expect(withoutComments(source, { lines: true }).split("\n")).toHaveLength(4);
+    expect(withoutComments(source, { lines: true }).split("\n")[3]).toBe("const b = 2;");
+    // A block that never spanned a line has no newlines to keep, and still may not weld.
+    expect(withoutComments("a/* x */b", { lines: true })).toBe("a b");
+    // Off by default, exactly as every existing caller reads it: the two lines the block
+    // spanned become one, and everything below it moves up by one.
+    expect(withoutComments(source).split("\n")).toHaveLength(3);
+  });
+
   it("has no second definition of a comment stripper", () => {
     const offenders: string[] = [];
     const walk = (dir: string): void => {

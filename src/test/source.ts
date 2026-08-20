@@ -24,7 +24,8 @@ import { readFileSync } from "node:fs";
  * The rule, stated once:
  *
  * - `/* ... *\/` blocks become a single space, so removing one cannot silently weld the token
- *   before it to the token after it.
+ *   before it to the token after it — or, with `lines`, the newlines they contained, for a
+ *   scan that prints the coordinate of what it found.
  * - `// ...` runs to end of line — **unless the slashes are preceded by a colon**, which is
  *   `https://`, and a scan that ate the rest of the line at every URL would be blind past it.
  * - `<!-- ... -->` only when asked, because it is Markdown syntax and stripping it from
@@ -38,13 +39,27 @@ import { readFileSync } from "node:fs";
 export interface StripOptions {
   /** Also remove HTML comments. For Markdown; off by default, where it would mean nothing. */
   html?: boolean;
+  /**
+   * Keep the newlines that were inside a stripped comment, so line *n* of the result is
+   * line *n* of the file.
+   *
+   * Off by default because most callers ask "what words are in this file" and a block
+   * comment collapsing to a space is the cheapest answer. On for the scans that report a
+   * coordinate: `pricing.test.ts` prints `line 103: …` next to every price it objects to,
+   * and after a 90-line file header that number was pointing a reader at the wrong line —
+   * which is the same class of defect as the offence it was reporting, on the other side of
+   * the message. A scan may not be more precise than its own coordinates.
+   */
+  lines?: boolean;
 }
 
 export function withoutComments(source: string, options: StripOptions = {}): string {
+  const blank = (match: string): string =>
+    options.lines === true ? match.replace(/[^\n]/g, "") || " " : " ";
   const stripped = source
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/\/\*[\s\S]*?\*\//g, blank)
     .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
-  return options.html ? stripped.replace(/<!--[\s\S]*?-->/g, " ") : stripped;
+  return options.html ? stripped.replace(/<!--[\s\S]*?-->/g, blank) : stripped;
 }
 
 /**

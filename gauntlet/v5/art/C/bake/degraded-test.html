@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Pass — 20:40, Direction C</title>
+<style>
+/* Direction C — baked environment, live instruments.
+   One raster plate (constant, uncountable), everything the student reads or presses is DOM. */
+
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:#120b08;
+  color:#f5ead8;
+  font-family:system-ui,-apple-system,"Segoe UI Variable Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+:root{
+  --ink-1:#f5ead8; --ink-2:#e0d0bc; --ink-3:#c3ab95; --ink-4:#a98f78;
+  --amber:#f0a94a; --amber-ink:#ffcf8a; --flare:#f0b352;
+  --ground:#1d1310; --steel-hi:#3d2e22; --steel:#2b2018; --steel-lo:#1b130d;
+  --paper:#e8dcc0; --paper-ink:#2a2118; --paper-mut:#6b5a40;
+  --loss:#ff8574; --loss-deep:#9c2717;
+  --focus:#b9a8ff;
+  --sans:system-ui,-apple-system,"Segoe UI Variable Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Consolas,monospace;
+}
+
+.stage{
+  position:relative; width:100%; max-width:1600px; margin:0 auto; min-height:100vh;
+  display:flex; flex-direction:column;
+  background:var(--ground);
+  overflow:hidden;
+}
+/* the one grade shared by both layers: a quiet vignette over the whole stage */
+.stage::after{
+  content:""; position:absolute; inset:0; z-index:40; pointer-events:none;
+  background:radial-gradient(130% 105% at 50% 38%, transparent 58%, rgb(8 4 2 / .34) 100%);
+}
+
+/* ------------------------------------------------ topbar (the shell, dimmed) */
+.topbar{
+  position:relative; z-index:30;
+  display:flex; align-items:center; gap:26px; min-height:50px; padding:6px 24px;
+  background:#241a15; border-bottom:2px solid var(--amber);
+  box-shadow:0 8px 24px -18px rgb(0 0 0/.9);
+  white-space:nowrap;
+}
+.bow{font:800 20px/1 var(--mono); letter-spacing:.04em}
+.bow i{font-style:normal;color:#9678ff;font-size:11px;vertical-align:top}
+.ident small,.hud small{display:block;font:500 9.5px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4)}
+.ident b{font:700 13.5px/1.3 var(--sans);color:var(--ink-1)}
+.hud{display:flex;gap:22px;margin:0 0 0 auto;padding:0;list-style:none}
+.hud b{font:700 13.5px/1.3 var(--mono);color:var(--ink-1);font-variant-numeric:tabular-nums}
+.hud b span{font-weight:500;color:var(--ink-3);font-size:11.5px}
+.chip{padding:6px 14px;border-radius:999px;background:#38220f;color:var(--amber-ink);font:700 12.5px/1 var(--sans)}
+.seat{padding:6px 12px;border:1px solid #4d372b;border-radius:6px;color:var(--ink-3);font:700 11px/1 var(--mono);letter-spacing:.1em}
+
+/* ------------------------------------------------ frame of the screen */
+.service{position:relative;z-index:10;display:flex;flex-direction:column;flex:1;padding:8px 28px 0}
+.eyebrow{
+  margin:1px 2px 6px;color:var(--ink-4);
+  font:700 11px/1.4 var(--sans);letter-spacing:.18em;text-transform:uppercase;
+}
+.booth{position:relative;display:flex;flex-direction:column;flex:1}
+
+/* ------------------------------------------------ THE WINDOW (baked beyond, live mounted on it) */
+.window{
+  position:relative;flex:1;min-height:250px;
+  background:#171009;
+  border-radius:10px 10px 0 0;
+  box-shadow:0 2px 0 rgb(0 0 0/.5);
+}
+/* the opening: everything raster lives inside this recess and never leaves it */
+.view{
+  position:absolute;left:26px;right:26px;top:36px;bottom:0;overflow:hidden;
+  background:#1c1018;
+}
+.view__plate{
+  position:absolute;inset:0;
+  background-color:#241626;
+  background-image:
+    url("data:image/webp;base64,CORRUPT"),
+    linear-gradient(180deg,#241430 0%,#553137 34%,#8f4e2d 50%,#c67a3c 56%,#3d2413 60%,#160d08 100%);
+  background-size:cover,100% 100%;
+  background-position:center 64%,center;
+  background-repeat:no-repeat;
+}
+/* state grade 1: the sky goes down with the real clock (multiply, darkest at the top) */
+.view__night{
+  position:absolute;inset:0;opacity:var(--night,0);mix-blend-mode:multiply;
+  background:linear-gradient(180deg,rgb(34 24 66/.78) 0%,rgb(34 22 48/.5) 46%,rgb(28 16 24/.36) 100%);
+}
+/* state grade 2: the lamps bite harder as the sky drops (screen, pinned over the stall cores) */
+.view__glow{
+  position:absolute;inset:0;opacity:var(--glow,0);mix-blend-mode:screen;
+  background:
+    linear-gradient(180deg,transparent 34%,rgb(255 160 66/.13) 52%,rgb(255 150 60/.17) 62%,transparent 82%),
+    radial-gradient(34% 30% at 18% 56%,rgb(255 176 82/.2),transparent 72%),
+    radial-gradient(30% 26% at 52% 54%,rgb(255 168 74/.19),transparent 72%),
+    radial-gradient(26% 24% at 68% 51%,rgb(255 158 70/.15),transparent 74%),
+    radial-gradient(28% 24% at 88% 47%,rgb(255 150 80/.14),transparent 75%);
+}
+/* our own awning valance, hanging into the view; its shadow lands on the baked plate */
+.valance{
+  position:absolute;z-index:4;left:26px;right:26px;top:36px;height:16px;
+  background:repeating-linear-gradient(90deg,
+    #8a3324 0 46px,#7a2c1f 46px 52px,#e8d3ae 52px 98px,#d4bd94 98px 104px);
+  -webkit-mask-image:linear-gradient(#000,#000),radial-gradient(26px 8px at 26px 8px,#000 98%,transparent 100%);
+  -webkit-mask-size:100% 8px,52px 16px;-webkit-mask-repeat:repeat-x;-webkit-mask-position:0 0,0 0;
+  mask-image:linear-gradient(#000,#000),radial-gradient(26px 8px at 26px 8px,#000 98%,transparent 100%);
+  mask-size:100% 8px,52px 16px;mask-repeat:repeat-x;mask-position:0 0,0 0;
+  filter:drop-shadow(0 5px 5px rgb(6 3 1/.6));
+}
+.valance::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgb(0 0 0/.42) 0%,rgb(0 0 0/.05) 55%,rgb(255 200 130/.12) 100%)}
+
+/* the truck's own shadow falling onto the baked plate: the seam, crossed downward */
+.view__occlusion{
+  position:absolute;inset:0;pointer-events:none;
+  box-shadow:
+    inset 0 26px 34px -18px rgb(6 3 1/.95),
+    inset 20px 0 30px -22px rgb(6 3 1/.85),
+    inset -20px 0 30px -22px rgb(6 3 1/.85),
+    inset 0 -18px 26px -20px rgb(6 3 1/.7);
+}
+
+/* the frame itself: machined, warm, lit from the pass lamp above the student's head */
+.window::before{ /* top rail */
+  content:"";position:absolute;left:0;right:0;top:0;height:36px;z-index:3;
+  background:linear-gradient(180deg,#2e211a 0%,#241812 62%,#120a06 100%);
+  border-radius:10px 10px 0 0;
+  box-shadow:inset 0 1px 0 rgb(255 214 150/.28),inset 0 -1px 0 rgb(0 0 0/.8);
+}
+.window::after{ /* side posts */
+  content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  border-left:26px solid #1d140d;border-right:26px solid #1d140d;
+  border-radius:10px 10px 0 0;
+}
+.status{
+  position:absolute;z-index:5;left:26px;top:0;height:36px;margin:0;
+  display:flex;align-items:center;
+  color:#d8c4ac;font:700 13px/1 var(--sans);letter-spacing:.08em;
+}
+.status:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+.clock{
+  position:absolute;z-index:5;right:22px;top:5px;margin:0;padding:4px 12px;
+  color:var(--flare);font:700 14px/1.2 var(--mono);font-variant-numeric:tabular-nums;letter-spacing:.08em;
+  background:#0d0704;border-radius:5px;
+  box-shadow:inset 0 1px 4px rgb(0 0 0/.9),inset 0 -1px 0 rgb(255 200 130/.1),0 1px 0 rgb(255 214 150/.14);
+  text-shadow:0 0 10px rgb(240 179 82/.45);
+}
+
+/* the wire and the chits: live paper hanging inside the baked air, backlit by it */
+.wire{position:absolute;z-index:4;left:26px;right:26px;bottom:22px;height:96px;pointer-events:none}
+.wire__line{position:absolute;left:0;right:0;top:10px;width:100%;height:14px}
+.wire__row{position:absolute;inset:0;display:flex;align-items:flex-start;gap:14px;padding:14px 3% 0}
+.chits{display:flex;gap:14px;margin:0;padding:0;list-style:none}
+.chits li{
+  position:relative;min-width:96px;padding:22px 12px 8px;
+  transform:rotate(var(--tilt,0deg)) translateY(var(--drop,0px));
+  background:linear-gradient(175deg,#efe0ba 0%,#e3d3ae 55%,#cdb98d 100%);
+  color:#241a10;border-radius:2px;
+  box-shadow:
+    inset 0 0 18px rgb(140 90 30/.3),
+    inset 0 1px 0 rgb(255 240 200/.7),
+    0 0 16px rgb(255 170 80/.18),
+    0 6px 10px -6px rgb(0 0 0/.6);
+}
+.chits li::before{ /* the clip on the wire */
+  content:"";position:absolute;left:50%;top:-9px;width:12px;height:16px;margin-left:-6px;
+  background:linear-gradient(180deg,#8a7358 0%,#4d3a28 100%);
+  clip-path:polygon(15% 0,85% 0,100% 100%,0 100%);
+  box-shadow:0 1px 2px rgb(0 0 0/.6);
+}
+.chit__num{display:block;font:800 15px/1.1 var(--mono);letter-spacing:.02em}
+.chit__want{display:block;margin-top:2px;font:600 12px/1.2 var(--sans);color:#4d3c22}
+.lane{
+  margin:2px 0 0 auto;padding:9px 14px;align-self:flex-start;
+  background:#150d08;color:var(--ink-3);font:600 12px/1.2 var(--sans);border-radius:6px;
+  box-shadow:inset 0 1px 3px rgb(0 0 0/.8),0 1px 0 rgb(255 214 150/.12),0 0 14px rgb(255 170 80/.08);
+}
+.lane strong{color:var(--amber-ink);font:800 16px/1 var(--mono);font-variant-numeric:tabular-nums;margin-right:2px}
+
+/* the shutter: the live layer physically closing over the baked one */
+.shutter{
+  position:absolute;z-index:3;left:26px;right:26px;top:36px;bottom:0;overflow:hidden;
+  display:flex;flex-direction:column;
+  background:#1a120c;
+  box-shadow:inset 0 4px 10px rgb(0 0 0/.8);
+}
+.shutter i{
+  flex:1;
+  background:linear-gradient(180deg,#3a2c1f 0%,#2b2016 42%,#191108 88%,#0d0803 100%);
+  box-shadow:inset 0 1px 0 rgb(255 210 150/.16);
+}
+.shutter b{
+  flex:none;height:14px;
+  background:linear-gradient(180deg,#4d3a28 0%,#241812 100%);
+  box-shadow:inset 0 1px 0 rgb(255 214 150/.3),inset 0 -2px 3px rgb(0 0 0/.8);
+}
+.wire--closed{display:none}
+
+/* closed: the shutter is a beat, not a wall — the counter carries the close */
+.stage--closed .window{flex:none;height:280px;min-height:0}
+.stage--closed .deck{flex:1;align-content:start}
+/* market light still leaking under the shutter's bottom edge */
+.shutter::after{
+  content:"";position:absolute;left:0;right:0;bottom:0;height:3px;
+  background:linear-gradient(90deg,transparent 0,rgb(255 176 96/.4) 18%,rgb(255 200 120/.55) 42%,rgb(255 170 84/.35) 70%,transparent 100%);
+  filter:blur(1px);
+}
+
+/* ------------------------------------------------ THE SILL: the seam, made of an object */
+.sill{
+  position:relative;height:18px;flex:none;z-index:8;
+  background:linear-gradient(180deg,#8a6a48 0%,#5c4229 42%,#2e2015 100%);
+  box-shadow:inset 0 1.5px 0 rgb(255 218 158/.8),0 2px 4px rgb(0 0 0/.65);
+}
+.sill::after{ /* the scene's own light grazing the lip */
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(42% 260% at 30% -30%,rgb(255 196 110/.42),transparent 70%),
+             radial-gradient(30% 220% at 74% -30%,rgb(255 176 96/.2),transparent 70%);
+}
+
+/* ------------------------------------------------ THE DECK: one continuous counter */
+.deck{
+  position:relative;flex:none;display:grid;
+  grid-template-columns:minmax(320px,400px) minmax(470px,1fr) minmax(258px,300px);
+  grid-template-rows:auto auto auto;
+  grid-template-areas:"pass channel till" "alert alert alert" "controls controls controls";
+  gap:6px 30px;
+  padding:18px 36px 14px;
+  background:
+    radial-gradient(58% 120px at 30% 0%,rgb(255 170 80/.17),transparent 72%),
+    radial-gradient(40% 90px at 72% 0%,rgb(255 150 60/.1),transparent 72%),
+    linear-gradient(180deg,var(--steel-hi) 0,var(--steel) 110px,#211812 58%,var(--steel-lo) 100%);
+}
+.deck::before{ /* brushed metal */
+  content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(180deg,rgb(255 220 170/.02) 0 1px,transparent 1px 3px);
+}
+.deck h3{
+  margin:0 0 6px;color:var(--ink-4);
+  font:700 10.5px/1.4 var(--sans);letter-spacing:.16em;text-transform:uppercase;
+}
+
+/* the pass and its ticket */
+.pass{grid-area:pass;display:flex;align-items:flex-start;justify-content:center;padding-top:6px}
+.ticket{
+  position:relative;width:100%;max-width:392px;padding:14px 22px 16px;
+  color:var(--paper-ink);
+  background:linear-gradient(160deg,#f4e8cc 0%,var(--paper) 52%,#d9c9a6 100%);
+  transform:rotate(-1.3deg);
+  clip-path:polygon(0 10px,3% 4px,7% 9px,12% 3px,18% 8px,25% 2px,33% 7px,42% 3px,52% 8px,61% 2px,70% 7px,78% 3px,86% 8px,93% 3px,97% 7px,100% 4px,100% 100%,0 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255/.75),
+    0 2px 3px rgb(10 5 2/.55),
+    0 22px 34px -20px rgb(0 0 0/.9);
+  filter:drop-shadow(0 10px 12px rgb(0 0 0/.35));
+}
+.ticket header{
+  display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+  padding:6px 0 10px;border-bottom:1.5px solid #b8a684;
+}
+.ticket__num{font:800 30px/1 var(--mono);letter-spacing:-.01em}
+.ticket__meta{font:600 11.5px/1.3 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--paper-mut)}
+.ticket__want{display:flex;align-items:baseline;gap:12px;margin:9px 0 10px}
+.ticket__want strong{font:800 58px/0.9 var(--mono);font-variant-numeric:tabular-nums}
+.ticket__want span{font:800 19px/1 var(--sans);letter-spacing:.22em;color:#4d3c22}
+.ticket__band{
+  display:flex;align-items:center;justify-content:center;min-height:52px;
+  border-top:1.5px solid #b8a684;border-bottom:1.5px solid #b8a684;
+  background:repeating-linear-gradient(180deg,transparent 0 12px,rgb(120 90 40/.12) 12px 13px);
+}
+.ticket__blank{font:700 10px/1 var(--sans);letter-spacing:.3em;text-transform:uppercase;color:#b8a684}
+.ticket__stamp{
+  padding:7px 18px;transform:rotate(-5deg);
+  color:var(--loss-deep);border:3px solid var(--loss-deep);border-radius:4px;
+  font:800 24px/1 var(--sans);letter-spacing:.14em;
+  mix-blend-mode:multiply;opacity:.88;
+  mask-image:radial-gradient(140% 120% at 44% 40%,#000 55%,rgb(0 0 0/.55) 100%);
+  -webkit-mask-image:radial-gradient(140% 120% at 44% 40%,#000 55%,rgb(0 0 0/.55) 100%);
+}
+.pass__wiped{
+  width:100%;max-width:400px;height:200px;border-radius:8px;
+  background:
+    radial-gradient(70% 60% at 50% 40%,rgb(255 200 130/.05),transparent 75%),
+    linear-gradient(180deg,rgb(255 220 170/.03),transparent 40%);
+  box-shadow:inset 0 2px 10px rgb(0 0 0/.35),inset 0 -1px 0 rgb(255 214 150/.07);
+  display:flex;align-items:center;justify-content:center;
+}
+.pass__wiped span{width:56%;height:3px;border-radius:2px;background:rgb(255 214 150/.1)}
+.pass__done{position:absolute;margin:0;transform:translateY(84px);color:var(--ink-4);font:600 12.5px/1.3 var(--sans)}
+
+/* the plate rail: recessed channel, three tray pans, the unit the student paid for */
+.channel{grid-area:channel;padding-top:6px;min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.channel__count{display:flex;align-items:baseline;gap:10px;margin:0 0 8px}
+.channel__count strong{
+  font:800 50px/0.9 var(--mono);font-variant-numeric:tabular-nums;color:var(--ink-1);
+  text-shadow:0 0 18px rgb(255 190 100/.2);
+}
+.channel__count[data-bare] strong{color:var(--loss)}
+.channel__count::after{content:"";}
+.channel__count span{color:var(--ink-3)}
+.channel__count{color:var(--ink-3);font:500 15px/1.3 var(--sans)}
+.rail{
+  display:inline-flex;gap:12px;flex-wrap:nowrap;align-self:flex-start;
+  padding:12px 14px;border-radius:8px;
+  background:linear-gradient(180deg,#140d08 0%,#1c130c 100%);
+  box-shadow:inset 0 3px 8px rgb(0 0 0/.8),inset 0 -1px 0 rgb(255 200 130/.1),0 1px 0 rgb(255 214 150/.14);
+}
+.tray{
+  display:grid;grid-template-columns:repeat(5,19px);gap:6px 5px;
+  padding:9px 10px;border-radius:4px;
+  background:linear-gradient(180deg,#4a3826 0%,#332416 14%,#241810 100%);
+  box-shadow:inset 0 2px 5px rgb(0 0 0/.7),inset 0 -1px 0 rgb(255 200 130/.12),0 1px 0 rgb(255 214 150/.1);
+}
+.tray i{
+  width:19px;height:19px;border-radius:50%;
+  background:radial-gradient(circle at 40% 32%,#fff0d0 0 16%,#f2ddb0 44%,#dca75c 78%,#8a5c28 100%);
+  box-shadow:0 2px 3px rgb(0 0 0/.55),0 0 7px rgb(255 190 100/.28);
+}
+.tray i[data-gone]{
+  background:radial-gradient(circle at 50% 45%,#0d0805 0 52%,#1f1510 80%,#33241a 100%);
+  box-shadow:inset 0 2px 3px rgb(0 0 0/.85),0 1px 0 rgb(255 214 150/.1);
+}
+
+/* the till: dark glass, amber numerals, and the spike beside it */
+.till{grid-area:till;padding-top:6px;min-width:0}
+.till__glass{
+  display:grid;gap:9px;margin:0;padding:14px 16px;border-radius:8px;
+  background:linear-gradient(180deg,#0f0a06 0%,#171009 100%);
+  box-shadow:inset 0 2px 8px rgb(0 0 0/.85),inset 0 -1px 0 rgb(255 200 130/.08),0 1px 0 rgb(255 214 150/.12);
+}
+.till__glass div{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.till__glass dt{color:var(--ink-3);font:500 13px/1.3 var(--sans)}
+.till__glass dd{margin:0;font:700 17px/1.2 var(--mono);font-variant-numeric:tabular-nums;color:var(--ink-1)}
+.till__glass dd.money{font-size:23px;color:var(--amber-ink);text-shadow:0 0 14px rgb(240 169 74/.4)}
+.till__glass dd[data-loss]{color:var(--loss)}
+.till__spike{display:flex;align-items:center;gap:12px;margin-top:12px;min-height:40px}
+.stack{position:relative;width:58px;height:38px;margin:0;flex:none}
+.stack i{
+  position:absolute;left:2px;right:2px;bottom:2px;height:26px;border-radius:2px;
+  background:linear-gradient(168deg,#efe4c6 0%,#dfd0aa 60%,#c9b78c 100%);
+  transform:translateY(var(--y,0)) rotate(var(--r,0));
+  box-shadow:0 1px 2px rgb(0 0 0/.55),inset 0 1px 0 rgb(255 245 215/.8);
+}
+.stack i b{
+  position:absolute;right:6px;top:5px;width:16px;height:9px;border-radius:1px;
+  border:2px solid rgb(156 39 23/.75);transform:rotate(-6deg);
+}
+.stack__empty{
+  position:absolute;inset:4px 2px;border-radius:3px;
+  border:1.5px dashed rgb(255 214 150/.22);
+}
+.spike__count{margin:0;color:var(--ink-3);font:500 13px/1.3 var(--sans)}
+.spike__count strong{color:var(--ink-1);font:700 16px/1 var(--mono);font-variant-numeric:tabular-nums}
+
+/* the alert: a fact, said once, on its own strip of the counter */
+.alert{
+  grid-area:alert;margin:6px 0 0;padding:12px 18px;border-radius:6px;
+  font:500 15px/1.4 var(--sans);
+}
+.alert strong{font:700 17px/1 var(--mono);font-variant-numeric:tabular-nums}
+.alert--hard{
+  color:#ffb5a9;background:linear-gradient(180deg,#38130d 0%,#2b0f0a 100%);
+  border-left:3px solid var(--loss);
+  box-shadow:inset 0 1px 0 rgb(255 160 140/.14),inset 0 -2px 6px rgb(0 0 0/.5);
+}
+
+/* controls: machined into the counter, unmistakably buttons */
+.controls{grid-area:controls;display:flex;align-items:center;gap:16px;padding-top:6px}
+button{font-family:inherit;cursor:pointer}
+.primary{
+  min-height:48px;padding:0 28px;border:0;border-radius:8px;
+  color:#2a1708;font:800 16.5px/1 var(--sans);letter-spacing:.02em;
+  background:linear-gradient(180deg,#ffc46e 0%,var(--amber) 48%,#d98a2e 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255/.6),
+    inset 0 -2px 0 rgb(120 60 10/.55),
+    0 2px 3px rgb(0 0 0/.55),
+    0 12px 26px -12px rgb(240 169 74/.55);
+}
+.primary:hover{filter:brightness(1.06)}
+.ghost{
+  min-height:46px;padding:0 22px;border-radius:8px;
+  color:var(--ink-2);font:600 14.5px/1 var(--sans);
+  background:linear-gradient(180deg,#33261c 0%,#241a12 100%);
+  border:1px solid #4d372b;
+  box-shadow:inset 0 1px 0 rgb(255 214 150/.14),0 1px 2px rgb(0 0 0/.5);
+}
+.ghost:hover{border-color:#6d4e3c}
+.primary:focus-visible,.ghost:focus-visible,.status:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.progress{margin:0 0 0 auto;color:var(--ink-3);font:500 13.5px/1.4 var(--sans);font-variant-numeric:tabular-nums}
+
+/* ------------------------------------------------ reflow */
+@media (max-width:1140px){
+  .hud li:nth-child(1),.seat{display:none}
+  .deck{grid-template-columns:minmax(272px,340px) minmax(376px,1fr) minmax(216px,260px);gap:8px 20px;padding:14px 24px 12px}
+  .window{min-height:210px}
+  .ticket__want strong{font-size:52px}
+  .channel__count strong{font-size:44px}
+  .tray{grid-template-columns:repeat(5,17px);gap:6px 5px}
+  .tray i{width:17px;height:17px}
+}
+@media (max-height:640px){
+  .window{min-height:162px}
+  .topbar{min-height:44px;padding:4px 20px}
+  .rail{padding:8px 10px;gap:10px}
+  .till__glass{padding:10px 14px;gap:7px}
+  .till__spike{margin-top:8px;min-height:34px}
+  .channel__count strong{font-size:38px}
+  .channel__count{margin-bottom:6px}
+  .wire{bottom:14px;height:88px}
+  .chits li{min-width:86px;padding:18px 10px 7px}
+  .deck{padding-top:14px}
+  .ticket{padding:11px 18px 12px}
+  .ticket__want{margin:7px 0 8px}
+  .ticket__want strong{font-size:42px}
+  .ticket__num{font-size:24px}
+  .ticket__band{min-height:44px}
+  .primary{min-height:46px}
+  .eyebrow{margin-bottom:5px}
+}
+@media (max-width:760px){
+  .stage{min-height:0}
+  .topbar{gap:12px;padding:6px 12px;flex-wrap:wrap;white-space:normal}
+  .hud{gap:12px;margin-left:0}
+  .chip{display:none}
+  .service{padding:8px 12px 0}
+  .window{flex:none;height:auto;min-height:0;display:flex;flex-direction:column}
+  .view{position:relative;left:auto;right:auto;top:auto;bottom:auto;height:132px;margin:30px 12px 0;flex:none}
+  .valance{left:12px;right:12px;top:30px;height:11px;-webkit-mask-size:100% 5px,36px 11px;mask-size:100% 5px,36px 11px;background:repeating-linear-gradient(90deg,#8a3324 0 32px,#7a2c1f 32px 36px,#e8d3ae 36px 68px,#d4bd94 68px 72px)}
+  .window::after{border-left-width:12px;border-right-width:12px;bottom:auto;height:162px}
+  .status{left:12px;font-size:12.5px}
+  .clock{right:10px;top:3px;font-size:12px}
+  /* the wire lands: chits become a row of cards under the view, still the same paper */
+  .wire{position:static;height:auto;pointer-events:auto;margin:10px 12px 12px}
+  .wire__line{display:none}
+  .wire__row{position:static;padding:0;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  .chits{flex-wrap:wrap;gap:10px}
+  .chits li{transform:none;padding:10px 12px 8px;min-width:84px}
+  .chits li::before{display:none}
+  .lane{margin-left:0}
+  .shutter{position:relative;left:auto;right:auto;top:auto;bottom:auto;height:132px;margin:30px 12px 0;flex:none}
+  .deck{order:3;display:flex;flex-direction:column;gap:16px;padding:14px 14px 16px;background:
+    radial-gradient(80% 90px at 40% 0%,rgb(255 170 80/.15),transparent 72%),
+    linear-gradient(180deg,var(--steel-hi) 0,var(--steel) 90px,var(--steel-lo) 100%)}
+  .pass{padding-top:0;justify-content:stretch}
+  .ticket{max-width:none;transform:rotate(-.6deg)}
+  .rail{display:flex;flex-wrap:wrap;gap:10px;align-self:stretch}
+  .controls{flex-wrap:wrap}
+  .progress{margin-left:0;flex-basis:100%}
+  .stage::after{display:none}
+}
+@media (max-width:420px){
+  .hud li:nth-child(2){display:none}
+  .ticket__want strong{font-size:44px}
+  .channel__count strong{font-size:38px}
+}
+
+/* nothing here animates; state changes in the product transition on transform/opacity only,
+   and reduced motion turns even that off */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+}
+</style>
+</head><body>
+
+<div class="stage stage--late" style="--night:0.46;--glow:0.85">
+  <header class="topbar">
+    <span class="bow">BOW<i>◆</i></span>
+    <span class="ident"><small>Run the pop-up</small><b>Riverside Night Market</b></span>
+    <ul class="hud">
+      <li><small>Cash</small><b>$1,666</b></li>
+      <li><small>Stock</small><b>$200 <span>3 trays</span></b></li>
+      <li><small>Sold</small><b>27 <span>plates</span></b></li>
+      <li><small>Where you are</small><b>Saturday 1 of 4</b></li>
+    </ul>
+    <span class="chip">The market</span>
+    <span class="seat">VHAAK · SEAT 4</span>
+  </header>
+
+  <main class="service">
+    <p class="eyebrow">Saturday 1 — your window is open</p>
+
+    <section class="booth" aria-labelledby="h-late">
+      <div class="window">
+        <h2 class="status" id="h-late" tabindex="-1">You are serving customers.</h2>
+        <p class="clock" aria-label="Time at the market">20:40</p>
+        <div class="view" role="img" aria-label="The market lane at dusk beyond your window: stalls, string lights, people passing.">
+          <div class="view__plate"></div>
+          <div class="view__night"></div>
+          <div class="view__glow"></div>
+          <div class="view__occlusion"></div>
+        </div>
+        <div class="valance" aria-hidden="true"></div>
+        
+        <div class="wire">
+          <svg class="wire__line" viewBox="0 0 100 12" preserveAspectRatio="none" aria-hidden="true"><path d="M0 4.2 Q 50 13.2 100 3.2" fill="none" stroke="rgb(10 5 2 / 0.8)" stroke-width="2.4" vector-effect="non-scaling-stroke"/><path d="M0 3 Q 50 12 100 2" fill="none" stroke="rgb(255 214 150 / 0.6)" stroke-width="1.4" vector-effect="non-scaling-stroke"/></svg>
+          <div class="wire__row">
+            <ul class="chits" aria-label="Waiting to order">
+<li style="--tilt:-2.2deg;--drop:0px">
+        <span class="chit__num">#22</span>
+        <span class="chit__want">3 plates</span>
+      </li>
+<li style="--tilt:1.6deg;--drop:7px">
+        <span class="chit__num">#23</span>
+        <span class="chit__want">3 plates</span>
+      </li>
+<li style="--tilt:-1.1deg;--drop:3px">
+        <span class="chit__num">#24</span>
+        <span class="chit__want">2 plates</span>
+      </li>
+            </ul>
+            <p class="lane"><strong>11</strong> in the lane</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="sill" aria-hidden="true"></div>
+
+      <div class="deck">
+        <div class="pass">
+          <article class="ticket" aria-label="Order 21: 3 plates, arrived 20:40">
+      <header><span class="ticket__num">#21</span><span class="ticket__meta">arrived 20:40</span></header>
+      <p class="ticket__want"><strong>3</strong> <span>PLATES</span></p>
+      <div class="ticket__band"><span class="ticket__blank" aria-hidden="true">stamp</span></div>
+    </article>
+        </div>
+
+        <div class="channel">
+          <h3>Plates on the counter</h3>
+          <p class="channel__count" ><strong>3</strong> plates left</p>
+          <div class="rail" aria-hidden="true">
+<div class="tray"><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i></div><div class="tray"><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i></div><div class="tray"><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i data-gone=""></i><i></i><i></i><i></i></div>
+          </div>
+        </div>
+
+        <div class="till">
+          <h3>Tonight so far</h3>
+          <dl class="till__glass">
+            <div><dt>Money taken</dt><dd class="money">$324</dd></div>
+            <div><dt>Plates sold</dt><dd>27</dd></div>
+            <div><dt>Turned away</dt><dd >0</dd></div>
+          </dl>
+          <div class="till__spike">
+            <figure class="stack" aria-hidden="true"><i style="--r:-2.4deg;--y:0px"></i><i style="--r:1.8deg;--y:-4px"></i><i style="--r:-1.2deg;--y:-8px"><b></b></i></figure>
+    <p class="spike__count"><strong>20</strong> tickets</p>
+          </div>
+        </div>
+
+        
+
+        <div class="controls">
+          <button type="button" class="primary">Stamp &amp; serve</button>
+          <button type="button" class="ghost" aria-pressed="false">Serve automatically</button>
+          <p class="progress" aria-live="polite">Order 21 of 24.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+</body></html>

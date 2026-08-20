@@ -15,15 +15,19 @@ import type { Coverage, Mapping, StandardCompletionRule } from "../types";
  * other direction, NYSED 2.1 is three skills wearing one number and 4.1 is two, which is
  * what the completion rules at the bottom of this file exist for.
  *
- * **Four rows are deliberately `partial` where the objective's own verb asks for more than
+ * **Two rows are deliberately `partial` where the objective's own verb asks for more than
  * a decision competency provides.** 1.6 asks for a comparison across four payment methods
- * and `choose-how-to-pay` reaches one; 2.3 and 2.4 say "Explain" and "Describe" and
- * `keep-credit-costs-down` has `explanationRequired: false`; 4.4's second clause asks the
- * student to recommend an action and `protect-your-information` has the same false. Each of
- * the four is real evidence toward its objective and none of the four is the whole of it,
- * and none has a completion rule — no other competency covers what is missing, so writing
- * one would invent a "yes" the model cannot back. `mappingIntegrity.test.ts` names all four
- * so a fifth all-partial objective still fails the build until a person makes the same call.
+ * and `choose-how-to-pay` reaches one; 4.4's second clause asks the student to recommend an
+ * action and `protect-your-information` has `explanationRequired: false`. Both are real
+ * evidence toward their objective and neither is the whole of it, and neither has a
+ * completion rule — no other competency covers what is missing, so writing one would invent
+ * a "yes" the model cannot back. `mappingIntegrity.test.ts` names them so a new all-partial
+ * objective still fails the build until a person makes the same call.
+ *
+ * **There were four.** 2.3 and 2.4 were on that list for the same reason, and they left it
+ * the way a capped row is supposed to: not by re-reading the mapping, but by the competency
+ * behind it gaining the evidence the objectives were asking for. That is the only honest
+ * route off this list, and the note beside those two rows says what it cost.
  *
  * No row here is inferred. Each was written by a person and carries a `verifiedOn` date.
  */
@@ -82,14 +86,21 @@ export const NYSED_2026_MAPPINGS: readonly Mapping[] = [
   row("sort-by-need-want-goal", "2.1", "partial", "Covers the 'needs versus wants' part the objective names first."),
 
   row("decide-to-borrow", "2.2", "full", "Deciding whether borrowing is worth it for a specific purchase, and saying when it helps and when it hurts, is the objective."),
-  // 2.3's verb is "Explain," and `keep-credit-costs-down` has `explanationRequired: false` —
-  // nothing in it requires the student to say why paying in full beats paying the minimum,
-  // only to do it. Running the strategies forward is real evidence toward the objective; it
-  // is not the explanation the objective's own sentence asks for.
-  row("keep-credit-costs-down", "2.3", "partial", "Runs the strategies — paying in full, paying on time, minding the billing cycle — forward as decisions, which is evidence toward 2.3's demand but not the explanation its verb asks for; this competency does not require one."),
-  // Same gap, same competency, one objective over: 2.4 says "Describe," and living through a
-  // missed payment's consequences is not describing them.
-  row("keep-credit-costs-down", "2.4", "partial", "Has the student live through a missed payment's fee, rate change and longer payoff, which is evidence toward 2.4's demand but not the description its verb asks for; this competency does not require one."),
+  // 2.3 and 2.4 were `partial` for one reason: their verbs are "Explain" and "Describe," and
+  // `keep-credit-costs-down` asked the student to run the strategies forward without ever
+  // asking them to say anything. That was an accurate reading of the competency as it stood.
+  //
+  // The competency changed — er5 and er6, both required, both explanations — and the reason
+  // it changed is in `competencies.ts` beside them. It is worth repeating here because this
+  // is the file where the promotion cashes out: the rows were not added to move these two
+  // cells. They were added because a student can pass er1–er4 by paying the larger number
+  // whenever it is offered and reading the balance after a miss, and that student has a
+  // procedure rather than a strategy. The objectives' verbs and the competency's own claim
+  // wanted the same thing, which is the only condition under which a written row is worth
+  // what it costs — and it costs plenty: this competency is all-or-none, so a Module 2 world
+  // now produces six rows for it rather than four, on 2.1 as well as on these two.
+  row("keep-credit-costs-down", "2.3", "full", "The student runs the strategies — paying more than was asked, clearing the balance, not letting it run — and then explains which one kept their own total down, pointing at a figure from their own months. That is 2.3's verb over 2.3's content."),
+  row("keep-credit-costs-down", "2.4", "full", "The student lives through the missed payment's fee, changed rate and longer payoff, and then says what it went on costing after the fee — which is the described effect on the agreement 2.4 asks for, against the misconception that a late payment is a late fee."),
 
   // ── Topic 3 — Earning Income ───────────────────────────────────────────────────────
   row("compare-earning-paths", "3.1", "full", "Comparing the education, training and skills several careers require against what each pays is the objective."),

@@ -6,6 +6,7 @@ import { StudentChallenge } from "./stages/StudentChallenge";
 import { EducatorGuide } from "./educator/EducatorPages";
 import { SampleRun } from "./educator/SampleRun";
 import { MyClasses } from "./educator/MyClasses";
+import { AssignmentBuilder } from "./educator/AssignmentBuilder";
 import { TeacherSignIn } from "./educator/SignIn";
 import { AssignFlow, ObjectiveDetail, ObjectiveList } from "./educator/ObjectivePages";
 import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPages";
@@ -21,6 +22,7 @@ import { StudentHome } from "./student/Home";
 import { RunReport } from "./student/RunReport";
 import { ResumeGate } from "./student/ResumeGate";
 import { PLAYABLE_WORLDS } from "./domain/scenario/registry";
+import { WorldArt } from "./components/primitives/WorldArt";
 import { DEMO_CLASS_CODE } from "./fixtures/demoClass";
 
 /** A seat-scoped demo route redirected to its real-class equivalent, param and all. */
@@ -43,46 +45,73 @@ function DemoStudentRedirect() {
  * that is not attached to a class produces evidence nobody can read.
  */
 function Home() {
+  /* The second door is offered only when this browser actually holds a session for it to
+     open. Without that check it led to `/home`, which sends a student with no session
+     straight back to `/join` — so on a new tab, a cleared browser or a school-managed
+     machine the returning student was offered a door that was the door they had just
+     declined, and the two screens were byte-identical. */
+  const returning = studentToken();
   return (
-    <main className="home scene">
+    <main className="home ground-dark">
+      {/* The light in the room. One violet bloom behind the headline and one warm one under
+          the worlds, so the page has a direction to it rather than being flat dark. */}
+      <div className="home__aurora" aria-hidden="true" />
+
       <header className="home__bar">
         <AppMark />
         <Link to="/educator/guide">For educators</Link>
       </header>
-      <section className="home__grid">
-        <div className="home__copy">
-          <p className="eyebrow">{PLAN_UNDER_PRESSURE.pillar} · {PLAN_UNDER_PRESSURE.grades}</p>
-          <h1>Somebody has to decide where the money goes.</h1>
-          <p className="home__deck">
-            {/* "Story", not "world". The educator surface has just been moved onto one set of
-                words and this is the first sentence anybody reads; a front door speaking the
-                schema is where a vocabulary starts coming back. */}
-            Two stories, one job. {PLAYABLE_WORLDS.map((world) => world.title).join(" or ")} — you handle the money,
-            and you find out what your decisions cost.
-          </p>
-          {/* Two buttons that were the same door. "Come back to my class" led to `/home`, which
-              sends a student with no session straight to `/join` — so on a new tab, a cleared
-              browser or a school-managed machine the returning student was offered a door that
-              was the door they had just declined, and the two screens were byte-identical. The
-              second one is offered only when this browser actually holds a session for it to
-              open, which is the only case where it goes anywhere the first one does not. */}
-          <div className="home__actions">
-            <Link className="button button--primary" to="/join">I have a class code</Link>
-            {studentToken() && <Link className="button button--secondary" to="/home">Come back to my class</Link>}
-          </div>
+
+      <section className="home__hero">
+        <p className="home__eyebrow">{PLAN_UNDER_PRESSURE.pillar} · {PLAN_UNDER_PRESSURE.grades}</p>
+        <h1>Somebody has to decide where the money goes.</h1>
+        {/* "Story", not "world", was the old vocabulary here and it has been retired: the
+            educator surface, the registry and the student's own chooser all say world, and a
+            front door speaking a schema nothing else uses is where a vocabulary starts
+            coming apart. */}
+        <p className="home__deck">
+          Pick a world and you are the one handling the money in it. Every call you make
+          changes what happens next — and you find out what it cost the way you would in
+          life, weeks later, when it is too late to take it back.
+        </p>
+        <div className="home__actions">
+          <Link className="button button--primary" to="/join">I have a class code</Link>
+          {returning && <Link className="button button--secondary" to="/home">Come back to my class</Link>}
         </div>
-        <aside className="home__side">
-          <ul className="home__worlds">
-            {PLAYABLE_WORLDS.map((world) => (
-              <li key={world.id} data-world={world.id}>
-                <strong>{world.title}</strong>
-                <span>{world.subtitle}</span>
-                <span className="home__worlds-length">{world.durationMinutes.min}–{world.durationMinutes.max} minutes</span>
-              </li>
-            ))}
-          </ul>
-        </aside>
       </section>
+
+      <section className="home__worlds-section" aria-labelledby="home-worlds">
+        <h2 className="stamp" id="home-worlds">Choose your world</h2>
+        <ul className="home__worlds">
+          {PLAYABLE_WORLDS.map((world) => (
+            <li key={world.id} className="world-card" data-world={world.id}>
+              <div className="world-card__art">
+                <WorldArt world={world.id} />
+              </div>
+              <div className="world-card__body">
+                <h3>{world.title}</h3>
+                <p>{world.subtitle}</p>
+                <span className="world-card__length">
+                  {world.durationMinutes.min}–{world.durationMinutes.max} minutes
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {/* The one sentence that carries the product's whole claim, on the screen a district
+            evaluator meets first. Both worlds are judged against the same named parts of the
+            work, which is what makes the choice above safe to offer. */}
+        <p className="home__worlds-note">
+          Different worlds, the same job. Whichever you pick, your teacher gets the same set
+          of skills back — so the choice is yours to make on what you find interesting.
+        </p>
+      </section>
+
+      <footer className="home__foot">
+        <span>BOW Decision Challenges</span>
+        <Link to="/privacy">Data protection</Link>
+        <Link to="/educator/guide">Teacher&rsquo;s guide</Link>
+      </footer>
     </main>
   );
 }
@@ -120,6 +149,10 @@ export function App() {
           a year-planning surface, not the thing a teacher opens mid-week. */}
       <Route path="/educator" element={<Navigate to="/educator/classes" replace />} />
       <Route path="/educator/classes" element={<MyClasses />} />
+      {/* The real builder: pick a learning goal, and BOW shows only the stories it can prove
+          are compatible — §0 of the ruling, made into a screen. Reachable with an objective
+          already chosen (`?objective=`) or a class already chosen (`?classCode=`), or neither. */}
+      <Route path="/educator/assignments/new" element={<AssignmentBuilder />} />
       {/* The door a teacher did not have. A class used to be a code and a key in one browser,
           so a reimaged laptop destroyed a term of assessed work — and every endpoint behind
           this screen had been answering correctly for hours with nothing calling them. */}

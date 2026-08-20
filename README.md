@@ -207,6 +207,20 @@ not exist.
 Evidence is mapped to the NYSED Grades 5–8 Personal Finance Education Learning Objectives.
 BOW publishes the mapping as its own claim: **NYSED has not reviewed or endorsed BOW.**
 
+A mapping is a claim that a competency covers part of an objective. It says nothing about
+whether anything exists that can watch a student do it, and the two are worth keeping apart
+in your head: **1 of the 23 objectives is demonstrable today, and one of NYSED's five topics
+has any demonstrable objective at all.** `MODULE_COVERAGE.md` is the whole picture, topic by
+topic, generated from the code:
+
+```
+npx tsx scripts/module-coverage.ts
+```
+
+`moduleCoverage.test.ts` regenerates it and fails if the committed copy has drifted, because
+a coverage table is the most reliable lie in education software — written once, when it is
+true, and never opened again by the work that makes it false.
+
 ## Checking that a commit builds
 
 `scripts/verify-head.sh` exports a commit to a clean directory and runs the real build
@@ -220,8 +234,17 @@ scripts/verify-head.sh <ref>    # any commit
 It exists because `tsc -b`, `eslint` and `vitest` all run against the working tree, which is
 not what gets pushed. A tree that holds both a deleted module and the edit removing its import
 type-checks and tests green while the commit — which took the deletion and left the import —
-will not load a single page. Adding a file and forgetting to stage it fails loudly for the next
-person; deleting one does not fail for anybody until they check out.
+will not load a single page.
+
+This used to add that the opposite mistake, writing a file and forgetting to stage it, "fails
+loudly for the next person". **It does not fail loudly here, and the sentence is part of why.**
+`d6ec525` committed `import { disclosureEscape } from "../components/primitives/disclosureEscape"`
+and never committed the file. `main` did not typecheck, did not build, and failed eleven tests
+for the **68 commits** that followed — through the final build round, six judges' verdicts, an
+adversarial synthesis and a merged pull request — because the loud failure needs somebody to
+check the commit out, and in a repository where the work happens in one long-lived tree nobody
+does. Both mistakes are silent here, for the same reason. Run this after **any** commit that
+changes which files exist, not only after a deletion.
 
 ## Deployment
 

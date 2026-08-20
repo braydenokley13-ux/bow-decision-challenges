@@ -6,7 +6,7 @@ import { CODE_LENGTH, isWellFormedClassCode, normaliseClassCode } from "../platf
 import { MAX_DISPLAY_NAME, type ClassDoor, type DeviceClass } from "../platform/identity/types";
 import { ReadingTools } from "./reading";
 import { STUDENT_COPY } from "../content/studentCopy";
-import { claimSeat, readClassDoor, rememberStudent, rememberStudentId, studentIdHeld } from "./session";
+import { claimSeat, joinCodeHeld, readClassDoor, rememberJoinCode, rememberStudent, rememberStudentId, studentIdHeld } from "./session";
 import { clearEveryAttempt } from "../domain/io/persistence";
 
 /**
@@ -38,9 +38,22 @@ import { clearEveryAttempt } from "../domain/io/persistence";
  * The device question is asked once, in one sentence, and defaults to **shared**. A cart
  * Chromebook is the normal case in the rooms this runs in, and a session measured in weeks on
  * one is how the next student ends up inside the last one's attempt.
+ *
+ * An open class hands its own student a join code the first time they sign in — the same code
+ * a roster class prints on a card — and it is shown exactly once, here, in the `"issued"` step
+ * below. A roster class has a durable credential outside the browser: the printed card. An
+ * open class does not, and a shared-device session lasts ten hours with no way to renew it, so
+ * a student who was never shown that code and comes back tomorrow has no way in but retyping
+ * their name — which mints a second seat, a second account, and leaves the first one's board
+ * empty under it. `platform/identity/token.ts` also remembers the code for the account it
+ * belongs to, so `findClass` below can recognise the *browser* on the next visit — but a
+ * recognised browser is not a recognised child, and a cart is handed to a different one every
+ * day, so it asks on the `"recognized"` step rather than filling the code in on its own. Only a
+ * "yes" moves it where it is visible, and a different child on the same cart still meets a
+ * blank name box after answering honestly, exactly as they did before this existed.
  */
 
-type Step = "code" | "card" | "name";
+type Step = "code" | "card" | "name" | "recognized" | "issued";
 
 /** One id, because one step is on screen at a time and each step has one field. */
 const PROBLEM_ID = "join-problem";
@@ -67,6 +80,25 @@ export function StudentJoin() {
   const [device, setDevice] = useState<DeviceClass>("shared");
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** Whether the "card" step's code was filled in because this browser recognised the class,
+   * rather than typed or pasted by the student — see `findClass`. Changes the heading and
+   * offers a way out for the child it is wrong about. */
+  const [recognized, setRecognized] = useState(false);
+  /**
+   * A code this browser is holding for the class just entered, waiting on the "recognized"
+   * step's honest yes/no before it is shown to anybody.
+   *
+   * `findClass` finding a match is a fact about the *browser* — it says nothing about who is
+   * sitting at it right now, and a shared cart is handed to a different child every day. So a
+   * match does not fill the code in on its own; it asks first, in the same register the device
+   * question already asks "is this yours" — a plain question a child with no reason to lie
+   * answers honestly. Only "Yes" moves it into `joinCode` where it becomes visible.
+   */
+  const [pendingRecognition, setPendingRecognition] = useState<{ joinCode: string } | null>(null);
+  /** The code just minted for a brand-new open-class seat, on its way to the `"issued"` step.
+   * Held here rather than read back off the response a second time, because the service will
+   * not say it again — this is the one render that gets to. */
+  const [issuedCode, setIssuedCode] = useState("");
   /**
    * The box the message is about, and where the message and the focus both go.
    *
@@ -122,24 +154,45 @@ export function StudentJoin() {
     if (!isWellFormedClassCode(classCode)) { sayHowLongTheCodeIs(); return; }
     setBusy(true);
     setProblem(null);
-    const result = await readClassDoor(normaliseClassCode(classCode));
+    const normalised = normaliseClassCode(classCode);
+    const result = await readClassDoor(normalised);
     setBusy(false);
     if (!result.ok) {
       setProblem(result.message);
       return;
     }
     setDoor(result.body);
-    // A class with a list gets the card. A class without one gets the name box, and the card is
-    // one press away for the student who has been here before.
-    setStep(result.body.joinMode === "roster" ? "card" : "name");
+    if (result.body.joinMode === "roster") { setRecognized(false); setPendingRecognition(null); setStep("card"); return; }
+    // Open class: no list, so normally this is the name box. But if this exact browser is
+    // already holding the code this exact account was issued — see `token.ts` — asking for the
+    // name again would mint a second seat and orphan the first one's work under it. So this
+    // checks first, rather than making them remember or retype it. `studentIdHeld()` is what
+    // keeps the *check* safe on a shared cart: it is whichever account last signed in on this
+    // browser, and it changes the moment a different child does — the same guarantee
+    // `sharedDevice.test.tsx` holds for clearing a stranger's draft. It is not, on its own, a
+    // guarantee about who is sitting at the keyboard *right now* — a cart is handed to a
+    // different child every day without anybody signing in between — so a match asks on the
+    // `"recognized"` step rather than filling the code in and offering `Go in` immediately.
+    const remembered = joinCodeHeld(normalised);
+    if (remembered) {
+      const stillHere = remembered.studentId === studentIdHeld();
+      setPendingRecognition(stillHere ? remembered : null);
+      setRecognized(false);
+      setStep(stillHere ? "recognized" : "name");
+      return;
+    }
+    setRecognized(false);
+    setPendingRecognition(null);
+    setStep("name");
   };
 
   const finish = async (over: { joinCode?: string; displayName?: string }) => {
     if (busy) return;
     setBusy(true);
     setProblem(null);
+    const normalised = normaliseClassCode(classCode);
     const result = await claimSeat({
-      classCode: normaliseClassCode(classCode),
+      classCode: normalised,
       device,
       ...(over.joinCode ? { joinCode: over.joinCode } : {}),
       ...(over.displayName !== undefined ? { displayName: over.displayName } : {}),
@@ -164,6 +217,17 @@ export function StudentJoin() {
     if (studentIdHeld() !== result.body.studentId) clearEveryAttempt();
     rememberStudent(result.body.token);
     rememberStudentId(result.body.studentId);
+    if (result.body.joinCode) {
+      // Handed back once, on the join that mints it (`server/identity.ts`) — an open class has
+      // no card, so this is the only credential this account will ever have, and it was never
+      // shown to the student before this line existed. Kept here as well as shown, so the same
+      // browser can offer it straight back (`findClass`, above) instead of making them retype
+      // it from paper the next time their session dies.
+      rememberJoinCode(normalised, result.body.joinCode, result.body.studentId);
+      setIssuedCode(result.body.joinCode);
+      setStep("issued");
+      return;
+    }
     void navigate("/home", { replace: true });
   };
 
@@ -229,9 +293,46 @@ export function StudentJoin() {
         </Step>
       )}
 
-      {step === "card" && (
-        <Step key="card" heading="Type the code on your card.">
+      {step === "recognized" && (
+        <Step key="recognized" heading="Have you signed in here before?">
+          {/* The one honest question standing between a browser that recognises the class and
+              a code it will not otherwise show anybody. A cart Chromebook is handed to a
+              different child every day with nobody signing out of it in between, so what this
+              browser remembers is a fact about the *machine*, not about who is at the keyboard
+              — the same reason `DeviceChoice` below asks "whose computer is this" instead of
+              assuming. A child this is wrong about has no reason to say yes to it. */}
           <p>{door?.label}</p>
+          <p>This computer was signed in to this class before. Was that you?</p>
+          {problem && <Problem>{problem}</Problem>}
+          <Button
+            variant="primary"
+            onClick={() => { setJoinCode(pendingRecognition?.joinCode ?? ""); setRecognized(true); setProblem(null); setStep("card"); }}
+          >
+            Yes — that was me
+          </Button>
+          <Button
+            variant="quiet"
+            onClick={() => { setPendingRecognition(null); setRecognized(false); setProblem(null); setStep("name"); }}
+          >
+            No — I am new here
+          </Button>
+        </Step>
+      )}
+
+      {step === "card" && (
+        <Step
+          key="card"
+          heading={recognized ? "Is this still you?" : door?.joinMode === "open" ? "Type the code you were given." : "Type the code on your card."}
+        >
+          <p>{door?.label}</p>
+          {/* This is the one difference between a code the student typed and a code the browser
+              filled in after "recognized" said yes. Nothing about it is a login on its own:
+              `Go in` still round-trips the service, which still checks it against the account
+              it was issued to — this is only what tells the child looking at a filled-in box
+              why it is already full. */}
+          {recognized && (
+            <p className="join-step__note">You said this was you, so the code you were given is already here.</p>
+          )}
           <label className="field" htmlFor="join-code">
             <span className="field-label">Your code</span>
             <input
@@ -244,7 +345,7 @@ export function StudentJoin() {
               spellCheck={false}
               ref={field}
               {...invalid}
-              onChange={(event) => { setJoinCode(event.target.value.toUpperCase()); setProblem(null); }}
+              onChange={(event) => { setJoinCode(event.target.value.toUpperCase()); setProblem(null); setRecognized(false); }}
               onKeyDown={(event) => { if (event.key === "Enter" && joinCode.length >= 4) void finish({ joinCode }); }}
             />
           </label>
@@ -253,8 +354,24 @@ export function StudentJoin() {
           <Button variant="primary" aria-disabled={joinCode.length < 4 || busy} onClick={() => void finish({ joinCode })}>
             {busy ? "Going in…" : "Go in"}
           </Button>
-          <Button variant="quiet" onClick={() => { setStep("code"); setJoinCode(""); setProblem(null); }}>Different class</Button>
-          <p className="join-step__note">Lost your card? Ask your teacher — they can print you a new one.</p>
+          {recognized ? (
+            // Not "Different class" — the class code the student typed is still right, only the
+            // account this browser guessed might not be. Sending them to "code" would make them
+            // retype a code that was never wrong.
+            <Button
+              variant="quiet"
+              onClick={() => { setRecognized(false); setPendingRecognition(null); setJoinCode(""); setProblem(null); setStep("name"); }}
+            >
+              Not you? Start fresh
+            </Button>
+          ) : (
+            <Button variant="quiet" onClick={() => { setStep("code"); setJoinCode(""); setProblem(null); }}>Different class</Button>
+          )}
+          <p className="join-step__note">
+            {door?.joinMode === "open"
+              ? "Lost the code? Sign in on the device you used the first time — BOW may remember it there. Otherwise, ask your teacher."
+              : "Lost your card? Ask your teacher — they can print you a new one."}
+          </p>
         </Step>
       )}
 
@@ -283,7 +400,30 @@ export function StudentJoin() {
           </Button>
           {/* Typing the name again would make a second student with the same name and none of
               the first one's work. The code they were given the first time is the way back. */}
-          <Button variant="quiet" onClick={() => { setStep("card"); setProblem(null); }}>I have been here before</Button>
+          <Button variant="quiet" onClick={() => { setRecognized(false); setJoinCode(""); setStep("card"); setProblem(null); }}>
+            I have been here before
+          </Button>
+        </Step>
+      )}
+
+      {step === "issued" && (
+        <Step key="issued" heading="Write this code down.">
+          {/* The bug this screen exists to close: the service handed this code back exactly
+              once, `Join.tsx` threw it away, and a student whose shared-device session expired
+              overnight had no way back in but retyping their name — a second seat, a second
+              account, an empty board under it, while the very next screen this student would
+              meet warned them "I have been here before" and pointed at a code nobody had shown
+              them. See `RULING.md` §5 and `identity.ts`'s join route. */}
+          <p>BOW will not show you this again. It is how you get back to <strong>this</strong> board — not a new one — if you are signed out.</p>
+          <div className="class-created__code">
+            <p className="field-label">Your code</p>
+            <strong>{issuedCode}</strong>
+            <p>Not case sensitive.</p>
+          </div>
+          <p className="join-step__note">
+            This browser will offer it back to you next time. Writing it down also gets you in from a different one.
+          </p>
+          <Button variant="primary" onClick={() => void navigate("/home", { replace: true })}>I&rsquo;ve written it down</Button>
         </Step>
       )}
     </main>

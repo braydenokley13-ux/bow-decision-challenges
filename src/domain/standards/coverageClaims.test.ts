@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { WorldEvidenceCoverage } from "../competency/availability";
 import { BUILT_WORLD_COVERAGE, availableCompetencyIds, worldsAssessing } from "../competency/availability";
 import { COMPETENCIES, competencyById, evidenceRequirementById, requiredEvidenceRequirementsFor } from "../competency/competencies";
+import { competencyContract } from "../competency/contract";
 import type { CompetencyId } from "../competency/types";
 import { NYSED_2026_STANDARDS } from "./frameworks/nysed-2026";
 import { NYSED_2026_MAPPINGS } from "./mappings/nysed-2026";
@@ -41,6 +42,7 @@ function worldProducing(competencyId: CompetencyId): WorldEvidenceCoverage {
     worldId: "basketball",
     competencyId,
     producedEvidenceRequirementIds: requiredEvidenceRequirementsFor(competencyId).map((requirement) => requirement.id),
+    contract: competencyContract(competencyId),
   };
 }
 
@@ -192,6 +194,7 @@ describe("what BOW may claim about an objective", () => {
         worldId: "basketball",
         competencyId: "plan-within-income",
         producedEvidenceRequirementIds: required.slice(0, -1).map((requirement) => requirement.id),
+        contract: competencyContract("plan-within-income"),
       };
       expect(availableCompetencyIds([nearlyThere]).has("plan-within-income")).toBe(false);
       expect(isAssessable(ref("1.3"), availableCompetencyIds([nearlyThere]))).toBe(false);
@@ -204,7 +207,12 @@ describe("what BOW may claim about an objective", () => {
       const unwritten = COMPETENCIES.filter((competency) => competency.evidenceRequirements.length === 0);
       expect(unwritten.length).toBeGreaterThan(0);
       for (const competency of unwritten) {
-        const claim: WorldEvidenceCoverage = { worldId: "basketball", competencyId: competency.id, producedEvidenceRequirementIds: [] };
+        const claim: WorldEvidenceCoverage = {
+          worldId: "basketball",
+          competencyId: competency.id,
+          producedEvidenceRequirementIds: [],
+          contract: competencyContract(competency.id),
+        };
         expect(availableCompetencyIds([claim]).has(competency.id), competency.id).toBe(false);
       }
     });

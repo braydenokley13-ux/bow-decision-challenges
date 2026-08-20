@@ -57,19 +57,51 @@ export function useStageArrival(heading: RefObject<HTMLElement | null>, stage: s
  * takes a third of the window, and a browser scrolling a control into view puts it underneath.
  * The bar knows its own height, so it says so, and every scroll the browser performs — moving
  * focus to a heading, revealing a section, following an anchor — stops short of it.
+ *
+ * **Then it took the whole window, and the fix became the defect.** Measured at 400% zoom on a
+ * 1280×1024 screen — 320×256 CSS pixels — the bar wraps far enough to stand 456px tall, and this
+ * hook reserved `468px` of scroll padding inside a viewport `256px` high. A reserve nearly twice
+ * the window does not put a scrolled-to control under the bar; it puts it **212 pixels below the
+ * bottom of the screen**, because "align this element 468px from the top of the scrollport" is
+ * still what the browser does when there is no 468px to be had. A student who needs large text
+ * could not reach the button that takes a booth: every scroll that would have shown it —
+ * tabbing to it, a focus move, an anchor — parked it off the bottom instead. `market booths
+ * unusable at 400% zoom` was filed as a layout problem; it was this.
+ *
+ * Two rules follow, and both are about the reserve being a claim on space that has to exist:
+ *
+ * - **Never reserve more than a third of the window.** Past that the reserve costs more
+ *   operability than the bar it protects, whatever the bar's height says.
+ * - **Reserve nothing when the bar is not actually pinned.** `scenes.css` un-pins this chrome
+ *   below 480px of viewport height, precisely because a bar taking most of a short window is
+ *   worse than a bar that scrolls away — and a bar that scrolls away needs no reserve at all.
+ *   The hook reads the computed position rather than re-deriving that rule, so the stylesheet
+ *   stays the one place it is decided.
+ *
+ * The window listener is not redundant with the `ResizeObserver`: zooming changes the viewport
+ * without necessarily changing the bar's own box, and the cap is a fraction of the viewport.
  */
 export function usePinnedTopBar(bar: RefObject<HTMLElement | null>): void {
   useEffect(() => {
     const element = bar.current;
     if (!element || typeof ResizeObserver === "undefined") return;
     const measure = () => {
-      document.documentElement.style.scrollPaddingTop = `${Math.ceil(element.getBoundingClientRect().height) + 12}px`;
+      const pinned = getComputedStyle(element).position;
+      if (pinned !== "sticky" && pinned !== "fixed") {
+        document.documentElement.style.scrollPaddingTop = "";
+        return;
+      }
+      const wanted = Math.ceil(element.getBoundingClientRect().height) + 12;
+      const cap = Math.floor(window.innerHeight / 3);
+      document.documentElement.style.scrollPaddingTop = `${Math.max(0, Math.min(wanted, cap))}px`;
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);
+    window.addEventListener("resize", measure);
     return () => {
       observer.disconnect();
+      window.removeEventListener("resize", measure);
       document.documentElement.style.scrollPaddingTop = "";
     };
   }, [bar]);

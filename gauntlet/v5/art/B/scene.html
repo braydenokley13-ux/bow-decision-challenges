@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Pass — Direction B: Stylized Management Game</title>
+<style>
+/* =========================================================================
+   DIRECTION B — STYLIZED MANAGEMENT GAME
+   One hand, one light, one family of objects.
+
+   Rules this file obeys everywhere:
+   - Every object = 3-value material ramp + one top highlight + one hard
+     (zero-blur) drop shadow whose offset states its elevation.
+   - Light comes from the bulb string: highlights on top edges, shadows
+     straight down. No second light source anywhere.
+   - Radii family: 6 / 10 / 16. Nothing else.
+   - Text never sits on an unchecked ground. Art is aria-hidden; every fact
+     is HTML text.
+   - No animation. Hover/press transitions only under
+     prefers-reduced-motion: no-preference.
+   ========================================================================= */
+:root {
+  /* night */
+  --night-0:#0d0705; --night-1:#180d09; --night-2:#2a1712;
+  /* WOOD */
+  --wood-hi:#a8825c; --wood-mid:#7c573b; --wood-dk:#553823; --wood-line:#3c2718;
+  /* STEEL */
+  --steel-hi:#e2e8ec; --steel-mid:#aab3ba; --steel-dk:#6b7178; --steel-deep:#454d54;
+  /* PAPER (manila) */
+  --paper-hi:#f8efdc; --paper-mid:#efe3c4; --paper-dk:#d6c49c;
+  --paper-ink:#3a2c14; --paper-sub:#675426;
+  /* inks on dark */
+  --cream:#f7ecd9; --cream-dim:#d8c3a4; --cream-mute:#b99b78;
+  /* the one warm mark */
+  --amber:#f0a94a; --amber-hi:#ffd48a; --amber-deep:#b06d1d;
+  /* money + loss, from the world's fin tokens */
+  --green:#4ecf95; --red:#ff8574; --red-ink:#8f2413;
+  /* shadows: hard, straight down. offset = elevation */
+  --drop-sit: drop-shadow(0 7px 0 rgb(10 5 2 / .42));      /* sits on counter */
+  --drop-hang: drop-shadow(0 10px 0 rgb(10 5 2 / .32));    /* hangs from wire */
+  --drop-flat: drop-shadow(0 4px 0 rgb(10 5 2 / .45));     /* pinned flat */
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin:0; padding:0; }
+body {
+  width:1366px; height:768px; overflow:hidden;
+  background: var(--night-0);
+  font-family: var(--font);
+  color: var(--cream);
+}
+
+/* ---- top bar: the shell, kept quiet -------------------------------------- */
+.topbar {
+  height:48px; display:flex; align-items:center; gap:18px; padding:0 22px;
+  background:#241a15; border-bottom:3px solid var(--amber);
+  position:relative; z-index:4;
+}
+.topbar .mark { font-weight:800; font-size:15px; letter-spacing:.06em; color:var(--cream); }
+.topbar .mark i { font-style:normal; color:var(--amber); }
+.topbar .crumb { font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--cream-mute); }
+.topbar .crumb b { color:var(--cream-dim); font-weight:700; }
+.topbar .right { margin-left:auto; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--amber-hi); }
+
+/* ---- the stage ------------------------------------------------------------ */
+.stage { position:relative; width:1366px; height:720px; }
+.stage > svg.backdrop { position:absolute; inset:0; display:block; }
+.obj { position:absolute; }
+
+/* =========================================================================
+   OBJECT FAMILY
+   ========================================================================= */
+
+/* -- hanging wooden signboard: the screen heading -------------------------- */
+.sign-heading {
+  left:30px; top:30px; width:302px; padding:16px 20px 18px;
+  background:
+    repeating-linear-gradient(180deg, rgb(0 0 0 / 0) 0 11px, rgb(0 0 0 / .06) 11px 12px),
+    linear-gradient(180deg, var(--wood-hi), var(--wood-mid) 46%, var(--wood-dk));
+  border-radius:10px;
+  border-top:2px solid #c49a6c;
+  filter: var(--drop-hang);
+}
+.sign-heading::before, .sign-heading::after {
+  content:""; position:absolute; top:-30px; width:3px; height:30px;
+  background:#503626;
+}
+.sign-heading::before { left:44px; } .sign-heading::after { right:44px; }
+.sign-heading h1 {
+  margin:0; font-size:21px; line-height:1.18; font-weight:800;
+  letter-spacing:.045em; text-transform:uppercase; color:var(--cream);
+  text-shadow:0 2px 0 rgb(0 0 0 / .35);
+}
+
+/* -- hanging clock sign ----------------------------------------------------- */
+.clock {
+  right:30px; top:26px; width:208px; padding:12px 18px 12px; text-align:center;
+  background: linear-gradient(180deg, #241610, #1a100c);
+  border:3px solid var(--wood-dk); border-top-color:#7c573b;
+  border-radius:10px;
+  filter: var(--drop-hang);
+}
+.clock::before, .clock::after {
+  content:""; position:absolute; top:-29px; width:3px; height:29px; background:#503626;
+}
+.clock::before { left:36px; } .clock::after { right:36px; }
+.clock .t {
+  display:block; font-family:var(--mono); font-size:38px; line-height:1;
+  font-weight:700; color:var(--amber-hi); letter-spacing:.04em;
+  font-variant-numeric: tabular-nums;
+}
+.clock .sub {
+  display:block; margin-top:6px; font-size:10.5px; font-weight:700;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--cream-mute);
+}
+
+/* -- the lane: a wooden order rail with paper chits ------------------------- */
+.lane {
+  left:30px; top:158px; width:268px; padding:14px 16px 18px;
+  background:
+    repeating-linear-gradient(180deg, rgb(0 0 0 / 0) 0 13px, rgb(0 0 0 / .05) 13px 14px),
+    linear-gradient(180deg, var(--wood-hi), var(--wood-mid) 40%, var(--wood-dk));
+  border-radius:10px;
+  border-top:2px solid #c49a6c;
+  filter: var(--drop-sit);
+}
+.lane h2 {
+  margin:0 0 6px; font-size:11.5px; font-weight:800; letter-spacing:.18em;
+  text-transform:uppercase; color:#f3dfbe; text-shadow:0 1px 0 rgb(0 0 0 / .4);
+}
+.lane .count { margin:0 0 12px; font-size:14px; color:var(--cream); }
+.lane .count strong { font-size:30px; font-weight:800; line-height:1; margin-right:6px; font-variant-numeric:tabular-nums; }
+.lane ul { list-style:none; margin:0; padding:0; display:grid; gap:10px; }
+.chit {
+  position:relative; display:flex; align-items:baseline; justify-content:space-between;
+  padding:12px 14px 11px;
+  background: linear-gradient(180deg, var(--paper-hi), var(--paper-mid) 55%, var(--paper-dk));
+  border-radius:6px; color:var(--paper-ink);
+  filter: var(--drop-flat);
+}
+.chit::before { /* steel pin */
+  content:""; position:absolute; top:-5px; left:50%; margin-left:-5px;
+  width:10px; height:10px; border-radius:50%;
+  background: radial-gradient(circle at 35% 30%, var(--steel-hi), var(--steel-mid) 55%, var(--steel-deep));
+}
+.chit .no { font-family:var(--mono); font-weight:700; font-size:16px; }
+.chit .qty { font-size:14px; font-weight:700; }
+.chit:nth-child(odd) { transform:rotate(-.7deg); }
+.chit:nth-child(even) { transform:rotate(.6deg); }
+
+/* -- the ticket at the pass: the dominant object ---------------------------- */
+.ticket {
+  left:332px; top:208px; width:278px; padding:20px 24px 0;
+  background:
+    repeating-linear-gradient(180deg, rgb(0 0 0 / 0) 0 5px, rgb(94 74 33 / .03) 5px 6px),
+    linear-gradient(180deg, var(--paper-hi), var(--paper-mid) 45%, var(--paper-dk));
+  color:var(--paper-ink);
+  border-radius:8px 8px 0 0;
+  transform:rotate(-1.4deg);
+  filter: var(--drop-hang);
+}
+.ticket::before { /* punched hole */
+  content:""; position:absolute; top:10px; left:50%; margin-left:-7px;
+  width:14px; height:14px; border-radius:50%;
+  background:var(--night-1);
+  box-shadow: inset 0 2px 0 rgb(0 0 0 / .5), 0 1px 0 var(--paper-hi);
+}
+.ticket .eyebrow {
+  margin:8px 0 0; font-size:11px; font-weight:800; letter-spacing:.24em;
+  text-transform:uppercase; color:var(--paper-sub); text-align:center;
+}
+.ticket .no {
+  margin:2px 0 0; text-align:center; font-family:var(--mono);
+  font-size:44px; font-weight:700; line-height:1; letter-spacing:.02em;
+}
+.ticket hr { border:0; border-top:2px dashed var(--paper-dk); margin:12px 0 10px; }
+.ticket .want { margin:0; text-align:center; font-size:30px; font-weight:800; letter-spacing:.02em; }
+.ticket .when { margin:4px 0 0; text-align:center; font-size:12.5px; color:var(--paper-sub); font-weight:600; }
+.ticket .stampband {
+  margin:14px -24px 0; height:64px;
+  background: repeating-linear-gradient(180deg, rgb(94 74 33 / 0) 0 14px, rgb(94 74 33 / .22) 14px 15px);
+  border-top:1px solid var(--paper-dk);
+  display:flex; align-items:center; justify-content:center;
+}
+.ticket .stampband span {
+  font-size:10px; font-weight:800; letter-spacing:.3em; text-transform:uppercase;
+  color:#b3a077;
+}
+.ticket .tear {
+  margin:0 -24px; height:12px;
+  background: linear-gradient(180deg, var(--paper-dk), var(--paper-mid));
+  clip-path: polygon(0 0,100% 0,100% 30%,96% 100%,92% 30%,88% 100%,84% 30%,80% 100%,76% 30%,72% 100%,68% 30%,64% 100%,60% 30%,56% 100%,52% 30%,48% 100%,44% 30%,40% 100%,36% 30%,32% 100%,28% 30%,24% 100%,20% 30%,16% 100%,12% 30%,8% 100%,4% 30%,0 100%);
+}
+
+/* -- the chalkboard: plates on the counter ---------------------------------- */
+.chalk {
+  left:794px; top:176px; width:264px; padding:12px 14px 14px; text-align:center;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgb(255 255 255 / .045), rgb(255 255 255 / 0) 60%),
+    #1d1410;
+  border:6px solid var(--wood-dk); border-top-color:#8a6244;
+  border-radius:8px;
+  filter: var(--drop-flat);
+}
+.chalk h2 {
+  margin:0; font-size:10.5px; font-weight:800; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--cream-mute); white-space:nowrap;
+}
+.chalk .n {
+  display:block; margin-top:2px; font-size:76px; line-height:1; font-weight:800;
+  color:var(--cream); font-variant-numeric:tabular-nums;
+  text-shadow:0 3px 0 rgb(0 0 0 / .5);
+}
+.chalk .n[data-bare="true"] { color:var(--red); }
+.chalk .u { display:block; font-size:14px; font-weight:700; color:var(--cream-dim); letter-spacing:.06em; }
+
+/* -- the till: wooden cash box ---------------------------------------------- */
+.till {
+  right:32px; top:214px; width:254px;
+  background:
+    repeating-linear-gradient(180deg, rgb(0 0 0 / 0) 0 15px, rgb(0 0 0 / .05) 15px 16px),
+    linear-gradient(180deg, var(--wood-hi), var(--wood-mid) 42%, var(--wood-dk));
+  border-radius:10px; border-top:2px solid #c49a6c;
+  filter: var(--drop-sit);
+}
+.till h2 {
+  margin:0; padding:9px 0 8px; text-align:center;
+  font-size:11.5px; font-weight:800; letter-spacing:.2em; text-transform:uppercase;
+  color:#2b3236;
+  background: linear-gradient(180deg, var(--steel-hi), var(--steel-mid) 60%, var(--steel-dk));
+  border-radius:8px 8px 0 0;
+  text-shadow:0 1px 0 rgb(255 255 255 / .35);
+}
+.till dl { margin:0; padding:12px 16px 10px; display:grid; gap:9px; }
+.till .row { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+.till .row--money {
+  margin:0 -6px 2px; padding:5px 10px 6px; border-radius:6px;
+  background:#1a100c; box-shadow: inset 0 2px 0 rgb(0 0 0 / .55), 0 1px 0 rgb(255 214 150 / .18);
+}
+.till dt { font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#f0e2c4; }
+.till dd { margin:0; font-weight:800; font-variant-numeric:tabular-nums; color:var(--cream); font-size:17px; }
+.till dd.money { font-size:26px; color:var(--green); text-shadow:0 2px 0 rgb(0 0 0 / .4); }
+.till dd[data-loss="true"] { color:var(--red); }
+.till .drawer {
+  margin:4px 10px 12px; height:40px; position:relative;
+  background: linear-gradient(180deg, var(--steel-mid), var(--steel-dk) 70%, var(--steel-deep));
+  border-radius:6px; box-shadow: inset 0 2px 0 var(--steel-hi), inset 0 -3px 0 rgb(0 0 0 / .35);
+}
+.till .drawer::before { /* handle */
+  content:""; position:absolute; left:50%; top:50%; width:56px; height:12px;
+  transform:translate(-50%,-50%); border-radius:999px;
+  background: linear-gradient(180deg, #f2d9ad, var(--amber) 60%, var(--amber-deep));
+}
+
+/* -- controls: enamelled plaques mounted on the counter front ---------------- */
+.controls { left:352px; top:552px; display:flex; align-items:center; gap:22px; }
+button { font-family:var(--font); cursor:pointer; }
+.btn-serve {
+  min-width:296px; min-height:66px; padding:0 30px;
+  font-size:21px; font-weight:800; letter-spacing:.02em; color:#2a1708;
+  background: linear-gradient(180deg, #ffc978, var(--amber) 55%, #dd8f2c);
+  border:0; border-bottom:7px solid var(--amber-deep); border-radius:12px;
+  text-shadow:0 1px 0 rgb(255 255 255 / .35);
+  filter: var(--drop-flat);
+}
+.btn-auto {
+  min-height:54px; padding:0 24px;
+  font-size:15px; font-weight:800; letter-spacing:.02em; color:#1d2326;
+  background: linear-gradient(180deg, var(--steel-hi), var(--steel-mid) 60%, #8e979e);
+  border:0; border-bottom:6px solid var(--steel-deep); border-radius:10px;
+  text-shadow:0 1px 0 rgb(255 255 255 / .4);
+  filter: var(--drop-flat);
+}
+.btn-auto[aria-pressed="true"] {
+  background: linear-gradient(180deg, #fff1d6, var(--amber-hi) 60%, #e0a446);
+  border-bottom-color:var(--amber-deep); color:#2a1708;
+}
+button:focus-visible { outline:3px solid var(--amber-hi); outline-offset:3px; }
+@media (prefers-reduced-motion: no-preference) {
+  .btn-serve, .btn-auto { transition: transform 120ms ease, filter 120ms ease; }
+  .btn-serve:hover, .btn-auto:hover { transform:translateY(-2px); }
+  .btn-serve:active, .btn-auto:active { transform:translateY(3px); filter:drop-shadow(0 1px 0 rgb(10 5 2 / .45)); }
+}
+.progress {
+  left:952px; top:572px; margin:0; font-size:15px; font-weight:700;
+  color:var(--cream-dim); font-variant-numeric:tabular-nums;
+}
+
+/* -- stencil on the apron (decorative, duplicated in the top bar) ------------ */
+.stencil {
+  left:44px; top:496px; margin:0;
+  font-size:12px; font-weight:800; letter-spacing:.24em; text-transform:uppercase;
+  color:#6f4c33;
+}
+
+/* -- alert note (used by states; kept here so both files share one language) - */
+.note {
+  left:340px; top:472px; width:566px; margin:0; padding:12px 18px 12px 22px;
+  background: linear-gradient(180deg, var(--paper-hi), var(--paper-mid) 60%, var(--paper-dk));
+  color:var(--red-ink); font-size:15.5px; font-weight:700;
+  border-left:10px solid #c0402a; border-radius:6px;
+  transform:rotate(-.4deg);
+  filter: var(--drop-flat);
+}
+.note strong { font-size:19px; }
+
+.visually-hidden {
+  position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <span class="mark">B<i>◆</i>W</span>
+  <span class="crumb">Run the Pop-Up — <b>Riverside Night Market · Middle Row</b></span>
+  <span class="right">Saturday service</span>
+</header>
+
+<main class="stage">
+
+  <!-- ======================================================================
+       SCENERY. Everything here is environment and object; every fact it
+       depicts is carried again as HTML text below. aria-hidden throughout.
+       ====================================================================== -->
+  <svg class="backdrop" viewBox="0 0 1366 720" aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0d0705"/>
+        <stop offset=".55" stop-color="#180d09"/>
+        <stop offset="1" stop-color="#2a1712"/>
+      </linearGradient>
+      <radialGradient id="stallGlow" cx=".5" cy=".9" r=".75">
+        <stop offset="0" stop-color="#f0a94a" stop-opacity=".22"/>
+        <stop offset="1" stop-color="#f0a94a" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="bodyV" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#d6b489"/>
+        <stop offset=".7" stop-color="#c2a075"/>
+        <stop offset="1" stop-color="#a9895f"/>
+      </linearGradient>
+      <linearGradient id="windowGlow" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#ffe2a8"/>
+        <stop offset="1" stop-color="#f0a343"/>
+      </linearGradient>
+      <linearGradient id="counterTop" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#a87b52"/>
+        <stop offset="1" stop-color="#8a6244"/>
+      </linearGradient>
+      <linearGradient id="apronV" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#4a2e1f"/>
+        <stop offset="1" stop-color="#2c1a12"/>
+      </linearGradient>
+      <linearGradient id="panV" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#9aa2a9"/>
+        <stop offset="1" stop-color="#6b7178"/>
+      </linearGradient>
+      <radialGradient id="vig" cx=".5" cy=".45" r=".85">
+        <stop offset=".62" stop-color="#000" stop-opacity="0"/>
+        <stop offset="1" stop-color="#000" stop-opacity=".38"/>
+      </radialGradient>
+    </defs>
+
+    <!-- sky -->
+    <rect width="1366" height="410" fill="url(#sky)"/>
+    <ellipse cx="640" cy="330" rx="620" ry="240" fill="url(#stallGlow)"/>
+
+    <!-- distant stalls, silhouetted -->
+    <g fill="#1c110c">
+      <path d="M-10 268 L60 236 L190 236 L230 268 L230 410 L-10 410 Z"/>
+      <path d="M1160 276 L1210 246 L1330 246 L1376 276 L1376 410 L1160 410 Z"/>
+    </g>
+    <rect x="66" y="300" width="34" height="26" fill="#f0a94a" opacity=".10"/>
+    <rect x="1236" y="308" width="30" height="24" fill="#f0a94a" opacity=".10"/>
+
+    <!-- string lights: back wire then front wire; the world's one light source -->
+    <path d="M-10 26 Q 683 88 1376 26" fill="none" stroke="#3d281b" stroke-width="1.4"/>
+    <g fill="#ffd98f" opacity=".7">
+      <circle cx="120" cy="43" r="2.6"/><circle cx="300" cy="53" r="2.6"/>
+      <circle cx="480" cy="60" r="2.6"/><circle cx="683" cy="63" r="2.6"/>
+      <circle cx="886" cy="60" r="2.6"/><circle cx="1066" cy="53" r="2.6"/>
+      <circle cx="1246" cy="43" r="2.6"/>
+    </g>
+    <path d="M-10 54 Q 683 138 1376 54" fill="none" stroke="#5d3f2b" stroke-width="2"/>
+    <g>
+      <!-- front bulbs with halos: x, y sampled on the quadratic -->
+      <g stroke="#5d3f2b" stroke-width="1.4">
+        <line x1="60" y1="62" x2="60" y2="70"/><line x1="180" y1="74" x2="180" y2="82"/>
+        <line x1="300" y1="83" x2="300" y2="91"/><line x1="420" y1="90" x2="420" y2="98"/>
+        <line x1="540" y1="94" x2="540" y2="102"/><line x1="660" y1="96" x2="660" y2="104"/>
+        <line x1="780" y1="95" x2="780" y2="103"/><line x1="900" y1="92" x2="900" y2="100"/>
+        <line x1="1020" y1="86" x2="1020" y2="94"/><line x1="1140" y1="78" x2="1140" y2="86"/>
+        <line x1="1260" y1="67" x2="1260" y2="75"/>
+      </g>
+      <g fill="#f0a94a" opacity=".2">
+        <circle cx="60" cy="75" r="17"/><circle cx="180" cy="87" r="17"/>
+        <circle cx="300" cy="96" r="17"/><circle cx="420" cy="103" r="17"/>
+        <circle cx="540" cy="107" r="17"/><circle cx="660" cy="109" r="17"/>
+        <circle cx="780" cy="108" r="17"/><circle cx="900" cy="105" r="17"/>
+        <circle cx="1020" cy="99" r="17"/><circle cx="1140" cy="91" r="17"/>
+        <circle cx="1260" cy="80" r="17"/>
+      </g>
+      <g fill="#ffd98f">
+        <circle cx="60" cy="75" r="4.6"/><circle cx="180" cy="87" r="4.6"/>
+        <circle cx="300" cy="96" r="4.6"/><circle cx="420" cy="103" r="4.6"/>
+        <circle cx="540" cy="107" r="4.6"/><circle cx="660" cy="109" r="4.6"/>
+        <circle cx="780" cy="108" r="4.6"/><circle cx="900" cy="105" r="4.6"/>
+        <circle cx="1020" cy="99" r="4.6"/><circle cx="1140" cy="91" r="4.6"/>
+        <circle cx="1260" cy="80" r="4.6"/>
+      </g>
+      <g fill="#fff" opacity=".55">
+        <circle cx="58.5" cy="73.5" r="1.5"/><circle cx="178.5" cy="85.5" r="1.5"/>
+        <circle cx="298.5" cy="94.5" r="1.5"/><circle cx="418.5" cy="101.5" r="1.5"/>
+        <circle cx="538.5" cy="105.5" r="1.5"/><circle cx="658.5" cy="107.5" r="1.5"/>
+        <circle cx="778.5" cy="106.5" r="1.5"/><circle cx="898.5" cy="103.5" r="1.5"/>
+        <circle cx="1018.5" cy="97.5" r="1.5"/><circle cx="1138.5" cy="89.5" r="1.5"/>
+        <circle cx="1258.5" cy="78.5" r="1.5"/>
+      </g>
+    </g>
+
+    <!-- the truck face -->
+    <rect x="300" y="150" width="766" height="260" rx="16" fill="url(#bodyV)"/>
+    <rect x="300" y="150" width="766" height="8" rx="4" fill="#e8caa0"/>
+    <line x1="312" y1="318" x2="1054" y2="318" stroke="#a8875f" stroke-width="2"/>
+    <g fill="#8a6a49">
+      <circle cx="330" cy="167" r="2.4"/><circle cx="400" cy="167" r="2.4"/>
+      <circle cx="470" cy="167" r="2.4"/><circle cx="540" cy="167" r="2.4"/>
+      <circle cx="610" cy="167" r="2.4"/><circle cx="680" cy="167" r="2.4"/>
+      <circle cx="750" cy="167" r="2.4"/><circle cx="820" cy="167" r="2.4"/>
+      <circle cx="890" cy="167" r="2.4"/><circle cx="960" cy="167" r="2.4"/>
+      <circle cx="1030" cy="167" r="2.4"/>
+    </g>
+
+    <!-- the pass window: brightest thing in the world -->
+    <rect x="350" y="168" width="416" height="172" rx="12" fill="#5c646b"/>
+    <rect x="350" y="168" width="416" height="6" rx="3" fill="#8e979e"/>
+    <rect x="362" y="180" width="392" height="148" rx="8" fill="url(#windowGlow)"/>
+    <rect x="362" y="180" width="392" height="4" fill="#fff" opacity=".35"/>
+    <!-- interior: hood, hanging pans, the cook — one pair of hands, silhouetted -->
+    <rect x="362" y="180" width="392" height="20" fill="#8a5518" opacity=".5"/>
+    <g stroke="#6b3d10" stroke-width="3" opacity=".6" fill="none">
+      <line x1="622" y1="200" x2="622" y2="222"/>
+      <line x1="652" y1="200" x2="652" y2="228"/>
+    </g>
+    <g fill="#6b3d10" opacity=".6">
+      <circle cx="622" cy="231" r="10"/>
+      <circle cx="652" cy="237" r="9"/>
+    </g>
+    <!-- worktop inside -->
+    <line x1="374" y1="296" x2="742" y2="296" stroke="#b87a26" stroke-width="4"/>
+    <!-- the griddle pan the cook works -->
+    <g fill="#6b3d10" opacity=".62">
+      <rect x="618" y="278" width="72" height="18" rx="4"/>
+      <rect x="600" y="284" width="22" height="5" rx="2.5"/>
+    </g>
+    <!-- the cook: head, cap, body, arm to the pan. Marisol appears beside this
+         figure only on nights she is hired. -->
+    <g fill="#6b3d10" opacity=".62">
+      <path d="M700 232 a13 13 0 1 1 26 0 a13 13 0 1 1 -26 0"/>
+      <path d="M698 226 q15 -14 30 0 l-2 -8 q-13 -10 -26 0 Z"/>
+      <path d="M690 296 q2 -34 23 -38 q21 4 23 38 Z"/>
+      <path d="M702 258 q-22 6 -36 22 l7 7 q13 -14 31 -19 Z"/>
+    </g>
+    <!-- steam off the griddle -->
+    <g stroke="#fff" stroke-opacity=".32" stroke-width="3" fill="none" stroke-linecap="round">
+      <path d="M636 270 c 7 -12 -7 -18 0 -30"/>
+      <path d="M668 272 c 6 -10 -6 -16 0 -26"/>
+    </g>
+    <!-- sill -->
+    <rect x="344" y="332" width="428" height="18" rx="6" fill="#8e979e"/>
+    <rect x="344" y="332" width="428" height="4" rx="2" fill="#d6dde1"/>
+
+    <!-- awning over the window -->
+    <rect x="288" y="146" width="790" height="14" fill="#000" opacity=".22"/>
+    <rect x="288" y="100" width="790" height="52" fill="#b8442c"/>
+    <g fill="#ead9b8">
+      <rect x="321" y="100" width="66" height="52"/>
+      <rect x="453" y="100" width="66" height="52"/>
+      <rect x="585" y="100" width="66" height="52"/>
+      <rect x="717" y="100" width="66" height="52"/>
+      <rect x="849" y="100" width="66" height="52"/>
+      <rect x="981" y="100" width="66" height="52"/>
+    </g>
+    <g>
+      <circle cx="309" cy="152" r="21" fill="#b8442c"/><circle cx="351" cy="152" r="21" fill="#ead9b8"/>
+      <circle cx="393" cy="152" r="21" fill="#b8442c"/><circle cx="435" cy="152" r="21" fill="#ead9b8"/>
+      <circle cx="477" cy="152" r="21" fill="#b8442c"/><circle cx="519" cy="152" r="21" fill="#ead9b8"/>
+      <circle cx="561" cy="152" r="21" fill="#b8442c"/><circle cx="603" cy="152" r="21" fill="#ead9b8"/>
+      <circle cx="645" cy="152" r="21" fill="#b8442c"/><circle cx="687" cy="152" r="21" fill="#ead9b8"/>
+      <circle cx="729" cy="152" r="21" fill="#b8442c"/><circle cx="771" cy="152" r="21" fill="#ead9b8"/>
+      <circle cx="813" cy="152" r="21" fill="#b8442c"/><circle cx="855" cy="152" r="21" fill="#ead9b8"/>
+      <circle cx="897" cy="152" r="21" fill="#b8442c"/><circle cx="939" cy="152" r="21" fill="#ead9b8"/>
+      <circle cx="981" cy="152" r="21" fill="#b8442c"/><circle cx="1023" cy="152" r="21" fill="#ead9b8"/>
+      <circle cx="1057" cy="152" r="21" fill="#b8442c"/>
+    </g>
+    <rect x="284" y="94" width="798" height="10" rx="5" fill="#7e2c1c"/>
+
+    <!-- wire holding the ticket at the pass -->
+    <line x1="470" y1="158" x2="470" y2="216" stroke="#503626" stroke-width="2.4"/>
+
+    <!-- the counter: the lit play surface everything sits on -->
+    <rect x="0" y="400" width="1366" height="78" fill="url(#counterTop)"/>
+    <ellipse cx="640" cy="436" rx="560" ry="58" fill="#ffcf8a" opacity=".13"/>
+    <rect x="0" y="400" width="1366" height="4" fill="#c99a6b"/>
+    <line x1="0" y1="426" x2="1366" y2="426" stroke="#6f4c33" stroke-width="1" opacity=".5"/>
+    <line x1="0" y1="452" x2="1366" y2="452" stroke="#6f4c33" stroke-width="1" opacity=".5"/>
+
+    <!-- counter front / apron -->
+    <rect x="0" y="478" width="1366" height="172" fill="url(#apronV)"/>
+    <rect x="0" y="478" width="1366" height="10" fill="#6b4a33"/>
+    <rect x="0" y="488" width="1366" height="2" fill="#937355" opacity=".6"/>
+    <g stroke="#241610" stroke-width="2" opacity=".6">
+      <line x1="137" y1="492" x2="137" y2="650"/><line x1="274" y1="492" x2="274" y2="650"/>
+      <line x1="411" y1="492" x2="411" y2="650"/><line x1="548" y1="492" x2="548" y2="650"/>
+      <line x1="685" y1="492" x2="685" y2="650"/><line x1="822" y1="492" x2="822" y2="650"/>
+      <line x1="959" y1="492" x2="959" y2="650"/><line x1="1096" y1="492" x2="1096" y2="650"/>
+      <line x1="1233" y1="492" x2="1233" y2="650"/>
+    </g>
+
+    <!-- the control dock: a steel-edged recess built into the counter front.
+         The buttons that run the night are mounted in it, not floated over it. -->
+    <g>
+      <rect x="322" y="530" width="924" height="104" rx="12" fill="#1c110b"/>
+      <rect x="322" y="530" width="924" height="104" rx="12" fill="none" stroke="#6b4a33" stroke-width="2"/>
+      <rect x="324" y="532" width="920" height="4" rx="2" fill="#000" opacity=".5"/>
+      <rect x="324" y="628" width="920" height="3" rx="1.5" fill="#937355" opacity=".4"/>
+      <g fill="#8e979e">
+        <circle cx="338" cy="546" r="3.4"/><circle cx="1230" cy="546" r="3.4"/>
+        <circle cx="338" cy="618" r="3.4"/><circle cx="1230" cy="618" r="3.4"/>
+      </g>
+      <g fill="#454d54">
+        <rect x="336.4" y="545" width="3.2" height="2" rx="1"/><rect x="1228.4" y="545" width="3.2" height="2" rx="1"/>
+        <rect x="336.4" y="617" width="3.2" height="2" rx="1"/><rect x="1228.4" y="617" width="3.2" height="2" rx="1"/>
+      </g>
+    </g>
+
+    <!-- floor -->
+    <rect x="0" y="650" width="1366" height="70" fill="#0d0705"/>
+    <ellipse cx="640" cy="688" rx="500" ry="32" fill="#f0a94a" opacity=".07"/>
+
+    <!-- set dressing: a supplier crate and the empty pans, waiting for close -->
+    <g>
+      <ellipse cx="150" cy="682" rx="78" ry="10" fill="#000" opacity=".5"/>
+      <rect x="84" y="586" width="132" height="94" rx="6" fill="#553823"/>
+      <g fill="#6f4c33">
+        <rect x="90" y="594" width="120" height="16" rx="3"/>
+        <rect x="90" y="616" width="120" height="16" rx="3"/>
+        <rect x="90" y="638" width="120" height="16" rx="3"/>
+        <rect x="90" y="660" width="120" height="14" rx="3"/>
+      </g>
+      <rect x="84" y="586" width="10" height="94" rx="4" fill="#452c1a"/>
+      <rect x="206" y="586" width="10" height="94" rx="4" fill="#452c1a"/>
+      <rect x="84" y="586" width="132" height="5" rx="2.5" fill="#8a6242"/>
+      <path d="M96 598 L204 668 M204 598 L96 668" stroke="#452c1a" stroke-width="7" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(46 0)">
+      <ellipse cx="1268" cy="682" rx="70" ry="9" fill="#000" opacity=".5"/>
+      <path d="M1206 676 L1214 646 L1322 646 L1330 676 Z" fill="#454d54"/>
+      <rect x="1200" y="638" width="136" height="12" rx="6" fill="#6b7178"/>
+      <path d="M1212 636 L1219 610 L1317 610 L1324 636 Z" fill="#565e64"/>
+      <rect x="1206" y="602" width="124" height="11" rx="5.5" fill="#8e979e"/>
+      <path d="M1218 600 L1224 578 L1312 578 L1318 600 Z" fill="#6b7178"/>
+      <rect x="1212" y="570" width="112" height="10" rx="5" fill="#aab3ba"/>
+      <rect x="1212" y="570" width="112" height="2.5" rx="1.25" fill="#e2e8ec"/>
+    </g>
+
+    <!-- ================= objects on the counter ================= -->
+
+    <!-- the spike: dealt tickets, impaled -->
+    <g>
+      <ellipse cx="660" cy="466" rx="27" ry="6" fill="#1a0e07" opacity=".38"/>
+      <path d="M638 458 L682 458 L678 448 L642 448 Z" fill="#6b7178"/>
+      <ellipse cx="660" cy="448" rx="18" ry="6" fill="#9aa2a9"/>
+      <line x1="660" y1="448" x2="660" y2="392" stroke="#c9ced2" stroke-width="3"/>
+      <g>
+        <rect x="628" y="436" width="64" height="9" rx="2" fill="#d6c49c" transform="rotate(-2 660 440)"/>
+        <rect x="630" y="427" width="60" height="9" rx="2" fill="#e4d5ae" transform="rotate(3 660 431)"/>
+        <rect x="627" y="418" width="66" height="9" rx="2" fill="#d6c49c" transform="rotate(-3 660 422)"/>
+        <rect x="631" y="409" width="58" height="9" rx="2" fill="#efe3c4" transform="rotate(2 660 413)"/>
+      </g>
+      <g transform="rotate(-6 660 388)">
+        <rect x="628" y="368" width="64" height="40" rx="3" fill="#efe3c4"/>
+        <ellipse cx="660" cy="388" rx="24" ry="11" fill="none" stroke="#1f7a4d" stroke-width="2.5" opacity=".85"/>
+        <text x="660" y="392" text-anchor="middle" font-family="system-ui, sans-serif" font-size="9" font-weight="800" fill="#1f7a4d" letter-spacing="1">SERVED</text>
+      </g>
+      <line x1="660" y1="392" x2="660" y2="364" stroke="#c9ced2" stroke-width="3"/>
+      <circle cx="660" cy="362" r="3.5" fill="#e2e8ec"/>
+    </g>
+
+    <!-- three trays = the three trays bought. plates rack face-on; an empty
+         pan is an empty pan, never a bar. -->
+    <!-- tray 1: empty -->
+    <g>
+      <ellipse cx="759" cy="468" rx="58" ry="7" fill="#1a0e07" opacity=".38"/>
+      <rect x="704" y="402" width="110" height="16" rx="6" fill="#454d54"/>
+      <path d="M702 424 L710 462 L808 462 L816 424 Z" fill="url(#panV)"/>
+      <rect x="698" y="414" width="122" height="14" rx="7" fill="#aab3ba"/>
+      <rect x="698" y="414" width="122" height="3" rx="1.5" fill="#e2e8ec"/>
+      <rect x="712" y="430" width="94" height="5" rx="2.5" fill="#fff" opacity=".07"/>
+    </g>
+    <!-- tray 2: empty -->
+    <g>
+      <ellipse cx="881" cy="468" rx="58" ry="7" fill="#1a0e07" opacity=".38"/>
+      <rect x="826" y="402" width="110" height="16" rx="6" fill="#454d54"/>
+      <path d="M824 424 L832 462 L930 462 L938 424 Z" fill="url(#panV)"/>
+      <rect x="820" y="414" width="122" height="14" rx="7" fill="#aab3ba"/>
+      <rect x="820" y="414" width="122" height="3" rx="1.5" fill="#e2e8ec"/>
+      <rect x="834" y="430" width="94" height="5" rx="2.5" fill="#fff" opacity=".07"/>
+    </g>
+    <!-- tray 3: the last two plates, racked at its left end -->
+    <g>
+      <ellipse cx="1003" cy="468" rx="58" ry="7" fill="#1a0e07" opacity=".38"/>
+      <rect x="948" y="402" width="110" height="16" rx="6" fill="#454d54"/>
+      <g> <!-- the last two plates, racked upright in the pan -->
+        <circle cx="966" cy="404" r="13" fill="#f2e8d4"/>
+        <circle cx="966" cy="404" r="13" fill="none" stroke="#cdbd97" stroke-width="2"/>
+        <circle cx="966" cy="404" r="7" fill="none" stroke="#dccfb4" stroke-width="2"/>
+        <circle cx="998" cy="405" r="13" fill="#f2e8d4"/>
+        <circle cx="998" cy="405" r="13" fill="none" stroke="#cdbd97" stroke-width="2"/>
+        <circle cx="998" cy="405" r="7" fill="none" stroke="#dccfb4" stroke-width="2"/>
+      </g>
+      <path d="M946 424 L954 462 L1052 462 L1060 424 Z" fill="url(#panV)"/>
+      <rect x="942" y="414" width="122" height="14" rx="7" fill="#aab3ba"/>
+      <rect x="942" y="414" width="122" height="3" rx="1.5" fill="#e2e8ec"/>
+      <!-- heat off the last plates -->
+      <path d="M982 388 c 6 -9 -6 -14 0 -23" stroke="#fff" stroke-opacity=".25" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    </g>
+
+    <!-- vignette -->
+    <rect width="1366" height="720" fill="url(#vig)"/>
+  </svg>
+
+  <!-- ======================================================================
+       THE SCREEN. Real headings, real text, real controls.
+       ====================================================================== -->
+  <section aria-labelledby="svc-h">
+
+    <div class="obj sign-heading">
+      <h1 id="svc-h">You are serving customers.</h1>
+    </div>
+
+    <p class="obj clock" aria-label="Time at the market">
+      <span class="t">20:40</span>
+      <span class="sub">Market 18:00 – 21:00</span>
+    </p>
+
+    <!-- the lane -->
+    <div class="obj lane">
+      <h2>Waiting to order</h2>
+      <p class="count"><strong>10</strong> people are waiting</p>
+      <ul>
+        <li class="chit"><span class="no">#22</span><span class="qty">3 plates</span></li>
+        <li class="chit"><span class="no">#23</span><span class="qty">3 plates</span></li>
+        <li class="chit"><span class="no">#24</span><span class="qty">2 plates</span></li>
+      </ul>
+    </div>
+
+    <!-- the ticket at the pass -->
+    <div class="obj ticket">
+      <p class="eyebrow">Order</p>
+      <p class="no">#21</p>
+      <hr>
+      <p class="want">2 plates</p>
+      <p class="when">arrived 20:38</p>
+      <div class="stampband"><span>stamp</span></div>
+      <div class="tear"></div>
+    </div>
+
+    <!-- plates on the counter -->
+    <div class="obj chalk">
+      <h2>Plates on the counter</h2>
+      <span class="n" data-bare="false">2</span>
+      <span class="u">plates left · of 30 cooked</span>
+    </div>
+
+    <!-- the till -->
+    <div class="obj till">
+      <h2>Tonight so far</h2>
+      <dl>
+        <div class="row row--money"><dt>Money taken</dt><dd class="money">$336</dd></div>
+        <div class="row"><dt>Plates sold</dt><dd>28</dd></div>
+        <div class="row"><dt>Left without buying</dt><dd data-loss="false">0</dd></div>
+      </dl>
+      <div class="drawer"></div>
+    </div>
+
+    <!-- controls -->
+    <div class="obj controls">
+      <button type="button" class="btn-serve">Serve the next order</button>
+      <button type="button" class="btn-auto" aria-pressed="false">Serve automatically</button>
+    </div>
+    <p class="obj progress" aria-live="polite">Order 20 of 24.</p>
+
+    <p class="obj stencil" aria-hidden="true">Middle Row · Riverside Night Market</p>
+
+  </section>
+</main>
+
+</body>
+</html>

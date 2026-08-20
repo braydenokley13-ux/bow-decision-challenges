@@ -31,6 +31,8 @@ import { keyForClass, rememberClass, rememberedClasses } from "./classMemory";
 import { classLeadFor } from "./classLead";
 import { standardByRef } from "../domain/standards";
 import { studentSpineFor, type StudentSpine } from "./studentSpine";
+import { ObjectiveStanding } from "./ObjectiveStanding";
+import type { StandardRef } from "../domain/standards/types";
 import { TeachNext } from "./TeachNext";
 
 /**
@@ -1084,10 +1086,16 @@ export function RealStudentEvidence() {
         // The raw submission, not the derived row: the trail is built from the student's own
         // events, and a summary of them cannot be audited against itself.
         const submission = ready.submissions.find((entry) => entry.seatCode === seatCode && entry.sessionId === row.sessionId);
+        // The objective the teacher actually set, for the card that joins this student's
+        // evidence to it. Read off the assignment the submission was attributed to rather
+        // than off the class, because a class can hold several and only one of them is what
+        // this attempt was for. A legacy assignment carries `null` and the card draws nothing.
+        const setFor = ready.assignments.find((entry) => entry.id === submission?.assignmentId);
         return (
           <StudentPanel
             row={row}
             code={code ?? ""}
+            objectiveRef={setFor?.objectiveRef ?? null}
             attempt={{ number: index + 1, of: attempts.length }}
             onScore={scoreReasoning}
             {...(submission ? { submission } : {})}
@@ -1161,9 +1169,11 @@ function StudentLead({ spine, awaitingReading }: { spine: StudentSpine; awaiting
   );
 }
 
-function StudentPanel({ row, code, onScore, submission, onOverride, onFeedback, onRevise, onWithdraw, notes, attempt }: {
+function StudentPanel({ row, code, objectiveRef, onScore, submission, onOverride, onFeedback, onRevise, onWithdraw, notes, attempt }: {
   row: StudentRow;
   code: string;
+  /** The objective this attempt was set for, or `null` where the teacher chose none. */
+  objectiveRef: StandardRef | null;
   /** Which of this seat's attempts is on screen, and how many there are. */
   attempt: { number: number; of: number };
   onScore: (seat: string, session: string, scores: ReasoningScores | null) => Promise<boolean>;
@@ -1216,7 +1226,16 @@ function StudentPanel({ row, code, onScore, submission, onOverride, onFeedback, 
           <p>{summarise(row)}</p>
         </div>
         {spine
-          ? <StudentLead spine={spine} awaitingReading={row.reasoningPoints === null} />
+          ? (
+            <div className="student-lead-stack">
+              <StudentLead spine={spine} awaitingReading={row.reasoningPoints === null} />
+              {/* Where this evidence leaves the objective the work was set for. The skills and
+                  the objective were always two clicks apart and a teacher had to do the join
+                  in their head; it uses `resolveObjectiveCoverage`, the same function the class
+                  page uses, so the two surfaces cannot disagree about the same objective. */}
+              <ObjectiveStanding objectiveRef={objectiveRef} results={spine.results} />
+            </div>
+          )
           : <p className="class-state">This attempt could not be opened in full.</p>}
       </header>
 
@@ -1274,6 +1293,27 @@ function StudentPanel({ row, code, onScore, submission, onOverride, onFeedback, 
           <p className="response-note">
             <Link to={`/educator/class/${code}/reading`}>Read the whole class in one queue →</Link>
           </p>
+
+          {/* The teacher's own closing question, and the answer to it — under the canonical
+              writing, in its own block, said as theirs.
+
+              It is deliberately not in the rubric panel beside it and never will be. §37: a
+              question one teacher wrote may not move what BOW claims about a child, or two
+              classes set the same challenge would mean different things and nothing on any
+              screen would say so. What it is here is a thing to read before a discussion.
+
+              Absent for every attempt whose assignment carried no question, which is most. */}
+          {submission?.closingAnswer && (
+            <div className="closing-answer">
+              <p className="eyebrow">Your own question</p>
+              <blockquote className="closing-answer__asked">{submission.closingAnswer.questionText}</blockquote>
+              <blockquote className="closing-answer__given">{submission.closingAnswer.answer}</blockquote>
+              <p className="response-note">
+                You asked this, not BOW. It is not scored, it is not part of the skills reported above,
+                and it does not appear in the export.
+              </p>
+            </div>
+          )}
         </div>
         <div className="rubric-panel">
           {/* Not "10-point reasoning rubric". That sentence introduced a second scale as a

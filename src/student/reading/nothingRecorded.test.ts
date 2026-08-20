@@ -48,10 +48,19 @@ const ALLOWED_IMPORTS = [
   // directory, and the test below holds it to importing nothing but React, so this allowance
   // cannot widen into a door.
   /^\.\.\/\.\.\/components\/primitives\/useInPlaceArrival$/,
+  // The second, and it is the way out of a disclosure: `Escape` closes the full-glossary fold
+  // and stands the student back on the control that opened it. Four of the product's five
+  // `<details>` had no way out but their own summary, and one of the four is this one — a
+  // student who opens it mid-run has to find its summary again to get back to the decision.
+  // Named exactly, for the same reason, and held to the same rule below.
+  /^\.\.\/\.\.\/components\/primitives\/disclosureEscape$/,
 ];
 
-/** The one module outside this directory that is allowed in, and all it may reach for. */
-const BORROWED = "src/components/primitives/useInPlaceArrival.ts";
+/** The modules outside this directory that are allowed in, and all any of them may reach for. */
+const BORROWED = [
+  "src/components/primitives/useInPlaceArrival.ts",
+  "src/components/primitives/disclosureEscape.ts",
+];
 
 describe("nothing about who used this goes anywhere", () => {
   it("imports nothing that could carry it off the device", () => {
@@ -65,13 +74,17 @@ describe("nothing about who used this goes anywhere", () => {
     expect(strays, "an import that could reach the evidence log, the class service or a teacher's screen").toEqual([]);
   });
 
-  it("holds the one borrowed primitive to importing nothing but React", () => {
+  it("holds every borrowed primitive to importing nothing but React", () => {
     // The allowance above is only as good as what it lets in. A focus hook that grew an import
     // of the challenge context would be a reading control that knows which stage a student is
-    // on, which is the first half of a record of who used it.
-    const borrowed = readFileSync(BORROWED, "utf8");
-    const specifiers = [...borrowed.matchAll(/^\s*import\s[^;]*?from\s*["']([^"']+)["']/gm)].map((match) => match[1]);
-    expect(specifiers, `what ${BORROWED} reaches for`).toEqual(["react"]);
+    // on, which is the first half of a record of who used it. The same is true of anything
+    // else this directory is ever allowed to borrow, so the rule is over the list rather than
+    // over the one module that happened to be first.
+    for (const path of BORROWED) {
+      const borrowed = readFileSync(path, "utf8");
+      const specifiers = [...borrowed.matchAll(/^\s*import\s[^;]*?from\s*["']([^"']+)["']/gm)].map((match) => match[1]);
+      expect(specifiers, `what ${path} reaches for`).toEqual(["react"]);
+    }
   });
 
   it("makes no request of any kind", () => {

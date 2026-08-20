@@ -218,9 +218,13 @@ describe("the competencies Run the Pop-Up does not produce", () => {
   it.each(POP_UP_NOT_PRODUCED.filter((entry) => entry.competencyId === "plan-for-the-unexpected").map((entry) => entry.competencyId))(
     "fails the moment somebody writes %s's requirements",
     (competencyId: CompetencyId) => {
-      // Deliberately a tripwire, the same one Basketball carries. This world produces the
-      // evidence — the cushion is a plan built before knowing what will go wrong, and the
-      // generator is the thing that goes wrong — and nobody has written what would count.
+      // Deliberately a tripwire, the same one Basketball carries — and the two now fail for
+      // different reasons, which is worth knowing before either is cleared. This world produces
+      // the evidence for every student: the cushion is set before the generator dies. Basketball
+      // reaches its equivalent screen only for students who counted conditional income. So the
+      // blocker here is the unwritten requirements alone, and the blocker there is both that and
+      // a route every student reaches — and until both clear, listing it in one world would
+      // break §9.1 rather than close a gap.
       expect(competencyById(competencyId).evidenceRequirements, `${competencyId} now has requirements — route it in observer.ts`).toEqual([]);
     },
   );

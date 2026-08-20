@@ -44,7 +44,12 @@ p { color: var(--ink-2); }
    a cursor painted its own label in its own background, which reads as a button with no
    text on it at all. */
 .button--primary[aria-disabled="true"], .button--primary[aria-disabled="true"]:hover { color: var(--bow-brand-strong); background: var(--fin-adjustable-soft); border-color: var(--bow-brand); }
-.button--primary { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); }
+
+/* `--bow-brand-ink`, not `--ink-invert`. "Invert" means the ink that sits on `--ink-1`, and on
+   the dark ground that is near-black — which axe found painted onto a violet-500 button at
+   3.81:1 on the front door, the first screen anybody sees. The ink for a brand fill is the
+   brand's own, and it is the one token that knows the brand might be amber. */
+.button--primary { color: var(--bow-brand-ink); background: var(--bow-brand-fill); border-color: var(--bow-brand-fill); }
 .button--primary:hover { background: var(--bow-brand-strong); border-color: var(--bow-brand-strong); }
 .button--secondary { color: var(--ink-1); background: var(--surface-raised); }
 .button--quiet { color: var(--ink-2); background: transparent; border-color: var(--border-default); border-width: 1px; font-weight: 500; }
@@ -53,12 +58,12 @@ p { color: var(--ink-2); }
 /* The mark: a blue plate, the wordmark in ink, the product name in BOW blue caps. Geometry
    only — every colour on it is in `brand.css`, in one block, so there is one place to read
    what the mark looks like and one place it can be changed. */
-.app-mark { display: inline-flex; align-items: center; gap: var(--s-3); color: inherit; text-decoration: none; }
-.app-mark__monogram { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid; border-radius: var(--r-xs); font: 800 1.05rem/1 var(--font-ui); letter-spacing: -0.02em; }
+.app-mark { display: inline-flex; flex-direction: column; gap: 3px; color: inherit; text-decoration: none; }
+.app-mark__word { display: inline-flex; align-items: flex-start; gap: 1px; min-width: 0; }
 .app-mark b, .app-mark small { display: block; }
-.app-mark > span { min-width: 0; }
-.app-mark b { font: 800 1rem/1 var(--font-ui); letter-spacing: 0.1em; white-space: nowrap; }
-.app-mark small { margin-top: 4px; font: var(--t-micro); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; }
+.app-mark b { font: 800 1.4rem/1 var(--font-display); letter-spacing: -0.045em; white-space: nowrap; }
+.app-mark__star { width: 0.62em; height: 0.62em; margin-top: -0.12em; flex: none; fill: var(--violet-500); }
+.app-mark small { font: var(--t-micro); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; white-space: nowrap; }
 
 /*
  * One section heading, and this is the only one.
@@ -76,7 +81,19 @@ p { color: var(--ink-2); }
  * consistently for the title of a thing rather than the name of a section.
  */
 .section-heading, .section-head { max-width: 720px; margin-bottom: var(--gap-block); }
-.section-heading h2, .section-head h2, .debrief__section h2 { margin: 0; font: var(--t-display3); letter-spacing: var(--display-tracking); text-transform: uppercase; }
+
+/*
+ * Sentence case, not caps.
+ *
+ * The display voice sets short headlines in caps the way a sports page does, and that is
+ * right for the front door and for a world's establishing shot. It was also applied to every
+ * section heading on every teacher surface, so a page a teacher scans in a hurry shouted
+ * eight times before it said anything — and caps stop being a voice and start being an
+ * obstacle at the length these actually run to ("Where the class is on each skill").
+ *
+ * `.display-caps` still exists for the places that want it. This is the calm one.
+ */
+.section-heading h2, .section-head h2, .debrief__section h2 { margin: 0; font: var(--t-section); letter-spacing: var(--display-tracking); }
 .section-heading > p:not(.eyebrow), .section-head > p:not(.eyebrow) { max-width: var(--measure); margin: var(--s-3) 0 0; color: var(--ink-2); font: var(--t-body); }
 
 /* The debrief opens each numbered section with a bare heading rather than a block, so the
@@ -405,7 +422,7 @@ p { color: var(--ink-2); }
 .brief-answers dd { margin: 0; color: var(--ink-2); font: var(--t-ui); font-weight: 400; }
 .brief-answers__links { display: flex; flex-wrap: wrap; gap: var(--s-3) var(--s-6); margin-top: var(--s-5); }
 .brief-answers__links a { color: var(--ink-1); font: var(--t-ui); }
-.prerequisite-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1px; margin: 0; padding: 1px; list-style: none; }
+.prerequisite-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 1px; margin: 0; padding: 1px; list-style: none; }
 .prerequisite-list li { display: grid; grid-template-columns: auto 1fr; gap: var(--s-4); align-content: start; padding: var(--s-5); background: var(--surface); box-shadow: 0 0 0 1px var(--border-subtle); font: var(--t-body); }
 .prerequisite-list span { color: var(--ink-3); font: var(--font-mono); }
 .companion-callout { margin-top: var(--s-5); }
@@ -464,12 +481,12 @@ p { color: var(--ink-2); }
 /* The sample mini-unit, which is two cards on the page spine now rather than a full-bleed
    band of its own. `padding: var(--s-7)` inset the cards 32px from the text introducing
    them; the block padding is what it was actually for. */
-.mini-unit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--s-5); padding-block: var(--s-7); }
+.mini-unit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: var(--s-5); padding-block: var(--s-7); }
 .mini-unit-grid > article { background: var(--surface); border: 1px solid var(--border-default); }
 
 /* Padded by content. `min-height: 240px` left 120px of empty navy under two lines of text —
    the same dead band the hero rules above this one were stripped of. */
-.mini-unit-grid article > header { padding: var(--s-6); color: var(--ink-invert); background: var(--bow-brand-strong); }
+.mini-unit-grid article > header { padding: var(--s-6); color: var(--bow-brand-strong-ink); background: var(--bow-brand-strong); }
 .mini-unit-grid article > header span { color: var(--fin-conditional); font: var(--font-mono); }
 .mini-unit-grid article > header h3 { margin: var(--s-4) 0 var(--s-3); font: var(--t-title1); letter-spacing: var(--display-tracking); }
 .mini-unit-grid article > header p { color: var(--border-default); }
@@ -491,7 +508,37 @@ p { color: var(--ink-2); }
 .teach-next > p:not(.eyebrow) { max-width: 820px; font: var(--t-body-lg); }
 .teach-next > div { display: flex; gap: var(--s-3); margin-top: var(--s-5); }
 .teach-next .standard-chip { position: absolute; right: var(--s-6); top: var(--s-6); }
-.dashboard-section { padding: 0; }
+
+/*
+ * A teacher's page is made of sections, and until now a section was a margin.
+ *
+ * `.dashboard-section { padding: 0 }` was the whole rule, so every surface in the educator
+ * product was one uninterrupted column of headings, tables and paragraphs on the page
+ * ground — which is what made a product carrying real evidence read as a printed handout of
+ * it. The substance was never the problem; nothing had ever drawn a boundary round it.
+ *
+ * A section is a surface now: its own ground, a soft edge, one step of elevation. The
+ * heading sits inside it rather than floating above a table, so a teacher scanning for
+ * "where the class is on each skill" has something to land on.
+ */
+.dashboard-section {
+  padding: var(--s-6) var(--s-6) var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+}
+
+/* A table inside a card has the card's ground already; a second one reads as a box in a box.
+   The rules stay, because they are what makes a dense table readable. */
+.dashboard-section .concept-matrix,
+.dashboard-section .micro-table,
+.dashboard-section .grade-ledger { background: transparent; }
+
+/* Wide evidence tables scroll inside their own card rather than pushing the page sideways —
+   `gridFloors.test.ts` guards the grids, and this is the same failure for a table. */
+.dashboard-section > .micro-table,
+.dashboard-section > .concept-matrix { display: block; overflow-x: auto; }
 .concept-matrix, .micro-table, .grade-ledger { width: 100%; border-collapse: collapse; background: var(--surface); }
 
 /* Every caption in the educator surface, not just the one table that happened to have a
@@ -538,14 +585,14 @@ p { color: var(--ink-2); }
 .route-grid h3 { margin: var(--s-2) 0 var(--s-3); font: var(--t-title3); }
 .route-grid p { margin: 0 0 var(--s-4); color: var(--ink-muted-invert); font: var(--t-micro); }
 .seat-chips { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: auto; }
-.seat-chips a { min-width: 30px; padding: var(--s-2); color: var(--ink-invert); text-align: center; text-decoration: none; background: rgb(255 255 255 / 12%); border-radius: var(--r-xs); font: var(--t-micro); font-feature-settings: var(--num); }
+.seat-chips a { min-width: 30px; padding: var(--s-2); color: var(--bow-brand-strong-ink); text-align: center; text-decoration: none; background: rgb(255 255 255 / 12%); border-radius: var(--r-xs); font: var(--t-micro); font-feature-settings: var(--num); }
 .seat-chips a:hover { background: rgb(255 255 255 / 26%); }
-.trajectory-panel { display: grid; grid-template-columns: 0.35fr 1fr; gap: var(--s-6); margin: 0 var(--s-7); padding: var(--s-6); color: var(--ink-invert); background: var(--bow-brand-strong); }
+.trajectory-panel { display: grid; grid-template-columns: 0.35fr 1fr; gap: var(--s-6); margin: 0 var(--s-7); padding: var(--s-6); color: var(--bow-brand-strong-ink); background: var(--bow-brand-strong); }
 .trajectory-panel h2 { font: var(--t-title1); }
 .trajectory-panel p { color: var(--ink-muted-invert); }
 .trajectory-strip { display: grid; grid-template-columns: repeat(4, 1fr); }
 .trajectory-strip span { display: flex; flex-direction: column; justify-content: center; padding: var(--s-4); border-left: 1px solid var(--world-panel-edge); color: var(--ink-muted-invert); font: var(--t-ui); }
-.trajectory-strip b { color: var(--ink-invert); font: var(--m-lg); }
+.trajectory-strip b { color: var(--bow-brand-strong-ink); font: var(--m-lg); }
 .student-worklist { background: var(--surface); border-top: 1px solid var(--border-ink); }
 .student-worklist > a { min-height: 106px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s-4); padding: var(--s-4) var(--s-5); color: var(--ink-1); border-bottom: 1px solid var(--border-default); text-decoration: none; }
 .student-worklist > a:hover { background: var(--surface-sunken); }
@@ -567,7 +614,7 @@ p { color: var(--ink-2); }
  * `auto-fit` collapses a track with nothing in it, so the cards divide the row however many
  * there are, and the same rule handles the narrow width that used to need a media query.
  */
-.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(var(--card-min, 260px), 1fr)); gap: 1px; padding: 1px; background: var(--border-default); }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(var(--card-min, 260px), 100%), 1fr)); gap: 1px; padding: 1px; background: var(--border-default); }
 .card-grid > * { padding: var(--s-5); background: var(--surface); }
 
 /* `margin-block`: this sits on the page spine like every other block, and only its vertical
@@ -588,7 +635,7 @@ p { color: var(--ink-2); }
 .misconception-list b { display: block; font: var(--t-title3); }
 .misconception-list span { display: block; margin-top: var(--s-2); color: var(--ink-3); font: var(--t-micro); }
 .misconception-list__note { max-width: 70ch; margin-bottom: var(--s-5); }
-.reteach-card { align-self: start; position: sticky; top: var(--s-6); padding: var(--s-6); color: var(--ink-invert); background: var(--bow-brand-strong); }
+.reteach-card { align-self: start; position: sticky; top: var(--s-6); padding: var(--s-6); color: var(--bow-brand-strong-ink); background: var(--bow-brand-strong); }
 .reteach-card p, .reteach-card li { color: var(--border-default); }
 .reteach-card h2 { margin: var(--s-7) 0 var(--s-4); font: var(--t-display2); letter-spacing: var(--display-tracking); }
 
@@ -775,7 +822,7 @@ p { color: var(--ink-2); }
    contains M and W, so the widest code is half again as wide as the narrowest and no fixed
    number fits both. */
 .class-created { display: grid; grid-template-columns: minmax(0, max-content) minmax(0, 1fr); gap: var(--s-7); align-items: start; }
-.class-created__code { min-width: min(300px, 100%); display: grid; gap: var(--s-2); padding: var(--s-6); background: var(--bow-brand); color: var(--ink-invert); border-radius: var(--r-md); }
+.class-created__code { min-width: min(300px, 100%); display: grid; gap: var(--s-2); padding: var(--s-6); background: var(--bow-brand-fill); color: var(--bow-brand-ink); border-radius: var(--r-md); }
 .class-created__code .field-label { margin: 0; color: var(--bow-brand-ink-muted); }
 
 /* `letter-spacing` is added after the last character as well as between them, so the plate
@@ -864,13 +911,13 @@ p { color: var(--ink-2); }
 .spotlight__absence { margin: 0; padding: var(--s-3) var(--s-4); color: var(--ink-2); background: var(--surface); border: 1px dashed var(--border-strong); font: var(--t-sm); }
 .spotlight__absence strong { color: var(--ink-1); }
 
-.next-lesson__action { display: grid; gap: var(--s-3); padding: var(--s-5); color: var(--ink-invert); background: var(--bow-brand-strong); }
+.next-lesson__action { display: grid; gap: var(--s-3); padding: var(--s-5); color: var(--bow-brand-strong-ink); background: var(--bow-brand-strong); }
 .next-lesson__action > .eyebrow { margin: 0; color: var(--bow-brand-ink-muted); }
-.next-lesson__action h4 { margin: 0; color: var(--ink-invert); font: var(--t-title1); }
+.next-lesson__action h4 { margin: 0; color: var(--bow-brand-strong-ink); font: var(--t-title1); }
 .next-lesson__focus { margin: 0; max-width: var(--measure); color: var(--bow-brand-ink-muted); font: var(--t-body-lg); }
 .next-lesson__moves { display: grid; gap: var(--s-2); margin: 0; padding-left: var(--s-6); color: var(--bow-brand-ink-muted); font: var(--t-ui); font-weight: 400; }
 .next-lesson__minutes { margin: 0; color: var(--bow-brand-ink-muted); font: var(--t-micro); }
-.next-lesson__why { margin: var(--s-2) 0 0; padding-top: var(--s-3); border-top: 1px solid rgb(255 255 255 / 22%); color: var(--ink-invert); font: var(--t-ui); font-weight: 400; }
+.next-lesson__why { margin: var(--s-2) 0 0; padding-top: var(--s-3); border-top: 1px solid rgb(255 255 255 / 22%); color: var(--bow-brand-strong-ink); font: var(--t-ui); font-weight: 400; }
 .next-lesson__students ul { display: flex; flex-wrap: wrap; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
 .next-lesson__students li { display: grid; gap: 2px; padding: var(--s-3) var(--s-4); background: var(--surface-raised); border: 1px solid var(--border-default); font: var(--t-ui); }
 .next-lesson__students small { color: var(--ink-3); font: var(--t-micro); }
@@ -933,7 +980,7 @@ p { color: var(--ink-2); }
 .reading-queue h2:focus-visible { outline: 2px solid var(--focus-ring, var(--ink-1)); outline-offset: 4px; }
 
 /* Six BOW-internal levels, each saying what it means beside the control that records it. */
-.override-levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s-2); margin: var(--s-3) 0 0; padding: 0; list-style: none; }
+.override-levels { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: var(--s-2); margin: var(--s-3) 0 0; padding: 0; list-style: none; }
 .override-levels li { display: grid; gap: 2px; }
 .override-levels button { min-height: var(--tap); padding: 0 var(--s-4); color: var(--ink-1); background: var(--surface-raised); border: 1px solid var(--border-strong); border-radius: var(--r-sm); cursor: pointer; font: var(--t-ui); }
 .override-levels button[aria-pressed="true"] { color: var(--ink-invert); background: var(--ink-1); border-color: var(--ink-1); }
@@ -995,7 +1042,10 @@ p { color: var(--ink-2); }
 .trail__judgements { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
 .trail__judgements li { display: grid; gap: 2px; padding-left: var(--s-4); border-left: 3px solid var(--border-default); }
 .trail__judgements b, .trail__judgements span, .trail__judgements em { overflow-wrap: anywhere; }
-.trail__judgements li[data-superseded="true"] { border-left-style: dotted; opacity: 0.75; }
+
+/* Superseded, not unreadable: a teacher reading an evidence trail still has to be able to
+   read the judgement that was replaced. Dotted edge and muted ink, never a fade. */
+.trail__judgements li[data-superseded="true"] { border-left-style: dotted; color: var(--ink-3); }
 .trail__judgements b { font: var(--t-ui); }
 .trail__judgements span { color: var(--ink-2); font: var(--t-sm); }
 .trail__level { font-weight: 700; }
@@ -1089,7 +1139,7 @@ p { color: var(--ink-2); }
 .empty-state dt { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
 .empty-state dd { margin: var(--s-1) 0 0; font: var(--m-md); font-feature-settings: var(--num); }
 
-.choice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--s-4); }
+.choice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: var(--s-4); }
 .choice-dist { display: grid; align-content: start; gap: var(--s-3); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); }
 .choice-dist h3 { margin: 0; font: var(--t-title3); }
 .choice-dist__bar { display: flex; height: 10px; overflow: hidden; background: var(--surface-inset); border-radius: var(--r-pill); }
@@ -1108,7 +1158,7 @@ p { color: var(--ink-2); }
 .cut-list b { font: var(--m-sm); font-feature-settings: var(--num); }
 .cut-list .choice-dist__seats { grid-column: 2; }
 
-.adaptation-lines { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--s-4); margin: 0; }
+.adaptation-lines { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: var(--s-4); margin: 0; }
 .adaptation-lines > div { display: grid; gap: var(--s-1); padding: var(--s-4); background: var(--surface-sunken); }
 .adaptation-lines dt { color: var(--ink-2); font: var(--t-sm); font-weight: 400; }
 .adaptation-lines dd { margin: 0; font: var(--m-sm); font-feature-settings: var(--num); }
@@ -1137,7 +1187,7 @@ p { color: var(--ink-2); }
 .debrief__because { margin: var(--s-2) 0 0; color: var(--ink-3); font: var(--t-sm); font-weight: 400; }
 .debrief__list { display: grid; gap: var(--s-2); margin: var(--s-3) 0; padding-left: var(--s-6); }
 .debrief__list li { font: var(--t-body); }
-.debrief__contrast { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--s-4); }
+.debrief__contrast { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: var(--s-4); }
 .debrief__plan { padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); border-top: 3px solid var(--fin-reliable); }
 .debrief__plan h3 { margin: var(--s-1) 0 var(--s-4); font: var(--t-title3); }
 .debrief__plan dl { display: grid; gap: var(--s-2); margin: 0; }
@@ -1186,6 +1236,11 @@ p { color: var(--ink-2); }
 .objective-table tr[data-ready="false"] tbody th a, .objective-table tr[data-ready="false"] td { color: var(--ink-3); }
 .availability-pill { display: inline-block; padding: 2px var(--s-3); border-radius: var(--r-pill); color: var(--ink-3); background: var(--surface-sunken); font: var(--t-micro); }
 .availability-pill[data-ready="true"] { color: var(--fin-balanced-ink); background: var(--fin-balanced-soft); }
+
+/* The topics with nothing in them, under the count of what there is. Muted and rules-off:
+   it is the same fact as the column on every row below, said once for a reader planning a
+   term, and it must not compete with the search box that is the page's actual control. */
+.objective-topics-empty { max-width: var(--measure); margin: calc(var(--s-4) * -1) 0 var(--s-5); color: var(--ink-3); font: var(--t-body); }
 .objective-wording { max-width: var(--measure); margin: 0 0 var(--s-5); padding-left: var(--s-5); border-left: 3px solid var(--border-ink); font: var(--t-body-lg); }
 .framework-attribution { max-width: var(--measure); margin: 0 0 var(--s-5); color: var(--ink-3); font: var(--t-micro); }
 .objective-class { margin-bottom: var(--s-6); padding: var(--s-5); background: var(--surface); border: 1px solid var(--border-default); }
@@ -1199,6 +1254,10 @@ p { color: var(--ink-2); }
 .objective-result[data-state="strong"] strong { color: var(--fin-balanced-ink); }
 .objective-result[data-state="needs-attention"] strong { color: var(--fin-over-ink); }
 .objective-actions { margin: 0; }
+
+/* The companion note sits above the skills table rather than inside it: it is a fact about
+   what a teacher has already been given, not another row of what BOW measures. */
+.objective-companion { max-width: 60ch; margin: var(--s-5) 0 0; padding: var(--s-4); background: var(--surface-raised); border-left: 3px solid var(--border-strong); color: var(--ink-1); font: var(--t-sm); font-weight: 400; }
 
 /* The step rules used to stop at 640 while the commit bar under them ran the full
    width, which put three unrelated right edges on one short page. */
@@ -1274,7 +1333,7 @@ p { color: var(--ink-2); }
 
 /* The gap used to be a background showing through, which painted the unused cells at the
    end of a short topic as solid blocks of nothing. */
-.topic-band ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(238px, 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; }
+.topic-band ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(238px, 100%), 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; }
 .topic-band li { background: var(--surface); box-shadow: 0 0 0 1px var(--border-subtle); }
 .topic-band a { min-height: 92px; display: grid; grid-template-columns: auto 1fr; grid-template-areas: "code name" "state figure"; align-items: center; gap: var(--s-2) var(--s-4); padding: var(--s-4) var(--s-5); color: var(--ink-1); text-decoration: none; }
 .topic-band a:hover { background: var(--surface-raised); }
@@ -1338,6 +1397,8 @@ p { color: var(--ink-2); }
 .field > label, .field-caps { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.08em; text-transform: uppercase; }
 .field input, .field select, .field textarea,
 .class-form input, .class-form select, .class-form textarea,
+.builder-section input[type="text"], .builder-section input[type="search"], .builder-section input[type="datetime-local"],
+.builder-section select, .builder-section textarea,
 .map-filters select {
   min-height: var(--tap);
   padding: 0 var(--s-4);
@@ -1348,7 +1409,7 @@ p { color: var(--ink-2); }
   border-radius: var(--r-sm);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 60%);
 }
-.field select, .class-form select, .map-filters select {
+.field select, .class-form select, .builder-section select, .map-filters select {
   padding-right: var(--s-8);
   appearance: none;
   background-image: linear-gradient(45deg, transparent 50%, var(--ink-2) 50%), linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
@@ -1393,7 +1454,7 @@ p { color: var(--ink-2); }
    quiet, because absence had been given twenty-two full table rows on the first screen a
    district ever saw. The hairline comes from the items rather than from a fill behind them,
    so a row that does not divide evenly leaves nothing painted where an item is not. */
-.coming-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; }
+.coming-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); gap: 1px; margin: 0; padding: 0; list-style: none; }
 .coming-list li { background: var(--surface); box-shadow: 0 0 0 1px var(--border-subtle); }
 .coming-list a { display: block; padding: var(--s-4) var(--s-5); color: var(--ink-3); font: var(--t-ui); text-decoration: none; }
 .coming-list a:hover { color: var(--ink-1); background: var(--surface-raised); }
@@ -1445,7 +1506,7 @@ p { color: var(--ink-2); }
 .gradebook__counts div { display: grid; gap: 2px; }
 .gradebook__counts dt { color: var(--ink-3); font: var(--t-label); letter-spacing: var(--track-label); text-transform: uppercase; }
 .gradebook__counts dd { margin: 0; font: var(--m-md); font-feature-settings: var(--num); }
-.gradebook__criteria { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--s-3); margin: var(--s-4) 0 0; }
+.gradebook__criteria { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); gap: var(--s-3); margin: var(--s-4) 0 0; }
 .gradebook__criteria div { display: grid; gap: 2px; }
 .gradebook__criteria dt { color: var(--ink-2); font: var(--t-sm); }
 .gradebook__criteria dd { margin: 0; font-feature-settings: var(--num); font-weight: 600; }
@@ -1496,7 +1557,7 @@ p { color: var(--ink-2); }
 .join-code-input { width: 100%; padding: var(--s-4); font: var(--m-md); font-feature-settings: var(--num); letter-spacing: 0.18em; text-align: center; text-transform: uppercase; }
 
 /* Tap your own name. The list is the teacher's own, and a target big enough for a thumb. */
-.name-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr)); gap: var(--s-3); width: 100%; margin: 0; padding: 0; list-style: none; }
+.name-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(11rem, 100%), 1fr)); gap: var(--s-3); width: 100%; margin: 0; padding: 0; list-style: none; }
 .name-grid__pick { width: 100%; min-height: 3.25rem; padding: var(--s-3) var(--s-4); background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--r-sm); color: var(--ink-1); font: var(--t-ui); text-align: left; cursor: pointer; }
 .name-grid__pick:hover { border-color: var(--bow-brand); }
 .name-grid__pick[aria-pressed="true"] { border-color: var(--bow-brand); box-shadow: inset 3px 0 0 var(--bow-brand); }
@@ -1547,10 +1608,10 @@ p { color: var(--ink-2); }
 .student-card--done { color: var(--ink-2); box-shadow: inset 4px 0 0 var(--fin-balanced); }
 
 /* What the teacher wrote back, above the work, because it is the reason to open this again. */
-.student-feedback { display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-5); background: var(--bow-brand); border-radius: var(--r-sm); color: var(--bow-brand-ink); }
+.student-feedback { display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-5); background: var(--bow-brand-fill); border-radius: var(--r-sm); color: var(--bow-brand-ink); }
 .student-feedback .field-label { color: var(--bow-brand-ink-muted); }
 .student-feedback blockquote { margin: 0; font: var(--t-title2); }
-.student-feedback cite { display: block; margin-top: var(--s-2); font: var(--t-sm); font-style: normal; opacity: 0.8; }
+.student-feedback cite { display: block; margin-top: var(--s-2); font: var(--t-sm); font-style: normal; color: var(--ink-3); }
 
 .home__worlds { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
 .home__worlds li { display: grid; gap: 2px; padding: var(--s-4); background: var(--surface); border-radius: var(--r-sm); }
@@ -1622,7 +1683,7 @@ p { color: var(--ink-2); }
 .cards-sheet__head h2 { margin: var(--s-2) 0; color: var(--ink-1); font: var(--t-title2); }
 .cards-sheet__head p { max-width: 54ch; margin: 0; color: var(--ink-2); font: var(--t-ui); }
 .cards-sheet__acts { display: flex; flex-wrap: wrap; gap: var(--s-3); }
-.cards-sheet__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--s-4); margin: var(--s-5) 0 0; padding: 0; list-style: none; }
+.cards-sheet__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap: var(--s-4); margin: var(--s-5) 0 0; padding: 0; list-style: none; }
 .join-card { padding: var(--s-4); background: var(--surface); border: 1.5px dashed var(--border-ink); }
 .join-card__name { margin: 0 0 var(--s-3); color: var(--ink-1); font: var(--t-title3); }
 .join-card dl { display: grid; gap: var(--s-2); margin: 0; }
@@ -1672,6 +1733,136 @@ p { color: var(--ink-2); }
 .sign-in__switch { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); }
 .recovery-code { margin: var(--s-2) 0; color: var(--ink-1); font: var(--m-lg); font-feature-settings: var(--num); letter-spacing: 0.18em; }
 
+/* ---------------------------------------------------------------------------
+   The assignment builder.
+
+   Six numbered sections down the left, generated evidence beside them on the right — the
+   reference's own strongest idea, held to the ruling: every "Yes" the preview table draws
+   traces to a row in `BUILT_WORLD_COVERAGE`, and this stylesheet has no way to make the table
+   claim more than the data underneath it does.
+
+   `<fieldset>` per section rather than `<section>`, for the same reason `.class-form__worlds`
+   already is one: each one groups a set of controls a screen reader has to be able to name as
+   a group, and `<legend>` is the heading level that does that natively.
+   --------------------------------------------------------------------------- */
+.builder-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); align-items: start; gap: var(--s-7); }
+.builder-main { display: grid; gap: var(--gap-block); min-width: 0; }
+.builder-section { margin: 0; padding: var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--r-lg); box-shadow: var(--shadow-card); }
+
+/* Sentence case, for the same reason every other teacher heading is: five numbered sections
+   shouting in caps is a page arguing with the person reading it. */
+.builder-section legend { padding-inline: var(--s-2); color: var(--ink-1); font: var(--t-title1); letter-spacing: var(--display-tracking); }
+.builder-section > p { max-width: var(--measure); margin: 0 0 var(--s-4); color: var(--ink-2); font: var(--t-body); }
+
+/* 1. Learning goal */
+.builder-goal__selected { display: grid; gap: var(--s-2); margin-bottom: var(--s-5); padding-bottom: var(--s-5); border-bottom: 1px solid var(--border-subtle); }
+.builder-goal__text { max-width: var(--measure); margin: var(--s-2) 0 0; padding-left: var(--s-4); border-left: 3px solid var(--border-ink); font: var(--t-body-lg); }
+.builder-goal__meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-4); margin: var(--s-2) 0 0; }
+.builder-goal__meta .framework-attribution { margin: 0; max-width: none; }
+.builder-goal__warn { margin: var(--s-2) 0 0; padding: var(--s-4); background: var(--fin-conditional-soft); color: var(--fin-conditional-ink); font: var(--t-sm); border-left: 3px solid var(--fin-conditional); }
+.builder-goal > label { display: block; margin: var(--s-2) 0 var(--s-1); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.builder-goal input[type="search"] { width: 100%; max-width: 420px; margin-bottom: var(--s-4); }
+.builder-goal__list { display: grid; gap: 1px; max-height: 320px; overflow-y: auto; background: var(--border-subtle); border: 1px solid var(--border-subtle); border-radius: var(--r-sm); }
+.builder-goal__row { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: var(--s-3); padding: var(--s-3) var(--s-4); background: var(--surface); cursor: pointer; }
+.builder-goal__row:hover { background: var(--surface-raised); }
+.builder-goal__row input { margin-block-start: 0.3em; width: 16px; height: 16px; accent-color: var(--bow-brand); }
+.builder-goal__row span { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-3); font: var(--t-sm); color: var(--ink-2); }
+.builder-goal__row b { color: var(--ink-1); font-weight: 600; }
+.builder-goal__row[data-unavailable="true"] { color: var(--ink-4); cursor: default; }
+.builder-goal__row[data-unavailable="true"] b { color: var(--ink-4); }
+.builder-goal__row em { padding: 1px var(--s-3); background: var(--surface-sunken); color: var(--ink-4); font: var(--t-micro); font-style: normal; letter-spacing: 0.04em; text-transform: uppercase; border-radius: var(--r-pill); }
+.builder-goal__row:has(input:checked) { background: var(--fin-adjustable-soft); box-shadow: inset 3px 0 0 var(--bow-brand); }
+.builder-goal__row:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: -3px; }
+
+/* 2. Which story */
+.builder-mode { display: grid; gap: var(--s-3); }
+.builder-mode__card { display: grid; grid-template-columns: auto 1fr; gap: var(--s-3); align-items: start; padding: var(--s-4) var(--s-5); background: var(--surface-raised); border: 1.5px solid var(--border-strong); border-radius: var(--r-md); cursor: pointer; }
+.builder-mode__card input { margin-block-start: 0.3em; width: 18px; height: 18px; accent-color: var(--bow-brand); }
+.builder-mode__card span { display: block; color: var(--ink-2); font: var(--t-sm); }
+.builder-mode__card b { display: block; margin-bottom: var(--s-1); color: var(--ink-1); font: var(--t-title3); }
+.builder-mode__card[data-selected="true"] { border-color: var(--bow-brand); background: var(--fin-adjustable-soft); box-shadow: 0 0 0 1px var(--bow-brand); }
+.builder-mode__card:has(input:focus-visible) { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+
+/* 3. Stories */
+.builder-stories__empty { max-width: var(--measure); margin: 0; padding: var(--s-5); background: var(--fin-over-soft); color: var(--fin-over-ink); font: var(--t-body); border-left: 3px solid var(--fin-over); }
+.builder-stories__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: var(--s-4); margin: 0; }
+.builder-story-card { position: relative; display: block; cursor: pointer; border-radius: var(--r-lg); }
+.builder-story-card input { position: absolute; top: var(--s-3); right: var(--s-3); z-index: 1; width: 22px; height: 22px; accent-color: var(--bow-brand); }
+.builder-story-card .world-card { height: 100%; }
+.builder-story-card .world-card__body small { display: block; color: var(--ink-3); font: var(--t-sm); }
+.builder-story-card__length { display: block; margin-top: var(--s-2); color: var(--ink-4); font: var(--t-micro); font-feature-settings: var(--num); }
+.builder-story-card[data-selected="true"] .world-card { outline: 2px solid var(--bow-brand); outline-offset: 2px; box-shadow: var(--shadow-lift); }
+.builder-story-card:has(input:focus-visible) .world-card { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.builder-stories__note { max-width: var(--measure); margin: var(--s-4) 0 0; color: var(--ink-3); font: var(--t-sm); }
+
+/* 4. Class & due date */
+.builder-class label { display: block; margin: var(--s-4) 0 var(--s-1); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.builder-class label:first-of-type { margin-top: 0; }
+.builder-class select, .builder-class input[type="datetime-local"] { width: 100%; max-width: 420px; }
+.builder-class__note { max-width: var(--measure); margin: var(--s-3) 0 0; color: var(--ink-3); font: var(--t-micro); }
+
+/* 5. Closing question */
+.builder-closing label { display: block; margin: 0 0 var(--s-1); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.builder-closing textarea { width: 100%; resize: vertical; }
+.builder-closing__count { margin: var(--s-1) 0 var(--s-4); color: var(--ink-4); font: var(--t-micro); font-feature-settings: var(--num); text-align: right; }
+.builder-closing__suggest { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin: 0 0 var(--s-4); }
+.builder-closing__suggest span { color: var(--ink-3); font: var(--t-sm); }
+.builder-closing__required { display: flex; align-items: center; gap: var(--s-3); color: var(--ink-2); font: var(--t-sm); letter-spacing: normal; text-transform: none; }
+.builder-closing__required input { width: 18px; height: 18px; accent-color: var(--bow-brand); }
+
+/* Publish */
+.builder-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); }
+.builder-actions__status { margin: 0; color: var(--ink-3); font: var(--t-sm); }
+.builder-actions__status--problem { color: var(--fin-over-ink); font-weight: 600; }
+.builder-confirm { display: flex; flex-wrap: wrap; gap: var(--s-4); }
+
+/* The evidence preview. Sticky so it stays beside the section a teacher is on, and never the
+   only thing on screen — `top` matches the topbar's own height plus a breath of air. */
+.builder-preview { position: sticky; top: var(--s-6); align-self: start; padding: var(--s-6); background: var(--surface); border: 1px solid var(--border-default); border-radius: var(--r-lg); box-shadow: var(--shadow-card); }
+.builder-preview h2 { margin: 0 0 var(--s-4); font: var(--t-title2); }
+.builder-preview > p { margin: 0; color: var(--ink-2); font: var(--t-sm); }
+
+/* The rail is 280-360px and the table inside it has one text column plus one per story, so
+   the story headings were folding onto three lines each while the first column wrapped to
+   match. The head cells stop wrapping and the whole table scrolls sideways inside its own
+   card instead — the row a teacher is reading stays on one line, and nothing pushes the page
+   sideways. */
+
+/* The preview is a list of skills, each a list of the parts it needs. See
+   `AssignmentBuilder.tsx` for why it stopped being a table. */
+.builder-preview__skills { display: grid; gap: var(--s-5); margin: 0 0 var(--s-4); padding: 0; list-style: none; }
+.builder-preview__skills > li > h3 { margin: 0 0 var(--s-3); color: var(--ink-2); font: var(--t-sm); font-weight: 700; }
+.builder-preview__rows { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+
+.builder-preview__rows > li {
+  display: grid;
+  gap: 2px;
+  padding-left: var(--s-4);
+  border-left: 2px solid var(--fin-balanced);
+  color: var(--ink-2);
+  font: var(--t-sm);
+}
+
+/* The only thing on this panel a teacher has to act on. */
+.builder-preview__rows > li[data-gap="true"] { border-left-color: var(--fin-conditional); }
+.builder-preview__row small { color: var(--ink-4); }
+.builder-preview__gap { color: var(--fin-conditional-ink); font: var(--t-micro); font-weight: 700; }
+.builder-preview__every { margin: 0 0 var(--s-4); color: var(--ink-2); font: var(--t-sm); }
+
+.builder-preview__scroll { overflow-x: auto; margin-bottom: var(--s-4); }
+.builder-preview__scroll .micro-table { min-width: 100%; font: var(--t-sm); }
+.builder-preview__scroll th, .builder-preview__scroll td { padding: var(--s-3) var(--s-2); vertical-align: top; }
+.builder-preview__scroll thead th { white-space: nowrap; font: var(--t-micro); font-weight: 700; letter-spacing: 0.04em; }
+.builder-preview__scroll tbody td { text-align: center; font-feature-settings: var(--num); }
+.builder-preview__scroll tbody th { text-align: left; font: var(--t-sm); font-weight: 500; }
+.builder-preview__skill th { padding-top: var(--s-5); color: var(--ink-3); font: var(--t-label); letter-spacing: 0.04em; text-transform: uppercase; border-bottom: none; }
+.builder-preview__scroll thead th[data-included="false"] { color: var(--ink-4); font-weight: 400; }
+.builder-preview__note { margin-top: var(--s-4); color: var(--ink-3); font: var(--t-micro); }
+
+@media (max-width: 900px) {
+  .builder-layout { grid-template-columns: minmax(0, 1fr); }
+  .builder-preview { position: static; }
+}
 
 /* ---------------------------------------------------------------------------
    The narrow window, last — because a rule that overrides another has to come after it.
@@ -1706,3 +1897,72 @@ p { color: var(--ink-2); }
   .rubric-row { grid-template-columns: minmax(0, 1fr); }
   .map-header, .map-controls, .topic-bands, .map-note { padding-left: var(--s-5); padding-right: var(--s-5); }
 }
+
+/* The teacher's own closing question, on both sides of it.
+
+   Set apart from the canonical writing above it on purpose and not merely for rhythm: a
+   student has to be able to tell which question BOW is going to score, and a teacher has to be
+   able to tell which answer is not part of what BOW claims. Quieter than the panel it sits
+   under, ruled off, and never inside the rubric card. */
+.closing-question { display: grid; gap: var(--s-3); margin-top: var(--s-6); padding: var(--s-5); background: var(--surface-sunken); border-left: 3px solid var(--border-strong); }
+.closing-question__must { color: var(--fin-over-ink); font-weight: 600; }
+.closing-question__may { color: var(--ink-3); }
+.closing-question__asked { margin: 0; font: var(--t-body-lg); }
+.closing-question textarea { width: 100%; }
+.closing-question__note { margin: 0; color: var(--ink-3); font: var(--t-micro); }
+
+.closing-answer { margin-top: var(--s-6); padding-top: var(--s-5); border-top: 1px solid var(--border-default); }
+.closing-answer__asked { margin: 0 0 var(--s-3); color: var(--ink-2); font: var(--t-body); font-style: italic; }
+.closing-answer__given { margin: 0 0 var(--s-3); }
+
+/* ---------------------------------------------------------------------------
+   Where a student's evidence leaves the objective it was set for.
+
+   It sits under the lead in the student page's header, because the two answer
+   one question in two vocabularies — what the skills show, and what that means
+   for the objective a teacher actually chose — and a teacher should never have
+   to hold one in their head while scrolling to the other.
+   --------------------------------------------------------------------------- */
+
+.student-lead-stack { display: grid; align-content: start; gap: var(--s-4); min-width: 0; }
+
+.objective-standing {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-5);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--bow-brand);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+}
+
+.objective-standing > * { margin: 0; }
+
+.objective-standing__code { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: baseline; color: var(--ink-2); font: var(--t-sm); }
+
+.objective-standing__chip {
+  flex: none;
+  padding: 2px var(--s-3);
+  color: var(--bow-brand-strong);
+  background: var(--violet-50);
+  border-radius: var(--r-xs);
+  font: var(--t-label);
+  font-feature-settings: var(--num);
+  letter-spacing: 0.04em;
+}
+
+.objective-standing__state { display: grid; gap: 2px; }
+.objective-standing__state strong { font: var(--t-title3); }
+.objective-standing__state span { color: var(--ink-3); font: var(--t-sm); }
+
+/* The three states carry a colour each, and the middle one is the one that matters:
+   it has to read as "not the whole claim yet" rather than as a middling score. */
+.objective-standing[data-state="demonstrated"] .objective-standing__state strong { color: var(--fin-balanced-ink); }
+.objective-standing[data-state="partially-assessed"] .objective-standing__state strong { color: var(--fin-conditional-ink); }
+.objective-standing[data-state="not-assessed"] .objective-standing__state strong { color: var(--ink-3); }
+
+.objective-standing__missing ul { margin: var(--s-2) 0 0; padding-left: var(--s-5); color: var(--ink-2); font: var(--t-sm); }
+.objective-standing__missing li + li { margin-top: var(--s-2); }
+.objective-standing__link { font: var(--t-sm); }
+.objective-standing__attribution { color: var(--ink-4); font: var(--t-micro); }

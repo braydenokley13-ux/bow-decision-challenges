@@ -1,7 +1,7 @@
 import { allocateClassCode, generateTeacherKey, isWellFormedClassCode, isWellFormedSeatCode, normaliseClassCode, normaliseSeatCode } from "../src/platform/classes/codes";
 import { lastSweepResult, sweepIfDue } from "./retention";
-import { assignmentBelongsToClass, assignmentIdFor, assignmentsForClass, generateAssignmentId, readAssignmentRequest } from "../src/platform/classes/assignments";
-import { CLASS_RETENTION_DAYS, type Assignment, type AttributedSubmission, type ClassErrorCode, type EvidenceSubmission, type SubmissionRecord, type TeacherOverride } from "../src/platform/classes/types";
+import { assignmentBelongsToClass, assignmentIdFor, assignmentsForClass, CLOSING_QUESTION_MAX, generateAssignmentId, readAssignmentRequest } from "../src/platform/classes/assignments";
+import { CLASS_RETENTION_DAYS, type Assignment, type AttributedSubmission, type ClassErrorCode, type ClosingAnswer, type EvidenceSubmission, type SubmissionRecord, type TeacherOverride } from "../src/platform/classes/types";
 import { EVIDENCE_EVENT_TYPES } from "../src/domain/evidence/types";
 import { evidenceRequirementById } from "../src/domain/competency/competencies";
 import type { EvidenceRequirementId, RubricLevel } from "../src/domain/competency/types";
@@ -158,6 +158,39 @@ function fail(status: number, error: ClassErrorCode, message: string): ApiRespon
  */
 const SAFE_ID = /^[A-Za-z0-9._-]{8,64}$/;
 
+/**
+ * The longest closing answer this service will store, in characters.
+ *
+ * Generous — a student writing three good sentences must never hit it — and finite, because an
+ * unbounded text field on an unauthenticated-by-key surface is a place to put a megabyte.
+ */
+const CLOSING_ANSWER_MAX = 2000;
+
+/**
+ * A student's answer to the teacher's closing question, or `null` when there is none.
+ *
+ * `undefined` means malformed, which is a rejected request; `null` means the student did not
+ * answer, which is legal — a question the teacher marked optional, or one they left unanswered.
+ * The distinction is the same one `readStandardRef` makes and exists for the same reason.
+ *
+ * **`questionText` is required and comes from the client**, which is worth being explicit
+ * about: it is the question as the student was actually shown it, and it is stored so a
+ * teacher who later edits the question cannot silently re-label an answer already given. It is
+ * bounded and it is treated as text — nothing reads it, nothing routes on it, and it names no
+ * competency.
+ */
+function readClosingAnswer(value: unknown): ClosingAnswer | null | undefined {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "object") return undefined;
+  const { questionText, answer, at } = value as { questionText?: unknown; answer?: unknown; at?: unknown };
+  if (typeof questionText !== "string" || typeof answer !== "string") return undefined;
+  if (questionText.length > CLOSING_QUESTION_MAX || answer.length > CLOSING_ANSWER_MAX) return undefined;
+  const written = answer.trim();
+  if (written.length === 0) return null;
+  const stamped = typeof at === "number" && Number.isFinite(at) ? at : Date.now();
+  return { questionText: questionText.trim(), answer: written, at: stamped };
+}
+
 function readSubmission(body: unknown): EvidenceSubmission | null {
   if (!body || typeof body !== "object") return null;
   const candidate = body as Partial<EvidenceSubmission>;
@@ -180,6 +213,12 @@ function readSubmission(body: unknown): EvidenceSubmission | null {
     const type = (event as { type?: unknown }).type;
     if (typeof type !== "string" || !known.has(type)) return null;
   }
+  // The teacher's own closing question, answered. It is read here and kept out of `log`, which
+  // is the whole point of it having a field: nothing in `observe.ts` can reach it, so no
+  // competency result can move because of what a teacher chose to ask. §37.
+  const closingAnswer = readClosingAnswer(candidate.closingAnswer);
+  if (closingAnswer === undefined) return null;
+
   return {
     classCode: normaliseClassCode(String(candidate.classCode ?? "")),
     seatCode: normaliseSeatCode(candidate.seatCode),
@@ -187,6 +226,7 @@ function readSubmission(body: unknown): EvidenceSubmission | null {
     challengeId: candidate.challengeId,
     challengeVersion: candidate.challengeVersion,
     ...(candidate.assignmentId !== undefined ? { assignmentId: candidate.assignmentId } : {}),
+    ...(closingAnswer ? { closingAnswer } : {}),
     log: candidate.log,
   };
 }
@@ -313,6 +353,17 @@ export function keepWhatWasNotSent(
     // Restamping it moves a child from on time to a day late for pressing reload, and it is
     // the column a teacher sorts by when they want to know who has finished.
     submittedAt: existing.submittedAt,
+    // The student's own words, kept unless the student sends new ones.
+    //
+    // Not the same rule as the teacher fields above, and deliberately not: a closing answer IS
+    // the student's to send, so a delivery carrying one replaces the stored one — that is a
+    // student editing what they wrote. What must not happen is the other case. A retry that
+    // omits it, or a second delivery from a client that never showed the question, would
+    // otherwise erase sentences a child had already written, which is the one thing §84 says
+    // this service may never do.
+    ...(fresh.closingAnswer === undefined && existing.closingAnswer !== undefined
+      ? { closingAnswer: existing.closingAnswer }
+      : {}),
   };
 }
 

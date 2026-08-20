@@ -49,6 +49,7 @@ export const PAGE_TITLES: readonly PageTitle[] = [
   { path: PLAN_UNDER_PRESSURE.route, say: () => `${PLAN_UNDER_PRESSURE.title} — ${SUFFIX}` },
   { path: "/educator/classes", say: () => `My classes — ${SUFFIX}` },
   { path: "/educator/classes/new", say: () => `A new class — ${SUFFIX}` },
+  { path: "/educator/assignments/new", say: () => `New assignment — ${SUFFIX}` },
   { path: "/educator/sign-in", say: () => `Teacher sign-in — ${SUFFIX}` },
   { path: "/educator/guide", say: () => `Teacher's guide — ${SUFFIX}` },
   { path: "/educator/try", say: () => `Try it as a student — ${SUFFIX}` },

@@ -36,7 +36,19 @@ import { withoutComments } from "./test/source";
  * 3. Every clause of README's *What BOW holds* is checked against the handler that ships.
  */
 
-const DOCUMENTS = ["README.md", "ARCHITECTURE.md"] as const;
+/**
+ * `MODULE_COVERAGE.md` and `OBJECTIVE_CLOSURE.md` are generated rather than written, which does
+ * not exempt them: they are at the root, they have authoritative names, and the curriculum lead
+ * this rule exists for will open them first because they are the ones that answer their
+ * question — *what can this assess*, and *what would it take to assess the rest*. Held to the
+ * same rules as the two that are typed by hand.
+ *
+ * Being generated makes the rules **easier** to keep, not optional. A document that cannot say
+ * a false thing about the product without a test failing is the point of generating it; what it
+ * can still do is claim compliance, or deny what BOW holds, in prose a person wrote into the
+ * generator. That prose is checked here like any other.
+ */
+const DOCUMENTS = ["README.md", "ARCHITECTURE.md", "MODULE_COVERAGE.md", "OBJECTIVE_CLOSURE.md"] as const;
 
 /**
  * The sentence a document has to carry if it is not one of the two.

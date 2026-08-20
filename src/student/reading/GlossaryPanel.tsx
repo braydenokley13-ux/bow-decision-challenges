@@ -1,5 +1,6 @@
 import { useEffect, useRef, type KeyboardEvent } from "react";
 import { glossaryFor, termsOnScreen, type GlossaryEntry } from "./glossary";
+import { disclosureEscape } from "../../components/primitives/disclosureEscape";
 
 /**
  * The words on this screen, defined, without leaving the screen.
@@ -88,7 +89,7 @@ export function GlossaryPanel({ screenText, world, onClose, onRead, canRead, ret
           <p className="glossary__none">Nothing on this screen is in the list. The words below are the ones BOW explains.</p>
         )}
         {elsewhere.length > 0 && (
-          <details className="glossary__all">
+          <details className="glossary__all" onKeyDown={disclosureEscape()}>
             <summary>Every other word in this story<span aria-hidden="true">▾</span></summary>
             <TermList terms={elsewhere} />
           </details>

@@ -31,6 +31,27 @@ export interface WorldEvidenceCoverage {
   competencyId: CompetencyId;
   /** Every evidence requirement this world has a stated production route for. */
   producedEvidenceRequirementIds: readonly EvidenceRequirementId[];
+  /**
+   * The competency contract this row was written against — `competencyContract(competencyId)`
+   * at the moment somebody checked the world produces it.
+   *
+   * **This field exists because of a specific failure.** A world was designed against
+   * `is-the-add-on-worth-it` while it had four required rows; the competency gained a fifth;
+   * the design was never re-read; the court that judged it scored the designer's rubric rather
+   * than the shipped one; and a coverage figure went out two objectives wrong. Nothing in the
+   * build could notice, because a coverage row records *which* requirements a world produces
+   * and never recorded *which version of the competency* that claim was true of.
+   *
+   * `worldContractFreshness.test.ts` fails the build when a stamped contract and the current
+   * one disagree. It does not decide whether the world still works — usually the answer is
+   * that one new row needs a production route — it says the claim was written against a
+   * different contract than the one that ships, which is the fact nobody had.
+   *
+   * Re-stamping is the deliberate act of having re-read the world against the new contract.
+   * A stamp updated without that is the guard becoming a formality, and the test's failure
+   * message says so.
+   */
+  contract: string;
 }
 
 /**
@@ -74,6 +95,7 @@ export const BUILT_WORLD_COVERAGE: readonly WorldEvidenceCoverage[] = [
       "adapt-a-plan.er4",
       "adapt-a-plan.er5",
     ],
+    contract: "adapt-a-plan:4:b44odj",
   },
   /**
    * `sort-by-need-want-goal` — declared for as long as this product has existed, and
@@ -100,6 +122,7 @@ export const BUILT_WORLD_COVERAGE: readonly WorldEvidenceCoverage[] = [
       "sort-by-need-want-goal.er3",
       "sort-by-need-want-goal.er4",
     ],
+    contract: "sort-by-need-want-goal:4:1hlzpxg",
   },
   /**
    * The same competency, produced by the market, from the same event.
@@ -120,6 +143,7 @@ export const BUILT_WORLD_COVERAGE: readonly WorldEvidenceCoverage[] = [
       "sort-by-need-want-goal.er3",
       "sort-by-need-want-goal.er4",
     ],
+    contract: "sort-by-need-want-goal:4:1hlzpxg",
   },
   {
     worldId: "basketball",
@@ -131,6 +155,7 @@ export const BUILT_WORLD_COVERAGE: readonly WorldEvidenceCoverage[] = [
       "plan-within-income.er4",
       "plan-within-income.er5",
     ],
+    contract: "plan-within-income:5:huidtu",
   },
   // Run the Pop-Up produces the same two competencies from a completely different world: a
   // night market, four Saturdays, trays of food that spoil, and a rented generator that dies
@@ -149,6 +174,7 @@ export const BUILT_WORLD_COVERAGE: readonly WorldEvidenceCoverage[] = [
       "adapt-a-plan.er4",
       "adapt-a-plan.er5",
     ],
+    contract: "adapt-a-plan:4:b44odj",
   },
   {
     worldId: "food-truck",
@@ -160,6 +186,7 @@ export const BUILT_WORLD_COVERAGE: readonly WorldEvidenceCoverage[] = [
       "plan-within-income.er4",
       "plan-within-income.er5",
     ],
+    contract: "plan-within-income:5:huidtu",
   },
 ] as const;
 

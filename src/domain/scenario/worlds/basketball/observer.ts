@@ -232,15 +232,34 @@ export const BASKETBALL_EVIDENCE_ROUTES: readonly BasketballEvidenceRoute[] = [
 /**
  * Competencies Basketball produces evidence about that cannot be recorded yet.
  *
- * `plan-for-the-unexpected` is the one. Building a lower-resource version of a plan before
- * knowing what will go wrong, then meeting something that goes wrong, is exactly what C4.1
- * to C4.4 observe, and the product definition says as much. There is nothing to map it onto:
- * that competency's evidence requirements are an empty array, because writing them is
- * content work owned by a person and an invented requirement becomes a rubric row, a
- * reteach card and a claim about a student.
+ * `plan-for-the-unexpected` is the one, and this note used to say something about it that is
+ * not true. **It read: "Building a lower-resource version of a plan before knowing what will
+ * go wrong, then meeting something that goes wrong, is exactly what C4.1 to C4.4 observe."**
+ * The first half of that sentence describes the `fallback-version` screen. Half the students
+ * in this world never see it.
  *
- * So the route is named here instead of guessed, and `coverage.test.ts` fails the moment
- * somebody writes those requirements — which is exactly when this file needs changing.
+ * `reducer.ts` routes a saved working plan to `fallback-version` only when the student counted
+ * conditional income — *"A plan built on no conditional income has no lower-resource version to
+ * build, so the season starts instead of a screen that only says there is nothing to do."* For
+ * everyone else `primaryC4` falls through to `week5_cost_response`, and `neutrality.test.ts`
+ * asserts outright that the two produce equal C4 scores. That interchangeability is correct for
+ * what C4 is scoring — a repair is a repair, and this product refuses to reward risk appetite.
+ * It is wrong for a competency whose statement is *plan for it **before** it happens*: the two
+ * routes would report advance protection from advance protection for one student and from
+ * post-shock repair for another, decided by a choice that student made two screens earlier.
+ *
+ * Which is why nothing is routed. The requirements are still unwritten — that part was always
+ * true, and an invented requirement becomes a rubric row, a reteach card and a claim about a
+ * student. But writing them is no longer the only blocker, and the tripwire in `coverage.test.ts`
+ * says so rather than telling the next person to route it here.
+ *
+ * **What Basketball has that would carry it for every student:** the reserve line, set in the
+ * opening plan before anything goes wrong, and the Week 5 cost that tests it. That is the same
+ * shape as the market's cushion and the generator, and it is unconditional in both worlds. What
+ * it cannot be is a rubric about the *size* of the reserve — `neutrality.test.ts` already
+ * forbids rewarding a bigger cushion, correctly, because how much protection is right depends
+ * on the goal. It has to be about knowing what the plan would absorb and reckoning honestly
+ * with what it did not.
  */
 export const AWAITING_EVIDENCE_REQUIREMENTS: readonly CompetencyId[] = ["plan-for-the-unexpected"];
 

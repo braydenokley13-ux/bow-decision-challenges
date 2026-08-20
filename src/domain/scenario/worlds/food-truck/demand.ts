@@ -72,9 +72,15 @@ import type { DemandProfile } from "../../demand";
  * own comparisons are counted in.
  */
 export const POP_UP_DEMAND: DemandProfile = {
-  // Re-measured after the density pass. Cutting the pitch screen, the settle table and three
-  // summary sentences the ending's verdicts now say better took the copy from 3.78 to here.
-  readingGradeLevel: 3.41,
+  // Re-measured after the copy-clarity pass (`COPY_CONTRACT.md`), which is the reason this
+  // number moved so far from the density pass's 3.41 rather than a little: Flesch–Kincaid
+  // scores sentence length and syllables, and the pass's whole method was shortening sentences
+  // to one idea apiece — "A first Saturday brings a booth the crowd it gets" (nine words, one
+  // clause, grade ~2) became three plain sentences, each shorter still. The grade falling is
+  // the instrument correctly reading shorter sentences; it is not a claim that the writing is
+  // easier to *follow* than it was, which `COPY_CONTRACT.md`'s own companion check — not this
+  // ruler — is what actually catches. Measured with `measureReading` over `popUpStudentCopy()`.
+  readingGradeLevel: 2.66,
   // Two rulers reach this number and it has to satisfy both. `worldParity.test.ts` counts the
   // prose in `scenario.ts` — every branch, including the ending verdicts a single run never
   // prints — and `stages/readingLoad.test.tsx` renders the ten screens of the shortest
@@ -82,10 +88,19 @@ export const POP_UP_DEMAND: DemandProfile = {
   // inside fifteen per cent of each, because a number that matched one and not the other would
   // be true of a run nobody has.
   //
-  // Re-measured when the turn-in screen became a receipt. It was a headline and a sentence of
-  // AI policy over two thirds of an empty viewport while the other story's student was shown
-  // their four decisions and their own paragraph; it now says the same things in this world's
-  // nouns, and the words it costs are declared here rather than absorbed.
+  // Re-measured after the copy-clarity pass. Splitting stacked and inverted sentences into one
+  // plain clause apiece costs a few words per sentence — a subject named twice reads better
+  // than a pronoun that has to reach back two sentences for its noun, and it is not free — so
+  // the total rose a little even as most individual lines shortened. Counted with `countWords`
+  // over `popUpStudentCopy().filter(isProse)`.
+  //
+  // Re-measured again for The Counter (`SUPPLIER_BUILD_BRIEF.md` §4): `trayHint` and
+  // `affordable` are gone, `<LinesHeld>` no longer repeats the plan board on the first Saturday
+  // or the standing order, and `nextNote` says one sentence instead of three now that the
+  // order itself shows two unequal nights. The rendered critical path in
+  // `stages/readingLoad.test.tsx` fell to 2364 words; this sits between that and the 2755 the
+  // copy table's own prose measures, inside 15% of both, the same rule the number has always
+  // had to satisfy.
   totalWordsStudentReads: 2600,
   arithmeticOperations: 4,
   arithmeticComplexity: "multiply",

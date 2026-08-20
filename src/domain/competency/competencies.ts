@@ -264,6 +264,466 @@ const SAVE_TOWARD_A_GOAL_EVIDENCE: readonly EvidenceRequirement[] = [
 ] as const;
 
 /**
+ * `gross-to-net` — mapped `full` to NYSED 3.2 and `partial` to 3.3.
+ *
+ * **ER1 is not the interesting half and ER2 is.** The objective's own sentence is *analyze the
+ * difference between gross income and net income*, and an experience that stopped at the subtraction
+ * would be the pay-stub labelling exercise the Mechanics Lab scored 47/70 and called a support
+ * activity. What makes this a decision competency is that the student then **plans against the
+ * net number**, and the misconception it exists to catch — *plan from the number on the offer
+ * letter* — can only be caught by a world that lets them do exactly that and then shows them.
+ *
+ * So ER3 carries a demand on any world claiming this competency: there has to be a moment where
+ * a commitment is made while only the gross figure is on screen. Anything that shows take-home
+ * before the first commitment can never observe ER3, and four-fifths of a competency is nothing
+ * at all — `isCompetencyAvailable` is all-or-none by design.
+ *
+ * Every row is `required` because 3.2 is a `full` mapping, and `coverageClaims.test.ts` refuses
+ * a `full` mapping that stands on an optional row: an optional requirement can sit unreached
+ * and forever `null` while the competency still reports available, which would promise more
+ * than the bar it is actually held to.
+ *
+ * Three independent designs, written without sight of each other or of this file, decomposed
+ * this competency the same four ways. That is not proof they are right, and it is
+ * the strongest evidence available before a student has met one.
+ */
+const GROSS_TO_NET_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("gross-to-net", 1, {
+    label: "Works out take-home from gross",
+    kind: "decision",
+    required: true,
+    observableRule: "Takes the stated taxes and deductions off a gross figure they are given, and arrives at take-home before anything states it for them",
+    misconceptionIfNot: "Deductions are optional",
+  }),
+  requirement("gross-to-net", 2, {
+    label: "Plans against take-home, not gross",
+    kind: "decision",
+    required: true,
+    observableRule: "Every commitment made once take-home is known fits the take-home figure rather than the advertised one",
+    misconceptionIfNot: "Plan from the number on the offer letter",
+  }),
+  requirement("gross-to-net", 3, {
+    label: "Repairs what was committed on the gross figure",
+    kind: "decision",
+    required: true,
+    observableRule: "When a commitment priced off gross no longer fits, frees at least the shortfall from money that can still move, rather than leaving the plan overspent",
+    misconceptionIfNot: null,
+  }),
+  requirement("gross-to-net", 4, {
+    label: "Ends inside take-home, or says what is uncovered",
+    kind: "decision",
+    required: true,
+    observableRule: "The plan at the end fits what was actually taken home, or the amount still uncovered is stated as a figure",
+    misconceptionIfNot: null,
+  }),
+] as const;
+
+/**
+ * `what-taxes-fund` — mapped `full` to NYSED 3.3, whose verb is *explain*.
+ *
+ * The shape is `compare-two-lives` and it is load-bearing rather than decorative. *What taxes
+ * fund* is invisible from one life: a student who only ever sees the amount leaving their own
+ * cheque has seen a subtraction, and the misconception this competency exists to catch —
+ * *taxes are money that disappears* — is a claim about where the money went, which their own
+ * stub cannot answer. ER2 and ER3 are what reach the other life.
+ *
+ * **ER2 says "and not to one it does not" on purpose, and it is the accuracy gate for this
+ * whole module.** Social Security and Medicare are the two deductions a middle-school earner
+ * actually sees on a first pay stub, and neither of them funds schools, libraries or roads —
+ * those are property and sales taxes, which are not on that stub at all. An experience that lets a
+ * student route FICA to the local library and calls it right has taught something false, and
+ * it is the most natural false thing to teach here, because *schools and roads* is the answer
+ * every adult gives when asked what taxes pay for. Getting it right is also better content
+ * than getting it wrong: the thing a student uses most is funded by a tax their own pay packet
+ * has never met.
+ *
+ * All three required, for the `full` mapping, as above.
+ */
+const WHAT_TAXES_FUND_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("what-taxes-fund", 1, {
+    label: "Reads what a tax took from their own pay",
+    kind: "decision",
+    required: true,
+    observableRule: "States as an amount what each named tax took out of a gross figure that is the student's own, rather than naming the rate",
+    misconceptionIfNot: null,
+  }),
+  requirement("what-taxes-fund", 2, {
+    label: "Sends a deduction to what it actually funds",
+    kind: "decision",
+    required: true,
+    observableRule: "Connects each named deduction from their own pay to a public payment that deduction funds, and does not credit it with a service funded by some other tax",
+    misconceptionIfNot: null,
+  }),
+  requirement("what-taxes-fund", 3, {
+    label: "Says what the money bought, and who for",
+    kind: "explanation",
+    required: true,
+    observableRule: "Accounts for the reduction in their own take-home by naming something the money pays for and somebody who receives it, rather than treating it as money gone",
+    misconceptionIfNot: "Taxes are money that disappears",
+  }),
+] as const;
+
+/**
+ * `decide-to-borrow` — mapped `full` to NYSED 2.2 and `partial` to 2.1.
+ *
+ * **ER4 is what makes the `full` claim on 2.2 true, and it nearly was not written.** 2.2 reads:
+ *
+ * > Explain the costs and benefits of using credit to finance **different types of purchases**,
+ * > and describe situations in which using credit may be **helpful or harmful**.
+ *
+ * Plural, and both directions. The mapping's own rationale says *"a specific purchase"*,
+ * singular — the same gap that demoted the needs-wants-values row from `full` to `partial`
+ * after somebody read the state's sentence before reading this repository.
+ *
+ * Four independent design briefs, each holding that sentence, each proposing their own
+ * requirements, produced a single purchase with a cash-versus-credit fork. Not one reached the
+ * plural clause. That is evidence about what a twenty-minute decision experience naturally
+ * produces, not four oversights, and the first instinct was to demote the mapping.
+ *
+ * What changes it is the objective's own verbs. **Explain** and **describe** are speech acts.
+ * 2.2 does not ask the student to *make* a decision about several kinds of purchase; it asks
+ * them to *say* when credit helps and when it hurts — so the clause belongs on the written row
+ * rather than on the board, and reaching for it mechanically would have meant demanding every
+ * world carry two financeable purchases for a clause the objective never asked to be acted out.
+ * ER4 therefore asks for the case that would flip, in the student's own words, alongside the
+ * one they actually decided.
+ *
+ * Every row is `required`, as a `full` mapping demands. `explanationRequired` is already `true`
+ * on this competency, which is the flag that has to agree with the array.
+ */
+const DECIDE_TO_BORROW_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("decide-to-borrow", 1, {
+    label: "Prices the credit route",
+    kind: "decision",
+    required: true,
+    observableRule: "States what borrowing will cost in total — every payment plus interest and any fee — rather than reading the instalment as the price",
+    misconceptionIfNot: "The monthly payment is the price",
+  }),
+  requirement("decide-to-borrow", 2, {
+    label: "Prices the alternative",
+    kind: "decision",
+    required: true,
+    observableRule: "Establishes what not borrowing costs — waiting, going without, or paying another way — as a figure or as a stated consequence, before committing",
+    misconceptionIfNot: null,
+  }),
+  requirement("decide-to-borrow", 3, {
+    label: "Commits on terms they can meet",
+    kind: "decision",
+    required: true,
+    observableRule: "The repayment committed to fits money the student will actually have on the dates it falls due, given what is already owed",
+    misconceptionIfNot: "Credit is free if I pay it back",
+  }),
+  requirement("decide-to-borrow", 4, {
+    label: "Says what the extra bought, and when the answer would flip",
+    kind: "explanation",
+    required: true,
+    observableRule: "Names what was paid above the cash price and what having it sooner was worth, and names a purchase they would answer the other way and why",
+    misconceptionIfNot: null,
+  }),
+] as const;
+
+/**
+ * `keep-credit-costs-down` — `partial` to 2.1, 2.3 and 2.4, and **no `full` mapping anywhere**.
+ *
+ * It matters anyway, and more than a `partial` row usually does: it is one of the three
+ * competencies NYSED 2.1's completion rule names, so 2.1 reads *partially assessed* until all
+ * of this is produced alongside `decide-to-borrow` and `sort-by-need-want-goal`.
+ *
+ * **2.3 and 2.4 stay `partial` and these rows do not change that.** Both objectives' verbs are
+ * *explain* and *describe*, and every row below is a decision. Running the strategies forward is
+ * evidence toward them and is not the explanation their own sentences ask for; the competency
+ * carries `explanationRequired: false` and it would be a different competency if it did not.
+ * Closing that gap is a mapping decision somebody makes with a world in front of them, not an
+ * implementation detail.
+ *
+ * ER3 is the one the misconception hangs on. A missed payment is not a late fee: it is the fee,
+ * plus what the rate change costs from there on, plus the payoff date moving. A student who
+ * prices only the fee has priced the smallest part of it.
+ */
+const KEEP_CREDIT_COSTS_DOWN_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("keep-credit-costs-down", 1, {
+    label: "Pays more than the minimum where the money was there",
+    kind: "decision",
+    required: true,
+    observableRule: "In periods where more than the minimum was available and unclaimed, directs it at the balance rather than defaulting to the smallest payment accepted",
+    misconceptionIfNot: "The minimum payment is the expected payment",
+  }),
+  requirement("keep-credit-costs-down", 2, {
+    label: "Shows what paying the minimum costs",
+    kind: "decision",
+    required: true,
+    observableRule: "Produces what the minimum-only route costs against the route taken — in total paid, or in how much longer it runs, on their own balance",
+    misconceptionIfNot: null,
+  }),
+  requirement("keep-credit-costs-down", 3, {
+    label: "Prices a missed payment as everything it does",
+    kind: "decision",
+    required: true,
+    observableRule: "After a missed payment, accounts for the fee, the changed rate from there on, and the later payoff — not the fee alone",
+    misconceptionIfNot: "One late payment is one late fee",
+  }),
+  requirement("keep-credit-costs-down", 4, {
+    label: "Ends where they said, or states the gap",
+    kind: "decision",
+    required: true,
+    observableRule: "Finishes on the payoff they committed to, or states how far short the balance is and why",
+    misconceptionIfNot: null,
+  }),
+  /**
+   * The two written rows, and why they are here rather than on a nearby objective's balance sheet.
+   *
+   * They were proposed as "+2 objectives for one written row" — the cheapest move on the board.
+   * That is not why they are in the file, and the cheapness is close to an argument against them.
+   * The reason is the gap between operating this competency and holding it. A student can pass
+   * er1–er4 by paying the larger number whenever the screen offers one and reading the new
+   * balance after a miss. That student has learned a procedure. `keep-credit-costs-down` claims
+   * they can *keep the cost of a balance down*, which is a thing you know, not a thing you tap.
+   *
+   * They cost something real, and the cost is the honest half of the decision: this competency is
+   * all-or-none, so any world claiming it now produces six rows rather than four, and NYSED 2.1's
+   * completion rule names this competency — so Module 2's world got heavier on its flagship
+   * objective too. That is the price of the contract being right before an observer is written
+   * against it, which is the only moment it is cheap to change.
+   *
+   * **What was deliberately not added:** a decision row for billing cycles. 2.3 names cycles in a
+   * "such as" list, and a grace-period mechanic in a 5–8 world would be a real mechanic built to
+   * satisfy an illustrative example. The student explains the strategies they actually used.
+   */
+  requirement("keep-credit-costs-down", 5, {
+    label: "Says what kept the total down, on their own numbers",
+    kind: "explanation",
+    required: true,
+    observableRule: "Names at least one thing they did that made the credit cost less — paying more than was asked, clearing it early, not letting it run — and points at a figure from their own months to show it worked",
+    misconceptionIfNot: "How much you pay each month does not change what the credit costs in total",
+  }),
+  requirement("keep-credit-costs-down", 6, {
+    label: "Separates the missed payment's cost from its fee",
+    kind: "explanation",
+    required: true,
+    observableRule: "Says what the missed payment did beyond the fee — the rate it left them on, or the payoff it pushed back — and says it as something that kept costing rather than a one-time charge",
+    misconceptionIfNot: "One late payment is one late fee",
+  }),
+] as const;
+
+/**
+ * `use-insurance` — mapped `full` to NYSED 4.2, `partial` to 4.1 and 4.3.
+ *
+ * **ER2 is a demand on the world, and it is the hardest one in this file.** The shape is
+ * `compare-two-lives` and that is load-bearing rather than decorative: *shared risk* is
+ * invisible from one life. A student who only ever sees what happened to themselves has seen a
+ * premium and an outcome, and the misconception this competency exists to catch — *insurance is
+ * a scam if you don't claim* — is a claim about everybody else, which their own result cannot
+ * answer. So ER2 requires the student to reach the point where other participants' outcomes are
+ * readable, including at least one who paid in and claimed nothing.
+ *
+ * Anything that shows the student only their own result cannot assess 4.2 honestly, however
+ * good its copy is, and this row is what makes that a build failure rather than a review
+ * opinion.
+ *
+ * **The bad-thinking/good-outcome guard is ER3 and ER4 together.** A student who buys the
+ * cheapest cover and happens not to suffer a loss has learned nothing, and neither row can be
+ * satisfied from their own outcome: ER3 is read off a settled claim's split and ER4 off an
+ * account of the pool. Luck cannot produce either.
+ *
+ * All four `required`, as a `full` mapping demands. `explanationRequired` is already `true`.
+ */
+const USE_INSURANCE_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("use-insurance", 1, {
+    label: "Picks cover by what it reaches, not by price",
+    kind: "decision",
+    required: true,
+    observableRule: "Chooses among levels whose premiums and what they pay both differ, having read what more than one level covers, rather than taking the cheapest or the default",
+    misconceptionIfNot: "A lower premium is always better",
+  }),
+  requirement("use-insurance", 2, {
+    label: "Reads the pool, not only themselves",
+    kind: "decision",
+    required: true,
+    observableRule: "Reaches and reads outcomes belonging to other participants, including at least one who paid in and claimed nothing",
+    misconceptionIfNot: null,
+  }),
+  requirement("use-insurance", 3, {
+    label: "Says who paid what on a settled claim",
+    kind: "decision",
+    required: true,
+    observableRule: "For a loss that is settled, splits the bill between the participant and the pool at the cover level actually held",
+    misconceptionIfNot: null,
+  }),
+  requirement("use-insurance", 4, {
+    label: "Explains the result as shared risk",
+    kind: "explanation",
+    required: true,
+    observableRule: "Accounts for a term in which somebody paid in and got nothing back, using premiums paid by many against losses met by few, rather than as luck or as a bad deal for that person",
+    misconceptionIfNot: "Insurance is a scam if you don't claim",
+  }),
+] as const;
+
+/**
+ * `is-the-add-on-worth-it` — mapped `full` to NYSED 4.3, whose own text names a specific item.
+ *
+ * **ER4 is the whole competency and it is the reason this is not one decision.** A student who
+ * declines cover on something cheap, watches it survive, and then declines cover on something
+ * whose replacement they could not absorb has learned the wrong thing from one sample — and so
+ * has the student who buys cover on everything after one failure. Both look identical to a
+ * scorer reading only the first decision.
+ *
+ * So the competency requires a second offer, decided after an outcome is known and on its own
+ * two figures. Without it a single resolution decides the mark, which is `catastrophe roulette`
+ * — scored 32 and rejected — wearing a different hat. It is also a demand on the world: **the
+ * offer has to arrive at least twice, at different stakes.** A world that cannot do that cannot
+ * carry the `full` claim on 4.3.
+ *
+ * **ER5 was missing and the omission was mine.** Four decision rows were written here first,
+ * under a docstring asserting `explanationRequired: false` — which is not what this competency
+ * says. It carries `true`, and it always has. A flag promising that a written explanation is
+ * required evidence, over an array containing no explanation, is the same defect this run had
+ * already found twice on other people's rows: 2.2 and 5.5 both claimed `full` against
+ * objectives whose verbs ask for words, over competencies that required none. NYSED 4.3 says
+ * **analyze**. It was caught by reading the nine finished rubrics as one list rather than by
+ * any test, which is worth knowing about what the tests here do and do not cover.
+ *
+ * Every row required, as a `full` mapping demands.
+ */
+const IS_THE_ADD_ON_WORTH_IT_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("is-the-add-on-worth-it", 1, {
+    label: "Prices the cover against the thing it covers",
+    kind: "decision",
+    required: true,
+    observableRule: "States what replacing the item would cost them, and decides against that figure rather than against the cover's price alone",
+    misconceptionIfNot: "The item's replacement cost does not matter",
+  }),
+  requirement("is-the-add-on-worth-it", 2, {
+    label: "Uses how likely it is to fail",
+    kind: "decision",
+    required: true,
+    observableRule: "Takes the stated failure record into the decision, rather than deciding on cost or on how bad the failure would be alone",
+    misconceptionIfNot: "Warranties always pay off",
+  }),
+  requirement("is-the-add-on-worth-it", 3, {
+    label: "Commits before the outcome is known",
+    kind: "decision",
+    required: true,
+    observableRule: "The decision is stamped before that item's outcome resolves, and the outcome then resolves in front of them",
+    misconceptionIfNot: null,
+  }),
+  requirement("is-the-add-on-worth-it", 4, {
+    label: "Answers a second offer on its own numbers",
+    kind: "decision",
+    required: true,
+    observableRule: "A later offer at different stakes is decided from that offer's own replacement cost and failure record, rather than reversed on how the first one happened to turn out",
+    misconceptionIfNot: null,
+  }),
+  requirement("is-the-add-on-worth-it", 5, {
+    label: "Says what the decision turned on",
+    kind: "explanation",
+    required: true,
+    observableRule: "Names what the item would cost to replace and how likely it was to fail, and says which of the two moved the decision — for one of the offers they answered, not for add-ons in general",
+    misconceptionIfNot: null,
+  }),
+] as const;
+
+/**
+ * `how-savings-grow` — mapped `full` to **both** NYSED 5.2 and 5.5, which is the only place in
+ * the framework where one competency carries two whole objectives.
+ *
+ * **ER4 exists because both of those objectives say *explain*.** 5.2: *"Define and
+ * differentiate between investment principal and interest, and then **explain** how interest
+ * allows savings or investments to grow over time."* 5.5: *"**Explain** why starting to save or
+ * invest earlier can lead to greater returns over time."* The mapping's own rationale for 5.5
+ * reads *"showing that an earlier start ends with more, **and saying why**"* — and until this
+ * rubric was written, nothing in this competency required a student to say anything. It carried
+ * `explanationRequired: false`.
+ *
+ * That is the same defect that demoted 2.3 and 2.4 to `partial`: an objective whose verb asks
+ * for words, mapped `full` to a competency with no written row. Those two were demoted because
+ * `keep-credit-costs-down` has no explanation to hang the clause on. This one has somewhere to
+ * put it, so it gets a written row and the flag moves to `true` to agree with the array —
+ * which is what keeps two `full` claims true rather than merely convenient.
+ *
+ * **ER2 is the compounding row and it is the one a world can fail to present.** Interest on the
+ * balance a period *ended* with is what makes growth non-linear; a world that computes every
+ * period against the opening balance is teaching *growth is linear* while appearing to teach
+ * the opposite. The row is written so that scaling one period cannot satisfy it.
+ *
+ * Three independent designs decomposed this the same way. None of them proposed the written
+ * row, which is exactly the blind spot a rubric written away from the board is for.
+ */
+const HOW_SAVINGS_GROW_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("how-savings-grow", 1, {
+    label: "Separates what was put in from what was earned",
+    kind: "decision",
+    required: true,
+    observableRule: "Splits a balance into the amount deposited and the amount the interest added, as two figures",
+    misconceptionIfNot: null,
+  }),
+  requirement("how-savings-grow", 2, {
+    label: "Carries growth forward on the balance it reached",
+    kind: "decision",
+    required: true,
+    observableRule: "Works out a later period's growth from the balance the previous period ended with, rather than by scaling a single period across the whole run",
+    misconceptionIfNot: "Growth is linear",
+  }),
+  requirement("how-savings-grow", 3, {
+    label: "Puts the same money on two start dates",
+    kind: "decision",
+    required: true,
+    observableRule: "Runs the same amount from an earlier and a later start and states the difference between them as a figure",
+    misconceptionIfNot: null,
+  }),
+  requirement("how-savings-grow", 4, {
+    label: "Says why the earlier start ends with more",
+    kind: "explanation",
+    required: true,
+    observableRule: "Accounts for the gap between the two start dates in terms of interest earning on interest over the extra time, rather than only in terms of more money going in",
+    misconceptionIfNot: "Interest is a fixed bonus",
+  }),
+] as const;
+
+/**
+ * `compare-rates` — mapped `full` to NYSED 5.3, whose verbs are *compare* and *demonstrate*.
+ *
+ * Both are actions, so every row here is a decision and `explanationRequired: false` is correct
+ * — the opposite call from `how-savings-grow` above, made for the opposite reason, out of the
+ * same reading of what the objective's own sentence asks for.
+ *
+ * **ER2 is what stops this being "pick the biggest number".** The objective says *across
+ * multiple institutions*, and real accounts differ in more than rate: a fee below a balance
+ * threshold, a lock that outlasts the deadline, a delay on getting the money out. A world where
+ * the highest rate is always right has no comparison in it — and, said plainly because the
+ * temptation runs the other way, a world where the highest rate is never right has taught
+ * something equally false.
+ *
+ * **A dominant strategy here is correct and is not a defect.** This competency asks a student
+ * to work out which account is better and to show what better is worth; there is an answer, and
+ * asking this to be a dilemma would be asking it to stop being itself. What must not have a
+ * right answer is what the student is saving *for* — and that belongs to `save-toward-a-goal`,
+ * one competency over.
+ */
+const COMPARE_RATES_EVIDENCE: readonly EvidenceRequirement[] = [
+  requirement("compare-rates", 1, {
+    label: "Puts the offers on one footing",
+    kind: "decision",
+    required: true,
+    observableRule: "Prices more than one account over the same money and the same stretch of time before choosing between them",
+    misconceptionIfNot: null,
+  }),
+  requirement("compare-rates", 2, {
+    label: "Reads the conditions, not only the rate",
+    kind: "decision",
+    required: true,
+    observableRule: "The account chosen is one whose conditions — fees, minimums, when the money can be taken out — fit the dates the plan actually needs the money",
+    misconceptionIfNot: null,
+  }),
+  requirement("compare-rates", 3, {
+    label: "Shows what the better rate is worth",
+    kind: "decision",
+    required: true,
+    observableRule: "States what the chosen rate is worth against the alternative — as an amount, or as how much sooner the target is reached",
+    misconceptionIfNot: "A rate difference that small doesn't matter",
+  }),
+] as const;
+
+/**
  * The 21 competencies, in group order.
  *
  * **On the empty `evidenceRequirements` arrays.** Three competencies carry their evidence
@@ -422,7 +882,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "Compute what the credit version actually costs.",
       "Make and justify the call.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: DECIDE_TO_BORROW_EVIDENCE,
     misconceptions: [
       "The monthly payment is the price",
       "Credit is free if I pay it back",
@@ -440,14 +900,16 @@ export const COMPETENCIES: readonly Competency[] = [
       "Choose payment amounts across a repayment period.",
       "Show what paying in full versus paying the minimum does to the total.",
       "Respond to a missed payment and its consequences — fee, rate change, longer payoff.",
+      "Say what kept the cost down, and what the missed payment went on costing after the fee.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: KEEP_CREDIT_COSTS_DOWN_EVIDENCE,
     misconceptions: [
       "The minimum payment is the expected payment",
       "One late payment is one late fee",
+      "How much you pay each month does not change what the credit costs in total",
     ],
     gradeBand: "5-8",
-    explanationRequired: false,
+    explanationRequired: true,
     assessmentShape: "run-it-forward",
   },
 
@@ -480,7 +942,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "Compute net from gross.",
       "Then plan against net, not gross.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: GROSS_TO_NET_EVIDENCE,
     misconceptions: [
       "Plan from the number on the offer letter",
       "Deductions are optional",
@@ -498,7 +960,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "Show how a deduction on their own pay reduces what they take home.",
       "Connect that deduction to a specific public service it funds.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: WHAT_TAXES_FUND_EVIDENCE,
     misconceptions: ["Taxes are money that disappears"],
     gradeBand: "5-8",
     explanationRequired: true,
@@ -535,7 +997,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "See the pool's outcomes across several participants, not only their own.",
       "Explain the result using shared risk rather than luck.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: USE_INSURANCE_EVIDENCE,
     misconceptions: [
       "Insurance is a scam if you don't claim",
       "A lower premium is always better",
@@ -554,7 +1016,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "Decide, and live with whether the item fails.",
       "Weigh the price against the item's replacement cost.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: IS_THE_ADD_ON_WORTH_IT_EVIDENCE,
     misconceptions: [
       "Warranties always pay off",
       "The item's replacement cost does not matter",
@@ -615,10 +1077,12 @@ export const COMPETENCIES: readonly Competency[] = [
       "Project growth across periods.",
       "Compare two start dates and show the difference.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: HOW_SAVINGS_GROW_EVIDENCE,
     misconceptions: ["Interest is a fixed bonus", "Growth is linear"],
     gradeBand: "5-8",
-    explanationRequired: false,
+    // Both objectives this competency covers in full say "explain", and ER4 is the row that
+    // answers them. The flag has to agree with the array it describes.
+    explanationRequired: true,
     assessmentShape: "run-it-forward",
   },
   {
@@ -631,7 +1095,7 @@ export const COMPETENCIES: readonly Competency[] = [
       "Pick one.",
       "Show how much sooner the goal arrives on the better rate.",
     ],
-    evidenceRequirements: [],
+    evidenceRequirements: COMPARE_RATES_EVIDENCE,
     misconceptions: ["A rate difference that small doesn't matter"],
     gradeBand: "5-8",
     explanationRequired: false,

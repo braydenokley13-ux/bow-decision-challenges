@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { SCENARIO_NUMBERS as N } from "../src/domain/scenario/numbers";
 import { formatDollars } from "../src/domain/core/money";
+import { STUDENT_COPY } from "../src/content/studentCopy";
 import { BASKETBALL_SCENARIO } from "../src/domain/scenario/worlds/basketball";
 import type { CategoryId, SetupId } from "../src/domain/core/ids";
 import type { PlanMode } from "../src/domain/finance/types";
@@ -14,7 +15,15 @@ import { CHOICE_LABELS } from "../src/components/financial/choices";
 export const money = formatDollars;
 export const COMPLETION_LABEL = BASKETBALL_SCENARIO.incomeCopy.completion.label;
 export const NO_BONUS_HEADING = `Now show it works without the ${money(N.completionIncome)}.`;
-export const COUNT_BONUS_BUTTON = "Yes — count on it";
+/**
+ * The bonus card's "count on it" answer, from the product rather than retyped.
+ *
+ * This read "Yes — count on it" and the copy rewrite made it "Yes, count on it". Six journeys
+ * through Basketball then hung for five minutes each on a button that no longer existed. It is
+ * the fifth stale copy in this suite found the same way, which is the argument for never
+ * writing a sentence down here again.
+ */
+export const COUNT_BONUS_BUTTON = STUDENT_COPY.plan.steps.bonuses.yes;
 /**
  * The heading on the fallback check, in both the forms it now takes.
  *
