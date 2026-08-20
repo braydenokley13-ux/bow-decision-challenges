@@ -80,6 +80,38 @@ so it is separately cacheable, lazily fetchable and never charged to a route tha
 it. `vercel.json` already serves `/assets/*` as `immutable` for a year, which is exactly the
 header this wants.
 
+## 3b. What an evening actually costs today
+
+`BOW_PERF=1 npx playwright test --project=chromebook` — production bundle through `vite preview`,
+CPU throttled 4×, 1366×768, transfer read as CDP `encodedDataLength`. Full table in
+`gauntlet/v5/perf/baseline-chromebook.md`.
+
+| | |
+| --- | --- |
+| Cold start — front door | **276 kB**, 725 ms, 3 long tasks, worst 141 ms |
+| Everything after it — sign in, home, world choice, booth, money, plan, tray order, service | **10 kB combined** |
+| Whole evening | **286 kB**, worst single task 141 ms, peak heap 7.7 MB |
+| Worst layout shift | 0.024, on the beat where the night closes |
+
+Three things follow, and they reshape §4 rather than confirm it.
+
+**The world is free today because it is already downloaded.** Entering Food Truck costs 2.8 kB
+and serving a whole Saturday costs nothing, because every world is in the one chunk that loaded
+on the front door. So art at the world-entry budget of 250 kB is not a 250 kB addition to a
+286 kB evening — added eagerly it would nearly double the cold start, which is the number a
+student waits on. **World art therefore has to be fetched at world entry and never bundled**, and
+that is now a requirement rather than a preference.
+
+**There is real thermal headroom and no bandwidth crisis.** 141 ms is the worst main-thread task
+in an entire evening at 4× throttle, and the peak heap is under 8 MB. The machine is not
+struggling. This is what makes the art ambition affordable, and it is also the number that must
+not move: if art lands and the worst task doubles, the art is wrong, not the budget.
+
+**One defect is already visible.** The 0.024 shift when the night closes exceeds the 0.02 ceiling
+below, before a single image exists. It is small and it is real — something appearing at close
+moves the layout under the student's hands. It is recorded in `QUALITY_DEBT.md`; art must not be
+allowed to hide it or inherit it.
+
 ## 4. Budgets
 
 Derived from the measurement above, not invented. Gzip/transfer bytes unless stated.
@@ -97,6 +129,7 @@ Derived from the measurement above, not invented. Gzip/transfer bytes unless sta
 | Long tasks during the golden flow | **none > 200 ms** | Input latency on a Chromebook is the whole point |
 | Cumulative layout shift, any world screen | **0.02** | Every image declares dimensions or aspect ratio |
 | Art for a world the student has not opened | **0 bytes** | Basketball must not load while Food Truck is playing |
+| Added to cold start by any world's art | **0 bytes** | Measured above: cold start is the only download a student waits on. Art is fetched at world entry |
 
 A budget is a gate, not a target. Coming in under it is not a reason to add.
 
