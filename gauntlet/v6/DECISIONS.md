@@ -126,3 +126,46 @@ The memory store reports itself `durable:false, classroomReady:false` and says s
 health reason — *"Fine for tests and demos, not for a class."* Demonstrating school
 infrastructure on the store that admits it is not classroom-ready would be the wrong claim to
 make in the room.
+
+---
+
+## 7 · One path to assigning work: the assignment builder
+
+`QUALITY_DEBT.md` closed on this and declined to decide it, correctly — it is a product decision.
+It is now decided.
+
+**The assignment builder (`/educator/assignments/new`) is the single path.** `AssignFlow`, the
+`arriving` block in `MyClasses.tsx:523-549` and its "Or start a new class" branch come out.
+`/educator/assign?code=1.3` becomes a redirect to `/educator/assignments/new?objective=1.3`, so
+links already in a teacher's history keep working. `AssignFlow`'s comment is deleted with the code
+it describes rather than rewritten, because the product it describes is the one being removed.
+
+Both paths were confirmed live and distinct by direct measurement before ruling
+(`gauntlet/v6/teacher/BEFORE.md` §6): `/educator/assign` redirects client-side to
+`/educator/classes` carrying `?objective=`, landing on *"Create your first class."*;
+`/educator/assignments/new` stays on its own route and reads `?objective=` to pre-select. A
+teacher meets whichever they happen to find.
+
+**The argument.** Two doors to one act are two primary surfaces for one job, and the system may
+carry only one — the same rule the V6 teacher ruling applies to screens, applied to routes. The
+builder wins on the merits, not by elimination: it is the only screen that can express everything
+assigning now means (objective, world, audience — 44 controls), it already reads `?objective=` and
+pre-selects, and the objective page's own **Assign this** button was repointed at it some time
+ago. `ObjectivePages.tsx`'s surviving comment — *"two screens that both create a class and set it
+an objective are two places for that to go wrong and two places a teacher has to be told about"* —
+is right about the principle and wrong about which screen survives: the screen it defended was
+superseded, and only the warning was left in place.
+
+The case `AssignFlow` exists to cover — a teacher with no class yet — is real and does not justify
+a parallel flow. It becomes step one of the builder: publishing the assignment creates the class
+in the same act, one screen owning the whole transaction. A routing rule a teacher has to learn
+before they can assign anything is worse than either screen on its own.
+
+All three teacher directions in the V6 design war (T1, T2, T3) reached this answer independently
+and blind, from the same rendered evidence.
+
+**Consequence, booked rather than hidden:** the builder's own "Publish assignment" sits at y=2,482
+on a 2,582px page — below the fold, measured. Making the builder the only door makes that the next
+thing the one-instrument rule has to fix, and it is not fixed by this decision.
+
+Full reasoning and the surrounding ruling: `gauntlet/v6/teacher/RULING.md` §5.
