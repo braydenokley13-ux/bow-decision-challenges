@@ -210,8 +210,16 @@ You can show that last part, and it is worth ninety seconds if anybody asks abou
 
 ```bash
 grep -rl "Sample class" "$BOW_CLASS_DIR" ; echo "exit $?"      # finds nothing
+grep -rl "Aster"        "$BOW_CLASS_DIR" ; echo "exit $?"      # finds nothing
 head -c 200 "$BOW_CLASS_DIR"/*/class.json                       # {"v":1,"iv":"…","tag":"…","ct":"…"}
 ```
+
+Say the one thing a reviewer will spot before they say it: **the class code is the directory
+name.** `$BOW_CLASS_DIR/PFDEM/` is on the disk in plain sight, because the store has to be able to
+find a class by the code a student types. Everything *inside* it is sealed — the label, the
+sixteen names, every written explanation, every teacher note. A class code is read aloud to a
+room and written on a whiteboard; it is not a secret and the product has never treated it as
+one.
 
 ---
 
