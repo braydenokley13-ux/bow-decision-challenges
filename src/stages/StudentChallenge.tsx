@@ -1501,7 +1501,7 @@ function FinalRepairStage() {
             </ol>
             <div className="binary-choice">
               <button type="button" aria-pressed={completionDecided && state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: true })}>{PLAN_COPY.steps.bonuses.yes}</button>
-              <button type="button" aria-pressed={completionDecided && !state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: false })}>No — plan without it</button>
+              <button type="button" aria-pressed={completionDecided && !state.income.includeCompletionFinal} onClick={() => dispatch({ type: "COMPLETION_INCOME_DECIDED", included: false })}>{PLAN_COPY.steps.bonuses.no}</button>
             </div>
             <p className="decision-note">Say yes and you will be asked to show the plan still works if it never comes.</p>
           </section>
