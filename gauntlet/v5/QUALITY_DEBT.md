@@ -97,3 +97,39 @@ A is the enabling fix and comes first: without a surface vocabulary, every other
 one-off. D is the cheapest large win on the student side and is already inside the scope of the
 two design wars now running. B and C are teacher-side and wait for the teacher results and case
 file refoundation.
+
+## Two ways to assign an objective, and a comment insisting there is one
+
+Found by a browser test failing against a heading that was never going to arrive.
+
+`ObjectivePages.tsx:596-607` carries `AssignFlow`, whose comment is explicit:
+
+> There is one path to assigning work, and it is the classes page. The assign flow was a screen
+> that named an objective, offered a class, and — if there was no class — created one, which is
+> what "Create a class" is. **Two screens that both create a class and set it an objective are two
+> places for that to go wrong and two places a teacher has to be told about.**
+
+Both paths are live and routed today:
+
+| entry | goes to | creates a class? |
+| --- | --- | --- |
+| `/educator/assign?code=1.3` → `AssignFlow` | `/educator/classes?objective=1.3` | yes, and sets the objective |
+| The objective page's own **Assign this** button (`ObjectivePages.tsx:488`) | `/educator/assignments/new?objective=1.3` | the assignment builder |
+
+So the second screen the comment warns about was built, the button that used to lead to the first
+one was repointed at it, and the warning was left in place underneath. A teacher now meets
+whichever one they happen to find. Two e2e journeys were still asserting the older path and
+failed by clicking a button that had quietly changed destination — the tests were right about
+the design and wrong about the button.
+
+**This is a product decision rather than a defect, and it is not mine to make.** The two tests
+now reach the classes-page path by the URL that owns it, so both paths are exercised and neither
+is asserted to be the only one. What needs deciding:
+
+- Is the assignment builder the single path now, in which case `AssignFlow`, the `arriving` block
+  in `MyClasses.tsx:523-549` and its "Or start a new class" branch are dead weight to remove?
+- Or is the classes page still the path for a teacher who already has a class, in which case the
+  builder needs to say when it is the right screen — and `AssignFlow`'s comment needs rewriting,
+  because it currently describes a product that no longer exists.
+
+Either answer is fine. Having both, with a comment claiming there is one, is the thing to fix.

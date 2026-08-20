@@ -1983,9 +1983,14 @@ test("an objective can be set for a class a teacher already has, from the classe
   await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}`);
   await expect(page.getByRole("heading", { name: "Nothing turned in yet." })).toBeVisible();
 
-  // The one path to assigning: the objective travels in the URL from its own page.
-  await page.goto("/educator/objectives/nysed-pf-2026/1.3");
-  await page.getByRole("link", { name: "Assign this" }).click();
+  // There are now *two* ways in, which is worth stating because this comment used to say there
+  // was one. `AssignFlow` still redirects `/educator/assign` to the classes page carrying the
+  // objective in the URL, and that is the path this test is named for and covers. The objective
+  // page's own "Assign this" button no longer comes here — it opens the assignment builder at
+  // `/educator/assignments/new?objective=…`, which is a different screen with its own tests.
+  // Clicking it here was landing this test on "Build an assignment." and failing twenty seconds
+  // later against a heading that was never going to arrive.
+  await page.goto("/educator/classes?objective=1.3");
   await expect(page.getByRole("heading", { name: /Set 1\.3 .* for a class you already have/ })).toBeVisible();
   await page.getByRole("button", { name: "Set it" }).click();
   await expect(page.getByText(`Set. Students use code ${created.code}.`)).toBeVisible();
@@ -2125,12 +2130,12 @@ test("a teacher assigns 1.3, three students submit, and the objective reports wh
   // product had long since started composing for itself.
   const SEATS = ["7", "8", "9"];
 
-  await page.goto("/educator/objectives/nysed-pf-2026/1.3");
-  await page.getByRole("link", { name: "Assign this" }).click();
-
-  // §17.1's target, and one path to it: assigning is creating the class that will do it, or
-  // setting it for one that already exists. The objective travels in the URL and arrives
-  // already chosen. There is no second screen that also creates classes.
+  // §17.1's target: assigning is creating the class that will do it, or setting it for one
+  // that already exists, with the objective travelling in the URL and arriving already chosen.
+  // Reached through `/educator/assign`, the redirect that owns this path — the objective page's
+  // "Assign this" button opens the assignment builder instead, and clicking it here landed this
+  // journey on a screen that does not create classes.
+  await page.goto("/educator/assign?code=1.3");
   await expect(page).toHaveURL(/\/educator\/classes\?objective=1\.3/);
   await expect(page.getByLabel("Objective")).toHaveValue("1.3");
   await page.getByLabel("Name this class").fill("Period 3 · Grade 7");

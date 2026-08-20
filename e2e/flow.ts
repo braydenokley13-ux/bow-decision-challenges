@@ -539,7 +539,7 @@ export async function passWeek5Calculation(page: Page, total: string) {
 
 export async function decideOpportunity(page: Page, opts: { clinics: boolean; countBonus: boolean }) {
   await page.getByRole("button", { name: opts.clinics ? "Take the clinics" : "Keep the Saturdays" }).click();
-  await page.getByRole("button", { name: opts.countBonus ? COUNT_BONUS_BUTTON : "Plan without it" }).click();
+  await page.getByRole("button", { name: opts.countBonus ? COUNT_BONUS_BUTTON : PLAN_STEP.leaveBonus }).click();
 }
 
 /** Week 8 resolves the season before the student explains it. */
