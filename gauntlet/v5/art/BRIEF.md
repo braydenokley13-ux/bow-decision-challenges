@@ -33,8 +33,10 @@ quality is largest here, so this is the proving ground for the whole art languag
 
 Middle Row booth. 38 people walk past. The student ordered **3 trays = 30 plates**, at $60 a tray.
 Plates sell at $12. One pair of hands can pass 45 plates in an evening; hiring Marisol raises that
-to 80 and costs $70. The market runs 18:00–21:00 and the clock is real. Orders arrive as groups of
-one to three. The counter runs bare before the lane empties. Two different losses exist and must
+to 80 and costs $70. **The market runs 17:00 to 22:00** and the clock is real — an earlier version
+of this brief said 18:00–21:00, which was invented by me and not read off `marketClock` in
+`service.ts:185-190`. One direction printed the wrong hours on a sign because of it. Orders arrive
+as groups of one to three. The counter runs bare before the lane empties. Two different losses exist and must
 stay visually distinct: **people who wanted a plate after the food ran out** (a stock loss) and
 **people who waited too long and left** (a hands loss). They are two different lessons.
 
@@ -43,9 +45,16 @@ stay visually distinct: **people who wanted a plate after the food ran out** (a 
 1. **No fabricated economy.** No menu items, no per-item prices, no reputation, no weather, no
    tips, no dynamic pricing, no invented uncertainty. Environmental state derives only from real
    world state.
-2. **The shared-ruler ban.** No representation may let a student align stock quantity against
-   crowd quantity and read off the right tray count perceptually. If your scene draws 30 plates
-   above 38 silhouettes in a comparable row, you have handed over the answer and lost.
+2. **The shared-ruler ban, and the divide-by-ten trap.** No representation may let a student align
+   stock quantity against crowd quantity and read off the right tray count perceptually — 30
+   plates drawn above 38 silhouettes in a comparable row hands over the answer.
+   **A ten-slot container whose fill level is the stock, sitting beside a live crowd figure, is
+   the same failure in slower motion**, and all three directions in the first war walked into it.
+   It makes `ceil(crowd / 10)` the salient move, and that rule is optimal on **2 of the 12
+   booth-nights** in this world — one of which is Middle Row Saturday 1, the night everybody drew.
+   It is confirmed exactly where it is learned and wrong everywhere else, and it costs $180 at the
+   bridge gate on the last Saturday. Worse, it erases `soloServeCap = 45`, which is the fact that
+   makes hiring Marisol a real question. Draw the stock as stock; do not build a measuring jug.
 3. **No answer-key art.** Nothing may highlight, scale, colour or animate in a way that reveals a
    decision the student is being assessed on. No projection of what a different order would have
    earned.
