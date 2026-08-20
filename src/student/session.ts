@@ -83,9 +83,28 @@ export interface StudentClass {
   label: string;
   seatCode: string;
   displayName: string;
+  /** What this seat was set, minus anything set for other seats. */
   assignments: Assignment[];
-  inProgress: { worldId: WorldId; stage: string; updatedAt: number } | null;
-  completed: { sessionId: string; submittedAt: number; worldId: WorldId | null }[];
+  /**
+   * Whether the class holds no assignment at all — a different fact from "none for this seat".
+   *
+   * Most classes are in this state: `Assignment` is newer than the class service, and a teacher
+   * who has not opened the builder has set nothing. The run treats such a class as *every world,
+   * student chooses* (`StudentChallenge.tsx`), so the student's screen draws one card saying
+   * exactly that rather than inventing a title. Absent from an older service, which reads as
+   * `false` — the same as it behaved before this field existed.
+   */
+  nothingSetYet?: boolean;
+  /**
+   * The run this seat has open, and which piece of work it belongs to.
+   *
+   * `assignmentId` is what lets a class holding two assignments say *which one* is in
+   * progress. It is absent on a checkpoint written before the client sent one, and the screen
+   * treats that as "the oldest assignment" rather than as "no assignment" — the same fallback
+   * the service uses when attributing a submission that named none.
+   */
+  inProgress: { worldId: WorldId; stage: string; updatedAt: number; assignmentId?: string } | null;
+  completed: { sessionId: string; submittedAt: number; worldId: WorldId | null; assignmentId?: string }[];
   /**
    * What a teacher wrote back — every note, oldest first, not just the last one.
    *
@@ -97,8 +116,20 @@ export interface StudentClass {
   feedback: { id: string; body: string; at: number; sessionId: string; editedAt?: number }[];
 }
 
+/**
+ * Who is signed in here, and what they are in.
+ *
+ * `student` is answered from the token rather than from the class list, so a student with no
+ * roster row still has a name on their own screen. It is deliberately not cached anywhere on
+ * the device — see the note at the top of this file.
+ */
+export interface MyClasses {
+  student?: { displayName: string | null };
+  classes: StudentClass[];
+}
+
 export function readMyClasses() {
-  return call<{ classes: StudentClass[] }>("/me/classes");
+  return call<MyClasses>("/me/classes");
 }
 
 /** The attempt this student left behind in this class, from any device. */

@@ -5,7 +5,7 @@ import { PLAYABLE_WORLDS } from "../domain/scenario/registry";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import { studentAuthHeaders } from "../platform/identity/token";
 import { recapFor, type RunRecap } from "../domain/recap";
-import type { StudentClass } from "./session";
+import type { MyClasses } from "./session";
 
 /**
  * Finding the log a finished run was written from, so a student can be told what it holds.
@@ -166,7 +166,7 @@ export async function completedRunSource(sessionId: string, storage: Storage = w
  * If `session.ts` ever hands the status code back, this goes and both screens use that.
  */
 export async function readClasses(): Promise<
-  | { ok: true; body: { classes: StudentClass[] } }
+  | { ok: true; body: MyClasses }
   | { ok: false; why: "signed-out" | "network" }
 > {
   try {
@@ -175,7 +175,7 @@ export async function readClasses(): Promise<
     });
     if (response.status === 401 || response.status === 403) return { ok: false, why: "signed-out" };
     if (!response.ok) return { ok: false, why: "network" };
-    return { ok: true, body: (await response.json()) as { classes: StudentClass[] } };
+    return { ok: true, body: (await response.json()) as MyClasses };
   } catch {
     return { ok: false, why: "network" };
   }

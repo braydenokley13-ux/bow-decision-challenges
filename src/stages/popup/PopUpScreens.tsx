@@ -1,7 +1,6 @@
 import { useEffect, useId, useRef, type RefObject, useState} from "react";
 import { useDraft } from "../../app/attemptStore";
 import { RunSaturday } from "./RunSaturday";
-import { serviceRun } from "../../domain/scenario/worlds/food-truck/service";
 import { Button } from "../../components/primitives/Button";
 import { CalculationInput } from "../../components/primitives/CalculationInput";
 import { CountControl } from "../../components/financial/CountControl";
@@ -704,17 +703,13 @@ export function FirstSaturdayStage() {
 
   if (open) {
     const spotId = state.spotId ?? "back-lane";
-    const run = serviceRun(N, spotId, 1, trays, false);
-    const served = run.orders.slice(0, dealt);
-    const till = served.reduce((total, order) => total + order.takings, 0);
-    const soldSoFar = served.reduce((total, order) => total + order.served, 0);
     return (
       <PopUpShell
         stage="popup-first-saturday"
         kicker={COPY.first.kicker}
         title="Your window is open"
         ledger={ledger}
-        live={{ cash: ledger.cashToPlan + till, sold: soldSoFar }}
+        chrome="awning"
       >
         <RunSaturday
           saturday={1}
@@ -902,16 +897,6 @@ export function StandingOrderStage() {
     : state.counted.rebate ? COPY.standing.rebateMissedPlanned : COPY.standing.rebateMissedFree;
   if (serving !== null) {
     const spotId = spot ?? "back-lane";
-    const run = serviceRun(N, spotId, serving, trays, false);
-    const served = run.orders.slice(0, dealt);
-    const till = served.reduce((total, order) => total + order.takings, 0);
-    const soldSoFar = served.reduce((total, order) => total + order.served, 0);
-    // Saturday 1's takings are already in the ledger; Saturday 2's are not, because the reducer
-    // is told once at the end of both nights. The bar adds what this run has taken so far.
-    const banked = ledger.saturdays.reduce((total, day) => total + day.takings, 0);
-    const earlier = serving === 3
-      ? serviceRun(N, spotId, 2, trays, false).outcome.takings
-      : 0;
     return (
       <PopUpShell
         stage="popup-standing-order"
@@ -919,7 +904,7 @@ export function StandingOrderStage() {
         title="Your window is open"
         ledger={ledger}
         focusKey={`serving-${serving}`}
-        live={{ cash: ledger.cashToPlan + banked + earlier + till, sold: soldSoFar }}
+        chrome="awning"
       >
         {/* Keyed by the night, so the second one starts as a night rather than as a continuation.
             Without this the component survives the change and keeps whatever the student left
@@ -1185,11 +1170,6 @@ export function RepairStage() {
   if (serving !== null) {
     const spotId = spot ?? "back-lane";
     const helper = state.helper === true;
-    const run = serviceRun(N, spotId, 4, serving.trays, helper);
-    const served = run.orders.slice(0, dealt);
-    const till = served.reduce((total, order) => total + order.takings, 0);
-    const soldSoFar = served.reduce((total, order) => total + order.served, 0);
-    const banked = ledger.saturdays.reduce((total, day) => total + day.takings, 0);
     return (
       <PopUpShell
         stage="popup-repair"
@@ -1197,7 +1177,7 @@ export function RepairStage() {
         title="The last Saturday"
         ledger={ledger}
         focusKey="serving-4"
-        live={{ cash: ledger.cashToPlan + banked + till, sold: soldSoFar }}
+        chrome="awning"
       >
         <RunSaturday
           saturday={4}

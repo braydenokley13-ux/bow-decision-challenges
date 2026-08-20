@@ -259,6 +259,39 @@
   --m-md: 700 1.25rem/1.2 var(--font-ui);
   --m-sm: 700 1rem/1.2 var(--font-ui);
   --m-xs: 700 0.875rem/1.2 var(--font-ui);
+
+  /* ---------------------------------------------------------------------
+     The teacher scale. Five sizes, and a hard 14px floor.
+
+     `--t-label` and `--t-micro` both compute to 12px, `--t-sm` to 14 and `--t-ui`
+     to 15 — four sub-body sizes inside a 3px band, on the densest surfaces in the
+     product, which is why metadata, captions, counts and status all arrive at the
+     same volume there. The fix is not a sixth size: it is fewer sizes with real
+     distance between them, and density solved by disclosure rather than by
+     shrinking.
+
+     These are additions rather than edits. Nothing above changes value — the
+     student surfaces read the same file — and the two banned tokens keep working
+     everywhere else in the product. What is new is that the two teacher pages use
+     only the five below, and the smallest of them is 14px with no exceptions, not
+     even for a timestamp. Differentiation under body size is done with weight and
+     with the ink steps, never with pixels.
+     --------------------------------------------------------------------- */
+
+  /* Only inside the one raised surface on a page. A headline is furniture here,
+     not a poster: the shipped class page set it near 40px, which made it the
+     largest thing on a screen where it was not the most important thing. */
+  --tt-display: 700 2rem/1.14 var(--font-display);
+  --tt-title: 700 1.25rem/1.25 var(--font-ui);
+
+  /* The two blocks of human prose, and nothing else: a student's own writing, and
+     the account of what they decided. A child's sentences should not be set at the
+     size of a button caption. */
+  --tt-read: 400 1.125rem/1.6 var(--font-ui);
+  --tt-body: 400 1rem/1.55 var(--font-ui);
+
+  /* The floor. Meta, labels, badges, timestamps, seat chips. */
+  --tt-meta: 500 0.875rem/1.4 var(--font-ui);
 }
 
 /*

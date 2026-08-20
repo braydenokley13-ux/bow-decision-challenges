@@ -41,6 +41,11 @@ const FADED = /opacity:\s*(0?\.\d+)\s*;/g;
 const DECORATIVE = [
   "backdrop", "svg", "::before", "::after", "__glow", "__aurora", "-grid i", "__plates i",
   "tray-stack i", "star-rule", "perf-rule", "__scene", "__art", "world-art", "-mark",
+  // The segmented competency bar. It is `aria-hidden` in the markup and carries no words of its
+  // own — the state it shows is printed as text in the row beside it — so fading one segment
+  // fades a swatch rather than a sentence. `app.css`'s own comment above `.skill-bar` says the
+  // same thing, and this entry is here so the two cannot disagree silently.
+  "skill-bar",
 ];
 
 function decorative(selector: string): boolean {

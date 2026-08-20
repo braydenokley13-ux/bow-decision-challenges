@@ -148,8 +148,10 @@ describe("a second attempt can be read and scored", () => {
     // The page is showing the first attempt, and says so.
     expect(screen.getByText(/Attempt 1 of 2/i)).toBeInTheDocument();
 
-    // The rubric lives on the explanation tab, which is where a teacher reads the writing.
-    await userEvent.click(screen.getByRole("tab", { name: /The explanation/i }));
+    // The writing and the marks a teacher makes on it are on screen, not behind a tab. The
+    // four tabs are gone: the child's own sentences were rendered `display: none` by default
+    // inside an unselected panel, on the page whose whole reason to exist is that a person
+    // reads them.
     expect(screen.getByText(/first time I wrote a long careful answer/i)).toBeInTheDocument();
 
     // Score every criterion — the top of each segmented control — and save.

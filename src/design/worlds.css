@@ -806,143 +806,387 @@
 }
 
 /* ---------------------------------------------------------------------------
-   The window, open.
+   THE PASS — the window, open.
 
-   The one screen in this world where nothing is being decided, so nothing here
-   competes with the counter. Three panels, one of which is four times the
-   weight of the other two: what is in the lane, what is on the counter, what is
-   in the till. The counter wins because the counter is the evening.
+   One room in three regions of one object, per `gauntlet/v6/popup/RULING.md`:
+   the underside of our own awning at the top, the hatch full bleed under it,
+   and the counter below that — whose FAR lip is drawn into the bottom of the
+   plate and whose NEAR lip is the wood the instruments sit on.
+
+   Two rules hold the fiction together and both are easy to break by accident:
+
+     1. The hatch is never a box. No max-width, no border, no radius, no inset
+        shadow, no fade. A bordered picture on a page is what this replaced.
+     2. The counter's top edge is a SHADOW SEAM and nothing else. `PLATE.md`
+        honest-weakness #1 is two lit counter edges in situ; the drawn bullnose
+        keeps the specular and the DOM lip gives its own up, so a critical eye
+        sees one object rather than two.
    --------------------------------------------------------------------------- */
 
-.service { display: grid; gap: var(--s-5); }
+.popup-shell[data-chrome="awning"] {
+  --awning-cloth: #7d2a18;
+  --awning-dark: #2a0f08;
+  --wood-hi: #8a6a48;
+  --wood: #5c4229;
+  --wood-lo: #2e2015;
+  --board: #20241f;
+  --chalk: #eee9d6;
+  --paper: #e8dcc0;
+  --paper-ink: #2a2118;
+  --sky: #14213c;
+  --tag-ground: rgb(13 7 4 / 95%);
+  --till-ground: #0d0704;
+  --till-money: #ffcf8a;
+}
 
-.service__bar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-4); }
-.service__bar h2 { margin: var(--s-2) 0 0; font: var(--t-display3); letter-spacing: var(--display-tracking); }
-.service__bar h2:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 4px; }
+/* --------------------------------------------------------------- region 1: the awning underside */
 
-/* The clock is the only thing on screen that is allowed to feel like a machine. */
-.service__clock {
+.popup-topbar--awning {
+  min-height: 52px;
+  gap: var(--s-5);
+  padding: 0 var(--gutter);
+  background: linear-gradient(180deg, var(--awning-dark) 0%, #1b0a05 62%, #150804 100%);
+  border-bottom: 0;
+  box-shadow: 0 10px 22px rgb(0 0 0 / 45%);
+}
+
+/* The stencilled sign on the awning board. The `h1` is still the stage's `h1` and still carries
+   its exact accessible name — four browser specs find it by role and name — it simply stops
+   being the largest thing on a screen whose subject is a person at a window. */
+.awning__sign { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-3) var(--s-4); min-width: 0; }
+.awning__sign .eyebrow { margin: 0; font: var(--t-micro); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
+.awning__sign h1 { margin: 0; color: var(--ink-1); font: var(--t-micro); letter-spacing: var(--stamp-tracking); text-transform: uppercase; }
+.awning__place { color: var(--ink-4); font: var(--t-micro); letter-spacing: 0.04em; white-space: nowrap; }
+
+/* The room takes the whole width. The heading band is not rendered on this stage at all, so the
+   main column stops being a column and becomes the room's own floor. */
+.popup-main--room { width: 100%; max-width: none; margin: 0; padding: 0; gap: 0; }
+
+/* ------------------------------------------------------------------------- region 2: the hatch */
+
+.pass { display: block; }
+
+.pass-hatch {
+  position: relative;
+  height: clamp(232px, 56vh, 460px);
+  overflow: hidden;
+  background-color: var(--sky);
+}
+
+/* The plate. `background-size: cover` with `center 64%` is the geometry `PLATE.md` measured in
+   its own harness; the sky colour underneath means the box is never empty while the image is in
+   flight, which is also why this screen's layout shift is zero by construction.
+
+   The three grades are three `url()`s, so Vite hashes them into files and the browser fetches
+   exactly one — whichever rule currently matches. The front door, which never matches any of
+   them, pays nothing. Nothing but the clock may select between them. */
+.pass-hatch__plate {
+  position: absolute;
+  inset: 0;
+  background-color: var(--sky);
+  background-repeat: no-repeat;
+  background-position: center 64%;
+  background-size: cover;
+}
+
+.pass-hatch[data-grade="early"] .pass-hatch__plate { background-image: url("../assets/world/food-truck/lane-early.webp"); }
+.pass-hatch[data-grade="peak"] .pass-hatch__plate { background-image: url("../assets/world/food-truck/lane-peak.webp"); }
+.pass-hatch[data-grade="late"] .pass-hatch__plate { background-image: url("../assets/world/food-truck/lane-late.webp"); }
+
+/* Our own awning's scalloped valance, hanging into plate canvas y 0–54 — the band the plate
+   reserved for exactly this occlusion, so nothing drawn is covered by it. */
+.pass-valance {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 13px;
+  background-color: var(--awning-dark);
+  background-image: radial-gradient(circle at 50% 0, var(--awning-cloth) 0 8.5px, rgb(0 0 0 / 0) 9px);
+  background-repeat: repeat-x;
+  background-size: 22px 13px;
+  filter: drop-shadow(0 3px 6px rgb(0 0 0 / 55%));
+}
+
+/*
+  The person at the pass.
+
+  `--bullnose: 90.2%` is the drawn counter's far edge — plate canvas y 469–479 — expressed as a
+  fraction of the hatch box under `center 64%` cover at the target geometry. The SVG is authored
+  so its own y = 300 is the waist crop line, so pinning its bottom there makes the drawn counter
+  do the cropping: a waist crop reads as somebody leaning over our counter, which is the whole
+  difference between standing behind a window and standing across from one.
+*/
+.pass-customer {
+  --bullnose: 90.2%;
+
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% - var(--bullnose));
+  translate: -50% 0;
+  width: min(46%, 420px);
+  height: clamp(150px, 62%, 300px);
+  pointer-events: none;
+}
+
+/* `overflow: hidden` is load-bearing: the coat is drawn past the crop line on purpose so
+   the box edge — the counter's near lip — cuts the silhouette in a hard horizontal, the way a
+   real counter would, rather than the drawing curving away short of it. */
+.pass-customer svg { display: block; width: 100%; height: 100%; overflow: hidden; }
+
+/* The one loss that never reaches our window at all stands off to one side, out on the lane —
+   far enough off centre to read as a different event, close enough in to stay inside our lamp's
+   throw rather than disappearing into the stall crowd on the left. */
+.pass-customer[data-pose="no-hands"] { left: 33%; }
+
+/* The tags hang in plate canvas y 54–268 — its flattest region — on opaque chips, because no
+   live text on this screen ever touches raw artwork. */
+.pass-tag {
+  position: absolute;
+  top: 13%;
+  z-index: 2;
   margin: 0;
-  padding: var(--s-2) var(--s-4);
-  color: var(--world-flare);
-  font: var(--m-md);
-  font-feature-settings: var(--num);
-  background: rgb(0 0 0 / 30%);
-  border: 1px solid var(--border-default);
+  padding: 7px var(--s-4);
+  background: var(--tag-ground);
+  border: 1px solid rgb(255 255 255 / 12%);
   border-radius: var(--r-sm);
 }
 
-.service__note { max-width: var(--measure); margin: 0; color: var(--ink-3); font: var(--t-body); }
+.pass-tag--status { left: var(--gutter); max-width: 60%; color: #f7ede0; font: var(--t-ui); font-weight: 700; }
+.pass-tag--status:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+.pass-tag--clock { right: var(--gutter); color: var(--world-flare); font: var(--m-md); font-feature-settings: var(--num); }
 
-.service__floor {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
-  align-items: start;
-  gap: var(--s-4);
+/* Bottom-right, over the dark right mid-ground where `PLATE.md` says a pill sits comfortably. */
+.pass-lane {
+  position: absolute;
+  right: var(--gutter);
+  bottom: 12%;
+  z-index: 2;
+  margin: 0;
+  padding: 7px var(--s-5);
+  color: #f7ede0;
+  font: var(--t-sm);
+  background: var(--tag-ground);
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: var(--r-pill);
 }
 
-/* The counter is the subject, so it takes twice the room wherever there is room to take. */
+.pass-lane strong { font: var(--m-sm); font-feature-settings: var(--num); }
+
+/* ----------------------------------------------------------------------- region 3: the counter */
+
+.pass-counter {
+  position: relative;
+  min-height: 286px;
+  padding: var(--s-6) var(--gutter) var(--s-7);
+  background-color: var(--wood);
+  background-image:
+    radial-gradient(120% 150% at 50% 0%, rgb(255 195 106 / 20%) 0%, rgb(255 195 106 / 0%) 62%),
+    linear-gradient(180deg, rgb(0 0 0 / 0) 22%, rgb(138 106 72 / 25%) 22.4%, rgb(0 0 0 / 0) 22.8%),
+    linear-gradient(180deg, var(--wood) 0%, #4a351f 42%, var(--wood-lo) 100%);
+
+  /* The seam, and no second specular. One object, one lit edge, and the lit one is drawn. */
+  box-shadow: inset 0 2px 0 rgb(0 0 0 / 50%);
+}
+
+.pass-counter__grid { position: relative; display: grid; gap: var(--s-6); align-items: start; }
+
 @media (min-width: 900px) {
-  .service__floor { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr); }
+  .pass-counter__grid { grid-template-columns: minmax(min(300px, 100%), 392px) 1fr auto; }
+
+  /* A full-width final row with `align-self: end`, so the three buttons sit at the same y all
+     night whatever the columns above them are doing. */
+  .pass-controls { grid-column: 1 / -1; align-self: end; }
 }
 
-.service__queue, .service__counter, .service__till {
-  padding: var(--s-5);
-  background: var(--surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-md);
+.pass-slot { min-height: 168px; display: grid; align-content: start; gap: var(--s-4); }
+
+/* 1. THE TICKET — torn paper, and the only warm light surface on the counter. */
+.pass-ticket {
+  position: relative;
+  padding: var(--s-5) var(--s-5) var(--s-6);
+  color: var(--paper-ink);
+  background: var(--paper);
+  box-shadow: 0 6px 14px rgb(0 0 0 / 40%);
+  clip-path: polygon(0 3px, 12% 0, 30% 4px, 52% 0, 74% 4px, 92% 0, 100% 3px, 100% 100%, 0 100%);
 }
 
-.service__counter { background: var(--surface-raised); border-color: var(--border-default); box-shadow: var(--shadow-card); }
+.pass-ticket header { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-4); }
+.pass-ticket__no { font: var(--m-md); font-feature-settings: var(--num); }
+.pass-ticket__when { color: #5c4c33; font: var(--t-micro); letter-spacing: var(--stamp-tracking); }
 
-.service h3 {
-  margin: 0 0 var(--s-3);
-  color: var(--ink-3);
+/* `app.css` sets `p { color: var(--ink-2) }` at element specificity, which beats inheritance
+   from the ticket. Every paragraph on paper or on the board says its own colour for that reason. */
+.pass-ticket__want { display: flex; align-items: baseline; gap: var(--s-3); margin: var(--s-3) 0 0; color: var(--paper-ink); }
+.pass-ticket__want strong { font: 800 2.5rem/1 var(--font-ui); font-feature-settings: var(--num); }
+.pass-ticket__want span { font: var(--t-label); letter-spacing: var(--stamp-tracking); }
+.pass-ticket__said { margin: var(--s-3) 0 0; color: #4a3c28; font: var(--t-body); font-style: italic; }
+
+/* Two different losses, two different stamps. They are never one stamp. */
+.pass-ticket__stamp {
+  position: absolute;
+  right: var(--s-5);
+  bottom: var(--s-4);
+  margin: 0;
+  padding: 4px 10px;
+  color: #8f2417;
   font: var(--t-label);
   letter-spacing: var(--stamp-tracking);
-  text-transform: uppercase;
-}
-
-.service__waiting { margin: 0 0 var(--s-3); font: var(--t-body); }
-.service__waiting strong { font: var(--m-md); font-feature-settings: var(--num); }
-.service__waiting--empty { color: var(--ink-3); }
-.service__queue ul { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
-
-.service__queue li {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--s-3);
-  padding: var(--s-2) var(--s-3);
-  background: var(--surface-sunken);
+  border: 2px solid #8f2417;
   border-radius: var(--r-xs);
-  font: var(--t-sm);
+  rotate: -7deg;
 }
 
-.service__ticket { color: var(--ink-4); font-feature-settings: var(--num); }
+.pass-ticket__stamp[data-kind="no-hands"] { color: #5b4a86; border-color: #5b4a86; rotate: 5deg; }
+.pass-ticket__stamp[data-kind="short"] { color: #6d5312; border-color: #6d5312; rotate: -4deg; }
 
-/* The number the evening turns on. */
-.service__plates { display: flex; align-items: baseline; gap: var(--s-3); margin: 0 0 var(--s-4); }
-.service__plates strong { font: var(--m-hero); font-feature-settings: var(--num); line-height: 1; }
-.service__plates span { color: var(--ink-3); font: var(--t-body); }
-.service__plates[data-bare="true"] strong { color: var(--fin-over); }
+/* What happened to the person who just left the window, in the model's own words. */
+.pass-said { min-height: 1.4em; margin: 0; color: #f0e2cf; font: var(--t-body); }
 
-/* Every plate cooked, drawn once. A plate that has gone out is not deleted — it is left
-   as a hole, so the counter empties in front of the student rather than resizing. */
-.service__plate-grid { display: flex; flex-wrap: wrap; gap: 4px; }
-
-.service__plate-grid i {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: var(--world-flare);
-  transition: background var(--dur-state) var(--ease-standard), opacity var(--dur-state) var(--ease-standard);
+/* 2. THE CHALKBOARD */
+.pass-board {
+  padding: var(--s-5) var(--s-6);
+  color: var(--chalk);
+  background: var(--board);
+  border: 1px solid #3a4036;
+  border-radius: var(--r-xs);
+  box-shadow: inset 0 0 0 4px #3d2a17;
 }
 
-.service__plate-grid i[data-gone="true"] { background: transparent; border: 1px solid var(--border-default); opacity: 0.55; }
-.service__overflow { margin: var(--s-3) 0 0; color: var(--ink-4); font: var(--t-micro); font-feature-settings: var(--num); }
+.pass-board__label { margin: 0; color: #b9c0ae; font: var(--t-label); letter-spacing: var(--stamp-tracking); }
+.pass-board__count { margin: var(--s-2) 0 0; color: var(--chalk); font: 800 3.25rem/1 var(--font-ui); font-feature-settings: var(--num); }
+.pass-board__of { margin: var(--s-3) 0 0; color: #b9c0ae; font: var(--t-sm); font-feature-settings: var(--num); }
+.pass-board[data-bare="true"] .pass-board__count { color: var(--world-flare); }
+.pass-board[data-bare="true"] { border-color: var(--world-flare); }
 
-.service__till dl { display: grid; gap: var(--s-3); margin: 0; }
-.service__till div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
-.service__till dt { color: var(--ink-3); font: var(--t-sm); }
-.service__till dd { margin: 0; font: var(--m-sm); font-feature-settings: var(--num); }
+/* 3. THE TILL. Money the student has actually taken, never money they might take, and never
+      cash on hand — that cannot be spent from behind this window, and the comparison it invites
+      belongs to the settle screen once the decision can no longer be changed. */
+.pass-till {
+  min-width: 232px;
+  padding: var(--s-5) var(--s-6);
+  background: var(--till-ground);
+  border: 1px solid #3c2a19;
+  border-radius: var(--r-xs);
+  box-shadow: inset 0 3px 8px rgb(0 0 0 / 60%);
+}
 
-/* Wide enough for the largest takings any night can reach, so the row does not resize each
-   time the till passes a power of ten. The digits are already tabular; it is the *count* of
-   them that moves, and a number that jumps sideways while a student watches it climb reads as
-   a glitch rather than as money coming in. */
-.service__till dd.money { min-width: 5ch; font: var(--m-md); color: var(--fin-balanced); text-align: right; }
-.service__till dd[data-loss="true"] { color: var(--fin-over); }
+.pass-till dl { display: grid; gap: var(--s-4); margin: 0; }
+.pass-till div { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-5); }
+.pass-till dt { color: #c6b49b; font: var(--t-sm); }
+.pass-till dd { margin: 0; color: #f0e2cf; font: var(--m-sm); font-feature-settings: var(--num); }
 
-/* Something a student needs to notice, said once, without saying what to do about it. */
-.service__alert {
+/* Wide enough for the largest takings any night can reach, so the row does not resize each time
+   the till passes a power of ten. */
+.pass-till dd.money { min-width: 5ch; color: var(--till-money); font: var(--m-md); text-align: right; }
+.pass-till dd[data-loss="true"] { color: #ff9d84; }
+
+/* 4. ALERTS. They live in the ticket's column and take it over at close, so shutting the window
+      never opens a hole where the ticket used to be. */
+.pass-alert {
   margin: 0;
   padding: var(--s-4) var(--s-5);
-  color: var(--fin-over-ink);
+  color: #ffd9cd;
   font: var(--t-body);
-  background: var(--fin-over-soft);
-  border-left: 3px solid var(--fin-over);
+  background: rgb(90 24 12 / 55%);
+  border-left: 3px solid #ff8a6a;
   border-radius: var(--r-xs);
 }
 
-.service__alert--quiet { color: var(--fin-conditional-ink); background: var(--fin-conditional-soft); border-left-color: var(--fin-conditional); }
+.pass-alert--quiet { color: #ffeccb; background: rgb(92 62 12 / 55%); border-left-color: var(--world-flare); }
+.pass-alert strong { font-feature-settings: var(--num); }
 
-.service__controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); }
+/* 5. CONTROLS */
+.pass-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-5); }
 
-.service__auto {
+.pass-auto {
   min-height: var(--tap);
-  padding: 0 var(--s-5);
-  color: var(--ink-2);
+  padding: 0 var(--s-6);
+  color: #f0e2cf;
   font: var(--t-ui);
-  background: transparent;
-  border: 1px solid var(--border-strong);
+  background: rgb(0 0 0 / 28%);
+  border: 1px solid #8a6a48;
   border-radius: var(--r-sm);
   cursor: pointer;
 }
 
-.service__auto[aria-pressed="true"] { color: var(--ink-1); background: var(--surface-raised); }
-.service__auto:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
-.service__progress { margin: 0; color: var(--ink-3); font: var(--t-sm); font-feature-settings: var(--num); }
+.pass-auto[aria-pressed="true"] { color: #1a1006; background: #d8c095; }
+.pass-auto:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+.pass-controls .button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+.pass-nudge { margin: 0; color: #f0e2cf; font: var(--t-sm); }
+.pass-progress { margin: 0 0 0 auto; color: #d6c3a8; font: var(--t-sm); font-feature-settings: var(--num); }
 
-@media (prefers-reduced-motion: reduce) {
-  .service__plate-grid i { transition: none; }
+/* --------------------------------------------------------------------------------- reflow
+
+   Below 760px the room becomes one column and the order changes: ticket, then BOTH serve
+   buttons, then the board, then the till — so a student on a 360×740 phone can serve without
+   scrolling for the control. The hatch gives up height to pay for it. */
+
+@media (max-width: 900px) {
+  .pass-counter__grid { grid-template-columns: minmax(0, 1fr); }
+  .pass-slot { order: 1; }
+  .pass-controls { order: 2; }
+  .pass-board { order: 3; }
+  .pass-till { order: 4; }
+}
+
+@media (max-width: 760px) {
+  .pass-hatch { height: clamp(180px, 34vh, 260px); }
+  .pass-customer { width: min(72%, 320px); }
+  .pass-counter { padding: var(--s-5) var(--s-4) var(--s-6); }
+  .pass-tag { top: 10%; padding: 5px var(--s-3); }
+  .pass-tag--status { left: var(--s-4); font: var(--t-sm); font-weight: 700; }
+  .pass-tag--clock { right: var(--s-4); font: var(--m-sm); font-feature-settings: var(--num); }
+  .pass-lane { right: var(--s-4); bottom: 8%; padding: 5px var(--s-4); font: var(--t-micro); }
+  .pass-till { min-width: 0; }
+  .pass-controls .button, .pass-auto { width: 100%; }
+  .pass-progress { margin: 0; }
+}
+
+@media (max-width: 560px) {
+  /* The strip wraps to two rows rather than crushing the mark, the same way the standard bar
+     already does at this width. */
+  .popup-topbar--awning { padding: var(--s-3) var(--s-4); }
+  .awning__sign { grid-column: 1 / -1; grid-row: 2; }
+  .awning__place { white-space: normal; }
+}
+
+/* ------------------------------------------------------------------------------ forced colors
+
+   `PLATE.md`'s plate is a `background-image`, which no engine forces, so it survives — and
+   because it survives, every chip over it has to be an opaque `Canvas` rather than a translucent
+   wash, and every carrier on the counter needs an explicit edge to stay a distinct object.
+   The customer is SVG, which Blink does not force either; it declares `forced-color-adjust: none`
+   on purpose, which is legal precisely because it carries no fact that is not also text. */
+
+@media (forced-colors: active) {
+  .pass-customer { forced-color-adjust: none; }
+  .pass-tag, .pass-lane, .pass-ticket, .pass-board, .pass-till, .pass-alert, .pass-auto,
+  .popup-topbar--awning, .pass-counter {
+    color: CanvasText;
+    background: Canvas;
+    border: 1px solid CanvasText;
+  }
+
+  .pass-auto { color: ButtonText; background: ButtonFace; border-color: ButtonText; }
+  .pass-ticket { clip-path: none; }
+  .pass-ticket__no, .pass-ticket__when, .pass-ticket__said, .pass-ticket__stamp,
+  .pass-board__label, .pass-board__count, .pass-board__of,
+  .pass-till dt, .pass-till dd, .pass-till dd.money, .pass-alert, .pass-progress, .pass-nudge,
+  .pass-said, .awning__sign h1, .awning__place { color: CanvasText; }
+  .pass-ticket__stamp { border-color: CanvasText; }
+}
+
+/* ------------------------------------------------------------------------------ motion
+
+   Default is zero motion: outside this block no transition or animation property is declared on
+   anything in the room at all, so a pose swap is instant rather than merely fast. The only thing
+   that ever moves is a 250ms cross-fade between two postures of the same person, and auto-serve
+   stays a `setTimeout` moving numbers. */
+
+@media (prefers-reduced-motion: no-preference) {
+  .pass-customer svg { animation: pass-pose 250ms var(--ease-standard) both; }
+
+  @keyframes pass-pose {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 }

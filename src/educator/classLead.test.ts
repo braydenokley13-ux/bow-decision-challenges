@@ -151,8 +151,17 @@ describe("the ten-second lead", () => {
     // Minute five. The nine at the door are the only thing a teacher can act on.
     expect(classLeadFor(roomOf({})).headline).toBe("9 of 28 have not started.");
     // Minute thirty. The pile is the job, and the way into it is named.
+    //
+    // The pinned string used to open with the turned-in count and put the pile second — which
+    // contradicted this test's own name, and the module's own paragraph: *"Work arriving: how
+    // much of it there is to read, and the way into the queue."* The turned-in count has not
+    // gone anywhere; it is the first clause of the sentence under the headline, where the
+    // teacher still reads it and where it is no longer the largest thing on the page. The
+    // invariant this file exists for is untouched, and asserted below: the pile carries its
+    // own denominator inside the headline.
     const mid = classLeadFor(roomOf({ turnedIn: 22, working: 2, notStarted: 3, awaitingReading: 22 }));
-    expect(mid.headline).toBe("22 of 28 turned in. 22 of 22 still to read.");
+    expect(mid.headline).toBe("22 of 22 explanations still to read.");
+    expect(mid.detail).toContain("22 of 28 turned in.");
     expect(mid.action).toEqual({ label: "Read the 22 explanations", route: "reading" });
     // A single unread explanation is still the job, and it is still the thing to do next.
     expect(classLeadFor(roomOf({ turnedIn: 22, awaitingReading: 1, assessed: 21, demonstrated: 15, percentDemonstrated: 71, state: "strong" })).action)

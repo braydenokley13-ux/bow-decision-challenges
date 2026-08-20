@@ -167,6 +167,31 @@ export const LEVEL_DESCRIPTIONS: Record<0 | 2 | 3 | 4 | 5 | "null", string> = {
   null: "This run never asked it of them.",
 };
 
+/**
+ * The mark that travels with every level word. Never instead of it.
+ *
+ * State is never carried by colour alone and never by a glyph alone: every place a
+ * level or a state is shown, a teacher reads *word + mark + colour*, and the word is
+ * the accessible name. The marks are text rather than shapes drawn in CSS so they
+ * survive greyscale, a forced-colours mode and being read aloud as part of the row.
+ *
+ * The ramp is a fill fraction, so the order is legible without the table: full,
+ * nearly full, half, a quarter, empty — and the absence is an em dash, which is not on
+ * the ramp at all, because a run that never asked is not a low score.
+ */
+export const LEVEL_MARKS: Record<0 | 2 | 3 | 4 | 5 | "null", string> = {
+  5: "\u25cf",
+  4: "\u25d5",
+  3: "\u25d0",
+  2: "\u25d4",
+  0: "\u25cb",
+  null: "\u2014",
+};
+
+export function levelMark(level: 0 | 2 | 3 | 4 | 5 | null): string {
+  return level === null ? LEVEL_MARKS.null : LEVEL_MARKS[level];
+}
+
 /** Strongest first. The order every level list in the product is offered in. */
 export const LEVEL_ORDER: readonly (0 | 2 | 3 | 4 | 5 | "null")[] = [5, 4, 3, 2, 0, "null"];
 
@@ -267,6 +292,23 @@ export const SKILL_STATE_DESCRIPTIONS: Record<CompetencyResultState, string> = {
   incomplete: "Some of it has no judgement yet — usually because nobody has read the writing.",
 };
 
+/**
+ * Ladder 3's marks. The same rule as Ladder 2's: word, mark and colour, always three.
+ *
+ * *Evidence not all in* is an ellipsis rather than a circle on purpose — it is not a
+ * point on the ramp, it is a judgement that has not arrived — and *Never came up* keeps
+ * the em dash it has everywhere else. Four different things (missing, supplied,
+ * incomplete, shown) stay four different things with the colour taken away.
+ */
+export const SKILL_STATE_MARKS: Record<CompetencyResultState, string> = {
+  demonstrated: "\u25cf",
+  "demonstrated-with-support": "\u25d0",
+  developing: "\u25d4",
+  "not-yet-demonstrated": "\u25cb",
+  "not-observed": "\u2014",
+  incomplete: "\u2026",
+};
+
 /** Strongest first, so every distribution of these reads the same way in the product. */
 export const SKILL_STATE_ORDER: readonly CompetencyResultState[] = [
   "demonstrated", "demonstrated-with-support", "developing", "not-yet-demonstrated", "not-observed", "incomplete",
@@ -334,7 +376,7 @@ export const CLASS_STATE_DESCRIPTIONS: Record<ObjectiveResultState, string> = {
 // ---------------------------------------------------------------------------
 
 /** One line of a key: the word as it appears on the page, and the sentence behind it. */
-export interface KeyEntry { label: string; description: string }
+export interface KeyEntry { label: string; description: string; mark?: string }
 
 /**
  * The words on this page, each with its sentence, once.
@@ -352,13 +394,13 @@ export interface KeyEntry { label: string; description: string }
 export function levelKey(levels: Iterable<0 | 2 | 3 | 4 | 5 | null>): KeyEntry[] {
   const present = new Set<0 | 2 | 3 | 4 | 5 | "null">([...levels].map((level) => (level === null ? "null" : level)));
   return LEVEL_ORDER.filter((level) => present.has(level))
-    .map((level) => ({ label: LEVEL_LABELS[level], description: LEVEL_DESCRIPTIONS[level] }));
+    .map((level) => ({ label: LEVEL_LABELS[level], description: LEVEL_DESCRIPTIONS[level], mark: LEVEL_MARKS[level] }));
 }
 
 export function skillStateKey(states: Iterable<CompetencyResultState>): KeyEntry[] {
   const present = new Set(states);
   return SKILL_STATE_ORDER.filter((state) => present.has(state))
-    .map((state) => ({ label: SKILL_STATE_LABELS[state], description: SKILL_STATE_DESCRIPTIONS[state] }));
+    .map((state) => ({ label: SKILL_STATE_LABELS[state], description: SKILL_STATE_DESCRIPTIONS[state], mark: SKILL_STATE_MARKS[state] }));
 }
 
 export function classStateKey(states: Iterable<ObjectiveResultState>): KeyEntry[] {

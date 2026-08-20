@@ -35,7 +35,7 @@ function chapterFor(stage: StageId): string {
  * it, so a phone-width viewport spends its pixels on the decision rather than on two bars
  * repeating figures the page already shows.
  */
-export function PopUpShell({ stage, kicker, title, tone = "standard", banner, ledger, live, focusKey, headingVariant, children }: PropsWithChildren<{
+export function PopUpShell({ stage, kicker, title, tone = "standard", banner, ledger, live, focusKey, headingVariant, chrome, children }: PropsWithChildren<{
   stage: StageId;
   kicker: string;
   title: string;
@@ -54,6 +54,20 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
    * Nothing else about the heading moves; no other screen in the world takes this prop.
    */
   headingVariant?: "order" | undefined;
+  /**
+   * The one stage that is a room rather than a page.
+   *
+   * `chrome="awning"` turns the top bar into the underside of the pop-up's own awning — 52px,
+   * scalloped along its bottom edge, with the demoted `h1` stencilled on the sign board and the
+   * `popup-heading` band not rendered at all — and drops the `MotifHud` for the duration.
+   *
+   * Both deletions are argued in `gauntlet/v6/popup/RULING.md` §3 and both are local to the
+   * serving screen: the HUD only ever existed here in its `live={cash, sold}` form because
+   * "instrumentation that disagrees with the screen under it is worse than none", and on this
+   * screen `CASH` and `STOCK` cannot be spent while `SOLD` is a second copy of the till box 400px
+   * below it. Every other pop-up screen passes nothing and is untouched.
+   */
+  chrome?: "awning" | undefined;
 }>) {
   const { state, delivery, handOver } = usePopUp();
   const hub = usePopUpHubTrigger();
@@ -74,23 +88,40 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
   // light one, cut for a near-black surface. A night market is lit from a wire strung over a
   // lane, and the world was being drawn on the cream of a printed handout.
   return (
-    <div className="popup-shell ground-dark" data-world="food-truck" data-chapter={chapterFor(stage)}>
-      <header ref={topbar} className="popup-topbar">
+    <div className="popup-shell ground-dark" data-world="food-truck" data-chapter={chapterFor(stage)} data-chrome={chrome}>
+      <header ref={topbar} className={`popup-topbar${chrome === "awning" ? " popup-topbar--awning" : ""}`}>
         <AppMark subtitle={false} />
         {/* The world's own name and the place it happens in, always on screen, and the four
             quantities this run turns on beside it — cash, stock, plates sold, and which
             Saturday this is. Every figure is read off the same ledger every screen already
             prices its own questions from; see `MotifHud.tsx` for why none of it is stored. */}
-        <div className="popup-topbar__world">
-          <WorldIdentity title={POP_UP_SCENARIO.title} place={POP_UP_SCENARIO.pitch.kicker} />
-          <MotifHud
-            live={live}
-            ledger={ledger}
-            hasSpot={state.spotId !== null}
-            openingCommitted={state.saved.opening !== undefined}
-            position={position}
-          />
-        </div>
+        {chrome === "awning" ? (
+          /* The sign over the hatch. The `h1` keeps its exact accessible name — `e2e/popup.spec.ts`
+             finds the stage heading by role and name — and drops to `--t-micro`, which is the
+             `headingVariant="order"` precedent applied one step further.
+
+             It deliberately does NOT take the arrival ref. On this stage the thing a screen
+             reader should meet is the `h2` inside the hatch — "You are serving customers." —
+             and `RunSaturday` focuses it on mount. `useStageArrival` still scrolls the page to
+             the top; it simply has nothing to focus, which is the correct outcome here rather
+             than two elements arguing over the same commit. */
+          <div className="awning__sign">
+            <p className="eyebrow">{kicker}</p>
+            <h1>{title}</h1>
+            <span className="awning__place">— {POP_UP_SCENARIO.pitch.kicker}</span>
+          </div>
+        ) : (
+          <div className="popup-topbar__world">
+            <WorldIdentity title={POP_UP_SCENARIO.title} place={POP_UP_SCENARIO.pitch.kicker} />
+            <MotifHud
+              live={live}
+              ledger={ledger}
+              hasSpot={state.spotId !== null}
+              openingCommitted={state.saved.opening !== undefined}
+              position={position}
+            />
+          </div>
+        )}
         {/* The same two controls the other world carries, for the same two reasons: a market
             restored on a shared laptop has to be able to say whose it is, and a student who meant
             to play the other one needs a door that is not "finish this first" — and the reading
@@ -113,7 +144,8 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
           <RunMenu classCode={state.meta.classCode} seatCode={state.meta.seatCode} handIn={delivery.status} onLeave={handOver} />
         </div>
       </header>
-      <main className="popup-main" data-tone={tone}>
+      <main className={`popup-main${chrome === "awning" ? " popup-main--room" : ""}`} data-tone={tone}>
+        {chrome !== "awning" && (
         <header
           ref={heading}
           className={`popup-heading${tone === "dark" ? " popup-heading--dark scene" : ""}${headingVariant === "order" ? " popup-heading--order" : ""}`}
@@ -126,6 +158,7 @@ export function PopUpShell({ stage, kicker, title, tone = "standard", banner, le
           </div>
           {banner}
         </header>
+        )}
         {children}
       </main>
     </div>

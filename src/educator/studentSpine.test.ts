@@ -84,8 +84,13 @@ describe("the points model stays out of the lead", () => {
   };
 
   it("keeps the grade out of the student header and the class rows", () => {
-    const header = between("function StudentPanel", "student-tabs");
-    expect(header).toContain("StudentLead");
+    // The markers moved with the page, and both still name things rather than markup: the
+    // verdict is everything from the panel's own function to the pair of records under it,
+    // and the class list is the triage row inside the instrument. The four tabs are gone —
+    // `student-tabs` was the old end marker and a tab bar is a ranking abdicated — and the
+    // header block is now the raised verdict surface itself.
+    const header = between("function StudentPanel", "record-pair");
+    expect(header).toContain("SKILL_STATE_LABELS");
     expect(header).not.toMatch(/structuredPoints|finalPoints|REASONING_MAXIMUM/);
     // `COMPETENCY_STATE_HEADLINES` used to be the constant named here. It was one of two
     // tables holding the same six states — a Title Case copy for headings and a lowercase
@@ -95,9 +100,16 @@ describe("the points model stays out of the lead", () => {
     // one table. The claim this test makes is unchanged: **a class row leads with what the
     // student showed, not with a number**, and it names the surviving table so a row that
     // went back to spelling a state fails here.
-    const rows = between("function StudentRows", "function shortfallLine");
+    // The flat list of eighteen identical rows is the ranked triage now, and the claim this
+    // test makes about it is unchanged: **a class row leads with what the student showed, not
+    // with a number.** `Triage` heads each band with the state word; `TriageRow` opens with
+    // the seat and the gap in Ladder-2's words.
+    const rows = between("function Triage(", "function bandHint");
     expect(rows).toContain("SKILL_STATE_LABELS");
     expect(rows).not.toMatch(/structuredPoints|finalPoints|\/100/);
+    const row = between("function TriageRow", "function Cluster");
+    expect(row).toContain("seat.gap");
+    expect(row).not.toMatch(/structuredPoints|finalPoints|\/100/);
   });
 
   it("shows one gradebook line, and no composite total anywhere", () => {

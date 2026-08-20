@@ -177,7 +177,10 @@ describe("no two sentences on the fold that a teacher could not both believe", (
       }
 
       // 5. The reading pile the headline names is the pile the spine counts.
-      const stillToRead = /(\d+) of (\d+) still to read/.exec(text);
+      //    The noun moved into the middle of the phrase when the pile became the headline's
+      //    subject — "5 of 18 explanations still to read." — and the rule is about the two
+      //    numbers rather than about the words between them.
+      const stillToRead = /(\d+) of (\d+)(?: explanations?)? still to read/.exec(text);
       if (spine.awaitingReading > 0 && spine.submitted > 0) {
         expect(stillToRead?.[1]).toBe(String(spine.awaitingReading));
         expect(stillToRead?.[2]).toBe(String(spine.submitted));
@@ -216,7 +219,17 @@ describe("every student list on a class with a roster is in names", () => {
   });
 });
 
-describe("Right now says when it was taken, and can be taken again", () => {
+/**
+ * The reading is a reading, not a live feed — and the page says which.
+ *
+ * "Right now" used to be a section with its own heading, its own tile row and its own
+ * timestamp. The counts are the instrument's foot now and the timestamp is on the class
+ * identity line, because they are context for the triage rather than a question of their
+ * own — but the two things this test is actually about are unchanged and are what it still
+ * asserts: the page says when the reading was taken, and offers a control that takes
+ * another. Auto-polling is still deliberately not it.
+ */
+describe("the page says when its reading was taken, and can take another", () => {
   it("carries a timestamp and a control that asks the service again", async () => {
     const bundle = classOf(3, "none");
     // Two seats mid-run, which is what makes the panel render at all.
@@ -237,9 +250,10 @@ describe("Right now says when it was taken, and can be taken again", () => {
     }));
     openClass();
 
-    const panel = (await screen.findByRole("heading", { name: /Where the room is/i })).closest("section")!;
+    await screen.findByRole("heading", { level: 1 });
+    const panel = document.querySelector<HTMLElement>(".class-identity")!;
     // "Right now" was a snapshot: two API calls, both at load, and a teacher who waited sixty
-    // seconds watched nothing change on the one section that tells her who is stuck.
+    // seconds watched nothing change on the one part of the page that tells her who is stuck.
     expect(within(panel).getByText(/^As at /)).toBeInTheDocument();
 
     const before = calls;

@@ -2,13 +2,15 @@ import { useState } from "react";
 import { Button } from "../components/primitives/Button";
 import { competencyById } from "../domain/competency/competencies";
 import { evidenceTrail, judgementsOf, type TrailJudgement } from "../domain/competency/trail";
+import { isShortfall } from "../domain/competency/teachNext";
+import { disclosureEscape } from "../components/primitives/disclosureEscape";
 import { reteachFor } from "../domain/competency/reteach";
 import type { RubricLevel } from "../domain/competency/types";
 import type { SubmissionRecord, TeacherOverride } from "../platform/classes/types";
 import { machineObservationsFor, worldOfSubmission } from "./objectiveResults";
 import { eventLabel, stageLabel } from "../domain/scenario/registry";
-import { levelDescription, levelKey, levelLabel, LEVEL_ORDER, SUPPORT_LABELS } from "./labels";
-import { StateKey } from "./EducatorShell";
+import { levelDescription, levelKey, levelLabel, levelMark, LEVEL_ORDER, SUPPORT_LABELS } from "./labels";
+import { StateKey, WordKey } from "./EducatorShell";
 import type { OverrideRequest } from "./useClassEvidence";
 
 /**
@@ -33,57 +35,57 @@ import type { OverrideRequest } from "./useClassEvidence";
  */
 const LEVELS: readonly (RubricLevel | null)[] = LEVEL_ORDER.map((level) => (level === "null" ? null : level));
 
-/** One thing the work had to show, what a teacher said about it, and the two together. */
-function JudgementRow({ judgement, overrides, onOverride }: {
+/**
+ * One thing the work had to show, what BOW read, what a teacher said about it — and the way
+ * to disagree, on the row, behind a native disclosure.
+ *
+ * The override used to be a full-height panel per row: fourteen of them, unrolled, on a page
+ * whose primary control sat under all of them. The control is the same control and every one
+ * of the fourteen still has one — what changed is that a row a teacher agrees with costs a
+ * line instead of a screen. The row that fell short opens by default, because that is the
+ * row they came to argue with.
+ *
+ * `<details>` rather than a custom accordion, everywhere: keyboard-operable and announced
+ * with no JavaScript, which is the accessibility contract rather than a preference.
+ */
+function JudgementRow({ judgement, overrides, onOverride, openByDefault }: {
   judgement: TrailJudgement;
   overrides: readonly TeacherOverride[];
   onOverride: ((override: OverrideRequest) => Promise<boolean>) | null;
+  openByDefault: boolean;
 }) {
-  const [open, setOpen] = useState(false);
   const [level, setLevel] = useState<RubricLevel | null>(judgement.level);
   const [note, setNote] = useState("");
   const [saved, setSaved] = useState<string | null>(null);
   const mine = overrides.filter((entry) => entry.evidenceRequirementId === judgement.evidenceRequirementId);
   const standing = mine.at(-1);
+  const short = isShortfall(judgement.level);
 
   return (
-    <li className="judgement" data-level={judgement.level === null ? "none" : judgement.level}>
-      <div className="judgement__say">
+    <li data-short={short} data-level={judgement.level === null ? "none" : judgement.level}>
+      <div className="judgement-line">
         <b>{judgement.label}</b>
-        <span className="judgement__rule">{judgement.observableRule}</span>
-        <p className="judgement__reason">{judgement.reason}</p>
+        {/* Word, mark and colour — three signals, so the state survives greyscale and a
+            reader who has any one of them can still tell the six apart. */}
+        <span>
+          <span className="mark-glyph" aria-hidden="true">{levelMark(judgement.level)}</span>{"\u00a0"}
+          {levelLabel(judgement.level)}
+        </span>
+        <p className="judgement-rule">{judgement.observableRule} · {judgement.reason}</p>
         {/* The cap is the rubric's doing, not the student's, and saying which is which is the
-            difference between "they needed a hint" and "they could not do it".
-
-            It used to name the cap twice — "BOW saw Independently, held to After a hint: a
-            hint that named the problem caps this at After a hint" — which it could not help
-            doing, because a capped level *is* the cap: `levelUnderRubric` is `min(claimed,
-            cap)`, so whenever `cappedBySupport` is true the held level and the cap are the
-            same value. Four level words in eighteen, two of them the same word twice. Said
-            once, it is two clauses: what BOW read, and what holds it there.
-
-            No emphasis on the two level words, deliberately: `.judgement__say b` is a display
-            block one level up, so a `<b>` here breaks the sentence into four lines with the
-            comma and the full stop orphaned on their own. */}
+            difference between "they needed a hint" and "they could not do it". */}
         {judgement.cappedBySupport && (
-          <p className="judgement__cap">
+          <p className="judgement-rule">
             BOW read this as {levelLabel(judgement.claimed)}, and {SUPPORT_LABELS[judgement.supportLevel]} holds
             it at {levelLabel(judgement.level)}.
           </p>
         )}
-      </div>
-
-      <div className="judgement__verdicts">
-        <p className="judgement__machine">
-          <span>BOW</span>
-          <strong>{levelLabel(judgement.level)}</strong>
-        </p>
-        {/* Both, always. An override that hid the machine judgement would remove the only
-            thing a second teacher could check the first one against. */}
+        {/* Both readings, always. An override that hid the machine judgement would remove the
+            only thing a second teacher could check the first one against. */}
         {standing && (
-          <p className="judgement__override">
-            <span>You</span>
-            <strong>{levelLabel(standing.level)}</strong>
+          <p className="judgement-mine judgement__override">
+            <span>You read this as</span> <strong>{levelLabel(standing.level)}</strong>
+            {mine.length > 1 ? ` · ${mine.length} readings recorded` : ""} — yours stands.
           </p>
         )}
       </div>
@@ -101,161 +103,180 @@ function JudgementRow({ judgement, overrides, onOverride }: {
       )}
 
       {onOverride && (
-        <div className="judgement__act">
-          {!open ? (
-            <Button type="button" variant="quiet" onClick={() => setOpen(true)}>
-              {standing ? "Record a different judgement" : "I read this differently"}
-            </Button>
-          ) : (
-            <form
-              className="override-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (note.trim().length === 0) return;
-                void onOverride({ evidenceRequirementId: judgement.evidenceRequirementId, level, note: note.trim() })
-                  .then((ok) => {
-                    setSaved(ok ? "Recorded beside BOW's." : "Could not record that.");
-                    if (ok) { setOpen(false); setNote(""); }
-                  });
-              }}
-            >
-              <fieldset>
-                <legend>What you read it as</legend>
-                {/* Named, described, and not numbered. Six labels are BOW's own distinctions
-                    and nobody outside this codebase has agreed to them, so each one says what
-                    it means beside the control that records it. This is where the glossary
-                    rule started, and `StateKey` is the same rule applied to pages that only
-                    read the words rather than asking a person to pick one. */}
-                <ul className="override-levels">
-                  {LEVELS.map((option) => (
-                    <li key={String(option)}>
-                      <button
-                        type="button"
-                        aria-pressed={level === option}
-                        onClick={() => setLevel(option)}
-                      >
-                        {levelLabel(option)}
-                      </button>
-                      <span>{levelDescription(option)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </fieldset>
-              <label>
-                Why — this is kept with the judgement
-                <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} maxLength={600} required />
-              </label>
-              {/* Above the actions, because a rule explained under a disabled button is a
-                  rule a teacher meets after it has already refused them. */}
-              <p className="override-form__note" aria-live="polite">
-                {note.trim().length === 0 ? "A judgement with no reason is a number nobody can check later." : "BOW keeps both readings."}
-              </p>
-              <div className="override-form__act">
-                <Button type="button" variant="quiet" onClick={() => { setOpen(false); setNote(""); }}>Cancel</Button>
-                <Button type="submit" aria-disabled={note.trim().length === 0}>Record it</Button>
-              </div>
-            </form>
-          )}
+        <details open={openByDefault} onKeyDown={disclosureEscape()}>
+          <summary>{standing ? "Record a different judgement" : "I read this differently"}</summary>
+          <form
+            className="override-form"
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (note.trim().length === 0) return;
+              void onOverride({ evidenceRequirementId: judgement.evidenceRequirementId, level, note: note.trim() })
+                .then((ok) => {
+                  setSaved(ok ? "Recorded beside BOW's." : "Could not record that.");
+                  if (ok) setNote("");
+                });
+            }}
+          >
+            <fieldset>
+              <legend>What you read it as</legend>
+              {/* Named, described, and not numbered. Six labels are BOW's own distinctions
+                  and nobody outside this codebase has agreed to them, so each one says what
+                  it means beside the control that records it. */}
+              <ul className="override-levels">
+                {LEVELS.map((option) => (
+                  <li key={String(option)}>
+                    <button type="button" aria-pressed={level === option} onClick={() => setLevel(option)}>
+                      {levelLabel(option)}
+                    </button>
+                    <span>{levelDescription(option)}</span>
+                  </li>
+                ))}
+              </ul>
+            </fieldset>
+            <label>
+              Why — this is kept with the judgement
+              <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={3} maxLength={600} required />
+            </label>
+            {/* Above the actions, because a rule explained under a disabled button is a
+                rule a teacher meets after it has already refused them. */}
+            <p className="override-form__note" aria-live="polite">
+              {note.trim().length === 0 ? "A judgement with no reason is a number nobody can check later." : "BOW keeps both readings."}
+            </p>
+            <div className="override-form__act">
+              <Button type="submit" aria-disabled={note.trim().length === 0}>Record it</Button>
+            </div>
+          </form>
           <span aria-live="polite" className="judgement__saved">{saved}</span>
-        </div>
+        </details>
       )}
     </li>
   );
 }
 
+/**
+ * Every judgement on this attempt, grouped by skill, weakest group first.
+ *
+ * The ranking is the same one the class page's triage does, at this page's grain: the group
+ * holding the shortfall is the group a teacher came for, so it is the group they meet.
+ */
+export function JudgementRecord({ submission, onOverride }: {
+  submission: SubmissionRecord;
+  onOverride: ((override: OverrideRequest) => Promise<boolean>) | null;
+}) {
+  const trail = evidenceTrail(submission.log, machineObservationsFor(submission));
+  const overrides = submission.overrides ?? [];
+  const standing = judgementsOf(trail).filter((judgement) => !judgement.superseded);
+  const worst = (competencyId: string) =>
+    standing.filter((judgement) => judgement.competencyId === competencyId && isShortfall(judgement.level)).length;
+  const byCompetency = [...new Set(standing.map((judgement) => judgement.competencyId))]
+    .sort((a, b) => worst(b) - worst(a));
+  // The one row a teacher is most likely to want to argue with, opened for them. Exactly
+  // one, so the page does not unroll fourteen panels again by another route.
+  const firstShort = standing.find((judgement) => isShortfall(judgement.level))?.evidenceRequirementId ?? null;
+
+  return (
+    <div className="judgements">
+      {/* The propagation promise, said on the screen that makes it rather than in a doc. */}
+      <p className="judgements__propagates">
+        Every row here is yours to disagree with, and an override stands everywhere this
+        judgement appears — this page, the class overview, the objective standing, and anything
+        the student sees.
+      </p>
+      {byCompetency.map((competencyId) => (
+        <section className="judgement-block" key={competencyId}>
+          <h3>{competencyById(competencyId)?.statement ?? competencyId}</h3>
+          <ul className="judgement-rows">
+            {standing
+              .filter((judgement) => judgement.competencyId === competencyId)
+              .map((judgement) => (
+                <JudgementRow
+                  key={judgement.evidenceRequirementId}
+                  judgement={judgement}
+                  overrides={overrides}
+                  onOverride={onOverride}
+                  openByDefault={judgement.evidenceRequirementId === firstShort}
+                />
+              ))}
+          </ul>
+        </section>
+      ))}
+      <WordKey title="What these words mean" entries={levelKey(standing.map((judgement) => judgement.level))} />
+    </div>
+  );
+}
+
+/**
+ * Everything the student did, in the order it happened, behind one disclosure.
+ *
+ * The obligation is that every judgement can be traced to the moment that produced it — not
+ * that thirty-four moments are unrolled on the page by default. So the trail is complete and
+ * it is closed, and the compressed account above it is only honest because this is here.
+ */
+export function TrailRecord({ submission }: { submission: SubmissionRecord }) {
+  const trail = evidenceTrail(submission.log, machineObservationsFor(submission));
+  const worldId = worldOfSubmission(submission);
+  return (
+    <details className="trail-record" onKeyDown={disclosureEscape()}>
+      <summary>Every moment of this run, in order — {trail.moments.length} of them</summary>
+      {/* The timeline is the audit trail: each row is one moment from the log, and the
+          judgements under it are the ones that moment settled. Named by the story the
+          student was actually in — the stage ids and the event types are BOW's internal
+          vocabulary, and a trail printed in that vocabulary is a log file with a heading. */}
+      <ol className="trail">
+        {trail.moments.map((moment, index) => (
+          <li key={moment.eventId}>
+            <div className="trail__when">
+              <b>{stageLabel(worldId, moment.stage)}</b>
+              <span>{eventLabel(worldId, moment.type)}</span>
+              <span className="trail__step">Step {index + 1} of {trail.moments.length}</span>
+            </div>
+            <ul className="trail__judgements">
+              {moment.judgements.map((judgement) => (
+                <li key={`${judgement.evidenceRequirementId}-${judgement.reason}`} data-superseded={judgement.superseded}>
+                  <b>{judgement.label}</b>
+                  <span className="trail__level">{levelLabel(judgement.level)}</span>
+                  <span>{judgement.reason}</span>
+                  {judgement.superseded && <em>Revisited later. The reading below stands.</em>}
+                </li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ol>
+      {trail.notObserved.length > 0 && (
+        <div className="trail__absent">
+          <p className="field-label">{levelLabel(null)}</p>
+          <ul>
+            {trail.notObserved.map((judgement) => (
+              <li key={judgement.evidenceRequirementId}>
+                <b>{judgement.label}</b>
+                <span>{judgement.reason}</span>
+              </li>
+            ))}
+          </ul>
+          <p>These are absences, not zeros. Nothing here counted against this student.</p>
+        </div>
+      )}
+    </details>
+  );
+}
+
+/**
+ * The two records, together, for anywhere that wants the whole of §19's chain in one place.
+ *
+ * The student evidence page renders the two halves in their own regions now — the judgements
+ * are what a teacher reads and argues with, the transcript is the audit trail behind them —
+ * so this is the composition rather than the layout.
+ */
 export function EvidenceTrailPanel({ submission, onOverride }: {
   submission: SubmissionRecord;
   /** Absent where this teacher cannot write to the class. Reading never requires it. */
   onOverride: ((override: OverrideRequest) => Promise<boolean>) | null;
 }) {
-  const trail = evidenceTrail(submission.log, machineObservationsFor(submission));
-  const worldId = worldOfSubmission(submission);
-  const overrides = submission.overrides ?? [];
-  const standing = judgementsOf(trail).filter((judgement) => !judgement.superseded);
-  const byCompetency = [...new Set(standing.map((judgement) => judgement.competencyId))];
-
   return (
     <>
-      <section className="dashboard-section">
-        <div className="section-heading">
-          <p className="eyebrow">What BOW concluded, and why</p>
-          <h2>Every judgement on this attempt</h2>
-        </div>
-        {/* Once, at the top, for the words actually on this page — not once per row, and
-            never for a word this attempt did not produce. */}
-        <StateKey title="What these words mean" entries={levelKey(standing.map((judgement) => judgement.level))} />
-        {byCompetency.map((competencyId) => (
-          <section className="judgement-group" key={competencyId}>
-            <h3>{competencyById(competencyId)?.statement ?? competencyId}</h3>
-            <ul className="judgement-list">
-              {standing
-                .filter((judgement) => judgement.competencyId === competencyId)
-                .map((judgement) => (
-                  <JudgementRow
-                    key={judgement.evidenceRequirementId}
-                    judgement={judgement}
-                    overrides={overrides}
-                    onOverride={onOverride}
-                  />
-                ))}
-            </ul>
-          </section>
-        ))}
-      </section>
-
-      <section className="dashboard-section">
-        <div className="section-heading">
-          <p className="eyebrow">In the order it happened</p>
-          <h2>What this student did</h2>
-        </div>
-        {/* The timeline is the audit trail: each row is one moment from the log, and the
-            judgements under it are the ones that moment settled. */}
-        {/* Named by the world the student was actually in. The stage ids and the event types
-            are BOW's internal vocabulary, and a trail printed in that vocabulary is a log file
-            with a heading on it — which is what the market's students arrived as, screen after
-            screen of `popup-spot / POPUP_SUM_SUBMITTED`, on the page whose only job is letting
-            a teacher check what BOW saw about a child they can name.
-
-            The `<code>event-5</code>` that used to close each row went with it. It was the
-            anchor, and an anchor nobody can read is decoration: the moments are already in the
-            order they happened, so the position in that order is the reference, and it is
-            written in words. */}
-        <ol className="trail">
-          {trail.moments.map((moment, index) => (
-            <li key={moment.eventId}>
-              <div className="trail__when">
-                <b>{stageLabel(worldId, moment.stage)}</b>
-                <span>{eventLabel(worldId, moment.type)}</span>
-                <span className="trail__step">Step {index + 1} of {trail.moments.length}</span>
-              </div>
-              <ul className="trail__judgements">
-                {moment.judgements.map((judgement) => (
-                  <li key={`${judgement.evidenceRequirementId}-${judgement.reason}`} data-superseded={judgement.superseded}>
-                    <b>{judgement.label}</b>
-                    <span className="trail__level">{levelLabel(judgement.level)}</span>
-                    <span>{judgement.reason}</span>
-                    {judgement.superseded && <em>Revisited later. The reading below stands.</em>}
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ol>
-        {trail.notObserved.length > 0 && (
-          <div className="trail__absent">
-            <p className="field-label">{levelLabel(null)}</p>
-            <ul>
-              {trail.notObserved.map((judgement) => (
-                <li key={judgement.evidenceRequirementId}>
-                  <b>{judgement.label}</b>
-                  <span>{judgement.reason}</span>
-                </li>
-              ))}
-            </ul>
-            <p>These are absences, not zeros. Nothing here counted against this student.</p>
-          </div>
-        )}
-      </section>
+      <JudgementRecord submission={submission} onOverride={onOverride} />
+      <TrailRecord submission={submission} />
     </>
   );
 }

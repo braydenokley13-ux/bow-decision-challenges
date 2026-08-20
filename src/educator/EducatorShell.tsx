@@ -6,6 +6,7 @@ import { DEMO_CLASS_CODE } from "../fixtures/demoClass";
 import { NAV_LABELS, type KeyEntry } from "./labels";
 // Sets the flag `design/app.css` reads to keep the arrival ring off a page nobody has touched.
 import "../app/arrivalRing";
+import { disclosureEscape } from "../components/primitives/disclosureEscape";
 
 /**
  * The measure a page is set to. It is how wide the page's blocks are, and nothing else — every
@@ -37,7 +38,18 @@ function isSampleClassRoute(pathname: string): boolean {
   return pathname === `/educator/class/${DEMO_CLASS_CODE}` || pathname.startsWith(`/educator/class/${DEMO_CLASS_CODE}/`);
 }
 
-export function EducatorShell({ children, measure = "evidence" }: PropsWithChildren<{ measure?: EducatorMeasure }>) {
+/**
+ * Which type scale and which surface vocabulary this page is set in.
+ *
+ * `teacher` puts the page on the five-step scale with the 14px floor and turns on the
+ * focus, target and surface rules the accessibility contract binds the two teacher
+ * instruments to. It is a flag on the shell rather than a class every block has to carry,
+ * because the rule it keeps — no type under 14px anywhere on this page — is a property of
+ * the page and not of any one block on it.
+ */
+export type EducatorScale = "default" | "teacher";
+
+export function EducatorShell({ children, measure = "evidence", scale = "default" }: PropsWithChildren<{ measure?: EducatorMeasure; scale?: EducatorScale }>) {
   const { pathname } = useLocation();
   const main = useRef<HTMLElement>(null);
   const [ending, setEnding] = useState(false);
@@ -133,7 +145,7 @@ export function EducatorShell({ children, measure = "evidence" }: PropsWithChild
           : <NavLink className="educator-topbar__session" to="/educator/sign-in">Sign in</NavLink>}
         {isSampleClassRoute(pathname) && <span className="demo-pill">Sample class — not a real class</span>}
       </header>
-      <main className="educator-main" ref={main} tabIndex={-1} data-measure={measure}>{children}</main>
+      <main className={scale === "teacher" ? "educator-main teacher-page" : "educator-main"} ref={main} tabIndex={-1} data-measure={measure}>{children}</main>
     </div>
   );
 }
@@ -157,8 +169,45 @@ export function StateKey({ title, entries }: { title: string; entries: readonly 
     <div className="objective-bar-note">
       <p className="field-label">{title}</p>
       {entries.map((entry) => (
-        <p key={entry.label}><b>{entry.label}</b> — {entry.description}</p>
+        <p key={entry.label}>
+          {entry.mark && <><span className="mark-glyph" aria-hidden="true">{entry.mark}</span>{" "}</>}
+          <b>{entry.label}</b> — {entry.description}
+        </p>
       ))}
     </div>
+  );
+}
+
+/**
+ * The same key, as margin rather than as a section.
+ *
+ * On the two teacher pages the glossary was three boxed panels at the weight of the
+ * evidence they explain, repeated wherever a word first appeared. It is reference a
+ * teacher needs once and then stops reading, which is the definition of something that
+ * belongs behind a disclosure — and the disclosure is `<details>`/`<summary>`, so it is
+ * keyboard-operable and announced with no JavaScript at all.
+ *
+ * The mark travels with the word here for the same reason it travels everywhere: a state
+ * is a word, a mark and a colour, and a reader who has any one of the three can still
+ * tell four different things apart. The mark is `aria-hidden` because the word beside it
+ * is the accessible name; a screen reader that read both would say the state twice.
+ */
+export function WordKey({ title, entries }: { title: string; entries: readonly KeyEntry[] }) {
+  if (entries.length === 0) return null;
+  return (
+    <details className="word-key" onKeyDown={disclosureEscape()}>
+      <summary>{title}</summary>
+      <dl>
+        {entries.map((entry) => (
+          <div key={entry.label}>
+            <dt>
+              {entry.mark && <><span className="mark-glyph" aria-hidden="true">{entry.mark}</span>{" "}</>}
+              {entry.label}
+            </dt>
+            <dd>{entry.description}</dd>
+          </div>
+        ))}
+      </dl>
+    </details>
   );
 }

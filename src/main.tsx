@@ -9,6 +9,10 @@ import "./design/worlds.css";
 import "./design/motion.css";
 import "./design/app.css";
 import "./design/scenes.css";
+/* Last on purpose. The student's own screen re-states about thirty of `app.css`'s rules on the
+   dark ground rather than moving any of them out of a file six other surfaces read, so its
+   overrides win on import order at equal specificity. See the header of `student.css`. */
+import "./design/student.css";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("BOW could not find its application root.");

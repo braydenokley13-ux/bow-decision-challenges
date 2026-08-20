@@ -157,7 +157,10 @@ async function openTheClassPage(input: { unread?: boolean } = {}) {
       <Routes><Route path="/educator/class/:code" element={<RealClassOverview />} /></Routes>
     </MemoryRouter>,
   );
-  await waitFor(() => expect(view.container.querySelector(".live-state")).not.toBeNull());
+  // The instrument, which is the one raised surface the class page carries. The wait used to
+  // be on `.live-state` — a section that renders now only when somebody is actually mid-run,
+  // which this class's fixture (`progress: []`) is not.
+  await waitFor(() => expect(view.container.querySelector(".surface-instrument")).not.toBeNull());
   return { view, restore };
 }
 
