@@ -44,7 +44,12 @@ p { color: var(--ink-2); }
    a cursor painted its own label in its own background, which reads as a button with no
    text on it at all. */
 .button--primary[aria-disabled="true"], .button--primary[aria-disabled="true"]:hover { color: var(--bow-brand-strong); background: var(--fin-adjustable-soft); border-color: var(--bow-brand); }
-.button--primary { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); }
+
+/* `--bow-brand-ink`, not `--ink-invert`. "Invert" means the ink that sits on `--ink-1`, and on
+   the dark ground that is near-black — which axe found painted onto a violet-500 button at
+   3.81:1 on the front door, the first screen anybody sees. The ink for a brand fill is the
+   brand's own, and it is the one token that knows the brand might be amber. */
+.button--primary { color: var(--bow-brand-ink); background: var(--bow-brand-fill); border-color: var(--bow-brand-fill); }
 .button--primary:hover { background: var(--bow-brand-strong); border-color: var(--bow-brand-strong); }
 .button--secondary { color: var(--ink-1); background: var(--surface-raised); }
 .button--quiet { color: var(--ink-2); background: transparent; border-color: var(--border-default); border-width: 1px; font-weight: 500; }
@@ -481,7 +486,7 @@ p { color: var(--ink-2); }
 
 /* Padded by content. `min-height: 240px` left 120px of empty navy under two lines of text —
    the same dead band the hero rules above this one were stripped of. */
-.mini-unit-grid article > header { padding: var(--s-6); color: var(--ink-invert); background: var(--bow-brand-strong); }
+.mini-unit-grid article > header { padding: var(--s-6); color: var(--bow-brand-strong-ink); background: var(--bow-brand-strong); }
 .mini-unit-grid article > header span { color: var(--fin-conditional); font: var(--font-mono); }
 .mini-unit-grid article > header h3 { margin: var(--s-4) 0 var(--s-3); font: var(--t-title1); letter-spacing: var(--display-tracking); }
 .mini-unit-grid article > header p { color: var(--border-default); }
@@ -580,14 +585,14 @@ p { color: var(--ink-2); }
 .route-grid h3 { margin: var(--s-2) 0 var(--s-3); font: var(--t-title3); }
 .route-grid p { margin: 0 0 var(--s-4); color: var(--ink-muted-invert); font: var(--t-micro); }
 .seat-chips { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: auto; }
-.seat-chips a { min-width: 30px; padding: var(--s-2); color: var(--ink-invert); text-align: center; text-decoration: none; background: rgb(255 255 255 / 12%); border-radius: var(--r-xs); font: var(--t-micro); font-feature-settings: var(--num); }
+.seat-chips a { min-width: 30px; padding: var(--s-2); color: var(--bow-brand-strong-ink); text-align: center; text-decoration: none; background: rgb(255 255 255 / 12%); border-radius: var(--r-xs); font: var(--t-micro); font-feature-settings: var(--num); }
 .seat-chips a:hover { background: rgb(255 255 255 / 26%); }
-.trajectory-panel { display: grid; grid-template-columns: 0.35fr 1fr; gap: var(--s-6); margin: 0 var(--s-7); padding: var(--s-6); color: var(--ink-invert); background: var(--bow-brand-strong); }
+.trajectory-panel { display: grid; grid-template-columns: 0.35fr 1fr; gap: var(--s-6); margin: 0 var(--s-7); padding: var(--s-6); color: var(--bow-brand-strong-ink); background: var(--bow-brand-strong); }
 .trajectory-panel h2 { font: var(--t-title1); }
 .trajectory-panel p { color: var(--ink-muted-invert); }
 .trajectory-strip { display: grid; grid-template-columns: repeat(4, 1fr); }
 .trajectory-strip span { display: flex; flex-direction: column; justify-content: center; padding: var(--s-4); border-left: 1px solid var(--world-panel-edge); color: var(--ink-muted-invert); font: var(--t-ui); }
-.trajectory-strip b { color: var(--ink-invert); font: var(--m-lg); }
+.trajectory-strip b { color: var(--bow-brand-strong-ink); font: var(--m-lg); }
 .student-worklist { background: var(--surface); border-top: 1px solid var(--border-ink); }
 .student-worklist > a { min-height: 106px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s-4); padding: var(--s-4) var(--s-5); color: var(--ink-1); border-bottom: 1px solid var(--border-default); text-decoration: none; }
 .student-worklist > a:hover { background: var(--surface-sunken); }
@@ -630,7 +635,7 @@ p { color: var(--ink-2); }
 .misconception-list b { display: block; font: var(--t-title3); }
 .misconception-list span { display: block; margin-top: var(--s-2); color: var(--ink-3); font: var(--t-micro); }
 .misconception-list__note { max-width: 70ch; margin-bottom: var(--s-5); }
-.reteach-card { align-self: start; position: sticky; top: var(--s-6); padding: var(--s-6); color: var(--ink-invert); background: var(--bow-brand-strong); }
+.reteach-card { align-self: start; position: sticky; top: var(--s-6); padding: var(--s-6); color: var(--bow-brand-strong-ink); background: var(--bow-brand-strong); }
 .reteach-card p, .reteach-card li { color: var(--border-default); }
 .reteach-card h2 { margin: var(--s-7) 0 var(--s-4); font: var(--t-display2); letter-spacing: var(--display-tracking); }
 
@@ -817,7 +822,7 @@ p { color: var(--ink-2); }
    contains M and W, so the widest code is half again as wide as the narrowest and no fixed
    number fits both. */
 .class-created { display: grid; grid-template-columns: minmax(0, max-content) minmax(0, 1fr); gap: var(--s-7); align-items: start; }
-.class-created__code { min-width: min(300px, 100%); display: grid; gap: var(--s-2); padding: var(--s-6); background: var(--bow-brand); color: var(--ink-invert); border-radius: var(--r-md); }
+.class-created__code { min-width: min(300px, 100%); display: grid; gap: var(--s-2); padding: var(--s-6); background: var(--bow-brand-fill); color: var(--bow-brand-ink); border-radius: var(--r-md); }
 .class-created__code .field-label { margin: 0; color: var(--bow-brand-ink-muted); }
 
 /* `letter-spacing` is added after the last character as well as between them, so the plate
@@ -906,13 +911,13 @@ p { color: var(--ink-2); }
 .spotlight__absence { margin: 0; padding: var(--s-3) var(--s-4); color: var(--ink-2); background: var(--surface); border: 1px dashed var(--border-strong); font: var(--t-sm); }
 .spotlight__absence strong { color: var(--ink-1); }
 
-.next-lesson__action { display: grid; gap: var(--s-3); padding: var(--s-5); color: var(--ink-invert); background: var(--bow-brand-strong); }
+.next-lesson__action { display: grid; gap: var(--s-3); padding: var(--s-5); color: var(--bow-brand-strong-ink); background: var(--bow-brand-strong); }
 .next-lesson__action > .eyebrow { margin: 0; color: var(--bow-brand-ink-muted); }
-.next-lesson__action h4 { margin: 0; color: var(--ink-invert); font: var(--t-title1); }
+.next-lesson__action h4 { margin: 0; color: var(--bow-brand-strong-ink); font: var(--t-title1); }
 .next-lesson__focus { margin: 0; max-width: var(--measure); color: var(--bow-brand-ink-muted); font: var(--t-body-lg); }
 .next-lesson__moves { display: grid; gap: var(--s-2); margin: 0; padding-left: var(--s-6); color: var(--bow-brand-ink-muted); font: var(--t-ui); font-weight: 400; }
 .next-lesson__minutes { margin: 0; color: var(--bow-brand-ink-muted); font: var(--t-micro); }
-.next-lesson__why { margin: var(--s-2) 0 0; padding-top: var(--s-3); border-top: 1px solid rgb(255 255 255 / 22%); color: var(--ink-invert); font: var(--t-ui); font-weight: 400; }
+.next-lesson__why { margin: var(--s-2) 0 0; padding-top: var(--s-3); border-top: 1px solid rgb(255 255 255 / 22%); color: var(--bow-brand-strong-ink); font: var(--t-ui); font-weight: 400; }
 .next-lesson__students ul { display: flex; flex-wrap: wrap; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
 .next-lesson__students li { display: grid; gap: 2px; padding: var(--s-3) var(--s-4); background: var(--surface-raised); border: 1px solid var(--border-default); font: var(--t-ui); }
 .next-lesson__students small { color: var(--ink-3); font: var(--t-micro); }
@@ -1603,7 +1608,7 @@ p { color: var(--ink-2); }
 .student-card--done { color: var(--ink-2); box-shadow: inset 4px 0 0 var(--fin-balanced); }
 
 /* What the teacher wrote back, above the work, because it is the reason to open this again. */
-.student-feedback { display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-5); background: var(--bow-brand); border-radius: var(--r-sm); color: var(--bow-brand-ink); }
+.student-feedback { display: grid; gap: var(--s-2); padding: var(--s-4) var(--s-5); background: var(--bow-brand-fill); border-radius: var(--r-sm); color: var(--bow-brand-ink); }
 .student-feedback .field-label { color: var(--bow-brand-ink-muted); }
 .student-feedback blockquote { margin: 0; font: var(--t-title2); }
 .student-feedback cite { display: block; margin-top: var(--s-2); font: var(--t-sm); font-style: normal; color: var(--ink-3); }

@@ -443,7 +443,7 @@
 .closer-choice button[data-category="goal"] { border-left-color: var(--choice-1); }
 .closer-choice button[data-category="reserve"] { border-left-color: var(--choice-2); }
 .closer-choice button[data-category="flexibleCash"] { border-left-color: var(--choice-3); }
-.closer-choice button:hover { color: var(--ink-invert); background: var(--bow-brand); border-color: var(--bow-brand); }
+.closer-choice button:hover { color: var(--bow-brand-ink); background: var(--bow-brand-fill); border-color: var(--bow-brand-fill); }
 .closer-choice button:hover small { color: inherit; }
 
 /* -------------------------------------------------------------------------

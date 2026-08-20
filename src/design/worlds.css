@@ -86,6 +86,15 @@
   --bow-brand: var(--world-accent);
   --bow-brand-strong: var(--world-accent-ink);
 
+  /* Both of the market's brand grounds are *light* — lantern amber, and a paler amber — so a
+     brand fill in here carries near-black, the opposite of everywhere else in the product.
+     Repointing `--bow-brand` at the world accent without repointing its ink left white text on
+     amber at 2.00:1 waiting for the first component to use it. */
+  --bow-brand-fill: var(--world-accent);
+  --bow-brand-ink: #14142b;
+  --bow-brand-ink-muted: #3a2a12;
+  --bow-brand-strong-ink: #14142b;
+
   --canvas: #17100e;
   --surface: #241a15;
   --surface-raised: #2e211a;

@@ -41,7 +41,21 @@ import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
 import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
 import { CLASS_STATE_LABELS, COVERAGE_LABELS, LEVEL_LABELS, SKILL_STATE_LABELS, TERMS, skillStateInSentence } from "../src/educator/labels";
 import { PLAYABLE_WORLDS } from "../src/domain/scenario/registry";
+import { BASKETBALL_SCENARIO } from "../src/domain/scenario/worlds/basketball/scenario";
 import { STUDENT_COPY } from "../src/content/studentCopy";
+
+/**
+ * Headlines and labels this suite waits for, taken from the product rather than retyped.
+ *
+ * Four assertions waited for a heading reading "The showcase is off." The copy rewrite made it
+ * "The showcase is cancelled." — a better sentence, no behaviour change — and four tests then
+ * spent twenty seconds each failing to find a heading that no longer existed, including the
+ * accessibility sweep, which therefore stopped scanning three screens without ever reporting a
+ * violation. A suite holding its own copy of the words does not report a rewrite as a rewrite;
+ * it reports it as a broken product, and it stops checking the things it was there to check.
+ */
+const DISRUPTION = BASKETBALL_SCENARIO.disruption.title;
+const LEAVE_BONUS_OUT = STUDENT_COPY.plan.steps.bonuses.no;
 import { isAssessable, labelsFor, standardsIn, type FrameworkId } from "../src/domain/standards";
 import { DEMO_CLASS_CODE, DEMO_CLASS_LABEL } from "../src/fixtures/demoClass";
 
@@ -145,7 +159,7 @@ studentTest("full conditional path completes through fallback, Week 5, remaining
   await expect(page.getByRole("heading", { name: SEASON_HEADING })).toBeVisible();
   await playSeasonWeeks(page);
 
-  await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: DISRUPTION, exact: true })).toBeVisible();
   await passWeek5Calculation(page, String(week5TotalFor(context)));
 
   await expect(page.getByRole("heading", { name: TRIAGE_HEADING })).toBeVisible();
@@ -191,7 +205,7 @@ studentTest("confirmed-only path on the inexpensive setup skips the fallback and
   await expect(page.getByRole("heading", { name: BACKUP_HEADING })).not.toBeVisible();
   await playSeasonWeeks(page);
 
-  await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: DISRUPTION, exact: true })).toBeVisible();
   await passWeek5Calculation(page, String(week5TotalFor(context)));
 
   await savePlan(page, "week5-first-response", context);
@@ -264,7 +278,7 @@ studentTest("leaving the $800 bonus out of the final plan skips the remaining-ri
   await savePlan(page, "week5-first-response", context);
 
   await decideOpportunity(page, { clinics: true, countBonus: false });
-  await expect(page.getByRole("button", { name: "Plan without it" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: LEAVE_BONUS_OUT })).toHaveAttribute("aria-pressed", "true");
 
   await savePlan(page, "final", { ...context, clinics: true, countCompletionFinal: false });
 
@@ -642,7 +656,7 @@ studentTest("key screens have no serious or critical accessibility violations", 
   const scanned: PlanContext = { setupId: "cousin-room" };
   await savePlan(page, "working", scanned);
   await playSeasonWeeks(page);
-  await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: DISRUPTION, exact: true })).toBeVisible();
   await noSeriousAxeViolations(page);
 
   // The season review is the last screen a student types on, so it is scanned too.
@@ -870,7 +884,7 @@ studentTest("Weeks 1 to 4 and the deposit deadline are fully operable from the k
   const lock = page.getByRole("button", { name: "Lock it in and play Week 5" });
   await lock.focus();
   await lock.press("Enter");
-  await expect(page.getByRole("heading", { name: "The showcase is off.", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: DISRUPTION, exact: true })).toBeVisible();
 });
 
 // ---------------------------------------------------------------------------

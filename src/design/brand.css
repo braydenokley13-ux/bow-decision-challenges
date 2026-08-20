@@ -17,9 +17,21 @@
   --bow-brand-strong: var(--violet-700);
   --bow-brand-ink: #ffffff;
 
-  /* Muted text on a violet panel. A single muted token cannot clear AA against both a
-     near-white surface and this one, so the brand ground carries its own. */
-  --bow-brand-ink-muted: #d9cfff;
+  /* The brand as a *ground under text*, which is a different job from the brand as an accent.
+     On this page one value does both; on a dark page it cannot, so they are named apart here
+     and the dark block keeps this one where it is. Only fills that carry words use it —
+     `.season-strip` and `.route-grid` paint the accent and hold no text. */
+  --bow-brand-fill: var(--violet-600);
+
+  /* `--bow-brand-strong` is a *different* violet, so it needs its own ink rather than borrowing
+     the one above. On this ground both are dark enough to carry white; on the dark ground they
+     part company, which is exactly why one token could not serve both. */
+  --bow-brand-strong-ink: #ffffff;
+
+  /* Muted text on a violet panel. This read #d9cfff and measured 4.45:1 on `--bow-brand-fill` —
+     failing AA by five hundredths, underneath a comment explaining that the brand ground carries
+     its own muted token precisely so that it would pass. Nothing was checking. */
+  --bow-brand-ink-muted: #e0d9ff;
 
   /* The marker colour on a violet panel. `--fin-conditional` is tuned to be read on
      white and would fail here, so the brand ground re-points it to a lighter amber. */
@@ -47,7 +59,20 @@
   --bow-brand: var(--violet-500);
   --bow-brand-strong: var(--violet-400);
   --bow-brand-ink: #ffffff;
-  --bow-brand-ink-muted: #c9bcff;
+
+  /* The accent above is lifted to violet-500 so the brand is legible *as text* on a near-black
+     page. That same lift makes it unusable as a *ground*: nothing but pure white clears AA on
+     violet-500 — even violet-50 at #f5f3ff manages only 4.31 — so a muted label on a brand panel
+     is impossible there by arithmetic rather than by taste. The fill therefore stays at
+     violet-600 while the accent rises, and the two stop fighting over one value. */
+  --bow-brand-fill: var(--violet-600);
+
+  /* `--violet-400` is light enough that white fails on it — 3.27:1 — while near-black reaches
+     5.52:1. The chrome violet was lifted for legibility as *text* on a dark page, and that made
+     it too pale to be a *ground* for white: the trap a single "invert" token walked into, where
+     on this ground the brand got lighter and the ink got darker at the same time. */
+  --bow-brand-strong-ink: #14142b;
+  --bow-brand-ink-muted: #e0d9ff;
 }
 
 /* ---------------------------------------------------------------------------
