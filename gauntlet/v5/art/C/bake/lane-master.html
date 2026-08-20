@@ -1,0 +1,501 @@
+<!doctype html>
+<!--
+  Direction C bake master v2: the Middle Row lane, seen from behind the counter.
+
+  AUTHORING-TIME ONLY. Deliberately expensive — a Chromebook never runs it. Rendered once
+  through scripts/bake-art.mjs; ships as one WebP.
+
+  Optics: focal plane is the counter (the live DOM in front of this image), so everything here
+  is beyond focus, mildly for the lane, heavily for the bridge. Blur is also the evidence
+  firewall: the crowd is deliberately uncountable — overlapping, cropped by frame, soft — and
+  this image is CONSTANT across all world states. State response happens in CSS grade layers.
+
+  Canvas 1920x420. Display crop loses ~20px top and bottom at 1366-wide cover.
+  Light: stall lamps + lantern strings, warm amber; the sky holds the last of the blue hour.
+-->
+<html><head><meta charset="utf-8"><style>
+  html,body{margin:0;padding:0;background:#0d0806;overflow:hidden}
+  svg{display:block}
+</style></head><body>
+<svg width="1920" height="420" viewBox="0 0 1920 420" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- ============ gradients ============ -->
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0"    stop-color="#191130"/>
+      <stop offset="0.34" stop-color="#2e1e3d"/>
+      <stop offset="0.62" stop-color="#553137"/>
+      <stop offset="0.84" stop-color="#8f4e2d"/>
+      <stop offset="1"    stop-color="#c67a3c"/>
+    </linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0"    stop-color="#3d2413"/>
+      <stop offset="0.25" stop-color="#28180b"/>
+      <stop offset="1"    stop-color="#120a05"/>
+    </linearGradient>
+    <radialGradient id="stall-core" cx="0.5" cy="0.35" r="0.75">
+      <stop offset="0"   stop-color="#ffd489"/>
+      <stop offset="0.5" stop-color="#e89040"/>
+      <stop offset="1"   stop-color="#8a4318" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lamp-halo" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0"   stop-color="#ffe0a0" stop-opacity="0.9"/>
+      <stop offset="0.4" stop-color="#ffb85c" stop-opacity="0.35"/>
+      <stop offset="1"   stop-color="#ff9d3a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="lantern-paper" cx="0.5" cy="0.42" r="0.62">
+      <stop offset="0"   stop-color="#ffe6b0"/>
+      <stop offset="0.72" stop-color="#f5a548"/>
+      <stop offset="1"   stop-color="#b45f1e"/>
+    </radialGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0"   stop-color="#4a2c48"/>
+      <stop offset="0.4" stop-color="#5c3538"/>
+      <stop offset="1"   stop-color="#2c1a0e"/>
+    </linearGradient>
+    <linearGradient id="haze" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0"    stop-color="#d98440" stop-opacity="0"/>
+      <stop offset="0.55" stop-color="#d98440" stop-opacity="0.16"/>
+      <stop offset="1"    stop-color="#d98440" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#221433"/>
+      <stop offset="0.78" stop-color="#48283a"/>
+      <stop offset="1" stop-color="#b8653c"/>
+    </linearGradient>
+    <linearGradient id="vign-l" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0b0503" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#0b0503" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="vign-r" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0" stop-color="#0b0503" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#0b0503" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="vign-b" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#0b0503" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#0b0503" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- ============ depth-of-field ============ -->
+    <filter id="f-far"  x="-12%" y="-30%" width="124%" height="160%"><feGaussianBlur stdDeviation="5.5"/></filter>
+    <filter id="f-mid"  x="-10%" y="-25%" width="120%" height="150%"><feGaussianBlur stdDeviation="2.1"/></filter>
+    <filter id="f-near" x="-10%" y="-25%" width="120%" height="150%"><feGaussianBlur stdDeviation="1.1"/></filter>
+    <filter id="f-soft" x="-10%" y="-25%" width="120%" height="150%"><feGaussianBlur stdDeviation="0.8"/></filter>
+    <filter id="f-bloom" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="9"/></filter>
+    <filter id="f-glow"  x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="4"/></filter>
+    <filter id="f-rim"   x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.6"/></filter>
+    <filter id="f-steam" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6"/></filter>
+
+    <!-- ============ a market stall ============ -->
+    <!-- 260 wide, origin at the ground line. -->
+    <g id="stall">
+      <ellipse cx="130" cy="-80" rx="155" ry="100" fill="url(#stall-core)" opacity="var(--core,0.85)"/>
+      <rect x="18" y="-128" width="224" height="128" fill="#2c1810"/>
+      <rect x="18" y="-128" width="224" height="128" fill="url(#stall-core)" opacity="0.5"/>
+      <!-- chalk board: glowing panel with unreadable squiggle lines -->
+      <rect x="184" y="-122" width="44" height="30" rx="2" fill="#1d1208"/>
+      <g stroke="#e8c894" stroke-width="1.6" opacity="0.75" stroke-linecap="round">
+        <line x1="190" y1="-114" x2="216" y2="-114"/>
+        <line x1="190" y1="-107" x2="222" y2="-107"/>
+        <line x1="190" y1="-100" x2="210" y2="-100"/>
+      </g>
+      <!-- shelf with wares -->
+      <rect x="26" y="-92" width="148" height="3.5" fill="#1c0f08"/>
+      <g fill="#241208">
+        <rect x="32"  y="-114" width="16" height="20" rx="2"/>
+        <rect x="54"  y="-108" width="12" height="14" rx="2"/>
+        <rect x="140" y="-112" width="18" height="18" rx="3"/>
+        <circle cx="82" cy="-100" r="7"/>
+        <circle cx="112" cy="-102" r="8"/>
+      </g>
+      <!-- strings of hanging goods -->
+      <g stroke="#241208" stroke-width="2" stroke-linecap="round">
+        <line x1="40" y1="-128" x2="40" y2="-112"/><line x1="52" y1="-128" x2="52" y2="-108"/>
+        <line x1="64" y1="-128" x2="64" y2="-114"/>
+      </g>
+      <g fill="#2e1a0c">
+        <ellipse cx="40" cy="-108" rx="4" ry="6"/><ellipse cx="52" cy="-104" rx="4" ry="6"/><ellipse cx="64" cy="-110" rx="4" ry="6"/>
+      </g>
+      <!-- counter -->
+      <rect x="10" y="-52" width="240" height="52" fill="#1c0f08"/>
+      <rect x="10" y="-54" width="240" height="12" fill="#7a4820"/>
+      <rect x="10" y="-53" width="240" height="3" fill="#ffca7a" opacity="0.5"/>
+      <rect x="10" y="-42" width="240" height="3" fill="#100804"/>
+      <!-- goods on the counter -->
+      <g>
+        <rect x="28" y="-64" width="46" height="12" rx="2" fill="#3a2410"/>
+        <ellipse cx="51" cy="-64" rx="21" ry="5" fill="#d98a34"/>
+        <ellipse cx="51" cy="-66" rx="14" ry="3.5" fill="#f2b661"/>
+        <rect x="86" y="-62" width="40" height="10" rx="2" fill="#33200e"/>
+        <ellipse cx="106" cy="-62" rx="17" ry="4" fill="#e8a244"/>
+        <rect x="176" y="-64" width="48" height="12" rx="2" fill="#3a2410"/>
+        <ellipse cx="200" cy="-64" rx="21" ry="5" fill="#c67828"/>
+      </g>
+      <!-- the vendor: head, shoulders, one arm reaching to the counter -->
+      <g fill="#170b06">
+        <circle cx="136" cy="-94" r="12.5"/>
+        <path d="M114 -50 c 0 -24 9 -34 22 -34 c 13 0 22 10 22 34 z"/>
+        <path d="M124 -72 l -22 14 l 3.5 6.5 l 21 -11 z"/>
+      </g>
+      <!-- two hanging work lamps -->
+      <g>
+        <line x1="88" y1="-128" x2="88" y2="-114" stroke="#120a05" stroke-width="2.5"/>
+        <path d="M77 -114 h22 l5 9 h-32 z" fill="#241208"/>
+        <circle cx="88" cy="-101" r="5" fill="#ffe9bb"/>
+        <circle cx="88" cy="-101" r="15" fill="url(#lamp-halo)"/>
+        <line x1="176" y1="-128" x2="176" y2="-116" stroke="#120a05" stroke-width="2.5"/>
+        <path d="M166 -116 h20 l5 8 h-30 z" fill="#241208"/>
+        <circle cx="176" cy="-104" r="4.5" fill="#ffe9bb"/>
+        <circle cx="176" cy="-104" r="13" fill="url(#lamp-halo)"/>
+      </g>
+      <!-- canopy -->
+      <path d="M0 -128 L28 -178 H232 L260 -128 Z" fill="var(--canopy,#7a3b26)"/>
+      <path d="M28 -178 H232 L260 -128 H130 Z" fill="#000000" opacity="0.18"/>
+      <path d="M4 -133 H256 L260 -128 H0 Z" fill="var(--canopy-lit,#a85a34)"/>
+      <path d="M0 -128 h260 v5
+               a13 11 0 0 1 -26 0 a13 11 0 0 1 -26 0 a13 11 0 0 1 -26 0 a13 11 0 0 1 -26 0
+               a13 11 0 0 1 -26 0 a13 11 0 0 1 -26 0 a13 11 0 0 1 -26 0 a13 11 0 0 1 -26 0
+               a13 11 0 0 1 -26 0 a13 11 0 0 1 -26 0 z"
+            fill="var(--valance,#8a4527)"/>
+      <!-- valance underlit edge -->
+      <path d="M0 -123 h260" stroke="#ffb864" stroke-width="1.4" opacity="0.35"/>
+      <!-- poles -->
+      <rect x="14"  y="-128" width="6" height="128" fill="#140b05"/>
+      <rect x="240" y="-128" width="6" height="128" fill="#140b05"/>
+      <rect x="14"  y="-128" width="2" height="128" fill="#5c3a1c"/>
+      <rect x="240" y="-128" width="2" height="128" fill="#5c3a1c"/>
+      <!-- light pooling in front -->
+      <ellipse cx="130" cy="8" rx="140" ry="17" fill="#e8963e" opacity="0.28"/>
+    </g>
+
+    <!-- ============ crowd figures ============ -->
+    <!-- Adults ~56 tall, origin at feet. Distinct gestures, necks under the heads. -->
+    <g id="fig-stand">
+      <circle cx="0" cy="-49" r="6.4"/>
+      <path d="M-1.5 -43 h3 l0.8 3 h-4.6 z"/>
+      <path d="M-8 -12 l-1 -14 c-0.6 -8 2 -13 5 -14 h8 c3 1 5.6 6 5 14 l-1 14 l-1.6 12 h-3.4 l-0.6 -11 h-3.8 l-0.6 11 h-3.4 z"/>
+    </g>
+    <g id="fig-walk">
+      <circle cx="1" cy="-50" r="6.2"/>
+      <path d="M-0.5 -44.2 h3 l0.8 3 h-4.6 z"/>
+      <path d="M-7 -14 l-1 -13 c-0.6 -8 2 -13 5 -13.6 h8 c3 0.6 5.6 5.6 5 13.6 l-1 13 l5 12 l-3.4 1.6 l-6.6 -12 h-2 l-4.6 12.4 l-3.4 -1.2 z"/>
+    </g>
+    <g id="fig-point">
+      <!-- arm raised, pointing at a stall -->
+      <circle cx="0" cy="-50" r="6.3"/>
+      <path d="M-1.5 -44 h3 l0.8 3 h-4.6 z"/>
+      <path d="M-8 -13 l-1 -13 c-0.6 -8 2 -13 5 -14 h8 c2 0.6 3.6 3 4.4 6.4 l9.6 -7.4 l2 2.6 l-10.6 9.4 l-0.4 3 l-1 13 l-1.6 12 h-3.4 l-0.6 -11 h-3.8 l-0.6 11 h-3.4 z"/>
+    </g>
+    <g id="fig-plate">
+      <!-- eating from a plate held chest-high -->
+      <circle cx="0" cy="-50" r="6.3"/>
+      <path d="M-1.5 -44 h3 l0.8 3 h-4.6 z"/>
+      <path d="M-8 -13 l-1 -13 c-0.6 -8 2 -13 5 -14 h8 c3 1 5.6 6 5 14 l-0.6 8 l-1.4 5 l-1.6 12 h-3.4 l-0.6 -11 h-3.8 l-0.6 11 h-3.4 z"/>
+      <path d="M3 -34 l8 -2 l1 2.6 l-8 2.6 z"/>
+      <ellipse cx="12" cy="-37" rx="5" ry="1.7" fill="#e8c07a"/>
+    </g>
+    <g id="fig-bag">
+      <circle cx="0" cy="-49" r="6.2"/>
+      <path d="M-1.5 -43 h3 l0.8 3 h-4.6 z"/>
+      <path d="M-8 -12 l-1 -14 c-0.6 -8 2 -13 5 -14 h8 c3 1 5.6 6 5 14 l-0.6 9 l1.6 5 l-2.6 1 l-2 -4.6 l-0.4 3.6 l-1.6 12 h-3.4 l-0.6 -11 h-3.8 l-0.6 11 h-3.4 z"/>
+      <path d="M8 -16 h9 v11 h-9 z" transform="skewX(-3)"/>
+      <path d="M10 -16 c0 -3 5 -3 5 0" fill="none" stroke-width="1.4" stroke="#000"/>
+    </g>
+    <g id="fig-kid">
+      <g transform="scale(0.68)">
+        <circle cx="0" cy="-47" r="7.4"/>
+        <path d="M-1.5 -40 h3 l0.8 3 h-4.6 z"/>
+        <path d="M-7.5 -10 l-1 -13 c-0.6 -8 2 -13 5 -14 h7 c3 1 5.6 6 5 14 l-1 13 l-1.6 10 h-3.4 l-0.6 -9 h-3 l-0.6 9 h-3.4 z"/>
+      </g>
+    </g>
+
+    <!-- pendant bulb hanging from the wire -->
+    <g id="bulb">
+      <line x1="0" y1="0" x2="0" y2="7" stroke="#1c0f08" stroke-width="1.8"/>
+      <circle cy="12" r="16" fill="#ff9d3a" opacity="0.45" filter="url(#f-bloom)"/>
+      <circle cy="12" r="8" fill="#ffb85c" opacity="0.5" filter="url(#f-glow)"/>
+      <circle cy="12" r="4.6" fill="#ffd98e"/>
+      <circle cx="-1" cy="10.5" r="2" fill="#fff3d8"/>
+    </g>
+    <g id="bulb-sm">
+      <line x1="0" y1="0" x2="0" y2="5" stroke="#1c0f08" stroke-width="1.2"/>
+      <circle cy="8" r="7" fill="#ffb85c" opacity="0.4" filter="url(#f-glow)"/>
+      <circle cy="8" r="2.4" fill="#ffe2a8"/>
+    </g>
+
+    <filter id="grain">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.9  0 0 0 0 0.85  0 0 0 0 0.8  0 0 0 0.5 0"/>
+      <feComposite operator="in" in2="SourceGraphic"/>
+    </filter>
+  </defs>
+
+  <!-- ================= SKY ================= -->
+  <rect width="1920" height="248" fill="url(#sky)"/>
+  <g fill="#cdbde0">
+    <circle cx="140" cy="38" r="1.1" opacity="0.7"/><circle cx="290" cy="22" r="0.9" opacity="0.5"/>
+    <circle cx="420" cy="52" r="1.2" opacity="0.6"/><circle cx="560" cy="30" r="0.8" opacity="0.45"/>
+    <circle cx="708" cy="46" r="1" opacity="0.5"/><circle cx="980" cy="26" r="1.2" opacity="0.55"/>
+    <circle cx="1180" cy="44" r="0.9" opacity="0.5"/><circle cx="1420" cy="30" r="1.1" opacity="0.6"/>
+    <circle cx="1660" cy="50" r="1" opacity="0.5"/><circle cx="1820" cy="28" r="1.2" opacity="0.55"/>
+  </g>
+  <g filter="url(#f-mid)">
+    <path d="M120 92 q 220 -26 520 -12 q 180 8 260 2 q -160 26 -460 22 q -220 -2 -320 -12 z" fill="url(#cloud)" opacity="0.5"/>
+    <path d="M1080 68 q 260 -20 520 -4 q 140 8 200 4 q -180 22 -420 18 q -200 -2 -300 -18 z" fill="url(#cloud)" opacity="0.42"/>
+    <path d="M700 128 q 180 -14 420 -6 q -140 18 -330 14 q -60 -2 -90 -8 z" fill="url(#cloud)" opacity="0.32"/>
+  </g>
+
+  <!-- ================= GROUND (laid first; the river paints over it) ================= -->
+  <rect x="0" y="248" width="1920" height="172" fill="url(#ground)"/>
+
+  <!-- ================= FAR RIGHT: the river, the far bank ================= -->
+  <g filter="url(#f-far)">
+    <!-- city glow low over the far bank -->
+    <rect x="1380" y="176" width="540" height="52" fill="#d98440" opacity="0.55"/>
+    <rect x="1380" y="164" width="540" height="24" fill="#b06038" opacity="0.3"/>
+    <!-- the water -->
+    <rect x="1380" y="240" width="540" height="90" fill="url(#water)"/>
+    <rect x="1380" y="240" width="540" height="90" fill="#0e0812" opacity="0.5"/>
+    <!-- stepped skyline, dark against the glow -->
+    <path d="M1380 242 l0 -20 h30 v-12 h22 v18 h34 v-30 h10 v-8 h12 v8 h12 v26 h40 v-18 h26 v-14 h20 v14 h18 v22 h44 v-26 h14 v-38 h10 v38 h16 v20 h48 v-16 h30 v-22 h12 v22 h20 v20 h40 v-12 h28 v-20 h16 v20 h20 v14 h58 v-8 h30 v10 z" fill="#170d20"/>
+    <!-- lit windows, dense and irregular -->
+    <g fill="#ffb964">
+      <rect x="1414" y="228" width="3" height="4"/><rect x="1424" y="220" width="3" height="4"/>
+      <rect x="1448" y="216" width="3" height="4"/><rect x="1458" y="226" width="3" height="4"/>
+      <rect x="1484" y="204" width="3" height="4"/><rect x="1492" y="214" width="3" height="4"/>
+      <rect x="1522" y="228" width="3" height="4"/><rect x="1548" y="220" width="3" height="4"/>
+      <rect x="1560" y="212" width="3" height="4"/><rect x="1590" y="226" width="3" height="4"/>
+      <rect x="1612" y="204" width="3" height="4"/><rect x="1622" y="196" width="3" height="4"/>
+      <rect x="1652" y="222" width="3" height="4"/><rect x="1682" y="216" width="3" height="4"/>
+      <rect x="1694" y="228" width="3" height="4"/><rect x="1726" y="210" width="3" height="4"/>
+      <rect x="1736" y="200" width="3" height="4"/><rect x="1766" y="224" width="3" height="4"/>
+      <rect x="1800" y="216" width="3" height="4"/><rect x="1810" y="206" width="3" height="4"/>
+      <rect x="1846" y="228" width="3" height="4"/><rect x="1878" y="222" width="3" height="4"/>
+    </g>
+    <!-- a beacon on the tallest tower -->
+    <circle cx="1577" cy="168" r="2.6" fill="#ff6a4a"/>
+    <!-- waterfront promenade string at the bank line -->
+    <g fill="#ffe2a8">
+      <circle cx="1410" cy="238" r="3"/><circle cx="1460" cy="238" r="3"/><circle cx="1510" cy="238" r="3"/>
+      <circle cx="1560" cy="238" r="3"/><circle cx="1610" cy="238" r="3"/><circle cx="1660" cy="238" r="3"/>
+      <circle cx="1710" cy="238" r="3"/><circle cx="1760" cy="238" r="3"/><circle cx="1810" cy="238" r="3"/>
+      <circle cx="1860" cy="238" r="3"/><circle cx="1904" cy="238" r="3"/>
+    </g>
+    <!-- reflections, one smear per promenade light -->
+    <g opacity="0.85">
+      <rect x="1406" y="244" width="8" height="56" fill="#f0a94a" opacity="0.4"/>
+      <rect x="1456" y="244" width="7" height="70" fill="#ffc879" opacity="0.36"/>
+      <rect x="1506" y="244" width="9" height="52" fill="#f0a94a" opacity="0.42"/>
+      <rect x="1556" y="244" width="7" height="66" fill="#ffc879" opacity="0.34"/>
+      <rect x="1606" y="244" width="8" height="58" fill="#f0a94a" opacity="0.4"/>
+      <rect x="1656" y="244" width="7" height="72" fill="#ffc879" opacity="0.34"/>
+      <rect x="1706" y="244" width="9" height="54" fill="#f0a94a" opacity="0.4"/>
+      <rect x="1756" y="244" width="7" height="64" fill="#ffc879" opacity="0.34"/>
+      <rect x="1806" y="244" width="8" height="58" fill="#f0a94a" opacity="0.38"/>
+      <rect x="1856" y="244" width="7" height="66" fill="#ffc879" opacity="0.32"/>
+    </g>
+    <!-- the quay parapet between the lane and the water -->
+    <rect x="1380" y="322" width="540" height="10" fill="#0d0704"/>
+    <rect x="1380" y="320" width="540" height="2.5" fill="#7a4820" opacity="0.5"/>
+  </g>
+
+  <!-- paver joints -->
+  <g stroke="#0f0803" stroke-width="1.4" opacity="0.35" filter="url(#f-soft)">
+    <line x1="0" y1="300" x2="1400" y2="299"/>
+    <line x1="0" y1="352" x2="1400" y2="353"/>
+  </g>
+
+  <!-- ================= FAR STALL SUGGESTION at the lane's end ================= -->
+  <g filter="url(#f-far)" opacity="0.9">
+    <use href="#stall" transform="translate(1176,262) scale(0.5)" style="--canopy:#5c3a4a;--canopy-lit:#7a4a58;--valance:#63404f"/>
+    <ellipse cx="1330" cy="248" rx="80" ry="40" fill="#e08a44" opacity="0.22"/>
+    <g fill="#ffc879"><circle cx="1298" cy="230" r="2.4"/><circle cx="1322" cy="236" r="2.2"/><circle cx="1348" cy="228" r="2.4"/></g>
+  </g>
+
+  <!-- ================= MID STALLS: the row opposite ================= -->
+  <g filter="url(#f-mid)">
+    <use href="#stall" transform="translate(80,292)  scale(1.02)" style="--canopy:#7a3b26;--canopy-lit:#a85a34;--valance:#8a4527"/>
+    <use href="#stall" transform="translate(424,286) scale(0.92) scale(-1,1) translate(-260,0)" style="--canopy:#2e4a48;--canopy-lit:#3f625c;--valance:#35524e"/>
+    <use href="#stall" transform="translate(740,280) scale(0.83)" style="--canopy:#8a5a24;--canopy-lit:#b07834;--valance:#96662a;--core:0.62"/>
+    <use href="#stall" transform="translate(1000,272) scale(0.7) scale(-1,1) translate(-260,0)" style="--canopy:#5c2e38;--canopy-lit:#7a4048;--valance:#663540"/>
+  </g>
+
+  <!-- hanging paper lanterns: crisper than the stalls behind them, ribbed, hot-cored -->
+  <g filter="url(#f-near)">
+    <g transform="translate(396,152)">
+      <line x1="0" y1="-22" x2="0" y2="-17" stroke="#1c0f08" stroke-width="2.4"/>
+      <rect x="-4" y="-19" width="8" height="3.5" rx="1" fill="#3a1f0e"/>
+      <ellipse rx="16" ry="19" fill="url(#lantern-paper)"/>
+      <ellipse cx="-3" cy="-4" rx="7" ry="9" fill="#fff0c8" opacity="0.85"/>
+      <g fill="none" stroke="#a4581e" opacity="0.65">
+        <ellipse rx="15.6" ry="19" stroke-width="0.9"/>
+        <ellipse rx="11" ry="18.4" stroke-width="0.8"/>
+        <ellipse rx="5.5" ry="17.8" stroke-width="0.7"/>
+        <line x1="-16" y1="0" x2="16" y2="0" stroke-width="0.9"/>
+      </g>
+      <rect x="-3.5" y="17.5" width="7" height="3" rx="1" fill="#3a1f0e"/>
+      <circle r="30" fill="url(#lamp-halo)" opacity="0.8"/>
+    </g>
+    <g transform="translate(700,160)">
+      <line x1="0" y1="-18" x2="0" y2="-13" stroke="#1c0f08" stroke-width="2"/>
+      <rect x="-3" y="-15" width="6" height="3" rx="1" fill="#3a1f0e"/>
+      <ellipse rx="12" ry="15" fill="url(#lantern-paper)"/>
+      <ellipse cx="-2" cy="-3" rx="5" ry="7" fill="#fff0c8" opacity="0.8"/>
+      <g fill="none" stroke="#a4581e" opacity="0.6">
+        <ellipse rx="11.6" ry="15" stroke-width="0.8"/>
+        <ellipse rx="7" ry="14.4" stroke-width="0.7"/>
+        <line x1="-12" y1="0" x2="12" y2="0" stroke-width="0.8"/>
+      </g>
+      <rect x="-2.5" y="13.5" width="5" height="2.5" rx="1" fill="#3a1f0e"/>
+      <circle r="22" fill="url(#lamp-halo)" opacity="0.75"/>
+    </g>
+    <g transform="translate(962,170)">
+      <line x1="0" y1="-16" x2="0" y2="-11" stroke="#1c0f08" stroke-width="1.8"/>
+      <ellipse rx="10" ry="12" fill="url(#lantern-paper)"/>
+      <ellipse cx="-1.5" cy="-2.5" rx="4" ry="5.5" fill="#fff0c8" opacity="0.75"/>
+      <g fill="none" stroke="#a4581e" opacity="0.55">
+        <ellipse rx="9.6" ry="12" stroke-width="0.7"/>
+        <line x1="-10" y1="0" x2="10" y2="0" stroke-width="0.7"/>
+      </g>
+      <circle r="17" fill="url(#lamp-halo)" opacity="0.7"/>
+    </g>
+  </g>
+
+  <!-- ================= HAZE ================= -->
+  <rect x="0" y="160" width="1920" height="150" fill="url(#haze)" filter="url(#f-far)"/>
+
+  <!-- ================= STRING LIGHTS ================= -->
+  <!-- near run: bulbs pinned to the wire's own polyline points -->
+  <g filter="url(#f-soft)">
+    <path d="M-20 56 C 300 118 760 142 1180 122 C 1500 106 1740 78 1940 64" fill="none" stroke="#2a1810" stroke-width="2.6"/>
+  </g>
+  <use href="#bulb" transform="translate(104,82) scale(1.25)"/>
+  <use href="#bulb" transform="translate(248,101) scale(1.2)"/>
+  <use href="#bulb" transform="translate(400,115) scale(1.12)"/>
+  <use href="#bulb" transform="translate(576,128) scale(1.05)"/>
+  <use href="#bulb" transform="translate(756,136) scale(1.0)"/>
+  <use href="#bulb" transform="translate(940,137) scale(0.95)"/>
+  <use href="#bulb" transform="translate(1122,131) scale(0.88)"/>
+  <use href="#bulb-sm" transform="translate(1300,119)"/>
+  <use href="#bulb-sm" transform="translate(1470,106) scale(0.9)"/>
+  <use href="#bulb-sm" transform="translate(1632,92) scale(0.8)"/>
+  <use href="#bulb-sm" transform="translate(1788,78) scale(0.7)"/>
+  <!-- far run -->
+  <g opacity="0.85" filter="url(#f-near)">
+    <path d="M-20 124 C 420 170 1000 174 1500 138 S 1900 104 1940 112" fill="none" stroke="#241208" stroke-width="1.6"/>
+    <use href="#bulb-sm" transform="translate(150,144) scale(0.85)"/>
+    <use href="#bulb-sm" transform="translate(360,158) scale(0.8)"/>
+    <use href="#bulb-sm" transform="translate(580,167) scale(0.75)"/>
+    <use href="#bulb-sm" transform="translate(800,170) scale(0.7)"/>
+    <use href="#bulb-sm" transform="translate(1016,166) scale(0.65)"/>
+    <use href="#bulb-sm" transform="translate(1224,156) scale(0.6)"/>
+    <use href="#bulb-sm" transform="translate(1420,143) scale(0.55)"/>
+    <use href="#bulb-sm" transform="translate(1600,130) scale(0.5)"/>
+  </g>
+
+  <!-- ================= CROWD: mid-lane ================= -->
+  <!-- cluster queueing at the teal stall: overlapping, uneven, some backs to us -->
+  <g filter="url(#f-mid)">
+    <g fill="#f2b565" opacity="0.5" filter="url(#f-glow)">
+      <use href="#fig-stand" transform="translate(502,352) scale(1.55)"/>
+      <use href="#fig-point" transform="translate(540,356) scale(1.62)"/>
+    </g>
+    <g fill="#1d0f08">
+      <use href="#fig-stand" transform="translate(478,346) scale(1.38) scale(-1,1)"/>
+      <use href="#fig-stand" transform="translate(502,352) scale(1.52)"/>
+      <use href="#fig-point" transform="translate(540,356) scale(1.6)"/>
+      <use href="#fig-kid"   transform="translate(572,356) scale(1.5)"/>
+      <use href="#fig-bag"   transform="translate(596,350) scale(1.36) scale(-1,1)"/>
+    </g>
+  </g>
+  <!-- drifting walkers -->
+  <g filter="url(#f-mid)">
+    <g fill="#f2b565" opacity="0.45" filter="url(#f-glow)">
+      <use href="#fig-walk" transform="translate(852,360) scale(1.7)"/>
+      <use href="#fig-bag"  transform="translate(898,364) scale(1.66) scale(-1,1)"/>
+    </g>
+    <g fill="#1a0d07">
+      <use href="#fig-walk" transform="translate(852,360) scale(1.68)"/>
+      <use href="#fig-bag"  transform="translate(898,364) scale(1.64) scale(-1,1)"/>
+      <use href="#fig-plate" transform="translate(1120,348) scale(1.3)"/>
+      <use href="#fig-walk"  transform="translate(1156,344) scale(1.18) scale(-1,1)"/>
+      <use href="#fig-walk"  transform="translate(1022,352) scale(1.32)"/>
+      <use href="#fig-stand" transform="translate(1310,330) scale(0.95)"/>
+      <use href="#fig-walk"  transform="translate(1330,326) scale(0.82)"/>
+      <!-- a pair leaning on the parapet, looking at the water -->
+      <use href="#fig-stand" transform="translate(1546,352) scale(0.92)"/>
+      <use href="#fig-stand" transform="translate(1564,352) scale(0.86) scale(-1,1)"/>
+    </g>
+  </g>
+
+  <!-- ================= CROWD: near passers-by, cropped by the sill ================= -->
+  <!-- These are 2-4m away: heads at mid-frame, bodies running off the bottom. -->
+  <g filter="url(#f-near)">
+    <!-- left pair, walking right, warm rim from the stalls behind them -->
+    <g fill="#f2b565" opacity="0.45" filter="url(#f-rim)">
+      <circle cx="238" cy="232" r="27"/>
+      <circle cx="318" cy="248" r="24"/>
+    </g>
+    <g fill="#120903">
+      <!-- one with a low bun at the back of the head, tilted toward the other -->
+      <g transform="rotate(-6 234 234)">
+        <circle cx="234" cy="234" r="26"/>
+        <circle cx="212" cy="248" r="8"/>
+      </g>
+      <path d="M186 420 l6 -108 c2 -28 16 -46 48 -46 c30 0 44 16 47 44 l7 110 z"/>
+      <!-- the other in a flat cap -->
+      <g transform="rotate(4 316 250)">
+        <circle cx="316" cy="250" r="23"/>
+        <path d="M291 244 a25 25 0 0 1 44 -8 l 8 2 l -1.5 6 l -50 4 z"/>
+      </g>
+      <path d="M276 420 l5 -92 c2 -25 14 -40 40 -40 c26 0 38 14 40 38 l6 94 z"/>
+      <!-- a shared paper plate, held in a visible hand -->
+      <path d="M322 344 c 10 -6 20 -8 30 -6 l -2 10 c -9 -2 -18 0 -26 4 z"/>
+    </g>
+    <ellipse cx="354" cy="342" rx="16" ry="5" fill="#ecc27c"/>
+    <ellipse cx="354" cy="343.5" rx="16" ry="4" fill="#5c3a14" opacity="0.6"/>
+    <!-- right cluster, three heads leaning together -->
+    <g fill="#f2b565" opacity="0.4" filter="url(#f-rim)">
+      <circle cx="1594" cy="244" r="25"/>
+      <circle cx="1680" cy="230" r="27"/>
+    </g>
+    <g fill="#100802">
+      <g transform="rotate(5 1592 246)">
+        <circle cx="1592" cy="246" r="24"/>
+        <path d="M1568 240 a24 24 0 0 1 42 -8 l 9 2 l -2 6 l -49 4 z"/>
+      </g>
+      <path d="M1548 420 l6 -96 c2 -26 14 -42 44 -42 c28 0 40 15 42 40 l6 98 z"/>
+      <g transform="rotate(-4 1678 232)">
+        <circle cx="1678" cy="232" r="26"/>
+        <circle cx="1702" cy="218" r="10"/>
+      </g>
+      <path d="M1630 420 l6 -104 c2 -27 15 -45 46 -45 c29 0 42 16 45 43 l6 106 z"/>
+      <circle cx="1758" cy="258" r="22"/>
+      <path d="M1720 420 l5 -86 c2 -24 13 -38 38 -38 c25 0 36 13 38 36 l6 88 z"/>
+    </g>
+  </g>
+
+  <!-- ================= GROUND LIGHT + REFLECTIONS ================= -->
+  <g filter="url(#f-mid)" opacity="0.85">
+    <ellipse cx="212" cy="400" rx="210" ry="18" fill="#e8963e" opacity="0.11"/>
+    <ellipse cx="548" cy="394" rx="190" ry="16" fill="#e8963e" opacity="0.09"/>
+    <ellipse cx="848" cy="386" rx="175" ry="15" fill="#e8963e" opacity="0.09"/>
+    <ellipse cx="1090" cy="376" rx="140" ry="13" fill="#e8963e" opacity="0.08"/>
+    <rect x="382" y="336" width="24" height="76" fill="#f0a94a" opacity="0.11"/>
+    <rect x="688" y="330" width="19" height="66" fill="#f0a94a" opacity="0.10"/>
+    <rect x="954" y="326" width="15" height="56" fill="#f0a94a" opacity="0.09"/>
+    <rect x="1310" y="300" width="34" height="60" fill="#e08a44" opacity="0.08"/>
+  </g>
+
+  <!-- steam off the third stall's grill -->
+  <g filter="url(#f-steam)" opacity="0.5">
+    <path d="M816 252 c 14 -22 -12 -34 4 -58 c 12 -18 -6 -28 4 -44" fill="none" stroke="#ffd9a8" stroke-width="10" stroke-linecap="round"/>
+    <path d="M850 260 c 10 -18 -10 -28 2 -48 c 10 -14 -4 -22 3 -34" fill="none" stroke="#ffd9a8" stroke-width="7" stroke-linecap="round"/>
+  </g>
+
+  <!-- ================= GRADE ================= -->
+  <rect width="200" height="420" fill="url(#vign-l)"/>
+  <rect x="1720" width="200" height="420" fill="url(#vign-r)"/>
+  <rect y="330" width="1920" height="90" fill="url(#vign-b)"/>
+  <rect width="1920" height="420" filter="url(#grain)" opacity="0.05"/>
+</svg>
+</body></html>
