@@ -76,10 +76,10 @@ test("running Saturday 1, short of plates", async ({ page, request }) => {
   }
   await page.screenshot({ path: "gauntlet/v5/shots/32-service-midway.png", fullPage: true });
 
-  const run = page.getByRole("button", { name: /^Run it$/ }).first();
+  const run = page.getByRole("button", { name: /^Serve automatically$/ }).first();
   if (await run.isVisible().catch(() => false)) {
     await run.click();
-    await page.getByRole("button", { name: /Cash up and see the night/ }).waitFor({ state: "visible", timeout: 60_000 });
+    await page.getByRole("button", { name: /Close up and see how the night went/ }).waitFor({ state: "visible", timeout: 60_000 });
   }
   await page.screenshot({ path: "gauntlet/v5/shots/33-service-close.png", fullPage: true });
   await page.setViewportSize({ width: 1024, height: 600 });

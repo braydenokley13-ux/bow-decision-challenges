@@ -101,10 +101,10 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
       <header className="service__bar">
         <div>
           <h2 id="service-heading" ref={headline} tabIndex={-1}>
-            {done ? "The market is closing." : "Serving."}
+            {done ? "You are closed for the night." : "You are serving customers."}
           </h2>
         </div>
-        <p className="service__clock" aria-label="Market time">{marketClock(minute)}</p>
+        <p className="service__clock" aria-label="Time at the market">{marketClock(minute)}</p>
       </header>
 
       {note && <p className="service__note">{note}</p>}
@@ -112,10 +112,10 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
       <div className="service__floor">
         {/* The lane. What is still out there, and nothing about what it is worth. */}
         <div className="service__queue" aria-live="off">
-          <h3>In the lane</h3>
+          <h3>Waiting to order</h3>
           {stillWaiting > 0 ? (
             <>
-              <p className="service__waiting"><strong>{stillWaiting}</strong> still waiting</p>
+              <p className="service__waiting"><strong>{stillWaiting}</strong> {stillWaiting === 1 ? "person is waiting" : "people are waiting"}</p>
               <ul>
                 {upcoming.map((order) => (
                   <li key={order.ticket}>
@@ -126,13 +126,13 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
               </ul>
             </>
           ) : (
-            <p className="service__waiting service__waiting--empty">Nobody left in the lane.</p>
+            <p className="service__waiting service__waiting--empty">Nobody is waiting.</p>
           )}
         </div>
 
         {/* The counter. The one number that decides the evening, at the size it deserves. */}
         <div className="service__counter">
-          <h3>On the counter</h3>
+          <h3>Plates on the counter</h3>
           <p className="service__plates" data-bare={platesLeft === 0}>
             <strong>{platesLeft}</strong>
             <span>{platesLeft === 1 ? "plate left" : "plates left"}</span>
@@ -142,16 +142,16 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
               <i key={index} data-gone={index >= platesLeft} />
             ))}
           </div>
-          {run.cooked > 60 && <p className="service__overflow">{run.cooked} cooked in all</p>}
+          {run.cooked > 60 && <p className="service__overflow">You cooked {run.cooked} plates in all</p>}
         </div>
 
         {/* The till. Money the student has actually taken, never money they might take. */}
         <div className="service__till">
           <h3>Tonight so far</h3>
           <dl>
-            <div><dt>In the till</dt><dd className="money">{formatDollars(till)}</dd></div>
+            <div><dt>Money taken</dt><dd className="money">{formatDollars(till)}</dd></div>
             <div><dt>Plates sold</dt><dd>{sold}</dd></div>
-            <div><dt>Walked away</dt><dd data-loss={turnedAway > 0}>{turnedAway}</dd></div>
+            <div><dt>Left without buying</dt><dd data-loss={turnedAway > 0}>{turnedAway}</dd></div>
           </dl>
         </div>
       </div>
@@ -161,12 +161,12 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
           assessed on and the settle screen asks it properly, afterwards. */}
       {bare && (
         <p className="service__alert" role="status">
-          The counter is bare, and <strong>{stillWaiting}</strong> {stillWaiting === 1 ? "person is" : "people are"} still in the lane.
+          You have no plates left. <strong>{stillWaiting}</strong> {stillWaiting === 1 ? "person is" : "people are"} still waiting.
         </p>
       )}
       {quiet && (
         <p className="service__alert service__alert--quiet" role="status">
-          The lane has gone quiet with <strong>{platesLeft}</strong> {platesLeft === 1 ? "plate" : "plates"} still on the counter.
+          Nobody is waiting any more. You still have <strong>{platesLeft}</strong> {platesLeft === 1 ? "plate" : "plates"}.
         </p>
       )}
       {/* Why the people who left, left. Two different sentences because they are two different
@@ -175,13 +175,13 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
       {done && turnedAway > 0 && (
         <p className="service__alert" role="status">
           {noHands > 0 && noStock > 0 && (
-            <><strong>{noStock}</strong> reached the window after the last plate had gone, and <strong>{noHands}</strong> never got to the front.</>
+            <><strong>{noStock}</strong> {noStock === 1 ? "person" : "people"} wanted a plate after you ran out. Another <strong>{noHands}</strong> waited too long and left.</>
           )}
           {noHands > 0 && noStock === 0 && (
-            <><strong>{noHands}</strong> {noHands === 1 ? "person" : "people"} never got to the front of the queue. One pair of hands can pass {run.cap} plates in an evening.</>
+            <><strong>{noHands}</strong> {noHands === 1 ? "person" : "people"} waited too long and left. One person can serve {run.cap} plates in an evening.</>
           )}
           {noStock > 0 && noHands === 0 && (
-            <><strong>{noStock}</strong> {noStock === 1 ? "person" : "people"} reached the window after the last plate had gone.</>
+            <><strong>{noStock}</strong> {noStock === 1 ? "person" : "people"} wanted a plate after you ran out.</>
           )}
         </p>
       )}
@@ -193,7 +193,7 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
               Serve the next order
             </Button>
             <button type="button" className="service__auto" aria-pressed={auto} onClick={() => setAuto((on) => !on)}>
-              {auto ? "Stop" : "Run it"}
+              {auto ? "Stop" : "Serve automatically"}
             </button>
           </>
         )}
@@ -202,7 +202,7 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
         )}
         <p className="service__progress" aria-live="polite">
           {done
-            ? `The window is shut. ${sold} ${sold === 1 ? "plate" : "plates"} sold.`
+            ? `You are closed. You sold ${sold} ${sold === 1 ? "plate" : "plates"}.`
             : `Order ${dealt} of ${run.orders.length}.`}
         </p>
       </div>

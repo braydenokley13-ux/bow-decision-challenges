@@ -176,7 +176,7 @@ describe("the last Saturday offers a way out of a stock line that will not stret
       if (!serve) break;
       await user.click(serve);
     }
-    await user.click(screen.getByRole("button", { name: "Cash up the run" }));
+    await user.click(screen.getByRole("button", { name: "See how the four Saturdays went" }));
     // Four trays is where the stepper already stood: naming a line lifts the ceiling and the
     // order the student had asked for becomes reachable, which is the whole point.
     expect(actions.at(-1)).toEqual({ type: "POPUP_STOCK_ORDERED", saturday: 4, trays: 4, fromLine: "cut" });

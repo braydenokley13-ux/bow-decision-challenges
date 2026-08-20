@@ -641,7 +641,7 @@ export function FirstSaturdayStage() {
       <PopUpShell
         stage="popup-first-saturday"
         kicker={COPY.first.kicker}
-        title="The window is open"
+        title="Your window is open"
         ledger={ledger}
         live={{ cash: ledger.cashToPlan + till, sold: soldSoFar }}
       >
@@ -651,7 +651,7 @@ export function FirstSaturdayStage() {
           trays={trays}
           helper={false}
           note={S.saturdays[0]?.note}
-          closeLabel="Cash up and see the night"
+          closeLabel="Close up and see how the night went"
           dealt={dealt}
           onDealt={setDealt}
           onClose={() => dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 1, trays })}
@@ -842,7 +842,7 @@ export function StandingOrderStage() {
       <PopUpShell
         stage="popup-standing-order"
         kicker={COPY.standing.kicker}
-        title="The window is open"
+        title="Your window is open"
         ledger={ledger}
         focusKey={`serving-${serving}`}
         live={{ cash: ledger.cashToPlan + banked + earlier + till, sold: soldSoFar }}
@@ -853,7 +853,7 @@ export function StandingOrderStage() {
           trays={trays}
           helper={false}
           note={S.saturdays[serving - 1]?.note}
-          closeLabel={serving === 2 ? "Shut the window, one more week to go" : "Cash up both nights"}
+          closeLabel={serving === 2 ? "Close up. One more Saturday to go." : "See how both nights went"}
           dealt={dealt}
           onDealt={setDealt}
           onClose={() => {
@@ -1099,7 +1099,7 @@ export function RepairStage() {
       <PopUpShell
         stage="popup-repair"
         kicker={COPY.repair.kicker}
-        title="The last window"
+        title="The last Saturday"
         ledger={ledger}
         focusKey="serving-4"
         live={{ cash: ledger.cashToPlan + banked + till, sold: soldSoFar }}
@@ -1110,7 +1110,7 @@ export function RepairStage() {
           trays={serving.trays}
           helper={helper}
           note={S.saturdays[3]?.note}
-          closeLabel="Cash up the run"
+          closeLabel="See how the four Saturdays went"
           dealt={dealt}
           onDealt={setDealt}
           onClose={() => dispatch({

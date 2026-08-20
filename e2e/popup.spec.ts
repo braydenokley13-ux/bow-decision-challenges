@@ -178,11 +178,11 @@ async function runTheWindow(page: Page) {
   // The standing order serves two nights in a row — the busy Saturday and the quiet one — so
   // this runs whichever window is in front of it until none is offered.
   for (let night = 0; night < 3; night += 1) {
-    const serving = page.getByRole("heading", { name: /^(Serving\.|The market is closing\.)$/ });
+    const serving = page.getByRole("heading", { name: /^(You are serving customers\.|You are closed for the night\.)$/ });
     if (!(await serving.isVisible().catch(() => false))) return;
-    const auto = page.getByRole("button", { name: /^Run it$/ });
+    const auto = page.getByRole("button", { name: /^Serve automatically$/ });
     if (await auto.isVisible().catch(() => false)) await auto.click();
-    const close = page.getByRole("button", { name: /Cash up and see the night|Shut the window, one more week to go|Cash up both nights|Cash up the run/ });
+    const close = page.getByRole("button", { name: /Close up and see how the night went|Close up\. One more Saturday to go\.|See how both nights went|See how the four Saturdays went/ });
     await close.waitFor({ state: "visible", timeout: 60_000 });
     await close.click();
     await page.waitForTimeout(200);
