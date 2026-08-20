@@ -360,3 +360,67 @@ A world is: **a place, a HUD of the quantities that place runs on, locations you
 between, events that arrive whether you asked or not, people who want different things from
 you, and a stated goal.** Both shipped worlds have the decisions and none of the place. That
 gap is now the clearest single item on the world-systems backlog.
+
+---
+
+## 8. The golden mockup — the whole product in one frame
+
+A seventh reference, supplied later and ruled **the floor for perceived product quality**. It
+shows six surfaces at once under one banner: *One Objective. Any World. Real Decisions. Real
+Evidence.* Its value is not any single screen — it is that the six look like **one system**.
+
+### What it shows
+
+| Panel | What it establishes |
+| --- | --- |
+| **Build an assignment** | Stepped (*Step 1 of 6*), one question per step — "What should students learn?" — the objective as a *card* with its standards, four world cards, and *What this will produce* as four named evidence kinds: Decisions, Consequences, Thinking, Evidence |
+| **Student home** | Dark, personal. *Good evening, Jordan.* Cash and reputation in the bar. **Continue playing** as a wide art hero. *Your worlds* as a state-labelled row — In Progress / Assigned / Not started. *Assigned to you* underneath |
+| **Run the Pop-Up hub** | World rail (Truck · Supplier · Market · Festival), photographic scene, HUD of Cash / Stock / Plates Sold / Saturday, *Today's forecast*, an *Event*, and one primary action: **Open for business →** |
+| **Supplier** | A real commerce screen: category rail, a goods table with Price / In Stock / **Quality** / **Shelf Life** and per-row steppers, a running *Your order* basket, a subtotal, and **Review order $12.80** |
+| **Running Saturday** | *LIVE · Market Phase · 2:34 PM.* Active order tickets with timers, a **truck window** of menu items with prices and per-item stock, *Today so far* (revenue / costs / profit + sparkline), an actions row, and a stock warning with **Restock?** |
+| **Results** | Three columns — class understanding, by story, needs attention — then *Top learning strength*, *Most common gap*, *How to respond*, over a per-student table |
+
+### What we take from it
+
+1. **One shell, six jobs.** Same rails, same type, same violet — and six genuinely different
+   compositions. This is the answer to "every page is cards": consistency lives in the
+   *principles*, not in the layout.
+2. **The world rail.** Truck / Supplier / Market / Festival as persistent navigation is a
+   stronger idea than a hub you return to, and it is what makes a world feel like a place you
+   are *in* rather than a corridor you are moving along.
+3. **Running Saturday is a screen.** The single most important confirmation in the set: the
+   operating phase deserves its own full surface, with the queue, the window and the money all
+   visible at once. Shipped — see `RunSaturday.tsx`.
+4. **Supplier as commerce, not as a choice.** Quality and shelf life as *columns* is the whole
+   "do the thing" thesis in one table.
+5. **Results answers three questions, not six.** What did the class understand, how did it
+   differ by story, and who needs me. Then one strength, one gap, one response.
+6. **State labels on world cards.** *In Progress · Assigned · Not started* does more work than
+   any amount of styling.
+
+### What we must not copy — and why
+
+- **`Leaderboard` in the student rail, `Level 7 · Aspiring Operator`, XP.** Ranking children
+  against each other on a task about money. Already rejected in §4 and §7; the golden mockup
+  does not overturn it.
+- **`72%` class understanding and `84%` per student.** A composite score. This product removed
+  exactly that and its own release gate treats one as disqualifying. The three-column shape is
+  excellent; the number in the donut is not ours to print.
+- **`Today's forecast · High demand for: Tacos`.** A projection stated as fact before the
+  decision — the same defect as `+$84 this round` in §5. The world may say what it *knows*
+  (the organiser's stated crowd, a band) and never what a choice *will* pay.
+- **`Reputation 3` in the student bar.** There is no reputation in the model. Building one is a
+  real design task with a balance re-sweep behind it; drawing the number is not.
+- **A menu of priced items — Tacos $4.00, Burrito $7.50, Bowl $7.50, Limeade $2.50, each with
+  its own stock.** This is the largest honest gap between the reference and the product. The
+  economy has **one** good — a plate, $12, ten to a tray — and every number in
+  `economy.ts`, every verdict in `resolution.ts` and all 174,339 states of the balance sweep
+  rest on that. A menu is not a visual change; it is a new economy, a new dominant-strategy
+  analysis, and a re-sweep. It may well be worth doing. It must not be faked to make a
+  screenshot true.
+
+### The rule this reference sets
+
+Perceived quality is set by the **weakest important transition**, not the strongest screen. A
+cinematic hub that leads to a plain white modal is a cinematic hub that leads to a plain white
+modal. Judge the product as a sequence.
