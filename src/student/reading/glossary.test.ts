@@ -389,6 +389,10 @@ describe("the panel shows the words on the screen a student is on", () => {
  * it, defeats the only thing this list is for.
  */
 const PLAIN_ENOUGH = new Set<string>([
+  // Arrived with the service phase — "shut the window", "the window is shut". A Grade 5 reader
+  // working in a second language does not stop at it, and defining it in a money glossary
+  // would be the panel explaining English rather than explaining the market.
+  "shut",
   // The possessive of a word already on this list, arriving with the teacher’s own closing
   // question. A Grade 5 reader who reads "teacher" does not stop at "teacher’s". The
   // apostrophe is the typographic one every other possessive in the student copy uses.

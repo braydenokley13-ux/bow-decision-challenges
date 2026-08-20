@@ -796,6 +796,17 @@ function TipsJar() {
 
 export function StandingOrderStage() {
   const { state, dispatch } = usePopUp();
+  /**
+   * Which of the two middle Saturdays is being served, and how far through it.
+   *
+   * One order covers both nights and the crowds are not the same — 46 walk past on the Saturday
+   * the band plays and 25 on the quiet one — which is the whole trade-off this screen exists to
+   * create. Both used to resolve on the press and surface later as two compact result cards
+   * under the headline "The generator is dead", so the world's central decision was settled
+   * off-screen and reported underneath a catastrophe.
+   */
+  const [serving, setServing] = useState<2 | 3 | null>(null);
+  const [dealt, setDealt] = useState(0);
   const ledger = ledgerOf(state);
   const spot = state.spotId;
   const first = ledger.saturdays.find((day) => day.saturday === 1);
@@ -815,6 +826,49 @@ export function StandingOrderStage() {
   const rebate = earned
     ? state.counted.rebate ? COPY.standing.rebateEarnedPlanned : COPY.standing.rebateEarnedWindfall
     : state.counted.rebate ? COPY.standing.rebateMissedPlanned : COPY.standing.rebateMissedFree;
+  if (serving !== null) {
+    const spotId = spot ?? "back-lane";
+    const run = serviceRun(N, spotId, serving, trays, false);
+    const served = run.orders.slice(0, dealt);
+    const till = served.reduce((total, order) => total + order.takings, 0);
+    const soldSoFar = served.reduce((total, order) => total + order.served, 0);
+    // Saturday 1's takings are already in the ledger; Saturday 2's are not, because the reducer
+    // is told once at the end of both nights. The bar adds what this run has taken so far.
+    const banked = ledger.saturdays.reduce((total, day) => total + day.takings, 0);
+    const earlier = serving === 3
+      ? serviceRun(N, spotId, 2, trays, false).outcome.takings
+      : 0;
+    return (
+      <PopUpShell
+        stage="popup-standing-order"
+        kicker={COPY.standing.kicker}
+        title="The window is open"
+        ledger={ledger}
+        focusKey={`serving-${serving}`}
+        live={{ cash: ledger.cashToPlan + banked + earlier + till, sold: soldSoFar }}
+      >
+        <RunSaturday
+          saturday={serving}
+          spotId={spotId}
+          trays={trays}
+          helper={false}
+          note={S.saturdays[serving - 1]?.note}
+          closeLabel={serving === 2 ? "Shut the window, one more week to go" : "Cash up both nights"}
+          dealt={dealt}
+          onDealt={setDealt}
+          onClose={() => {
+            if (serving === 2) {
+              setServing(3);
+              setDealt(0);
+              return;
+            }
+            dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 2, trays });
+          }}
+        />
+      </PopUpShell>
+    );
+  }
+
   return (
     <PopUpShell
       stage="popup-standing-order"
@@ -958,6 +1012,15 @@ export function GeneratorStage() {
 
 export function RepairStage() {
   const { state, dispatch } = usePopUp();
+  /**
+   * The fireworks Saturday, served rather than reported.
+   *
+   * The biggest crowd of the run and the only night the organiser states as a band rather than
+   * a figure — so it is the one night whose outcome a student genuinely cannot know before it
+   * happens, and the one most worth watching. It resolved on the press like all the others.
+   */
+  const [serving, setServing] = useState<{ trays: number; fromLine?: PopUpLineId } | null>(null);
+  const [dealt, setDealt] = useState(0);
   const ledger = ledgerOf(state);
   const spot = state.spotId;
   const held = ledger.held;
@@ -1023,6 +1086,43 @@ export function RepairStage() {
       ...(toFind > 0 ? { acknowledgedResidual: dollars(toFind) } : {}),
     });
   };
+
+  if (serving !== null) {
+    const spotId = spot ?? "back-lane";
+    const helper = state.helper === true;
+    const run = serviceRun(N, spotId, 4, serving.trays, helper);
+    const served = run.orders.slice(0, dealt);
+    const till = served.reduce((total, order) => total + order.takings, 0);
+    const soldSoFar = served.reduce((total, order) => total + order.served, 0);
+    const banked = ledger.saturdays.reduce((total, day) => total + day.takings, 0);
+    return (
+      <PopUpShell
+        stage="popup-repair"
+        kicker={COPY.repair.kicker}
+        title="The last window"
+        ledger={ledger}
+        focusKey="serving-4"
+        live={{ cash: ledger.cashToPlan + banked + till, sold: soldSoFar }}
+      >
+        <RunSaturday
+          saturday={4}
+          spotId={spotId}
+          trays={serving.trays}
+          helper={helper}
+          note={S.saturdays[3]?.note}
+          closeLabel="Cash up the run"
+          dealt={dealt}
+          onDealt={setDealt}
+          onClose={() => dispatch({
+            type: "POPUP_STOCK_ORDERED",
+            saturday: 4,
+            trays: serving.trays,
+            ...(serving.fromLine ? { fromLine: serving.fromLine } : {}),
+          })}
+        />
+      </PopUpShell>
+    );
+  }
 
   return (
     <PopUpShell stage="popup-repair" kicker={COPY.repair.kicker} title={COPY.repair.title} ledger={ledger} focusKey={saved ? "settled" : "open"}>
@@ -1100,7 +1200,7 @@ export function RepairStage() {
           </section>
           <div className="popup-action">
             <p>{S.saturdays[3]?.note}</p>
-            <Button type="button" onClick={() => dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 4, trays, fromLine: named })}>{COPY.saturday.open}</Button>
+            <Button type="button" onClick={() => setServing({ trays, ...(named ? { fromLine: named } : {}) })}>{COPY.saturday.open}</Button>
           </div>
         </>
       ) : (
@@ -1108,7 +1208,7 @@ export function RepairStage() {
           <p className="popup-verdict" data-tone="hard">{COPY.repair.noLast}</p>
           <div className="popup-action">
             <p>{S.saturdays[3]?.note}</p>
-            <Button type="button" onClick={() => dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 4, trays: 0 })}>{COPY.repair.noLastAction}</Button>
+            <Button type="button" onClick={() => setServing({ trays: 0 })}>{COPY.repair.noLastAction}</Button>
           </div>
         </>
       )}

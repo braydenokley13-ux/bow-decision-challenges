@@ -152,12 +152,31 @@ describe("the last Saturday offers a way out of a stock line that will not stret
   });
 
   it("carries the named line into the order the log records", async () => {
+    // Serving is a second arrival on the same stage, and the arrival ring asks the browser
+    // whether motion is wanted. jsdom has no `matchMedia`; the rest of the suite stubs it the
+    // same way rather than making the component defensive about a browser API it should be
+    // able to rely on.
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: false, media: query, onchange: null,
+      addEventListener: () => {}, removeEventListener: () => {},
+      addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
+    }));
     const user = userEvent.setup();
     const actions: PopUpAction[] = [];
     mount(stateAfter(STRANDED), () => <RepairStage />, (action) => actions.push(action));
     await user.click(screen.getByRole("button", { name: `${POP_UP_SCENARIO.lines.cut.label} ${formatDollars(dollars(200))}` }));
     await user.click(screen.getByRole("button", { name: "One tray more" }));
     await user.click(screen.getByRole("button", { name: COPY.saturday.open }));
+    // Opening the window no longer commits the order — the student serves the night first, and
+    // the reducer is told when they shut up shop. Same event, same payload, later.
+    // Served by hand rather than with `Run it`: the auto-run is paced for a person watching a
+    // counter empty, and a unit test asserting a payload should not wait out an evening.
+    for (let order = 0; order < 120; order += 1) {
+      const serve = screen.queryByRole("button", { name: "Serve the next order" });
+      if (!serve) break;
+      await user.click(serve);
+    }
+    await user.click(screen.getByRole("button", { name: "Cash up the run" }));
     // Four trays is where the stepper already stood: naming a line lifts the ceiling and the
     // order the student had asked for becomes reachable, which is the whole point.
     expect(actions.at(-1)).toEqual({ type: "POPUP_STOCK_ORDERED", saturday: 4, trays: 4, fromLine: "cut" });

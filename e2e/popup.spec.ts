@@ -175,13 +175,18 @@ async function settleTheTips(page: Page) {
  * far and the other three still resolve on the press.
  */
 async function runTheWindow(page: Page) {
-  const serving = page.getByRole("heading", { name: /^(Serving\.|The market is closing\.)$/ });
-  if (!(await serving.isVisible().catch(() => false))) return;
-  const auto = page.getByRole("button", { name: /^Run it$/ });
-  if (await auto.isVisible().catch(() => false)) await auto.click();
-  const close = page.getByRole("button", { name: /Cash up and see the night/ });
-  await close.waitFor({ state: "visible", timeout: 60_000 });
-  await close.click();
+  // The standing order serves two nights in a row — the busy Saturday and the quiet one — so
+  // this runs whichever window is in front of it until none is offered.
+  for (let night = 0; night < 3; night += 1) {
+    const serving = page.getByRole("heading", { name: /^(Serving\.|The market is closing\.)$/ });
+    if (!(await serving.isVisible().catch(() => false))) return;
+    const auto = page.getByRole("button", { name: /^Run it$/ });
+    if (await auto.isVisible().catch(() => false)) await auto.click();
+    const close = page.getByRole("button", { name: /Cash up and see the night|Shut the window, one more week to go|Cash up both nights|Cash up the run/ });
+    await close.waitFor({ state: "visible", timeout: 60_000 });
+    await close.click();
+    await page.waitForTimeout(200);
+  }
 }
 
 async function orderTrays(page: Page, trays: number) {
