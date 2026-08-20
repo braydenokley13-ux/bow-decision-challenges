@@ -12,7 +12,7 @@ import { createClass, gotoFreshChallenge, seatOnRoster, signIn, startIfConfirmAs
  * in the lane, and that cannot be judged from a screenshot of it at rest.
  */
 const COPY = POP_UP_SCENARIO.screens;
-const SPOT = POP_UP_SCENARIO.spots[1]!; // Middle Row: 38 walk past, one pair of hands can pass 45.
+const SPOT = POP_UP_SCENARIO.spots[1]; // Middle Row: 38 walk past, one pair of hands can pass 45.
 
 test("running Saturday 1, short of plates", async ({ page, request }) => {
   const errors: string[] = [];
