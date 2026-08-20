@@ -28,3 +28,4 @@ gauntlet/screens/
 .probe/
 e2e/zzprobe.spec.ts
 scripts-tmp-*.mjs
+src/**/__probe*.test.ts

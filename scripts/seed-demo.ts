@@ -29,7 +29,7 @@
  *
  * ## The one rule this inherits from `demoClass.ts`
  *
- * *Author the choices, never the evidence.* What is written down here is which buttons fifteen
+ * *Author the choices, never the evidence.* What is written down here is which buttons sixteen
  * imaginary students pressed — which room, which booth, which money they counted, how they split
  * what was left. Every log those choices produce comes out of `src/test/runChallenge.ts` and
  * `src/test/runPopUp.ts` driving the actual reducers, exactly as the product's own tests do, so
@@ -44,7 +44,7 @@
  *
  * ## Everybody in it is invented
  *
- * Fifteen invented names, one invented school, one invented class. Nothing here is drawn from
+ * Sixteen invented names, one invented school, one invented class. Nothing here is drawn from
  * any real student, and the class label says "Sample" so that every screen which prints a class
  * label prints the disclaimer with it.
  *
@@ -156,15 +156,22 @@ const MIDDLING: ReasoningScores = { "C6.1": 2, "C6.2": 1, "C6.3": 1, "C6.4": 2 }
 const THIN: ReasoningScores = { "C6.1": 1, "C6.2": 1, "C6.3": 0, "C6.4": 1 };
 
 /**
- * Fifteen seats, and what each one is in the room to prove.
+ * Sixteen seats, and what each one is in the room to prove.
  *
- * Seats 1 and 2 are the pair that matters most, and they are built to be a pair. Seat 1's
- * written explanation earns full marks from a person and her plan does not hold: she sent the
- * last of the money to savings, so `plan-within-income.er3` — *savings is a planned amount, not
- * the leftover* — is judged **Did not do it**, and she counted a bonus that Week 5 then took
- * away. Seat 2's plan holds on every requirement BOW judges and he cannot say why: his marks are
- * 3 of 10. A composite would put a number over both of those and it would be indefensible in
- * either direction. BOW does not produce one, and this class is where that refusal is visible.
+ * Seats 1 and 2 are the pair that matters most, and they are built to be a pair. Both numbers on
+ * each of them are **derived**, and they were chosen by running `resolveSeason` over candidate
+ * option sets until the contrast was real rather than asserted:
+ *
+ * - **Seat 1** earns full marks from a person — 10 of 10, the best writing in the class — and
+ *   the season ends *Course $950 short*. She sent the last of the money to savings, so
+ *   `plan-within-income.er3` (*savings is a planned amount, not the leftover*) is judged **Did
+ *   not do it**, and she built the plan around a $1,000 bonus that Week 5 took away.
+ * - **Seat 2** scores 3 of 10 — the weakest writing in the class, no numbers and no trade-off
+ *   named — and the season ends *Course funded, attendance held, ends holding $950*. Every
+ *   requirement BOW judges is met; the only one he misses is the one that **is** the writing.
+ *
+ * One number over either of those would be indefensible in both directions. BOW does not produce
+ * one, and this class is where that refusal is visible on a screen rather than in a sentence.
  */
 const SEATS: readonly Seat[] = [
   {
@@ -172,32 +179,32 @@ const SEATS: readonly Seat[] = [
     plan: {
       kind: "basketball",
       run: {
-        setupId: "gym-sublet", reserveSeat: false, takeClinics: false,
-        countCompletion: true, countOutcome: true,
-        split: { goal: 0.6, reserve: 0.1 }, closeOpeningInto: "goal",
+        setupId: "gym-sublet", reserveSeat: false, takeClinics: false, countOutcome: true,
+        split: { goal: 0.3, reserve: 0.0 }, closeOpeningInto: "goal",
         defenseText:
-          "I put the course seat first and let the reserve take what was left, because the course is the thing that lasts past the season. "
-          + "When the outcome bonus did not come in Week 5 the plan was short and I had to give up the clinics to cover it.",
+          "I took the Gym District Sublet at $225 a week so Avery could walk to practice and never miss a session, "
+          + "and I counted the $1,000 showcase bonus because the team was on track for it. When it did not come in Week 5 "
+          + "the course line was the only one left to cut, so Avery kept her attendance and did not get the $1,200 place.",
       },
     },
     reasoning: FULL_MARKS,
     note:
       "This is the clearest explanation in the class — you said what you protected, what it cost and which numbers you stood on. "
       + "The thing to look at is where the savings figure came from: it was whatever was left after everything else, so when Week 5 moved, it was the line that moved.",
-    shows: "Reasoned well · plan did not hold. 10/10 writing, BOW says a requirement was not met",
+    shows: "Best writing in the class (10/10) · Avery ends $950 short of the course",
   },
   {
     name: "Cormac Vellum",
     plan: {
       kind: "basketball",
       run: {
-        setupId: "cousin-room", reserveSeat: false, takeClinics: false,
-        split: { goal: 0.2, reserve: 0.4 }, closeOpeningInto: "flexibleCash",
+        setupId: "teammate-share", reserveSeat: true, takeClinics: false,
+        split: { goal: 0.5, reserve: 0.3 }, closeOpeningInto: "flexibleCash",
         defenseText: "It worked out fine. I had enough left at the end and nothing went wrong that I could not pay for.",
       },
     },
     reasoning: THIN,
-    shows: "Reasoned poorly · plan held. 3/10 writing, every decision requirement met",
+    shows: "Weakest writing in the class (3/10) · Avery gets the course and ends holding $950",
   },
   {
     name: "Delia Fenwright",
@@ -215,9 +222,12 @@ const SEATS: readonly Seat[] = [
     override: {
       evidenceRequirementId: "plan-within-income.er3",
       level: 3,
+      // The note has to be true of the level's own words. Level 3 renders as *Did it after a
+      // hint*, so a note saying "I watched her do it unaided" would be a teacher's judgement
+      // and the product's vocabulary disagreeing on the same row, in front of a district.
       note:
-        "She set the reserve figure on paper at the start of the lesson and I watched her do it — the board only records the order she typed it in. "
-        + "Recording what I saw, not what the screen inferred.",
+        "She set the savings figure herself, but only after I stopped at her desk and asked what that line was for. "
+        + "That is a hint, not the answer — recording what happened in the room rather than what the board could see.",
     },
     shows: "A teacher overruled BOW's judgement. Watch it travel to the class page and the export",
   },
@@ -365,7 +375,13 @@ const SEATS: readonly Seat[] = [
     name: "Perrin Tuck",
     plan: { kind: "not-started" },
     reasoning: null,
-    shows: "Spare seat · use this card for the live run in front of the room",
+    shows: "Spare seat · the LIVE RUN card. Basketball, machine one, then machine two",
+  },
+  {
+    name: "Quill Marchetti",
+    plan: { kind: "not-started" },
+    reasoning: null,
+    shows: "Spare seat · the SECOND WORLD card. Open Run the Pop-Up from this one",
   },
 ];
 
@@ -571,12 +587,27 @@ async function main(): Promise<void> {
 
   for (const [index, seat] of SEATS.entries()) {
     const card = cards[index]!;
+    const startedAt = Date.now() - (SEATS.length - index) * 7 * 60_000;
+
+    // Presenting the card is what claims the seat, so a seat that is meant to read *has not
+    // signed in* must never be presented — not even to get a token that is then unused.
+    //
+    // This loop used to join every seat at the top and then branch, and the three students who
+    // had done nothing came out reading "Signed in 8/20/2026" on the class list. The class
+    // overview was still right, because *not started* is derived from work rather than from the
+    // roster row, and that made the contradiction worse rather than better: one screen said
+    // three children had never opened it and the screen next to it said they had all signed in.
+    // Walking the runbook is what found it.
+    if (seat.plan.kind === "not-started") {
+      built.push({ seat, card, world: "—", state: "not started", reasoning: "—" });
+      continue;
+    }
+
     const joined = await api<{ token: string }>(`/classes/${code}/join`, {
       method: "POST",
       body: { classCode: code, seatCode: card.seatCode, joinCode: card.joinCode, device: "shared" },
     });
     const studentToken = joined.body.token;
-    const startedAt = Date.now() - (SEATS.length - index) * 7 * 60_000;
 
     if (seat.plan.kind === "basketball" || seat.plan.kind === "food-truck") {
       const runOptions = { seatCode: card.seatCode, startedAt };
@@ -636,18 +667,8 @@ async function main(): Promise<void> {
       });
       continue;
     }
-
-    // Not started. The seat is left unclaimed so the teacher's list reads the truth: this
-    // student has a card and has never signed in.
-    built.push({ seat, card, world: "—", state: "not started", reasoning: "—" });
   }
   step(`students: ${submitted.length} finished runs posted, ${built.filter((row) => row.state.startsWith("mid-run")).length} mid-run checkpoints`);
-
-  // -- A seat that never signed in must not look like one that did. ----------
-  //
-  // Joining above claims a seat, which is exactly what a card is for — so the three seats that
-  // are meant to read "has not signed in" are never joined at all. That is why the loop skips
-  // them rather than joining and undoing it.
 
   // -- The teacher reads the writing. ---------------------------------------
   let read = 0;
@@ -726,6 +747,20 @@ async function main(): Promise<void> {
     progress: { seatCode: string; stage: string }[];
     feedback: unknown[];
   }>(`/classes/${code}/submissions`, { key: teacherKey });
+  // The one contradiction this seed has already produced once, checked rather than assumed: a
+  // seat with no work on it must also read "has not signed in" on the class list.
+  const untouched = SEATS.filter((seat) => seat.plan.kind === "not-started").map((seat) => seat.name);
+  const wronglyClaimed = readBack.body.roster
+    .filter((row) => row.claimed)
+    .map((row) => SEATS[Number(row.seatCode) - 1]?.name ?? row.seatCode)
+    .filter((name) => untouched.includes(name));
+  if (wronglyClaimed.length > 0) {
+    throw new Error(
+      `${wronglyClaimed.join(", ")} have never done anything and the class list says they have signed in. `
+      + "The demonstration cannot show \"who has not started\" over a roster that disagrees with it.",
+    );
+  }
+  step(`verified: ${untouched.length} seats hold a card and have never signed in — ${untouched.join(", ")}`);
   step(
     `verified: ${readBack.body.roster.length} on the list · ${readBack.body.submissions.length} turned in · `
     + `${readBack.body.progress.length} mid-run · ${readBack.body.feedback.length} notes`,
