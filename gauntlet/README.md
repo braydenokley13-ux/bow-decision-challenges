@@ -16,13 +16,22 @@ were allowed to reject. Every finding was reproduced by the person who filed it.
 | --- | --- |
 | `GAUNTLET_STATUS.md` | The running log of rounds: who was sent at what, what they said, what closed. Read it for the shape of the run, not for the truth about the product. |
 | `DEFECTS.md` | Every reproduced defect, grouped by the round that found it, with its state. §N is what the lead found by using the product between rounds. |
-| `critiques/` | The reports themselves, 29 of them. `recon-*` is the first sweep; the rest are named for what they attacked. Each carries its own method, its own receipts and its own verdict. |
+| `critiques/` | The reports themselves, 43 of them. `recon-*` is the first sweep; the rest are named for what they attacked. Each carries its own method, its own receipts and its own verdict. |
 | `research/` | Eight reports establishing the external bar — what NGPF, iCivics, Khan Academy, state assessment instruments and good consumer software actually do — written before anything was built against them. |
-| `receipts/` | 857 screenshots and transcripts. Named by the finding they belong to, so a claim in a critique can be checked against the thing that was on the screen. |
+| `receipts/` | 2,437 files: 2,090 screenshots and the rest transcripts, console logs and the probe scripts that produced them. Named by the finding they belong to, so a claim in a critique can be checked against the thing that was on the screen. |
 | `decisions/` | Things that were deliberately **not** built, and why. A gauntlet that only records what was done is a sales document. |
 | `COVERAGE_COURT_CONTRACT.md` | **Canonical.** The one test every coverage verdict runs. It exists because four courts ran the same-sounding question four ways and one of them was wrong by two objectives. A verdict that did not run it is not a verdict. |
 | `judges/BRIEFS.md` | The six final verdicts and the rules they run under, written down **before** they were run so nobody could tune the question to the answer. |
 | `ACCOUNTS.md` · `ASSESSMENT.md` · `D26_ANSWERS.md` | The three things a district asks about, answered from the running product with the gaps stated as gaps. |
+
+**The two counts in that table are measured, not remembered.** They read 29 and 857 in this
+file until this round, which was true when it was written and had been left behind by three
+more rounds of evidence since. Read them off the disk rather than off this page:
+
+```bash
+find gauntlet/critiques -maxdepth 1 -name '*.md' | wc -l   # 43
+find gauntlet/receipts -type f | wc -l                     # 2,437
+```
 
 ## The two disciplines worth stealing
 
@@ -39,7 +48,9 @@ nobody will read again.
 
 ## What this cost, honestly
 
-The receipts are 154MB and the repository is packed at 187MB because of them. That is the price
-of being able to check a claim eighteen hours later, and it is a real cost to anyone cloning
-this. Whether to keep them all at the end of the run is a decision for the person who owns the
-repository, not for the run.
+The receipts are 384MB and the repository is packed at 328MB because of them — `du -sh
+gauntlet/receipts` and `git count-objects -vH`, run today. Those two numbers said 154MB and
+187MB here until this round, and they will be wrong again after the next one, which is why the
+commands are written beside them. That is the price of being able to check a claim eighteen
+hours later, and it is a real cost to anyone cloning this. Whether to keep them all at the end
+of the run is a decision for the person who owns the repository, not for the run.

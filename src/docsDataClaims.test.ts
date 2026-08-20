@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { handleApiRequest } from "../server/handler";
 import { memoryStore, type ClassStore } from "../server/store";
@@ -219,6 +219,27 @@ describe("neither document claims compliance with anything", () => {
 
 const NOW = 1_770_000_000_000;
 
+/**
+ * The only modules allowed to know the retired composite total exists.
+ *
+ * Two compute it and one declares it. Nothing else in `src/` may name `finalPoints` or
+ * `deriveGrade` at all — not a screen, and not the plain `.ts` module that would hand a screen
+ * a finished sentence with the number already in it.
+ *
+ * Named one by one rather than matched on a directory. `src/domain/evidence/**` would excuse
+ * the next module added beside them, and the point of this list is that adding a fourth is a
+ * decision somebody writes down here.
+ */
+const COMPOSITE_IS_COMPUTED_IN: readonly string[] = [
+  // Sums the observations and the marked reasoning into the total. Where it is computed.
+  "src/domain/evidence/grade.ts",
+  // Assembles the whole assessment and carries `grade` on the result. One property access from
+  // a caller, which is exactly why the sweep above had to stop being a `.tsx` sweep.
+  "src/domain/evidence/result.ts",
+  // Declares the field on `GradeResult`. Renders nothing; a type cannot reach a teacher.
+  "src/domain/evidence/types.ts",
+];
+
 function api(store: ClassStore) {
   return (method: string, path: string, body?: unknown, headers: Record<string, string | undefined> = {}) =>
     handleApiRequest(
@@ -311,10 +332,34 @@ describe("the README's account of what BOW holds is the handler's account", () =
   it("finds no rendered composite to advertise, which is what makes the section true", () => {
     // The claim above is only honest while the composite stays unrendered. This is the check
     // the judge did by hand — every `.tsx` under `src/`, for a use of the grade total.
+    //
+    // **`.tsx` was the hole.** A composite total does not need a component to reach a person.
+    // An export builder, a print helper, a CSV writer, a server response shaper — any of them
+    // is a plain `.ts`, any of them renders text a teacher reads, and this guard could not see
+    // one. The value is live and one property access away: `deriveResult` returns
+    // `grade.finalPoints` (`src/domain/evidence/result.ts`), so the distance between "no screen
+    // shows it" and "a document a district keeps shows it" was one file with the wrong
+    // extension. So the sweep is `.ts` and `.tsx` alike, and the three modules that are
+    // *supposed* to know the number exists are named here rather than matched by a pattern —
+    // a pattern would quietly re-open the hole for the next module that happened to fit it.
     const rendered = readdirSync("src", { recursive: true, encoding: "utf8" })
-      .filter((entry) => entry.endsWith(".tsx") && !entry.includes(".test."))
+      .filter((entry) => /\.tsx?$/.test(entry) && !entry.includes(".test."))
+      .filter((entry) => !COMPOSITE_IS_COMPUTED_IN.includes(`src/${entry}`))
       .filter((entry) => /\bfinalPoints\b|\bderiveGrade\b/.test(withoutComments(readFileSync(`src/${entry}`, "utf8"))));
-    expect(rendered, "a screen has started rendering the composite total").toEqual([]);
+    expect(rendered, "a module has started rendering the composite total").toEqual([]);
+  });
+
+  it("keeps the allow-list honest, so renaming a module cannot empty the sweep", () => {
+    // An allow-list nothing checks is a list of paths that used to exist. If one of these is
+    // renamed and the entry is left behind, the sweep above goes on passing while the file it
+    // was excusing is somewhere else — unnamed, unswept, and free to print the total.
+    for (const path of COMPOSITE_IS_COMPUTED_IN) {
+      expect(existsSync(path), `${path} is allowed to compute the composite and no longer exists`).toBe(true);
+      expect(
+        /\bfinalPoints\b|\bderiveGrade\b/.test(withoutComments(readFileSync(path, "utf8"))),
+        `${path} is allowed to compute the composite and no longer mentions it — take it off the list`,
+      ).toBe(true);
+    }
   });
 
   it("still says all of it, so deleting the section fails rather than passes", () => {
