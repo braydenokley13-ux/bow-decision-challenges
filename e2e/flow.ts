@@ -357,6 +357,36 @@ export async function chooseSeasonIfOffered(page: Page) {
   }
 }
 
+/**
+ * Serve a Saturday to the end and close up.
+ *
+ * The window used to open straight onto the next decision. It now opens onto the evening the
+ * student ordered for — the counter emptying, the lane still there, the till climbing — and
+ * that screen sits between every `saturday.open` and whatever follows it.
+ *
+ * `golden.spec.ts` was written before that screen existed and nobody added it, so the market's
+ * golden path pressed *open the window* and then spent three minutes waiting for a tips jar
+ * that was two screens away. The suite reported a timeout; the product was working perfectly.
+ * That is the whole reason this lives in `flow.ts` instead of being pasted into a second spec:
+ * a click sequence kept in two places is a click sequence that will be updated in one.
+ *
+ * `nights` is required rather than inferred because the standing order serves **two** Saturdays
+ * back to back. A loop that just kept closing whatever it found would pass whether it served
+ * two nights or none, which is how a helper starts quietly skipping the thing it is named for.
+ */
+export async function serveTheNight(page: Page, nights = 1) {
+  for (let night = 0; night < nights; night += 1) {
+    await expect(
+      page.getByRole("button", { name: "Serve automatically" }),
+      `night ${night + 1} of ${nights}: the window opened but no evening was there to run`,
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Serve automatically" }).click();
+    const closeUp = page.getByRole("button", { name: /^(Close up|See how)/ });
+    await closeUp.waitFor({ state: "visible", timeout: 120_000 });
+    await closeUp.click();
+  }
+}
+
 export const SETUP_ORDER = ["gym-sublet", "teammate-share", "cousin-room"] as const;
 
 /** Titles as the cards render them, so the ranking helper can find each row. */
@@ -398,15 +428,33 @@ export async function completeSetupStage(page: Page, chosenIndex: 0 | 1 | 2, onC
 }
 
 /** What the planning screen calls each of its four questions, and how it moves between them. */
+/**
+ * The plan's four screens, named by the product rather than by this file.
+ *
+ * These were eight hard-copied strings, and the copy rewrite that made both worlds readable
+ * changed four of them — three em dashes became colons and "Yes — count on it" became
+ * "Yes, count on it". Every one of those is a better sentence and not one of them is a
+ * behaviour change, but the suite was looking for buttons that no longer existed, so the two
+ * golden paths sat waiting three minutes for a click that could never land and then reported
+ * a timeout. A student would have been fine. The evidence that a student is fine was gone.
+ *
+ * A test suite that keeps its own copy of the words is a suite that reports a rewrite as a
+ * regression, which is worse than useless: it trains everyone to distrust it precisely when
+ * the product is being improved. So the words come from the one place that defines them. If a
+ * button is renamed again, this follows it; if a button is *removed*, this fails to compile,
+ * which is the failure that was actually wanted.
+ */
+const PLAN_COPY = STUDENT_COPY.plan.steps;
+
 export const PLAN_STEP = {
-  countOn: "What Avery can count on",
-  bonuses: "Bonuses that might happen",
-  committed: "Money already spoken for",
-  countBonus: "Yes — count on it",
-  leaveBonus: "No — leave it out",
-  toBonuses: "Next — the two bonuses",
-  toCommitted: "Next — what Avery already owes",
-  toPlan: "Now decide what Avery protects",
+  countOn: PLAN_COPY.countOn.name,
+  bonuses: PLAN_COPY.bonuses.name,
+  committed: PLAN_COPY.committed.name,
+  countBonus: PLAN_COPY.bonuses.yes,
+  leaveBonus: PLAN_COPY.bonuses.no,
+  toBonuses: PLAN_COPY.countOn.next,
+  toCommitted: PLAN_COPY.bonuses.next,
+  toPlan: PLAN_COPY.committed.next,
 } as const;
 
 /**

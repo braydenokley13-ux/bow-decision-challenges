@@ -14,6 +14,7 @@ import {
   scoreWriting,
   seatOnRoster,
   seedRuns,
+  serveTheNight,
   signIn,
   stepPastTheDeal,
   submitDefense,
@@ -203,6 +204,7 @@ async function playMarket(page: Page, answer: string) {
   await orderTrays(page, 3);
   await checkSum(page, MARKET_COPY.saturday.order.label, orderCost(MARKET, 3));
   await page.getByRole("button", { name: MARKET_COPY.saturday.open }).click();
+  await serveTheNight(page);
 
   // The tips jar: money that is not the truck's, three things that want it, and a reason for
   // the one left out. The night does not end until both halves are answered, which is the beat
@@ -214,6 +216,9 @@ async function playMarket(page: Page, answer: string) {
   await page.getByRole("button", { name: MARKET_COPY.standing.alone }).click();
   await orderTrays(page, 3);
   await page.getByRole("button", { name: MARKET_COPY.standing.action }).click();
+  // The standing order covers Saturdays 2 and 3, so the window opens twice before the market
+  // asks anything else.
+  await serveTheNight(page, 2);
 
   await checkSum(page, MARKET_COPY.generator.gap.label, swapBill(MARKET));
   await page.getByRole("button", { name: MARKET_COPY.generator.action }).click();
@@ -222,6 +227,7 @@ async function playMarket(page: Page, answer: string) {
   await page.getByRole("button", { name: MARKET_COPY.repair.commit }).click();
 
   await page.getByRole("button", { name: MARKET_COPY.saturday.open }).click();
+  await serveTheNight(page);
   await page.getByRole("button", { name: MARKET_COPY.settle.action }).click();
   await page.locator(".writeup__tiles button").nth(0).click();
   await page.locator(".writeup__tiles button").nth(1).click();

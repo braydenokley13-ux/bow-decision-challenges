@@ -921,7 +921,14 @@ export function StandingOrderStage() {
         focusKey={`serving-${serving}`}
         live={{ cash: ledger.cashToPlan + banked + earlier + till, sold: soldSoFar }}
       >
+        {/* Keyed by the night, so the second one starts as a night rather than as a continuation.
+            Without this the component survives the change and keeps whatever the student left
+            switched on — press *Serve automatically* on Saturday 2, close up, and Saturday 3
+            begins serving itself before anyone has looked at it. The student never opened that
+            window. A remount also puts focus back on the new night's heading, which is where a
+            screen reader needs it. */}
         <RunSaturday
+          key={serving}
           saturday={serving}
           spotId={spotId}
           trays={trays}
@@ -1007,7 +1014,17 @@ export function StandingOrderStage() {
         {/* The two nights' own notes are on the order above, where the decision is, and what a
             tray costs is on the control itself. Anything printed here was the screen saying
             something it had already said. */}
-        <Button type="button" aria-disabled={!ready} onClick={() => ready && dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 2, trays })}>
+        {/* Ordering opens the window; it does not settle the nights.
+            This used to dispatch `POPUP_STOCK_ORDERED` straight from here, which resolved
+            Saturdays 2 and 3 off-screen as arithmetic and stepped to the generator. The
+            consequence was that the `serving !== null` branch above — both nights' service, with
+            its own two close labels and a HUD written to add the un-banked till of a night in
+            progress — was unreachable: nothing in the file ever called `setServing(2)`, so half
+            the market's Saturdays were never run by anybody. A student ran the first Saturday,
+            ran the last, and was told what happened on the two in between.
+            Now it hands over to the counter, and the reducer is told once at the end of night
+            three, which is what the branch below was always written to expect. */}
+        <Button type="button" aria-disabled={!ready} onClick={() => ready && setServing(2)}>
           {ready ? COPY.standing.action : state.tipClaims === null ? COPY.tips.gateClaims : COPY.standing.gate}
         </Button>
       </div>
