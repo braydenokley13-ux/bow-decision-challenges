@@ -508,14 +508,41 @@
    shadow beneath it, a lantern highlight along its top edge, the same amber a bulb on the
    wire would throw. `box-shadow`, not `border: 1px`, doing the work a line was doing before.
    --------------------------------------------------------------------------- */
+
+/*
+ * Ramos's counter: the one lit thing on a dark lane.
+ *
+ * The build brief specified separation by a two-part light model rather than a stroke, and
+ * gave `0 24px 60px -28px rgb(0 0 0 / 85%)` for the contact shadow. That was implemented
+ * faithfully and rendered as nothing, because **a black shadow on a near-black ground has
+ * nothing to darken** — the market's canvas is `#17100e`, and 85% black over it is 85% black.
+ * `tokens.css` already says this in writing about `.ground-dark`: depth here is carried by the
+ * surface ramp and by light, not by shade. The brief forgot its own world.
+ *
+ * So the slab is lit instead. Three sources, all warm, none of them a border:
+ *   - a top-to-bottom gradient, so the surface itself is brighter where the lamp hits it;
+ *   - a rim light along the top edge at an opacity you can actually see (14% was invisible);
+ *   - a wide amber bloom underneath, which is the lantern the world's own art direction has
+ *     been describing since the lane was first drawn.
+ * The contact shadow stays, but as the smallest of the four effects rather than the load-
+ * bearing one.
+ */
 .tray-order {
+  position: relative;
   display: grid;
   gap: var(--s-4);
-  max-width: 720px;
-  padding: var(--s-6);
-  background: var(--surface-raised);
+  width: min(720px, 100%);
+  margin-inline: auto;
+  padding: var(--s-7) var(--s-6) var(--s-6);
+  background:
+    linear-gradient(178deg, #3a2a20 0%, var(--surface-raised) 42%, #241a15 100%);
   border: 0;
-  box-shadow: 0 24px 60px -28px rgb(0 0 0 / 85%), inset 0 1px 0 rgb(240 179 82 / 14%);
+  border-radius: var(--r-md);
+  box-shadow:
+    inset 0 1px 0 rgb(255 214 150 / 55%),
+    inset 0 -1px 0 rgb(0 0 0 / 40%),
+    0 0 90px -20px rgb(240 169 74 / 22%),
+    0 26px 50px -30px rgb(0 0 0 / 90%);
 }
 
 /* What a tray is and what it costs, read once at the top of the slab rather than argued for
@@ -570,8 +597,11 @@
 }
 .count-control input:focus-visible { position: relative; z-index: 1; outline: 3px solid var(--focus-ring); outline-offset: -3px; }
 
-.tray-order__cost { margin: 0; padding-top: var(--s-3); border-top: 2px solid var(--border-ink); }
-.tray-order__cost span { font: var(--m-md); font-feature-settings: var(--num); }
+/* A readout, not a headline: the same figure is in the sum's settled row below, and the one
+   that matters on this slab is the tray count. A hairline rather than a 2px ink rule, because
+   on a lit surface a hard black line is a crack in it. */
+.tray-order__cost { margin: 0; padding-top: var(--s-3); border-top: 1px solid rgb(255 214 150 / 18%); }
+.tray-order__cost span { color: var(--ink-2); font: var(--m-sm); font-feature-settings: var(--num); }
 
 /* A third the weight of the control, measured: the split note, the hands-bound warning and
    the band note are all read here, and none of them is the answer to the sum on the screen. */
@@ -586,19 +616,27 @@
 /* Trays, not plates. A tray is wide and flat and reads as a crate of food; a plate reads as a
    countable dot, and a row of countable dots beside a crowd figure is a ruler. See the comment
    at the call site in `PopUpScreens.tsx` for the arithmetic this protects. */
-.tray-stack { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; min-height: 16px; }
+.tray-stack { display: flex; flex-wrap: wrap; gap: 8px; margin: var(--s-2) 0 0; min-height: 22px; }
 
+/* A tray on a lit counter: a shallow metal pan with food showing along the top edge. Wide and
+   flat so it cannot be counted against a crowd figure the way a row of round plate marks could,
+   and warm enough to read as stock rather than as a progress bar. */
 .tray-stack i {
-  width: 38px;
-  height: 14px;
+  width: 52px;
+  height: 22px;
   display: block;
-  border-radius: 2px;
-  box-shadow: inset 0 3px 0 rgb(0 0 0 / 22%);
+  border-radius: 2px 2px 4px 4px;
+  box-shadow:
+    inset 0 4px 0 rgb(240 169 74 / 55%),
+    inset 0 5px 0 rgb(0 0 0 / 30%),
+    inset 0 -3px 0 rgb(0 0 0 / 28%),
+    0 2px 4px -1px rgb(0 0 0 / 55%);
 }
 
 /* An order draws what is being cooked and nothing about how it lands. Colouring the plates
    sold and binned before the night happened answered the question the screen is asking. */
-.tray-stack i[data-state="cooking"], .night__plates i[data-state="cooking"] { background: var(--border-strong); }
+.tray-stack i[data-state="cooking"] { background: #6d4a3a; }
+.night__plates i[data-state="cooking"] { background: var(--border-strong); }
 .night__plates i[data-state="sold"] { background: var(--plate-sold); }
 .night__plates i[data-state="binned"] { background: var(--pat-over); border: 1px solid var(--fin-over); }
 .night { display: grid; gap: var(--s-3); padding: var(--s-5); background: var(--surface-raised); border: 1px solid var(--border-default); border-left: 4px solid var(--world-accent); }

@@ -283,7 +283,15 @@ function TrayOrder({ saturday, nights, max, trays, onTrays, pricing = "settled",
       </div>
       {/* No empty element while the sum is open: a row with nothing in it still takes up the
           gap this grid gives every row, and a blank beat where the total belongs reads as the
-          screen having lost its place. */}
+          screen having lost its place.
+
+          Once settled, the total stays on the instrument. It does read twice on the screen —
+          here, and in the sum's own settled row below — and I tried removing it, which
+          `lastSaturday.test.tsx` correctly refused: the two are not the same statement. The
+          sum's row is the record that the student worked it out; this is the order's own
+          total, sitting beside what it leaves, where the next decision is made. What was
+          wrong was its weight, not its presence, so it is a readout now rather than a
+          headline. */}
       {pricing === "settled" && (
         <p className="tray-order__cost">
           <span>{formatDollars(cost)}{nights === 2 ? ` ${COPY.saturday.bothNights}` : ""}</span>
