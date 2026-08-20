@@ -238,21 +238,21 @@ function depositVerdict(final: SnapshotInputs, n: ScenarioNumbers, pressure: Wee
     // "the course cost less" reads as a mistake, and one headed "Paid off" that opens with
     // what the decision cost teaches a student that the badge is decoration. The price is in
     // every branch; what moves is whether it leads or follows.
-    const priced = `The seat was held from Week ${week} for ${early} instead of ${full}, so the course cost ${premium} less.`;
+    const priced = `The seat was held from Week ${week}. It cost ${early} instead of ${full}. That is ${premium} less.`;
     return {
       id: "course-deposit",
       label: "Reserving the course seat early",
       taken: true,
       outcome: strained ? "cost_you" : "paid_off",
       detail: strained
-        ? `Reserving it stopped being money Avery could move, and Week 5 asked for ${asked} out of the ${movable} that still could. ${priced}`
+        ? `Reserving it stopped being money Avery could move. Week 5 asked for ${asked}. Only ${movable} could still move. ${priced}`
         : tested
-          ? `${priced} Week 5 asked for ${asked}, and the ${movable} still free to move covered it.`
-          : `${priced} Week 5 asked nothing of the money left movable, so committing early cost Avery no room.`,
+          ? `${priced} Week 5 asked for ${asked}. The ${movable} still free to move covered it.`
+          : `${priced} Week 5 never asked for any of the money left movable. Committing early cost Avery nothing extra.`,
     };
   }
 
-  const priced = `The course cost the full ${full} rather than the ${early} it took at Week ${week}, so Avery paid ${premium} more.`;
+  const priced = `The course cost the full ${full}. Reserving early at Week ${week} would have cost only ${early}. Avery paid ${premium} more by waiting.`;
   return {
     id: "course-deposit",
     label: "Not reserving the course seat early",
@@ -268,10 +268,10 @@ function depositVerdict(final: SnapshotInputs, n: ScenarioNumbers, pressure: Wee
     // premium is a real cost and it is still said; what leads the sentence is whatever the
     // badge is about.
     detail: !tested
-      ? `${priced} Week 5 then asked nothing of the money Avery kept reachable, so the room it bought was never needed.`
+      ? `Week 5 never asked for any of the money Avery kept reachable. Waiting never used that money for anything. ${priced}`
       : held
-        ? `Week 5 asked for ${asked}, and it came out of the ${movable} Avery had kept reachable. Reserving early would have locked some of that away. ${priced}`
-        : `Week 5 asked for ${asked} and only ${movable} could move, so keeping it reachable was not enough on its own. ${priced}`,
+        ? `Week 5 asked for ${asked}. It came out of the ${movable} Avery had kept reachable. Reserving early would have locked some of that away. ${priced}`
+        : `Week 5 asked for ${asked}. Only ${movable} could move. Keeping it reachable was not enough on its own. ${priced}`,
   };
 }
 
@@ -358,10 +358,10 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, load: LoadReado
   const counterfactual = protect === null
     ? ""
     : protect > pool
-      ? ` Holding it needed ${formatDollars(protect)} in the rides row, and this plan had ${formatDollars(pool)} to split across all three amounts — no way of splitting it would have kept the bonus.`
+      ? ` Holding onto the bonus needed ${formatDollars(protect)} in the rides row. This plan only had ${formatDollars(pool)} to split across all three amounts — no way of splitting it would have kept the bonus.`
       : spentOnRides > 0
-        ? ` Putting ${formatDollars(protect)} into rides — ${formatDollars(dollars(protect - spentOnRides))} more than you put there, out of your other two amounts — would have kept it.`
-        : ` Putting ${formatDollars(protect)} into rides, out of your other two amounts, would have kept it.`;
+        ? ` Putting ${formatDollars(protect)} into rides would have kept it. That is ${formatDollars(dollars(protect - spentOnRides))} more than you put there, from your other two amounts.`
+        : ` Putting ${formatDollars(protect)} into rides would have kept it. That money would come from your other two amounts.`;
 
   const verdicts: RiskVerdict[] = [
     {
@@ -370,7 +370,7 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, load: LoadReado
       // the attendance bonus" over a body saying "Your plan was already built without it" —
       // a heading and its own sentence disagreeing about what the student did. Every other
       // verdict on this panel already names both sides of its decision.
-      label: final.includeCompletion ? `Building the plan around the ${bonusLabel}` : `Planning without the ${bonusLabel}`,
+      label: final.includeCompletion ? `Counting on the ${bonusLabel}` : `Not counting on the ${bonusLabel}`,
       taken: final.includeCompletion,
       outcome: !final.includeCompletion ? "no_effect" : held ? "paid_off" : "cost_you",
       // The verdict that costs the most is the one that most needs the counterfactual: a
@@ -378,11 +378,11 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, load: LoadReado
       // who reads what would have kept it has learned why their plan behaved as it did.
       detail: !final.includeCompletion
         ? held
-          ? `Avery made every session, so the bonus arrived anyway. Your plan never needed it — that is ${bonus} more than you planned for.`
-          : "Avery missed a session, so the bonus never arrived. Your plan was already built without it."
+          ? `Avery made every session. The bonus arrived anyway. Your plan never needed it. That is ${bonus} more than you planned for.`
+          : "Avery missed a session. The bonus never arrived. Your plan did not count on it anyway."
         : held
-          ? "Avery made every session. The money you planned around actually landed."
-          : `Avery missed a session, and the money your plan was counting on never came.${counterfactual}`,
+          ? "Avery made every session. The bonus you counted on arrived."
+          : `Avery missed a session. The money your plan was counting on never came.${counterfactual}`,
     },
     {
       id: "clinics",
@@ -400,12 +400,12 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, load: LoadReado
       detail: !final.includeOptionalWork
         ? "Avery kept the Saturdays. No extra money, and no extra hours."
         : withoutClinics && !held
-          ? `The clinics brought in ${formatDollars(n.optionalWorkIncome)} and took ${clinicHours} hours a week. Those hours are why Avery went over the line — without them the bonus would have held.`
+          ? `The clinics brought in ${formatDollars(n.optionalWorkIncome)} and took ${clinicHours} hours a week. Those hours are why Avery missed a session. Without them, the bonus would have held.`
           : held
-            ? `The clinics brought in ${formatDollars(n.optionalWorkIncome)} and took ${clinicHours} hours a week. Avery made every session anyway.`
+            ? `The clinics brought in ${formatDollars(n.optionalWorkIncome)} and took ${clinicHours} hours a week. Avery still made every practice and every game.`
             // The bonus was already gone at this housing and this spend, so the fee is money
             // the plan would not otherwise have had — and the hours were still spent.
-            : `The clinics brought in ${formatDollars(n.optionalWorkIncome)} and took ${clinicHours} hours a week. The week was already over the line without them, so they are not why the bonus went.`,
+            : `The clinics brought in ${formatDollars(n.optionalWorkIncome)} and took ${clinicHours} hours a week. The week already had no time left without them. They are not why the bonus was lost.`,
     },
     {
       id: "buying-time",
@@ -419,12 +419,12 @@ function riskVerdicts(final: SnapshotInputs, n: ScenarioNumbers, load: LoadReado
             ? "no_effect"
             : "fell_short",
       detail: final.amounts.flexibleCash === 0
-        ? "Nothing went on rides, so Avery took every bus and every long way round."
+        ? "Nothing went on rides. Avery took the slowest way to get everywhere."
         : held && !withoutTimeMoney
-          ? "This is what saved the bonus. Without the hours you bought back, Avery would have run out of week."
+          ? "This is what saved the bonus. Buying those hours back kept Avery in every session."
           : held
-            ? "Avery would have made every session either way, so this money bought rest rather than the bonus."
-            : `It bought ${hours(load.bought)} back, and Avery still did not have enough week left.`,
+            ? "Avery would have made every session either way. This money bought rest instead of the bonus."
+            : `This money bought ${hours(load.bought)} back. Avery still did not have enough week left.`,
     },
     depositVerdict(final, n, pressure, courseLineCut),
     // Appended before the sort rather than merged into it, so that within one outcome the

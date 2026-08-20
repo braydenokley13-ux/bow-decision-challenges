@@ -389,6 +389,43 @@ describe("the panel shows the words on the screen a student is on", () => {
  * it, defeats the only thing this list is for.
  */
 const PLAIN_ENOUGH = new Set<string>([
+  // Arrived with the same copy-clarity pass (`COPY_CONTRACT.md`) applied to the season's own
+  // files — `scenario.ts`, `claims.ts`, `consequences.ts`, `resolution.ts` and
+  // `studentCopy.ts`'s `plan` and `choose` blocks. Ordinary verbs, connectives and nouns a
+  // Grade 5 reader in their second language already has, none of them the run's name for
+  // anything: "always" (replaces "no matter what"), "besides" and "onto" (prepositions),
+  // "buttons" (names the − and + controls literally), "checking" and "used" (ordinary verb
+  // forms), "depend" (from "does not depend on"), "direction", "happy" (replaces "glad of"),
+  // "joined"/"joins" and "typed" (how a name reaches the roster, said plainly), "lasts"
+  // (the season "lasts eight weeks" rather than "runs" one), "loses" (the plan "loses the
+  // payment"), "minutes" (the world-picker's own "How long" / "minutes" pair), "placed" and
+  // "ride" (the money and hours vocabulary the plan rail already uses as nouns, now also as
+  // a verb and a singular), "shares" ("Avery shares a room"), "slowest" ("the slowest way to
+  // get everywhere", replacing "every long way round"), "teams" (plural of a word already on
+  // this list), "thirty" (a number word, spelled out once for "thirty minutes"), and
+  // "worlds" (plural of "world").
+  "always", "besides", "buttons", "checking", "depend", "direction", "happy", "joined", "joins",
+  "lasts", "loses", "minutes", "onto", "placed", "ride", "shares", "slowest", "teams", "thirty",
+  "typed", "used", "worlds",
+  // Plural/third-person form of "check", already on this list.
+  "checks",
+  // Arrived with the copy-clarity pass on the market's `scenario.ts` and `claims.ts`
+  // (`COPY_CONTRACT.md`), which split inverted and stacked sentences into one plain clause
+  // apiece — "he", "sees" and "sits" are the subjects that sentence now names instead of
+  // leaving out; "falls", "helped", "picked", "sees", "sits", "stand", "think" and "wasted"
+  // are the ordinary verbs those subjects take. None is a word a Grade 5 reader in their
+  // second language would stop at.
+  "he", "sees", "sits", "falls", "helped", "picked", "stand", "think", "wasted",
+  // Ordinary nouns and connectives the same pass introduced: "booths" (plural of a word
+  // already defined), "claim" (singular of "claims", already on this list), "rain" (the
+  // weather, not a verb), "big", "eat" (from "eat into", already the contract's own worked
+  // example of the fix for a metaphor status line), "include", "ordering" (the -ing form of
+  // "order", already defined) and "also".
+  "booths", "claim", "rain", "big", "eat", "include", "ordering", "also",
+  // "no" was only ever covered by accident, decomposed out of the "a job" entry's "no job"
+  // form. Removing that form (above, with the status line that said it) leaves the bare word
+  // uncovered on its own account, and it needs no glossary entry to clear that bar.
+  "no",
   // Arrived with the service phase — "shut the window", "the window is shut". A Grade 5 reader
   // working in a second language does not stop at it, and defining it in a money glossary
   // would be the panel explaining English rather than explaining the market.

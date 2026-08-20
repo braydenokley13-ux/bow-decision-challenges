@@ -115,7 +115,7 @@ describe("the last Saturday is not a room with no door", () => {
     const verdicts = resolveMarket(camsRun({ foodLine: "cut" }), N).verdicts;
     const cut = verdicts.find((entry) => entry.id === "cut")!;
     expect(cut.outcome).toBe("fell_short");
-    expect(cut.detail).toContain("went back into the run");
+    expect(cut.detail).toContain("went back into the market");
   });
 
   it("leaves a run that names no line exactly where it was", () => {

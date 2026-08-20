@@ -45,28 +45,28 @@ export function planConsequences(input: SnapshotInputs, n: ScenarioNumbers): Rec
     goal: input.depositTaken
       ? `The seat is held. Nothing else is owed on the course.`
       : input.amounts.goal === 0
-        ? `Nothing put toward the ${formatDollars(coursePrice)} the course costs.`
+        ? `Nothing put toward the course yet. It costs ${formatDollars(coursePrice)}.`
         : courseShort > 0
-        ? `${formatDollars(courseShort)} short of the ${formatDollars(coursePrice)} the course costs.`
-        : `Enough to pay the ${formatDollars(coursePrice)} the course costs.`,
+        ? `${formatDollars(courseShort)} still needed. The course costs ${formatDollars(coursePrice)}.`
+        : `Enough to pay. The course costs ${formatDollars(coursePrice)}.`,
     reserve: input.amounts.reserve === 0
       ? "Nothing kept back. If anything goes wrong, it comes out of the rest of the plan."
       : conditional > 0
         ? uncovered > 0
-          ? `Covers ${formatDollars(input.amounts.reserve)} of the ${formatDollars(conditional)} this plan is counting on.`
-          : `Covers the whole ${formatDollars(conditional)} this plan is counting on.`
-        : `${formatDollars(input.amounts.reserve)} kept aside in case something goes wrong.`,
+          ? `This plan is counting on ${formatDollars(conditional)}. This backup money covers ${formatDollars(input.amounts.reserve)} of it.`
+          : `This plan is counting on ${formatDollars(conditional)}. This backup money covers all of it.`
+        : `You have ${formatDollars(input.amounts.reserve)} kept aside in case something goes wrong.`,
     flexibleCash: load.bought === 0
-      ? `Nothing paid for rides or the physio a tired body needs. Getting everywhere still takes Avery ${hoursPerWeek(load.net)}.`
+      ? `Nothing paid for rides or physio. Getting everywhere still takes Avery ${hoursPerWeek(load.net)}.`
       // Hours come in whole blocks, so money can stop buying them two different ways: it can
       // fall short of the next block, or there can be no block left to buy. The line used to
       // report both as "not enough to buy another hour", which on a row holding seven times
       // the hourly rate read as arithmetic nobody could follow.
-      : `Pays for rides. Avery gets ${hoursPerWeek(load.bought)} back, and still spends ${hours(load.net)}.${
+      : `Pays for rides. Avery gets ${hoursPerWeek(load.bought)} back. Avery still spends ${hours(load.net)} getting everywhere.${
           idleTimeMoney > 0
             ? load.net === 0
-              ? ` Every hour is bought already, so the last ${formatDollars(idleTimeMoney)} in this row buys no more time.`
-              : ` The last ${formatDollars(idleTimeMoney)} in this row is short of the ${formatDollars(n.load.blockBuybackCost)} another hour costs.`
+              ? ` Every hour is already bought. The last ${formatDollars(idleTimeMoney)} in this row buys no more time.`
+              : ` The last ${formatDollars(idleTimeMoney)} in this row is not enough. Another hour costs ${formatDollars(n.load.blockBuybackCost)}.`
             : ""
         }`,
   };

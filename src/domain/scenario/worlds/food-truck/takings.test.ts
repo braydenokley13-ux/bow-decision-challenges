@@ -30,15 +30,15 @@ describe("the takings are the organiser's until the settle-up, and the world say
     // trap, and the same rule stated while the money is being divided is a decision.
     const lead = POP_UP_SCENARIO.screens.plan.lead;
     expect(lead).toMatch(/organiser/i);
-    expect(lead).toMatch(/end of the run/i);
+    expect(lead).toMatch(/four saturdays end/i);
     expect(lead.toLowerCase()).toContain("window");
   });
 
   it("names the takings on the screen that lists what the repair can reach", () => {
     // The student has just been shown three Saturdays of takings. A list of what is reachable
     // that does not mention them is the omission this test exists for.
-    expect(POP_UP_SCENARIO.breakdown.locked).toMatch(/taken at the window/i);
-    expect(POP_UP_SCENARIO.breakdown.locked).toMatch(/until she pays the stalls at the end of the run/i);
+    expect(POP_UP_SCENARIO.breakdown.locked).toMatch(/took at the window/i);
+    expect(POP_UP_SCENARIO.breakdown.locked).toMatch(/until the market ends/i);
   });
 
   it("never closes a truck whose own plan lines could have paid the bill", () => {

@@ -76,8 +76,12 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
     where: ["basketball", "food-truck"],
   },
   {
+    // "tied to" dropped from the forms below: it was the season's own label for the two
+    // conditional payments ("Payment tied to making every practice and game.") until the
+    // copy-clarity pass replaced it with the literal condition ("You get paid only if …"),
+    // because "tied to" names the rule by a financial metaphor rather than by the rule.
     term: "a rule on it",
-    forms: ["a rule on it", "a bonus rule is met", "money with a rule on it", "tied to"],
+    forms: ["a rule on it", "a bonus rule is met", "money with a rule on it"],
     meaning: "Money that arrives only if something else happens first. Until it happens you do not have it.",
     where: ["basketball", "food-truck"],
   },
@@ -229,10 +233,21 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
 
   // --- The plan itself -----------------------------------------------------
   {
+    // "no job" dropped from the forms below: it was the market's own status line for an
+    // unplaced dollar ("$1,110 still has no job.") until the copy-clarity pass replaced it
+    // with a line naming the concrete thing a dollar is missing — "$1,110 still needs a
+    // line." — because a status line is exactly where `COPY_CONTRACT.md` forbids a metaphor
+    // repeating. "a job" survives on the market's heading ("Give every dollar a job.") and
+    // its closing control ("every dollar a job"), where the metaphor is flavour copy and the
+    // literal three lines are on screen beside it. Basketball's own status lines carried the
+    // identical metaphor ("Every dollar has a job." / "still has no job." / "Still to give a
+    // job") with no flavour use anywhere else to fall back on, so the same pass replaced all
+    // three with "placed" — the word the rest of that rail already used — rather than keep
+    // one surviving instance for its own sake. `where` moves to the market alone.
     term: "a job",
-    forms: ["a job", "no job", "every dollar a job"],
+    forms: ["a job", "every dollar a job"],
     meaning: "A dollar has a job when you have said what it is for. The plan does not close while any dollar has none.",
-    where: ["basketball", "food-truck"],
+    where: ["food-truck"],
   },
   {
     term: "freed",
@@ -340,12 +355,10 @@ export const GLOSSARY: readonly GlossaryEntry[] = [
     meaning: "What the city charges for the right to trade. Every stall pays it and none of it comes back.",
     where: ["food-truck"],
   },
-  {
-    term: "dearest",
-    forms: ["dearest"],
-    meaning: "The most expensive.",
-    where: ["food-truck"],
-  },
+  // "dearest" removed: the Bridge Gate booth used to be "the dearest going", and the
+  // copy-clarity pass replaced it with "It costs the most of the three" — plainer, and it
+  // drops a word a Grade 5 reader working in a second language is less likely to already
+  // have than "most" or "costs".
 
   // --- The market ----------------------------------------------------------
   {
