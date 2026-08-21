@@ -32,6 +32,7 @@ import { buildPopUpSubmission } from "../src/test/runPopUp";
 import type { SubmissionRecord } from "../src/platform/classes/types";
 import { CLASS_STATE_LABELS, LEVEL_LABELS, SKILL_STATE_ORDER, skillStateInSentence } from "../src/educator/labels";
 import { REASONING_CRITERIA } from "../src/domain/blueprint/reasoning";
+import { REASONING_MAXIMUM } from "../src/domain/evidence/grade";
 
 /**
  * The nine golden journeys.
@@ -304,19 +305,25 @@ test("golden 1: a student's work reaches their teacher", async ({ page }) => {
 
   // The teacher's own room, opened with the key the class gave them.
   await page.goto(`/educator/class/${created.code}?key=${created.teacherKey}`);
-  // The room's own count, read off the page's headline rather than off a class name. This was
-  // pinned to `.class-header`, a wrapper that has since gone; the count moved into the `h1` and
-  // the journey reported "the work never arrived" about a page that was showing it. What the
-  // promise needs is that the class says one run came in and whose it was — the exact sentence
-  // around the figure is `classLead`'s to word and to change.
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(/1( of \d+)? turned in/);
+  // The room's own count, read off the lead the class page leads with rather than off a class
+  // name. It was pinned to `.class-header`, then — when that wrapper went — to the `h1`. Both
+  // pins were to *where a sentence happened to sit*, and both broke: the class page now leads
+  // with the reading queue ("1 of 1 explanation still to read.") and carries the turned-in
+  // count in the detail line under it, which is `classLead.ts`'s own doctrine applied
+  // (`gauntlet/v6/teacher/RULING.md` §4). The promise this journey protects is that the class
+  // says one run came in, against the room it came from — so it is asked of the whole lead,
+  // which is the region `classLead` renders into, and the clause order inside it stays
+  // `classLead`'s to change. `1 of 1` rather than `1( of \d+)?`: the denominator beside the
+  // count is the invariant that module exists for, and an optional one asserts nothing.
+  await expect(page.locator(".instrument__lead")).toContainText(/1 of 1 turned in/);
   await expect(page.locator("body")).toContainText(card.displayName);
 
-  // And the student's own words, on the student's own page.
+  // And the student's own words, on the student's own page. Not behind a tab: the tab bar is
+  // gone (RULING §3 — "a tab bar is a ranking abdicated"), and the child's writing is now a
+  // ranked region near the top of the page, which is the thing the tab was hiding.
   await page.goto(`/educator/class/${created.code}/students/${card.seatCode}?key=${created.teacherKey}`);
   await expect(page.getByRole("heading", { name: card.displayName, exact: true })).toBeVisible();
-  await page.getByRole("tab", { name: "The explanation" }).click();
-  await expect(page.locator(".student-response")).toContainText("I kept the course money where I set it");
+  await expect(page.locator("section.written blockquote").first()).toContainText("I kept the course money where I set it");
 });
 
 /* ---------------------------------------------------------------------------
@@ -365,16 +372,37 @@ test("golden 1b: a teacher's own question is answered, read, and changes nothing
   // The teacher reads it, on the student's own page, under their own writing and outside the
   // rubric — which is the assertion that matters.
   await page.goto(`/educator/class/${created.code}/students/${card.seatCode}?key=${created.teacherKey}`);
-  await page.getByRole("tab", { name: "The explanation" }).click();
   const closing = page.locator(".closing-answer");
   await expect(closing).toContainText(QUESTION);
   await expect(closing).toContainText(ANSWER);
   await expect(closing, "the teacher is not told whose question this was").toContainText(/You asked this, not BOW/);
-  await expect(page.locator(".rubric-panel"), "the answer reached the scoring panel").not.toContainText(ANSWER);
+  // The line the question may not cross, asked of the three regions that could carry it over.
+  //
+  // This was one assertion against `.rubric-panel`, which is the *reading queue's* scoring
+  // panel and is not on the student page at all since the rebuild. A negated matcher does not
+  // quietly pass against a locator that matches nothing — `not.toContainText` polls for an
+  // element and times out when none arrives — so this was a dead assertion of exactly the kind
+  // `e2eReadsLabels.test.ts` was written about: it could only ever fail, and it would have
+  // reported "the answer reached the scoring panel" about a panel that was never there.
+  //
+  // The rebuilt page ranks instead of tabbing, and the three surfaces that state or produce a
+  // claim about this child are the verdict (BOW's reading, R2), the judgement record (every one
+  // of them, R5) and the teacher's own marks control (R3, which is what `.rubric-panel` was
+  // here). The answer belongs to none of them.
+  await expect(page.locator(".verdict__grid"), "the answer reached BOW's verdict").not.toContainText(ANSWER);
+  await expect(page.locator(".judgements"), "the answer reached the judgement record").not.toContainText(ANSWER);
+  await expect(page.locator(".written__own"), "the answer reached the scoring panel").not.toContainText(ANSWER);
+  // And each of the three is on the page. A refusal is only worth what the thing refusing it is
+  // worth, and this is the line that says which of the two a red above is.
+  for (const region of [".verdict__grid", ".judgements", ".written__own"]) {
+    await expect(page.locator(region), `${region} is not on this page to refuse anything`).toHaveCount(1);
+  }
 
   // And the canonical evidence is untouched: the student's own write-up still reads as it did,
-  // and nothing about the closing answer is in the log the observer sees.
-  await expect(page.locator(".student-response blockquote").first()).toContainText("I kept the course money where I set it");
+  // and nothing about the closing answer is in the log the observer sees. `section.written`
+  // holds the closing block too, so `.first()` is the child's own writing rather than either
+  // half of the question — which is the blockquote this assertion has always been about.
+  await expect(page.locator("section.written blockquote").first()).toContainText("I kept the course money where I set it");
   const room = await page.request.get(`${API}/classes/${created.code}/submissions`, {
     headers: { "X-BOW-Teacher-Key": created.teacherKey },
   });
@@ -407,10 +435,17 @@ test("golden 2: the other world produces the same shape of evidence", async ({ p
   // signs in as that seat exactly as a student's device does.
   await seedRuns(page.request, classCode, [{ seat: "2" }]);
 
+  // Every requirement the attempt was judged against, off the judgement record.
+  //
+  // `.judgement` / `.judgement__say` were the old panel's classes. The record is the same
+  // record — one row per thing the work had to show, each arguable — rebuilt as `<ul
+  // class="judgement-rows">` of rows whose `.judgement-line b` is the requirement's own name
+  // (RULING §3, R5). The shape this journey is about is untouched by that: what it compares is
+  // the *set of requirement names* the two worlds produce, not where the list is drawn.
   const rowsFor = async (seat: string) => {
     await page.goto(`/educator/class/${classCode}/students/${seat}?key=${createClassKeyFor(classCode)}`);
-    await expect(page.locator(".judgement").first()).toBeVisible();
-    return page.locator(".judgement__say b").allInnerTexts();
+    await expect(page.locator(".judgement-rows > li").first()).toBeVisible();
+    return page.locator(".judgement-rows > li .judgement-line b").allInnerTexts();
   };
   const market = await rowsFor("1");
   const basketball = await rowsFor("2");
@@ -622,15 +657,23 @@ test("golden 7: a teacher's judgement travels to every surface that reports it",
   await seedRuns(page.request, created.code, [{ seat: "1" }]);
 
   await page.goto(`/educator/class/${created.code}/students/1?key=${key}`);
-  // Driven the way a teacher drives it, tab included: the trail opens selected today, and a
-  // journey that assumed it always would be would look for a judgement inside a hidden panel
-  // the day it stops being the default and report the wrong thing about why it could not.
-  await page.getByRole("tab", { name: "Evidence trail" }).click();
-  const judgement = page.locator(".judgement").first();
-  const requirement = (await judgement.locator(".judgement__say b").innerText()).trim();
-  const before = (await judgement.locator(".judgement__machine strong").innerText()).trim();
+  // Driven the way a teacher drives it. There is no tab to press any more — the four tabs are
+  // gone and every region is on the page, ranked (RULING §3) — so the row is reached by being
+  // on the page rather than by selecting the panel it used to hide in. The old classes went
+  // with the panel: a row is `.judgement-rows > li`, its requirement is `.judgement-line b`,
+  // and BOW's own reading is the state span beside it, which carries word + mark together.
+  const judgement = page.locator(".judgement-rows > li").first();
+  await expect(judgement, "the judgement record is on the page").toBeVisible();
+  const requirement = (await judgement.locator(".judgement-line b").innerText()).trim();
+  const before = (await judgement.locator(".judgement-line > span").first().innerText()).trim();
 
-  await judgement.getByRole("button", { name: /I read this differently|Record a different judgement/ }).click();
+  // The way to disagree is a native `<details>` per row now rather than a button: exactly one
+  // row — the first shortfall — is open by default, so a row that is not it has to be opened
+  // the way a teacher opens it. Pressing `summary` on an already-open row would close it.
+  const disclosure = judgement.locator("details");
+  if (!(await disclosure.evaluate((element: HTMLDetailsElement) => element.open))) {
+    await disclosure.locator("summary").click();
+  }
   // Read off the vocabulary rather than written down here: these six words are the product's
   // own distinctions and they have been renamed twice, and a suite that keeps its own copy of
   // them is a second place they are defined.
@@ -653,17 +696,12 @@ test("golden 7: a teacher's judgement travels to every surface that reports it",
   // Read back after a reload, so this is about what the service kept rather than about what one
   // component happened to be holding.
   await page.reload();
-  await page.getByRole("tab", { name: "Evidence trail" }).click();
   // Found by the requirement it was recorded against rather than by where it sits in the list:
   // a judgement that moves position when a teacher disagrees with it is a real possibility, and
   // a journey pinned to "the first row" would report the wrong thing about why it is missing.
-  const overridden = page.locator(".judgement").filter({ hasText: requirement });
+  const overridden = page.locator(".judgement-rows > li").filter({ hasText: requirement }).first();
   await expect(overridden.locator(".judgement__override strong")).toContainText(LEVEL_LABELS[2]);
-  await expect(overridden.locator(".judgement__machine strong")).toContainText(before);
-
-  // The class page reports the teacher's reading, not BOW's.
-  await page.goto(`/educator/class/${created.code}?key=${key}&t=${Date.now()}`);
-  await expect(page.locator("body")).toContainText(requirement.slice(0, 12));
+  await expect(overridden.locator(".judgement-line > span").first()).toHaveText(before);
 
   // The objective page a teacher reports against, which is the surface this step never reached.
   //
@@ -676,6 +714,25 @@ test("golden 7: a teacher's judgement travels to every surface that reports it",
   // above, a person reads the writing here — which is what turns a count into an assessment —
   // and the page then has to report a result and name the state in Ladder 4's own words.
   await scoreWriting(page.request, created.code, key, "1");
+
+  // The class page reports the teacher's reading, not BOW's — and it now says so in words
+  // rather than by the requirement merely appearing somewhere in `body`.
+  //
+  // This step used to run *before* the writing was read, and asked only that the requirement's
+  // first twelve characters were on the page anywhere. Both halves of that are gone. A seat
+  // whose writing nobody has read sits in the triage's *Evidence not all in* band, which is
+  // deliberately chips and one sentence and never names a gap (RULING §2) — so before the
+  // reading there is nothing on this page to find, and the old assertion would fail here for a
+  // reason that is the product working. Once a person has read it the seat is ranked by what it
+  // fell short on, and that row is where the propagation is legible: it carries the requirement
+  // **and the teacher's own word for it**, which is BOW's judgement overruled on a different
+  // page from the one it was typed on. BOW read this row as something else entirely; the class
+  // page is quoting the teacher.
+  await page.goto(`/educator/class/${created.code}?key=${key}&t=${Date.now()}`);
+  const ranked = page.locator('.triage__row[data-seat="1"]');
+  await expect(ranked, "the class page ranks this seat by the gap the teacher re-read").toContainText(requirement);
+  await expect(ranked, "and in the teacher's word for it, not BOW's").toContainText(LEVEL_LABELS[2]);
+
   await page.goto(`/educator/objectives/nysed-pf-2026/1.3?t=${Date.now()}`);
   const reported = page.locator(".objective-class").filter({ hasText: created.code });
   await expect(reported.locator(".objective-result")).not.toContainText(CLASS_STATE_LABELS["not-assessed"]);
@@ -732,7 +789,17 @@ test("golden 8: a mixed class counts as one class", async ({ page, context }) =>
 
   // The class page is one class: everyone still in the room, nobody who is not.
   await page.goto(`/educator/class/${classCode}?key=${key}&t=${Date.now()}`);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("turned in");
+  // The room, counted once, against the room it is a count of. This asked only that the `h1`
+  // contained the words "turned in" — which the headline stopped doing when the class page
+  // re-cut its lead to open with the reading queue (RULING §4), and which never said anything
+  // about *this* class anyway: it would have passed on a headline reporting nine seats or one.
+  // Five children were seated, one left the school, one turned nothing in, and one had two
+  // goes — so the honest count is three of the four still in the room, and one attempt more
+  // than that, which is exactly the arithmetic this journey exists to keep from drifting.
+  await expect(page.locator(".instrument__lead"), "the lead counts the seats still in the room")
+    .toContainText(/3 of 4 turned in/);
+  await expect(page.locator(".class-identity__facts"), "one student with two goes is one student and two attempts")
+    .toContainText("4 students · 4 attempts");
   for (const student of [basketball.card, market.card, twice.card, away]) {
     await expect(page.locator("body")).toContainText(student.displayName);
   }
@@ -842,9 +909,18 @@ test("golden 9: a teacher's classes survive their laptop", async ({ page, browse
     // the two: the address bar is clean, and the work is reachable anyway.
     expect(new URL(after.url()).searchParams.get("key"), "the teacher key is back in the address bar").toBeNull();
     await after.goto(`/educator/class/${code}/students/1`);
-    await after.getByRole("tab", { name: "The explanation" }).click();
-    await expect(after.locator(".student-response")).toContainText("I kept the course money where I set it");
-    await expect(after.locator(".rubric-panel footer strong")).toContainText("10/10");
+    // The writing, on the page rather than behind a tab — the tabs are gone (RULING §3).
+    await expect(after.locator("section.written blockquote").first()).toContainText("I kept the course money where I set it");
+    // And the mark, in the control it was recorded through rather than in a read-only total.
+    //
+    // This was `.rubric-panel footer strong`, which is the *reading queue's* panel: on the
+    // rebuilt student page the teacher's own marks are a live control beside the writing they
+    // are marks about, and it opens on whatever a person already recorded. So this is the
+    // stronger form of the same promise — the total is right *because* the four criterion
+    // marks behind it came back, not merely because a number was stored. `10/10` is composed
+    // from the rubric rather than typed: the maximum is the rubric's to change.
+    await expect(after.locator(".written__own .feedback__actions strong"))
+      .toHaveText(`${REASONING_MAXIMUM}/${REASONING_MAXIMUM}`);
   } finally {
     await reimaged.close();
   }
