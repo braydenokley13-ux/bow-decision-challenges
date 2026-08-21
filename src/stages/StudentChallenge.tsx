@@ -266,27 +266,30 @@ function OpeningStage() {
 
   if (!seat) {
     return (
-      <div className="opening opening--waiting" data-world={state.meta.worldId}>
-        <header className="opening__bar"><AppMark /><span>Plan Under Pressure</span></header>
-        <main>
-          <p className="join-status" aria-live="polite">{problem ?? (seat ? "Opening your run…" : "Getting your class…")}</p>
-          {problem && <Button type="button" variant="secondary" onClick={() => window.location.reload()}>Try again</Button>}
-        </main>
-      </div>
+      <main className="opening opening--waiting" data-world={state.meta.worldId}>
+        <div className="opening__bar"><AppMark /><span>Plan Under Pressure</span></div>
+        <p className="join-status" aria-live="polite">{problem ?? (seat ? "Opening your run…" : "Getting your class…")}</p>
+        {problem && <Button type="button" variant="secondary" onClick={() => window.location.reload()}>Try again</Button>}
+      </main>
     );
   }
 
   return (
-    <div className="opening" data-world={state.meta.worldId}>
-      <header className="opening__bar">
+    /* The whole screen is the landmark, because this screen had none: axe reported that the
+       document has no main landmark and put both of the blocks below outside any region. It is
+       the screen every real student meets between their own home and the world's first stage,
+       so a screen-reader user arriving here had nothing to jump to.
+
+       `<main>` sits on the outer element rather than on the grid, and the product bar stays a
+       plain `<div>`, because `SampleRun` wraps this screen in a banner of its own on
+       `/educator/try` — a `<header>` here would be a second one, which axe calls
+       `landmark-no-duplicate-banner` and which is a worse answer than the problem it fixed. */
+    <main className="opening" data-world={state.meta.worldId}>
+      <div className="opening__bar">
         <AppMark />
         <span>Plan Under Pressure</span>
-      </header>
-      {/* A landmark, because this screen had none: axe reported that the document has no
-          main landmark, and put both of the blocks below outside any region. It is the screen
-          every real student meets between their own home and the world's first stage, so a
-          screen-reader user arriving here had nothing to jump to. */}
-      <main className="opening__grid">
+      </div>
+      <div className="opening__grid">
         {/* Avery, and the one thing Avery is playing for — but only where Avery is what the
             student is about to play. With a picker one screen away, this panel sold one of
             the two worlds before the student had been offered either, and a student who
@@ -379,8 +382,8 @@ function OpeningStage() {
             </>
           )}
         </section>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
 

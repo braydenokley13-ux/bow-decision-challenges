@@ -150,6 +150,25 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
   // The two ceilings, kept apart the way the model keeps them apart.
   const noStock = dealtOrders.reduce((total, order) => total + Math.max(0, order.reachable - order.served), 0);
   const noHands = dealtOrders.reduce((total, order) => total + Math.max(0, order.wanted - order.reachable), 0);
+  /*
+   * How much of the window's own reach is still unspent.
+   *
+   * `order.reachable` is the model's count of the people one pair of hands could physically get
+   * to, so the sum of it is how far the hands have got tonight and `cap - reached` is the
+   * headroom under the serve cap — the same subtraction the chalkboard already does for the
+   * trays, on the model's other ceiling. No new figure is invented: `run.cap` is `serveCap`,
+   * which the standing-order screen prints before the student orders and the close alert names
+   * afterwards, and `reachable` is on every order this component is already reading.
+   *
+   * It is deliberately *not* `sold`. On a night where both ceilings bite — the bridge gate on
+   * three trays is 30 cooked against a crowd of 54, so 15 people find a bare counter and 9 more
+   * are never reached — `sold` is 30 against a cap of 45 and a board counting sales would sit
+   * quiet through the exact night the hands ran out. What is spent against the hands is
+   * everybody they got to, plate or no plate.
+   */
+  const reached = dealtOrders.reduce((total, order) => total + order.reachable, 0);
+  const handsLeft = Math.max(0, run.cap - reached);
+  const hands = run.cap > N.soloServeCap ? "two pairs of hands" : "one pair of hands";
   const stillWaiting = run.orders.slice(dealt).reduce((total, order) => total + order.wanted, 0);
   const minute = last ? last.minute : 0;
 
@@ -291,11 +310,29 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
             {alerts}
           </div>
 
-          {/* 2. THE CHALKBOARD — the one number the evening turns on. */}
-          <div className="pass-board" data-bare={platesLeft === 0}>
-            <p className="pass-board__label">PLATES LEFT</p>
-            <p className="pass-board__count">{platesLeft}</p>
-            <p className="pass-board__of">of the {run.cooked} you cooked</p>
+          {/* 2. THE CHALKBOARDS — one board per ceiling, in the same hand, side by side.
+                 There used to be one. The trays got an instrument that rings when it binds and
+                 the hands got a sentence, so an evening where nine people left because one pair
+                 of hands could not reach them was, in greyscale with the prose covered, the same
+                 screen as an evening where nothing went wrong. Both ceilings now count down to
+                 zero in the same 52px chalk and both ring at zero, so which one bound is a
+                 reading rather than an inference. Neither board is a judgement and neither says
+                 what should have been ordered: they report a ceiling and where the night got to
+                 against it. */}
+          <div className="pass-boards">
+            <div className="pass-board" data-bare={platesLeft === 0}>
+              <p className="pass-board__label">PLATES LEFT</p>
+              <p className="pass-board__count">{platesLeft}</p>
+              <p className="pass-board__of">of the {run.cooked} you cooked</p>
+            </div>
+            {/* The serve cap, read the way the trays are read. `data-bare` is the plates board's
+                own attribute on purpose: the two boards are one instrument twice, so they ring
+                on one rule and nothing about the ring has to be kept in step by hand. */}
+            <div className="pass-board" data-bare={handsLeft === 0}>
+              <p className="pass-board__label">HANDS LEFT</p>
+              <p className="pass-board__count">{handsLeft}</p>
+              <p className="pass-board__of">of the {run.cap} {hands} can serve</p>
+            </div>
           </div>
 
           {/* 3. THE TILL — money the student has actually taken, never money they might take. */}
@@ -303,6 +340,10 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
             <dl>
               <div><dt>Money taken</dt><dd className="money">{formatDollars(till)}</dd></div>
               <div><dt>Plates sold</dt><dd>{sold}</dd></div>
+              {/* `data-loss` used to change the ink and nothing else, so the one figure on the
+                  counter that says people went home empty-handed survived a greyscale print as
+                  an ordinary numeral. It now takes a ring as well — the same ring the boards
+                  take when a ceiling binds — so the state has a carrier that is not a colour. */}
               <div><dt>Left without buying</dt><dd data-loss={turnedAway > 0}>{turnedAway}</dd></div>
             </dl>
           </div>

@@ -1041,9 +1041,22 @@
 /* What happened to the person who just left the window, in the model's own words. */
 .pass-said { min-height: 1.4em; margin: 0; color: #f0e2cf; font: var(--t-body); }
 
-/* 2. THE CHALKBOARD */
+/* 2. THE CHALKBOARDS
+
+   Two ceilings, two instruments, one hand. They share the middle column and split it, so the
+   pair costs the counter no height at all: the row is set by the ticket slot's 168px minimum
+   and a board is shorter than that at every width this screen reflows to. That matters more
+   than it sounds — at 1024x600 the controls row already sits on the fold line, and a stacked
+   second board would have pushed the serve buttons off a Chromebook. */
+.pass-boards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-5);
+}
+
 .pass-board {
-  padding: var(--s-5) var(--s-6);
+  min-width: 0;
+  padding: var(--s-5);
   color: var(--chalk);
   background: var(--board);
   border: 1px solid #3a4036;
@@ -1053,7 +1066,16 @@
 
 .pass-board__label { margin: 0; color: #b9c0ae; font: var(--t-label); letter-spacing: var(--stamp-tracking); }
 .pass-board__count { margin: var(--s-2) 0 0; color: var(--chalk); font: 800 3.25rem/1 var(--font-ui); font-feature-settings: var(--num); }
-.pass-board__of { margin: var(--s-3) 0 0; color: #b9c0ae; font: var(--t-sm); font-feature-settings: var(--num); }
+/* The caption under the numeral. It is tight against the count and set a little tighter than
+   `--t-sm` leads it, because at 1024 the hands board's caption is three lines and the pair has
+   to stay inside the ticket slot's 168px — the moment the boards are the tallest thing in the
+   row, the controls under them move down the screen. */
+.pass-board__of { margin: var(--s-2) 0 0; color: #b9c0ae; font: var(--t-sm); line-height: 1.35; font-feature-settings: var(--num); }
+
+/* A ceiling that has been reached. The ring is the carrier that is not a colour: it survives a
+   greyscale print and a forced-colors palette, where the flare on the numeral does not. The
+   numeral itself is the second carrier, and it is text — both boards read `0` when their own
+   ceiling binds, which is the same fact a screen reader is given. */
 .pass-board[data-bare="true"] .pass-board__count { color: var(--world-flare); }
 .pass-board[data-bare="true"] { border-color: var(--world-flare); }
 
@@ -1077,7 +1099,13 @@
 /* Wide enough for the largest takings any night can reach, so the row does not resize each time
    the till passes a power of ten. */
 .pass-till dd.money { min-width: 5ch; color: var(--till-money); font: var(--m-md); text-align: right; }
-.pass-till dd[data-loss="true"] { color: #ff9d84; }
+
+/* People who went home without a plate. The loss state used to be ink and nothing else, which
+   is a state carried by colour alone: desaturated, `9 left without buying` and `0 left without
+   buying` were the same 14px row. It takes the boards' own ring as well — an `outline` rather
+   than a border so the row cannot change height when the first person is turned away, and
+   `currentColor` so a forced-colors palette draws it in `CanvasText` along with the digits. */
+.pass-till dd[data-loss="true"] { color: #ff9d84; outline: 1.5px solid currentcolor; outline-offset: 3px; }
 
 /* 4. ALERTS. They live in the ticket's column and take it over at close, so shutting the window
       never opens a hole where the ticket used to be. */
@@ -1124,7 +1152,7 @@
   .pass-counter__grid { grid-template-columns: minmax(0, 1fr); }
   .pass-slot { order: 1; }
   .pass-controls { order: 2; }
-  .pass-board { order: 3; }
+  .pass-boards { order: 3; }
   .pass-till { order: 4; }
 }
 
@@ -1167,6 +1195,14 @@
   }
 
   .pass-auto { color: ButtonText; background: ButtonFace; border-color: ButtonText; }
+
+  /* A reached ceiling still has to be a ring here. `--world-flare` is forced to `CanvasText`
+     along with every other edge on the counter, so the amber stops distinguishing the board
+     that rang from the one that did not; width is not a colour and survives. Every carrier on
+     this counter is `border-box`, so the thicker edge eats padding rather than moving anything.
+     The same reasoning puts a wider outline on the till's loss figure. */
+  .pass-board[data-bare="true"] { border-width: 3px; }
+  .pass-till dd[data-loss="true"] { outline-width: 2.5px; }
   .pass-ticket { clip-path: none; }
   .pass-ticket__no, .pass-ticket__when, .pass-ticket__said, .pass-ticket__stamp,
   .pass-board__label, .pass-board__count, .pass-board__of,
