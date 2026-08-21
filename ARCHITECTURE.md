@@ -425,6 +425,24 @@ count an educator reads.
 **Rule of two with forethought**: nothing here blocks Challenge #2, and nothing here was
 generalised before Challenge #2 could prove what it needs.
 
+## Student Recovery V1
+
+Student recovery is portable across classes without using names or other personal-data
+scanning. A fresh browser presents the new class card and the student's BOW key; BOW resolves
+the key through a keyed blind index derived from the store session secret, then performs the
+slow recovery-hash verification before linking the new seat to the existing account. A wrong
+key, a missing account, or a legacy account with no recovery index fails closed with the same
+generic refusal; there is no ambient-session merge and no BOW-key reissue endpoint.
+
+The recovery contract is deliberately explicit. If only the card is lost, the teacher may
+reissue the card and the original student may restore the account with the original bearer
+session plus BOW key. If only the BOW key is lost, the original card continues to identify the
+seat in that class; BOW does not reveal or reissue the key. If both are lost, a teacher-issued
+replacement card creates a clean account: the teacher retains the seat's submitted evidence,
+but the new account cannot read the previous account's active checkpoint or private feedback.
+The original bearer plus BOW proof can reclaim the replacement card and see the original
+checkpoint and feedback again. Recovery keys are never placed in URLs, logs, or PII indexes.
+
 ## What Challenge #2 would reuse as-is
 
 The registry and routing; persistence keying; the whole class service and its three stores;
@@ -440,3 +458,64 @@ micro-skills; its stages and interactions; its art direction block in `worlds.cs
 whichever parts of `analysis.ts` are about *this* challenge's decisions — the choice
 distributions currently name housing, clinics and a deposit, which are Plan Under Pressure's
 questions, not the platform's. That is the first real extraction Challenge #2 should force.
+
+## Live-product reality (August 2026)
+
+The running service has three store drivers: in-memory for isolated tests, a local file store
+for self-hosting, and Redis-compatible REST storage when `KV_REST_API_URL` and
+`KV_REST_API_TOKEN` are present. The server refuses to advertise a classroom-ready deployment
+when it would fall back to ephemeral memory. `server/store-export.ts` provides an explicit
+export of the durable store for migration and inspection. Export is not a backup or disaster
+recovery system: operators still need provider retention, encryption, and restore procedures.
+
+Teacher accounts are durable password/recovery identities. A printed teacher/class key remains
+a capability for legacy handover surfaces; it is not proof of a verified email or person. Those
+key-only surfaces are visibly labelled legacy/handover. Educator global sign-out clears the
+teacher token and the locally remembered class capabilities. Student identity is an opaque
+account plus a class-scoped seat: a first join can issue a recovery key once, while linking an
+existing account requires both a new class-card proof and the BOW recovery key. No shared-device
+browser token is silently treated as proof that the current child is the remembered child.
+
+Progress checkpoints are keyed by class, seat, session, world, stage, and assignment where
+available. The client treats an assignment id as authoritative and does not choose
+`assignments[0]` when multiple assignments exist. Shared run copies retain their ancestry so a
+fork can resume without overwriting the source run. Food Truck's mid-service `serviceProgress`
+is continuity state rather than evidence; the submitted closing answer is delivered separately
+from that transient progress.
+
+The Test Lab guard is available through `src/platform/testLab/guard.ts` and the explicit local
+runner `BOW_TEST_LAB=1 npm run test:lab:check -- --scope=demo:PFDEM`. It requires the flag,
+rejects production origins by default, and requires a narrowly scoped reset argument;
+`BOW_TEST_LAB_ALLOW_PRODUCTION=1` is an intentional override. The runner signs in (or creates)
+a lab teacher through the normal identity routes, deletes only the named demo class through its
+normal owner capability, creates a fresh class, creates two assignments, creates one roster
+card, joins through the student card flow, checkpoints progress, and verifies class,
+assignment, roster, progress, and submission categories through the educator read route. It
+does not add an impersonation endpoint or bypass domain operations. Student-id reset is not
+pretended to exist: no normal API route can locate and erase an arbitrary student account
+without a class-owner context, so that scope is rejected explicitly. The lab has no recovery
+guarantee beyond the store's export and operator backup process.
+
+## Architecture V1 freeze (implemented boundary)
+
+- **Vercel entry:** `api/[[...route]].ts` exports the `{ fetch }` entry and passes bearer
+  authorization, teacher-key, proxy-address and request-body data into the same handler used by
+  the local server. Provider/runtime failures are returned as a bounded `503`, not an unhandled
+  function error.
+- **Redis:** the REST driver sends `Authorization: Bearer <token>`, rejects non-success or
+  malformed provider responses, seals stored values, applies the 120-day class retention window,
+  and exposes retention status through `/api/health`.
+- **Student recovery privacy:** BOW keys are normalized into a keyed, non-reversible lookup
+  index and still checked against the slow stored hash. Missing, wrong, legacy-unindexed, or
+  otherwise invalid keys receive the same generic refusal. BOW does not reveal or reissue a lost
+  key; a card-only reissue releases the seat while preserving the original account's recovery
+  path, and losing both credentials creates a clean account that cannot read the prior account's
+  active checkpoint or private feedback.
+- **Remote Test Lab:** non-loopback or explicitly production-overridden runs require operator
+  supplied `BOW_TEST_LAB_TEACHER_EMAIL` and `BOW_TEST_LAB_TEACHER_PASSWORD`, reject predictable
+  defaults, require `BOW_TEST_LAB=1`, and accept only an explicit demo reset scope.
+- **Health and proof boundary:** `/api/health` is `200` only when the selected store is durable,
+  readable with its canary/key, and not blocked; missing durable configuration, key mismatch, or
+  blocked store state is `503`. The repository proves these paths locally and through the guarded
+  lab code, but this checkout does not claim live durable classroom proof until a deployed
+  endpoint returns healthy and a real remote run verifies persistence across requests/devices.

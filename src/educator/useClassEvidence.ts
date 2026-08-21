@@ -6,7 +6,7 @@ import type { EvidenceRequirementId, RubricLevel } from "../domain/competency/ty
 import { analyseClass, type ClassAnalysis } from "./analysis";
 import { rememberClass } from "./classMemory";
 import { useTeacherKey } from "./teacherKeyUrl";
-import { myTeaching, teacherToken } from "./teacherSession";
+import { myTeaching, teacherAuthHeaders, teacherToken } from "./teacherSession";
 import type { RosterRow } from "./names";
 import type { ProgressRow, TeacherFeedback } from "../platform/identity/types";
 import { DEMO_CLASS_CODE, demoClassBundle } from "../fixtures/demoClass";
@@ -33,6 +33,15 @@ export interface OverrideRequest {
   evidenceRequirementId: EvidenceRequirementId;
   level: RubricLevel | null;
   note: string;
+}
+
+/** Account-owned classes require the teacher bearer; legacy/unclaimed classes still use the key. */
+function educatorHeaders(teacherKey: string, contentType?: string): Record<string, string> {
+  return {
+    ...(contentType ? { "Content-Type": contentType } : {}),
+    "X-BOW-Teacher-Key": teacherKey,
+    ...teacherAuthHeaders(),
+  };
 }
 
 export type ClassEvidenceState =
@@ -193,7 +202,7 @@ export function useClassEvidence(code: string | undefined): {
     if (isDemo || !code || !teacherKey) return null;
     try {
       const response = await fetch(`${CLASS_API_BASE}/classes/${code}/submissions`, {
-        headers: { "X-BOW-Teacher-Key": teacherKey },
+        headers: educatorHeaders(teacherKey),
       });
       const body: unknown = await response.json();
       if (!response.ok) {
@@ -260,7 +269,7 @@ export function useClassEvidence(code: string | undefined): {
         // the two cannot end up disagreeing about the same piece of writing.
         const response = await fetch(`${CLASS_API_BASE}/classes/${code}/submissions/${seatCode}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
+          headers: educatorHeaders(teacherKey, "application/json"),
           body: JSON.stringify({ reasoningPoints: scores ? reasoningTotal(scores) : null, reasoningCriteria: scores, sessionId }),
         });
         if (response.ok) await refresh();
@@ -291,7 +300,7 @@ export function useClassEvidence(code: string | undefined): {
       try {
         const response = await fetch(`${CLASS_API_BASE}/classes/${code}/feedback`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
+          headers: educatorHeaders(teacherKey, "application/json"),
           body: JSON.stringify({ seatCode, sessionId, body, flagged }),
         });
         if (response.ok) await refresh();
@@ -316,7 +325,7 @@ export function useClassEvidence(code: string | undefined): {
       try {
         const response = await fetch(`${CLASS_API_BASE}/classes/${code}/submissions/${seatCode}/overrides`, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
+          headers: educatorHeaders(teacherKey, "application/json"),
           body: JSON.stringify({ ...override, sessionId }),
         });
         if (response.ok) await refresh();
@@ -343,7 +352,7 @@ export function useClassEvidence(code: string | undefined): {
       try {
         const response = await fetch(`${CLASS_API_BASE}/classes/${code}/feedback/${id}`, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
+          headers: educatorHeaders(teacherKey, "application/json"),
           body: JSON.stringify({ body, flagged }),
         });
         if (response.ok) await refresh();
@@ -361,7 +370,7 @@ export function useClassEvidence(code: string | undefined): {
       try {
         const response = await fetch(`${CLASS_API_BASE}/classes/${code}/feedback/${id}`, {
           method: "DELETE",
-          headers: { "X-BOW-Teacher-Key": teacherKey },
+          headers: educatorHeaders(teacherKey),
         });
         if (response.ok) await refresh();
         return response.ok;

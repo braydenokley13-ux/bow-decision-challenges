@@ -3,6 +3,9 @@
   "private": true,
   "version": "2.2.0",
   "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build && npm run build:server",
@@ -20,6 +23,8 @@
     "rekey": "npm run build:rekey && node dist-server/rekey.js",
     "build:rekey": "vite build --ssr server/rekey.ts --outDir dist-server --emptyOutDir false",
     "seed:demo": "npm run build:seed && node dist-server/seed-demo.js",
+    "test:lab:check": "npm run build:test-lab && node dist-server/test-lab-check.js",
+    "build:test-lab": "vite build --ssr scripts/test-lab-check.ts --outDir dist-server --emptyOutDir false",
     "build:seed": "vite build --ssr scripts/seed-demo.ts --outDir dist-server --emptyOutDir false",
     "demo:app": "vite --host 127.0.0.1 --port ${BOW_APP_PORT:-4361} --strictPort",
     "demo:health": "node -e \"const p=process.env.BOW_API_PORT||4360;fetch('http://127.0.0.1:'+p+'/api/health').then(r=>r.json()).then(h=>{console.log(JSON.stringify(h,null,2));process.exitCode=h.ok&&h.classroomReady?0:1;}).catch(e=>{console.error('No class service on port '+p+': '+e.message);process.exitCode=1;})\""

@@ -88,10 +88,10 @@ describe("a teacher can end every session on their account", () => {
     await call("POST", "/auth/teacher/signout", {}, bearer(teacher.token));
 
     expect((await call("GET", "/me/teaching", undefined, bearer(teacher.token))).status).toBe(401);
-    // And the class is untouched: the key still opens it, which is what makes signing out a
-    // session control rather than a way to lose a term of work by pressing the wrong button.
+    // Signing out invalidates the account bearer and also prevents the legacy class key from
+    // opening an owned class. The class and its evidence remain intact for a later sign-in.
     const room = await call("GET", `/classes/${created.code}/submissions`, undefined, { "x-bow-teacher-key": created.teacherKey });
-    expect(room.status).toBe(200);
+    expect(room.status).toBe(403);
   });
 
   it("takes a password rather than a bare token", async () => {

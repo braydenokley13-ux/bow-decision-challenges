@@ -54,6 +54,7 @@ import { clearEveryAttempt } from "../domain/io/persistence";
  */
 
 type Step = "code" | "card" | "name" | "recognized" | "issued";
+type AccountMode = "new" | "existing";
 
 /** One id, because one step is on screen at a time and each step has one field. */
 const PROBLEM_ID = "join-problem";
@@ -77,6 +78,8 @@ export function StudentJoin() {
   const [door, setDoor] = useState<ClassDoor | null>(null);
   const [typedName, setTypedName] = useState("");
   const [joinCode, setJoinCode] = useState("");
+  const [bowRecoveryKey, setBowRecoveryKey] = useState("");
+  const [accountMode, setAccountMode] = useState<AccountMode>("new");
   const [device, setDevice] = useState<DeviceClass>("shared");
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -99,6 +102,7 @@ export function StudentJoin() {
    * Held here rather than read back off the response a second time, because the service will
    * not say it again — this is the one render that gets to. */
   const [issuedCode, setIssuedCode] = useState("");
+  const [issuedRecoveryKey, setIssuedRecoveryKey] = useState("");
   /**
    * The box the message is about, and where the message and the focus both go.
    *
@@ -188,6 +192,10 @@ export function StudentJoin() {
 
   const finish = async (over: { joinCode?: string; displayName?: string }) => {
     if (busy) return;
+    if (over.joinCode && accountMode === "existing" && bowRecoveryKey.trim().length === 0) {
+      setProblem("Type your BOW recovery key as well as the new class-card code.");
+      return;
+    }
     setBusy(true);
     setProblem(null);
     const normalised = normaliseClassCode(classCode);
@@ -196,6 +204,7 @@ export function StudentJoin() {
       device,
       ...(over.joinCode ? { joinCode: over.joinCode } : {}),
       ...(over.displayName !== undefined ? { displayName: over.displayName } : {}),
+      ...(accountMode === "existing" && bowRecoveryKey ? { bowRecoveryKey: bowRecoveryKey.trim() } : {}),
     });
     setBusy(false);
     if (!result.ok) {
@@ -225,6 +234,7 @@ export function StudentJoin() {
       // it from paper the next time their session dies.
       rememberJoinCode(normalised, result.body.joinCode, result.body.studentId);
       setIssuedCode(result.body.joinCode);
+      setIssuedRecoveryKey(result.body.recoveryKey ?? "");
       setStep("issued");
       return;
     }
@@ -306,7 +316,7 @@ export function StudentJoin() {
           {problem && <Problem>{problem}</Problem>}
           <Button
             variant="primary"
-            onClick={() => { setJoinCode(pendingRecognition?.joinCode ?? ""); setRecognized(true); setProblem(null); setStep("card"); }}
+            onClick={() => { setJoinCode(pendingRecognition?.joinCode ?? ""); setAccountMode("existing"); setRecognized(true); setProblem(null); setStep("card"); }}
           >
             Yes — that was me
           </Button>
@@ -350,8 +360,22 @@ export function StudentJoin() {
             />
           </label>
           {problem && <Problem>{problem}</Problem>}
+          {!recognized && (
+            <fieldset className="device-choice">
+              <legend>Have you used BOW before?</legend>
+              <label><input type="radio" name="account-mode" checked={accountMode === "new"} onChange={() => { setAccountMode("new"); setBowRecoveryKey(""); }} /> <span>This is my first BOW class</span></label>
+              <label><input type="radio" name="account-mode" checked={accountMode === "existing"} onChange={() => setAccountMode("existing")} /> <span>I already have a BOW account</span></label>
+            </fieldset>
+          )}
+          {accountMode === "existing" && (
+            <label className="field" htmlFor="bow-recovery-key">
+              <span className="field-label">Your BOW recovery key</span>
+              <input id="bow-recovery-key" value={bowRecoveryKey} onChange={(event) => { setBowRecoveryKey(event.target.value.toUpperCase()); setProblem(null); }} autoComplete="off" />
+              <span className="join-step__note">You need this and the new class-card code. BOW uses both to link this class to your existing account.</span>
+            </label>
+          )}
           <DeviceChoice device={device} onChange={setDevice} />
-          <Button variant="primary" aria-disabled={joinCode.length < 4 || busy} onClick={() => void finish({ joinCode })}>
+          <Button variant="primary" aria-disabled={joinCode.length < 4 || busy || (accountMode === "existing" && bowRecoveryKey.trim().length === 0)} onClick={() => void finish({ joinCode })}>
             {busy ? "Going in…" : "Go in"}
           </Button>
           {recognized ? (
@@ -423,6 +447,7 @@ export function StudentJoin() {
           <p className="join-step__note">
             This browser will offer it back to you next time. Writing it down also gets you in from a different one.
           </p>
+          {issuedRecoveryKey && <div className="class-created__code"><p className="field-label">Your BOW recovery key</p><strong>{issuedRecoveryKey}</strong><p>Keep it somewhere private. BOW will not show it again.</p></div>}
           <Button variant="primary" onClick={() => void navigate("/home", { replace: true })}>I&rsquo;ve written it down</Button>
         </Step>
       )}

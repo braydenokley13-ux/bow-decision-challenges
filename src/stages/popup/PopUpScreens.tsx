@@ -707,7 +707,7 @@ export function FirstSaturdayStage() {
    * the run has not been committed and re-serving it would be watching a night twice.
    */
   const [open, setOpen] = useState(false);
-  const [dealt, setDealt] = useState(0);
+  const dealt = state.serviceProgress?.saturday === 1 ? state.serviceProgress.dealt : 0;
   const ledger = ledgerOf(state);
   const plan = ledger.held;
   const max = affordableTrays(plan.stock, N);
@@ -740,7 +740,7 @@ export function FirstSaturdayStage() {
           note={S.saturdays[0]?.note}
           closeLabel="Close up and see how the night went"
           dealt={dealt}
-          onDealt={setDealt}
+          onDealt={(next) => dispatch({ type: "POPUP_SERVICE_PROGRESS", saturday: 1, dealt: next })}
           onClose={() => dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 1, trays })}
         />
       </PopUpShell>
@@ -896,7 +896,7 @@ export function StandingOrderStage() {
    * off-screen and reported underneath a catastrophe.
    */
   const [serving, setServing] = useState<2 | 3 | null>(null);
-  const [dealt, setDealt] = useState(0);
+  const dealt = serving !== null && state.serviceProgress?.saturday === serving ? state.serviceProgress.dealt : 0;
   const ledger = ledgerOf(state);
   const spot = state.spotId;
   const first = ledger.saturdays.find((day) => day.saturday === 1);
@@ -942,11 +942,10 @@ export function StandingOrderStage() {
           note={S.saturdays[serving - 1]?.note}
           closeLabel={serving === 2 ? "Close up. One more Saturday to go." : "See how both nights went"}
           dealt={dealt}
-          onDealt={setDealt}
+          onDealt={(next) => dispatch({ type: "POPUP_SERVICE_PROGRESS", saturday: serving, dealt: next })}
           onClose={() => {
             if (serving === 2) {
               setServing(3);
-              setDealt(0);
               return;
             }
             dispatch({ type: "POPUP_STOCK_ORDERED", saturday: 2, trays });
@@ -1121,7 +1120,7 @@ export function RepairStage() {
    * happens, and the one most worth watching. It resolved on the press like all the others.
    */
   const [serving, setServing] = useState<{ trays: number; fromLine?: PopUpLineId } | null>(null);
-  const [dealt, setDealt] = useState(0);
+  const dealt = state.serviceProgress?.saturday === 4 ? state.serviceProgress.dealt : 0;
   const ledger = ledgerOf(state);
   const spot = state.spotId;
   const held = ledger.held;
@@ -1208,7 +1207,7 @@ export function RepairStage() {
           note={S.saturdays[3]?.note}
           closeLabel="See how the four Saturdays went"
           dealt={dealt}
-          onDealt={setDealt}
+          onDealt={(next) => dispatch({ type: "POPUP_SERVICE_PROGRESS", saturday: 4, dealt: next })}
           onClose={() => dispatch({
             type: "POPUP_STOCK_ORDERED",
             saturday: 4,

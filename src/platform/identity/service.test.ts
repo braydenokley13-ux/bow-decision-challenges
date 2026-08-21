@@ -482,6 +482,31 @@ describe("the teacher is the recovery mechanism, and the off switch", () => {
     expect((await join(store, created.code, fresh)).status).toBe(200);
   });
 
+  it("reissues a card without changing the student's account when the original BOW key is supplied", async () => {
+    const store = memoryStore();
+    const teacher = await signUp(store, "ms.chen@example.org");
+    const created = await openClass(store, teacher.token);
+    const [card] = await paste(store, created.code, teacher.token, ["Ana R."]);
+
+    const first = await join(store, created.code, card!);
+    expect(first.status).toBe(200);
+    const firstBody = first.body as { studentId: string; token: string; recoveryKey: string };
+
+    const reissued = await api(store)("POST", `/classes/${created.code}/roster/1/code`, {}, bearer(teacher.token));
+    expect(reissued.status).toBe(200);
+    const fresh = (reissued.body as { card: JoinCard }).card;
+
+    const restored = await join(
+      store,
+      created.code,
+      fresh,
+      { bowRecoveryKey: firstBody.recoveryKey },
+      bearer(firstBody.token),
+    );
+    expect(restored.status, JSON.stringify(restored.body)).toBe(200);
+    expect((restored.body as { studentId: string }).studentId).toBe(firstBody.studentId);
+  }, 30_000);
+
   it("signs a whole class out without touching anything they did", async () => {
     const store = memoryStore();
     const teacher = await signUp(store, "ms.chen@example.org");

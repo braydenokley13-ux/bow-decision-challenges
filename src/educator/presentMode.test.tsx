@@ -3,7 +3,7 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Present } from "./ShareOut";
+import { Present } from "./ShareOutPage";
 import type { ShareOutSlide } from "./shareOut";
 
 /**

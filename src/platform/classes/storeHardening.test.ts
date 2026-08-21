@@ -31,7 +31,11 @@ const NOW = 1_790_000_000_000;
 function fakeKv() {
   const strings = new Map<string, string>();
   const bodies: string[] = [];
-  const fetcher = (_url: string, init: { body: string }) => {
+  const headers: Record<string, string>[] = [];
+  const urls: string[] = [];
+  const fetcher = (url: string, init: { body: string; headers?: Record<string, string> }) => {
+    urls.push(url);
+    headers.push({ ...(init.headers ?? {}) });
     bodies.push(init.body);
     let parsed: unknown;
     try {
@@ -60,7 +64,7 @@ function fakeKv() {
     if (command === "EXPIRE") result = 1;
     return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ result }) });
   };
-  return { fetcher: fetcher as unknown as typeof fetch, strings, bodies };
+  return { fetcher: fetcher as unknown as typeof fetch, strings, bodies, headers, urls };
 }
 
 let restore: (() => void) | null = null;
@@ -78,13 +82,17 @@ describe("the managed store, which is the path a district was told to pilot", ()
     globalThis.fetch = kv.fetcher;
     restore = () => { globalThis.fetch = original; };
 
-    const store = redisRestStore("https://kv.test", "token", vault(KEY));
+    const token = randomBytes(24).toString("base64url");
+    const store = redisRestStore("https://kv.test", token, vault(KEY));
     // With the envelope sealed this threw `Class store rejected SET: 400` — the encrypted
     // configuration was a total outage, so the only working one was the unencrypted one.
     await store.putClass(CLASS);
     expect(await store.getClass("H4KVW")).toMatchObject({ code: "H4KVW", label: "Period 3" });
 
     for (const body of kv.bodies) expect(Array.isArray(JSON.parse(body))).toBe(true);
+    expect(kv.headers.length).toBe(kv.bodies.length);
+    for (const header of kv.headers) expect(header.Authorization).toBe(`Bearer ${token}`);
+    for (const requestUrl of kv.urls) expect(requestUrl).not.toContain(token);
   });
 
   it("seals the value even though the command is in the clear", async () => {
@@ -93,11 +101,73 @@ describe("the managed store, which is the path a district was told to pilot", ()
     globalThis.fetch = kv.fetcher;
     restore = () => { globalThis.fetch = original; };
 
-    await redisRestStore("https://kv.test", "token", vault(KEY)).putClass(CLASS);
+    await redisRestStore("https://kv.test", randomBytes(24).toString("base64url"), vault(KEY)).putClass(CLASS);
     const stored = kv.strings.get("class:H4KVW")!;
     expect(stored).not.toContain("Period 3");
     expect(stored).not.toContain("abcdefghijklmnop");
     expect(JSON.parse(stored)).toMatchObject({ v: 1 });
+    const classWrite = kv.bodies
+      .map((body) => JSON.parse(body) as [string, string, string])
+      .find(([verb, key]) => verb === "SET" && key === "class:H4KVW");
+    expect(classWrite).toBeDefined();
+    expect(JSON.parse(classWrite![2])).toMatchObject({ v: 1 });
+  });
+
+  it.each([
+    { label: "an HTTP failure", response: { ok: false, status: 401, json: () => Promise.resolve({ error: "provider detail" }) } },
+    { label: "a JSON error envelope", response: { ok: true, status: 200, json: () => Promise.resolve({ error: "provider detail" }) } },
+  ])("passes authentication and keeps $label opaque", async ({ response }) => {
+    const token = randomBytes(24).toString("base64url");
+    const seen: { url: string; init: { headers?: Record<string, string> } }[] = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = ((requestUrl: string, init: { headers?: Record<string, string> }) => {
+      seen.push({ url: requestUrl, init });
+      return Promise.resolve(response) as unknown as Promise<Response>;
+    }) as unknown as typeof fetch;
+    restore = () => { globalThis.fetch = original; };
+
+    let failure: unknown;
+    try {
+      await redisRestStore("https://kv.test", token, vault(KEY)).getClass("H4KVW");
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure).toBeInstanceOf(Error);
+    expect(String(failure)).toMatch(/Class store rejected GET/);
+    expect(String(failure)).not.toContain(token);
+    expect(seen[0]?.init.headers?.Authorization).toBe(`Bearer ${token}`);
+    expect(seen[0]?.url).not.toContain(token);
+  });
+
+  it("keeps student and teacher indexes, plus erased shareout data, inside the class window", async () => {
+    const kv = fakeKv();
+    const original = globalThis.fetch;
+    globalThis.fetch = kv.fetcher;
+    restore = () => { globalThis.fetch = original; };
+
+    const store = redisRestStore("https://kv.test", randomBytes(24).toString("base64url"), vault(KEY));
+    const record = { ...CLASS, teacherId: "teacher-1", expiresAt: Date.now() + 60_000 };
+    await store.putClass(record);
+    await store.putStudent({ id: "student-1", createdAt: 1 });
+    await store.putRosterEntry({
+      classCode: record.code, seatCode: "1", displayName: "Ana", joinCodeHash: "hash",
+      studentId: "student-1", claimedAt: 1, removedAt: null,
+    } as never);
+    await store.linkSeatToStudent("student-1", { classCode: record.code, seatCode: "1" });
+    await store.putShareOut({
+      classCode: record.code,
+      items: [{ sessionId: "session-1", seatCode: "1", note: "compare", order: 0 }],
+      named: false,
+      updatedAt: 1,
+    });
+    await store.eraseSeat(record.code, "1");
+
+    const commands = kv.bodies.map((body) => JSON.parse(body) as (string | number)[]);
+    expect(commands.some(([verb, key]) => verb === "EXPIRE" && key === "teacher-classes:teacher-1")).toBe(true);
+    expect(commands.some(([verb, key]) => verb === "EXPIRE" && key === "student-seats:student-1")).toBe(true);
+    expect(commands.some(([verb, key]) => verb === "EXPIRE" && key === "student:student-1")).toBe(true);
+    const shareoutWrites = commands.filter(([verb, key]) => verb === "SET" && key === "shareout:H4KVW");
+    expect(shareoutWrites.at(-1)).toContain("EX");
   });
 
   it("never writes a session-signing secret into the store", async () => {
@@ -319,9 +389,11 @@ describe("a flood of forged submissions", () => {
 
     // Everything an attacker needs: the class code, off a whiteboard. Nothing else.
     for (let attempt = 0; attempt < 150; attempt += 1) {
+      const forgedSession = `forged-${String(attempt).padStart(6, "0")}`;
       const junk = await call("POST", `/classes/${created.code}/submissions`, {
-        classCode: created.code, seatCode: "4", sessionId: `forged-${attempt}`,
-        challengeId: built.challengeId, challengeVersion: built.challengeVersion, log: built.log,
+        classCode: created.code, seatCode: "4", sessionId: forgedSession,
+        challengeId: built.challengeId, challengeVersion: built.challengeVersion,
+        log: built.log.map((event) => ({ ...event, sessionId: forgedSession })),
       });
       expect(junk.status).toBe(403);
     }

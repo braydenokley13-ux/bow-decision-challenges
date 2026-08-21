@@ -80,11 +80,11 @@ function homeOf(store: ClassStore, token: string, now = NOW) {
   return api(store, now)("GET", "/me/classes", undefined, bearer(token)).then((result) => result.body as Home);
 }
 
-function logFor(sessionId: string): EvidenceEvent[] {
+function logFor(sessionId: string, worldId: EvidenceEvent["worldId"] = "basketball"): EvidenceEvent[] {
   return [{
     id: "event-1", sequence: 1, timestamp: NOW, type: "SESSION_STARTED", stage: "entry",
     challengeId: PLAN_UNDER_PRESSURE.id, challengeVersion: PLAN_UNDER_PRESSURE.version,
-    sessionId, worldId: "basketball", conceptIds: [], competencyIds: [], evidenceRequirementIds: [],
+    sessionId, worldId, conceptIds: [], competencyIds: [], evidenceRequirementIds: [],
     payload: {}, supportLevel: "standard_access",
   }];
 }
@@ -142,8 +142,8 @@ describe("what a student is told they were set", () => {
     const token = await signIn(store, created.code, cards[0]!);
     await api(store)("POST", `/classes/${created.code}/submissions`, {
       classCode: created.code, seatCode: "1", sessionId: "session-aaaaaaaa", assignmentId: second.id,
-      challengeId: PLAN_UNDER_PRESSURE.id, challengeVersion: PLAN_UNDER_PRESSURE.version, log: logFor("session-aaaaaaaa"),
-    }, bearer(token));
+      challengeId: PLAN_UNDER_PRESSURE.id, challengeVersion: PLAN_UNDER_PRESSURE.version, log: logFor("session-aaaaaaaa", "food-truck"),
+      }, bearer(token));
 
     const home = await homeOf(store, token);
     expect(home.classes[0]?.assignments.map((entry) => entry.id)).toEqual([first.id, second.id]);

@@ -120,7 +120,7 @@ async function whatTheStudentSees(place: Room, at = NOW): Promise<{ id: string; 
 
 /** What the teacher's own evidence room holds, including anything they took back. */
 async function whatTheTeacherHolds(place: Room): Promise<TeacherFeedback[]> {
-  const seen = await api(place.store)("GET", `/classes/${place.code}/submissions`, undefined, { "x-bow-teacher-key": place.teacherKey });
+  const seen = await api(place.store)("GET", `/classes/${place.code}/submissions`, undefined, bearer(place.teacherToken));
   expect(seen.status).toBe(200);
   return (seen.body as { feedback: TeacherFeedback[] }).feedback;
 }
@@ -129,7 +129,7 @@ function write(place: Room, body: string, at: number, extra: Record<string, unkn
   return api(place.store, at)(
     "POST", `/classes/${place.code}/feedback`,
     { seatCode: place.seatCode, sessionId: place.sessionId, body, ...extra },
-    { "x-bow-teacher-key": place.teacherKey },
+    bearer(place.teacherToken),
   );
 }
 
@@ -180,7 +180,7 @@ describe("a teacher who mistyped can fix it or take it back", () => {
     const fixed = await api(place.store, NOW + MINUTE)(
       "PATCH", `/classes/${place.code}/feedback/${id}`,
       { body: "Look again at Week 5." },
-      { "x-bow-teacher-key": place.teacherKey },
+      bearer(place.teacherToken),
     );
     expect(fixed.status).toBe(200);
 
@@ -199,7 +199,7 @@ describe("a teacher who mistyped can fix it or take it back", () => {
     const id = (regretted.body as { id: string }).id;
 
     const taken = await api(place.store, NOW + 2 * MINUTE)(
-      "DELETE", `/classes/${place.code}/feedback/${id}`, undefined, { "x-bow-teacher-key": place.teacherKey },
+      "DELETE", `/classes/${place.code}/feedback/${id}`, undefined, bearer(place.teacherToken),
     );
     expect(taken.status).toBe(200);
 
@@ -256,7 +256,7 @@ describe("a note is delivered whole or refused, never quietly cut", () => {
     const refused = await api(place.store, NOW + MINUTE)(
       "PATCH", `/classes/${place.code}/feedback/${id}`,
       { body: "x".repeat(MAX_FEEDBACK_LENGTH + 1) },
-      { "x-bow-teacher-key": place.teacherKey },
+      bearer(place.teacherToken),
     );
     expect(refused.status).toBe(400);
     expect((await whatTheStudentSees(place, NOW + 2 * MINUTE))[0]?.body).toBe("Short and delivered.");
@@ -299,7 +299,7 @@ describe("notes written before feedback was a sequence are not lost", () => {
     const id = before[0]!.id;
     const fixed = await api(store, NOW + 3 * MINUTE)(
       "PATCH", `/classes/${place.code}/feedback/${id}`, { body: "Written last term, and still true." },
-      { "x-bow-teacher-key": place.teacherKey },
+      bearer(place.teacherToken),
     );
     expect(fixed.status).toBe(200);
     expect((await whatTheStudentSees(place, NOW + 4 * MINUTE)).map((note) => note.body))

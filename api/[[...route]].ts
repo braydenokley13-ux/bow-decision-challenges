@@ -17,7 +17,7 @@ import { storeFromEnvironment } from "../server/store";
  */
 const store = storeFromEnvironment();
 
-export default async function handler(request: Request): Promise<Response> {
+async function fetch(request: Request): Promise<Response> {
   const url = new URL(request.url);
   // The same headers the self-hosted server sends, from the same function rather than from a
   // second copy of the list. This path once had none of them, the fix was to paste the block
@@ -79,3 +79,5 @@ export default async function handler(request: Request): Promise<Response> {
     );
   }
 }
+
+export default { fetch };

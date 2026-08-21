@@ -1,8 +1,8 @@
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createHash, createHmac, randomBytes, randomUUID } from "node:crypto";
 import { readStoreKey, STORE_KEY_HELP, vault, type Vault } from "./vault";
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { CLASS_RETENTION_DAYS, type Assignment, type ClassRecord, type SubmissionRecord } from "../src/platform/classes/types";
+import { type Assignment, type ClassRecord, type SubmissionRecord } from "../src/platform/classes/types";
 import type {
   AttemptCheckpoint,
   ClassJoinMode,
@@ -75,6 +75,9 @@ export interface StudentSeat {
   classCode: string;
   seatCode: string;
 }
+
+/** The student record plus its blind, keyed recovery lookup pointer. */
+export type StoredStudent = StudentAccount & { recoveryIndex?: string };
 
 export type StoreId = "memory" | "file" | "redis" | "unconfigured";
 
@@ -149,6 +152,8 @@ export interface ClassStore {
   sessionSecret(): Promise<string>;
 
   getTeacher(id: string): Promise<StoredTeacher | null>;
+  /** Permanently removes teacher secrets and detaches their class ownership links. */
+  deleteTeacher(id: string): Promise<void>;
   /** Lower-cased at the boundary. Two accounts on one address is the bug this prevents. */
   getTeacherByEmail(email: string): Promise<StoredTeacher | null>;
   putTeacher(record: StoredTeacher): Promise<void>;
@@ -157,7 +162,11 @@ export interface ClassStore {
   linkClassToTeacher(teacherId: string, code: string): Promise<void>;
 
   getStudent(id: string): Promise<StudentAccount | null>;
+  /** Resolves a recovery key's blind index, then still verifies the slow hash in identity.ts. */
+  getStudentByRecoveryIndex(index: string): Promise<StudentAccount | null>;
   putStudent(record: StudentAccount): Promise<void>;
+  /** Removes an account and its recovery index, without touching any class evidence. */
+  deleteStudent(id: string): Promise<void>;
   /** Every seat this account holds, across every class. The student's own home screen. */
   listSeatsForStudent(studentId: string): Promise<StudentSeat[]>;
   linkSeatToStudent(studentId: string, seat: StudentSeat): Promise<void>;
@@ -200,6 +209,14 @@ const VAULT_CANARY = "bow.vault.canary.v1";
 /** A stable, non-reversing key for an email address, so no address is a filename or a redis key. */
 export function emailKey(email: string): string {
   return createHash("sha256").update(email.trim().toLowerCase(), "utf8").digest("hex").slice(0, 32);
+}
+
+/** A keyed, non-reversible index for a normalized high-entropy student recovery key. */
+export function studentRecoveryIndex(secret: string, value: string): string {
+  return createHmac("sha256", secret)
+    .update(`student-recovery:${value.normalize("NFKC").trim().toUpperCase()}`, "utf8")
+    .digest("hex")
+    .slice(0, 32);
 }
 
 const checkpointKey = (record: Pick<AttemptCheckpoint, "seatCode">) => record.seatCode;
@@ -255,6 +272,7 @@ export function memoryStore(): ClassStore {
   const teachers = new Map<string, StoredTeacher>();
   const teacherClasses = new Map<string, Set<string>>();
   const students = new Map<string, StudentAccount>();
+  const studentRecovery = new Map<string, string>();
   const studentSeats = new Map<string, StudentSeat[]>();
   const rosters = new Map<string, Map<string, StoredRosterEntry>>();
   const checkpoints = new Map<string, Map<string, AttemptCheckpoint>>();
@@ -272,11 +290,24 @@ export function memoryStore(): ClassStore {
     return created;
   };
 
+  const removeStudent = (id: string): void => {
+    const record = students.get(id) as StoredStudent | undefined;
+    if (record?.recoveryIndex && studentRecovery.get(record.recoveryIndex) === id) studentRecovery.delete(record.recoveryIndex);
+    students.delete(id);
+    studentSeats.delete(id);
+  };
+
   return {
     id: "memory",
     durable: false,
     getClass: (code) => Promise.resolve(classes.get(code) ?? null),
-    putClass: (record) => { classes.set(record.code, record); return Promise.resolve(); },
+    putClass: (record) => {
+      const previous = classes.get(record.code);
+      classes.set(record.code, record);
+      if (previous?.teacherId && previous.teacherId !== record.teacherId) teacherClasses.get(previous.teacherId)?.delete(record.code);
+      if (record.teacherId) teacherClasses.set(record.teacherId, (teacherClasses.get(record.teacherId) ?? new Set()).add(record.code));
+      return Promise.resolve();
+    },
     listAssignments: (code) => Promise.resolve(assignments.get(code) ?? []),
     putAssignment: (record) => {
       assignments.set(record.classId, mergeAssignments(assignments.get(record.classId) ?? [], record));
@@ -285,6 +316,10 @@ export function memoryStore(): ClassStore {
     listSubmissions: (code) => Promise.resolve(submissions.get(code) ?? []),
     putSubmission: (record) => {
       submissions.set(record.classCode, merge(submissions.get(record.classCode) ?? [], record));
+      const checkpoint = bucket(checkpoints, record.classCode).get(record.seatCode);
+      if (checkpoint && !checkpoint.submittedAt && (!checkpoint.sessionId || checkpoint.sessionId === record.sessionId)) {
+        bucket(checkpoints, record.classCode).set(record.seatCode, { ...checkpoint, submittedAt: record.submittedAt });
+      }
       return Promise.resolve();
     },
     deleteClass: (code) => {
@@ -296,7 +331,11 @@ export function memoryStore(): ClassStore {
       feedback.delete(code);
       shareOuts.delete(code);
       for (const set of teacherClasses.values()) set.delete(code);
-      for (const [id, seats] of studentSeats) studentSeats.set(id, seats.filter((seat) => seat.classCode !== code));
+      for (const [id, seats] of studentSeats) {
+        const remaining = seats.filter((seat) => seat.classCode !== code);
+        if (remaining.length === 0) removeStudent(id);
+        else studentSeats.set(id, remaining);
+      }
       return Promise.resolve();
     },
     expiredClassCodes: (now) =>
@@ -310,13 +349,27 @@ export function memoryStore(): ClassStore {
       const chosen = shareOuts.get(code);
       if (chosen) shareOuts.set(code, { ...chosen, items: chosen.items.filter((item) => item.seatCode !== seatCode) });
       for (const [id, seats] of studentSeats) {
-        studentSeats.set(id, seats.filter((seat) => !(seat.classCode === code && seat.seatCode === seatCode)));
+        const remaining = seats.filter((seat) => !(seat.classCode === code && seat.seatCode === seatCode));
+        if (remaining.length === 0) removeStudent(id);
+        else studentSeats.set(id, remaining);
       }
       return Promise.resolve();
     },
 
     sessionSecret: () => Promise.resolve(secret),
     getTeacher: (id) => Promise.resolve(teachers.get(id) ?? null),
+    deleteTeacher: (id) => {
+      teachers.delete(id);
+      teacherClasses.delete(id);
+      for (const [code, record] of classes) {
+        if (record.teacherId === id) {
+          const detached = { ...record };
+          delete detached.teacherId;
+          classes.set(code, detached);
+        }
+      }
+      return Promise.resolve();
+    },
     getTeacherByEmail: (email) =>
       Promise.resolve([...teachers.values()].find((record) => record.email === email.trim().toLowerCase()) ?? null),
     putTeacher: (record) => { teachers.set(record.id, record); return Promise.resolve(); },
@@ -327,7 +380,27 @@ export function memoryStore(): ClassStore {
     },
 
     getStudent: (id) => Promise.resolve(students.get(id) ?? null),
-    putStudent: (record) => { students.set(record.id, record); return Promise.resolve(); },
+    getStudentByRecoveryIndex: (index) => {
+      const id = studentRecovery.get(index);
+      if (!id) return Promise.resolve(null);
+      const record = students.get(id) as StoredStudent | undefined;
+      if (!record || record.recoveryIndex !== index) {
+        studentRecovery.delete(index);
+        return Promise.resolve(null);
+      }
+      return Promise.resolve(record);
+    },
+    putStudent: (record) => {
+      const previous = students.get(record.id) as StoredStudent | undefined;
+      if (previous?.recoveryIndex && previous.recoveryIndex !== (record as StoredStudent).recoveryIndex && studentRecovery.get(previous.recoveryIndex) === record.id) {
+        studentRecovery.delete(previous.recoveryIndex);
+      }
+      const next = record as StoredStudent;
+      students.set(record.id, record);
+      if (next.recoveryIndex) studentRecovery.set(next.recoveryIndex, record.id);
+      return Promise.resolve();
+    },
+    deleteStudent: (id) => { removeStudent(id); return Promise.resolve(); },
     listSeatsForStudent: (studentId) => Promise.resolve(studentSeats.get(studentId) ?? []),
     linkSeatToStudent: (studentId, seat) => {
       const kept = (studentSeats.get(studentId) ?? []).filter((entry) => entry.classCode !== seat.classCode);
@@ -343,7 +416,19 @@ export function memoryStore(): ClassStore {
     },
 
     listRoster: (code) => Promise.resolve([...bucket(rosters, code).values()].sort(bySeat)),
-    putRosterEntry: (record) => { bucket(rosters, record.classCode).set(record.seatCode, record); return Promise.resolve(); },
+    putRosterEntry: (record) => {
+      const roster = bucket(rosters, record.classCode);
+      const previous = roster.get(record.seatCode);
+      roster.set(record.seatCode, record);
+      if (previous?.studentId && previous.studentId !== record.studentId) {
+        studentSeats.set(previous.studentId, (studentSeats.get(previous.studentId) ?? []).filter((seat) => seat.classCode !== record.classCode || seat.seatCode !== record.seatCode));
+      }
+      if (record.studentId) {
+        const kept = (studentSeats.get(record.studentId) ?? []).filter((seat) => seat.classCode !== record.classCode);
+        studentSeats.set(record.studentId, [...kept, { classCode: record.classCode, seatCode: record.seatCode }]);
+      }
+      return Promise.resolve();
+    },
     listCheckpoints: (code) => Promise.resolve([...bucket(checkpoints, code).values()].sort(bySeat)),
     putCheckpoint: (record) => { bucket(checkpoints, record.classCode).set(checkpointKey(record), record); return Promise.resolve(); },
     listFeedback: (code) => Promise.resolve([...bucket(feedback, code).values()].map(withFeedbackId).sort(byWhenWritten)),
@@ -460,6 +545,7 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
   const accountPath = (kind: string, id: string) => join(root, "_accounts", segment(kind, "account kind"), `${segment(id, "account id")}.json`);
   const indexPath = (kind: string, owner: string, name: string) =>
     join(root, "_index", segment(kind, "index kind"), segment(owner, "index owner"), `${segment(name, "index name")}.json`);
+  const studentRecoveryPath = (index: string) => indexPath("student-recovery", "by-key", index);
 
   async function readIndex<T>(kind: string, owner: string): Promise<T[]> {
     let names: string[];
@@ -499,14 +585,29 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
       }
     },
     getClass: (code) => readJson<StoredClass>(classPath(code)),
-    putClass: (record) => writeAtomic(classPath(record.code), record),
+    putClass: async (record) => {
+      const previous = await readJson<StoredClass>(classPath(record.code));
+      await writeAtomic(classPath(record.code), record);
+      if (previous?.teacherId && previous.teacherId !== record.teacherId) await rm(indexPath("teacher", previous.teacherId, record.code), { force: true });
+      if (record.teacherId) await writeAtomic(indexPath("teacher", record.teacherId, record.code), { code: record.code });
+    },
     listAssignments: async (code) =>
       (await readFolder<Assignment>(code, "assignments")).sort((a, b) => a.createdAt - b.createdAt),
     putAssignment: (record) => writeAtomic(assignmentPath(record.classId, record.id), record),
     listSubmissions: async (code) =>
       (await readFolder<SubmissionRecord>(code, "submissions"))
         .sort((a, b) => Number(a.seatCode) - Number(b.seatCode) || a.submittedAt - b.submittedAt),
-    putSubmission: (record) => writeAtomic(submissionPath(record.classCode, record), record),
+    putSubmission: (record) => {
+      const path = submissionPath(record.classCode, record);
+      return (async () => {
+      await writeAtomic(path, record);
+      const checkpoint = (await readFolder<AttemptCheckpoint>(record.classCode, "checkpoints"))
+        .find((entry) => entry.seatCode === record.seatCode && (!entry.sessionId || entry.sessionId === record.sessionId));
+      if (checkpoint && !checkpoint.submittedAt) {
+        await writeAtomic(join(root, segment(record.classCode, "class code"), "checkpoints", `${segment(checkpointKey(checkpoint), "checkpoint key")}.json`), { ...checkpoint, submittedAt: record.submittedAt });
+      }
+      })();
+    },
     deleteClass: async (code) => {
       // The seat index lives outside the class directory, so it has to be unpicked before the
       // directory goes — otherwise a deleted class survives as a row on somebody's home screen.
@@ -522,7 +623,11 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
       for (const entry of await readFolder<StoredRosterEntry>(code, "roster")) {
         if (!entry.studentId) continue;
         const remaining = await readIndex<StudentSeat>("student", entry.studentId);
-        if (remaining.length === 0) await rm(accountPath("students", entry.studentId), { force: true });
+        if (remaining.length === 0) {
+          const student = await readJson<StoredStudent>(accountPath("students", entry.studentId));
+          if (student?.recoveryIndex) await rm(studentRecoveryPath(student.recoveryIndex), { force: true });
+          await rm(accountPath("students", entry.studentId), { force: true });
+        }
       }
       await rm(join(root, code), { recursive: true, force: true });
     },
@@ -546,6 +651,8 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
       if (entry?.studentId) {
         await rm(indexPath("student", entry.studentId, code), { force: true });
         if ((await readIndex<StudentSeat>("student", entry.studentId)).length === 0) {
+          const student = await readJson<StoredStudent>(accountPath("students", entry.studentId));
+          if (student?.recoveryIndex) await rm(studentRecoveryPath(student.recoveryIndex), { force: true });
           await rm(accountPath("students", entry.studentId), { force: true });
         }
       }
@@ -575,6 +682,16 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
     // and touches no disk this process owns.
     sessionSecret: () => Promise.resolve(keeper.derive("session")),
     getTeacher: (id) => readJson<StoredTeacher>(accountPath("teachers", id)),
+    deleteTeacher: async (id) => {
+      const teacher = await readJson<StoredTeacher>(accountPath("teachers", id));
+      if (teacher) await rm(accountPath("teachers-by-email", emailKey(teacher.email)), { force: true });
+      for (const entry of await readIndex<{ code: string }>("teacher", id)) {
+        const record = await readJson<StoredClass>(classPath(entry.code));
+        if (record?.teacherId === id) await writeAtomic(classPath(entry.code), { ...record, teacherId: undefined });
+      }
+      await rm(join(root, "_index", "teacher", segment(id, "index owner")), { recursive: true, force: true });
+      await rm(accountPath("teachers", id), { force: true });
+    },
     getTeacherByEmail: async (email) => {
       const pointer = await readJson<{ id: string }>(accountPath("teachers-by-email", emailKey(email)));
       return pointer ? readJson<StoredTeacher>(accountPath("teachers", pointer.id)) : null;
@@ -588,7 +705,29 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
     linkClassToTeacher: (teacherId, code) => writeAtomic(indexPath("teacher", teacherId, code), { code }),
 
     getStudent: (id) => readJson<StudentAccount>(accountPath("students", id)),
-    putStudent: (record) => writeAtomic(accountPath("students", record.id), record),
+    getStudentByRecoveryIndex: async (index) => {
+      const pointer = await readJson<{ id: string }>(studentRecoveryPath(index));
+      if (!pointer?.id) return null;
+      const student = await readJson<StoredStudent>(accountPath("students", pointer.id));
+      if (!student || student.recoveryIndex !== index) {
+        await rm(studentRecoveryPath(index), { force: true });
+        return null;
+      }
+      return student;
+    },
+    putStudent: async (record) => {
+      const path = accountPath("students", record.id);
+      const previous = await readJson<StoredStudent>(path);
+      const next = record as StoredStudent;
+      await writeAtomic(path, record);
+      if (previous?.recoveryIndex && previous.recoveryIndex !== next.recoveryIndex) await rm(studentRecoveryPath(previous.recoveryIndex), { force: true });
+      if (next.recoveryIndex) await writeAtomic(studentRecoveryPath(next.recoveryIndex), { id: record.id });
+    },
+    deleteStudent: async (id) => {
+      const student = await readJson<StoredStudent>(accountPath("students", id));
+      if (student?.recoveryIndex) await rm(studentRecoveryPath(student.recoveryIndex), { force: true });
+      await rm(accountPath("students", id), { force: true });
+    },
     listSeatsForStudent: (studentId) => readIndex<StudentSeat>("student", studentId),
     linkSeatToStudent: (studentId, seat) => writeAtomic(indexPath("student", studentId, seat.classCode), seat),
     unlinkSeatFromStudent: async (studentId, seat) => {
@@ -596,8 +735,13 @@ export function fileStore(root: string, keeper: Vault): ClassStore {
     },
 
     listRoster: async (code) => (await readFolder<StoredRosterEntry>(code, "roster")).sort(bySeat),
-    putRosterEntry: (record) =>
-      writeAtomic(join(root, segment(record.classCode, "class code"), "roster", `${segment(record.seatCode, "seat code")}.json`), record),
+    putRosterEntry: async (record) => {
+      const path = join(root, segment(record.classCode, "class code"), "roster", `${segment(record.seatCode, "seat code")}.json`);
+      const previous = await readJson<StoredRosterEntry>(path);
+      await writeAtomic(path, record);
+      if (previous?.studentId && previous.studentId !== record.studentId) await rm(indexPath("student", previous.studentId, record.classCode), { force: true });
+      if (record.studentId) await writeAtomic(indexPath("student", record.studentId, record.classCode), { classCode: record.classCode, seatCode: record.seatCode });
+    },
     listCheckpoints: async (code) => (await readFolder<AttemptCheckpoint>(code, "checkpoints")).sort(bySeat),
     putCheckpoint: (record) =>
       writeAtomic(join(root, segment(record.classCode, "class code"), "checkpoints", `${segment(checkpointKey(record), "checkpoint key")}.json`), record),
@@ -627,23 +771,47 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
   async function command<T>(...args: (string | number)[]): Promise<T | null> {
     const verb = String(args[0]).toUpperCase();
     if ((verb === "SET" || verb === "HSET") && args[1] !== "bow:vault-check") await plantCanary();
-    const response = await fetch(url, {
-      method: "POST",
-      // The command itself, in the clear, because it is a wire protocol and not a record.
-      // This line read `put(args)` for one release, which sealed the whole `["SET", key, …]`
-      // envelope — so a deployment that set a store key sent Upstash ciphertext it could not
-      // parse and every single request 400'd. A vendor review found it by running the driver
-      // against a spec-correct mock: the security-conscious configuration was a total outage,
-      // which meant in practice that nobody would use it. What is sealed is `put(value)`,
-      // below, one argument in.
-      body: JSON.stringify(args),
-    });
-    if (!response.ok) throw new Error(`Class store rejected ${args[0]}: ${response.status}`);
-    const body = (await response.json()) as { result?: T };
-    return body.result ?? null;
+    const rejected = (status?: number): Error => {
+      const suffix = typeof status === "number" ? `: ${status}` : "";
+      return new Error(`Class store rejected ${verb}${suffix}`);
+    };
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        // The command itself, in the clear, because it is a wire protocol and not a record.
+        // This line read `put(args)` for one release, which sealed the whole `["SET", key, …]`
+        // envelope — so a deployment that set a store key sent Upstash ciphertext it could not
+        // parse and every single request 400'd. A vendor review found it by running the driver
+        // against a spec-correct mock: the security-conscious configuration was a total outage,
+        // which meant in practice that nobody would use it. What is sealed is `put(value)`,
+        // below, one argument in.
+        body: JSON.stringify(args),
+      });
+    } catch {
+      // Provider/network errors must not be rethrown: runtimes may include the request URL in
+      // their message, and a managed URL must never become an accidental secret channel.
+      throw rejected();
+    }
+    if (!response.ok) throw rejected(response.status);
+
+    let body: unknown;
+    try {
+      body = await response.json();
+    } catch {
+      throw rejected(response.status);
+    }
+    if (!body || typeof body !== "object" || Array.isArray(body)) throw rejected(response.status);
+    if (Object.prototype.hasOwnProperty.call(body, "error")) throw rejected(response.status);
+    return (body as { result?: T }).result ?? null;
   }
 
-  const ttl = (record: { expiresAt: number }) => Math.max(60, Math.round((record.expiresAt - Date.now()) / 1000));
+  const ttl = (record: { expiresAt: number }) => Math.max(1, Math.ceil((record.expiresAt - Date.now()) / 1000));
 
   /**
    * Every value in and out of the managed store, sealed under the key this deployment was
@@ -677,9 +845,20 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
     return values.flatMap((value) => { const record = get<T>(value); return record ? [record] : []; });
   }
 
-  /** The hash outlives nothing: it expires with the class it belongs to. */
-  const keepWithClass = (key: string) =>
-    command("EXPIRE", key, ttl({ expiresAt: Date.now() + 1000 * 60 * 60 * 24 * CLASS_RETENTION_DAYS }));
+  /** The hash expires with the class it belongs to, not with the time its first child arrived. */
+  const keepWithClass = async (key: string, code: string) => {
+    const record = await (async () => {
+      const raw = await command<string>("GET", `class:${code}`);
+      return raw ? get<StoredClass>(raw) : null;
+    })();
+    if (!record) return;
+    const desired = ttl(record);
+    const current = await command<number>("TTL", key);
+    // A student or teacher can hold more than one class. Redis cannot expire hash fields, so
+    // keep the longest class window on the shared index rather than shortening it when a newer
+    // seat or pointer is added for a class that closes sooner.
+    if (typeof current !== "number" || current < desired) await command("EXPIRE", key, desired);
+  };
 
   return {
     id: "redis",
@@ -712,20 +891,33 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
       return raw ? get<StoredClass>(raw) : null;
     },
     putClass: async (record) => {
+      const previousRaw = await command<string>("GET", `class:${record.code}`);
+      const previous = previousRaw ? get<StoredClass>(previousRaw) : null;
       await command("SET", `class:${record.code}`, put(record), "EX", ttl(record));
+      if (previous?.teacherId && previous.teacherId !== record.teacherId) await command("HDEL", `teacher-classes:${previous.teacherId}`, record.code);
+      if (record.teacherId) {
+        await command("HSET", `teacher-classes:${record.teacherId}`, record.code, put({ code: record.code }));
+        await keepWithClass(`teacher-classes:${record.teacherId}`, record.code);
+      }
     },
     listAssignments: async (code) =>
       (await readHash<Assignment>(`assignments:${code}`)).sort((a, b) => a.createdAt - b.createdAt),
     putAssignment: async (record) => {
       await command("HSET", `assignments:${record.classId}`, record.id, put(record));
-      await keepWithClass(`assignments:${record.classId}`);
+      await keepWithClass(`assignments:${record.classId}`, record.classId);
     },
     listSubmissions: async (code) =>
       (await readHash<SubmissionRecord>(`submissions:${code}`))
         .sort((a, b) => Number(a.seatCode) - Number(b.seatCode) || a.submittedAt - b.submittedAt),
     putSubmission: async (record) => {
       await command("HSET", `submissions:${record.classCode}`, submissionKey(record), put(record));
-      await keepWithClass(`submissions:${record.classCode}`);
+      await keepWithClass(`submissions:${record.classCode}`, record.classCode);
+      const checkpoint = (await readHash<AttemptCheckpoint>(`checkpoints:${record.classCode}`))
+        .find((entry) => entry.seatCode === record.seatCode && (!entry.sessionId || entry.sessionId === record.sessionId));
+      if (checkpoint && !checkpoint.submittedAt) {
+        await command("HSET", `checkpoints:${record.classCode}`, checkpointKey(checkpoint), put({ ...checkpoint, submittedAt: record.submittedAt }));
+        await keepWithClass(`checkpoints:${record.classCode}`, record.classCode);
+      }
     },
     deleteClass: async (code) => {
       for (const entry of await readHash<StoredRosterEntry>(`roster:${code}`)) {
@@ -737,7 +929,10 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
         // and nobody meant to keep, and a retention promise that leaves litter is a retention
         // promise a reviewer stops believing.
         if ((await readHash<StudentSeat>(`student-seats:${entry.studentId}`)).length === 0) {
+          const studentRaw = await command<string>("GET", `student:${entry.studentId}`);
+          const student = studentRaw ? get<StoredStudent>(studentRaw) : null;
           await command("DEL", `student:${entry.studentId}`, `student-seats:${entry.studentId}`);
+          if (student?.recoveryIndex) await command("DEL", `student-recovery:${student.recoveryIndex}`);
         }
       }
       const raw = await command<string>("GET", `class:${code}`);
@@ -766,7 +961,10 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
       if (entry?.studentId) {
         await command("HDEL", `student-seats:${entry.studentId}`, code);
         if ((await readHash<StudentSeat>(`student-seats:${entry.studentId}`)).length === 0) {
+          const studentRaw = await command<string>("GET", `student:${entry.studentId}`);
+          const student = studentRaw ? get<StoredStudent>(studentRaw) : null;
           await command("DEL", `student:${entry.studentId}`, `student-seats:${entry.studentId}`);
+          if (student?.recoveryIndex) await command("DEL", `student-recovery:${student.recoveryIndex}`);
         }
       }
       await command("HDEL", `roster:${code}`, seatCode);
@@ -782,7 +980,13 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
       const chosenRaw = await command<string>("GET", `shareout:${code}`);
       const chosen = chosenRaw ? get<ShareOutSelection>(chosenRaw) : null;
       if (chosen) {
-        await command("SET", `shareout:${code}`, put({ ...chosen, items: chosen.items.filter((item) => item.seatCode !== seatCode) }));
+        const classRaw = await command<string>("GET", `class:${code}`);
+        const classRecord = classRaw ? get<StoredClass>(classRaw) : null;
+        if (classRecord) {
+          await command("SET", `shareout:${code}`, put({ ...chosen, items: chosen.items.filter((item) => item.seatCode !== seatCode) }), "EX", ttl(classRecord));
+        } else {
+          await command("DEL", `shareout:${code}`);
+        }
       }
     },
 
@@ -796,6 +1000,17 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
     getTeacher: async (id) => {
       const raw = await command<string>("GET", `teacher:${id}`);
       return raw ? get<StoredTeacher>(raw) : null;
+    },
+    deleteTeacher: async (id) => {
+      const raw = await command<string>("GET", `teacher:${id}`);
+      const teacher = raw ? get<StoredTeacher>(raw) : null;
+      if (teacher) await command("DEL", `teacher-email:${emailKey(teacher.email)}`);
+      for (const entry of await readHash<{ code: string }>(`teacher-classes:${id}`)) {
+        const classRaw = await command<string>("GET", `class:${entry.code}`);
+        const record = classRaw ? get<StoredClass>(classRaw) : null;
+        if (record?.teacherId === id) await command("SET", `class:${entry.code}`, put({ ...record, teacherId: undefined }), "EX", ttl(record));
+      }
+      await command("DEL", `teacher:${id}`, `teacher-classes:${id}`);
     },
     getTeacherByEmail: async (email) => {
       const pointer = await command<string>("GET", `teacher-email:${emailKey(email)}`);
@@ -819,16 +1034,44 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
       // which classes — and "it is only metadata" is the sentence at the start of every
       // re-identification.
       await command("HSET", `teacher-classes:${teacherId}`, code, put({ code }));
+      await keepWithClass(`teacher-classes:${teacherId}`, code);
     },
 
     getStudent: async (id) => {
       const raw = await command<string>("GET", `student:${id}`);
       return raw ? get<StudentAccount>(raw) : null;
     },
-    putStudent: async (record) => { await command("SET", `student:${record.id}`, put(record)); },
+    getStudentByRecoveryIndex: async (index) => {
+      const raw = await command<string>("GET", `student-recovery:${index}`);
+      const id = raw ? get<string>(raw) : null;
+      if (!id) return null;
+      const studentRaw = await command<string>("GET", `student:${id}`);
+      const student = studentRaw ? get<StoredStudent>(studentRaw) : null;
+      if (!student || student.recoveryIndex !== index) {
+        await command("DEL", `student-recovery:${index}`);
+        return null;
+      }
+      return student;
+    },
+    putStudent: async (record) => {
+      const previousRaw = await command<string>("GET", `student:${record.id}`);
+      const previous = previousRaw ? get<StoredStudent>(previousRaw) : null;
+      const next = record as StoredStudent;
+      await command("SET", `student:${record.id}`, put(record));
+      if (previous?.recoveryIndex && previous.recoveryIndex !== next.recoveryIndex) await command("DEL", `student-recovery:${previous.recoveryIndex}`);
+      if (next.recoveryIndex) await command("SET", `student-recovery:${next.recoveryIndex}`, put(record.id));
+    },
+    deleteStudent: async (id) => {
+      const raw = await command<string>("GET", `student:${id}`);
+      const student = raw ? get<StoredStudent>(raw) : null;
+      await command("DEL", `student:${id}`, `student-seats:${id}`);
+      if (student?.recoveryIndex) await command("DEL", `student-recovery:${student.recoveryIndex}`);
+    },
     listSeatsForStudent: (studentId) => readHash<StudentSeat>(`student-seats:${studentId}`),
     linkSeatToStudent: async (studentId, seat) => {
       await command("HSET", `student-seats:${studentId}`, seat.classCode, put(seat));
+      await keepWithClass(`student-seats:${studentId}`, seat.classCode);
+      await keepWithClass(`student:${studentId}`, seat.classCode);
     },
     unlinkSeatFromStudent: async (studentId, seat) => {
       await command("HDEL", `student-seats:${studentId}`, seat.classCode);
@@ -836,25 +1079,33 @@ export function redisRestStore(url: string, token: string, keeper: Vault): Class
 
     listRoster: async (code) => (await readHash<StoredRosterEntry>(`roster:${code}`)).sort(bySeat),
     putRosterEntry: async (record) => {
+      const previous = (await readHash<StoredRosterEntry>(`roster:${record.classCode}`)).find((entry) => entry.seatCode === record.seatCode);
       await command("HSET", `roster:${record.classCode}`, record.seatCode, put(record));
-      await keepWithClass(`roster:${record.classCode}`);
+      if (previous?.studentId && previous.studentId !== record.studentId) await command("HDEL", `student-seats:${previous.studentId}`, record.classCode);
+      if (record.studentId) await command("HSET", `student-seats:${record.studentId}`, record.classCode, put({ classCode: record.classCode, seatCode: record.seatCode }));
+      await keepWithClass(`roster:${record.classCode}`, record.classCode);
+      if (record.studentId) await keepWithClass(`student-seats:${record.studentId}`, record.classCode);
     },
     listCheckpoints: async (code) => (await readHash<AttemptCheckpoint>(`checkpoints:${code}`)).sort(bySeat),
     putCheckpoint: async (record) => {
       await command("HSET", `checkpoints:${record.classCode}`, checkpointKey(record), put(record));
-      await keepWithClass(`checkpoints:${record.classCode}`);
+      await keepWithClass(`checkpoints:${record.classCode}`, record.classCode);
     },
     listFeedback: async (code) => (await readHash<TeacherFeedback>(`feedback:${code}`)).map(withFeedbackId).sort(byWhenWritten),
     putFeedback: async (record) => {
       await command("HSET", `feedback:${record.classCode}`, feedbackKey(record), put(record));
-      await keepWithClass(`feedback:${record.classCode}`);
+      await keepWithClass(`feedback:${record.classCode}`, record.classCode);
     },
     getShareOut: async (code) => {
       const raw = await command<string>("GET", `shareout:${code}`);
       return raw ? get<ShareOutSelection>(raw) : null;
     },
     putShareOut: async (record) => {
-      await command("SET", `shareout:${record.classCode}`, put(record), "EX", ttl({ expiresAt: Date.now() + 1000 * 60 * 60 * 24 * CLASS_RETENTION_DAYS }));
+      const classRecord = await (async () => {
+        const raw = await command<string>("GET", `class:${record.classCode}`);
+        return raw ? get<StoredClass>(raw) : null;
+      })();
+      if (classRecord) await command("SET", `shareout:${record.classCode}`, put(record), "EX", ttl(classRecord));
     },
   };
 }
@@ -894,12 +1145,15 @@ export function unconfiguredStore(reason: string): ClassStore {
     eraseSeat: refuse,
     sessionSecret: refuse,
     getTeacher: refuse,
+    deleteTeacher: refuse,
     getTeacherByEmail: refuse,
     putTeacher: refuse,
     listClassesForTeacher: refuse,
     linkClassToTeacher: refuse,
     getStudent: refuse,
+    getStudentByRecoveryIndex: refuse,
     putStudent: refuse,
+    deleteStudent: refuse,
     listSeatsForStudent: refuse,
     linkSeatToStudent: refuse,
     unlinkSeatFromStudent: refuse,
