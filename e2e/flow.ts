@@ -309,7 +309,10 @@ export async function enterChallenge(page: Page, options: { classCode: string; s
  * every student journey in the suite on one line, for a reason none of them was checking.
  */
 export async function startIfConfirmAsked(page: Page) {
-  const confirm = page.getByRole("button", { name: /^(Start the eight weeks|Go in)$/ });
+  // Three names, and the third arrived with the fix for `DEFECTS.md` D23: the confirm button is
+  // drawn from the offer the class actually made rather than from the number of worlds compiled
+  // in, so a class pinned to something other than Basketball reads a plain `Start`.
+  const confirm = page.getByRole("button", { name: /^(Start the eight weeks|Start|Go in)$/ });
   const picker = page.getByRole("heading", { name: STUDENT_COPY.choose.title });
   const contract = page.getByRole("button", { name: "Find Avery a place" });
   const ranking = page.getByRole("heading", { name: /Which place costs the least/i });

@@ -83,6 +83,16 @@ export interface StudentClass {
   label: string;
   seatCode: string;
   displayName: string;
+  /**
+   * Whether this student typed the name above themselves at `/join`.
+   *
+   * The confirm card told every rostered child that their name *"came from one of two places…
+   * or you typed it yourself when you joined"* — true of the product in general and false of
+   * the child reading it on a class whose every name the teacher pasted (`DEFECTS.md` D29).
+   * The service already knows which, so it says which. Absent from an older service, which
+   * reads as the old two-branch sentence rather than as a guess.
+   */
+  selfNamed?: boolean;
   /** What this seat was set, minus anything set for other seats. */
   assignments: Assignment[];
   /**

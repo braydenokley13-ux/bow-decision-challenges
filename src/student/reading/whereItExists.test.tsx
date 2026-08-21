@@ -52,7 +52,7 @@ afterEach(cleanup);
 describe("the screens outside a run", () => {
   it("offers reading help on the student's own page", async () => {
     render(<MemoryRouter><StudentHome /></MemoryRouter>);
-    await waitFor(() => expect(screen.getByRole("heading", { name: /you are not in a class yet/i })).toBeVisible());
+    await waitFor(() => expect(screen.getByRole("heading", { name: /you are not on a class list any more/i })).toBeVisible());
     expect(screen.getByRole("button", { name: /reading help/i })).toBeVisible();
   });
 

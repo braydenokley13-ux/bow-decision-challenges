@@ -18,6 +18,7 @@ import { costOfTipClaims, TIP_CLAIM_REASONS, tipClaims, type TipClaim } from "..
 import { resolveMarket, type MarketVerdict } from "../../domain/scenario/worlds/food-truck/resolution";
 import { POP_UP_NUMBERS as N } from "../../domain/scenario/worlds/food-truck/numbers";
 import { POP_UP_LINES, type PopUpLineId, type PopUpSourceId, type PopUpSumId, type SaturdayNumber, type SpotId, type TipClaimId } from "../../domain/scenario/worlds/food-truck/types";
+import { serviceRun } from "../../domain/scenario/worlds/food-truck/service";
 import { checkWriting, NUMBERS_WANTED } from "../../domain/evidence/writingGate";
 import type { ClaimReasonId } from "../../domain/core/ids";
 import type { PopUpSumCopy } from "../../domain/scenario/worlds/food-truck/scenario";
@@ -25,6 +26,26 @@ import { usePopUp } from "./PopUpContext";
 import { PopUpBoard, type LockedLine } from "./PopUpBoard";
 import { LinesHeld, PopUpShell } from "./PopUpShell";
 import { affordableTrays, readNight } from "./popupView";
+
+/**
+ * The awning sign, which has to agree with the room under it.
+ *
+ * `PopUpShell` renders this as the page's `<h1>`, and it was the constant string *"Your window
+ * is open"* on every render — including the three closing screens, where the `<h2>` directly
+ * beneath it reads *"You are closed for the night."* A screen-reader user walking the headings
+ * heard the two in that order (`DEFECTS.md` D25). It is the same class of defect as the figure
+ * standing at the pass under *"Nobody is waiting"*, which was fixed; the heading did not get
+ * the same treatment.
+ *
+ * The evening's length is a pure function of the same five inputs `RunSaturday` builds its own
+ * run from, so the two cannot disagree about when the night is over.
+ */
+export function awningTitle(spotId: SpotId, saturday: SaturdayNumber, trays: number, helper: boolean, dealt: number): string {
+  return dealt >= serviceRun(N, spotId, saturday, trays, helper).orders.length
+    ? "You are closed for the night"
+    : "Your window is open";
+}
+
 
 const S = POP_UP_SCENARIO;
 const COPY = S.screens;
@@ -707,7 +728,7 @@ export function FirstSaturdayStage() {
       <PopUpShell
         stage="popup-first-saturday"
         kicker={COPY.first.kicker}
-        title="Your window is open"
+        title={awningTitle(spotId, 1, trays, false, dealt)}
         ledger={ledger}
         chrome="awning"
       >
@@ -901,7 +922,7 @@ export function StandingOrderStage() {
       <PopUpShell
         stage="popup-standing-order"
         kicker={COPY.standing.kicker}
-        title="Your window is open"
+        title={awningTitle(spotId, serving, trays, state.helper === true, dealt)}
         ledger={ledger}
         focusKey={`serving-${serving}`}
         chrome="awning"

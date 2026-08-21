@@ -91,7 +91,18 @@ describe("the points model stays out of the lead", () => {
     // header block is now the raised verdict surface itself.
     const header = between("function StudentPanel", "record-pair");
     expect(header).toContain("SKILL_STATE_LABELS");
-    expect(header).not.toMatch(/structuredPoints|finalPoints|REASONING_MAXIMUM/);
+    // **BOW's own points** stay out of the verdict — that is the claim, and it is unchanged.
+    // `REASONING_MAXIMUM` came off this list deliberately: it is the denominator of the
+    // *teacher's* hand-marked reading of the child's writing, which is not a grade BOW
+    // produced and is the one datum the verdict was missing. Leaving BOW's half of a
+    // two-part report standing alone as the page's headline ranked the best writer in the
+    // class below the weakest, with the human marks that say otherwise 555px under the fold
+    // (`DEFECTS.md` D18). So the pair is up here, as two statements, and the assertions
+    // below are what stop it becoming one number.
+    expect(header).not.toMatch(/structuredPoints|finalPoints/);
+    expect(header, "the human half has to be named as a person's, never as BOW's").toMatch(/a person read in the writing/);
+    expect(header, "and it has to say the two are never summed").toMatch(/never added to the state beside it/);
+    expect(header, "no arithmetic may join the two halves").not.toMatch(/reasoningPoints\s*[+*]|\+\s*row\.reasoningPoints/);
     // `COMPETENCY_STATE_HEADLINES` used to be the constant named here. It was one of two
     // tables holding the same six states — a Title Case copy for headings and a lowercase
     // copy for the tail of a sentence — and the two had already drifted: *not observed*

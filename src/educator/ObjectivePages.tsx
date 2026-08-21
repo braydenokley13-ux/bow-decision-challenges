@@ -207,7 +207,13 @@ export function ObjectiveList() {
         {/* The whole framework, in its own order, with the one thing a teacher and a district
             both need to know beside each row. An objective BOW cannot see yet is still a link:
             its page says which skill sits behind it and what is missing, which is the question
-            a teacher asks next. */}
+            a teacher asks next.
+
+            The heading is what the rows below hang from. Without it the page went straight
+            from its only `<h1>` to the first row's `<h3>` (axe `heading-order`), so a
+            screen-reader user walking the outline met twenty-three third-level headings under
+            nothing. */}
+        <h2 className="row-list__head">Every {unit} in this framework</h2>
         <div className="row-list">
           {shown.map((standard) => {
             const assessable = isAssessable(refOf(standard));

@@ -810,6 +810,10 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
           label: record.label,
           seatCode: seat.seatCode,
           displayName: mine.displayName,
+          // Which of the two ways this name reached BOW. The run's confirm card says one
+          // sentence or the other rather than both, because both is false for whichever child
+          // is reading it.
+          selfNamed: mine.selfNamed === true,
           assignments: mineToDo,
           // Whether the class holds *nothing at all*, which is a different fact from "nothing
           // for this seat" and has to be drawn differently. It is deliberately not answered by

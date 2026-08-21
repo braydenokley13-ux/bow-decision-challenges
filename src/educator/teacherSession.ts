@@ -67,7 +67,15 @@ export function teacherAuthHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-type Result<T> = { ok: true; body: T } | { ok: false; message: string };
+/**
+ * `offline` is the difference between *the service said no* and *the service said nothing*.
+ *
+ * Collapsing the two is how a teacher on a Chromebook with no wifi gets told their class does
+ * not exist. A refusal is an answer and can be rendered as one; a fetch that never got an HTTP
+ * response is a fact about the network, and no screen may turn it into a claim about a class,
+ * a link or a sign-in (`DEFECTS.md` D21).
+ */
+type Result<T> = { ok: true; body: T } | { ok: false; message: string; offline?: boolean };
 
 async function call<T>(path: string, init: RequestInit = {}): Promise<Result<T>> {
   try {
@@ -83,7 +91,7 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<Result<T>>
       : "That did not work. Try again.";
     return { ok: false, message };
   } catch {
-    return { ok: false, message: "No connection. Check the network and try again." };
+    return { ok: false, message: "No connection. Check the network and try again.", offline: true };
   }
 }
 

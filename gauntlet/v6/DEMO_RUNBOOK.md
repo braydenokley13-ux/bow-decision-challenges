@@ -8,7 +8,10 @@ file store on ports `4360` (class service) and `4361` (app). Every numbered step
 walked in a real browser and photographed into `gauntlet/v6/runbook/step-NN-*.png`; the
 instrument that does it is `gauntlet/v6/runbook/verify-runbook.mjs`, and you can run it yourself
 the night before. Where the runbook was wrong, the runbook was fixed and re-run. It was wrong
-**sixteen times**; every one of them is listed at the end of §J.
+**sixteen times**; every one of them is listed at the end of §J. It was then **re-walked on 20
+August** against the rebuilt teacher instrument, and §D3, §D9, §D11, §D12, §D13, §E1, §F and §G
+were corrected again — see J4's second list. The screens moved after the runbook was frozen, and
+the runbook was the document that was wrong.
 
 Read §A the night before. Read §G, §H and §I before you walk into the room — they are the half
 of this document that protects you.
@@ -290,13 +293,24 @@ Click **PFDEM**.
 
 One screen answers most of what a district came to ask.
 
-- Headline: **"10 of 16 turned in. 2 of 10 still to read."**
-- Under it, derived and not stored: **"63% of the 8 with a usable result so far showed everything
-  1.3 asks for — 5 of 8."**
-- **Where the room is** — *Turned in 10 of 16 · Working right now 2 of 16 · Not started 4 of 16*,
-  with **"Not started: Nessa Ordway, Orrin Vasquene, Perrin Tuck and Quill Marchetti"** written
-  out by name, and the two students who are mid-run listed with the screen they are on — *Linnea
-  Thornbury · The first plan*, *Marlow Quillfeather · The money with a rule on it*.
+- Headline: **"2 of 10 explanations still to read."** — the pile leads, and the turned-in count
+  is the sentence under it. (The clause order is deliberate and was reversed by
+  `teacher/RULING.md` §4; a runbook that reads the old order out loud is reading a screen that
+  is not there.)
+- Under it, derived and not stored: **"10 of 16 turned in. 63% of the 8 with a usable result so
+  far showed everything 1.3 asks for — 5 of 8."**
+- Beside the triage, **Who needs you — all 16, ranked**: every child in the room in bands
+  worst-first, each *Not yet* row naming its own gap in the product's own words **and** what a
+  person read in that child's writing — *"Explains the trade-off made — Part of it · you read the
+  writing 3 of 10"*. Identical gaps are one row: *"Savings is a planned amount — Did not do it ·
+  Same gap, 2 students"*, with the twelve-minute lesson under it.
+- The instrument's foot: *Turned in 10 of 16 · Working right now 2 of 16 · Not started 4 of 16 ·
+  Written back 2 of 8 read*. **There is no section called "Where the room is"** — those counts
+  are the foot now, and the phrase appears nowhere in the page.
+- Below the instrument, **Who is mid-run right now** — *Linnea Thornbury · The first plan · 21
+  min ago*, *Marlow Quillfeather · The money with a rule on it*. Both names are links, and so is
+  every seat that has not started: opening one shows that child, their state and the screen they
+  are on, not a refusal.
 
 Scroll once more for **What should I teach next?** — the misconception this class actually has
 (*"Savings is leftover money"*), quoted in two students' own words, with the seats named and a
@@ -425,20 +439,41 @@ does not say "Saved"; it moves on. Press **← Previous** and the bar now reads
 
 ### 10:15 — D11 · The pair. **This is the most important ninety seconds in the room.**
 
-Open **Aster Ninebark** (seat 1), then **The plan** tab:
+**There are no tabs.** The four tab bars came out — `teacher/RULING.md` §3, *"a tab bar is a
+ranking abdicated"* — and everything this step needs is in the first viewport of each child's
+page. Do not go looking for *The plan* or *The explanation*; there is nothing to click.
 
-> Attendance bonus **Held** · Left uncovered **$0** · Course **$950 short** · Ends holding **$800**
+Open **Aster Ninebark** (seat 1). Read the line under her name, which is the whole outcome:
 
-And on **The explanation** tab: **10 of 10**, full marks on all four criteria, marked by a person.
-Above it, BOW: *"Savings is a planned amount — **Did not do it**"*, and against the objective:
-*"Nothing yet."*
+> Gym District Sublet · waited on the course · kept the Saturdays · made every session ·
+> **$950 short of the course** · **ends holding $800**
 
-Now open **Cormac Vellum** (seat 2), **The plan** tab:
+Then the instrument directly beneath it, which is the point of the whole beat — two statements,
+side by side, neither of them a summary of the other:
 
-> Attendance bonus **Held** · Left uncovered **$0** · Course **Funded** · Ends holding **$950**
+> **What the decisions showed** — ○ Not yet · *BOW read the run. It never reads the writing.*
+> **What a person read in the writing** — **10 of 10** · *Your own mark, not BOW's. It is never
+> added to the state beside it.*
 
-And his writing: **3 of 10**. Every requirement BOW judges: *Showed it*. The only one he misses
-is *Explains the trade-off made — Part of it*, which is the one that **is** the writing.
+Under them the one shortfall, *"Savings is a planned amount — Did not do it"*, and in the third
+column the objective: *"Nothing yet."*
+
+Now open **Cormac Vellum** (seat 2) — he is one press away on the queue bar at the top, because
+he is in the same pile. Same two places, same order:
+
+> Teammate Share · reserved the seat · kept the Saturdays · made every session · **got the
+> course** · **ends holding $950**
+
+> **What the decisions showed** — ◔ Part way
+> **What a person read in the writing** — **3 of 10**
+
+Every requirement BOW judges: *Showed it*. The only one he misses is *Explains the trade-off made
+— Part of it*, which is the one that **is** the writing.
+
+If somebody in the room asks to see the class page again, go back to it: the *Not yet* pile is
+ranked on the pair, so **Cormac is the first row and Aster is inside the cluster below him**,
+each with what you read printed on their own row. That is the same argument at class grain, and
+it is worth thirty seconds if you have them.
 
 Say, and this is the sentence to have ready word for word:
 
@@ -454,18 +489,20 @@ Say, and this is the sentence to have ready word for word:
 
 ### 11:45 — D12 · A teacher overrules BOW, live
 
-Open **Delia Fenwright** (seat 3) → **Evidence trail**. One row carries two readings:
+Open **Delia Fenwright** (seat 3) and scroll to **Every judgement on this attempt** (there is no
+*Evidence trail* tab; the record is a section on the page). One row carries two readings:
 
 > **BOW** Did not do it · **YOU** Did it after a hint
 > *"She set the savings figure herself, but only after I stopped at her desk and asked what that
 > line was for. That is a hint, not the answer…"*
 
-Then do one yourself, so the room sees it happen. Back to **Aster Ninebark** → **Evidence
-trail** → the *Savings is a planned amount* row → **I read this differently** → **Part of it** →
-type a reason (the note is required, and the service refuses an override without one) → **Record
-it**.
+Then do one yourself, so the room sees it happen. Back to **Aster Ninebark** → scroll to **Every
+judgement on this attempt** → the *Savings is a planned amount* row → **I read this differently**
+(a disclosure, already open on the failed row) → **Part of it** → type a reason (the note is
+required, and the service refuses an override without one) → **Record it**.
 
-Reload. Both readings are on the row: BOW's original, and yours, with your words and the date.
+Both readings are on the row without reloading: BOW's original, and yours, with your words and
+the date.
 
 Say: *"BOW's judgement is not deleted and never is. Your reading sits beside it, with your reason
 attached, and it travels — to the class page, to the objective page, and to the line that leaves
@@ -476,13 +513,15 @@ for a gradebook."*
 
 ### 12:45 — D13 · Write back, and watch a student receive it
 
-Open **Elowen Marchbanks** (seat 4) — the student you marked in D10 — and scroll to **What they
-hear from you**. Type two sentences and press **Send it**.
+Open **Elowen Marchbanks** (seat 4) — the student you marked in D10. **What they hear from you**
+is in the first viewport, beside her own writing; it used to be 7,000px down. Type two sentences
+and press **Send it**.
 
-The confirmation is the line *under* the button: **"Sent. They will see it next time they open
-BOW."** The paragraph *above* the box still reads *"Nothing has been written back about this run
-yet"* until the page is reloaded, so read the line under the button and move on rather than
-reloading in front of the room (§PRODUCT_GAPS 8).
+The confirmation is the line under the button: **"Sent. They will see it next time they open
+BOW."** The refusal above the box — *"Nothing has been written back about this run yet"* — is
+gone by the time it appears, because every write now waits for the class to be read back
+(`DEFECTS.md` D13). Reloading is safe and unnecessary; the two lines are never on screen
+together.
 
 Now on the **second machine**, `/join` → `PFDEM` → **seat 4's card**. Her own screen carries
 **"Your teacher wrote back"** and the note underneath, under the heading *FROM YOUR TEACHER ·
@@ -492,9 +531,9 @@ Say: *"That is a person's sentence, written by a person, arriving on a child's s
 this product writes to a student."*
 
 Optional, ten seconds, and worth it if the room has been asking about teacher-authored
-questions: open **Hollis Windrow** (seat 7) → **The explanation**. Under the canonical writing —
+questions: open **Hollis Windrow** (seat 7) and scroll to **What they wrote**. Under the canonical writing —
 which carries its own line, *"Nothing about this writing is machine-scored, and it is never sent
-to a model"* — is a panel headed **Your own question**, with the teacher's end-of-simulation
+to a model"* — is a panel headed **Your own question**, with the teacher’s end-of-simulation
 question, the student's answer to it, and the sentence *"You asked this, not BOW. It is not
 scored, it is not part of the skills reported above…"*
 
@@ -562,7 +601,7 @@ and leave devtools open on the Application tab. During D8:
 
 Two things make it undeniable, and both are worth doing:
 
-- In the **Teacher** profile, before D8, note the time on *Where the room is*. After the resume,
+- In the **Teacher** profile, before D8, note the time on *Who is mid-run right now*. After the resume,
   press **Check again** — Perrin Tuck's row now says a later screen and *just now*. The teacher's
   board moved because of something that happened on the other profile.
 - **After** the run has resumed on the second profile, turn the wifi off and reload. The run is
@@ -605,14 +644,14 @@ aborted in Chromium:
 
 | Address | With the API down |
 | --- | --- |
-| `/educator/class/DEMO` | renders in full — *"18 of the 18 students BOW has seen turned in"* |
+| `/educator/class/DEMO` | renders in full — headline *"5 of 18 explanations still to read."*, with *"18 of the 18 students BOW has seen turned in"* as the sentence under it |
 | `/educator/class/DEMO/reading` | renders — *"18 of 18 turned in · 5 still to read"* |
 | `/educator/class/DEMO/debrief` | renders — *"18 students finished. 69% of the 13 assessed…"* |
 | `/educator/class/DEMO/students/1` | renders — a full evidence trail |
 | `/educator/try` | renders — a real student run, nothing saved, nothing sent |
 | `/educator/objectives` | renders — the honest 1-of-23 |
 | `/privacy` | renders |
-| **`/educator/class/DEMO/roster`** | **error screen.** Do not go there. §PRODUCT_GAPS 1 |
+| `/educator/class/DEMO/roster` | renders the true refusal — *"The sample class has no class list."*, with what to do instead. It used to render *"This class did not open. This browser does not hold the key for that class."*, which was false three ways to a signed-in teacher (`DEFECTS.md` D20). There is nothing to demonstrate here; the sentence is simply no longer a lie if somebody clicks it. |
 
 **What to say when you switch:** *"The class service is not answering, so I am going to show you
 the sample class instead. It is the same screens — the same component, not a mock-up — over
@@ -638,7 +677,9 @@ it, and it is the right thing to hand somebody who asks "can I have a go".
 | Health says `"storeKey":"mismatch"`, 503, everything refuses | The key in this shell does not open the records in this directory. | Put the original key back and restart. **Do not create a class to test it.** If the original key is gone, the class is gone: `export BOW_CLASS_DIR=$(mktemp -d)`, new key, re-seed. |
 | Health says `"classroomReady": false` with `"durable": false` | You are on the memory store — probably `npm run api:dev`. | Stop it. `npm run api` with the key set. Re-seed. |
 | Class page: *"That class has closed."* | The class is past `expiresAt`. 120 days, not configurable. | `npm run seed:demo -- --reset`. Cannot happen to a class seeded this week. |
-| Class page: *"This link does not open that class."* | This browser does not hold the key. | Sign in at `/educator/sign-in` and open it from **My classes** — the key comes down with the account. Or paste the private link from the seed output once. |
+| Class page: *"BOW cannot reach the class service."* | **The network, not your link.** The class is intact and you are still signed in. | Press **Try again** on the page. If it keeps failing, check the service shell is still running and that `BOW_API_PORT` matches. Never re-create a class to "fix" this — the classes are on the service, not in the page. |
+| Class page: *"This link does not open that class."* | This browser holds no key for it **and** no signed-in account owns it. A signed-in teacher no longer sees this: the page fetches the key from the account. | Sign in at `/educator/sign-in` — the key comes down with the account and the class opens from the address you are already on. Or paste the private link from the seed output once. |
+| `/educator/classes` says *"BOW cannot reach the class service."* | Same network failure, on the list. | Press **Try again**. It will never show you the *"Create your first class."* screen because of a failed read, so if you *do* see that screen, the account genuinely holds no classes and you should re-seed. |
 | Seed stops: *"Class PFDEM already exists on this store"* | A previous run left one. | `npm run seed:demo -- --reset`. |
 | Seed stops part-way with an HTTP status | Half a class exists. **Do not carry on.** | `npm run seed:demo -- --reset` and read the printed lines: they stop at the exact call that failed. |
 | The class page is empty but health is fine | The app is proxying to a different class service. | Check `BOW_API_PORT` is exported in the shell that started Vite, restart Vite. |
@@ -842,6 +883,33 @@ changing underneath it while it was being written.
 16. The closing-question panel is headed **Your own question**, and the canonical writing above
     it carries its own line — *"Nothing about this writing is machine-scored, and it is never
     sent to a model"*. D13 quoted only the second half.
+
+**The teacher instrument was rebuilt underneath it, and this is what that cost**
+
+17. **The four tabs came out.** `teacher/RULING.md` §3 removed them — *"a tab bar is a ranking
+    abdicated"* — and §D11, §D12 and §D13 were still navigating by *The plan*, *The explanation*
+    and *Evidence trail*. Measured after the rebuild: `document.querySelectorAll('[role="tab"]')`
+    returns **0** on both of the pair's pages. All three steps were rewritten to the scroll order
+    the pages now have, and the two facts §D11 turns on — course funded or short, and what the
+    student is left holding — were 5,400px down a 6,400px page with nothing above them saying
+    either. That was a product defect as much as a document one and is fixed at both ends: the
+    outcome pair is now on the what-they-did line under the child's name, in the first viewport
+    (`DEFECTS.md` D24).
+18. **§D3's headline was the pre-ruling clause order.** It told the presenter to read out *"10 of
+    16 turned in. 2 of 10 still to read."*; the page leads with the pile — *"2 of 10 explanations
+    still to read."* — and carries the turned-in count in the sentence under it, which is the
+    re-cut `teacher/RULING.md` §4 approved. §D3 also pointed at a section called *Where the room
+    is*, which no longer exists in any form: those counts are the instrument's foot.
+19. **§F's fallback table quoted the sample class's old headline** and told the presenter the
+    roster route is an error screen. It renders an honest refusal now (`DEFECTS.md` D20), and the
+    class page's own *"Add one"* link no longer points at it.
+20. **§G's diagnosis row for *"This link does not open that class."* prescribed a repair that
+    landed on a second wrong screen** — with the service down, *"open it from My classes"* put the
+    presenter on *"Create your first class."* in front of the room. Both screens now separate an
+    unreachable service from a refusal (`DEFECTS.md` D21), and §G has a row for each.
+21. **§D13 told the presenter to expect a contradiction the product no longer has** and to avoid a
+    reload that now works. Measured by polling the whole panel from the moment *Send it* was
+    pressed: **0 samples** carried both lines (`DEFECTS.md` D13).
 
 The screenshots in `gauntlet/v6/runbook/` are from the run after all sixteen. Other work was
 landing in `src/` while they were taken — item 15 is what that looks like — so treat them as what

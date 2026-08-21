@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
-import { EducatorShell } from "./EducatorShell";
+import { ClassUnreachable, EducatorShell } from "./EducatorShell";
 import { SeatNamesContext, seatNames, useSeatLabel } from "./names";
 import { REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 import { REASONING_MAXIMUM } from "../domain/evidence/grade";
@@ -38,11 +38,12 @@ function queueOrder(rows: readonly StudentRow[]): string[] {
 
 export function ReadingQueue() {
   const { code } = useParams();
-  const { state, scoreReasoning } = useClassEvidence(code);
+  const { state, scoreReasoning, reload } = useClassEvidence(code);
 
   if (state.status === "loading") {
     return <EducatorShell><p className="class-state" aria-live="polite">Opening the class…</p></EducatorShell>;
   }
+  if (state.status === "offline") return <ClassUnreachable where="Reading queue" onRetry={reload} />;
   if (state.status === "error") {
     return (
       <EducatorShell>

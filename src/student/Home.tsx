@@ -170,10 +170,22 @@ function Ready({ classes, name, onSignOut }: {
             {/* An `h2` under the nameplate, because the `h1` is the student. Where the service
                 could not name them — an older deployment — this is the page's own heading and
                 takes the focus instead, so no arrival is silent. */}
+            {/* **Not** "you are not in a class yet". A student only reaches this screen with a
+                live session, and a session only exists because they joined a class — so "yet"
+                is the one thing this cannot be. What actually happened is one of three: the
+                teacher took the seat off the list, reissued the card, or closed the class. The
+                door already says the true sentence to the same child one screen later
+                ("You are not on this class list any more. Ask your teacher."), and this screen
+                said the untruthful one while they were looking at it (`DEFECTS.md` D30). */}
             {name
-              ? <h2>You are not in a class yet.</h2>
-              : <h1 tabIndex={-1} ref={title}>You are not in a class yet.</h1>}
-            <p>Ask your teacher for the class code, then come back.</p>
+              ? <h2>You are not on a class list any more.</h2>
+              : <h1 tabIndex={-1} ref={title}>You are not on a class list any more.</h1>}
+            <p>
+              You signed in with a class card, so you were on one. Your teacher may have taken your
+              seat off the list, printed you a new card, or closed the class. Ask your teacher — what
+              you turned in is still theirs to read.
+            </p>
+            <p>With a new card, type it here.</p>
             <Link className="button button--primary" to="/join">Type a class code</Link>
             {!name && <Button variant="secondary" onClick={onSignOut}>Not you? Sign out</Button>}
             {/* The one state with nothing to push down, and the only decoration on this page. */}
@@ -296,6 +308,21 @@ function ClassBlock({ entry, several }: { entry: StudentClass; several: boolean 
  * at all. That is the guard that stops this list turning into a launcher — if every card gets
  * the theatre, the theatre stops meaning anything.
  */
+/**
+ * The way in to one piece of work — **which** piece of work, not just which class.
+ *
+ * Both cards on a two-assignment home used to link to the same route carrying nothing but the
+ * class code, and everything downstream resolved `assignments[0]`: pressing "Start — Run the
+ * Pop-Up" opened Basketball, and anything filed from it was filed under the first
+ * assignment's id (`DEFECTS.md` D22). The screen promised two pieces of work the product
+ * could only deliver one of. An empty id is omitted rather than sent as `assignment=`, because
+ * a blank parameter is a claim about which one and there is nothing to claim.
+ */
+function workRoute(classCode: string, assignmentId: string): string {
+  const query = assignmentId ? `?class=${classCode}&assignment=${encodeURIComponent(assignmentId)}` : `?class=${classCode}`;
+  return `${PLAN_UNDER_PRESSURE.route}${query}`;
+}
+
 function WorkCard({ card, entry, nameActions }: { card: HomeCard; entry: StudentClass; nameActions: boolean }) {
   const accent = card.accentWorldId;
   return (
@@ -336,8 +363,8 @@ function WorkCard({ card, entry, nameActions }: { card: HomeCard; entry: Student
               button is a promise to hand a student a blank board on any device but the one they
               began on. `educator/carryOn.test.ts` reads this line to keep it true. */}
           {card.run
-            ? <Link className="button button--primary" to={`${PLAN_UNDER_PRESSURE.route}?class=${entry.classCode}`}>{nameActions ? `Carry on — ${card.title}` : "Carry on"}</Link>
-            : <Link className="button button--primary" to={`${PLAN_UNDER_PRESSURE.route}?class=${entry.classCode}`}>{nameActions ? `Start — ${card.title}` : "Start"}</Link>}
+            ? <Link className="button button--primary" to={workRoute(entry.classCode, card.assignmentId)}>{nameActions ? `Carry on — ${card.title}` : "Carry on"}</Link>
+            : <Link className="button button--primary" to={workRoute(entry.classCode, card.assignmentId)}>{nameActions ? `Start — ${card.title}` : "Start"}</Link>}
         </p>
       )}
 

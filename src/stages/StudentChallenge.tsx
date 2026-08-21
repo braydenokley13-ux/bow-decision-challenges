@@ -35,7 +35,7 @@ import { DepositDeadline, SeasonWeeks } from "./SeasonWeeks";
 import { Week8Resolution } from "./Week8Resolution";
 import { WorldChoice } from "./WorldChoice";
 import { worldOffer } from "./worldOffer";
-import { DEFAULT_WORLD_ID, PLAYABLE_WORLDS, WORLD_CHOICE_UI_READY } from "../domain/scenario/registry";
+import { DEFAULT_WORLD_ID, PLAYABLE_WORLDS, WORLD_CHOICE_UI_READY, WORLD_REGISTRY } from "../domain/scenario/registry";
 import { PopUpChallenge } from "./popup/PopUpChallenge";
 import type { StageId } from "../domain/evidence/types";
 import { checkWriting, NUMBERS_WANTED } from "../domain/evidence/writingGate";
@@ -93,7 +93,7 @@ function useRevealOnce<T extends HTMLElement = HTMLDivElement>(active: boolean) 
  * roster to be on — nothing to resolve, and nothing this student could type that would make
  * it truer, which is why the old screen's two required boxes were unfillable here.
  */
-const OFFLINE_SEAT: StartingSeat = { classCode: "", seatCode: "", label: "", displayName: null, assignment: null };
+const OFFLINE_SEAT: StartingSeat = { classCode: "", seatCode: "", label: "", displayName: null, selfNamed: undefined, assignment: null };
 
 /** Who is about to play, as the session answered it. Every field comes from the service. */
 interface StartingSeat {
@@ -101,6 +101,8 @@ interface StartingSeat {
   seatCode: string;
   label: string;
   displayName: string | null;
+  /** Which of the two ways this name reached BOW, where the service said. `undefined` where it did not. */
+  selfNamed: boolean | undefined;
   assignment: Assignment | null;
 }
 
@@ -133,10 +135,31 @@ function OpeningStage() {
   const [seat, setSeat] = useState<StartingSeat | null>(() => (transport.requiresClass ? null : OFFLINE_SEAT));
   const [problem, setProblem] = useState<string | null>(null);
   const started = useRef(false);
-  // Whether a picker exists at all. The class decides whether it is offered, and that is not
-  // known until the session has answered — but a build with one world can never show one, and
-  // a build with two should not promise either before the student has chosen.
-  const choosing = WORLD_CHOICE_UI_READY && PLAYABLE_WORLDS.length > 1;
+  /**
+   * What this seat was actually offered, decided by the assignment in front of it.
+   *
+   * `choosing` used to be `WORLD_CHOICE_UI_READY && PLAYABLE_WORLDS.length > 1` — a fact about
+   * the build, not about the class. On a class pinned to one world the screen therefore
+   * offered two ways in and told the student to pick one, named the world the student cannot
+   * have, and then carried the pinned offer anyway: a promise made and withdrawn inside one
+   * click, on the screen that budgets 55 seconds for a child (`DEFECTS.md` D23). It is the
+   * same `worldOffer` the picker itself re-reads one screen later, so the two cannot disagree.
+   */
+  const seatOffer = seat
+    ? worldOffer({
+      allowedWorldIds: seat.assignment?.allowedWorldIds ?? [],
+      assignmentAllowsChoice: seat.assignment?.studentChoosesWorld ?? true,
+      playableWorldIds: PLAYABLE_WORLDS.map((world) => world.id),
+      pickerReady: WORLD_CHOICE_UI_READY,
+      defaultWorldId: DEFAULT_WORLD_ID,
+    })
+    : null;
+  const choosing = seatOffer?.studentChooses ?? false;
+  // The one world this seat opens into when there is nothing to choose. Never assumed to be
+  // Basketball: a market class that was shown Avery's roster card and a $1,200 course would be
+  // the same defect one screen further on.
+  const opensInto = seatOffer?.opensInto ?? DEFAULT_WORLD_ID;
+  const pinnedWorld = WORLD_REGISTRY[opensInto] ?? null;
 
   useEffect(() => {
     if (!transport.requiresClass) return;
@@ -157,6 +180,7 @@ function OpeningStage() {
         return;
       }
       const wanted = (params.get("class") ?? "").toUpperCase();
+      const wantedAssignment = params.get("assignment") ?? "";
       const classes = result.body.classes;
       const picked = wanted
         ? classes.find((entry) => entry.classCode === wanted)
@@ -172,7 +196,17 @@ function OpeningStage() {
         seatCode: picked.seatCode,
         label: picked.label,
         displayName: picked.displayName,
-        assignment: picked.assignments[0] ?? null,
+        selfNamed: picked.selfNamed,
+        // **Which** piece of work, from the card the student pressed. This was
+        // `picked.assignments[0]` unconditionally, so a class with two assignments had exactly
+        // one openable piece of work: both cards on the student's home linked to the same
+        // route carrying nothing but the class code, the second card's "Start — Run the
+        // Pop-Up" opened Basketball, and anything filed from it was filed under the first
+        // assignment's id (`DEFECTS.md` D22). A named assignment this seat is not set falls
+        // back rather than dead-ends — the class is still theirs and the work still opens.
+        assignment: (wantedAssignment
+          ? picked.assignments.find((entry) => entry.id === wantedAssignment)
+          : undefined) ?? picked.assignments[0] ?? null,
       });
     })();
     return () => { cancelled = true; };
@@ -182,14 +216,10 @@ function OpeningStage() {
     if (!seat) return;
     if (started.current) return;
     started.current = true;
-    // What this class was set, carried to the picker so it does not have to ask again.
-    setOffer(worldOffer({
-      allowedWorldIds: seat.assignment?.allowedWorldIds ?? [],
-      assignmentAllowsChoice: seat.assignment?.studentChoosesWorld ?? true,
-      playableWorldIds: PLAYABLE_WORLDS.map((world) => world.id),
-      pickerReady: WORLD_CHOICE_UI_READY,
-      defaultWorldId: DEFAULT_WORLD_ID,
-    }));
+    // What this class was set, carried to the picker so it does not have to ask again — and
+    // the same object the screen above was drawn from, so the offer a student read and the
+    // offer the press carries are one value rather than two computations of it.
+    if (seatOffer) setOffer(seatOffer);
     // The teacher's own closing question, filed against this run before the first screen.
     // It belongs to the assignment rather than to the world, so it is kept outside both
     // reducers — see `student/closingQuestion.ts` — and asking for it later would mean every
@@ -237,20 +267,26 @@ function OpeningStage() {
   if (!seat) {
     return (
       <div className="opening opening--waiting" data-world={state.meta.worldId}>
-        <div className="opening__bar"><AppMark /><span>Plan Under Pressure</span></div>
-        <p className="join-status" aria-live="polite">{problem ?? (seat ? "Opening your run…" : "Getting your class…")}</p>
-        {problem && <Button type="button" variant="secondary" onClick={() => window.location.reload()}>Try again</Button>}
+        <header className="opening__bar"><AppMark /><span>Plan Under Pressure</span></header>
+        <main>
+          <p className="join-status" aria-live="polite">{problem ?? (seat ? "Opening your run…" : "Getting your class…")}</p>
+          {problem && <Button type="button" variant="secondary" onClick={() => window.location.reload()}>Try again</Button>}
+        </main>
       </div>
     );
   }
 
   return (
     <div className="opening" data-world={state.meta.worldId}>
-      <div className="opening__bar">
+      <header className="opening__bar">
         <AppMark />
         <span>Plan Under Pressure</span>
-      </div>
-      <div className="opening__grid">
+      </header>
+      {/* A landmark, because this screen had none: axe reported that the document has no
+          main landmark, and put both of the blocks below outside any region. It is the screen
+          every real student meets between their own home and the world's first stage, so a
+          screen-reader user arriving here had nothing to jump to. */}
+      <main className="opening__grid">
         {/* Avery, and the one thing Avery is playing for — but only where Avery is what the
             student is about to play. With a picker one screen away, this panel sold one of
             the two worlds before the student had been offered either, and a student who
@@ -258,8 +294,12 @@ function OpeningStage() {
             basketball. Where there is a choice to make, the choice is the story. */}
         <aside className="opening__side scene">
           {choosing ? (
-            <p className="opening__span">{PLAYABLE_WORLDS.map((world) => world.title).join(" · ")}</p>
-          ) : (
+            // Only the worlds this seat can actually have. Naming both on a class pinned to one
+            // is naming the world the student cannot open.
+            <p className="opening__span">
+              {(seatOffer?.worldIds ?? []).map((id) => WORLD_REGISTRY[id]?.title ?? id).join(" · ")}
+            </p>
+          ) : opensInto === "basketball" ? (
             <>
               <CourtBackdrop />
               <RosterCard />
@@ -269,6 +309,11 @@ function OpeningStage() {
               </div>
               <p className="opening__span">Eight weeks · ends at the regional showcase</p>
             </>
+          ) : (
+            // A class pinned to the other world. Its own name and its own role, read from the
+            // registry — Avery's roster card and the $1,200 course belong to a run this student
+            // is not about to do.
+            <p className="opening__span">{pinnedWorld?.title ?? ""}</p>
           )}
           <div className="opening__job">
             {/* Whose run this is, before it starts. On a cart Chromebook the previous
@@ -283,7 +328,7 @@ function OpeningStage() {
               </p>
             )}
             <Button type="button" onClick={start}>
-              {choosing ? "Go in" : "Start the eight weeks"}
+              {choosing ? "Go in" : opensInto === "basketball" ? "Start the eight weeks" : "Start"}
             </Button>
             <p id="join-status" className="join-status" aria-live="polite">{transport.promise}</p>
             {seat.displayName && (
@@ -299,7 +344,13 @@ function OpeningStage() {
                 service has no teacher and no roster, and telling a teacher trying the sample
                 run that "the only name here is the one your teacher wrote on their class
                 list" is a claim about a list that does not exist. */}
-            {seat.displayName && <p className="privacy-note">{STUDENT_COPY.join.privacy}</p>}
+            {seat.displayName && (
+              <p className="privacy-note">
+                {seat.selfNamed === undefined
+                  ? STUDENT_COPY.join.privacy
+                  : seat.selfNamed ? STUDENT_COPY.join.privacySelfNamed : STUDENT_COPY.join.privacyFromTeacher}
+              </p>
+            )}
           </div>
         </aside>
         {/* The story. It used to open with an 01/02/03 list of the decisions ahead — a
@@ -312,16 +363,23 @@ function OpeningStage() {
               <h1>{STUDENT_COPY.join.chooseHeadline}</h1>
               <p className="opening__lede">{STUDENT_COPY.join.chooseLede}</p>
             </>
-          ) : (
+          ) : opensInto === "basketball" ? (
             <>
               <p className="eyebrow">{invitation.kicker}</p>
               <h1>{invitation.headline}</h1>
               <p className="opening__lede"><strong>{offer.headline}</strong> {offer.body}</p>
               <p className="opening__role">{invitation.role}</p>
             </>
+          ) : (
+            <>
+              <p className="eyebrow">Before you start</p>
+              <h1>{pinnedWorld?.title ?? ""}</h1>
+              <p className="opening__lede">{pinnedWorld?.subtitle ?? ""}</p>
+              <p className="opening__role">{pinnedWorld?.role ?? ""}</p>
+            </>
           )}
         </section>
-      </div>
+      </main>
     </div>
   );
 }

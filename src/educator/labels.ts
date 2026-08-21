@@ -405,26 +405,34 @@ export function skillStateInSentence(state: CompetencyResultState): string {
  * any, which makes the two impossible to confuse even read out of context.
  *
  * The bands come from `objectiveState.ts` and the words are true across the whole of each
- * one, which is why the middle state is *Half the class or more* rather than the shorter and
+ * one, which is why the middle state ends *or more* rather than reading as the shorter and
  * punchier *About half*: this band runs from 50% to 79%, and "about half" is a false report
  * of 79%. A label a teacher has to correct against the count beside it is a label doing harm.
  *
- * They are subjects rather than sentences — *Most of the class* and not *Most of the class
- * showed it* — because of where they have to fit. The Objective Map's status column is
- * `white-space: nowrap` and this table also supplies the map's filter options; a sentence
- * there squeezed the objective column to one word per line on the one page the product tells
- * a teacher to print and hand to somebody. The verb is not lost: it is in the sentence beside
- * each one, and the count and denominator travel with every use. The side effect is worth
- * having on its own — these five now share no word with Ladder 3 but the adverb *yet*.
+ * The subject these three name is **the assessed students**, and it says so, because the three
+ * of them used to say *the class*. On a class of sixteen where ten turned in and eight have a
+ * usable result, the pill read *Half the class or more · 5 of 8* — and five of sixteen is 31%.
+ * The glossary sentence beneath was already exact ("of the assessed students"), but a glossary
+ * is a disclosure and a pill is a claim, and both denominators were on the same screen for a
+ * district evaluator to do out loud (`DEFECTS.md` D28). The clause this paragraph opens with
+ * applies to the subject as much as to the threshold.
+ *
+ * They are subjects rather than sentences — *Most of the assessed students* and not *Most of
+ * the assessed students showed it* — because of where they have to fit: a status cell beside
+ * an objective, where a sentence squeezes the objective column to one word per line on the one
+ * page the product tells a teacher to print and hand to somebody. The verb is not lost: it is
+ * in the sentence beside each one, and the count and denominator travel with every use. The
+ * side effect is worth having on its own — these five now share no word with Ladder 3 but the
+ * adverb *yet*.
  *
  * The two refusals are refusals, not low states. *Too few assessed* is a fact about a
  * denominator and *Nobody assessed yet* is a fact about a marking pile; neither is a result
  * and neither may be read as one.
  */
 export const CLASS_STATE_LABELS: Record<ObjectiveResultState, string> = {
-  strong: "Most of the class",
-  developing: "Half the class or more",
-  "needs-attention": "Fewer than half",
+  strong: "Most of the assessed students",
+  developing: "Half the assessed students or more",
+  "needs-attention": "Fewer than half the assessed students",
   "too-few-assessed": "Too few assessed",
   "not-assessed": "Nobody assessed yet",
 };

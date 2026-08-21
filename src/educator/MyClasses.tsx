@@ -73,7 +73,7 @@ export function MyClasses() {
   const [working, setWorking] = useState(false);
   // The account first where there is one, this browser otherwise. A list that was only ever
   // this browser's is a wiped laptop away from a term of assessed work.
-  const { classes: known, syncing, reload: reloadKnown } = useRememberedClasses();
+  const { classes: known, syncing, unreachable, reload: reloadKnown } = useRememberedClasses();
   // Only objectives a story can actually produce evidence for. An objective BOW has a
   // mapping for and no story would produce a class code, thirty submissions and no result — which is
   // the one thing §5.6 says the product may never let a teacher believe.
@@ -437,6 +437,30 @@ export function MyClasses() {
     return <EducatorShell><p className="class-state" aria-live="polite">Getting your classes…</p></EducatorShell>;
   }
 
+  // A read that never got an HTTP answer is the network, not an empty account. Rendering it
+  // as the first-run state told a teacher who had lost wifi that her term of assessed work did
+  // not exist, and handed her a form to create a new class over the top of it. The signed-in
+  // bar stays, nothing is offered that would overwrite anything, and the only control is the
+  // one that asks again (`DEFECTS.md` D21).
+  if (known.length === 0 && unreachable) {
+    return (
+      <EducatorShell>
+        <header className="page-header">
+          <p className="eyebrow">My classes</p>
+          <h1>BOW cannot reach the class service.</h1>
+          <p>
+            Your classes are on the service, not in this page, so nothing here can list them until it
+            answers. Nothing has been lost and nothing has changed — this is the network, and it is not
+            a statement about your classes.
+          </p>
+          <p aria-live="polite">
+            <Button onClick={reloadKnown}>Try again</Button>
+          </p>
+        </header>
+      </EducatorShell>
+    );
+  }
+
   if (known.length === 0) {
     return (
       <EducatorShell>
@@ -473,6 +497,17 @@ export function MyClasses() {
           {!teacherToken() && <Link to="/educator/sign-in">Make an account</Link>}
           {!teacherToken() && " and they follow you to any computer — a wiped laptop takes them otherwise."}
         </p>
+        {/* This list is what this browser already knows. When the account read got no answer at
+            all it may not be all of them, and the page says so rather than presenting a partial
+            list as the whole one — the same distinction the class pages draw between a refusal
+            and the network (`DEFECTS.md` D21). */}
+        {unreachable && (
+          <p className="class-state" role="status">
+            BOW could not reach the class service, so this is what this browser already knows and may
+            not be all of your classes. Nothing has been lost.{" "}
+            <Button variant="quiet" onClick={reloadKnown}>Try again</Button>
+          </p>
+        )}
       </header>
 
       <section className="dashboard-section">

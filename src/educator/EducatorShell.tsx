@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PropsWithChildren } from "react";
 import { NavLink, useLocation } from "react-router-dom";
+import { Button } from "../components/primitives/Button";
 import { AppMark } from "../components/primitives/AppMark";
 import { forgetTeacher, signOutEverywhere, teacherToken } from "./teacherSession";
 import { DEMO_CLASS_CODE } from "../fixtures/demoClass";
@@ -163,6 +164,37 @@ export function EducatorShell({ children, measure = "evidence", scale = "default
  * safe to drop into a section that sometimes has no results in it. The entries come from
  * `labels.ts`, never from the caller, so a page cannot explain a word it made up.
  */
+/**
+ * The service said nothing at all, said as the network rather than as a claim about a class.
+ *
+ * Every teacher surface that reads a class used to render an unreachable service through the
+ * same branch as a refusal: *"This class did not open. This link does not open that class."*
+ * — three false statements to a teacher whose wifi dropped, on a page whose class is intact
+ * on disk. `Home.tsx` has drawn this distinction for the student since the Chromebook-cart
+ * finding; the teacher surfaces never had it (`DEFECTS.md` D21).
+ *
+ * The bar above this stays exactly as it is — signing in is a fact about this browser, and a
+ * dead service does not sign anybody out — and the only control offered is the one that asks
+ * again. Nothing here offers to create anything.
+ */
+export function ClassUnreachable({ where, onRetry }: { where: string; onRetry?: () => void }) {
+  return (
+    <EducatorShell>
+      <header className="page-header">
+        <p className="eyebrow">{where}</p>
+        <h1>BOW cannot reach the class service.</h1>
+        <p>
+          This class is on the service, not in this page, so nothing here can open it until the service
+          answers. Your link is right and you are still signed in — nothing has been lost and nothing has
+          changed. This is the network.
+        </p>
+        {onRetry && <p aria-live="polite"><Button onClick={onRetry}>Try again</Button></p>}
+        {!onRetry && <p>Reload the page once the network is back.</p>}
+      </header>
+    </EducatorShell>
+  );
+}
+
 export function StateKey({ title, entries }: { title: string; entries: readonly KeyEntry[] }) {
   if (entries.length === 0) return null;
   return (

@@ -24,11 +24,20 @@ export function useRememberedClasses(): {
   classes: readonly RememberedClass[];
   /** Whether the account is still being asked. False immediately when there is no account. */
   syncing: boolean;
+  /**
+   * The account was asked and the service never answered.
+   *
+   * Not the same fact as "you have no classes", and the screen above this must not render it
+   * as one: a teacher whose wifi dropped was shown *"Create your first class."* with the
+   * creation form open over the top of a term of assessed work (`DEFECTS.md` D21).
+   */
+  unreachable: boolean;
   reload: () => void;
 } {
   const signedIn = Boolean(teacherToken());
   const [classes, setClasses] = useState<readonly RememberedClass[]>(() => rememberedClasses());
   const [syncing, setSyncing] = useState(signedIn);
+  const [unreachable, setUnreachable] = useState(false);
   const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
@@ -43,6 +52,7 @@ export function useRememberedClasses(): {
         await claimRememberedClasses(owned.body.classes.map((entry) => entry.code));
       }
       if (cancelled) return;
+      setUnreachable(!owned.ok && owned.offline === true);
       setClasses(rememberedClasses());
       setSyncing(false);
     })();
@@ -52,6 +62,7 @@ export function useRememberedClasses(): {
   return {
     classes,
     syncing,
+    unreachable,
     reload: () => { setClasses(rememberedClasses()); setNonce((value) => value + 1); },
   };
 }

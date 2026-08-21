@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
-import { EducatorShell, StateKey, WordKey } from "./EducatorShell";
+import { ClassUnreachable, EducatorShell, StateKey, WordKey } from "./EducatorShell";
 import { useClassEvidence, type ClassEvidenceState, type OverrideRequest } from "./useClassEvidence";
 import { JudgementRecord, TrailRecord } from "./EvidenceTrailPanel";
 import type { AttributedSubmission } from "../platform/classes/types";
-import { attemptsFor, classRoll, worldSections, type ChoiceDistribution, type ClassAnalysis, type ClassRoll, type StudentRow } from "./analysis";
+import { attemptsFor, classRoll, worldSections, type ChoiceDistribution, type ClassAnalysis, type ClassRoll, type ClassSeat, type StudentRow } from "./analysis";
 import { SeatNamesContext, endSentence, seatLabels, seatNames, useSeatLabel, useSeatNames, type RosterRow } from "./names";
 import { gradebookLineFor, gradebookRows, gradebookTsv } from "./gradebook";
 import { MAX_FEEDBACK_LENGTH, type TeacherFeedback } from "../platform/identity/types";
@@ -33,6 +33,7 @@ import { queuePlaceFor, triageFor, writtenBackCount, type QueuePlace, type Triag
 import type { CompetencyBreakdownRow } from "./objectiveResults";
 import { standardByRef } from "../domain/standards";
 import { studentSpineFor } from "./studentSpine";
+import { DEMO_CLASS_CODE } from "../fixtures/demoClass";
 import { ObjectiveStanding } from "./ObjectiveStanding";
 import type { StandardRef } from "../domain/standards/types";
 import { TeachNext } from "./TeachNext";
@@ -58,13 +59,19 @@ import { disclosureEscape } from "../components/primitives/disclosureEscape";
 
 type ReadyClass = Extract<ClassEvidenceState, { status: "ready" }>;
 
-function ClassFrame({ state, children, title }: {
+function ClassFrame({ state, children, title, onRetry }: {
   state: ClassEvidenceState;
   title?: string;
+  onRetry?: () => void;
   children: (ready: ReadyClass) => React.ReactNode;
 }) {
   if (state.status === "loading") {
     return <EducatorShell><p className="class-state" aria-live="polite">Opening the class…</p></EducatorShell>;
+  }
+  // The network, said as the network. A dead service is not a wrong link and not a signed-out
+  // teacher, and this page must never say either of those about a class that is intact.
+  if (state.status === "offline") {
+    return <ClassUnreachable where="Class evidence" {...(onRetry ? { onRetry } : {})} />;
   }
   if (state.status === "error") {
     return (
@@ -165,14 +172,48 @@ function NothingYet({ code, label, teacherKey, hasRoster, roll, roster, progress
               for an email address or a last name.
             </p>
           )}
-          <p>
-            {hasRoster ? "Their cards are on the " : "Or hand out named cards instead — "}
-            <Link to={`/educator/class/${code}/roster`}>{hasRoster ? "class list" : "make the class list"}</Link>.
-          </p>
+          {/* Not offered on the sample, which structurally cannot have a class list — see
+              `NoRosterRefusal`. A link a class cannot follow is not a repair. */}
+          {code !== DEMO_CLASS_CODE && (
+            <p>
+              {hasRoster ? "Their cards are on the " : "Or hand out named cards instead — "}
+              <Link to={`/educator/class/${code}/roster`}>{hasRoster ? "class list" : "make the class list"}</Link>.
+            </p>
+          )}
           <Button variant="secondary" onClick={onCheckAgain}>Check again</Button>
         </div>
       </section>
     </>
+  );
+}
+
+/**
+ * The no-roster refusal, and a repair the class it is on can actually perform.
+ *
+ * The sentence is the one `RULING.md` §2 R2 singles out — the proof the page will not invent
+ * a room it cannot see. Its repair link was `/educator/class/<code>/roster` on every class,
+ * including the sample, where that route can never work: `DEMO` is four characters precisely
+ * so no real class code can equal it, and its runs were never posted to anything. So the one
+ * control the refusal offered, in the first viewport, was a dead end (`DEFECTS.md` D20).
+ *
+ * A refusal that offers a repair it cannot perform is a second false statement bolted to a
+ * true one. On the sample the repair is the real one: make a class that can have a list.
+ */
+function NoRosterRefusal({ code, className }: { code: string; className: string }) {
+  if (code === DEMO_CLASS_CODE) {
+    return (
+      <p className={className}>
+        This class has no student list, so BOW cannot say who has not started — only who has.
+        The sample class cannot have one.{" "}
+        <Link to="/educator/classes">Make a class of your own</Link> and every seat gets a name.
+      </p>
+    );
+  }
+  return (
+    <p className={className}>
+      This class has no student list, so BOW cannot say who has not started — only who has.
+      {" "}<Link to={`/educator/class/${code}/roster`}>Add one</Link> and every seat gets a name.
+    </p>
   );
 }
 
@@ -564,12 +605,7 @@ function LiveState({ roll, roster, progress, code, loadedAt, onCheckAgain, compa
           computer they used, and pressing Turn in again from that computer sends it.
         </p>
       )}
-      {!compact && !roll.hasRoster && (
-        <p className="class-state">
-          This class has no student list, so BOW cannot say who has not started — only who has.
-          {" "}<Link to={`/educator/class/${code}/roster`}>Add one</Link> and every seat gets a name.
-        </p>
-      )}
+      {!compact && !roll.hasRoster && <NoRosterRefusal code={code} className="class-state" />}
       {/* Said out loud rather than left as a difference between two numbers. Work from a seat
           the teacher removed is kept and is not counted anywhere on this page, and a teacher
           who is not told that has to work it out from an arithmetic that no longer adds up. */}
@@ -817,7 +853,7 @@ export function RealClassOverview() {
   const { state, teacherKey, reload } = useClassEvidence(code);
 
   return (
-    <ClassFrame state={state}>
+    <ClassFrame state={state} onRetry={reload}>
       {(ready) => {
         const { analysis, record, assignments, submissions } = ready;
         const names = seatNames(ready.roster);
@@ -909,12 +945,7 @@ export function RealClassOverview() {
                       An em dash with a reason beats a fabricated zero: this is the sentence
                       that proves the page will not invent a room it cannot see. */}
                   {lead.note && <p className="instrument__refusal">{lead.note}</p>}
-                  {!roll.hasRoster && (
-                    <p className="instrument__refusal">
-                      This class has no student list, so BOW cannot say who has not started — only who has.
-                      {" "}<Link to={`/educator/class/${record.code}/roster`}>Add one</Link> and every seat gets a name.
-                    </p>
-                  )}
+                  {!roll.hasRoster && <NoRosterRefusal code={record.code} className="instrument__refusal" />}
                 </div>
                 <Triage groups={groups} code={record.code} size={size} />
               </div>
@@ -1030,10 +1061,18 @@ export function RealClassOverview() {
             {spine.narratable && (
             <div className="record-pair">
             {worldSections(roll.rows).map((world) => (
-              <section className="surface-record" key={world.worldId} aria-labelledby={`decided-${world.worldId}`}>
+              // Both regions are headed "What they decided", and on a mixed class that gave
+              // two landmarks one accessible name — visually distinct, programmatically
+              // identical (axe `landmark-unique`). The line that disambiguates them on screen
+              // is the world's title beside the heading, so it is in the name too.
+              <section
+                className="surface-record"
+                key={world.worldId}
+                aria-labelledby={`decided-${world.worldId} decided-${world.worldId}-which`}
+              >
                 <div className="record__head">
                   <h2 id={`decided-${world.worldId}`}>What they decided</h2>
-                  <p>{world.title} · {world.seats} {world.seats === 1 ? "student" : "students"}</p>
+                  <p id={`decided-${world.worldId}-which`}>{world.title} · {world.seats} {world.seats === 1 ? "student" : "students"}</p>
                 </div>
                 <div className="record-columns">
                   {world.distributions.map((distribution) => (
@@ -1164,7 +1203,11 @@ function Triage({ groups, code, size }: { groups: readonly TriageGroup[]; code: 
 /** What this band is, in one clause, so the words above it never stand alone. */
 function bandHint(group: TriageGroup): string {
   if (group.band === "not-in") return "Nothing has arrived from these seats.";
-  if (group.band === "short") return "Open these first — every row names the gap.";
+  if (group.band === "short") {
+    return group.seats.some((seat) => seat.reading !== null)
+      ? "Open these first — every row names the gap and what you read in the writing, weakest reading first."
+      : "Open these first — every row names the gap.";
+  }
   if (group.band === "incomplete") {
     return group.seats.some((seat) => seat.gapShowing)
       ? "Their writing is unread. A seat marked read first already shows a gap, so it is worth reading before the rest."
@@ -1184,6 +1227,10 @@ function TriageRow({ seat, code, label }: { seat: TriageSeat; code: string; labe
       <span>
         {seat.gap ? `${seat.gap.label} — ${seat.gap.verdict}` : "Still short of something the work had to show"}
         {seat.gap && seat.gap.more > 0 ? ` · ${seat.gap.more} more` : ""}
+        {/* The other half of the pair, on the row, in the same breath as BOW's half. A row
+            that printed only the machine's word put the best writer in the class at the top
+            of the triage and the weakest three rows below her. */}
+        {seat.reading && <> · <span className="mark-reading">you read the writing {seat.reading.points} of {seat.reading.of}</span></>}
         {seat.writtenBack && <> · <span className="mark-written">written back</span></>}
       </span>
       <span className="triage__arrow" aria-hidden="true">→</span>
@@ -1223,11 +1270,13 @@ function Cluster({ cluster, code, label }: { cluster: TriageCluster; code: strin
 /** One seat, as a chip through to their own evidence, with whatever rides on it. */
 function SeatChip({ seat, code, label }: { seat: TriageSeat; code: string; label: (seat: string) => string }) {
   if (seat.state === null) {
+    // A link, now that the destination is a person: the seat's own page renders their name,
+    // their state and the screen they are on rather than "Nothing from this seat."
     return (
-      <span className="triage-seat" data-seat-waiting={seat.seatCode}>
+      <Link className="triage-seat" data-seat-waiting={seat.seatCode} to={`/educator/class/${code}/students/${seat.seatCode}`}>
         {label(seat.seatCode)}
         <small>{seat.roll === "not-started" ? "not started" : "still working"}</small>
-      </span>
+      </Link>
     );
   }
   return (
@@ -1237,6 +1286,7 @@ function SeatChip({ seat, code, label }: { seat: TriageSeat; code: string; label
         <small><span className="mark-glyph" aria-hidden="true">{SKILL_STATE_MARKS["demonstrated-with-support"]}</span>{"\u00a0"}after a hint</small>
       )}
       {seat.gapShowing && seat.awaitingReading && <small className="mark-first">read first</small>}
+      {seat.reading && <small className="mark-reading">you read {seat.reading.points} of {seat.reading.of}</small>}
       {seat.writtenBack && <small className="mark-written">written back</small>}
     </Link>
   );
@@ -1264,10 +1314,10 @@ function competencyStatement(competencyId: string, submissions: readonly Attribu
 export function RealStudentEvidence() {
   const { code, seatCode } = useParams();
   const [params] = useSearchParams();
-  const { state, scoreReasoning, recordOverride, sendFeedback, reviseFeedback, withdrawFeedback } = useClassEvidence(code);
+  const { state, reload, scoreReasoning, recordOverride, sendFeedback, reviseFeedback, withdrawFeedback } = useClassEvidence(code);
 
   return (
-    <ClassFrame state={state} title="That student's work did not open.">
+    <ClassFrame state={state} title="That student's work did not open." onRetry={reload}>
       {(ready) => {
         // Every attempt this seat turned in, oldest first. The page opens on their **latest**,
         // so the run a teacher lands on from a class row is the run that row described — and
@@ -1279,14 +1329,21 @@ export function RealStudentEvidence() {
         const asked = Number(params.get("attempt"));
         const index = Number.isInteger(asked) && asked >= 1 && asked <= attempts.length ? asked - 1 : attempts.length - 1;
         const row = attempts[index] ?? null;
+        // Read once, before the branch, because a seat with nothing turned in is still a
+        // child if the roll knows about them — and the page that linked here named them.
+        const roll = classRoll({ rows: ready.analysis.rows, roster: ready.roster, progress: ready.progress, at: ready.loadedAt });
+        const groups = triageFor({ seats: roll.seats, submissions: ready.submissions, feedback: ready.feedback });
         if (!row) {
+          const seat = roll.seats.find((entry) => entry.seatCode === seatCode) ?? null;
           return (
-            <header className="page-header page-header--with-back">
-              <Link to={`/educator/class/${code}`}>← Class evidence</Link>
-              <p className="eyebrow">{`Seat ${seatCode}`}</p>
-              <h1>Nothing from this seat.</h1>
-              <p>No student has turned work in from seat {seatCode} in this class.</p>
-            </header>
+            <NotTurnedIn
+              seat={seat}
+              seatCode={seatCode ?? ""}
+              code={code ?? ""}
+              progress={ready.progress}
+              loadedAt={ready.loadedAt}
+              queue={seat ? queuePlaceFor(groups, seat.seatCode) : null}
+            />
           );
         }
         // The raw submission, not the derived row: the trail is built from the student's own
@@ -1300,11 +1357,7 @@ export function RealStudentEvidence() {
         // Where this child sits in the pile the teacher is working through, computed from the
         // same triage the class page ranks — so "next" is the next child in the band they are
         // already in, and a teacher never has to go back to the class page to reach them.
-        const roll = classRoll({ rows: ready.analysis.rows, roster: ready.roster, progress: ready.progress, at: ready.loadedAt });
-        const queue = queuePlaceFor(
-          triageFor({ seats: roll.seats, submissions: ready.submissions, feedback: ready.feedback }),
-          row.seatCode,
-        );
+        const queue = queuePlaceFor(groups, row.seatCode);
         return (
           <StudentPanel
             row={row}
@@ -1328,6 +1381,86 @@ export function RealStudentEvidence() {
         );
       }}
     </ClassFrame>
+  );
+}
+
+/**
+ * A seat on the roll with nothing turned in — which is a person, not an absence.
+ *
+ * The class page names these children twice on its first screen: in the triage, and in
+ * *Who is mid-run right now*. Both were links, and both landed on **"Nothing from this
+ * seat. No student has turned work in from seat 11 in this class."** — no name, no state,
+ * no screen they are on, no way to the next child. The page contradicted the page that
+ * linked to it, one click earlier, on a class where the teacher had pasted the name herself
+ * (`DEFECTS.md` D19).
+ *
+ * A seat with no roster row at all keeps the old refusal, because then it is true: nothing
+ * in this class knows who sits there.
+ */
+function NotTurnedIn({ seat, seatCode, code, progress, loadedAt, queue }: {
+  seat: ClassSeat | null;
+  seatCode: string;
+  code: string;
+  progress: readonly ProgressRow[];
+  loadedAt: number;
+  queue: QueuePlace | null;
+}) {
+  const label = useSeatLabel();
+  const live = progress.find((entry) => entry.seatCode === seatCode) ?? null;
+  if (!seat) {
+    return (
+      <header className="page-header page-header--with-back">
+        <Link to={`/educator/class/${code}`}>← Class evidence</Link>
+        <p className="eyebrow">{`Seat ${seatCode}`}</p>
+        <h1>Nothing from this seat.</h1>
+        <p>There is no seat {seatCode} on this class list, and nothing has been turned in from it.</p>
+      </header>
+    );
+  }
+  const state = seat.state === "still-working"
+    ? "Still working"
+    : seat.state === "started-quiet"
+      ? "Started, not turned in"
+      : "Not started";
+  return (
+    <>
+      {queue && <QueueBar queue={queue} code={code} />}
+      <header className="student-identity surface-margin">
+        {!queue && <p className="student-identity__facts"><Link to={`/educator/class/${code}`}>← Class evidence</Link></p>}
+        <h1>{label(seatCode)}</h1>
+        <span className="student-identity__facts">
+          <span>{`Seat ${seatCode}`}</span>
+          <span>{state}</span>
+          {live && <span>{WORLD_REGISTRY[live.worldId]?.title ?? ""}</span>}
+        </span>
+      </header>
+      {/* A record rather than the page's raised surface, and deliberately: there is nothing
+          here for a teacher to act on. A seat that has turned nothing in has no evidence, so
+          it gets no instrument — the weight says that before the words do. */}
+      <section className="surface-record" aria-labelledby="not-in">
+        <div className="verdict__lead">
+          <h2 id="not-in">What the evidence shows</h2>
+          <p className="verdict__state" data-state="unread"><span>Nothing turned in yet</span></p>
+          {live
+            ? (
+              <p className="verdict__absence">
+                {startedStageLabel(live.worldId, live.stage)} · last moved {sinceLabel(loadedAt - live.updatedAt)}.
+                Nothing is judged until they turn in, so there is no state to report and BOW will not
+                guess one.
+              </p>
+            )
+            : (
+              <p className="verdict__absence">
+                No browser has said this seat has opened the work, and nothing has arrived from it.
+                An absence, not a zero.
+              </p>
+            )}
+          <p className="verdict__absence">
+            Their card and the way to reissue it are on the <Link to={`/educator/class/${code}/roster`}>class list</Link>.
+          </p>
+        </div>
+      </section>
+    </>
   );
 }
 
@@ -1477,10 +1610,44 @@ function StudentPanel({ row, code, objectiveRef, onScore, submission, onOverride
             <div className="verdict__grid">
               <div className="verdict__lead">
                 <h2 id="verdict">What the evidence shows</h2>
-                <p className="verdict__state" data-state={spine.lead}>
-                  <span className="mark-glyph" aria-hidden="true">{SKILL_STATE_MARKS[spine.lead]}</span>
-                  <span>{SKILL_STATE_LABELS[spine.lead]}</span>
-                </p>
+                {/* Two statements, side by side, because the product's whole claim is that
+                    the decisions and the writing are reported separately and never rolled
+                    into one number. One Ladder-4 word standing alone as the page's verdict
+                    was doing exactly that rolling-up in the reader's head — and doing it
+                    backwards on the pair the demonstration turns on: the best explanation in
+                    the class led with the worst word on Ladder 3 while the weakest led one
+                    rung above her, and the human marks that say so were 555px below the fold
+                    (`DEFECTS.md` D18). The datum was already on the page. It is up here now. */}
+                <div className="verdict__pair">
+                  <div className="verdict__half">
+                    <p className="field-label">What the decisions showed</p>
+                    <p className="verdict__state" data-state={spine.lead}>
+                      <span className="mark-glyph" aria-hidden="true">{SKILL_STATE_MARKS[spine.lead]}</span>
+                      <span>{SKILL_STATE_LABELS[spine.lead]}</span>
+                    </p>
+                    <p className="verdict__half-note">BOW read the run. It never reads the writing.</p>
+                  </div>
+                  <div className="verdict__half">
+                    <p className="field-label">What a person read in the writing</p>
+                    {row.reasoningPoints === null
+                      ? (
+                        <p className="verdict__state" data-state="unread">
+                          <span>Nobody has read it yet</span>
+                        </p>
+                      )
+                      : (
+                        <p className="verdict__state verdict__state--read" data-count="">
+                          <span>{row.reasoningPoints} of {REASONING_MAXIMUM}</span>
+                        </p>
+                      )}
+                    <p className="verdict__half-note">
+                      {row.reasoningPoints === null
+                        ? "Your reading, when you make it. It is never added to the state beside it."
+                        : "Your own mark, not BOW's. It is never added to the state beside it."}
+                      {" "}<a href="#your-marks">{row.reasoningPoints === null ? "Read it and mark it" : "Your marks"} ↓</a>
+                    </p>
+                  </div>
+                </div>
                 {spine.shortfalls.length > 0 && (
                   <ul className="verdict__flags">
                     {spine.shortfalls.map((flag) => (
@@ -1558,7 +1725,7 @@ function StudentPanel({ row, code, objectiveRef, onScore, submission, onOverride
               deliberately not part of what BOW claims about this child: §37 — a mark one
               teacher records may not move what BOW says, or two classes set the same
               challenge would mean different things and nothing on any screen would say so. */}
-          <div className="written__own">
+          <div className="written__own" id="your-marks">
             <p className="field-label">Your own marks — BOW adds nothing to it</p>
             {REASONING_CRITERIA.map((criterion) => (
               <div className="rubric-row" key={criterion.id}>
@@ -1925,6 +2092,16 @@ function summarise(row: StudentRow): string {
     row.tookClinics === null ? "never reached the Saturdays" : row.tookClinics ? "took the clinics" : "kept the Saturdays",
   ];
   if (row.resolution) bits.push(row.resolution.attendanceHeld ? "made every session" : "lost the bonus");
+  // How it came out, on the line a teacher reads first. These two facts — did Avery get the
+  // course, and what is she left holding — are what the whole demonstration turns on, and they
+  // sat at 85% page depth with nothing above them saying either (`DEFECTS.md` D24). They are
+  // facts about the run and not a judgement of the student, which is the rule this line keeps.
+  if (row.resolution) {
+    bits.push(row.resolution.courseFunded
+      ? "got the course"
+      : `${formatDollars(row.resolution.courseShort)} short of the course`);
+    bits.push(`ends holding ${formatDollars(row.resolution.endCash)}`);
+  }
   return bits.join(" · ");
 }
 

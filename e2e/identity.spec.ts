@@ -195,7 +195,7 @@ test("a reissued card lets the same child in, and the old card lets nobody in", 
   // The browser that was holding the old session is not left claiming to be somebody: the
   // page is honest about there being nothing here, and offers the way out rather than a name.
   await page.goto("/home");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("You are not in a class yet.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("You are not on a class list any more.");
   await expect(page.locator("body")).not.toContainText(old.displayName);
   await expect(page.getByRole("button", { name: "Not you? Sign out" })).toBeVisible();
 
@@ -243,7 +243,7 @@ test("a seat taken off the list loses its way in, and its work stays with the te
   // The session in the child's hand stops opening anything, and says so rather than showing
   // an empty version of somebody's page.
   await page.goto("/home");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("You are not in a class yet.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("You are not on a class list any more.");
   await expect(page.locator(".work-card")).toHaveCount(0);
   await expect(page.locator("body")).not.toContainText(card.displayName);
 
@@ -283,7 +283,7 @@ test("a class that has been deleted leaves nobody holding it", async ({ page, re
   expect(gone.status(), await gone.text()).toBe(200);
 
   await page.goto("/home");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("You are not in a class yet.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("You are not on a class list any more.");
   await expect(page.locator(".work-card")).toHaveCount(0);
 
   // And the code on the whiteboard opens nothing, without saying what used to be behind it.

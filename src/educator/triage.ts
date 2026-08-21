@@ -1,3 +1,4 @@
+import { REASONING_MAXIMUM } from "../domain/evidence/grade";
 import { evidenceRequirementById } from "../domain/competency/competencies";
 import { reteachFor, type ReteachTopic } from "../domain/competency/reteach";
 import type { CompetencyResultState } from "../domain/competency/types";
@@ -45,6 +46,15 @@ export interface TriageSeat {
   gap: { label: string; verdict: string; more: number } | null;
   /** Their writing is still in the pile nobody has read. */
   awaitingReading: boolean;
+  /**
+   * What a person read in their writing — the other half of the pair, carried on the row.
+   *
+   * `null` until somebody has read it. This is never combined with the state above into one
+   * number: the product's whole claim is that the decisions and the writing are reported
+   * separately, and a row that shows only BOW's half ranks the best writer in the room above
+   * the weakest one whenever the machine's half happens to fall that way (`DEFECTS.md` D18).
+   */
+  reading: { points: number; of: number } | null;
   /** A person has already written back on this attempt. The fifth state, as a mark. */
   writtenBack: boolean;
   /** Their run already shows a shortfall, so their writing is worth reading before the rest. */
@@ -107,6 +117,32 @@ function headState(band: TriageBand, seats: readonly TriageSeat[]): CompetencyRe
   return null;
 }
 
+/**
+ * Where a seat sits once the pair is read rather than only BOW's half of it.
+ *
+ * The band a seat is in is still BOW's — a gap is a gap, and a person's reading of a
+ * paragraph cannot make a missing plan number present. But *inside* a band the order is the
+ * teacher's own reading, weakest first, because the child who fell short on the decisions
+ * **and** wrote weakly is the child who needs a person most, and the child who fell short
+ * and wrote the best explanation in the room is the one a teacher can hand back with a
+ * sentence. Ranking on BOW's half alone put the strongest reasoner in the class at the top
+ * of the triage and the weakest three rows below her (`DEFECTS.md` D18).
+ *
+ * A seat nobody has read yet sits between the two: it is not a weak reading, and it is not a
+ * strong one. This is a sort key and never a score — nothing derived here is rendered, and
+ * the two halves are printed as two statements wherever the seat appears.
+ */
+function readingRank(seat: TriageSeat): number {
+  if (!seat.reading || seat.reading.of === 0) return 0.5;
+  return seat.reading.points / seat.reading.of;
+}
+
+/** Weakest human reading first, unread in the middle, and seat order inside a tie. */
+function byPair(a: TriageSeat, b: TriageSeat): number {
+  const gap = readingRank(a) - readingRank(b);
+  return gap !== 0 ? gap : a.seatCode.localeCompare(b.seatCode, undefined, { numeric: true });
+}
+
 function gapOf(spine: StudentSpine): TriageSeat["gap"] {
   const [first, ...rest] = spine.shortfalls;
   if (!first) return null;
@@ -153,6 +189,9 @@ export function triageFor(input: {
       roll: latest ? null : seat.state,
       gap: spine ? gapOf(spine) : null,
       awaitingReading: latest !== null && latest.reasoningPoints === null,
+      reading: latest && latest.reasoningPoints !== null
+        ? { points: latest.reasoningPoints, of: REASONING_MAXIMUM }
+        : null,
       writtenBack,
       gapShowing: (spine?.shortfalls.length ?? 0) > 0,
       afterAHint: spine?.lead === "demonstrated-with-support",
@@ -160,7 +199,9 @@ export function triageFor(input: {
   });
 
   return BAND_ORDER.flatMap((band) => {
-    const seats = rows.filter((seat) => (seat.state === null ? band === "not-in" : bandFor(seat.state) === band));
+    const seats = rows
+      .filter((seat) => (seat.state === null ? band === "not-in" : bandFor(seat.state) === band))
+      .sort(byPair);
     if (seats.length === 0) return [];
     // Only the shortfall band is read as rows, so it is the only one that clusters. A band
     // of chips is already one line per pile.
@@ -175,13 +216,24 @@ export function triageFor(input: {
         clusters.push({
           key,
           gap: group[0]?.gap ?? null,
-          seats: group,
+          seats: [...group].sort(byPair),
           reteach: group.length > 1 ? reteachForGap(group, spines) : null,
         });
       }
-      // Biggest cluster first: one sentence three children share is a bigger fact about the
-      // room than one child's own, and it is the one with a lesson attached.
-      clusters.sort((a, b) => b.seats.length - a.seats.length);
+      // The pair ranks the rows, and size breaks the tie.
+      //
+      // This was size alone — "one sentence three children share is a bigger fact about the
+      // room than one child's own, and it is the one with a lesson attached" — which is true
+      // about *the lesson* and was doing the ranking for *the children*. On the seeded class it
+      // put the best explanation in the room (10 of 10, by a person) two rows above the weakest
+      // (3 of 10), under a heading telling the teacher to open these first (`DEFECTS.md` D18).
+      //
+      // With nothing read yet every cluster ranks at the same unknown, so size decides and the
+      // old order stands unchanged — which is the normal case mid-lesson. Once a person has
+      // read the writing, their reading is what the page ranks on. Nothing is summed: the two
+      // halves are printed as two statements on every row this order produces.
+      const weakest = (cluster: TriageCluster) => Math.min(...cluster.seats.map(readingRank));
+      clusters.sort((a, b) => (weakest(a) - weakest(b)) || (b.seats.length - a.seats.length));
     }
     return [{ band, state: headState(band, seats), seats, clusters }];
   });

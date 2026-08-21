@@ -108,10 +108,14 @@ function whatMovedLine(row: StudentRow): string {
     return "Nothing was taken off any line: the plan they finished with is the plan they started with.";
   }
   const said = moved.map((movement) => `${formatDollars(movement.chosenReduction)} off ${CHOICE_LABELS[movement.category].toLowerCase()}`);
+  // "Everything covered" is a claim about the *plan's* balance and about nothing else, and
+  // said on its own it read as the whole outcome — three thousand pixels above a fact row
+  // saying the course was $950 short, on the student the demonstration turns on
+  // (`DEFECTS.md` D24). So the clause names its own subject.
   const ending = row.resolution
     ? row.resolution.uncovered > 0
-      ? ` They finished with ${formatDollars(row.resolution.uncovered)} still uncovered.`
-      : " They finished with everything covered."
+      ? ` They finished with ${formatDollars(row.resolution.uncovered)} of the plan still uncovered.`
+      : " Every line of the plan was covered."
     : "";
   return `They cut ${said.join(", ")}.${ending}`;
 }

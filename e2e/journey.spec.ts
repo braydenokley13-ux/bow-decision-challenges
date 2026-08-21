@@ -737,30 +737,25 @@ test.describe("The golden journey", () => {
 });
 
 /* ==========================================================================
-   The two defects the journey above walks past, each stated on its own so a
-   red here names the thing that is wrong rather than stopping the journey.
+   The two defects the journey above walked past. Both are fixed, and both keep
+   their own test so a regression names the thing that broke rather than
+   stopping the journey.
    ========================================================================== */
 
 test("the screen between the card and the run does not offer a choice the class has not", async ({ page }) => {
   /**
-   * **Reproduced, still open.** `test.fail()` rather than a skip: the assertion below runs
-   * every time and the suite stays green while it keeps failing, and it turns *red* the day
-   * somebody fixes the product — which is the only moment a recorded defect needs to shout.
-   *
-   * A class set exactly one world still meets the entry screen, and that screen decides what
-   * to say from `WORLD_CHOICE_UI_READY && PLAYABLE_WORLDS.length > 1`
-   * (`src/stages/StudentChallenge.tsx:139`) rather than from the assignment in front of it. So
-   * a student whose teacher pinned them to the market presses *Run the Pop-Up* on their own
-   * home page and is answered by
+   * **Fixed** (`DEFECTS.md` D23). The entry screen used to decide what to say from
+   * `WORLD_CHOICE_UI_READY && PLAYABLE_WORLDS.length > 1` — a fact about the build — rather
+   * than from the assignment in front of it. So a student whose teacher pinned them to the
+   * market pressed *Run the Pop-Up* on their own home page and was answered by
    *
    *     Eight Weeks to the Showcase · Run the Pop-Up
    *     Two ways in. You pick one.
    *
-   * with a button reading *Go in* — and then gets no choice at all, because the offer the
-   * button actually carries is the pinned one. It is a promise made and withdrawn inside one
-   * click, on the screen that budgets 55 seconds for a child to read it.
+   * with a button reading *Go in*, and then got no choice at all, because the offer the button
+   * actually carried was the pinned one. It is now the same `worldOffer` the picker itself
+   * re-reads one screen later, so the two cannot disagree.
    */
-  test.fail();
   const created = await createClass(page.request, "One world");
   const set = await page.request.post(`${API}/classes/${created.code}/assignments`, {
     headers: { "X-BOW-Teacher-Key": created.teacherKey },
@@ -781,8 +776,12 @@ test("the screen between the card and the run does not offer a choice the class 
   // Wait for whichever screen actually arrives before reading it. `not.toContainText` against
   // a body that has not rendered yet passes instantly and says nothing, which is how this
   // assertion managed to be green and red in the same hour on the same commit.
+  //
+  // Three names, because the confirm button is now drawn from the offer rather than from the
+  // build: `Go in` where there is a choice to make, `Start the eight weeks` where the class is
+  // pinned to Basketball, and a plain `Start` where it is pinned to anything else.
   await expect(
-    page.getByRole("button", { name: /^(Start the eight weeks|Go in)$/ })
+    page.getByRole("button", { name: /^(Start the eight weeks|Start|Go in)$/ })
       .or(page.getByRole("heading", { name: COPY.spot.title }))
       .first(),
   ).toBeVisible();
@@ -795,20 +794,17 @@ test("the screen between the card and the run does not offer a choice the class 
 
 test("a second assignment's card opens the second assignment", async ({ page }) => {
   /**
-   * **Reproduced, still open.** Marked `test.fail()` for the reason given above.
-   *
-   * Both cards on the student's home link to the same route with nothing on it but the class
-   * code, and the run resolves what to open from `picked.assignments[0]`
-   * (`src/stages/StudentChallenge.tsx`) and files evidence under `assignments[0].id`
-   * (`src/stages/popup/seat.ts`). So a class holding two assignments has exactly one openable
-   * piece of work: pressing the second card opens the first one's world, and any run made
-   * from it is filed under the first one's id.
+   * **Fixed** (`DEFECTS.md` D22). Both cards on the student's home used to link to the same
+   * route with nothing on it but the class code, and the run resolved what to open from
+   * `picked.assignments[0]` and filed evidence under `assignments[0].id`. So a class holding
+   * two assignments had exactly one openable piece of work: pressing the second card opened
+   * the first one's world, and any run made from it was filed under the first one's id. The
+   * card now carries `?assignment=<id>` and both resolutions read it.
    *
    * The class here is set Basketball first and the market second, which is the same class as
    * the journey with the two assignments swapped — so a green here and a green there together
-   * would mean the button does what it says whichever way round the teacher set them.
+   * mean the button does what it says whichever way round the teacher set them.
    */
-  test.fail();
   const created = await createClass(page.request, "Second card");
   for (const worlds of [["basketball"], ["food-truck"]]) {
     const set = await page.request.post(`${API}/classes/${created.code}/assignments`, {
@@ -829,6 +825,14 @@ test("a second assignment's card opens the second assignment", async ({ page }) 
 
   await expect(page.locator(".work-card__title").nth(1)).toHaveText(POP_UP_TITLE);
   await page.getByRole("link", { name: `Start — ${POP_UP_TITLE}` }).click();
+
+  // The confirm screen between the card and the run, which now names the world the card named
+  // rather than the other one — the second half of the same defect, and the assertion below
+  // would pass through a screen still selling Basketball if it did not read it here.
+  await expect(page.getByRole("heading", { level: 1, name: POP_UP_TITLE })).toBeVisible();
+  await expect(page.locator("body"), "the card that was pressed is the world that is offered")
+    .not.toContainText(BASKETBALL_TITLE);
+  await startIfConfirmAsked(page);
 
   // The market's first screen is the booths. Basketball's is the housing ranking.
   await expect(

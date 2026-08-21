@@ -7,6 +7,7 @@ import { rememberKey } from "./classMemory";
 import { useTeacherKey } from "./teacherKeyUrl";
 import { replaceClassKey, teacherToken } from "./teacherSession";
 import { MAX_ROSTER_SIZE, type ClassJoinMode, type JoinCard } from "../platform/identity/types";
+import { DEMO_CLASS_CODE } from "../fixtures/demoClass";
 
 /**
  * The class list, and the cards that come off it.
@@ -47,6 +48,17 @@ interface RosterRow {
 type State =
   | { status: "loading" }
   | { status: "error"; message: string }
+  /**
+   * The sample class, which structurally cannot have a class list.
+   *
+   * `DEMO` is four characters precisely so no class the service allocates can ever equal it
+   * (`codes.ts`), and its eighteen runs were never posted to anything. So this route used to
+   * call the real API with a teacher key it does not have and render **"This class did not
+   * open. This browser does not hold the key for that class."** — three false statements to a
+   * signed-in teacher who followed a link the sample class itself offered
+   * (`DEFECTS.md` D3/D20). The refusal is now the true one, and it says what to do instead.
+   */
+  | { status: "sample" }
   | { status: "ready"; rows: RosterRow[]; joinMode: ClassJoinMode };
 
 /** Two names are the same name when a person would say they were. */
@@ -60,9 +72,12 @@ export function Roster() {
   const teacherKey = useTeacherKey(code);
   // A browser with no key for this class is a fact about the arrival, not a load that fails —
   // so it resolves during render rather than as the first thing an effect does.
-  const [state, setState] = useState<State>(() => (code && teacherKey
-    ? { status: "loading" }
-    : { status: "error", message: "This browser does not hold the key for that class. Open it from the link you were given, or from My classes." }));
+  const isDemo = code === DEMO_CLASS_CODE;
+  const [state, setState] = useState<State>(() => (isDemo
+    ? { status: "sample" }
+    : code && teacherKey
+      ? { status: "loading" }
+      : { status: "error", message: "This browser does not hold the key for that class. Open it from the link you were given, or from My classes." }));
   // Held in component state and nowhere else, deliberately. A card that survived a reload
   // would be a join code sitting in a browser store on a staffroom machine.
   const [cards, setCards] = useState<JoinCard[]>([]);
@@ -125,14 +140,16 @@ export function Roster() {
   }, [teacherKey]);
 
   const load = useCallback(async () => {
-    if (!code || !teacherKey) return;
+    // Nothing about the sample reaches the network, in either direction — the same rule
+    // `useClassEvidence.ts` keeps, for the same reason.
+    if (isDemo || !code || !teacherKey) return;
     try {
       const body = (await call(`/classes/${code}/roster`)) as { roster: RosterRow[]; joinMode: ClassJoinMode };
       setState({ status: "ready", rows: body.roster, joinMode: body.joinMode });
     } catch (error) {
       setState({ status: "error", message: error instanceof Error ? error.message : "That class did not open." });
     }
-  }, [call, code, teacherKey]);
+  }, [call, code, teacherKey, isDemo]);
 
   useEffect(() => {
     let cancelled = false;
@@ -307,6 +324,24 @@ export function Roster() {
 
   if (state.status === "loading") {
     return <EducatorShell><p className="class-state" aria-live="polite">Opening the class…</p></EducatorShell>;
+  }
+  if (state.status === "sample") {
+    return (
+      <EducatorShell>
+        <header className="page-header page-header--with-back">
+          <Link to={`/educator/class/${code ?? ""}`}>← Class evidence</Link>
+          <p className="eyebrow">Class list</p>
+          <h1>The sample class has no class list.</h1>
+          <p>
+            DEMO is a worked example, not a room: its eighteen runs were never turned in to the class
+            service, so there are no seats to name, no cards to hand out and nothing to reissue. That
+            is a fact about the sample and not a failure.
+          </p>
+          <p>Make a class of your own and every one of these controls is real on it.</p>
+          <p><Link className="button button--primary" to="/educator/classes">My classes →</Link></p>
+        </header>
+      </EducatorShell>
+    );
   }
   if (state.status === "error") {
     return (

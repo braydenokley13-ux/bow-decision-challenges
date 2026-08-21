@@ -89,7 +89,7 @@ describe("whose screen this is", () => {
     // name and a sign-out button — a page that could not say whose it was.
     home({}, { displayName: "Devon P." }, 0);
     expect(await screen.findByRole("heading", { name: "Devon P.", level: 1 })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "You are not in a class yet." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "You are not on a class list any more." })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Not you? Sign out" })).toBeInTheDocument();
   });
 });

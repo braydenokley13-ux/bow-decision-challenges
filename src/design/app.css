@@ -1308,6 +1308,32 @@ p { color: var(--ink-2); }
 .class-form__worlds input { min-height: 0; margin-block-start: 0.2em; accent-color: var(--navy); }
 .class-form__worlds b { display: block; color: var(--ink-1); }
 
+/* §37's one question of the teacher's own — four elements that had no rule at any of their
+   class names (`DEFECTS.md` D7) and rendered as four separate faults on the second screen of
+   the demonstration: the textarea drawn over the right-hand end of its own label, four
+   suggestion buttons at four widths on four left edges, the required-answer caption on the
+   line beneath its own checkbox, and a raw browser-default notched border around all of it.
+   The overlap was the mechanism to fix first: inside `.class-form`'s grid a `<label>` is a
+   grid item and gets its own row, and inside this fieldset it was an inline box sitting on
+   the same line as the inline-block control after it. */
+.class-form__closing { display: grid; gap: var(--s-3); padding: var(--s-4); border: 1px solid var(--border-strong); border-radius: var(--r-sm); background: var(--surface-raised); }
+.class-form__closing legend { padding-inline: var(--s-2); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.class-form__closing > label:not(.class-form__closing-required) { display: block; }
+.class-form__closing textarea { min-height: calc(var(--tap) * 1.5); padding: var(--s-3) var(--s-4); line-height: 1.5; resize: vertical; }
+.class-form__closing-note { max-width: var(--measure); margin: 0; color: var(--ink-3); font: var(--t-sm); letter-spacing: normal; text-transform: none; }
+
+/* One column, so four sentences of different lengths share one left edge and one width
+   instead of being sized by their own text. They read as the list of choices they are. */
+.class-form__closing-suggest { display: grid; gap: var(--s-2); margin: 0; justify-items: stretch; }
+.class-form__closing-suggest > span { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.class-form__closing-suggest .button { justify-content: flex-start; width: 100%; text-align: left; }
+
+/* Specific enough to beat `.class-form label`, which is where the uppercase label styling and
+   the block display come from — without it the caption rendered as small caps on the line
+   beneath its own checkbox. */
+.class-form .class-form__closing-required { display: grid; grid-template-columns: auto 1fr; gap: var(--s-3); align-items: start; font: var(--t-sm); letter-spacing: normal; text-transform: none; color: var(--ink-2); }
+.class-form .class-form__closing-required input { min-height: 0; margin-block-start: 0.15em; accent-color: var(--navy); }
+
 /* ---------------------------------------------------------------------------
  * Objective Map. A coverage document, not a dashboard: five bands of ruled
  * type on the cream, with status carried by the geometry of a mark and by a
@@ -1468,6 +1494,9 @@ p { color: var(--ink-2); }
 .segmented button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); }
 
 /* A row that goes somewhere looks like it does, rather than parking an arrow at the far edge. */
+
+/* The heading the rows hang from. Without one the page skipped h1 -> h3. */
+.row-list__head { margin: var(--s-6) 0 var(--s-3); font: var(--t-title3); color: var(--ink-2); }
 .row-list { display: grid; gap: 1px; background: var(--border-subtle); }
 .row-list > a { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s-4); padding: var(--s-5); background: var(--surface); color: var(--ink-1); text-decoration: none; }
 .row-list > a:hover { background: var(--surface-raised); }
@@ -1875,8 +1904,31 @@ p { color: var(--ink-2); }
 .builder-closing__required { display: flex; align-items: center; gap: var(--s-3); color: var(--ink-2); font: var(--t-sm); letter-spacing: normal; text-transform: none; }
 .builder-closing__required input { width: 18px; height: 18px; accent-color: var(--bow-brand); }
 
-/* Publish */
-.builder-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); }
+/* Publish.
+
+   The single completing control on the single assign path, and it sat at y=2,617 on a
+   2,717px page — 1,849px below the fold, measured, with nothing else on the screen that
+   commits an assignment (`teacher/RULING.md` §5 booked this as the consequence of making the
+   builder the only door; `DEFECTS.md` D27 is it measured again after the page grew). It
+   travels with the teacher now, the way `.plan-commit` does for the student: a sticky bar at
+   the foot of the form column, in view at every scroll position, with the reason it is not
+   pressable yet beside it rather than at the end of a scroll. */
+.builder-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-4);
+  margin-top: var(--s-6);
+  padding: var(--s-5) var(--s-6);
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-left: 4px solid var(--bow-brand);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lift);
+}
 .builder-actions__status { margin: 0; color: var(--ink-3); font: var(--t-sm); }
 .builder-actions__status--problem { color: var(--fin-over-ink); font-weight: 600; }
 .builder-confirm { display: flex; flex-wrap: wrap; gap: var(--s-4); }
@@ -2260,6 +2312,18 @@ p { color: var(--ink-2); }
 .mark-written { color: var(--fin-balanced-ink); font: var(--tt-meta); font-weight: 600; }
 .mark-first { color: var(--fin-conditional-ink); font: var(--tt-meta); font-weight: 600; }
 
+/* The other half of the pair, on the row. The teacher's own reading of the writing
+   travelled nowhere on this page — so the triage ranked the class on BOW's half of a
+   two-part report and put the strongest reasoner in the room at the top of it. The
+   number is its own carrier: it survives greyscale without the ink step below. */
+.mark-reading {
+  color: var(--ink-2);
+  font: var(--tt-meta);
+  font-weight: 700;
+  font-feature-settings: var(--num);
+  white-space: nowrap;
+}
+
 /* ---------------------------------------------------------------------------
    The records. Flat, hairline, page ground — reference that stays on screen.
    --------------------------------------------------------------------------- */
@@ -2375,6 +2439,31 @@ p { color: var(--ink-2); }
 .verdict__state[data-state="not-yet-demonstrated"] { color: var(--fin-over-ink); }
 .verdict__state[data-state="developing"] { color: var(--fin-conditional-ink); }
 .verdict__state[data-state="demonstrated"], .verdict__state[data-state="demonstrated-with-support"] { color: var(--fin-balanced-ink); }
+
+/* The lead, as two statements rather than one word. `decision` and `writing` are two
+   separate reports in this product and adding them together is the thing it refuses to
+   do — so the screen shows them as two columns of equal weight, both above the fold,
+   with the sentence that says they are never summed sitting under each. */
+
+/* Stacked rather than literally side by side: the lead is one column of a three-column
+   instrument, and splitting ~250px in two set "what a person read in the writing" four words
+   deep and the number at caption size. One under the other, both inside the first viewport,
+   with a rule between them — which is what the pair had to be: two statements, neither of them
+   a summary of the other. */
+.verdict__pair { display: grid; gap: var(--s-4); align-items: start; }
+.verdict__half { display: grid; align-content: start; gap: var(--s-2); min-width: 0; }
+.verdict__half + .verdict__half { padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); }
+.verdict__half-note { margin: 0; color: var(--ink-3); font: var(--tt-meta); }
+.verdict__half-note a { color: var(--ink-2); }
+
+/* `.teacher-page p` is a class-plus-element selector and was quietly winning against
+   `.verdict__state`, so the page's lead state has been rendering at body size — `RULING.md` §3
+   asks for 24px, and both halves of the pair have to carry the same weight or the layout is
+   making the ranking the words refuse to make. */
+.teacher-page .verdict__state { font: 700 1.5rem/1.2 var(--font-ui); }
+.teacher-page .verdict__state[data-state="unread"] { color: var(--ink-2); font-size: 1.25rem; }
+.verdict__state--read { font-feature-settings: var(--num); }
+
 .verdict__flags { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
 .verdict__absence { margin: 0; color: var(--ink-2); font: var(--tt-body); }
 .verdict__skills { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; min-width: 0; font-feature-settings: var(--num); }

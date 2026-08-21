@@ -6,6 +6,7 @@ import type { EvidenceRequirementId, RubricLevel } from "../domain/competency/ty
 import { analyseClass, type ClassAnalysis } from "./analysis";
 import { rememberClass } from "./classMemory";
 import { useTeacherKey } from "./teacherKeyUrl";
+import { myTeaching, teacherToken } from "./teacherSession";
 import type { RosterRow } from "./names";
 import type { ProgressRow, TeacherFeedback } from "../platform/identity/types";
 import { DEMO_CLASS_CODE, demoClassBundle } from "../fixtures/demoClass";
@@ -37,6 +38,17 @@ export interface OverrideRequest {
 export type ClassEvidenceState =
   | { status: "loading" }
   | { status: "error"; message: string }
+  /**
+   * The service never answered — no HTTP response at all.
+   *
+   * Deliberately not an `error`, because the two say opposite things to a teacher. An error is
+   * the service telling her something about this class; this is the network, and the class is
+   * exactly where she left it. Collapsing them rendered *"This link does not open that class.
+   * Use the link you were given when you created it."* to a signed-in teacher holding a
+   * correct link to an intact class (`DEFECTS.md` D21) — the same failure family the student
+   * door was fixed for, on the surfaces that never got it.
+   */
+  | { status: "offline" }
   | {
       status: "ready";
       record: ClassRecord;
@@ -95,7 +107,7 @@ export function useClassEvidence(code: string | undefined): {
   // opened the class here before. It is never derivable from the class code, and it does not
   // stay in the address bar: `useTeacherKey` files it here and rewrites the URL without it,
   // because these are the pages with the children's names and the children's writing on them.
-  const teacherKey = useTeacherKey(code);
+  const heldKey = useTeacherKey(code);
   const [fetched, setFetched] = useState<ClassEvidenceState>({ status: "loading" });
   const [nonce, setNonce] = useState(0);
 
@@ -104,15 +116,59 @@ export function useClassEvidence(code: string | undefined): {
   // challenge runs on every keystroke in a reasoning rubric would be its own kind of bug.
   const demo = useMemo(() => (isDemo ? demoReady() : null), [isDemo]);
 
+  /**
+   * The key this browser does not hold, asked for from the account that owns the class.
+   *
+   * A signed-in teacher who opens a class on a machine that has never seen its link used to
+   * be told *"This link does not open that class"* — which is false twice over: the link is
+   * right, and the service will hand her the key for the asking. `GET /me/teaching` is the
+   * same call `/educator/classes` already makes, and this is the same recovery, on the page
+   * she actually landed on.
+   *
+   * When that call gets no answer at all, the result is the network state and never a claim
+   * about her link.
+   */
+  const [recovery, setRecovery] = useState<{ code: string; key: string | null; offline: boolean } | null>(null);
+  // Whether the account is still being asked, derived rather than stored: there is exactly one
+  // write here, after the answer, so the render never cascades.
+  const asking = !isDemo && Boolean(code) && !heldKey && Boolean(teacherToken());
+  const recovering = asking && recovery?.code !== code;
+  const accountOffline = asking && recovery !== null && recovery.code === code && recovery.offline;
+  useEffect(() => {
+    if (!asking || !code) return;
+    let cancelled = false;
+    void (async () => {
+      const owned = await myTeaching();
+      if (cancelled) return;
+      if (owned.ok) {
+        for (const entry of owned.body.classes) {
+          rememberClass({ code: entry.code, label: entry.label, teacherKey: entry.teacherKey, createdAt: entry.createdAt });
+        }
+        const mine = owned.body.classes.find((entry) => entry.code === code);
+        setRecovery({ code, key: mine?.teacherKey ?? null, offline: false });
+        return;
+      }
+      setRecovery({ code, key: null, offline: owned.offline === true });
+    })();
+    return () => { cancelled = true; };
+  }, [asking, code, nonce]);
+
+  const teacherKey = heldKey ?? (recovery && recovery.code === code ? recovery.key : null);
+
   // A missing code or a missing key are facts about this render, not things to discover
-  // asynchronously — there is nothing to ask the service about. The demo never reaches this:
-  // it has no teacher key and needs none, because nothing about it is gated on one.
+  // asynchronously — except that a key can now arrive from the account, so a browser without
+  // one is *asking* rather than refused until that answer comes back. The demo never reaches
+  // this: it has no teacher key and needs none, because nothing about it is gated on one.
   const blocked: ClassEvidenceState | null = isDemo
     ? null
     : !code
       ? { status: "error", message: educatorClassError("class_not_found") }
       : !teacherKey
-        ? { status: "error", message: educatorClassError("not_authorised") }
+        ? recovering
+          ? { status: "loading" }
+          : accountOffline
+            ? { status: "offline" }
+            : { status: "error", message: educatorClassError("not_authorised") }
         : null;
 
   /**
@@ -165,7 +221,9 @@ export function useClassEvidence(code: string | undefined): {
         loadedAt: Date.now(),
       };
     } catch {
-      return { status: "error", message: educatorClassError("unavailable") };
+      // No HTTP answer. The class is intact and this browser cannot see it, which is a
+      // different sentence from any of the service's own refusals.
+      return { status: "offline" };
     }
   }, [code, teacherKey, isDemo]);
 

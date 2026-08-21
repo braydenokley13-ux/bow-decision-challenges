@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { EducatorShell, StateKey } from "./EducatorShell";
+import { ClassUnreachable, EducatorShell, StateKey } from "./EducatorShell";
 import { useClassEvidence } from "./useClassEvidence";
 import { classRoll, worldSections, type StudentRow } from "./analysis";
 import { loadShareOutSelection, shareOutSlides, summaryOf } from "./shareOut";
@@ -41,7 +41,7 @@ import { levelLabel, skillStateKey, SKILL_STATE_LABELS, TERMS } from "./labels";
  */
 export function Debrief() {
   const { code } = useParams();
-  const { state, teacherKey } = useClassEvidence(code);
+  const { state, teacherKey, reload } = useClassEvidence(code);
   // §5 is the teacher's own selection, so this page has to ask for it rather than pick for
   // itself. `undefined` is the service not answering and leaves the last read standing;
   // nothing chosen and nothing readable both end as an empty §5, which is the safe end.
@@ -59,6 +59,7 @@ export function Debrief() {
   if (state.status === "loading") {
     return <EducatorShell measure="read"><p className="class-state" aria-live="polite">Opening the class…</p></EducatorShell>;
   }
+  if (state.status === "offline") return <ClassUnreachable where="Debrief" onRetry={reload} />;
   if (state.status === "error") {
     return (
       <EducatorShell measure="read">
