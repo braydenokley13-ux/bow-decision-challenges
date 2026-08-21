@@ -1157,6 +1157,22 @@
   .pass-till { order: 4; }
 }
 
+/* A short window is not a narrow one, and the rules above only ever asked about width.
+   Measured on the shipped build at 1024x600 — the Chromebook the brief names as the primary
+   teaching device — the controls row ran 582 to 626 against a 600px window, so "Serve the next
+   order" was clipped by twenty-six pixels on the screen this world is meant to be played on. The
+   arithmetic is not subtle: the strip is ~62px, the counter is 286px, and 56vh of 600 is 336, so
+   the room needs 684px of a window that has 600.
+
+   Height is what has to give, and the hatch is what gives it — the same trade the width rules
+   below already make, keyed on the axis that was actually short. 34vh of 600 is 204px, which puts
+   the controls comfortably inside the fold and still leaves the plate reading as a window rather
+   than a letterbox. `e2e/popup.spec.ts` sweeps 1024x600 and would have caught the regression this
+   fixes if it had asserted the control's bottom edge rather than its presence. */
+@media (max-height: 700px) and (min-width: 761px) {
+  .pass-hatch { height: clamp(168px, 34vh, 240px); }
+}
+
 @media (max-width: 760px) {
   .pass-hatch { height: clamp(180px, 34vh, 260px); }
   .pass-customer { width: min(72%, 320px); }
