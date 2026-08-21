@@ -109,13 +109,26 @@ leaves the same error behind a longer wait.
 
 `src/domain/machine/pacing.ts` holds a **design budget** per stage — what the interactions
 on that screen add up to, and what those seconds are made of. The longest route (both
-bonuses counted, the attendance bonus still counted at the end) budgets to **19.8 minutes**;
-the shortest complete route to 18.3. `pacing.test.ts` fails the build if the total leaves
-the band, if a stage grows past a quarter of the run, or if a stage a student never reaches
-is counted in the total.
+bonuses counted, the attendance bonus still counted at the end) budgets to **23.4 minutes**
+— 1,405 seconds, 23m25s — and the shortest complete route to 21.9. `pacing.test.ts` fails
+the build if the total leaves the band, if a stage grows past a quarter of the run, or if a
+stage a student never reaches is counted in the total.
 
-It aims below the middle of the advertised 20–25 minutes on purpose: a real student is
-slower than a budget. **It is not a measurement.** No test here can be — that takes
+**Those two figures read 19.8 and 18.3 here for longer than they were true, against an
+advertised band of 20–25 minutes, and they were wrong in the same direction for the same
+reason:** nothing in the repository counted the words on a screen, so a stage could declare
+165 seconds while rendering 491 words and no test could tell. `stages/readingLoad.test.tsx`
+counts them now; `working-plan`, `week8-resolution` and `submitted` were re-declared against
+what they actually render, and the world picker — a screen every student passes through —
+got a budget for the first time. Nothing failed the build when this paragraph drifted, which
+is the honest reason it drifted.
+
+It aims below the middle of the advertised 20–28 minutes on purpose: a real student is
+slower than a budget. That band is `PLAN_UNDER_PRESSURE.duration` in
+`src/platform/challenges/registry.ts` and it is what a teacher should allow for the challenge
+itself, before getting a class of twenty-eight through the join screen; each world advertises
+its own narrower one where a student meets it — 22–28 minutes for the basketball season,
+20–24 for the pop-up. **It is not a measurement.** No test here can be — that takes
 middle-schoolers, a classroom and a clock, and the pilot gate that depends on them is open
 until they exist.
 

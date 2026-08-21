@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Run the Pop-Up — Direction C: the counter is the screen</title>
+<style>
+:root{
+  --ink-1:#fbf3e4; --ink-2:#e4d5c4; --ink-3:#bda795; --ink-4:#8a7261;
+  --accent:#f0a94a; --accent-2:#f0b352; --accent-ink:#ffcf8a;
+  --ground:#140d0b; --panel:#241713; --panel-edge:#4d332a; --panel-hi:#33201a;
+  --over:#ff8574; --over-soft:#3c1712; --over-ink:#ffb5a9;
+  --balanced:#4ecf95; --balanced-soft:#10331f;
+  --paper:#efe3c8; --paper-ink:#2a2118;
+  --figure-fill:#33211a; --figure-fill-2:#241712;
+  --rim-warm:#f7c780; --rim-cool:#8fb3c9;
+  --focus:#ffd27a;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Consolas,monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:#0a0605;color:var(--ink-2);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+h1,h2,h3,p,dl,dd,ul{margin:0}
+button{font:inherit}
+img,svg{display:block;max-width:100%}
+.visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* ---------- shell ---------- */
+.stage{max-width:1440px;margin:0 auto;background:var(--ground);min-height:100vh}
+
+.topbar{display:flex;align-items:center;gap:clamp(12px,2.4vw,26px);min-height:48px;
+  padding:6px clamp(14px,3vw,26px);background:var(--panel);border-bottom:3px solid var(--accent);
+  flex-wrap:wrap}
+.bow{font:800 18px/1 var(--mono);color:var(--ink-1);flex:none}
+.bow i{font-style:normal;color:#a98bff;font-size:10px;vertical-align:top}
+.world-id{display:flex;flex-direction:column;gap:2px;margin-right:auto;min-width:0}
+.world-id b{font:700 13.5px/1.3 var(--sans);color:var(--ink-1)}
+.world-id span{display:flex;align-items:center;gap:5px;font:500 10px/1.3 var(--mono);
+  letter-spacing:.1em;text-transform:uppercase;color:var(--ink-4)}
+.hud{display:flex;gap:clamp(10px,2vw,22px);list-style:none;margin:0;padding:0;flex-wrap:wrap}
+.hud li{display:flex;flex-direction:column;gap:1px;min-width:0}
+.hud li small{font:600 9px/1.3 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-4)}
+.hud li b{font:700 13px/1.3 var(--mono);color:var(--ink-1);font-variant-numeric:tabular-nums;white-space:nowrap}
+.hud li b em{margin-left:4px;font-style:normal;font-weight:500;color:var(--ink-3);font-size:11px}
+.topbar-end{display:flex;gap:8px;align-items:center;flex:none}
+.chip-btn{padding:7px 12px;font:600 11.5px/1.2 var(--sans);color:var(--ink-2);background:transparent;
+  border:1px solid var(--panel-edge);border-radius:999px;cursor:pointer}
+.chip-btn:hover{background:var(--panel-hi)}
+
+main{padding:10px clamp(14px,3vw,28px) 40px}
+
+.heading-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-bottom:6px}
+.eyebrow{margin:0;color:var(--accent);font:700 11px/1.4 var(--sans);text-transform:uppercase;letter-spacing:.16em}
+/* Demoted per PopUpShell's `headingVariant="order"` precedent: the h1 stays in the DOM with
+   its accessible name, dropped to micro scale, no longer the dominant thing on the screen. */
+h1.order-h1{margin:0;font:700 11px/1.4 var(--sans);color:var(--ink-4);text-transform:uppercase;
+  letter-spacing:.16em}
+h1.order-h1::before{content:"— "}
+
+h2#service-heading{margin:0 0 8px;font:700 clamp(18px,2.2vw,24px)/1.15 var(--sans);color:var(--ink-1);
+  outline:none}
+h2#service-heading:focus-visible{outline:2px solid var(--focus);outline-offset:4px}
+
+/* ---------- the pass: hatch + live customer ---------- */
+.pass-frame{position:relative;border-radius:18px 18px 0 0;background:#1a120d;padding:9px 10px 0;
+  box-shadow:0 24px 44px -26px rgba(0,0,0,.75)}
+.hatch{position:relative;aspect-ratio:1920/404;overflow:hidden;border-radius:9px;background:#160d12;
+  isolation:isolate}
+/* Crop math: with `background-size:cover` + `background-position:center top`, a container whose
+   aspect-ratio is `1920 / X` shows exactly canvas rows y=0..X of the 1920x520 plate (the width
+   drives the cover scale, so the shown height in source pixels equals the ratio's own X). X=404
+   here, well inside the "sky, string, stalls, lane" band and safely short of the "lane vanishing"
+   seam (y456-470) and the drawn bullnose/counter (y469-520) — those rows are never fetched into
+   view. See DIRECTION.md §1. */
+.hatch__plate{position:absolute;inset:0;background-size:cover;background-position:50% 0%;
+  background-repeat:no-repeat;background-color:#1c1018}
+.hatch__vignette{position:absolute;inset:0;pointer-events:none;
+  box-shadow:inset 0 22px 30px -16px rgb(6 3 1/.9),inset 16px 0 26px -18px rgb(6 3 1/.82),
+    inset -16px 0 26px -18px rgb(6 3 1/.82),inset 0 -34px 44px -20px rgb(6 3 1/.9)}
+.valance{position:absolute;left:0;right:0;top:0;height:13px;z-index:3;
+  background:repeating-linear-gradient(90deg,#8a3324 0 42px,#7a2c1f 42px 48px,#e8d3ae 48px 90px,#d4bd94 90px 96px);
+  filter:drop-shadow(0 4px 4px rgb(6 3 1/.6))}
+.figure-wrap{position:absolute;left:50%;bottom:0;transform:translateX(-46%);height:90%;z-index:2;
+  display:flex;align-items:flex-end;pointer-events:none;transition:opacity .18s ease, transform .18s ease}
+.figure-wrap svg{height:100%;width:auto;overflow:visible}
+@media (prefers-reduced-motion: reduce){ .figure-wrap{transition:none} }
+.figure-empty{position:absolute;inset:0;align-items:center;justify-content:center;z-index:2}
+.figure-empty:not([hidden]){display:flex}
+.figure-empty span{padding:6px 14px;background:rgba(10,6,4,.55);border-radius:999px;
+  color:var(--ink-3);font:600 12px/1.2 var(--sans);letter-spacing:.04em}
+
+.pass-clock{position:absolute;top:9px;right:9px;z-index:4;margin:0;padding:5px 11px;
+  background:#0d0704;border-radius:5px;color:var(--accent-2);font:700 13px/1 var(--mono);
+  letter-spacing:.05em;box-shadow:inset 0 1px 4px rgb(0 0 0/.9);font-variant-numeric:tabular-nums}
+
+.pass-caption{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;margin:8px 6px 2px;
+  font:500 clamp(14px,1.6vw,16px)/1.4 var(--sans);color:var(--ink-2)}
+.pass-caption strong{color:var(--ink-1);font-weight:700}
+.pass-caption .outcome{color:var(--ink-3);font-size:13.5px}
+.pass-caption .outcome[data-tone="stock"]{color:var(--over-ink)}
+.pass-caption .outcome[data-tone="hands"]{color:var(--over-ink)}
+.pass-caption .outcome[data-tone="good"]{color:var(--balanced)}
+
+/* ---------- the counter itself: dominant, foreshortened, physical ---------- */
+.counter{position:relative;padding:18px clamp(16px,4vw,54px) 16px;border-radius:0 0 18px 18px;
+  overflow:hidden;background:#1c110b}
+.counter::before{content:"";position:absolute;inset:0;z-index:0;
+  clip-path:polygon(3% 0,97% 0,100% 100%,0% 100%);
+  background:
+    repeating-linear-gradient(96deg, rgb(0 0 0/.14) 0 2px, transparent 2px 30px),
+    linear-gradient(180deg,#332015 0%,#1e130c 55%,#130b07 100%)}
+.counter::after{content:"";position:absolute;left:0;right:0;top:0;height:6px;z-index:0;
+  background:linear-gradient(180deg,rgb(255 200 130/.28),transparent)}
+.counter > *{position:relative;z-index:1}
+
+.instruments{display:flex;flex-wrap:wrap;gap:clamp(18px,3vw,44px);align-items:flex-start;
+  justify-content:space-between}
+.instrument{flex:1 1 190px;min-width:170px}
+.instrument h3{margin:0 0 2px;font:700 11px/1.2 var(--sans);letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-4)}
+.instrument .value{display:flex;align-items:baseline;gap:8px;margin-top:6px}
+.instrument .value strong{font:700 clamp(26px,3.2vw,38px)/1 var(--sans);color:var(--ink-1);
+  font-variant-numeric:tabular-nums}
+.instrument .value span{color:var(--ink-3);font:500 14px/1.3 var(--sans)}
+.instrument .value strong[data-bare="true"]{color:var(--over-ink)}
+.instrument small.sub{display:block;margin-top:4px;color:var(--ink-4);font:500 11.5px/1.3 var(--sans)}
+
+.plate-stack{display:flex;flex-wrap:wrap;gap:3px;margin:8px 0 2px;max-width:230px}
+.plate-stack i{width:13px;height:13px;border-radius:50%;flex:none;
+  border:2px solid var(--accent-2);background:radial-gradient(circle at 35% 30%,#fff6dd,var(--accent) 72%);
+  box-shadow:0 1px 0 rgb(0 0 0/.4)}
+.plate-stack i[data-gone]{background:transparent;border-color:rgb(255 255 255/.18);box-shadow:none}
+@media (prefers-reduced-motion: no-preference){ .plate-stack i{transition:background-color .12s,border-color .12s} }
+
+.till-jar{position:relative;width:100%;max-width:210px;height:16px;border-radius:8px;
+  background:#120a06;border:1px solid rgb(255 255 255/.12);overflow:hidden;margin:8px 0 2px}
+.till-jar i{display:block;height:100%;background:linear-gradient(90deg,#2f6b4c,var(--balanced));
+  width:var(--fill,0%)}
+@media (prefers-reduced-motion: no-preference){ .till-jar i{transition:width .18s ease} }
+
+.spike-row{display:flex;align-items:flex-end;gap:9px;margin:4px 0 0}
+.spike{position:relative;flex:none;width:3px;height:44px;background:#6b5644;border-radius:2px}
+.spike .stub{position:absolute;left:50%;width:16px;height:11px;background:var(--paper);
+  border:1px solid rgb(0 0 0/.35);border-radius:1px;transform-origin:left center}
+.waiting-rail{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 0;padding:0;list-style:none}
+.waiting-rail li{padding:4px 9px;background:rgb(255 255 255/.06);border-radius:6px;
+  font:500 12px/1.3 var(--sans);color:var(--ink-3);white-space:nowrap}
+.waiting-rail li b{color:var(--ink-2);font-feature-settings:"tnum"}
+
+/* ---------- alerts (unchanged facts, unchanged wording) ---------- */
+.alert{margin:10px 0 0;padding:10px 16px;border-left:4px solid var(--over);background:var(--over-soft);
+  color:var(--over-ink);font:500 14.5px/1.5 var(--sans);border-radius:0 8px 8px 0}
+.alert--quiet{border-color:var(--accent-2);background:var(--panel-hi);color:var(--ink-2)}
+.alert strong{font-weight:800}
+
+/* ---------- controls ---------- */
+.controls{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:14px}
+.btn{min-height:46px;padding:0 22px;border-radius:10px;border:2px solid transparent;
+  font:700 14.5px/1 var(--sans);cursor:pointer}
+.btn--primary{color:#241205;background:var(--accent);box-shadow:0 6px 0 -2px #a9701f}
+.btn--primary:hover{background:var(--accent-2)}
+.btn--secondary{color:var(--ink-1);background:transparent;border-color:var(--panel-edge)}
+.btn--secondary[aria-pressed="true"]{background:var(--panel-hi)}
+.btn:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.progress{margin:0;color:var(--ink-3);font:600 13.5px/1.3 var(--sans);font-variant-numeric:tabular-nums}
+
+/* ---------- responsive ---------- */
+@media (max-width:760px){
+  .instruments{flex-direction:column;gap:22px}
+  .instrument{min-width:0;flex:none}
+}
+@media (max-width:420px){
+  .topbar{gap:8px 14px}
+  .hud{gap:10px 16px}
+  main{padding:12px 10px 36px}
+  .pass-frame{padding:8px 8px 0}
+  .counter{padding:20px 14px 18px}
+  .controls{gap:10px}
+  .btn{padding:0 16px;min-height:44px}
+}
+
+/* ---------- forced colors ---------- */
+@media (forced-colors:active){
+  .hatch, .pass-frame, .counter{forced-color-adjust:none}
+  .instrument, .waiting-rail li, .till-jar, .plate-stack i{border:1px solid CanvasText}
+  .btn{border:1px solid ButtonText}
+  .pass-clock, .figure-empty span{border:1px solid CanvasText}
+  .alert{border-left-color:CanvasText}
+}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <header class="topbar">
+    <span class="bow">BOW<i>&#9679;</i></span>
+    <div class="world-id">
+      <b>Run the Pop-Up</b>
+      <span>&#9679; Riverside Night Market</span>
+    </div>
+    <ul class="hud" aria-label="This run's own numbers, right now">
+      <li><small>Cash</small><b id="hud-cash">$1,510</b></li>
+      <li><small>Stock</small><b id="hud-stock">$200 <em>3 trays</em></b></li>
+      <li><small>Sold</small><b id="hud-sold">0 <em>plates</em></b></li>
+      <li><small>Where you are</small><b>Saturday 1 of 4</b></li>
+    </ul>
+    <div class="topbar-end">
+      <button type="button" class="chip-btn">The market</button>
+      <button type="button" class="chip-btn">Reading help</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="heading-row">
+      <p class="eyebrow">Saturday 1</p>
+      <h1 class="order-h1">Your window is open</h1>
+    </div>
+
+    <section class="service" aria-labelledby="service-heading">
+      <h2 id="service-heading" tabindex="-1">You are serving customers.</h2>
+
+      <!-- THE PASS: decorative — the plate never varies with world state, and the customer's
+           only facts (ticket, wanted, outcome) are already stated as text below it, so this
+           whole illustrated region is aria-hidden rather than role="img". See DIRECTION.md §5. -->
+      <div class="pass-frame">
+        <div class="hatch" aria-hidden="true">
+          <div class="hatch__plate" id="hatch-plate"></div>
+          <div class="valance"></div>
+          <div class="hatch__vignette"></div>
+          <div class="figure-wrap" id="figure-wrap"></div>
+          <div class="figure-empty" id="figure-empty" hidden><span>Window closed.</span></div>
+        </div>
+        <p class="pass-clock" aria-label="Time at the market" id="clock-pill">17:00</p>
+      </div>
+
+      <p class="pass-caption" id="pass-caption" aria-live="polite"></p>
+
+      <div class="counter">
+        <div class="instruments">
+          <div class="instrument">
+            <h3>Plates on the counter</h3>
+            <div class="value"><strong id="plates-left" data-bare="false">30</strong><span id="plates-word">plates left</span></div>
+            <div class="plate-stack" id="plate-stack" aria-hidden="true"></div>
+            <small class="sub" id="plates-overflow" hidden></small>
+          </div>
+
+          <div class="instrument">
+            <h3>Tickets &amp; the lane</h3>
+            <div class="value"><strong id="orders-done">0</strong><span>of 24 orders</span></div>
+            <div class="spike-row" aria-hidden="true">
+              <div class="spike" id="spike"></div>
+            </div>
+            <small class="sub" id="waiting-line">38 people are waiting.</small>
+            <ul class="waiting-rail" id="waiting-rail"></ul>
+          </div>
+
+          <div class="instrument">
+            <h3>Tonight so far</h3>
+            <div class="value"><strong id="till-amount">$0</strong><span>taken</span></div>
+            <div class="till-jar" aria-hidden="true"><i id="till-fill" style="--fill:0%"></i></div>
+            <small class="sub"><span id="plates-sold">0</span> sold &middot; <span id="turned-away" data-loss="false">0</span> left without buying</small>
+          </div>
+        </div>
+
+        <div id="alerts"></div>
+
+        <div class="controls">
+          <div id="control-open">
+            <button type="button" class="btn btn--primary" id="btn-serve">Serve the next order</button>
+          </div>
+          <button type="button" class="btn btn--secondary" id="btn-auto" aria-pressed="false">Serve automatically</button>
+          <button type="button" class="btn btn--primary" id="btn-close" hidden>Close up and see how the night went</button>
+          <p class="progress" id="progress" aria-live="polite">Order 0 of 24.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---- the real numbers: Middle Row, Saturday 1, 3 trays, no helper ----
+     Produced by `npx tsx -e "...serviceRun(N,'middle-row',1,3,false)..."` against
+     src/domain/scenario/worlds/food-truck/service.ts — copied verbatim, not re-derived. */
+  var COOKED = 30, CROWD = 38, CAP = 45, PLATE_PRICE = 12;
+  var ORDERS = [
+    {ticket:1,minute:0,wanted:1,reachable:1,served:1,outcome:"served",takings:12,platesLeft:29,tillAfter:12},
+    {ticket:2,minute:2,wanted:2,reachable:2,served:2,outcome:"served",takings:24,platesLeft:27,tillAfter:36},
+    {ticket:3,minute:6,wanted:1,reachable:1,served:1,outcome:"served",takings:12,platesLeft:26,tillAfter:48},
+    {ticket:4,minute:14,wanted:1,reachable:1,served:1,outcome:"served",takings:12,platesLeft:25,tillAfter:60},
+    {ticket:5,minute:24,wanted:3,reachable:3,served:3,outcome:"served",takings:36,platesLeft:22,tillAfter:96},
+    {ticket:6,minute:36,wanted:2,reachable:2,served:2,outcome:"served",takings:24,platesLeft:20,tillAfter:120},
+    {ticket:7,minute:51,wanted:1,reachable:1,served:1,outcome:"served",takings:12,platesLeft:19,tillAfter:132},
+    {ticket:8,minute:66,wanted:2,reachable:2,served:2,outcome:"served",takings:24,platesLeft:17,tillAfter:156},
+    {ticket:9,minute:84,wanted:1,reachable:1,served:1,outcome:"served",takings:12,platesLeft:16,tillAfter:168},
+    {ticket:10,minute:102,wanted:1,reachable:1,served:1,outcome:"served",takings:12,platesLeft:15,tillAfter:180},
+    {ticket:11,minute:121,wanted:2,reachable:2,served:2,outcome:"served",takings:24,platesLeft:13,tillAfter:204},
+    {ticket:12,minute:140,wanted:3,reachable:3,served:3,outcome:"served",takings:36,platesLeft:10,tillAfter:240},
+    {ticket:13,minute:160,wanted:1,reachable:1,served:1,outcome:"served",takings:12,platesLeft:9,tillAfter:252},
+    {ticket:14,minute:179,wanted:2,reachable:2,served:2,outcome:"served",takings:24,platesLeft:7,tillAfter:276},
+    {ticket:15,minute:198,wanted:1,reachable:1,served:1,outcome:"served",takings:12,platesLeft:6,tillAfter:288},
+    {ticket:16,minute:216,wanted:1,reachable:1,served:1,outcome:"served",takings:12,platesLeft:5,tillAfter:300},
+    {ticket:17,minute:234,wanted:3,reachable:3,served:3,outcome:"served",takings:36,platesLeft:2,tillAfter:336},
+    {ticket:18,minute:249,wanted:2,reachable:2,served:2,outcome:"served",takings:24,platesLeft:0,tillAfter:360},
+    {ticket:19,minute:264,wanted:1,reachable:1,served:0,outcome:"no-stock",takings:0,platesLeft:0,tillAfter:360},
+    {ticket:20,minute:276,wanted:2,reachable:2,served:0,outcome:"no-stock",takings:0,platesLeft:0,tillAfter:360},
+    {ticket:21,minute:286,wanted:1,reachable:1,served:0,outcome:"no-stock",takings:0,platesLeft:0,tillAfter:360},
+    {ticket:22,minute:294,wanted:1,reachable:1,served:0,outcome:"no-stock",takings:0,platesLeft:0,tillAfter:360},
+    {ticket:23,minute:298,wanted:2,reachable:2,served:0,outcome:"no-stock",takings:0,platesLeft:0,tillAfter:360},
+    {ticket:24,minute:300,wanted:1,reachable:1,served:0,outcome:"no-stock",takings:0,platesLeft:0,tillAfter:360}
+  ];
+
+  function marketClock(minute){
+    var total = 17*60 + Math.max(0, Math.min(300, Math.round(minute)));
+    var h = Math.floor(total/60)%24, m = total%60;
+    return (h<10?"0":"")+h+":"+(m<10?"0":"")+m;
+  }
+  // Suggested mapping from PLATE.md: early <18:30 <= peak <20:30 <= late. Reads only the
+  // public clock, exactly like the accepted plate's own rule.
+  function gradeFor(minute){
+    var total = 17*60 + minute;
+    if (total < 18*60+30) return "early";
+    if (total < 20*60+30) return "peak";
+    return "late";
+  }
+  function money(cents){ return "$" + cents.toLocaleString("en-US"); }
+  function plural(n, one, many){ return n === 1 ? one : many; }
+
+  var PLATE_SRC = {
+    early: "../../../../v5/art/pass/lane-early.webp",
+    peak:  "../../../../v5/art/pass/lane-peak.webp",
+    late:  "../../../../v5/art/pass/lane-late.webp"
+  };
+
+  /* ---------------- the live customer: deterministic seed -> silhouette ---------------- */
+  function hash(n){
+    var h = n | 0;
+    h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+    h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+    h = (h ^ (h >>> 16)) >>> 0;
+    return h;
+  }
+  var ACCENTS = ["#5c9a90", "#c47a53", "#93a05a", "#93648f"];
+  var HEADS = ["none", "cap", "beanie"];
+  var BODIES = [
+    "M36 46C26 46 21 92 19 140L81 140C79 92 74 46 64 46Z",
+    "M32 46C22 46 18 92 16 140L84 140C82 92 78 46 68 46Z",
+    "M27 46C17 46 14 92 12 140L88 140C86 92 82 46 73 46Z"
+  ];
+  function paramsFor(ticket, offset){
+    var h = hash(ticket * 97 + offset * 31 + 7);
+    return {
+      accent: ACCENTS[h % ACCENTS.length],
+      head: HEADS[(h >>> 3) % HEADS.length],
+      body: BODIES[(h >>> 6) % BODIES.length],
+      height: (0.92 + ((h >>> 9) % 3) * 0.08).toFixed(2)
+    };
+  }
+  function headwearSVG(head, accent){
+    if (head === "cap") return '<path d="M31 19a19 19 0 0 1 38 0q-4-3-19-3t-19 3Z" fill="' + accent + '"/><path d="M31 20q-10 1-14 6l4 3q6-5 12-5Z" fill="' + accent + '"/>';
+    if (head === "beanie") return '<path d="M30 21a20 20 0 0 1 40 0v3H30Z" fill="' + accent + '"/><path d="M31 21h38M31 17h38" stroke="rgba(0,0,0,.28)" stroke-width="2"/>';
+    return "";
+  }
+  var MOUTHS = {
+    "served": "M42 34q8 6 16 0",
+    "short": "M43 35q7 3 14 0",
+    "no-stock": "M42 36q8-5 16 0",
+    "no-hands": "M43 36q7-4 14 0"
+  };
+  function personGroupSVG(order){
+    var wanted = order.wanted, served = order.served, outcome = order.outcome;
+    var main = paramsFor(order.ticket, 0);
+    var companions = [];
+    for (var i = 1; i < wanted; i++) companions.push(paramsFor(order.ticket, i));
+
+    var companionMarkup = companions.map(function(p, idx){
+      var dx = idx % 2 === 0 ? -1 : 1;
+      var off = 24 + idx * 11;
+      return '<g transform="translate(' + (dx*off) + ' 8) scale(0.7)" opacity="0.72">' +
+        '<path class="torso" d="' + p.body + '" fill="var(--figure-fill-2)" stroke="var(--rim-cool)" stroke-width="1" opacity=".95"/>' +
+        '<circle cx="50" cy="26" r="16" fill="var(--figure-fill-2)" stroke="var(--rim-cool)" stroke-width="1"/>' +
+        headwearSVG(p.head, p.accent) +
+        '</g>';
+    }).join("");
+
+    var handsMarkup;
+    if (outcome === "served" || outcome === "short"){
+      var discs = "";
+      for (var d = 0; d < served; d++){
+        var cx = 50 + 17*d - 8.5*(served-1);
+        discs += '<circle cx="' + cx + '" cy="116" r="7" fill="none" stroke="var(--accent-2)" stroke-width="2.2"/>';
+      }
+      var emptyHand = outcome === "short" ? '<circle cx="72" cy="119" r="6" fill="none" stroke="var(--ink-3)" stroke-width="1.6"/>' : "";
+      handsMarkup =
+        '<path d="M18 88Q4 106 12 128" stroke="var(--figure-fill)" stroke-width="11" fill="none" stroke-linecap="round"/>' +
+        '<path d="M82 88Q96 106 88 128" stroke="var(--figure-fill)" stroke-width="11" fill="none" stroke-linecap="round"/>' +
+        discs + emptyHand;
+    } else {
+      handsMarkup =
+        '<path d="M18 90Q2 102 8 118" stroke="var(--figure-fill)" stroke-width="11" fill="none" stroke-linecap="round"/>' +
+        '<path d="M82 90Q98 102 92 118" stroke="var(--figure-fill)" stroke-width="11" fill="none" stroke-linecap="round"/>' +
+        '<circle cx="8" cy="120" r="6" fill="none" stroke="var(--ink-3)" stroke-width="1.6"/>' +
+        '<circle cx="92" cy="120" r="6" fill="none" stroke="var(--ink-3)" stroke-width="1.6"/>';
+    }
+
+    var tilt = (outcome === "no-stock" || outcome === "no-hands") ? 6 : 0;
+    var fade = outcome === "no-hands";
+
+    return '<svg viewBox="0 0 100 140" style="height:100%;width:auto" role="presentation" ' +
+      'class="person"' + (fade ? ' style="opacity:.7"' : '') + '>' +
+      '<g transform="scale(' + main.height + ')">' +
+        companionMarkup +
+        '<g>' +
+          handsMarkup +
+          '<ellipse cx="50" cy="139" rx="30" ry="5" fill="rgba(0,0,0,.4)"/>' +
+          '<path d="' + main.body + '" fill="var(--figure-fill)"/>' +
+          '<path d="' + main.body + '" fill="none" stroke="var(--rim-warm)" stroke-width="2" opacity=".85" stroke-dasharray="0 46 120 400" stroke-linecap="round"/>' +
+          '<path d="' + main.body + '" fill="none" stroke="var(--rim-cool)" stroke-width="1.3" opacity=".55"/>' +
+          '<g transform="rotate(' + tilt + ' 50 30)">' +
+            '<circle cx="50" cy="26" r="17" fill="var(--figure-fill)"/>' +
+            '<path d="M33 26a17 17 0 0 1 34 0" fill="none" stroke="var(--rim-warm)" stroke-width="2" opacity=".85"/>' +
+            '<path d="M33 26a17 17 0 0 0 34 0" fill="none" stroke="var(--rim-cool)" stroke-width="1.3" opacity=".55"/>' +
+            headwearSVG(main.head, main.accent) +
+            '<circle cx="44" cy="25" r="1.6" fill="var(--ink-1)"/>' +
+            '<circle cx="56" cy="25" r="1.6" fill="var(--ink-1)"/>' +
+            '<path d="' + MOUTHS[outcome] + '" stroke="var(--ink-1)" stroke-width="1.8" fill="none" stroke-linecap="round"/>' +
+          '</g>' +
+        '</g>' +
+      '</g>' +
+    '</svg>';
+  }
+
+  function outcomeSentence(order){
+    if (order.outcome === "served") return { text: "get " + order.served + " " + plural(order.served,"plate","plates") + ".", tone: "good" };
+    if (order.outcome === "short") return { text: "get " + order.served + " of " + order.wanted + " " + plural(order.wanted,"plate","plates") + " — the rest ran out.", tone: "stock" };
+    if (order.outcome === "no-stock") return { text: "find no plates on the counter.", tone: "stock" };
+    return { text: "can't be reached before the window closes.", tone: "hands" };
+  }
+
+  /* ---------------- state + render ---------------- */
+  var els = {
+    hatchPlate: document.getElementById("hatch-plate"),
+    clockPill: document.getElementById("clock-pill"),
+    figureWrap: document.getElementById("figure-wrap"),
+    figureEmpty: document.getElementById("figure-empty"),
+    passCaption: document.getElementById("pass-caption"),
+    heading: document.getElementById("service-heading"),
+    platesLeft: document.getElementById("plates-left"),
+    platesWord: document.getElementById("plates-word"),
+    plateStack: document.getElementById("plate-stack"),
+    platesOverflow: document.getElementById("plates-overflow"),
+    ordersDone: document.getElementById("orders-done"),
+    spike: document.getElementById("spike"),
+    waitingLine: document.getElementById("waiting-line"),
+    waitingRail: document.getElementById("waiting-rail"),
+    tillAmount: document.getElementById("till-amount"),
+    tillFill: document.getElementById("till-fill"),
+    platesSold: document.getElementById("plates-sold"),
+    turnedAway: document.getElementById("turned-away"),
+    alerts: document.getElementById("alerts"),
+    controlOpen: document.getElementById("control-open"),
+    btnServe: document.getElementById("btn-serve"),
+    btnAuto: document.getElementById("btn-auto"),
+    btnClose: document.getElementById("btn-close"),
+    progress: document.getElementById("progress"),
+    hudCash: document.getElementById("hud-cash"),
+    hudSold: document.getElementById("hud-sold")
+  };
+
+  var STARTING_CASH = 1510; // ledger cash before tonight's till is committed — display only
+  var dealt = 0;
+  var autoTimer = null;
+  var AUTO_MS = 420; // same pace as the shipped auto-serve interval
+
+  function currentPlateCap(){ return Math.min(COOKED, 40); }
+
+  function render(){
+    var done = dealt >= ORDERS.length;
+    var last = dealt > 0 ? ORDERS[dealt - 1] : null;
+    var platesLeft = last ? last.platesLeft : COOKED;
+    var till = last ? last.tillAfter : 0;
+    var sold = COOKED - platesLeft;
+    var minute = last ? last.minute : 0;
+    var grade = gradeFor(minute);
+
+    var dealtOrders = ORDERS.slice(0, dealt);
+    var turnedAway = 0, noStock = 0, noHands = 0;
+    dealtOrders.forEach(function(o){
+      turnedAway += (o.wanted - o.served);
+      noStock += Math.max(0, o.reachable - o.served);
+      noHands += Math.max(0, o.wanted - o.reachable);
+    });
+    var stillWaiting = ORDERS.slice(dealt).reduce(function(t,o){ return t + o.wanted; }, 0);
+    var bare = platesLeft === 0 && stillWaiting > 0;
+    var quiet = done && platesLeft > 0;
+
+    // heading + clock
+    els.heading.textContent = done ? "You are closed for the night." : "You are serving customers.";
+    els.clockPill.textContent = marketClock(minute);
+    els.hatchPlate.style.backgroundImage = "url(" + PLATE_SRC[grade] + ")";
+    document.body.dataset.grade = grade;
+
+    // the live customer at the pass — the current order's own fate is already fixed by
+    // what's on the counter, so the figure shows it rather than a neutral placeholder that
+    // a press would immediately overwrite.
+    if (!done){
+      var current = ORDERS[dealt];
+      els.figureEmpty.hidden = true;
+      els.figureWrap.style.display = "";
+      els.figureWrap.innerHTML = personGroupSVG(current);
+      var sentence = outcomeSentence(current);
+      els.passCaption.innerHTML =
+        '<strong>Ticket #' + current.ticket + '</strong> wants ' + current.wanted + ' ' +
+        plural(current.wanted, "plate", "plates") + '. <span class="outcome" data-tone="' + sentence.tone + '">They ' + sentence.text + '</span>';
+    } else {
+      els.figureWrap.style.display = "none";
+      els.figureWrap.innerHTML = "";
+      els.figureEmpty.hidden = false;
+      els.passCaption.innerHTML = '<strong>Nobody is at the window.</strong> <span class="outcome">You are closed for the night.</span>';
+    }
+
+    // plates on the counter — a physical stack that shrinks as orders leave with plates
+    var cap = currentPlateCap();
+    var stackHtml = "";
+    for (var i = 0; i < cap; i++){
+      stackHtml += "<i" + (i >= platesLeft ? " data-gone" : "") + "></i>";
+    }
+    els.plateStack.innerHTML = stackHtml;
+    els.platesLeft.textContent = platesLeft;
+    els.platesLeft.dataset.bare = String(platesLeft === 0);
+    els.platesWord.textContent = plural(platesLeft, "plate left", "plates left");
+    if (COOKED > cap){
+      els.platesOverflow.hidden = false;
+      els.platesOverflow.textContent = "You cooked " + COOKED + " plates in all.";
+    } else {
+      els.platesOverflow.hidden = true;
+    }
+
+    // tickets & the lane — spike grows with every order dealt with; the rail names who's next
+    els.ordersDone.textContent = dealt;
+    var spikeCount = Math.min(dealt, 26);
+    var spikeHtml = "";
+    for (var s = 0; s < spikeCount; s++){
+      var rot = ((s * 37) % 20) - 10;
+      var bottom = 3 + s * 1.5;
+      spikeHtml += '<span class="stub" style="bottom:' + bottom + 'px;transform:translateX(-50%) rotate(' + rot + 'deg)"></span>';
+    }
+    els.spike.innerHTML = spikeHtml;
+    els.spike.style.height = Math.max(44, 3 + spikeCount * 1.5 + 12) + "px";
+    if (stillWaiting > 0){
+      els.waitingLine.textContent = stillWaiting + " " + plural(stillWaiting, "person is", "people are") + " waiting.";
+      var upcoming = ORDERS.slice(dealt + (done ? 0 : 1), dealt + (done ? 0 : 1) + 3);
+      els.waitingRail.innerHTML = upcoming.map(function(o){
+        return "<li>#" + o.ticket + " <b>" + o.wanted + "</b> " + plural(o.wanted,"plate","plates") + "</li>";
+      }).join("");
+    } else {
+      els.waitingLine.textContent = "Nobody is waiting.";
+      els.waitingRail.innerHTML = "";
+    }
+
+    // tonight so far
+    els.tillAmount.textContent = money(till);
+    var fillPct = Math.min(100, Math.round((till / (COOKED * PLATE_PRICE)) * 100));
+    els.tillFill.style.setProperty("--fill", fillPct + "%");
+    els.platesSold.textContent = sold;
+    els.turnedAway.textContent = turnedAway;
+    els.turnedAway.dataset.loss = String(turnedAway > 0);
+
+    // alerts — same two facts, same wording, said the moment they're true
+    var alertsHtml = "";
+    if (bare){
+      alertsHtml += '<p class="alert" role="status">You have no plates left. <strong>' + stillWaiting + '</strong> ' +
+        plural(stillWaiting, "person is", "people are") + ' still waiting.</p>';
+    }
+    if (quiet){
+      alertsHtml += '<p class="alert alert--quiet" role="status">Nobody is waiting any more. You still have <strong>' + platesLeft + '</strong> ' +
+        plural(platesLeft, "plate", "plates") + '.</p>';
+    }
+    if (done && turnedAway > 0){
+      var msg = "";
+      if (noHands > 0 && noStock > 0){
+        msg = "<strong>" + noStock + "</strong> " + plural(noStock,"person","people") + " wanted a plate after you ran out. Another <strong>" + noHands + "</strong> waited too long and left.";
+      } else if (noHands > 0){
+        msg = "<strong>" + noHands + "</strong> " + plural(noHands,"person","people") + " waited too long and left. One person can serve " + CAP + " plates in an evening.";
+      } else if (noStock > 0){
+        msg = "<strong>" + noStock + "</strong> " + plural(noStock,"person","people") + " wanted a plate after you ran out.";
+      }
+      alertsHtml += '<p class="alert" role="status">' + msg + '</p>';
+    }
+    els.alerts.innerHTML = alertsHtml;
+
+    // controls
+    els.controlOpen.style.display = done ? "none" : "";
+    els.btnAuto.style.display = done ? "none" : "";
+    els.btnClose.hidden = !done;
+    els.progress.textContent = done ? ("You are closed. You sold " + sold + " " + plural(sold,"plate","plates") + ".") : ("Order " + dealt + " of " + ORDERS.length + ".");
+
+    // top-bar HUD — mirrors the same numbers, live, the way MotifHud does during service
+    els.hudCash.textContent = money(STARTING_CASH + till);
+    els.hudSold.innerHTML = sold + ' <em>' + plural(sold,"plate","plates") + '</em>';
+
+    if (done && autoTimer){ clearInterval(autoTimer); autoTimer = null; els.btnAuto.setAttribute("aria-pressed","false"); els.btnAuto.textContent = "Serve automatically"; }
+  }
+
+  function serveNext(){
+    if (dealt >= ORDERS.length) return;
+    dealt += 1;
+    render();
+  }
+
+  els.btnServe.addEventListener("click", serveNext);
+  els.btnAuto.addEventListener("click", function(){
+    if (autoTimer){
+      clearInterval(autoTimer); autoTimer = null;
+      els.btnAuto.setAttribute("aria-pressed","false"); els.btnAuto.textContent = "Serve automatically";
+      return;
+    }
+    els.btnAuto.setAttribute("aria-pressed","true"); els.btnAuto.textContent = "Stop";
+    autoTimer = setInterval(function(){
+      if (dealt >= ORDERS.length){ clearInterval(autoTimer); autoTimer = null; return; }
+      serveNext();
+    }, AUTO_MS);
+  });
+  els.btnClose.addEventListener("click", function(){
+    els.btnClose.textContent = "Closed — the settle screen is outside this mock";
+    els.btnClose.disabled = true;
+  });
+
+  // Convenience presets for judging the three required moments — not a product control.
+  // Reads once at load from the URL hash so each moment can be screenshotted directly.
+  function applyHash(){
+    var h = (location.hash || "").replace("#", "");
+    if (h === "midway") dealt = 18;
+    else if (h === "close") dealt = 24;
+    else dealt = 0;
+    render();
+  }
+  window.addEventListener("hashchange", applyHash);
+  applyHash();
+})();
+</script>
+</body>
+</html>

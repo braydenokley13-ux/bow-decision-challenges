@@ -371,6 +371,38 @@ p { color: var(--ink-2); }
 .educator-topbar nav a.active { color: var(--ink-1); border-bottom: 2px solid var(--ink-1); }
 .demo-pill, .standard-chip, .tag-row span { padding: var(--s-2) var(--s-3); background: var(--surface-sunken); border-radius: var(--r-pill); color: var(--ink-2); font: var(--t-micro); }
 
+/* ── "Try it as a student" ────────────────────────────────────────────────────────────────
+   D8. `SampleRun.tsx` renders `.sample-run` and `.sample-run__bar`, and neither had a rule at
+   any of its class names in any stylesheet — so the banner that says *"Sample run — nothing
+   here reaches a teacher"*, the sentence explaining it and the way back to the guide all
+   arrived as raw text in the top-left corner, above the product's own app bar, measured at
+   `padding: 0px` and a transparent ground. It is on the path a district evaluator takes from
+   the educator guide to see what students see, which is the worst place in the product for
+   the first thing on screen to look unfinished.
+
+   So it is a band rather than page content: its own sunken ground, a strong rule under it,
+   and the whole student product framed inside it. The wrapper takes the viewport height so
+   the band sits over a full screen instead of over whatever the run happens to be tall.
+   Reading order is what it says — the disclaimer, then why, then the way out — and the way
+   out is pushed to the far end at any width that has room for it. */
+.sample-run { min-height: 100vh; display: grid; grid-template-rows: auto minmax(0, 1fr); background: var(--canvas); }
+.sample-run__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-3) var(--s-5);
+  padding: var(--s-4) var(--s-6);
+  background: var(--surface-sunken);
+  border-bottom: 2px solid var(--border-strong);
+}
+
+/* The disclaimer is the sentence a teacher is being asked to trust, so it is not set at the
+   size of a caption: 14px is this product's floor for anything an adult reads on a working
+   surface, and the pill is the one word of it that has to be unmissable. */
+.sample-run__bar .demo-pill { font: var(--tt-meta); font-weight: 700; color: var(--ink-1); background: var(--surface); border: 1px solid var(--border-strong); }
+.sample-run__bar > p { flex: 1 1 32ch; max-width: var(--measure); margin: 0; color: var(--ink-2); font: var(--tt-meta); font-weight: 400; }
+.sample-run__bar > a { display: inline-block; padding-block: 4px; color: var(--ink-1); font: var(--tt-meta); font-weight: 600; text-underline-offset: 5px; }
+
 /*
  * One spine for the whole educator surface.
  *
@@ -1276,6 +1308,32 @@ p { color: var(--ink-2); }
 .class-form__worlds input { min-height: 0; margin-block-start: 0.2em; accent-color: var(--navy); }
 .class-form__worlds b { display: block; color: var(--ink-1); }
 
+/* §37's one question of the teacher's own — four elements that had no rule at any of their
+   class names (`DEFECTS.md` D7) and rendered as four separate faults on the second screen of
+   the demonstration: the textarea drawn over the right-hand end of its own label, four
+   suggestion buttons at four widths on four left edges, the required-answer caption on the
+   line beneath its own checkbox, and a raw browser-default notched border around all of it.
+   The overlap was the mechanism to fix first: inside `.class-form`'s grid a `<label>` is a
+   grid item and gets its own row, and inside this fieldset it was an inline box sitting on
+   the same line as the inline-block control after it. */
+.class-form__closing { display: grid; gap: var(--s-3); padding: var(--s-4); border: 1px solid var(--border-strong); border-radius: var(--r-sm); background: var(--surface-raised); }
+.class-form__closing legend { padding-inline: var(--s-2); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.class-form__closing > label:not(.class-form__closing-required) { display: block; }
+.class-form__closing textarea { min-height: calc(var(--tap) * 1.5); padding: var(--s-3) var(--s-4); line-height: 1.5; resize: vertical; }
+.class-form__closing-note { max-width: var(--measure); margin: 0; color: var(--ink-3); font: var(--t-sm); letter-spacing: normal; text-transform: none; }
+
+/* One column, so four sentences of different lengths share one left edge and one width
+   instead of being sized by their own text. They read as the list of choices they are. */
+.class-form__closing-suggest { display: grid; gap: var(--s-2); margin: 0; justify-items: stretch; }
+.class-form__closing-suggest > span { color: var(--ink-3); font: var(--t-label); letter-spacing: 0.06em; text-transform: uppercase; }
+.class-form__closing-suggest .button { justify-content: flex-start; width: 100%; text-align: left; }
+
+/* Specific enough to beat `.class-form label`, which is where the uppercase label styling and
+   the block display come from — without it the caption rendered as small caps on the line
+   beneath its own checkbox. */
+.class-form .class-form__closing-required { display: grid; grid-template-columns: auto 1fr; gap: var(--s-3); align-items: start; font: var(--t-sm); letter-spacing: normal; text-transform: none; color: var(--ink-2); }
+.class-form .class-form__closing-required input { min-height: 0; margin-block-start: 0.15em; accent-color: var(--navy); }
+
 /* ---------------------------------------------------------------------------
  * Objective Map. A coverage document, not a dashboard: five bands of ruled
  * type on the cream, with status carried by the geometry of a mark and by a
@@ -1436,6 +1494,9 @@ p { color: var(--ink-2); }
 .segmented button[aria-pressed="true"] { background: var(--ink-1); color: var(--ink-invert); }
 
 /* A row that goes somewhere looks like it does, rather than parking an arrow at the far edge. */
+
+/* The heading the rows hang from. Without one the page skipped h1 -> h3. */
+.row-list__head { margin: var(--s-6) 0 var(--s-3); font: var(--t-title3); color: var(--ink-2); }
 .row-list { display: grid; gap: 1px; background: var(--border-subtle); }
 .row-list > a { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s-4); padding: var(--s-5); background: var(--surface); color: var(--ink-1); text-decoration: none; }
 .row-list > a:hover { background: var(--surface-raised); }
@@ -1618,6 +1679,39 @@ p { color: var(--ink-2); }
 .home__worlds strong { font: var(--t-title2); }
 .home__worlds span { color: var(--ink-2); font: var(--t-sm); }
 .home__worlds-length { font-feature-settings: var(--num); }
+
+/* ── The front door's footer ──────────────────────────────────────────────────────────────
+   D4. `.home__foot` had no rule anywhere, so the browser laid its three children out in the
+   default inline flow with nothing between them: measured at 1366 the wordmark ran 0–206px,
+   *Data protection* 206–331 and *Teacher's guide* 331–456, printing
+   `BOW Decision ChallengesData protectionTeacher's guide` as one unbroken string on the first
+   screen a district evaluator meets. At 360 it overlapped itself.
+
+   A wrapping row on the same gutter the bar and the hero above it already use, with a
+   hairline over it so the page ends rather than stopping. `scenes.css` owns the rest of this
+   screen; this rule stays here because `app.css` is where the element's own name belongs and
+   nothing in `scenes.css` claims it. The links keep the 4px of block padding every standalone
+   link in this product carries — at this size they measure 19px, under the 24px 2.5.8 asks
+   for — and the name is pushed away from them so the two are never read as one list. */
+.home__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2) var(--s-5);
+  padding: var(--s-5) clamp(20px, 4vw, 56px) var(--s-6);
+  border-top: 1px solid var(--border-subtle);
+  color: var(--ink-3);
+  font: var(--t-sm);
+}
+.home__foot > span { margin-inline-end: auto; }
+.home__foot a { display: inline-block; padding-block: 4px; color: var(--ink-2); text-underline-offset: 5px; }
+.home__foot a:hover { color: var(--ink-1); }
+
+/* On a phone the name takes its own line: with all three sharing one it wrapped between the
+   two links, which reads as a list whose first item is the product's name. */
+@media (max-width: 560px) {
+  .home__foot > span { flex: 1 0 100%; }
+}
 
 /* ── Share-out ────────────────────────────────────────────────────────────────────────────
    Select and sequence, then project. Nothing reaches a room that a teacher did not choose. */
@@ -1810,8 +1904,31 @@ p { color: var(--ink-2); }
 .builder-closing__required { display: flex; align-items: center; gap: var(--s-3); color: var(--ink-2); font: var(--t-sm); letter-spacing: normal; text-transform: none; }
 .builder-closing__required input { width: 18px; height: 18px; accent-color: var(--bow-brand); }
 
-/* Publish */
-.builder-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4); }
+/* Publish.
+
+   The single completing control on the single assign path, and it sat at y=2,617 on a
+   2,717px page — 1,849px below the fold, measured, with nothing else on the screen that
+   commits an assignment (`teacher/RULING.md` §5 booked this as the consequence of making the
+   builder the only door; `DEFECTS.md` D27 is it measured again after the page grew). It
+   travels with the teacher now, the way `.plan-commit` does for the student: a sticky bar at
+   the foot of the form column, in view at every scroll position, with the reason it is not
+   pressable yet beside it rather than at the end of a scroll. */
+.builder-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-4);
+  margin-top: var(--s-6);
+  padding: var(--s-5) var(--s-6);
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-left: 4px solid var(--bow-brand);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lift);
+}
 .builder-actions__status { margin: 0; color: var(--ink-3); font: var(--t-sm); }
 .builder-actions__status--problem { color: var(--fin-over-ink); font-weight: 600; }
 .builder-confirm { display: flex; flex-wrap: wrap; gap: var(--s-4); }
@@ -1966,3 +2083,669 @@ p { color: var(--ink-2); }
 .objective-standing__missing li + li { margin-top: var(--s-2); }
 .objective-standing__link { font: var(--t-sm); }
 .objective-standing__attribution { color: var(--ink-4); font: var(--t-micro); }
+
+/* ===========================================================================
+   The teacher instrument — the class overview and one student's evidence.
+
+   Three materials, one scale, and a rule about how many of the first a page may
+   carry. See `gauntlet/v6/teacher/RULING.md` §4.
+
+   ## Why a surface vocabulary rather than a restyle
+
+   The design system had exactly one card, so "make this dominant" could only be
+   faked with size — which is how a class page ended up with a 40px headline
+   above seven `.dashboard-section` blocks of identical weight, none of which
+   answered the question a teacher opens the page with. Ranking by size inside one
+   material is the defect; ranking by *material* is the fix, because a page whose
+   surfaces differ can demote a table without deleting it.
+
+   - `.surface-instrument` — raised, roomy, the card ground. The thing a teacher
+     acts on. **One per screen**, enforced by `oneInstrument.test.tsx` rather than
+     left as a convention, because a convention drifts back the way the type
+     drifted to 12px.
+   - `.surface-record` — flat, a hairline, the page ground. Reference that stays
+     on screen and is meant to be read second.
+   - `.surface-margin` — no ground, no border. Furniture: identity lines, keys,
+     the gradebook line, the links at the foot.
+
+   `.surface-record__flag` is a tinted inset for one shortfall row. It is a
+   modifier and never a surface on its own.
+   =========================================================================== */
+
+.surface-instrument {
+  /* 24px top and bottom rather than 32. The horizontal roominess is what makes a raised
+     surface feel raised; the vertical is what pushes the next region down the page, and on
+     the student's evidence page that next region is the child's own writing and the box the
+     teacher replies in. Measured: 32/32 put the composer at y=864 on a 768px fold. */
+  padding: var(--s-6) var(--s-7);
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lift);
+}
+
+.surface-record {
+  padding: var(--s-6);
+  background: var(--canvas);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  box-shadow: none;
+}
+
+.surface-margin { padding: 0; background: none; border: 0; box-shadow: none; }
+
+.surface-record__flag {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  align-items: baseline;
+  justify-content: space-between;
+  padding: var(--s-4) var(--s-5);
+  background: var(--fin-over-soft);
+  border-left: 4px solid var(--fin-over);
+  border-radius: var(--r-xs);
+}
+
+/* Every heading, label and count on the two teacher pages comes off the five-step
+   scale. The 12px tokens are not banned from the stylesheet — the student product
+   reads the same file — they are banned from here, and this is where that is kept. */
+.teacher-page,
+.teacher-page p,
+.teacher-page li,
+.teacher-page td,
+.teacher-page th,
+.teacher-page dd,
+.teacher-page dt { font: var(--tt-body); }
+.teacher-page h1 { font: var(--tt-display); letter-spacing: var(--display-tracking); }
+.teacher-page h2 { font: var(--tt-title); letter-spacing: 0; }
+.teacher-page h3, .teacher-page h4 { font: var(--tt-body); font-weight: 700; }
+.teacher-page .eyebrow,
+.teacher-page .field-label { font: var(--tt-meta); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.teacher-page small,
+.teacher-page cite,
+.teacher-page time,
+.teacher-page caption { font: var(--tt-meta); }
+.teacher-page [data-count] { font-feature-settings: var(--num); font-variant-numeric: tabular-nums; }
+
+/* One ring, on everything. The contract names 2px `--violet-600`; `--focus-ring`
+   is that colour, and going through the token means a theme change moves it. */
+.teacher-page :focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; border-radius: var(--r-xs); }
+
+/* 44px on every control, including the seat chips and the per-row disclosures that
+   would otherwise be the two smallest targets on either page. */
+.teacher-page a.triage-seat,
+.teacher-page .triage__row,
+.teacher-page summary { min-height: var(--tap); }
+
+/* ---------------------------------------------------------------------------
+   R1 — the identity line. A margin, not a header: no card, no border, one line.
+   --------------------------------------------------------------------------- */
+.class-identity { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); align-items: baseline; }
+.class-identity > .eyebrow { margin: 0; }
+.class-identity__facts { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); align-items: baseline; margin: 0; color: var(--ink-3); font: var(--tt-meta); }
+.class-identity__facts [data-count] { color: var(--ink-2); }
+
+/* ---------------------------------------------------------------------------
+   R2 — the instrument. Two columns from 1100px: the lead, and the triage that is
+   the class list. Below that the lead compresses — the detail sentence and the
+   state pill drop into the foot — so the first seat clears a 600px fold on the
+   Chromebook the brief names as the secondary device.
+   --------------------------------------------------------------------------- */
+.instrument { display: grid; gap: var(--s-6); }
+.instrument__grid { display: grid; gap: var(--s-6) var(--s-7); }
+
+@media (min-width: 1100px) {
+  .instrument__grid { grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr); }
+}
+
+.instrument__lead { display: grid; align-content: start; gap: var(--s-4); min-width: 0; }
+.instrument__lead h1 { max-width: 18ch; margin: 0; }
+.instrument__lead p { margin: 0; color: var(--ink-2); }
+.instrument__detail { max-width: 46ch; }
+
+/* The class's Ladder-4 state, quiet on purpose. It is a label on the sentence
+   above it, not a verdict of its own — and it never appears without the counts
+   the sentence carries. */
+.instrument__state {
+  justify-self: start;
+  padding: var(--s-2) var(--s-4);
+  color: var(--ink-2);
+  background: var(--surface-sunken);
+  border-radius: var(--r-pill);
+  font: var(--tt-meta);
+  font-feature-settings: var(--num);
+}
+
+.instrument__actions { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.instrument__refusal { max-width: 46ch; color: var(--ink-3); font: var(--tt-meta); font-weight: 400; }
+.instrument__refusal a { color: var(--ink-1); }
+
+/* The foot: the room-state counts. They were a whole section with its own heading
+   on the shipped page; they are context for the triage, not a question of their
+   own, so they are the instrument's last line. */
+.instrument__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-6);
+  align-items: baseline;
+  margin: 0;
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--border-default);
+  color: var(--ink-3);
+  font: var(--tt-meta);
+}
+.instrument__foot > div { display: flex; gap: var(--s-2); align-items: baseline; }
+.instrument__foot dt { font-weight: 700; color: var(--ink-2); }
+.instrument__foot dd { margin: 0; font-feature-settings: var(--num); font-variant-numeric: tabular-nums; }
+
+/* ---------------------------------------------------------------------------
+   The triage, which IS the class list. Every seat, ranked by state severity.
+   --------------------------------------------------------------------------- */
+.triage { display: grid; align-content: start; gap: var(--s-4); min-width: 0; }
+.triage > h2 { margin: 0; font: var(--tt-meta); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.triage__group { display: grid; gap: var(--s-3); }
+.triage__group + .triage__group { padding-top: var(--s-3); border-top: 1px solid var(--border-default); }
+
+.triage__head { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); align-items: baseline; margin: 0; }
+.triage__count { color: var(--ink-1); font: var(--m-md); font-feature-settings: var(--num); }
+.triage__state { display: inline-flex; gap: var(--s-2); align-items: baseline; font: var(--tt-body); font-weight: 700; }
+.triage__hint { flex: 1 1 14ch; color: var(--ink-3); font: var(--tt-meta); font-weight: 400; text-align: right; }
+
+/* The state mark, always beside its word and never instead of it. Rendered as a
+   text glyph rather than drawn in CSS so it survives greyscale, a high-contrast
+   mode and a screen reader that reads the label beside it. */
+.mark-glyph { font-feature-settings: normal; line-height: 1; }
+.triage__group[data-state="not-yet-demonstrated"] .triage__state,
+.triage__group[data-state="not-yet-demonstrated"] .triage__count { color: var(--fin-over-ink); }
+.triage__group[data-state="incomplete"] .triage__state { color: var(--ink-2); }
+.triage__group[data-state="demonstrated"] .triage__state { color: var(--fin-balanced-ink); }
+
+/* One seat, one gap, one way in. A full row, because these are the four children
+   the page exists to name. */
+.triage__row {
+  display: grid;
+  grid-template-columns: minmax(6ch, auto) minmax(0, 1fr) auto;
+  gap: var(--s-2) var(--s-4);
+  align-items: center;
+  padding: var(--s-3) var(--s-3) var(--s-3) 0;
+  color: var(--ink-1);
+  border-bottom: 1px solid var(--border-subtle);
+  text-decoration: none;
+}
+.triage__row:hover { background: var(--surface-sunken); }
+.triage__row b { font: var(--tt-body); font-weight: 700; }
+.triage__row span { color: var(--ink-2); font: var(--tt-body); }
+.triage__row em { color: var(--ink-3); font: var(--tt-meta); font-style: normal; }
+.triage__arrow { color: var(--ink-3); }
+
+/* Identical shortfalls cluster. Three rows reading the same sentence are one
+   shortfall printed three times — the defect this page exists to cure, reappearing
+   inside the cure. The gap heads the row, the children are chips through to their
+   own evidence, and the reteach is where a teacher goes next. */
+.triage__cluster { display: grid; gap: var(--s-2); padding: var(--s-3) var(--s-4); background: var(--surface-sunken); border-radius: var(--r-sm); }
+.triage__cluster p { margin: 0; }
+.triage__gap { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); align-items: baseline; justify-content: space-between; font: var(--tt-body); font-weight: 700; }
+.triage__same { color: var(--ink-3); font: var(--tt-meta); font-weight: 500; }
+.triage__reteach { font: var(--tt-meta); }
+
+.triage-seats { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.triage-seat {
+  display: inline-flex;
+  gap: var(--s-2);
+  align-items: center;
+  padding: var(--s-2) var(--s-4);
+  color: var(--ink-1);
+  background: var(--surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-sm);
+  font: var(--tt-meta);
+  font-weight: 600;
+  text-decoration: none;
+}
+.triage-seat:hover { border-color: var(--ink-1); }
+.triage-seat small { color: var(--ink-3); font: var(--tt-meta); font-weight: 500; }
+
+/* The fifth state the brief names and nothing on this page carried: read, but not
+   yet written back. It is a mark on the row rather than a fourth group, because
+   with an empty feedback list a group would swallow thirteen of eighteen children
+   and drown the four gaps. */
+.mark-written { color: var(--fin-balanced-ink); font: var(--tt-meta); font-weight: 600; }
+.mark-first { color: var(--fin-conditional-ink); font: var(--tt-meta); font-weight: 600; }
+
+/* The other half of the pair, on the row. The teacher's own reading of the writing
+   travelled nowhere on this page — so the triage ranked the class on BOW's half of a
+   two-part report and put the strongest reasoner in the room at the top of it. The
+   number is its own carrier: it survives greyscale without the ink step below. */
+.mark-reading {
+  color: var(--ink-2);
+  font: var(--tt-meta);
+  font-weight: 700;
+  font-feature-settings: var(--num);
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------------------
+   The records. Flat, hairline, page ground — reference that stays on screen.
+   --------------------------------------------------------------------------- */
+.record__head { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); align-items: baseline; margin: 0 0 var(--s-4); }
+.record-pair .record__head { margin-bottom: 0; }
+.record__head h2 { margin: 0; }
+.record__head p { margin: 0; color: var(--ink-3); font: var(--tt-meta); }
+
+.record-pair { display: grid; gap: var(--s-5); }
+.record-pair > .surface-record { padding: var(--s-5) var(--s-6); }
+
+@media (min-width: 900px) { .record-pair { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+
+/* Two story records side by side, each on its own denominator. Demoted to a flat
+   record is the right weight for these; deleted is not. */
+.record-columns { display: grid; gap: var(--s-5); }
+
+@media (min-width: 900px) { .record-columns { grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); } }
+
+/* A count-only distribution. The seats behind every count are one native
+   disclosure away rather than inline under each row. */
+.dist { display: grid; gap: var(--s-3); margin: 0; }
+.dist h3 { margin: 0; font: var(--tt-body); font-weight: 700; }
+.dist ul { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.dist li { display: grid; grid-template-columns: 4ch minmax(0, 1fr); gap: var(--s-3); align-items: baseline; font: var(--tt-body); }
+.dist li b { font-feature-settings: var(--num); font-variant-numeric: tabular-nums; }
+.dist li[data-empty="true"] { color: var(--ink-3); }
+.dist details summary { color: var(--ink-2); font: var(--tt-meta); cursor: pointer; }
+.dist details p { margin: var(--s-2) 0 0; color: var(--ink-2); font: var(--tt-meta); }
+
+/* The segmented bar is decoration beside text that carries the data, so it is
+   `aria-hidden` in the markup and has no words of its own here. */
+.skill-bar { display: flex; height: 8px; overflow: hidden; border-radius: var(--r-pill); background: var(--surface-inset); }
+.skill-bar > span { display: block; height: 100%; }
+.skill-bar > span[data-state="demonstrated"] { background: var(--fin-balanced); }
+.skill-bar > span[data-state="demonstrated-with-support"] { background: var(--choice-2); opacity: 0.6; }
+.skill-bar > span[data-state="developing"] { background: var(--fin-conditional); }
+.skill-bar > span[data-state="not-yet-demonstrated"] { background: var(--fin-over); }
+.skill-bar > span[data-state="incomplete"] { background: var(--border-strong); }
+.skill-bar > span[data-state="not-observed"] { background: var(--fin-locked); }
+
+.skill-rows { display: grid; gap: var(--s-5); }
+.skill-rows > li { display: grid; gap: var(--s-3); list-style: none; }
+.skill-rows__statement { margin: 0; font: var(--tt-body); font-weight: 600; }
+.skill-rows__counts { margin: 0; color: var(--ink-2); font: var(--tt-body); }
+
+/* ---------------------------------------------------------------------------
+   R0 on the student page — the queue bar. What turns the class triage from a list
+   of links into a workflow: a teacher processes the whole cluster without going
+   back to the class page, the way the reading queue already works.
+   --------------------------------------------------------------------------- */
+.queue-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-default);
+}
+.queue-bar__what { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-3); align-items: baseline; margin: 0; color: var(--ink-2); font: var(--tt-meta); }
+.queue-bar__what b { color: var(--ink-1); }
+.queue-bar__moves { display: flex; flex-wrap: wrap; gap: var(--s-3); }
+.queue-bar__moves a, .queue-bar__moves span {
+  display: inline-flex;
+  min-height: var(--tap);
+  gap: var(--s-2);
+  align-items: center;
+  padding: 0 var(--s-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-sm);
+  color: var(--ink-1);
+  font: var(--tt-meta);
+  font-weight: 600;
+  text-decoration: none;
+}
+.queue-bar__moves span { color: var(--ink-4); border-style: dashed; }
+
+/* R1 — the student's identity line. Same material as the class page's, and the same rule:
+   one wrapping row, because every row of furniture above the instrument is a row the
+   evidence under it has to give up on a 768px screen. */
+.student-identity { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); align-items: baseline; }
+.student-identity h1 { margin: 0; font: var(--tt-display); }
+.student-identity__facts { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-4); align-items: baseline; margin: 0; color: var(--ink-3); font: var(--tt-meta); }
+.student-identity__did { margin: 0; color: var(--ink-2); font: var(--tt-body); }
+
+/* R2 — the verdict. The page's one raised surface.
+
+   Three columns from 1100px, and the third one is a measurement rather than a taste: with
+   the objective standing stacked under the three skills, the instrument ran 609px and put
+   the child's own writing at y=1,023 — below the fold on the device the brief names, which
+   is the exact defect the page was rebuilt to cure, moved 6,000px up and left in place. */
+.verdict__grid { display: grid; gap: var(--s-5) var(--s-6); }
+
+/* Two columns from 760, three from 1100 — and the third column is a measurement rather than
+   a taste. Stacked in one column the instrument ran 609px and put the child's own writing at
+   y=1,023: below the fold on the device the brief names, which is the exact defect this page
+   was rebuilt to cure, moved 6,000px up the page and left in place. Three columns hold the
+   whole verdict — the state and its shortfall, the three skills, and where the attempt
+   leaves the objective — inside 350px, and the writing and the reply clear the fold behind
+   it. `order` puts the skills between the two rather than the DOM, because the reading order
+   with one column is verdict, objective, skills. */
+@media (min-width: 760px) {
+  .verdict__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .verdict__skills-col { grid-column: 1 / -1; padding-top: var(--s-4); border-top: 1px solid var(--border-default); }
+  .verdict__skills { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-5); }
+  .verdict__skills li { padding-bottom: 0; border-bottom: 0; }
+}
+
+.verdict__lead { display: grid; align-content: start; gap: var(--s-4); }
+.verdict__lead h2 { margin: 0; font: var(--tt-meta); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.verdict__skills-col { display: grid; align-content: start; gap: var(--s-3); min-width: 0; }
+.verdict__state { display: flex; gap: var(--s-3); align-items: baseline; margin: 0; font: 700 1.5rem/1.2 var(--font-ui); }
+.verdict__state[data-state="not-yet-demonstrated"] { color: var(--fin-over-ink); }
+.verdict__state[data-state="developing"] { color: var(--fin-conditional-ink); }
+.verdict__state[data-state="demonstrated"], .verdict__state[data-state="demonstrated-with-support"] { color: var(--fin-balanced-ink); }
+
+/* The lead, as two statements rather than one word. `decision` and `writing` are two
+   separate reports in this product and adding them together is the thing it refuses to
+   do — so the screen shows them as two columns of equal weight, both above the fold,
+   with the sentence that says they are never summed sitting under each. */
+
+/* Stacked rather than literally side by side: the lead is one column of a three-column
+   instrument, and splitting ~250px in two set "what a person read in the writing" four words
+   deep and the number at caption size. One under the other, both inside the first viewport,
+   with a rule between them — which is what the pair had to be: two statements, neither of them
+   a summary of the other. */
+.verdict__pair { display: grid; gap: var(--s-4); align-items: start; }
+.verdict__half { display: grid; align-content: start; gap: var(--s-2); min-width: 0; }
+.verdict__half + .verdict__half { padding-top: var(--s-4); border-top: 1px solid var(--border-subtle); }
+.verdict__half-note { margin: 0; color: var(--ink-3); font: var(--tt-meta); }
+.verdict__half-note a { color: var(--ink-2); }
+
+/* `.teacher-page p` is a class-plus-element selector and was quietly winning against
+   `.verdict__state`, so the page's lead state has been rendering at body size — `RULING.md` §3
+   asks for 24px, and both halves of the pair have to carry the same weight or the layout is
+   making the ranking the words refuse to make. */
+.teacher-page .verdict__state { font: 700 1.5rem/1.2 var(--font-ui); }
+.teacher-page .verdict__state[data-state="unread"] { color: var(--ink-2); font-size: 1.25rem; }
+.verdict__state--read { font-feature-settings: var(--num); }
+
+.verdict__flags { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; }
+.verdict__absence { margin: 0; color: var(--ink-2); font: var(--tt-body); }
+.verdict__skills { display: grid; gap: var(--s-3); margin: 0; padding: 0; list-style: none; min-width: 0; font-feature-settings: var(--num); }
+
+/* The state leads the row and the statement runs on from it, rather than sitting on a line
+   of its own: three chips on three lines of their own cost 90px in a column that decides
+   where the writing below starts. */
+.verdict__skills li { margin: 0; padding-bottom: var(--s-2); border-bottom: 1px solid var(--border-subtle); }
+.verdict__skills li b { margin-right: var(--s-2); }
+.verdict__skills li:last-child { padding-bottom: 0; border-bottom: 0; }
+.verdict__skills > li > span { color: var(--ink-2); font: var(--tt-body); }
+.verdict__skills b { white-space: nowrap; font: var(--tt-meta); font-weight: 700; }
+
+/* R3 — the child's writing, and the reply. The two things on this page only a
+   person can do, and the reason the page was rebuilt: they were at 96% of a
+   7,500px document, one of them switched off in CSS behind a tab. */
+.written { display: grid; gap: var(--s-3); }
+.written blockquote { margin: 0; padding-left: var(--s-5); border-left: 3px solid var(--violet-300); color: var(--ink-1); font: var(--tt-read); }
+.written__promise { margin: 0; color: var(--ink-2); font: var(--tt-meta); }
+.written__own { display: grid; gap: var(--s-3); padding-top: var(--s-4); border-top: 1px solid var(--border-default); }
+
+/* R4 — what they decided, six steps, from the student's own log. The only block
+   on the page that tells a teacher what the child actually did in a form a person
+   can read aloud, which is why it is set at the reading size. */
+.decision-steps { display: grid; gap: var(--s-4); margin: 0; padding: 0; counter-reset: step; list-style: none; }
+.decision-steps li { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr); gap: var(--s-4); align-items: baseline; counter-increment: step; }
+.decision-steps li::before { content: counter(step); color: var(--ink-4); font: var(--m-xs); font-feature-settings: var(--num); }
+.decision-steps__what { margin: 0; font: var(--tt-read); }
+.decision-steps__label { display: block; color: var(--ink-3); font: var(--tt-meta); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.decision-steps__none { color: var(--ink-3); font: var(--tt-body); }
+
+/* R5 — every judgement, grouped by skill, weakest group first, and every one of
+   them overridable. The fourteen full-height panels are per-row disclosures now;
+   the surface did not narrow. */
+.judgements { display: grid; gap: var(--s-6); }
+.judgement-block { display: grid; gap: var(--s-3); }
+.judgement-block > h3 { margin: 0; font: var(--tt-body); font-weight: 700; }
+.judgement-block > p { margin: 0; color: var(--ink-3); font: var(--tt-meta); }
+.judgement-rows { display: grid; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+.judgement-rows > li { padding: var(--s-4) 0; border-bottom: 1px solid var(--border-subtle); }
+.judgement-rows > li[data-short="true"] { background: var(--fin-over-soft); border-left: 4px solid var(--fin-over); padding-left: var(--s-4); border-radius: var(--r-xs); }
+
+/* A row that is waiting on a person rather than on the student — a paragraph turned in and
+   not yet read. It is neither a shortfall nor an absence, so it takes neither of their
+   grounds: a dashed edge, because the judgement has not arrived, in the ink this product
+   already uses for a reading that is still open. */
+.judgement-rows > li[data-level="unread"] { padding-left: var(--s-4); border-left: 4px dashed var(--fin-adjustable); }
+.judgement-rows > li[data-level="unread"] > .judgement-line > span { color: var(--fin-adjustable-ink); }
+.judgement-line { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-2) var(--s-4); align-items: baseline; }
+.judgement-line b { font: var(--tt-body); font-weight: 700; }
+.judgement-line > span { font: var(--tt-meta); font-weight: 700; white-space: nowrap; }
+.judgement-rule { grid-column: 1 / -1; margin: var(--s-2) 0 0; color: var(--ink-2); font: var(--tt-meta); font-weight: 400; }
+.judgement-mine { grid-column: 1 / -1; margin: var(--s-2) 0 0; color: var(--fin-adjustable-ink); font: var(--tt-meta); font-weight: 600; }
+.judgement-rows details > summary { display: flex; align-items: center; color: var(--ink-2); font: var(--tt-meta); font-weight: 600; cursor: pointer; }
+.judgement-rows details[open] > summary { margin-bottom: var(--s-3); }
+.judgements__propagates { margin: 0; color: var(--ink-2); font: var(--tt-meta); }
+
+/* R7 — the gradebook line. Furniture: it leaves the product, it is the teacher's
+   own marks, and the sentence saying so travels with it. */
+.gradebook-line { display: grid; gap: var(--s-3); }
+.gradebook-line__counts { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); margin: 0; align-items: baseline; }
+.gradebook-line__counts > div { display: flex; gap: var(--s-2); align-items: baseline; }
+.gradebook-line__counts dt { color: var(--ink-3); font: var(--tt-meta); }
+.gradebook-line__counts dd { margin: 0; color: var(--ink-1); font: var(--tt-body); font-weight: 700; font-variant-numeric: tabular-nums; }
+.gradebook-line p { margin: 0; color: var(--ink-2); font: var(--tt-meta); }
+
+/* The key, behind one disclosure, at the foot. It is a glossary, and a glossary is
+   margin — it was three boxes at section weight on the shipped page. */
+.word-key summary { color: var(--ink-2); font: var(--tt-meta); font-weight: 600; cursor: pointer; }
+.word-key dl { display: grid; gap: var(--s-2); margin: var(--s-3) 0 0; }
+.word-key dt { color: var(--ink-1); font: var(--tt-meta); font-weight: 700; }
+.word-key dd { margin: 0 0 var(--s-2); color: var(--ink-2); font: var(--tt-meta); font-weight: 400; }
+
+.teacher-foot { display: flex; flex-wrap: wrap; gap: var(--s-4) var(--s-5); align-items: center; }
+
+/* ---------------------------------------------------------------------------
+   Reflow. One breakpoint, not a mobile path and a zoom path. Below ~620px every
+   grid on both pages is a single column, chips wrap, and text wraps rather than
+   ellipsing — a column one word wide is the failure this clause exists to forbid.
+   --------------------------------------------------------------------------- */
+@media (max-width: 620px) {
+  .surface-instrument { padding: var(--s-5); }
+  .surface-record { padding: var(--s-5); }
+  .instrument__grid,
+  .verdict__grid,
+  .record-pair,
+  .record-columns { grid-template-columns: 1fr; }
+  .instrument__lead h1 { max-width: none; }
+  .triage__row { grid-template-columns: minmax(0, 1fr) auto; }
+  .triage__row span { grid-column: 1 / -1; }
+  .triage__hint { flex-basis: 100%; text-align: left; }
+  .verdict__skills li { grid-template-columns: 1fr; }
+  .judgement-line { grid-template-columns: 1fr; }
+  .decision-steps li { grid-template-columns: 1.75rem minmax(0, 1fr); gap: var(--s-3); }
+  .dist li { grid-template-columns: 3ch minmax(0, 1fr); }
+  .queue-bar { align-items: stretch; flex-direction: column; }
+}
+
+/* ---------------------------------------------------------------------------
+   The two teacher pages' own rhythm.
+
+   `--gap-section` is 56px, which is right for a page of sibling sections and wrong for a
+   page whose first surface has to start inside the first 200px — measured at 1024×600, the
+   fold is 600px and every pixel above the instrument is a child's name below it. The
+   sections under the instrument keep a full section gap between them; the margin at the top
+   does not get one, because it is one line of furniture rather than a section.
+   --------------------------------------------------------------------------- */
+.educator-main.teacher-page { padding-top: var(--s-3); }
+.educator-main.teacher-page > * + * { margin-top: var(--s-5); }
+.educator-main.teacher-page > .queue-bar + .student-identity { margin-top: var(--s-3); }
+.educator-main.teacher-page > .surface-record + .surface-record,
+.educator-main.teacher-page > .surface-instrument + * { margin-top: var(--s-7); }
+
+/* At 1100px and below the lead compresses: the detail sentence and the state carry on being
+   read, they just stop standing between the headline and the first child's name. `display:
+   contents` dissolves the two-column wrapper so the instrument itself becomes the single
+   column, and `order` puts the triage above the sentence that describes it. Measured need:
+   the shipped lead spent 400px before the first seat on a 600px fold. */
+@media (max-width: 1099px) {
+  .instrument { gap: var(--s-4); }
+  .instrument__grid, .instrument__lead { display: contents; }
+  .instrument__lead h1 { order: 1; }
+  .instrument__actions { order: 2; }
+  .triage { order: 3; }
+  .instrument__detail, .instrument__state { order: 4; }
+  .instrument__refusal { order: 5; }
+  .instrument__foot { order: 6; }
+}
+
+/* The teach-next card, inside a record rather than at the foot of a page.
+   Two of its rules were written for a section that owned the bottom of the objective page:
+   a 2px rule across the top, and the recommendation drawn as a full-width violet panel. On
+   a flat record the rule reads as a section break inside a card, and the violet panel is the
+   second most saturated object on a page whose one purple control is the reading queue —
+   colour doing the work of material, which is the cause this ruling exists to fix. Scoped to
+   the teacher pages so the objective page, which is not in this ruling, is untouched. */
+.teacher-page .next-lesson { margin-top: 0; padding-top: 0; border-top: 0; }
+.teacher-page .next-lesson > .eyebrow { display: none; }
+.teacher-page .next-lesson__action {
+  padding: var(--s-5);
+  color: var(--ink-1);
+  background: var(--violet-50);
+  border-left: 4px solid var(--bow-brand-strong);
+  border-radius: var(--r-xs);
+}
+.teacher-page .next-lesson__action > .eyebrow { display: block; color: var(--bow-brand-strong); }
+.teacher-page .next-lesson__action h3,
+.teacher-page .next-lesson__action h4 { color: var(--ink-1); }
+.teacher-page .next-lesson__focus,
+.teacher-page .next-lesson__moves,
+.teacher-page .next-lesson__minutes { color: var(--ink-2); }
+.teacher-page .next-lesson__focus { font: var(--tt-body); }
+.teacher-page .next-lesson__moves { font: var(--tt-body); }
+.teacher-page .next-lesson__minutes,
+.teacher-page .next-lesson__students small,
+.teacher-page .next-lesson__gaps td small,
+.teacher-page .next-lesson__gaps th small { font: var(--tt-meta); }
+.teacher-page .next-lesson__why { color: var(--ink-1); border-top-color: var(--border-default); font: var(--tt-body); }
+.teacher-page .spotlight h3, .teacher-page .spotlight h4 { font: var(--tt-title); }
+.teacher-page .spotlight__rule,
+.teacher-page .spotlight__none,
+.teacher-page .spotlight__work blockquote { font: var(--tt-body); }
+.teacher-page .spotlight__work cite,
+.teacher-page .spotlight__absence,
+.teacher-page .objective-bar-note p,
+.teacher-page .next-lesson__working summary { font: var(--tt-meta); }
+
+/* The objective standing, as the instrument's third column rather than a card stacked under
+   the skills. Only the type is re-set here — the block's own structure, its refusals and its
+   attribution line are the component's and are not this stylesheet's to edit. */
+
+/* The same rule for the objective standing: it is a column of the instrument here, not a
+   card sitting on one. Its left rule stays — that is the block's identity and it still reads
+   as one thing — and its own ground and shadow come off. */
+.teacher-page .objective-standing {
+  min-width: 0;
+  gap: var(--s-3);
+  padding: 0 0 0 var(--s-5);
+  background: none;
+  border: 0;
+  border-left: 3px solid var(--bow-brand);
+  border-radius: 0;
+  box-shadow: none;
+}
+.teacher-page .objective-standing__code,
+.teacher-page .objective-standing__state span,
+.teacher-page .objective-standing__missing ul,
+.teacher-page .objective-standing__link,
+.teacher-page .objective-standing__attribution { font: var(--tt-meta); }
+.teacher-page .objective-standing__state strong { font: var(--tt-body); font-weight: 700; }
+.teacher-page .objective-standing__chip { font: var(--tt-meta); font-weight: 700; letter-spacing: 0.04em; }
+
+@media (min-width: 1100px) {
+  /* Not three equal columns. The middle one holds three of BOW's own skill sentences, which
+     are the longest strings on the page; the two either side hold short lines. Sized 1:1.4:1
+     each of them wraps to about the same depth, and the instrument stops being as tall as its
+     worst-packed column. */
+  .verdict__grid { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.35fr) minmax(0, 0.9fr); }
+  .verdict__skills-col { grid-column: auto; order: 2; padding-top: 0; border-top: 0; }
+  .teacher-page .objective-standing { order: 3; }
+  .verdict__skills { grid-template-columns: minmax(0, 1fr); gap: var(--s-3); }
+
+  /* At this width each statement is a label on a state chip rather than running prose, so it
+     sits at the meta step — 14px, the floor, never below it. */
+  .verdict__skills > li > span { font: var(--tt-meta); }
+}
+
+/* The write-back panel, on a page where it is one of two records side by side rather than
+   the last thing on a 7,500px document. Only the rhythm changes: every control, every
+   sentence and the four-hundred-character limit are the panel's own. */
+
+/* Flat inside its record. `.feedback` brings its own ground, its own rule and its own inset
+   because it used to be the last block on a page with nothing around it; inside a record it
+   is a card in a card, which is the material confusion this whole ruling exists to end. */
+.teacher-page .feedback { gap: var(--s-2); margin: 0; padding: 0; background: none; border-top: 0; }
+.teacher-page .feedback__none,
+.teacher-page .feedback__sent,
+.teacher-page .feedback__sent cite,
+.teacher-page .feedback .field-label,
+.teacher-page .feedback .checkline,
+.teacher-page .feedback__actions span { font: var(--tt-meta); }
+.teacher-page .feedback textarea { font: var(--tt-body); }
+
+/* The 14px floor, kept where the two rebuilt pages borrow blocks that predate it.
+   `--t-micro` and `--t-label` both compute to 12px and appear a hundred and thirty-six times
+   across the sheet; they are not being removed, because the student product reads the same
+   file. They are being kept off these two pages, which is the contract — 14px, no
+   exceptions, not for a timestamp, a legend or a column header. Differentiation below body
+   size is weight and ink, never pixels. */
+.teacher-page .micro-table thead th,
+.teacher-page .micro-table caption,
+.teacher-page .override-levels span,
+.teacher-page .override-form legend,
+.teacher-page .override-form label,
+.teacher-page .override-form__note,
+.teacher-page .judgement__history time,
+.teacher-page .judgement__history li,
+.teacher-page .judgement__saved,
+.teacher-page .trail__step,
+.teacher-page .trail__level,
+.teacher-page .trail__judgements li,
+.teacher-page .trail__when span,
+.teacher-page .trail__absent li,
+.teacher-page .trail__absent p,
+.teacher-page .closing-answer .eyebrow,
+.teacher-page .class-state,
+.teacher-page .adaptation-lines dt,
+.teacher-page .adaptation-lines dd,
+.teacher-page .gradebook .field-label,
+.teacher-page .gradebook__note,
+.teacher-page .gradebook__counts dt,
+.teacher-page .gradebook__criteria dt,
+.teacher-page .gradebook__criteria dd,
+.teacher-page .gradebook__figure span,
+.teacher-page .resolve-changes-table th,
+.teacher-page .resolve-changes-table td,
+.teacher-page .rubric-row span,
+.teacher-page .segmented button,
+.teacher-page .assign-list span { font: var(--tt-meta); }
+.teacher-page .override-form legend,
+.teacher-page .override-form label,
+.teacher-page .gradebook .field-label { font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* Tables reflow to definition rows, never to a column one word wide.
+   Measured at 360: the teach-next table's third header rendered 76px wide and 122px tall —
+   "Never came up" stacked one word per line, which is no horizontal scroll and not readable
+   either. Below the single breakpoint every teacher table becomes one block per row: the
+   thing being counted, then each count under the name of its own column. The header row is
+   taken out of the flow rather than out of the document, so it still names the columns for a
+   screen reader, and `data-label` is what puts that name in front of each cell for everybody
+   else — a bare "3 of 13" with its heading off-screen is a number with no subject. */
+@media (max-width: 620px) {
+  .teacher-page .micro-table,
+  .teacher-page .micro-table tbody,
+  .teacher-page .micro-table tr,
+  .teacher-page .micro-table tbody th,
+  .teacher-page .micro-table tbody td { display: block; width: auto; }
+  .teacher-page .micro-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .teacher-page .micro-table tbody tr { padding: var(--s-4) 0; border-bottom: 1px solid var(--border-default); }
+  .teacher-page .micro-table tbody th { padding: 0 0 var(--s-3); border: 0; }
+  .teacher-page .micro-table tbody td { padding: var(--s-2) 0 0; border: 0; white-space: normal; }
+  .teacher-page .micro-table tbody td::before { content: attr(data-label) " — "; color: var(--ink-3); font-weight: 700; }
+  .teacher-page .micro-table tbody td:not([data-label])::before { content: none; }
+  .teacher-page .resolve-changes-table { display: block; overflow-x: auto; }
+}

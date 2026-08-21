@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>T1 — One student's evidence — Seat 3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --violet-600: #6733e8; --violet-700: #5522c4; --violet-100: #ece7ff; --violet-50: #f5f3ff;
+    --ink-1: #14142b; --ink-2: #3d3d5c; --ink-3: #5a5a78; --ink-4: #6b6b8c;
+    --canvas: #f5f5fa; --surface: #ffffff; --surface-sunken: #efeff7; --surface-inset: #e6e6f1;
+    --border-subtle: #ebebf4; --border-default: #dddcec; --border-strong: #c3c2da;
+    --balanced: #15704a; --balanced-soft: #dcefe5; --balanced-ink: #0e5335;
+    --conditional: #a8720c; --conditional-soft: #fbf0d9; --conditional-ink: #6b4703;
+    --over: #b3301f; --over-soft: #fbe4e0; --over-ink: #832014;
+    --shadow-card: 0 1px 2px rgb(20 20 43 / 6%), 0 8px 20px -12px rgb(20 20 43 / 16%);
+    --shadow-lift: 0 2px 6px rgb(20 20 43 / 7%), 0 24px 48px -24px rgb(20 20 43 / 26%);
+    --fs-micro: 0.8125rem; --fs-sm: 0.90625rem; --fs-body: 1rem; --fs-md: 1.0625rem;
+    --fs-lg: 1.1875rem; --fs-title: 1.375rem; --fs-headline: 1.875rem; --fs-display: 2rem;
+    --radius-lg: 18px; --radius-md: 12px; --radius-sm: 8px;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: var(--canvas); color: var(--ink-1); font: 400 var(--fs-body)/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: var(--violet-700); }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 32px 64px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 32px; border-bottom: 1px solid var(--border-subtle); background: var(--surface); font-size: var(--fs-sm); color: var(--ink-3); }
+  .topbar b { color: var(--ink-1); }
+  .badge-sample { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: var(--violet-50); color: var(--violet-700); font-weight: 700; font-size: var(--fs-micro); border: 1px solid var(--violet-100); }
+
+  .back { display: inline-block; font-size: var(--fs-sm); font-weight: 700; margin-bottom: 8px; text-decoration: none; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 0.06em; font-size: var(--fs-micro); font-weight: 700; color: var(--ink-4); margin: 0 0 4px; }
+
+  header.page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; margin-bottom: 18px; flex-wrap: wrap; }
+  h1.seat-name { font-size: var(--fs-display); font-weight: 800; margin: 0 0 2px; }
+  .page-head__sub { color: var(--ink-3); font-size: var(--fs-sm); margin: 0; }
+  .page-head__world { font-size: var(--fs-sm); color: var(--ink-3); margin-top: 6px; }
+  .page-head__world b { color: var(--ink-1); }
+
+  /* ---------- PRIMARY: decide & respond. the one raised surface. ---------- */
+  .decide {
+    background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-lift);
+    border: 1px solid var(--border-subtle); padding: 24px 26px 22px; margin-bottom: 18px;
+  }
+  .decide__grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 26px; }
+  @media (max-width: 900px) { .decide__grid { grid-template-columns: 1fr; } }
+
+  .verdict__lead { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .lead-mark { width: 15px; height: 15px; border-radius: 3px; flex: none; background: var(--over-soft); border: 2.5px solid var(--over); }
+  .verdict__lead strong { font-size: var(--fs-headline); font-weight: 800; }
+  .verdict__lead span { font-size: var(--fs-sm); color: var(--ink-3); }
+
+  ul.skills { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  ul.skills li { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; font-size: var(--fs-sm); padding: 6px 0; border-bottom: 1px solid var(--border-subtle); }
+  ul.skills li span.name { color: var(--ink-2); max-width: 62%; }
+  ul.skills li b { font-weight: 700; white-space: nowrap; }
+  ul.skills li[data-state="not-yet"] b { color: var(--over-ink); }
+  ul.skills li[data-state="incomplete"] b { color: var(--conditional-ink); }
+  ul.skills li[data-state="ok"] b { color: var(--balanced-ink); }
+
+  .flags { margin: 10px 0 0; padding: 0; list-style: none; }
+  .flags li { font-size: var(--fs-sm); color: var(--over-ink); background: var(--over-soft); border-radius: var(--radius-sm); padding: 8px 12px; margin-bottom: 6px; }
+  .absence-note { font-size: var(--fs-sm); color: var(--conditional-ink); background: var(--conditional-soft); border-radius: var(--radius-sm); padding: 8px 12px; margin-top: 6px; }
+
+  .objective-card { background: var(--surface-sunken); border-radius: var(--radius-md); padding: 14px 16px; }
+  .objective-card p.eyebrow { margin-bottom: 6px; }
+  .objective-card strong { font-size: var(--fs-md); display: block; margin-bottom: 4px; }
+  .objective-card span { font-size: var(--fs-sm); color: var(--ink-3); }
+
+  .writeback { border-top: 1px solid var(--border-subtle); margin-top: 20px; padding-top: 18px; }
+  .writeback__head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+  .writeback__head h2 { font-size: var(--fs-lg); margin: 0; }
+  .writeback__head span { font-size: var(--fs-sm); color: var(--ink-4); }
+  textarea.fb {
+    width: 100%; font: inherit; font-size: var(--fs-md); padding: 10px 12px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border-default); resize: vertical; min-height: 64px; background: var(--surface);
+  }
+  .writeback__row { display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
+  .checkline { display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); color: var(--ink-3); }
+  .writeback__actions { display: flex; align-items: center; gap: 12px; }
+  .charcount { font-size: var(--fs-micro); color: var(--ink-4); }
+
+  .btn { font: 700 var(--fs-sm)/1 inherit; padding: 9px 16px; border-radius: 999px; border: 1px solid transparent; cursor: pointer; text-decoration: none; white-space: nowrap; display: inline-block; }
+  .btn--primary { background: var(--violet-600); color: #fff; }
+  .btn--ghost { background: var(--surface); color: var(--ink-2); border-color: var(--border-default); }
+  .btn--quiet { background: none; color: var(--violet-700); border: none; padding: 9px 4px; }
+  .btn--sm { padding: 6px 12px; font-size: var(--fs-micro); }
+
+  /* ---------- tabs (secondary) ---------- */
+  input[name="tabs"] {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap;
+  }
+  .tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--border-subtle); margin-bottom: 16px; }
+  .tabs label {
+    padding: 10px 16px; font-size: var(--fs-md); font-weight: 700; color: var(--ink-3); cursor: pointer;
+    border-bottom: 2px solid transparent; margin-bottom: -2px;
+  }
+  #tab-trail:checked ~ .tabs label[for="tab-trail"],
+  #tab-explain:checked ~ .tabs label[for="tab-explain"],
+  #tab-plan:checked ~ .tabs label[for="tab-plan"],
+  #tab-next:checked ~ .tabs label[for="tab-next"] { color: var(--violet-700); border-bottom-color: var(--violet-600); }
+
+  .panel { display: none; }
+  #tab-trail:checked ~ .panels #panel-trail,
+  #tab-explain:checked ~ .panels #panel-explain,
+  #tab-plan:checked ~ .panels #panel-plan,
+  #tab-next:checked ~ .panels #panel-next { display: block; }
+
+  .card { background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 18px 20px; margin-bottom: 14px; }
+  .card h2 { font-size: var(--fs-lg); margin: 0 0 4px; }
+  .card > p.small { font-size: var(--fs-sm); color: var(--ink-3); margin: 0 0 12px; }
+
+  details.competency { border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); margin-bottom: 8px; }
+  details.competency[open] { background: var(--surface-sunken); }
+  details.competency > summary { list-style: none; cursor: pointer; padding: 11px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: var(--fs-md); }
+  details.competency > summary::-webkit-details-marker { display: none; }
+  details.competency > summary .tally { font-weight: 400; font-size: var(--fs-sm); color: var(--ink-3); }
+  .comp__body { padding: 0 14px 12px; }
+
+  ul.judgements { list-style: none; margin: 0; padding: 0; }
+  ul.judgements li { padding: 9px 0; border-top: 1px solid var(--border-subtle); display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: start; }
+  ul.judgements li:first-child { border-top: none; }
+  .j__label { font-size: var(--fs-sm); font-weight: 600; color: var(--ink-1); }
+  .j__rule { display: block; font-size: var(--fs-micro); color: var(--ink-4); font-weight: 400; margin-top: 2px; }
+  .j__level { font-size: var(--fs-sm); font-weight: 700; white-space: nowrap; text-align: right; }
+  .j__level[data-lv="5"], .j__level[data-lv="4"] { color: var(--balanced-ink); }
+  .j__level[data-lv="0"] { color: var(--over-ink); }
+  .j__level[data-lv="null"] { color: var(--ink-4); }
+
+  table.rubric { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+  table.rubric th, table.rubric td { text-align: left; padding: 8px 10px; border-top: 1px solid var(--border-subtle); }
+  table.rubric td.mark { text-align: right; font-weight: 700; }
+  .writing-quote { border-left: 4px solid var(--violet-200, #d9cfff); padding: 4px 14px; font-size: var(--fs-md); color: var(--ink-1); margin: 0 0 12px; font-style: italic; }
+
+  dl.opening-figures { display: grid; grid-template-columns: 1fr auto; gap: 4px 20px; font-size: var(--fs-sm); max-width: 320px; }
+  dl.opening-figures dt { color: var(--ink-3); }
+  dl.opening-figures dd { margin: 0; font-weight: 700; text-align: right; }
+
+  .keyline { display: flex; flex-wrap: wrap; gap: 12px 20px; font-size: var(--fs-sm); color: var(--ink-3); margin: 4px 0 12px; }
+  .keyline div { display: flex; align-items: center; gap: 7px; }
+  .mark--ok { width: 13px; height: 13px; border-radius: 50%; background: var(--balanced); border: 2px solid var(--balanced); }
+  .mark--gap { width: 13px; height: 13px; border-radius: 3px; background: var(--over-soft); border: 2px solid var(--over); }
+  .mark--none { width: 13px; height: 13px; border-radius: 50%; background: var(--surface); border: 2px dashed var(--ink-4); }
+
+  details.ref { border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-bottom: 12px; background: transparent; }
+  details.ref[open] { background: var(--surface); }
+  details.ref > summary { list-style: none; cursor: pointer; padding: 13px 18px; display: flex; justify-content: space-between; font-weight: 700; font-size: var(--fs-md); color: var(--ink-2); }
+  details.ref > summary::-webkit-details-marker { display: none; }
+  details.ref > summary .n { font-weight: 400; color: var(--ink-4); font-size: var(--fs-sm); margin-left: 8px; }
+  .ref__body { padding: 0 18px 18px; font-size: var(--fs-sm); color: var(--ink-2); }
+
+  ol.transcript { list-style: none; margin: 0; padding: 0; }
+  ol.transcript li { padding: 8px 0; border-top: 1px solid var(--border-subtle); font-size: var(--fs-sm); }
+  ol.transcript li:first-child { border-top: none; }
+  ol.transcript b { color: var(--ink-1); }
+  ol.transcript span.step { color: var(--ink-4); font-size: var(--fs-micro); float: right; }
+
+  .gradebook-line dl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 0 0 10px; }
+  .gradebook-line dt { font-size: var(--fs-micro); color: var(--ink-4); text-transform: uppercase; letter-spacing: .03em; }
+  .gradebook-line dd { margin: 2px 0 0; font-size: var(--fs-lg); font-weight: 800; }
+  :focus-visible { outline: 3px solid var(--violet-600); outline-offset: 2px; }
+
+  /* ---------- reflow: no shrinking type, no 2D scroll — everything stacks or wraps ---------- */
+  @media (max-width: 700px) {
+    .wrap { padding: 20px 16px 48px; }
+    .topbar { padding: 10px 16px; flex-wrap: wrap; gap: 8px; }
+    .decide { padding: 18px 16px 18px; }
+    ul.skills li { flex-wrap: wrap; }
+    ul.skills li span.name { max-width: 100%; }
+    .tabs { flex-wrap: wrap; row-gap: 2px; }
+    .tabs label { padding: 8px 10px; }
+    .card { padding: 16px 14px; }
+    ul.judgements li { grid-template-columns: 1fr; row-gap: 4px; }
+    .j__level { text-align: left; }
+    table.rubric, table.rubric tbody, table.rubric tr, table.rubric td, table.rubric th { display: block; width: 100%; }
+    table.rubric td.mark { text-align: left; padding-top: 0; border-top: none; }
+    .writeback__row { flex-direction: column; align-items: flex-start; }
+    .gradebook-line dl { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <span>BOW <b>Educator</b> · Plan Under Pressure</span>
+    <span class="badge-sample">Sample class — not a real one</span>
+  </div>
+
+  <div class="wrap">
+    <a class="back" href="class.html">&larr; Class evidence</a>
+
+    <header class="page-head">
+      <div>
+        <p class="eyebrow">Turned in 1:32 PM &middot; attempt 1 of 1</p>
+        <h1 class="seat-name">Seat 3</h1>
+        <p class="page-head__world">Basketball &middot; <b>Gym District Sublet</b> &middot; reserved seat not decided &middot; clinics not decided</p>
+      </div>
+    </header>
+
+    <!-- PRIMARY SURFACE: verdict + the one control only a teacher has, together. -->
+    <section class="decide">
+      <div class="decide__grid">
+        <div>
+          <div class="verdict__lead">
+            <span class="lead-mark" aria-hidden="true"></span>
+            <div>
+              <strong>Not yet &mdash; plan within income</strong><br />
+              <span>The least this attempt can be said to have shown. Weakest first, because that's the reason to open them.</span>
+            </div>
+          </div>
+
+          <ul class="skills">
+            <li data-state="ok"><span class="name">Separate needs, wants, values and goals</span><b>Showed it</b></li>
+            <li data-state="not-yet"><span class="name">Plan within income</span><b>Not yet</b></li>
+            <li data-state="incomplete"><span class="name">Adapt a plan after a change</span><b>Evidence not all in</b></li>
+          </ul>
+
+          <ul class="flags">
+            <li><b>Savings is a planned amount</b> &mdash; did not do it. The course line took whatever the other two rows left over, instead of Seat&nbsp;3 setting it first.</li>
+          </ul>
+          <p class="absence-note">3 things the work had to show were never asked in this run &mdash; the final repair was never saved, so BOW never saw whether it would have worked. Absences, not zeros.</p>
+        </div>
+
+        <div class="objective-card">
+          <p class="eyebrow">Set to</p>
+          <strong>1.3 &middot; Plan within income</strong>
+          <span>Covers: all of it. This run is read against the whole objective &mdash; showing one of its skills is not showing what it asked for.</span>
+        </div>
+      </div>
+
+      <div class="writeback">
+        <div class="writeback__head">
+          <h2>Write back</h2>
+          <span>400 characters &middot; one message &middot; they see it next time they open BOW</span>
+        </div>
+        <label class="checkline" for="fb-text" style="display:block;font-size:var(--fs-sm);color:var(--ink-3);margin-bottom:6px;">Name one thing they did and one thing to try next time.</label>
+        <textarea class="fb" id="fb-text" rows="2" placeholder="Name one thing they did and one thing to try next time."></textarea>
+        <div class="writeback__row">
+          <label class="checkline"><input type="checkbox" /> Worth talking about in person &mdash; for your list, not theirs.</label>
+          <div class="writeback__actions">
+            <span class="charcount">400 left</span>
+            <button type="button" class="btn btn--primary">Send it</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECONDARY: the four things a teacher opens a student to do -->
+    <input type="radio" name="tabs" id="tab-trail" checked />
+    <input type="radio" name="tabs" id="tab-explain" />
+    <input type="radio" name="tabs" id="tab-plan" />
+    <input type="radio" name="tabs" id="tab-next" />
+
+    <div class="tabs" role="tablist" aria-label="This student's work">
+      <label for="tab-trail">Evidence trail</label>
+      <label for="tab-explain">The explanation</label>
+      <label for="tab-plan">The plan</label>
+      <label for="tab-next">What next</label>
+    </div>
+
+    <div class="panels">
+      <div class="panel" id="panel-trail">
+        <div class="card">
+          <h2>Every judgement on this attempt</h2>
+          <p class="small">Grouped by skill. Closed groups showed everything they had to &mdash; open one to check BOW's reading, or override it, on the same row.</p>
+
+          <details class="competency" open>
+            <summary><span>Plan within income</span><span class="tally">1 not yet &middot; 4 showed it</span></summary>
+            <div class="comp__body">
+              <ul class="judgements">
+                <li>
+                  <div><span class="j__label">Savings is a planned amount</span><span class="j__rule">Savings is set to a deliberate figure before discretionary categories are filled, not as the remainder after them</span></div>
+                  <span class="j__level" data-lv="0">Did not do it</span>
+                </li>
+                <li>
+                  <div><span class="j__label">Knows what money is actually available</span><span class="j__rule">Totals available money correctly; keeps conditional money marked as conditional</span></div>
+                  <span class="j__level" data-lv="5">Right first time</span>
+                </li>
+                <li>
+                  <div><span class="j__label">Covers what is required first</span><span class="j__rule">Every required cost included once, at the right amount</span></div>
+                  <span class="j__level" data-lv="5">Right first time</span>
+                </li>
+                <li>
+                  <div><span class="j__label">The plan actually balances</span><span class="j__rule">Saved plan does not exceed available money; nothing left unassigned</span></div>
+                  <span class="j__level" data-lv="5">Right first time</span>
+                </li>
+                <li>
+                  <div><span class="j__label">Explains the trade&#8209;off made</span><span class="j__rule">Names something given up, what it was given up for, and their own numbers</span></div>
+                  <span class="j__level" data-lv="4">Fixed it themselves</span>
+                </li>
+              </ul>
+              <p style="font-size:var(--fs-sm);margin-top:10px;"><a href="#">I read this differently &rarr;</a></p>
+            </div>
+          </details>
+
+          <details class="competency">
+            <summary><span>Separate needs, wants, values and goals</span><span class="tally">4 showed it</span></summary>
+            <div class="comp__body">
+              <ul class="judgements">
+                <li><div><span class="j__label">Fits the choice to the money there is</span><span class="j__rule">Commits no more than there is; leaves nothing behind that an unpaid claim could still take</span></div><span class="j__level" data-lv="5">Right first time</span></li>
+                <li><div><span class="j__label">Chooses on what the claim is, not what it costs</span><span class="j__rule">Says what the unpaid claim was &mdash; needed, promised, or wanted &mdash; not that it was cheapest to drop</span></div><span class="j__level" data-lv="5">Right first time</span></li>
+                <li><div><span class="j__label">The reason holds up against what they did</span><span class="j__rule">The reason given is true of what they left unpaid and not of what they paid for</span></div><span class="j__level" data-lv="5">Right first time</span></li>
+                <li><div><span class="j__label">Says what made one claim matter more</span><span class="j__rule">Names what made one claim matter &mdash; needed, promised, or saved toward &mdash; not what it cost</span></div><span class="j__level" data-lv="5">Right first time</span></li>
+              </ul>
+            </div>
+          </details>
+
+          <details class="competency">
+            <summary><span>Adapt a plan after a change</span><span class="tally">2 showed it &middot; 3 never came up</span></summary>
+            <div class="comp__body">
+              <ul class="judgements">
+                <li><div><span class="j__label">Works out the size of the change</span><span class="j__rule">Correctly totals what was lost and what is newly required</span></div><span class="j__level" data-lv="5">Right first time</span></li>
+                <li><div><span class="j__label">Explains what they protected and why</span><span class="j__rule">Names what they refused to cut and why</span></div><span class="j__level" data-lv="5">Right first time</span></li>
+                <li><div><span class="j__label">Uses only money that can still move</span><span class="j__rule">Repairs from adjustable categories; does not reclaim committed money</span></div><span class="j__level" data-lv="null">Never came up</span></li>
+                <li><div><span class="j__label">Frees enough to cover it</span><span class="j__rule">Frees at least the shortfall, or as much as was available</span></div><span class="j__level" data-lv="null">Never came up</span></li>
+                <li><div><span class="j__label">Ends with a plan that works, or says what is still short</span><span class="j__rule">Final plan balances, or the uncovered amount is acknowledged</span></div><span class="j__level" data-lv="null">Never came up</span></li>
+              </ul>
+              <p style="font-size:var(--fs-sm);color:var(--ink-3);margin-top:8px;">The final repair was never saved this run, so BOW never saw these three. Not a zero &mdash; a question the run didn't get to ask.</p>
+            </div>
+          </details>
+
+          <div class="keyline">
+            <div><span class="mark--ok" aria-hidden="true"></span> Right first time / Fixed it themselves</div>
+            <div><span class="mark--gap" aria-hidden="true"></span> Did not do it</div>
+            <div><span class="mark--none" aria-hidden="true"></span> Never came up</div>
+          </div>
+        </div>
+
+        <details class="ref">
+          <summary><span>What Seat 3 did <span class="n">&mdash; in the order it happened, 7 moments</span></span></summary>
+          <div class="ref__body">
+            <ol class="transcript">
+              <li><span class="step">Step 1 of 7</span><b>Working plan &middot; Calculation submitted</b> &mdash; totalled the place and eight weeks of essentials once each; reconciled at the first attempt.</li>
+              <li><span class="step">Step 2 of 7</span><b>Working plan &middot; Savings set as the remainder</b> &mdash; the course line took whatever the goal and reserve rows left over.</li>
+              <li><span class="step">Step 3 of 7</span><b>Working plan &middot; Plan saved</b> &mdash; spent no more than available, nothing left unassigned.</li>
+              <li><span class="step">Step 4 of 7</span><b>Fallback version &middot; Plan saved</b> &mdash; kept both bonuses out of the total unless marked conditional.</li>
+              <li><span class="step">Step 5 of 7</span><b>Season weeks &middot; Competing claims settled</b> &mdash; $105 of $150 on travel share and a gift; $45 left could not cover the team shoes.</li>
+              <li><span class="step">Step 6 of 7</span><b>Week 5 event &middot; Calculation submitted</b> &mdash; totalled what Week 5 took away and newly required, every component counted.</li>
+              <li><span class="step">Step 7 of 7</span><b>Defense &middot; Submitted</b> &mdash; wrote the explanation scored under &ldquo;The explanation&rdquo;.</li>
+            </ol>
+          </div>
+        </details>
+      </div>
+
+      <div class="panel" id="panel-explain">
+        <div class="card">
+          <h2>What they wrote</h2>
+          <blockquote class="writing-quote">&ldquo;The sublet costs more, so I protected the reserve first and let the goal line absorb what changed in Week&nbsp;5.&rdquo;</blockquote>
+          <p class="small">Nothing about this writing is machine-scored, and it is never sent to a model. A person reads it and scores it &mdash; which is what Seat 3 was told would happen. Already scored below; open a row to change it.</p>
+          <table class="rubric">
+            <thead><tr><th>Score the writing &mdash; four things, you decided</th><th></th></tr></thead>
+            <tbody>
+              <tr><td>Workability &mdash; explains why the final plan actually holds</td><td class="mark">1 / 2</td></tr>
+              <tr><td>Protected priority &mdash; names what they chose to keep, and why</td><td class="mark">2 / 2</td></tr>
+              <tr><td>Trade&#8209;off &mdash; names what that choice cost them</td><td class="mark">1 / 2</td></tr>
+              <tr><td>Numerical evidence &mdash; two accurate, relevant numbers from their own plan</td><td class="mark">2 / 4</td></tr>
+              <tr><th scope="row">Reasoning total</th><td class="mark">6 / 10</td></tr>
+            </tbody>
+          </table>
+          <p style="margin-top:10px;"><button type="button" class="btn btn--ghost btn--sm">Change the score</button></p>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-plan">
+        <div class="card">
+          <h2>What Seat 3 planned</h2>
+          <p class="small">The opening plan. No repair was ever saved this run &mdash; there is no &ldquo;after&rdquo; to show beside it.</p>
+          <dl class="opening-figures">
+            <dt>Goal</dt><dd>$1,000</dd>
+            <dt>Reserve</dt><dd>$1,000</dd>
+            <dt>Flexible cash</dt><dd>$600</dd>
+          </dl>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-next">
+        <div class="card">
+          <h2>What to work on</h2>
+          <p class="small">One gap, and it's the same one two other students hit &mdash; see the shared reteach on the class page.</p>
+          <ul class="flags" style="margin-top:0;">
+            <li><b>Savings is a planned amount</b> &mdash; did not do it. Set to a deliberate figure before discretionary categories are filled, not as the remainder after them.</li>
+          </ul>
+          <p style="margin-top:10px;"><a class="btn btn--ghost btn--sm" href="class.html#reteach-savings">Open the 12&#8209;minute reteach on the class page &rarr;</a></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- REFERENCE: gradebook line, one interaction away, never the headline -->
+    <details class="ref">
+      <summary><span>Gradebook line <span class="n">&mdash; BOW adds nothing to it; these are your marks</span></span></summary>
+      <div class="ref__body gradebook-line">
+        <dl>
+          <div><dt>Did it</dt><dd>9</dd></div>
+          <div><dt>Part of it, or none</dt><dd>1</dd></div>
+          <div><dt>Never came up</dt><dd>3</dd></div>
+          <div><dt>Asked of this run</dt><dd>10</dd></div>
+        </dl>
+        <p>A mark on this attempt is out of 10 &mdash; did it plus part-of-it-or-none. The 3 this run never asked are not in it: absences, not zeros.</p>
+        <p><strong>Reasoning 6 of 10</strong> &mdash; your own marks, criterion by criterion. The only number that leaves BOW is the one a person records after reading the writing.</p>
+      </div>
+    </details>
+
+  </div>
+</body>
+</html>

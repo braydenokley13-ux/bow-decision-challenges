@@ -207,7 +207,13 @@ export function ObjectiveList() {
         {/* The whole framework, in its own order, with the one thing a teacher and a district
             both need to know beside each row. An objective BOW cannot see yet is still a link:
             its page says which skill sits behind it and what is missing, which is the question
-            a teacher asks next. */}
+            a teacher asks next.
+
+            The heading is what the rows below hang from. Without it the page went straight
+            from its only `<h1>` to the first row's `<h3>` (axe `heading-order`), so a
+            screen-reader user walking the outline met twenty-three third-level headings under
+            nothing. */}
+        <h2 className="row-list__head">Every {unit} in this framework</h2>
         <div className="row-list">
           {shown.map((standard) => {
             const assessable = isAssessable(refOf(standard));
@@ -589,19 +595,33 @@ export function ObjectiveDetail() {
 }
 
 // ---------------------------------------------------------------------------
-// /educator/assign — the route that used to be a second way to do this
+// /educator/assign — an address teachers already have, kept working
 // ---------------------------------------------------------------------------
 
 /**
- * There is one path to assigning work, and it is the classes page.
+ * There is one path to assigning work, and it is the assignment builder.
  *
- * The assign flow was a screen that named an objective, offered a class, and — if there was
- * no class — created one, which is what "Create a class" is. Two screens that both create a
- * class and set it an objective are two places for that to go wrong and two places a teacher
- * has to be told about. The objective travels in the URL; the classes page picks it up.
+ * The warning this file used to carry was right about the principle and wrong about which
+ * screen survives: *"two screens that both create a class and set it an objective are two
+ * places for that to go wrong and two places a teacher has to be told about."* True — and
+ * the screen it was defending had already been superseded. The builder is the only surface
+ * that can express what assigning now means (objective, story, audience, the closing
+ * question), it already reads `?objective=` and pre-selects, and this page's own **Assign
+ * this** button was repointed at it some time ago. Two doors to one act are two primary
+ * surfaces for one job, and a system may carry one — the same rule that governs how many
+ * raised surfaces a screen may have, applied to routes.
+ *
+ * The case the old flow existed for — a teacher with no class yet — is real and does not
+ * justify a parallel screen. It is step one of the builder: publishing the assignment makes
+ * the class in the same act, one screen owning the whole transaction.
+ *
+ * This stays as a redirect rather than being deleted with the route, because
+ * `/educator/assign?code=1.3` is an address that is already in teachers' history and in
+ * links they were sent. `code` is the query name that address used; `objective` is the one
+ * the builder reads. Recorded as `gauntlet/v6/DECISIONS.md` §7.
  */
 export function AssignFlow() {
   const [params] = useSearchParams();
   const code = params.get("code");
-  return <Navigate replace to={code ? `/educator/classes?objective=${code}` : "/educator/classes"} />;
+  return <Navigate replace to={code ? `/educator/assignments/new?objective=${code}` : "/educator/assignments/new"} />;
 }

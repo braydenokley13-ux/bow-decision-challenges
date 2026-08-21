@@ -33,7 +33,7 @@ teachers review or test parts of the platform."*
 | 10 | *"teachers … monitor where students are … and review important decisions and responses"* | **holds** | `ProgressRow` drives a live class view; the reading queue and evidence trail carry the decisions and the writing. |
 | 11 | *"in-class, homework, and multi-day assignments"* | **holds** | Follows from 9. Resume is across devices and across days. |
 | 12 | *"review student work, provide feedback, use simulation results as part of an assessment, select examples for class discussion"* | **holds** | Reading queue, teacher→student feedback, an exportable gradebook line, and a share-out that anonymises and sequences. All four exist and are tested. |
-| 13 | *"teachers review or test parts of the platform before October"* | **not started** | No user-test packet exists. §81 asks for onboarding script, task, no-coaching instructions, observation sheet, confusion markers, interview questions. This is the only commitment with a **deadline before October**, it is the cheapest of them to meet, and it is now the only one with no work behind it. |
+| 13 | *"teachers review or test parts of the platform before October"* | **instrument built, session not run** | `gauntlet/TEACHER_TEST_PACKET.md` exists and is written to be handed to a runner and used without further preparation: onboarding script, five tasks, no-coaching rules, observation sheet, confusion markers, interview questions, and four falsifiable predictions written down before anybody sits. **No teacher has run it.** Those are two different facts and this row used to carry only the first half of the first one — it read *"not started / no user-test packet exists"* after the packet had been written at `a0ef6b4`. What is still owed is a room, five teachers and a morning. Until that happens, nothing in this product or its documents may claim teacher validation. |
 
 ---
 
@@ -105,10 +105,14 @@ and 2 of 5 topics — a real improvement and not the sentence in the letter.
 
 ## What this changes about the gauntlet
 
-1. **The teacher-test packet is now the only unbuilt commitment.** It is the only one with a
-   pre-October deadline,
-   it costs a day rather than a fortnight, and the letter offers it unprompted. It also
-   converts every *heuristic* judgement in this run into something a real teacher can falsify.
+1. **The teacher test is written and has not been run.** The packet landed at `a0ef6b4`; this
+   file went on saying it did not exist, which is the exact failure mode this document was
+   created to prevent — a claim about the product that was true when it was written and was not
+   re-checked. The remaining cost is a room, five teachers and a morning, and it is still the
+   only commitment with a pre-October deadline. It also remains the only instrument that can
+   falsify a judgement in this gauntlet that begins *a teacher would*: until it is run, every
+   such judgement is a guess, and the V6 gauntlet's own teacher-surface rulings are guesses of
+   exactly that kind.
 2. **The custom end-of-simulation question is built and walked end to end.** It belongs to the
    assignment and never to the immutable challenge version; a required one holds the turn-in
    button; the answer survives a reload and a re-delivery; the teacher reads it under the

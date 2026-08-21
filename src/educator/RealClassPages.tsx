@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
-import { EducatorShell, StateKey } from "./EducatorShell";
+import { ClassUnreachable, EducatorShell, StateKey, WordKey } from "./EducatorShell";
 import { useClassEvidence, type ClassEvidenceState, type OverrideRequest } from "./useClassEvidence";
-import { EvidenceTrailPanel, StudentSummary } from "./EvidenceTrailPanel";
+import { JudgementRecord, TrailRecord } from "./EvidenceTrailPanel";
 import type { AttributedSubmission } from "../platform/classes/types";
-import { attemptsFor, classRoll, worldSections, type ChoiceDistribution, type ClassAnalysis, type ClassRoll, type StudentRow } from "./analysis";
+import { attemptsFor, classRoll, worldSections, type ChoiceDistribution, type ClassAnalysis, type ClassRoll, type ClassSeat, type StudentRow } from "./analysis";
 import { SeatNamesContext, endSentence, seatLabels, seatNames, useSeatLabel, useSeatNames, type RosterRow } from "./names";
 import { gradebookLineFor, gradebookRows, gradebookTsv } from "./gradebook";
 import { MAX_FEEDBACK_LENGTH, type TeacherFeedback } from "../platform/identity/types";
@@ -21,19 +21,24 @@ import { WORLD_REGISTRY } from "../domain/scenario/registry";
 import { POP_UP_SCENARIO } from "../domain/scenario/worlds/food-truck";
 import { derivePopUpFacts } from "../domain/scenario/worlds/food-truck/facts";
 import type { CompetencyResultState } from "../domain/competency/types";
-import { levelBucketKey, levelLabel, skillStateKey, skillStateInSentence, LEVEL_BUCKET_LABELS, SKILL_STATE_LABELS, TERMS } from "./labels";
+import { levelBucketKey, levelLabel, levelMark, skillStateKey, skillStateInSentence, LEVEL_BUCKET_LABELS, SKILL_STATE_LABELS, SKILL_STATE_MARKS, SKILL_STATE_ORDER, TERMS } from "./labels";
 import { REASONING_MAXIMUM } from "../domain/evidence/grade";
 import { REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 import { MINIMUM_RESULTS_FOR_CLASS_NARRATION } from "../domain/competency/objectiveState";
 import { classSpineFrom, type ClassSpine } from "./classSpine";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import { keyForClass, rememberClass, rememberedClasses } from "./classMemory";
-import { classLeadFor } from "./classLead";
+import { classLeadFor, classStateLabel, type ClassLeadReading } from "./classLead";
+import { queuePlaceFor, triageFor, writtenBackCount, type QueuePlace, type TriageBand, type TriageCluster, type TriageGroup, type TriageSeat } from "./triage";
+import type { CompetencyBreakdownRow } from "./objectiveResults";
 import { standardByRef } from "../domain/standards";
-import { studentSpineFor, type StudentSpine } from "./studentSpine";
+import { studentSpineFor } from "./studentSpine";
+import { DEMO_CLASS_CODE } from "../fixtures/demoClass";
 import { ObjectiveStanding } from "./ObjectiveStanding";
 import type { StandardRef } from "../domain/standards/types";
 import { TeachNext } from "./TeachNext";
+import { decisionStepsFor } from "./decisionSteps";
+import { disclosureEscape } from "../components/primitives/disclosureEscape";
 
 /**
  * The educator's view of a real class.
@@ -54,13 +59,19 @@ import { TeachNext } from "./TeachNext";
 
 type ReadyClass = Extract<ClassEvidenceState, { status: "ready" }>;
 
-function ClassFrame({ state, children, title }: {
+function ClassFrame({ state, children, title, onRetry }: {
   state: ClassEvidenceState;
   title?: string;
+  onRetry?: () => void;
   children: (ready: ReadyClass) => React.ReactNode;
 }) {
   if (state.status === "loading") {
     return <EducatorShell><p className="class-state" aria-live="polite">Opening the class…</p></EducatorShell>;
+  }
+  // The network, said as the network. A dead service is not a wrong link and not a signed-out
+  // teacher, and this page must never say either of those about a class that is intact.
+  if (state.status === "offline") {
+    return <ClassUnreachable where="Class evidence" {...(onRetry ? { onRetry } : {})} />;
   }
   if (state.status === "error") {
     return (
@@ -75,7 +86,7 @@ function ClassFrame({ state, children, title }: {
     );
   }
   return (
-    <EducatorShell>
+    <EducatorShell scale="teacher">
       <SeatNamesContext.Provider value={seatNames(state.roster)}>{children(state)}</SeatNamesContext.Provider>
     </EducatorShell>
   );
@@ -161,14 +172,48 @@ function NothingYet({ code, label, teacherKey, hasRoster, roll, roster, progress
               for an email address or a last name.
             </p>
           )}
-          <p>
-            {hasRoster ? "Their cards are on the " : "Or hand out named cards instead — "}
-            <Link to={`/educator/class/${code}/roster`}>{hasRoster ? "class list" : "make the class list"}</Link>.
-          </p>
+          {/* Not offered on the sample, which structurally cannot have a class list — see
+              `NoRosterRefusal`. A link a class cannot follow is not a repair. */}
+          {code !== DEMO_CLASS_CODE && (
+            <p>
+              {hasRoster ? "Their cards are on the " : "Or hand out named cards instead — "}
+              <Link to={`/educator/class/${code}/roster`}>{hasRoster ? "class list" : "make the class list"}</Link>.
+            </p>
+          )}
           <Button variant="secondary" onClick={onCheckAgain}>Check again</Button>
         </div>
       </section>
     </>
+  );
+}
+
+/**
+ * The no-roster refusal, and a repair the class it is on can actually perform.
+ *
+ * The sentence is the one `RULING.md` §2 R2 singles out — the proof the page will not invent
+ * a room it cannot see. Its repair link was `/educator/class/<code>/roster` on every class,
+ * including the sample, where that route can never work: `DEMO` is four characters precisely
+ * so no real class code can equal it, and its runs were never posted to anything. So the one
+ * control the refusal offered, in the first viewport, was a dead end (`DEFECTS.md` D20).
+ *
+ * A refusal that offers a repair it cannot perform is a second false statement bolted to a
+ * true one. On the sample the repair is the real one: make a class that can have a list.
+ */
+function NoRosterRefusal({ code, className }: { code: string; className: string }) {
+  if (code === DEMO_CLASS_CODE) {
+    return (
+      <p className={className}>
+        This class has no student list, so BOW cannot say who has not started — only who has.
+        The sample class cannot have one.{" "}
+        <Link to="/educator/classes">Make a class of your own</Link> and every seat gets a name.
+      </p>
+    );
+  }
+  return (
+    <p className={className}>
+      This class has no student list, so BOW cannot say who has not started — only who has.
+      {" "}<Link to={`/educator/class/${code}/roster`}>Add one</Link> and every seat gets a name.
+    </p>
   );
 }
 
@@ -228,14 +273,17 @@ function ClassName({ code, label: given, teacherKey, worlds }: {
   };
 
   if (!editing) {
+    // A span rather than a paragraph: on the class overview this sits in the identity line
+    // beside the counts and the timestamp, and a block element there would break one line
+    // into three. `.eyebrow` carries the type either way.
     return (
-      <p className="eyebrow">
+      <span className="eyebrow">
         {[label, worlds].filter(Boolean).join(" · ")}{" "}
         <Button type="button" variant="quiet" onClick={() => { setTyped(label); setSaid(null); setEditing(true); }}>
           Rename
         </Button>
         {said && <span aria-live="polite"> · {said}</span>}
-      </p>
+      </span>
     );
   }
   return (
@@ -275,20 +323,32 @@ function worldsPlayed(rows: readonly StudentRow[]): string | null {
   return titles.length > 0 ? titles.join(" · ") : null;
 }
 
-/** One decision, and who made each call. Counts, and the seats behind every count. */
-function Distribution({ distribution }: { distribution: ChoiceDistribution }) {
+/**
+ * One decision, and who made each call. Counts, and the seats behind every count.
+ *
+ * The seats moved behind a native disclosure rather than off the page. Printed inline under
+ * every share of every question, they were the single largest block of repeated text on the
+ * class overview — and they are the thing that makes a count checkable, so they cannot go.
+ * `<details>` is the whole mechanism: keyboard-operable, announced, no JavaScript.
+ */
+function Distribution({ distribution, seats }: { distribution: ChoiceDistribution; seats: number }) {
   const names = useSeatNames();
   return (
-    <article className="choice-dist">
+    <article className="dist">
       <h3>{distribution.question}</h3>
       <ul>
         {distribution.shares.map((share) => (
           <li key={share.id} data-empty={share.seats.length === 0}>
-            <b>{share.seats.length}</b>
-            <span>{share.label}</span>
-            {/* Every count links back to the students inside it, so nothing here is a
-                number a teacher has to take on faith. */}
-            <span className="choice-dist__seats">{seatLabels(share.seats, names)}</span>
+            <b data-count="">{share.seats.length}</b>
+            <span>
+              of {seats} — {share.label}
+              {share.seats.length > 0 && (
+                <details onKeyDown={disclosureEscape()}>
+                  <summary>Which seats</summary>
+                  <p>{seatLabels(share.seats, names)}</p>
+                </details>
+              )}
+            </span>
           </li>
         ))}
       </ul>
@@ -323,12 +383,16 @@ function demandLabelFor(spine: ClassSpine): string {
   return objective ? `everything ${objective.code} asks for` : "everything the work asked for";
 }
 
-function ClassLead({ spine, roll, code }: {
-  spine: ClassSpine;
-  roll: ClassRoll;
-  code: string;
-}) {
-  const lead = classLeadFor({
+/**
+ * The reading, computed once, wherever the lead is rendered.
+ *
+ * The class page lays the four parts of it out itself — headline, detail, refusal and the
+ * one control — because on the instrument they are four things in three positions rather
+ * than a stack. `NothingYet` still renders the stack, and both read this, so the two screens
+ * cannot come to say different things about the same class.
+ */
+export function classLeadReading(spine: ClassSpine, roll: ClassRoll): ClassLeadReading {
+  return classLeadFor({
     // The class as the roll counts it — one row per student still in the room — so the
     // headline's denominator is the same class the tiles and the list below are about.
     inClass: roll.seats.length,
@@ -344,6 +408,14 @@ function ClassLead({ spine, roll, code }: {
     demandLabel: demandLabelFor(spine),
     narratable: spine.narratable,
   });
+}
+
+function ClassLead({ spine, roll, code }: {
+  spine: ClassSpine;
+  roll: ClassRoll;
+  code: string;
+}) {
+  const lead = classLeadReading(spine, roll);
   return (
     <>
       <h1>{lead.headline}</h1>
@@ -421,7 +493,7 @@ function sinceLabel(elapsed: number): string {
  * last-touched time are what a teacher can act on; anything finer would be surveillance
  * bought with nothing.
  */
-function LiveState({ roll, roster, progress, code, loadedAt, onCheckAgain }: {
+function LiveState({ roll, roster, progress, code, loadedAt, onCheckAgain, compact = false }: {
   /** The class, counted once, by the same function every other number on this page reads. */
   roll: ClassRoll;
   roster: readonly RosterRow[];
@@ -431,6 +503,19 @@ function LiveState({ roll, roster, progress, code, loadedAt, onCheckAgain }: {
   loadedAt: number;
   /** Ask the service again. The panel says when it last did, so this is a control and not a hope. */
   onCheckAgain: () => void;
+  /**
+   * On the class overview, where three of the five things this panel used to say are now
+   * said better somewhere else.
+   *
+   * The counts are the instrument's foot, the seats nobody has heard from are chips in the
+   * triage, the timestamp and the way to take another reading are on the identity line, and
+   * the no-list refusal is beside the headline it explains. What is left is the part with
+   * nowhere else to be: which children are mid-run, on which screen, and how long since
+   * their browser last said anything — plus the two facts about this class that are neither
+   * a count nor a judgement. With none of those true, this renders nothing rather than an
+   * empty card.
+   */
+  compact?: boolean;
 }) {
   const label = useSeatLabel();
   if (roll.seats.length === 0) return null;
@@ -442,12 +527,13 @@ function LiveState({ roll, roster, progress, code, loadedAt, onCheckAgain }: {
   const started = roll.seats.filter((seat) => seat.state === "still-working" || seat.state === "started-quiet");
   const startedRows = started.flatMap((seat) => progress.filter((row) => row.seatCode === seat.seatCode).slice(0, 1));
   const size = roll.seats.length;
+  if (compact && startedRows.length === 0 && roll.excluded.length === 0) return null;
 
   return (
-    <section className="dashboard-section live-state">
-      <div className="section-heading">
-        <p className="eyebrow">Right now</p>
-        <h2>Where the room is</h2>
+    <section className={compact ? "surface-record live-state" : "dashboard-section live-state"}>
+      <div className={compact ? "record__head" : "section-heading"}>
+        {!compact && <p className="eyebrow">Right now</p>}
+        <h2>{compact ? "Who is mid-run right now" : "Where the room is"}</h2>
         {/* When this was taken, and a way to take it again.
             "Right now" was a snapshot: two API calls, both at load, no refresh anywhere on a
             class that has data. A teacher-experience review opened this page, started a student
@@ -457,14 +543,17 @@ function LiveState({ roll, roster, progress, code, loadedAt, onCheckAgain }: {
             taken and let her take another. Auto-polling is deliberately not it — a panel that
             renumbers itself under a teacher who is reading a name off it is worse than one that
             is plainly a minute old. */}
-        <p className="live-state__taken">
-          <span>As at {new Date(loadedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
-          <Button variant="quiet" onClick={onCheckAgain}>Check again</Button>
-        </p>
+        {!compact && (
+          <p className="live-state__taken">
+            <span>As at {new Date(loadedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+            <Button variant="quiet" onClick={onCheckAgain}>Check again</Button>
+          </p>
+        )}
       </div>
       {/* Every tile carries the class it is a count of. "Still working 3" was a number a
           teacher had to hold the class size in their head to read — and the morning after the
           lesson it was a number about nobody. */}
+      {!compact && (
       <dl className="live-state__counts">
         <div><dt>Turned in</dt><dd>{roll.turnedIn} of {size}</dd></div>
         <div><dt>Working right now</dt><dd>{roll.stillWorking} of {size}</dd></div>
@@ -476,10 +565,11 @@ function LiveState({ roll, roster, progress, code, loadedAt, onCheckAgain }: {
         )}
         <div><dt>Not started</dt><dd>{roll.notStarted === null ? "—" : `${roll.notStarted} of ${size}`}</dd></div>
       </dl>
+      )}
       {/* First, because it is the only line on this screen a teacher acts on by standing up.
           It used to print under a list of nineteen working students, which at minute five of
           a lesson pushed it off a 1366×768 screen — the one minute it exists for. */}
-      {notStarted.length > 0 && (
+      {!compact && notStarted.length > 0 && (
         // Every one of them, named. This line is a walking list — a teacher reads it and gets
         // up — so "and 3 more" is three children she has been told about and cannot find. The
         // six-name cap belongs on lines that summarise; this one does not summarise.
@@ -515,12 +605,7 @@ function LiveState({ roll, roster, progress, code, loadedAt, onCheckAgain }: {
           computer they used, and pressing Turn in again from that computer sends it.
         </p>
       )}
-      {!roll.hasRoster && (
-        <p className="class-state">
-          This class has no student list, so BOW cannot say who has not started — only who has.
-          {" "}<Link to={`/educator/class/${code}/roster`}>Add one</Link> and every seat gets a name.
-        </p>
-      )}
+      {!compact && !roll.hasRoster && <NoRosterRefusal code={code} className="class-state" />}
       {/* Said out loud rather than left as a difference between two numbers. Work from a seat
           the teacher removed is kept and is not counted anywhere on this page, and a teacher
           who is not told that has to work it out from an arithmetic that no longer adds up. */}
@@ -645,9 +730,12 @@ function Feedback({ seatCode, sessionId, notes, onSend, onRevise, onWithdraw }: 
 
   return (
     <section className="feedback">
-      <div className="section-heading">
-        <p className="eyebrow">Write back</p>
-        <h3>What they hear from you</h3>
+      {/* An `h2`: on the student's page this is one of the page's own records, and it is the
+          one thing on the screen only a person can do. It used to be an `h3` inside a stack
+          at the bottom of a 7,500px document. */}
+      <div className="record__head">
+        <h2>What they hear from you</h2>
+        <p>Write back</p>
       </div>
       {/* The whole sequence, oldest first, because that is the order it is read in on the
           student's own home page — a correction printed above the sentence it corrects is
@@ -737,25 +825,47 @@ function Feedback({ seatCode, sessionId, notes, onSend, onRevise, onWithdraw }: 
   );
 }
 
+/**
+ * The class overview, as an instrument rather than a document.
+ *
+ * Six regions, and they are three materials rather than seven identical cards. What
+ * changed is not what this page knows — nothing left the DOM — it is that the page now
+ * ranks itself, because a demotion is expressible: the thing a teacher acts on is raised,
+ * the reference is flat, and the furniture is neither.
+ *
+ * R1 · the identity line — margin. Which class, and when this reading was taken.
+ * R2 · the instrument — the page's one raised surface: the lead, and the triage, which is
+ *      the class list. Every seat in the room, ranked by what their evidence shows, with
+ *      the room-state counts on its foot.
+ * R3 · what to teach next — record.
+ * R4 · where the class is on each skill — record.
+ * R5 · what each story's students decided — record.
+ * R6 · the key and the ways out — margin.
+ *
+ * The `1 · 2 · 3 · 4 · 5` numbering is gone with the flat sequence it was numbering. The
+ * counts that were a section called "Where the room is" are the instrument's foot, because
+ * they are context for the triage rather than a question of their own. The eighteen
+ * identical rows under "Every student who turned in" are the same eighteen students, ranked,
+ * inside the instrument. Nothing was deleted to make it shorter.
+ */
 export function RealClassOverview() {
   const { code } = useParams();
   const { state, teacherKey, reload } = useClassEvidence(code);
 
   return (
-    <ClassFrame state={state}>
+    <ClassFrame state={state} onRetry={reload}>
       {(ready) => {
         const { analysis, record, assignments, submissions } = ready;
         const names = seatNames(ready.roster);
         // One reading of who is in this class and what each of them turned in. Every count
-        // below is taken from it — the headline, the live tiles, the table's denominator, the
-        // student list and the export — so two of them cannot disagree about the same room.
+        // below is taken from it — the headline, the foot, the table's denominator, the
+        // triage and the export — so two of them cannot disagree about the same room.
         // They used to be computed five ways and three of them were on screen at once.
         // `at` is when the page was read, so "still working" is a claim about now rather than
-        // about whenever a browser last said anything. A checkpoint quiet for longer than a
-        // lesson stops counting as a child at a keyboard.
+        // about whenever a browser last said anything.
         const roll = classRoll({ rows: analysis.rows, roster: ready.roster, progress: ready.progress, at: ready.loadedAt });
-        // The spine is read against the same class: one attempt per student still in the
-        // room, so "turned in" in the headline is the same number as "turned in" in the tile.
+        // The reading is against the same class: one attempt per student still in the room,
+        // so "turned in" in the headline is the same number as "turned in" on the foot.
         const counted = roll.rows.flatMap((row) => submissions.filter((entry) => entry.sessionId === row.sessionId));
         const spine = classSpineFrom({ record, assignments, submissions: counted });
         if (roll.rows.length === 0) {
@@ -775,49 +885,91 @@ export function RealClassOverview() {
           );
         }
         const total = roll.turnedIn;
-        const students = (
-          <section className="dashboard-section">
-            <div className="section-heading">
-              <p className="eyebrow">Open these</p>
-              <h2>Every student who turned in</h2>
-            </div>
-            <StudentRows
-              rows={roll.rows}
-              submissions={submissions}
-              code={record.code}
-              attempts={new Map(roll.seats.map((seat) => [seat.seatCode, seat.attempts.length]))}
-            />
-          </section>
-        );
+        const lead = classLeadReading(spine, roll);
+        const stateWord = classStateLabel(spine.reading?.result.state ?? null);
+        const groups = triageFor({ seats: roll.seats, submissions, feedback: ready.feedback });
+        const answered = writtenBackCount(groups);
+        const size = roll.seats.length;
+        const words = new Set(groups.flatMap((group) => (group.state ? [group.state] : [])));
 
         return (
           <>
-            <header className="page-header page-header--split">
-              <div>
-                <ClassName
-                  code={record.code}
-                  label={record.label}
-                  teacherKey={teacherKey ?? ""}
-                  worlds={worldsPlayed(roll.rows)}
-                />
-                <ClassLead spine={spine} roll={roll} code={record.code} />
-              </div>
-              <div className="page-header__meta">
-                {/* The unit, said out loud, on the surface a teacher reads a number off and
-                    then says it to a room. One student who had two goes is one student and two
-                    attempts, and the debrief, the queue and the export all count the first of
-                    those — so the header names both rather than leaving a colleague to work out
-                    which of two screens is lying. */}
-                <span>{roll.seats.length} {roll.seats.length === 1 ? "student" : "students"} · {roll.attempts.length} {roll.attempts.length === 1 ? "attempt" : "attempts"}</span>
-                {/* The largest single job this product creates, and it used to be a
-                    sentence. It is the way into the queue that does it. */}
-                {roll.awaitingReading.length > 0
-                  ? <Link to={`/educator/class/${record.code}/reading`}>{roll.awaitingReading.length} awaiting your reading</Link>
-                  : <span>Every explanation read</span>}
-              </div>
+            {/* R1 · margin. One line: which class this is, what it played, and when this
+                reading was taken. It used to be a bordered header with a 40px headline in
+                it; the headline belongs to the instrument and this is furniture. */}
+            <header className="class-identity surface-margin">
+              <ClassName
+                code={record.code}
+                label={record.label}
+                teacherKey={teacherKey ?? ""}
+                worlds={worldsPlayed(roll.rows)}
+              />
+              {/* The unit, said out loud, on the surface a teacher reads a number off and
+                  then says it to a room. One student who had two goes is one student and two
+                  attempts, so this names both rather than leaving a colleague to work out
+                  which of two screens is lying. And when the reading was taken, with the way
+                  to take another — the counts below do not renumber themselves under a
+                  teacher who is reading a name off them. */}
+              <p className="class-identity__facts">
+                <span data-count="">{size} {size === 1 ? "student" : "students"} · {roll.attempts.length} {roll.attempts.length === 1 ? "attempt" : "attempts"}</span>
+                <span>As at {new Date(ready.loadedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+                <Button variant="quiet" onClick={reload}>Check again</Button>
+              </p>
             </header>
 
+            {/* R2 · THE INSTRUMENT. The one raised surface on this page, and the only one
+                there may ever be — `oneInstrument.test.tsx` fails the build on a second. */}
+            <section className="surface-instrument instrument" aria-labelledby="class-lead">
+              <div className="instrument__grid">
+                <div className="instrument__lead">
+                  <h1 id="class-lead">{lead.headline}</h1>
+                  <p className="instrument__detail">{lead.detail}</p>
+                  {stateWord && spine.reading && (
+                    <p className="instrument__state" data-count="">
+                      {stateWord} · {spine.reading.result.demonstrated} of {spine.assessed}
+                    </p>
+                  )}
+                  <div className="instrument__actions">
+                    {lead.action && (
+                      <Link className="button button--primary" to={`/educator/class/${record.code}/${lead.action.route}`}>
+                        {lead.action.label} →
+                      </Link>
+                    )}
+                    {/* One purple control on the page. The debrief is the second thing to do,
+                        so it is drawn as the second thing to do. */}
+                    {spine.narratable && lead.action?.route !== "debrief" && (
+                      <Link className="button button--secondary" to={`/educator/class/${record.code}/debrief`}>Run the debrief</Link>
+                    )}
+                  </div>
+                  {/* The refusal, in the words §15.3 defines it by, and the repair beside it.
+                      An em dash with a reason beats a fabricated zero: this is the sentence
+                      that proves the page will not invent a room it cannot see. */}
+                  {lead.note && <p className="instrument__refusal">{lead.note}</p>}
+                  {!roll.hasRoster && <NoRosterRefusal code={record.code} className="instrument__refusal" />}
+                </div>
+                <Triage groups={groups} code={record.code} size={size} />
+              </div>
+              {/* The foot. These four counts were a whole section with a heading of their
+                  own; they are context for the triage above them, not a question of their
+                  own, and every one of them carries the class it is a count of. */}
+              <dl className="instrument__foot">
+                <div><dt>Turned in</dt><dd data-count="">{roll.turnedIn} of {size}</dd></div>
+                <div><dt>Working right now</dt><dd data-count="">{roll.stillWorking} of {size}</dd></div>
+                {roll.startedQuiet > 0 && (
+                  <div><dt>Started, not turned in</dt><dd data-count="">{roll.startedQuiet} of {size}</dd></div>
+                )}
+                <div><dt>Not started</dt><dd data-count="">{roll.notStarted === null ? "—" : `${roll.notStarted} of ${size}`}</dd></div>
+                {/* The half of the loop only a person can close, which no surface in this
+                    product carried before. It is a count rather than a group for the reason
+                    `triage.ts` gives: an empty one would swallow the room. */}
+                <div><dt>Written back</dt><dd data-count="">{answered.writtenBack} of {answered.read} read</dd></div>
+              </dl>
+            </section>
+
+            {/* Who is mid-run, and the two things about this class that are neither a count
+                nor a judgement. A record: it is what a teacher checks, not what they act on. */}
             <LiveState
+              compact
               roll={roll}
               roster={ready.roster}
               progress={ready.progress}
@@ -827,53 +979,46 @@ export function RealClassOverview() {
             />
 
             {!spine.narratable && (
-              <p className="class-guard">
-                {total} turned in — individual work below. BOW does not describe a class from
+              <p className="class-guard surface-margin">
+                {total} turned in — individual work above. BOW does not describe a class from
                 fewer than {MINIMUM_RESULTS_FOR_CLASS_NARRATION} runs.
               </p>
             )}
 
-            {/* §18.1, at the top of the surface a teacher actually lands on. The objective
+            {/* R3 · record. §18.1, on the surface a teacher actually lands on. The objective
                 page renders the same reading from the same module; neither owns it. */}
             {spine.reading && spine.narratable && (
-              <section className="dashboard-section">
+              <section className="surface-record" aria-labelledby="teach-next">
+                <div className="record__head">
+                  <h2 id="teach-next">What should I teach next?</h2>
+                  <p>From this class's own evidence</p>
+                </div>
                 <TeachNext
                   reading={spine.reading.teachNext}
                   spotlight={spine.reading.spotlight}
                   classCode={record.code}
                   teacherKey={teacherKey ?? ""}
+                  level={3}
                 />
               </section>
             )}
 
-            {!spine.narratable && students}
-
+            {/* R4 · record. Weakest first, so the row a teacher would act on is the row they
+                meet — the same ranking the triage above does, at skill grain. */}
             {spine.narratable && spine.reading && spine.reading.competencies.length > 0 && (
-              <section className="dashboard-section">
-                <div className="section-heading">
-                  <p className="eyebrow">What the evidence shows</p>
-                  <h2>Where the class is on each skill</h2>
+              <section className="surface-record" aria-labelledby="class-skills">
+                <div className="record__head">
+                  <h2 id="class-skills">Where the class is on each skill</h2>
+                  <p>Weakest first</p>
                 </div>
                 <table className="micro-table">
                   {/* Two sentences because there are two numbers and only one of them is
                       this table's denominator. It read "Counts across the {assessed} of
                       {total} with a usable result", which claims the rows below are counted
-                      over the assessed students — and they are not: `classResultFor` puts
-                      every student who turned in into exactly one state per skill, naming the
-                      unassessed ones as an absence rather than dropping them. Before a
-                      teacher has marked anything that caption said "across the 0 of 10"
-                      directly above rows totalling ten, one of which read "10 showed it".
-                      The rows were right and the caption was the false one, so the caption
-                      now says what it is counting and states the assessed figure as the
-                      separate fact it is. */}
+                      over the assessed students — and they are not: every student who turned
+                      in lands in exactly one state per skill, and the unassessed are named as
+                      an absence rather than dropped. */}
                   <caption>
-                    {/* What a usable result actually is. This said "one whose written explanation
-                        somebody has read", which is the usual reason a student has not got one and
-                        is not what one is — a teacher-experience review read it on a fold where
-                        nine students had a usable result and twenty-one explanations were
-                        unread, and the two sentences could not both be believed. The objective
-                        page states the same fact about the same table; both now say it the same
-                        way, and both say what is true of the students who do not have one. */}
                     Counts across all {total} who turned in. {spine.assessed} of them have a usable
                     result — nothing the work had to show is missing from their run. The rest are
                     still short of something, and the rows below name that as an absence rather
@@ -881,110 +1026,269 @@ export function RealClassOverview() {
                   </caption>
                   <thead><tr><th scope="col">Skill</th><th scope="col">Where the class is</th></tr></thead>
                   <tbody>
-                    {spine.reading.competencies.map((row) => (
+                    {weakestFirst(spine.reading.competencies).map((row) => (
                       <tr key={row.competencyId}>
                         <th scope="row">{competencyStatement(row.competencyId, submissions)}</th>
                         {/* Counts of students, so the words are Ladder 3 — one claim about
-                            one child, added up. Lowercased by the same table, not a second one. */}
-                        <td>
-                          {Object.entries(row.counts)
-                            .filter(([, count]) => count > 0)
-                            .map(([entry, count]) => `${count} ${skillStateInSentence(entry as CompetencyResultState)}`)
-                            .join(" · ")}
+                            one child, added up. The bar beside them is decoration and says
+                            so: it is `aria-hidden`, and every number it draws is in the
+                            sentence under it with its denominator attached. */}
+                        <td data-label="Where the class is">
+                          <span className="skill-bar" aria-hidden="true">
+                            {SKILL_STATE_ORDER.filter((entry) => row.counts[entry] > 0).map((entry) => (
+                              <span key={entry} data-state={entry} style={{ flex: row.counts[entry] }} />
+                            ))}
+                          </span>
+                          <span className="skill-rows__counts">
+                            {Object.entries(row.counts)
+                              .filter(([, count]) => count > 0)
+                              .map(([entry, count]) => `${count} ${skillStateInSentence(entry as CompetencyResultState)}`)
+                              .join(" · ")}
+                          </span>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                {/* Once for the page. The class list further down leads every row with one of
-                    these same six words, so a teacher meets the key before the rows. */}
-                <StateKey
-                  title="What these words mean"
-                  entries={skillStateKey(spine.reading.competencies.flatMap((row) =>
-                    (Object.entries(row.counts) as [CompetencyResultState, number][])
-                      .filter(([, count]) => count > 0).map(([state]) => state)))}
-                />
               </section>
             )}
 
-            {/* Below the guard, nothing here describes the class. These two sections are
-                distributions, so they wait until there is a class to distribute. */}
+            {/* R5 · record. Below the guard nothing here describes the class: these are
+                distributions, so they wait until there is a class to distribute. Kept and
+                demoted rather than cut — a teacher mid-lesson who wants "how many chose the
+                sublet" has to have a path to it, and the seats behind every count are one
+                native disclosure away rather than inline under every row. */}
             {spine.narratable && (
-              <>
-                {/* One section per world, because the questions are the world's. A class
-                    where students chose differently was asked two different sets of
-                    questions, and each set has its own denominator. */}
-                {/* One block per world, each with its own denominator. Nothing on this page
-                    divides one world's question by the whole class any more. */}
-                {worldSections(roll.rows).map((world) => (
-                  <section className="dashboard-section" key={world.worldId}>
-                    <div className="section-heading">
-                      <p className="eyebrow">
-                        {world.title} · {world.seats} {world.seats === 1 ? "student" : "students"}
-                      </p>
-                      <h2>What they decided</h2>
-                    </div>
-                    <div className="choice-grid">
-                      {world.distributions.map((distribution) => (
-                        <Distribution key={distribution.id} distribution={distribution} />
-                      ))}
-                    </div>
-                    {world.adaptation && (
-                      <div className="adaptation">
-                        <div className="section-heading">
-                          <p className="eyebrow">{world.adaptation.heading}</p>
-                          <h3>What moved</h3>
-                        </div>
-                        {world.adaptation.cuts.length > 0 && (
-                          <ul className="cut-list">
-                            {world.adaptation.cuts.map((entry) => (
-                              <li key={entry.label}>
-                                <b>{entry.seats.length}</b>
-                                <span>of {world.seats} cut <strong>{entry.label}</strong> first</span>
-                                <span className="choice-dist__seats">{seatLabels(entry.seats, names)}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                        <dl className="adaptation-lines">
-                          {world.adaptation.lines.map((line) => (
-                            <div key={line.label}><dt>{line.label}</dt><dd>{line.count} of {world.seats}</dd></div>
+            <div className="record-pair">
+            {worldSections(roll.rows).map((world) => (
+              // Both regions are headed "What they decided", and on a mixed class that gave
+              // two landmarks one accessible name — visually distinct, programmatically
+              // identical (axe `landmark-unique`). The line that disambiguates them on screen
+              // is the world's title beside the heading, so it is in the name too.
+              <section
+                className="surface-record"
+                key={world.worldId}
+                aria-labelledby={`decided-${world.worldId} decided-${world.worldId}-which`}
+              >
+                <div className="record__head">
+                  <h2 id={`decided-${world.worldId}`}>What they decided</h2>
+                  <p id={`decided-${world.worldId}-which`}>{world.title} · {world.seats} {world.seats === 1 ? "student" : "students"}</p>
+                </div>
+                <div className="record-columns">
+                  {world.distributions.map((distribution) => (
+                    <Distribution key={distribution.id} distribution={distribution} seats={world.seats} />
+                  ))}
+                </div>
+                {world.adaptation && (
+                  <div className="record-columns" style={{ marginTop: "var(--s-5)" }}>
+                    <div className="dist">
+                      <h3>{world.adaptation.heading} · what moved</h3>
+                      {world.adaptation.cuts.length > 0 && (
+                        <ul>
+                          {world.adaptation.cuts.map((entry) => (
+                            <li key={entry.label}>
+                              <b>{entry.seats.length}</b>
+                              <span>
+                                of {world.seats} cut <strong>{entry.label}</strong> first
+                                <details onKeyDown={disclosureEscape()}>
+                                  <summary>Which seats</summary>
+                                  <p>{seatLabels(entry.seats, names)}</p>
+                                </details>
+                              </span>
+                            </li>
                           ))}
-                        </dl>
-                      </div>
-                    )}
-                  </section>
-                ))}
-              </>
+                        </ul>
+                      )}
+                      <ul>
+                        {world.adaptation.lines.map((line) => (
+                          <li key={line.label}>
+                            <b>{line.count}</b>
+                            <span>of {world.seats} — {line.label.toLowerCase()}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </section>
+            ))}
+            </div>
             )}
 
-            {spine.narratable && students}
-
-            <section className="dashboard-section">
-              <ExportClass roll={roll} submissions={submissions} roster={ready.roster} label={record.label} />
-            </section>
-
-            <section className="card-grid class-foot">
-              <div>
-                <span>Next</span>
-                <strong>Run the debrief</strong>
-                <p>Two real plans, what changed after Week 5, and what to review — from this class's evidence.</p>
-                <Link className="button button--primary" to={`/educator/class/${record.code}/debrief`}>Open the debrief</Link>
+            {/* R6 · margin. The key once, behind one disclosure, and the ways out of the
+                page. Three boxed keys at section weight used to be repeated down the page. */}
+            <div className="surface-margin">
+              <WordKey title="What these words mean" entries={skillStateKey(words)} />
+              <div className="teacher-foot">
+                <ExportClass roll={roll} submissions={submissions} roster={ready.roster} label={record.label} />
                 <Link className="button button--secondary" to={`/educator/class/${record.code}/share-out`}>Pick what the room sees</Link>
+                {/* The class list, except on a class that structurally cannot have one.
+                    `/educator/class/DEMO/roster` renders "This class did not open." — a link
+                    to a dead end is worse than no link. */}
+                {roll.hasRoster && (
+                  <Link className="button button--secondary" to={`/educator/class/${record.code}/roster`}>Class list</Link>
+                )}
               </div>
-              <div>
-                <span>This class</span>
-                <strong>Who is in this class</strong>
-                {/* The list is what turns every seat number on this page into a name, so the
-                    way to it belongs beside the things a teacher does with the names. */}
-                <p>Names, join cards, a card reissued for a student who lost theirs, and taking somebody off the list.</p>
-                <Link className="button button--secondary" to={`/educator/class/${record.code}/roster`}>Class list</Link>
-              </div>
-            </section>
+            </div>
           </>
         );
       }}
     </ClassFrame>
+  );
+}
+
+/**
+ * The skills, ranked by how much of the class is still short of them.
+ *
+ * The order used to be whatever `classResultFor` produced, which is the order the skills are
+ * declared in — so the row a teacher would act on was wherever it happened to fall. Weakest
+ * first is the same ranking the triage above it does, at skill grain, and it is computed
+ * rather than authored: the share of this skill's students who have shown it, ascending.
+ */
+function weakestFirst(rows: readonly CompetencyBreakdownRow[]): CompetencyBreakdownRow[] {
+  const shown = (row: CompetencyBreakdownRow) => {
+    const total = Object.values(row.counts).reduce((sum, count) => sum + count, 0);
+    if (total === 0) return 1;
+    return (row.counts.demonstrated + row.counts["demonstrated-with-support"]) / total;
+  };
+  return [...rows].sort((a, b) => shown(a) - shown(b));
+}
+
+/**
+ * Who needs you, ranked — and the same shortfall said once.
+ *
+ * This *is* the class list. It replaces a section of eighteen identical rows headed "Every
+ * student who turned in", which answered "what does this class contain" to a teacher who
+ * asked "who needs me". Every seat in the room is here, in a band named by what their own
+ * evidence shows, worst band first.
+ *
+ * The cost is real and is worth naming: there is no flat, seat-ordered view of the class on
+ * this page any more. Grouping wins because the page's job is *who needs you*, and the class
+ * list — in seat order, with names and cards — is one link away at the foot.
+ */
+function Triage({ groups, code, size }: { groups: readonly TriageGroup[]; code: string; size: number }) {
+  const label = useSeatLabel();
+  return (
+    <div className="triage">
+      <h2>Who needs you — all {size}, ranked</h2>
+      {groups.map((group) => (
+        <div className="triage__group" key={group.band} data-state={group.state ?? "not-in"}>
+          <p className="triage__head">
+            <span className="triage__count" data-count="">{group.seats.length}</span>
+            <span className="triage__state">
+              <span className="mark-glyph" aria-hidden="true">{group.state ? SKILL_STATE_MARKS[group.state] : "◌"}</span>
+              <span>{group.state ? SKILL_STATE_LABELS[group.state] : "Not turned in"}</span>
+            </span>
+            <span className="triage__hint">{bandHint(group)}</span>
+          </p>
+          {group.band === "short"
+            ? group.clusters.map((cluster) => (
+              cluster.seats.length > 1
+                ? <Cluster key={cluster.key} cluster={cluster} code={code} label={label} />
+                : cluster.seats.map((seat) => <TriageRow key={seat.seatCode} seat={seat} code={code} label={label} />)
+            ))
+            : (
+              <ul className="triage-seats">
+                {group.seats.map((seat) => (
+                  <li key={seat.seatCode}><SeatChip seat={seat} code={code} label={label} /></li>
+                ))}
+              </ul>
+            )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** What this band is, in one clause, so the words above it never stand alone. */
+function bandHint(group: TriageGroup): string {
+  if (group.band === "not-in") return "Nothing has arrived from these seats.";
+  if (group.band === "short") {
+    return group.seats.some((seat) => seat.reading !== null)
+      ? "Open these first — every row names the gap and what you read in the writing, weakest reading first."
+      : "Open these first — every row names the gap.";
+  }
+  if (group.band === "incomplete") {
+    return group.seats.some((seat) => seat.gapShowing)
+      ? "Their writing is unread. A seat marked read first already shows a gap, so it is worth reading before the rest."
+      : "Their writing is unread, so nothing about them is settled yet.";
+  }
+  if (group.band === "never") return "This run never asked for any of it.";
+  return group.seats.some((seat) => seat.afterAHint)
+    ? "Everything the work had to show — one of them after a hint."
+    : "Everything the work had to show.";
+}
+
+/** One child, one gap, one way in. The four rows this page exists to put on a screen. */
+function TriageRow({ seat, code, label }: { seat: TriageSeat; code: string; label: (seat: string) => string }) {
+  return (
+    <Link className="triage__row" data-seat={seat.seatCode} to={`/educator/class/${code}/students/${seat.seatCode}`}>
+      <b>{label(seat.seatCode)}</b>
+      <span>
+        {seat.gap ? `${seat.gap.label} — ${seat.gap.verdict}` : "Still short of something the work had to show"}
+        {seat.gap && seat.gap.more > 0 ? ` · ${seat.gap.more} more` : ""}
+        {/* The other half of the pair, on the row, in the same breath as BOW's half. A row
+            that printed only the machine's word put the best writer in the class at the top
+            of the triage and the weakest three rows below her. */}
+        {seat.reading && <> · <span className="mark-reading">you read the writing {seat.reading.points} of {seat.reading.of}</span></>}
+        {seat.writtenBack && <> · <span className="mark-written">written back</span></>}
+      </span>
+      <span className="triage__arrow" aria-hidden="true">→</span>
+    </Link>
+  );
+}
+
+/**
+ * One shortfall, and every child showing it.
+ *
+ * Three rows reading "Savings is a planned amount — Did not do it" are one shortfall printed
+ * three times, which is the defect this page exists to cure appearing inside the cure. The
+ * gap heads the row, the children are chips through to their own evidence, and the lesson
+ * for the wrong idea behind it is the thing to do about all three at once.
+ */
+function Cluster({ cluster, code, label }: { cluster: TriageCluster; code: string; label: (seat: string) => string }) {
+  return (
+    <div className="triage__cluster">
+      <p className="triage__gap">
+        {cluster.gap ? `${cluster.gap.label} — ${cluster.gap.verdict}` : "Short of something the work had to show"}
+        <span className="triage__same">Same gap, {cluster.seats.length} students</span>
+      </p>
+      <ul className="triage-seats">
+        {cluster.seats.map((seat) => (
+          <li key={seat.seatCode}><SeatChip seat={seat} code={code} label={label} /></li>
+        ))}
+      </ul>
+      {cluster.reteach && (
+        <p className="triage__reteach">
+          Teach it once: <strong>{cluster.reteach.title}</strong> · about {cluster.reteach.minutes} minutes.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** One seat, as a chip through to their own evidence, with whatever rides on it. */
+function SeatChip({ seat, code, label }: { seat: TriageSeat; code: string; label: (seat: string) => string }) {
+  if (seat.state === null) {
+    // A link, now that the destination is a person: the seat's own page renders their name,
+    // their state and the screen they are on rather than "Nothing from this seat."
+    return (
+      <Link className="triage-seat" data-seat-waiting={seat.seatCode} to={`/educator/class/${code}/students/${seat.seatCode}`}>
+        {label(seat.seatCode)}
+        <small>{seat.roll === "not-started" ? "not started" : "still working"}</small>
+      </Link>
+    );
+  }
+  return (
+    <Link className="triage-seat" data-seat={seat.seatCode} to={`/educator/class/${code}/students/${seat.seatCode}`}>
+      {label(seat.seatCode)}
+      {seat.afterAHint && (
+        <small><span className="mark-glyph" aria-hidden="true">{SKILL_STATE_MARKS["demonstrated-with-support"]}</span>{"\u00a0"}after a hint</small>
+      )}
+      {seat.gapShowing && seat.awaitingReading && <small className="mark-first">read first</small>}
+      {seat.reading && <small className="mark-reading">you read {seat.reading.points} of {seat.reading.of}</small>}
+      {seat.writtenBack && <small className="mark-written">written back</small>}
+    </Link>
   );
 }
 
@@ -998,70 +1302,22 @@ function competencyStatement(competencyId: string, submissions: readonly Attribu
 }
 
 /**
- * The class list, led by what each student showed.
- *
- * Every row used to open with `100/100`, which is the number that is the same for almost
- * everybody and says nothing about what to do next. It opens with the competency state and
- * the requirement that fell short, which is the sentence a teacher acts on.
+ * The class list used to be a section of its own — eighteen identical rows headed *Every
+ * student who turned in*, each one leading with a state word and none of them ranked. It is
+ * the triage inside the instrument now: the same eighteen students, the same evidence, in
+ * bands worst-first with the shortfall named on the row and identical shortfalls said once.
+ * `StudentRows` and the line it composed went with the section, because both existed to
+ * render a flat list that no longer exists — and a helper kept for a surface that is gone is
+ * how the surface comes back.
  */
-function StudentRows({ rows, submissions, code, attempts }: {
-  rows: readonly StudentRow[];
-  submissions: readonly AttributedSubmission[];
-  code: string;
-  /** How many attempts each seat turned in. One row per student either way; the row says so. */
-  attempts: ReadonlyMap<string, number>;
-}) {
-  const label = useSeatLabel();
-  return (
-    <div className="row-list">
-      {rows.map((row) => {
-        const submission = submissions.find((entry) => entry.sessionId === row.sessionId);
-        const spine = submission ? studentSpineFor(submission) : null;
-        // A student who had a second go is one row here and was one row here before — the
-        // difference is that the row now says which of their attempts it is describing.
-        const count = attempts.get(row.seatCode) ?? 1;
-        return (
-          <Link key={row.sessionId} to={`/educator/class/${code}/students/${row.seatCode}`}>
-            <div>
-              <small>{label(row.seatCode)}{count > 1 ? ` · attempt ${count} of ${count}` : ""}</small>
-              <h3>{spine ? SKILL_STATE_LABELS[spine.lead] : "No result"}</h3>
-              <small>{spine ? shortfallLine(spine, row) : "This attempt could not be read."}</small>
-            </div>
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
-
-/**
- * The one thing a teacher would open this student for, said in their own words.
- *
- * Every verdict here is Ladder 2, read from the table. It used to improvise three of them —
- * "not shown", "partly shown" and "Showed every required part." — none of which appeared
- * anywhere else in the product, on the row a teacher clicks to reach a page that then said
- * the same fact two further ways.
- */
-function shortfallLine(spine: StudentSpine, row: StudentRow): string {
-  const [first, ...rest] = spine.shortfalls;
-  if (first) {
-    return `${first.label} — ${levelLabel(first.level)}${rest.length > 0 ? ` · ${rest.length} more` : ""}`;
-  }
-  if (row.reasoningPoints === null) return "Written explanation still to read.";
-  if (spine.notObserved.length > 0) {
-    const count = spine.notObserved.length;
-    return `${count} ${count === 1 ? "thing" : "things"} the work had to show ${count === 1 ? "was" : "were"} never asked in this run.`;
-  }
-  return `${LEVEL_BUCKET_LABELS.met} — everything the work had to show.`;
-}
 
 export function RealStudentEvidence() {
   const { code, seatCode } = useParams();
   const [params] = useSearchParams();
-  const { state, scoreReasoning, recordOverride, sendFeedback, reviseFeedback, withdrawFeedback } = useClassEvidence(code);
+  const { state, reload, scoreReasoning, recordOverride, sendFeedback, reviseFeedback, withdrawFeedback } = useClassEvidence(code);
 
   return (
-    <ClassFrame state={state} title="That student's work did not open.">
+    <ClassFrame state={state} title="That student's work did not open." onRetry={reload}>
       {(ready) => {
         // Every attempt this seat turned in, oldest first. The page opens on their **latest**,
         // so the run a teacher lands on from a class row is the run that row described — and
@@ -1073,30 +1329,42 @@ export function RealStudentEvidence() {
         const asked = Number(params.get("attempt"));
         const index = Number.isInteger(asked) && asked >= 1 && asked <= attempts.length ? asked - 1 : attempts.length - 1;
         const row = attempts[index] ?? null;
+        // Read once, before the branch, because a seat with nothing turned in is still a
+        // child if the roll knows about them — and the page that linked here named them.
+        const roll = classRoll({ rows: ready.analysis.rows, roster: ready.roster, progress: ready.progress, at: ready.loadedAt });
+        const groups = triageFor({ seats: roll.seats, submissions: ready.submissions, feedback: ready.feedback });
         if (!row) {
+          const seat = roll.seats.find((entry) => entry.seatCode === seatCode) ?? null;
           return (
-            <header className="page-header page-header--with-back">
-              <Link to={`/educator/class/${code}`}>← Class evidence</Link>
-              <p className="eyebrow">{`Seat ${seatCode}`}</p>
-              <h1>Nothing from this seat.</h1>
-              <p>No student has turned work in from seat {seatCode} in this class.</p>
-            </header>
+            <NotTurnedIn
+              seat={seat}
+              seatCode={seatCode ?? ""}
+              code={code ?? ""}
+              progress={ready.progress}
+              loadedAt={ready.loadedAt}
+              queue={seat ? queuePlaceFor(groups, seat.seatCode) : null}
+            />
           );
         }
         // The raw submission, not the derived row: the trail is built from the student's own
         // events, and a summary of them cannot be audited against itself.
         const submission = ready.submissions.find((entry) => entry.seatCode === seatCode && entry.sessionId === row.sessionId);
-        // The objective the teacher actually set, for the card that joins this student's
+        // The objective the teacher actually set, for the block that joins this student's
         // evidence to it. Read off the assignment the submission was attributed to rather
         // than off the class, because a class can hold several and only one of them is what
-        // this attempt was for. A legacy assignment carries `null` and the card draws nothing.
+        // this attempt was for. A legacy assignment carries `null` and the block draws nothing.
         const setFor = ready.assignments.find((entry) => entry.id === submission?.assignmentId);
+        // Where this child sits in the pile the teacher is working through, computed from the
+        // same triage the class page ranks — so "next" is the next child in the band they are
+        // already in, and a teacher never has to go back to the class page to reach them.
+        const queue = queuePlaceFor(groups, row.seatCode);
         return (
           <StudentPanel
             row={row}
             code={code ?? ""}
             objectiveRef={setFor?.objectiveRef ?? null}
             attempt={{ number: index + 1, of: attempts.length }}
+            queue={queue}
             onScore={scoreReasoning}
             {...(submission ? { submission } : {})}
             onOverride={(override) => recordOverride(row.seatCode, row.sessionId, override)}
@@ -1116,66 +1384,162 @@ export function RealStudentEvidence() {
   );
 }
 
-/** §19.1's chain, cut into the four things a teacher opens a student to do. */
-const TABS = [
-  { id: "trail", label: "Evidence trail" },
-  { id: "plan", label: "The plan" },
-  { id: "explanation", label: "The explanation" },
-  { id: "next", label: "What next" },
-] as const;
-
-type TabId = (typeof TABS)[number]["id"];
-
 /**
- * What this attempt shows, at the top of the page it is about.
+ * A seat on the roll with nothing turned in — which is a person, not an absence.
  *
- * The header used to print `STRUCTURED 90/90 · REASONING 10/10 · TOGETHER 100/100` two
- * hundred pixels above a red *Not demonstrated*, and reconciled the two nowhere. The states
- * are the assessment; the flags are the requirements behind them; the points are at the
- * bottom of the page with a sentence saying what they count.
+ * The class page names these children twice on its first screen: in the triage, and in
+ * *Who is mid-run right now*. Both were links, and both landed on **"Nothing from this
+ * seat. No student has turned work in from seat 11 in this class."** — no name, no state,
+ * no screen they are on, no way to the next child. The page contradicted the page that
+ * linked to it, one click earlier, on a class where the teacher had pasted the name herself
+ * (`DEFECTS.md` D19).
+ *
+ * A seat with no roster row at all keeps the old refusal, because then it is true: nothing
+ * in this class knows who sits there.
  */
-function StudentLead({ spine, awaitingReading }: { spine: StudentSpine; awaitingReading: boolean }) {
+function NotTurnedIn({ seat, seatCode, code, progress, loadedAt, queue }: {
+  seat: ClassSeat | null;
+  seatCode: string;
+  code: string;
+  progress: readonly ProgressRow[];
+  loadedAt: number;
+  queue: QueuePlace | null;
+}) {
+  const label = useSeatLabel();
+  const live = progress.find((entry) => entry.seatCode === seatCode) ?? null;
+  if (!seat) {
+    return (
+      <header className="page-header page-header--with-back">
+        <Link to={`/educator/class/${code}`}>← Class evidence</Link>
+        <p className="eyebrow">{`Seat ${seatCode}`}</p>
+        <h1>Nothing from this seat.</h1>
+        <p>There is no seat {seatCode} on this class list, and nothing has been turned in from it.</p>
+      </header>
+    );
+  }
+  const state = seat.state === "still-working"
+    ? "Still working"
+    : seat.state === "started-quiet"
+      ? "Started, not turned in"
+      : "Not started";
   return (
-    <div className="student-lead" data-state={spine.lead}>
-      <p className="field-label">What the evidence shows</p>
-      <strong>{SKILL_STATE_LABELS[spine.lead]}</strong>
-      <ul className="student-lead__skills">
-        {spine.competencies.map((line) => (
-          <li key={line.competencyId}>
-            <span>{line.statement}</span>
-            <b>{SKILL_STATE_LABELS[line.state]}</b>
-          </li>
-        ))}
-      </ul>
-      {spine.shortfalls.length > 0 && (
-        <ul className="student-lead__flags">
-          {spine.shortfalls.map((flag) => (
-            <li key={flag.evidenceRequirementId}>
-              {flag.label} — {levelLabel(flag.level)}
-            </li>
-          ))}
-        </ul>
-      )}
-      {spine.lead === "incomplete" && awaitingReading && (
-        <p className="student-lead__absence">Their written explanation has not been read yet, so the evidence is not all in.</p>
-      )}
-      {spine.notObserved.length > 0 && (
-        <p className="student-lead__absence">
-          {spine.notObserved.length} {spine.notObserved.length === 1 ? "thing" : "things"} the work had to
-          show {spine.notObserved.length === 1 ? "was" : "were"} never asked in this run. Absences, not zeros.
-        </p>
-      )}
-    </div>
+    <>
+      {queue && <QueueBar queue={queue} code={code} />}
+      <header className="student-identity surface-margin">
+        {!queue && <p className="student-identity__facts"><Link to={`/educator/class/${code}`}>← Class evidence</Link></p>}
+        <h1>{label(seatCode)}</h1>
+        <span className="student-identity__facts">
+          <span>{`Seat ${seatCode}`}</span>
+          <span>{state}</span>
+          {live && <span>{WORLD_REGISTRY[live.worldId]?.title ?? ""}</span>}
+        </span>
+      </header>
+      {/* A record rather than the page's raised surface, and deliberately: there is nothing
+          here for a teacher to act on. A seat that has turned nothing in has no evidence, so
+          it gets no instrument — the weight says that before the words do. */}
+      <section className="surface-record" aria-labelledby="not-in">
+        <div className="verdict__lead">
+          <h2 id="not-in">What the evidence shows</h2>
+          <p className="verdict__state" data-state="unread"><span>Nothing turned in yet</span></p>
+          {live
+            ? (
+              <p className="verdict__absence">
+                {startedStageLabel(live.worldId, live.stage)} · last moved {sinceLabel(loadedAt - live.updatedAt)}.
+                Nothing is judged until they turn in, so there is no state to report and BOW will not
+                guess one.
+              </p>
+            )
+            : (
+              <p className="verdict__absence">
+                No browser has said this seat has opened the work, and nothing has arrived from it.
+                An absence, not a zero.
+              </p>
+            )}
+          <p className="verdict__absence">
+            Their card and the way to reissue it are on the <Link to={`/educator/class/${code}/roster`}>class list</Link>.
+          </p>
+        </div>
+      </section>
+    </>
   );
 }
 
-function StudentPanel({ row, code, objectiveRef, onScore, submission, onOverride, onFeedback, onRevise, onWithdraw, notes, attempt }: {
+/**
+ * What the teacher is in the middle of, and the two children either side of it.
+ *
+ * A class page that ranks four children with the same gap and then makes a teacher go back to
+ * it between each one has ranked them and not helped. This is the reading queue's own pattern,
+ * on the page where the work actually gets done.
+ */
+function QueueBar({ queue, code }: { queue: QueuePlace; code: string }) {
+  const label = useSeatLabel();
+  const to = (seat: string) => `/educator/class/${code}/students/${seat}`;
+  return (
+    <nav className="queue-bar surface-margin" aria-label="This pile">
+      <p className="queue-bar__what">
+        <b>{QUEUE_BAND_LABELS[queue.band]}</b>
+        <span data-count="">{queue.index} of {queue.of}</span>
+      </p>
+      <div className="queue-bar__moves">
+        {/* The same name this destination has everywhere else in the product. A second word
+            for one place is a second thing a teacher has to learn. */}
+        <Link to={`/educator/class/${code}`}>← Class evidence</Link>
+        {queue.previous
+          ? <Link to={to(queue.previous)}>← {label(queue.previous)}</Link>
+          : <span aria-disabled="true">← First in this pile</span>}
+        {queue.next
+          ? <Link to={to(queue.next)}>{label(queue.next)} →</Link>
+          : <span aria-disabled="true">Last in this pile →</span>}
+      </div>
+    </nav>
+  );
+}
+
+/**
+ * What each pile is called, in the queue bar's own words.
+ *
+ * Deliberately not Ladder 3's labels for two of the five. A pile is a thing a teacher is
+ * working through, and "Fell short of something" says what the pile is *for* in a way that
+ * "Not yet" — which is a claim about one child on one skill — does not.
+ */
+const QUEUE_BAND_LABELS: Record<TriageBand, string> = {
+  "not-in": "Nothing turned in",
+  short: "Fell short of something",
+  incomplete: "Writing still to read",
+  shown: "Nothing outstanding",
+  never: "The run never asked for it",
+};
+
+/**
+ * One student's evidence, in seven regions, ranked rather than tabbed.
+ *
+ * The four tabs are gone, and that is the whole argument of this page: a tab bar is a ranking
+ * abdicated. The reading order was the teacher's to guess, and the tab it opened on was BOW's
+ * judgement — so the child's own writing, the thing that most needs a person, was rendered
+ * `display: none` by default, and *Write back*, the one thing only a teacher can do, was the
+ * last element on a 7,526px page under fourteen unrolled override panels.
+ *
+ * R0 · the pile, and the two children either side of this one — margin.
+ * R1 · who this is — margin.
+ * R2 · the verdict — the page's one raised surface.
+ * R3 · what they wrote, and what you write back — two records, side by side.
+ * R4 · what they decided, in six steps — record.
+ * R5 · every judgement, and the way to disagree with each — record.
+ * R6 · the opening figures and the full transcript — record.
+ * R7 · the key and the gradebook line — margin.
+ *
+ * Nothing left the page. Every removal is a demotion, and every demoted thing is on screen or
+ * one native disclosure away.
+ */
+function StudentPanel({ row, code, objectiveRef, onScore, submission, onOverride, onFeedback, onRevise, onWithdraw, notes, attempt, queue }: {
   row: StudentRow;
   code: string;
   /** The objective this attempt was set for, or `null` where the teacher chose none. */
   objectiveRef: StandardRef | null;
   /** Which of this seat's attempts is on screen, and how many there are. */
   attempt: { number: number; of: number };
+  /** Where this child sits in the pile a teacher is working through. `null` off the roll. */
+  queue: QueuePlace | null;
   onScore: (seat: string, session: string, scores: ReasoningScores | null) => Promise<boolean>;
   submission?: AttributedSubmission;
   onOverride: (override: OverrideRequest) => Promise<boolean>;
@@ -1184,217 +1548,319 @@ function StudentPanel({ row, code, objectiveRef, onScore, submission, onOverride
   onWithdraw: (id: string) => Promise<boolean>;
   notes: readonly TeacherFeedback[];
 }) {
-  // Opens on the trail, because the reason to open one student is to check a conclusion —
-  // and because §19.1 says the chain is read in order, not picked from.
-  const [tab, setTab] = useState<TabId>("trail");
   // Opens on whatever a person already recorded, so re-opening a scored student shows
   // their reading rather than a blank rubric that would overwrite it on the next save.
   const [scores, setScores] = useState<ReasoningScores>(() => row.reasoningCriteria ?? {});
   const [saved, setSaved] = useState<string | null>(null);
   const total = reasoningTotal(scores);
-  // Every criterion has to have been answered before this is a reading rather than a blank.
+  // Every one of the four has to have been answered before this is a reading rather than a blank.
   const complete = REASONING_CRITERIA.every((criterion) => scores[criterion.id] !== undefined);
   const spine = submission ? studentSpineFor(submission) : null;
   const label = useSeatLabel();
+  const steps = decisionStepsFor(row);
 
   return (
     <>
-      <header className="page-header page-header--split">
-        <div>
-          <Link to={`/educator/class/${code}`}>← Class evidence</Link>
-          <p className="eyebrow">Turned in {new Date(row.submittedAt).toLocaleString()}</p>
-          <h1>{label(row.seatCode)}</h1>
-          {/* A student who turned in twice used to be shown their later attempt silently, on a
-              page with no switcher and no mention of the first — while the export listed both
-              and the queue listed neither. Which one is on screen, which one the class counts,
-              and a way to the other. */}
-          {attempt.of > 1 && (
-            <p className="class-state">
+      {queue && <QueueBar queue={queue} code={code} />}
+
+      {/* R1 · margin. Who this is, when it arrived, and what they did — never how well. */}
+      <header className="student-identity surface-margin">
+        {/* No second back link. The pile bar above already carries the way out, and two links
+            to one place on one screen is the same defect as two doors to one act. */}
+        {!queue && <p className="student-identity__facts"><Link to={`/educator/class/${code}`}>← Class evidence</Link></p>}
+        {/* Name and facts on one baseline row. Two rows of furniture above the instrument is
+            two rows the evidence below has to give up. */}
+        <h1>{label(row.seatCode)}</h1>
+        <span className="student-identity__facts">
+          <span>Turned in {new Date(row.submittedAt).toLocaleString()}</span>
+          <span>{WORLD_REGISTRY[row.worldId]?.title ?? ""}</span>
+          <span>{summarise(row)}</span>
+        </span>
+        {/* A student who turned in twice used to be shown their later attempt silently, on a
+            page with no switcher and no mention of the first — while the export listed both
+            and the queue listed neither. Which one is on screen, which one the class counts,
+            and a way to the other. */}
+        {attempt.of > 1 && (
+          <p className="student-identity__facts">
+            <span>
               Attempt {attempt.number} of {attempt.of}.{" "}
               {attempt.number === attempt.of
                 ? "Their latest, and the one every count on this class is made from."
-                : `Every count on this class is made from attempt ${attempt.of}, their latest.`}{" "}
-              {Array.from({ length: attempt.of }, (_, index) => index + 1)
-                .filter((number) => number !== attempt.number)
-                .map((number) => (
-                  <Link key={number} to={`/educator/class/${code}/students/${row.seatCode}?attempt=${number}`}>
-                    See attempt {number}
-                  </Link>
-                ))}
-            </p>
-          )}
-          <p>{summarise(row)}</p>
-        </div>
-        {spine
-          ? (
-            <div className="student-lead-stack">
-              <StudentLead spine={spine} awaitingReading={row.reasoningPoints === null} />
-              {/* Where this evidence leaves the objective the work was set for. The skills and
-                  the objective were always two clicks apart and a teacher had to do the join
-                  in their head; it uses `resolveObjectiveCoverage`, the same function the class
-                  page uses, so the two surfaces cannot disagree about the same objective. */}
-              <ObjectiveStanding objectiveRef={objectiveRef} results={spine.results} />
-            </div>
-          )
-          : <p className="class-state">This attempt could not be opened in full.</p>}
+                : `Every count on this class is made from attempt ${attempt.of}, their latest.`}
+            </span>
+            {Array.from({ length: attempt.of }, (_, index) => index + 1)
+              .filter((number) => number !== attempt.number)
+              .map((number) => (
+                <Link key={number} to={`/educator/class/${code}/students/${row.seatCode}?attempt=${number}`}>
+                  See attempt {number}
+                </Link>
+              ))}
+          </p>
+        )}
       </header>
 
-      {/* The Ladder-3 words the panel above just used, each with its sentence, once — above
-          the tabs, because the header stays put while the tabs swap under it. Ladder 2's key
-          belongs to the trail, which is the tab every Ladder-2 word on this page appears on
-          and the one this panel opens to. */}
-      {spine && <StateKey title="What these words mean" entries={skillStateKey(spine.competencies.map((line) => line.state))} />}
+      {/* R2 · THE INSTRUMENT. What this attempt shows, and the one thing that fell short.
+          The header used to print `STRUCTURED 90/90 · REASONING 10/10 · TOGETHER 100/100`
+          two hundred pixels above a red *Not demonstrated* and reconcile the two nowhere.
+          The states are the assessment; the flag row is the shortfall behind them; the points
+          are at the foot of the page with a sentence saying what they count. */}
+      {spine
+        ? (
+          <section className="surface-instrument" aria-labelledby="verdict">
+            <div className="verdict__grid">
+              <div className="verdict__lead">
+                <h2 id="verdict">What the evidence shows</h2>
+                {/* Two statements, side by side, because the product's whole claim is that
+                    the decisions and the writing are reported separately and never rolled
+                    into one number. One Ladder-4 word standing alone as the page's verdict
+                    was doing exactly that rolling-up in the reader's head — and doing it
+                    backwards on the pair the demonstration turns on: the best explanation in
+                    the class led with the worst word on Ladder 3 while the weakest led one
+                    rung above her, and the human marks that say so were 555px below the fold
+                    (`DEFECTS.md` D18). The datum was already on the page. It is up here now. */}
+                <div className="verdict__pair">
+                  <div className="verdict__half">
+                    <p className="field-label">What the decisions showed</p>
+                    <p className="verdict__state" data-state={spine.lead}>
+                      <span className="mark-glyph" aria-hidden="true">{SKILL_STATE_MARKS[spine.lead]}</span>
+                      <span>{SKILL_STATE_LABELS[spine.lead]}</span>
+                    </p>
+                    <p className="verdict__half-note">BOW read the run. It never reads the writing.</p>
+                  </div>
+                  <div className="verdict__half">
+                    <p className="field-label">What a person read in the writing</p>
+                    {row.reasoningPoints === null
+                      ? (
+                        <p className="verdict__state" data-state="unread">
+                          <span>Nobody has read it yet</span>
+                        </p>
+                      )
+                      : (
+                        <p className="verdict__state verdict__state--read" data-count="">
+                          <span>{row.reasoningPoints} of {REASONING_MAXIMUM}</span>
+                        </p>
+                      )}
+                    <p className="verdict__half-note">
+                      {row.reasoningPoints === null
+                        ? "Your reading, when you make it. It is never added to the state beside it."
+                        : "Your own mark, not BOW's. It is never added to the state beside it."}
+                      {" "}<a href="#your-marks">{row.reasoningPoints === null ? "Read it and mark it" : "Your marks"} ↓</a>
+                    </p>
+                  </div>
+                </div>
+                {spine.shortfalls.length > 0 && (
+                  <ul className="verdict__flags">
+                    {spine.shortfalls.map((flag) => (
+                      <li className="surface-record__flag" key={flag.evidenceRequirementId}>
+                        <b>{flag.label}</b>
+                        <span>
+                          <span className="mark-glyph" aria-hidden="true">{levelMark(flag.level)}</span>{" "}
+                          {levelLabel(flag.level)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {spine.lead === "incomplete" && row.reasoningPoints === null && (
+                  <p className="verdict__absence">Their written explanation has not been read yet, so the evidence is not all in.</p>
+                )}
+                {spine.notObserved.length > 0 && (
+                  <p className="verdict__absence">
+                    {spine.notObserved.length} {spine.notObserved.length === 1 ? "thing" : "things"} the work had to
+                    show {spine.notObserved.length === 1 ? "was" : "were"} never asked in this run. Absences, not zeros.
+                  </p>
+                )}
+              </div>
+              {/* Where this evidence leaves the objective the work was set for. Its own
+                  column, because the skills and the objective were always two clicks apart
+                  and a teacher had to do the join in their head — and because stacked under
+                  the skills it pushed the child's own writing off the first screen, which is
+                  the defect this page was rebuilt to fix. It uses `resolveObjectiveCoverage`,
+                  the same function the class page uses, so the two cannot disagree. */}
+              <ObjectiveStanding objectiveRef={objectiveRef} results={spine.results} />
+              <div className="verdict__skills-col">
+                {/* Named on the list rather than above it. A 32px label over three rows that
+                    already say what they are is 32px of the first screen, and the first screen
+                    is where the child's own writing has to start. */}
+                <ul className="verdict__skills" aria-label="Each skill, on this attempt">
+                  {spine.competencies.map((line) => (
+                    <li key={line.competencyId}>
+                      <b>
+                        <span className="mark-glyph" aria-hidden="true">{SKILL_STATE_MARKS[line.state]}</span>{" "}
+                        {SKILL_STATE_LABELS[line.state]}
+                      </b>
+                      <span>{line.statement}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+        )
+        : <p className="class-state surface-margin">This attempt could not be opened in full.</p>}
 
-      {/* §19.1 says the chain is read in an order. The four tabs are that order cut into the
-          four things a teacher opens a student to do, and every one of them is one click from
-          every other — a teacher checking a conclusion should never have to scroll past the
-          rubric to reach the evidence, or the other way round. */}
-      <div className="student-tabs" role="tablist" aria-label="This student's work">
-        {TABS.map((entry) => (
-          <button
-            key={entry.id}
-            type="button"
-            role="tab"
-            id={`student-tab-${entry.id}`}
-            aria-selected={tab === entry.id}
-            aria-controls={`student-panel-${entry.id}`}
-            onClick={() => setTab(entry.id)}
-          >
-            {entry.label}
-          </button>
-        ))}
-      </div>
-
-      <div role="tabpanel" id="student-panel-trail" aria-labelledby="student-tab-trail" hidden={tab !== "trail"}>
-        {submission
-          ? <EvidenceTrailPanel submission={submission} onOverride={onOverride} />
-          : <p className="class-state">This attempt could not be opened in full, so there is no trail to show.</p>}
-      </div>
-
-      <div role="tabpanel" id="student-panel-next" aria-labelledby="student-tab-next" hidden={tab !== "next"}>
-        {submission
-          ? <StudentSummary submission={submission} />
-          : <p className="class-state">This attempt could not be opened in full.</p>}
-      </div>
-
-      <div role="tabpanel" id="student-panel-explanation" aria-labelledby="student-tab-explanation" hidden={tab !== "explanation"}>
-      <section className="reasoning-layout">
-        <div className="student-response">
-          <p className="eyebrow">What they wrote</p>
+      {/* R3 · two records, side by side. This is where the two worst findings on this page
+          die — the child's writing behind a tab, and the teacher's reply 7,000px down —
+          and they die by ranking rather than by tabs. */}
+      <div className="record-pair">
+        <section className="surface-record written" aria-labelledby="wrote">
+          <div className="record__head">
+            <h2 id="wrote">What they wrote</h2>
+          </div>
           {row.defense && row.defense.text.trim() ? (
             <blockquote>{row.defense.text}</blockquote>
           ) : (
             <p className="class-state">This student turned in no written explanation.</p>
           )}
-          <p className="response-note">
+          <p className="written__promise">
             Nothing about this writing is machine-scored, and it is never sent to a model. You read it
             and you score it — which is what the student was told would happen.
           </p>
-          <p className="response-note">
+          <p className="written__promise">
             <Link to={`/educator/class/${code}/reading`}>Read the whole class in one queue →</Link>
           </p>
 
+          {/* The teacher's own marks, on the writing they are marks about, as the control a
+              teacher actually uses rather than a read-only inset two screens away. It is
+              deliberately not part of what BOW claims about this child: §37 — a mark one
+              teacher records may not move what BOW says, or two classes set the same
+              challenge would mean different things and nothing on any screen would say so. */}
+          <div className="written__own" id="your-marks">
+            <p className="field-label">Your own marks — BOW adds nothing to it</p>
+            {REASONING_CRITERIA.map((criterion) => (
+              <div className="rubric-row" key={criterion.id}>
+                <div><b>{criterion.label}</b><span>{criterion.hint}</span></div>
+                <div className="segmented">
+                  {Array.from({ length: criterion.max + 1 }, (_, value) => (
+                    <button
+                      type="button"
+                      key={value}
+                      aria-label={`${criterion.label}: ${value} of ${criterion.max}`}
+                      aria-pressed={scores[criterion.id] === value}
+                      onClick={() => setScores((current) => ({ ...current, [criterion.id]: value }))}
+                    >{value}</button>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <p className="feedback__actions">
+              {/* An unread paragraph and a paragraph a person read and scored zero are
+                  different facts, and this used to show both as "0/10" with nothing
+                  selected — one stray click from saving a zero nobody meant. */}
+              <strong>{complete ? `${total}/${REASONING_MAXIMUM}` : `—/${REASONING_MAXIMUM}`}</strong>
+              <Button
+                aria-disabled={!complete}
+                onClick={() => complete && void onScore(row.seatCode, row.sessionId, scores).then((ok) => setSaved(ok ? "Saved." : "Could not save that."))}
+              >
+                Save review
+              </Button>
+              <span aria-live="polite">{saved || (complete ? "" : "Score all four to save.")}</span>
+            </p>
+          </div>
+
           {/* The teacher's own closing question, and the answer to it — under the canonical
-              writing, in its own block, said as theirs.
-
-              It is deliberately not in the rubric panel beside it and never will be. §37: a
-              question one teacher wrote may not move what BOW claims about a child, or two
-              classes set the same challenge would mean different things and nothing on any
-              screen would say so. What it is here is a thing to read before a discussion.
-
-              Absent for every attempt whose assignment carried no question, which is most. */}
+              writing, in its own block, said as theirs. Absent for every attempt whose
+              assignment carried no question, which is most. */}
           {submission?.closingAnswer && (
             <div className="closing-answer">
               <p className="eyebrow">Your own question</p>
               <blockquote className="closing-answer__asked">{submission.closingAnswer.questionText}</blockquote>
               <blockquote className="closing-answer__given">{submission.closingAnswer.answer}</blockquote>
-              <p className="response-note">
+              <p className="written__promise">
                 You asked this, not BOW. It is not scored, it is not part of the skills reported above,
                 and it does not appear in the export.
               </p>
             </div>
           )}
-        </div>
-        <div className="rubric-panel">
-          {/* Not "10-point reasoning rubric". That sentence introduced a second scale as a
-              fact a teacher already knew, on the two surfaces where they meet it first — and
-              the product has one rubric, the levels in `labels.ts`, which this is not. What
-              this panel is, is four things a person marks by hand. The maximum is not
-              asserted here because it is on screen twice already: on each row's own buttons
-              and in the total underneath. */}
-          <p className="eyebrow">Score the writing — four things, you decide</p>
-          {REASONING_CRITERIA.map((criterion) => (
-            <div className="rubric-row" key={criterion.id}>
-              <div><b>{criterion.label}</b><span>{criterion.hint}</span></div>
-              <div className="segmented">
-                {Array.from({ length: criterion.max + 1 }, (_, value) => (
-                  <button
-                    type="button"
-                    key={value}
-                    aria-label={`${criterion.label}: ${value} of ${criterion.max}`}
-                    aria-pressed={scores[criterion.id] === value}
-                    onClick={() => setScores((current) => ({ ...current, [criterion.id]: value }))}
-                  >{value}</button>
-                ))}
-              </div>
-            </div>
-          ))}
-          <footer>
-            <span>Reasoning total</span>
-            {/* An unread paragraph and a paragraph a person read and scored zero are
-                different facts, and the panel used to show both as "0/10" with nothing
-                selected — one stray click away from saving a zero nobody meant. */}
-            <strong>{complete ? `${total}/${REASONING_MAXIMUM}` : `—/${REASONING_MAXIMUM}`}</strong>
-            <Button
-              aria-disabled={!complete}
-              onClick={() => complete && void onScore(row.seatCode, row.sessionId, scores).then((ok) => setSaved(ok ? "Saved." : "Could not save that."))}
-            >
-              Save review
-            </Button>
-            <span aria-live="polite">{saved || (complete ? "" : "Score all four to save.")}</span>
-          </footer>
-        </div>
-      </section>
+        </section>
+
+        <section className="surface-record" aria-labelledby="write-back">
+          <Feedback
+            seatCode={row.seatCode}
+            sessionId={row.sessionId}
+            notes={notes}
+            onSend={onFeedback}
+            onRevise={onRevise}
+            onWithdraw={onWithdraw}
+          />
+        </section>
       </div>
 
-      <div role="tabpanel" id="student-panel-plan" aria-labelledby="student-tab-plan" hidden={tab !== "plan"}>
-      {/* The plan a teacher opened this tab to read, in whichever world the student built
-          one. This tab used to render nothing at all for a market run — the one view of
-          what the student actually made, silently blank. */}
-      {row.worldId !== "basketball" && <PopUpPlanTab row={row} />}
-      {row.resolution && (
-        <section className="dashboard-section">
-          <div className="section-heading">
-            <p className="eyebrow">How the season ended</p>
-            <h2>The consequences of this plan</h2>
-          </div>
+      {/* R4 · record. What the child actually did, in six steps, from their own events. It
+          is set at the reading size because it is prose a teacher reads aloud, and it is only
+          an honest compression because R6 below keeps every moment of the run. */}
+      <section className="surface-record" aria-labelledby="decided">
+        <div className="record__head">
+          <h2 id="decided">What they decided</h2>
+          <p>Read from their own run, step by step</p>
+        </div>
+        <ol className="decision-steps">
+          {steps.map((step) => (
+            <li key={step.label}>
+              <p className="decision-steps__what">
+                <span className="decision-steps__label">{step.label}</span>
+                {step.what}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* R5 · record. Every judgement on this attempt, weakest group first, each one
+          overridable on its own row. */}
+      <section className="surface-record" aria-labelledby="judgements">
+        <div className="record__head">
+          <h2 id="judgements">Every judgement on this attempt</h2>
+          <p>What BOW concluded, and why</p>
+        </div>
+        {submission
+          ? <JudgementRecord submission={submission} onOverride={onOverride} />
+          : <p className="class-state">This attempt could not be opened in full, so there is nothing to check.</p>}
+      </section>
+
+      {/* R6 · record. The figures behind the account above, and the whole run in order. */}
+      <section className="surface-record" aria-labelledby="record">
+        <div className="record__head">
+          <h2 id="record">The full record</h2>
+          <p>Everything the six steps above were read from</p>
+        </div>
+        {row.worldId !== "basketball" && <PopUpPlanTab row={row} />}
+        {/* The figures the account above was read from, as one row. A run that never saved a
+            final board has no after, and that is said rather than left as an empty column. */}
+        {row.worldId === "basketball" && row.opening && (
+          <dl className="adaptation-lines">
+            <div><dt>{CHOICE_LABELS.goal}</dt><dd>{formatDollars(row.opening.goal)}</dd></div>
+            <div><dt>{CHOICE_LABELS.reserve}</dt><dd>{formatDollars(row.opening.reserve)}</dd></div>
+            <div><dt>{CHOICE_LABELS.flexibleCash}</dt><dd>{formatDollars(row.opening.flexibleCash)}</dd></div>
+          </dl>
+        )}
+        {row.worldId === "basketball" && row.opening && !row.final && (
+          <p className="class-state">
+            No final plan was ever saved, so there is no after to compare this with — and the three
+            things the work had to show after Week {SCENARIO_NUMBERS.disruptionWeek} were never asked.
+            Absences, not zeros.
+          </p>
+        )}
+        {row.resolution && (
           <dl className="adaptation-lines">
             <div><dt>Attendance bonus</dt><dd>{row.resolution.attendanceHeld ? "Held" : `Lost in Week ${row.resolution.bonusLostWeek}`}</dd></div>
             <div><dt>Left uncovered</dt><dd>{formatDollars(row.resolution.uncovered)}</dd></div>
             <div><dt>Course</dt><dd>{row.resolution.courseFunded ? "Funded" : `${formatDollars(row.resolution.courseShort)} short`}</dd></div>
             <div><dt>Ends holding</dt><dd>{formatDollars(row.resolution.endCash)}</dd></div>
           </dl>
-        </section>
-      )}
+        )}
+        {row.opening && row.final && <WhatMoved row={row} />}
+        {submission && <TrailRecord submission={submission} />}
+      </section>
 
-      {row.opening && row.final && <WhatMoved row={row} />}
-      </div>
-
-      {/* The other model, once, at the bottom, saying what it is.
-          BOW computes a points total because a gradebook needs a number, and the way it is
+      {/* R7 · margin. The key, then the other model — once, at the foot, saying what it is.
+          BOW computes a points total because a gradebook needs a number, and how it is
           computed has not changed. What changed is that it no longer sits at the top of the
-          page contradicting the states above: it is one line, it says what it counts, and
-          the working behind it is one disclosure away. */}
-      {submission && <Gradebook submission={submission} displayName={label(row.seatCode) === `Seat ${row.seatCode}` ? null : label(row.seatCode)} />}
-
-      <Feedback
-        seatCode={row.seatCode}
-        sessionId={row.sessionId}
-        notes={notes}
-        onSend={onFeedback}
-        onRevise={onRevise}
-        onWithdraw={onWithdraw}
-      />
+          page contradicting the states above. */}
+      <div className="surface-margin">
+        {spine && <WordKey title="What the three skill words mean" entries={skillStateKey(spine.competencies.map((line) => line.state))} />}
+        {submission && <Gradebook submission={submission} displayName={label(row.seatCode) === `Seat ${row.seatCode}` ? null : label(row.seatCode)} />}
+      </div>
     </>
   );
 }
@@ -1615,12 +2081,27 @@ function Gradebook({ submission, displayName }: { submission: AttributedSubmissi
 function summarise(row: StudentRow): string {
   if (row.worldId === "food-truck") return popUpSummary(row);
   const place = BASKETBALL_SCENARIO.setups.find((setup) => setup.id === row.setupId)?.title ?? "No place chosen";
+  // `null` is a student who never reached the question, and it is not a student who answered
+  // no. This line read "waited on the course · kept the Saturdays" about a run that stopped
+  // before either was asked — two decisions attributed to a child who was never offered them,
+  // on the first line a teacher reads. It is the same defect `choiceDistributions` was fixed
+  // for, in the one place that was still building its sentence with a bare ternary.
   const bits = [
     place,
-    row.reservedSeat ? "reserved the seat" : "waited on the course",
-    row.tookClinics ? "took the clinics" : "kept the Saturdays",
+    row.reservedSeat === null ? "never reached the course deadline" : row.reservedSeat ? "reserved the seat" : "waited on the course",
+    row.tookClinics === null ? "never reached the Saturdays" : row.tookClinics ? "took the clinics" : "kept the Saturdays",
   ];
   if (row.resolution) bits.push(row.resolution.attendanceHeld ? "made every session" : "lost the bonus");
+  // How it came out, on the line a teacher reads first. These two facts — did Avery get the
+  // course, and what is she left holding — are what the whole demonstration turns on, and they
+  // sat at 85% page depth with nothing above them saying either (`DEFECTS.md` D24). They are
+  // facts about the run and not a judgement of the student, which is the rule this line keeps.
+  if (row.resolution) {
+    bits.push(row.resolution.courseFunded
+      ? "got the course"
+      : `${formatDollars(row.resolution.courseShort)} short of the course`);
+    bits.push(`ends holding ${formatDollars(row.resolution.endCash)}`);
+  }
   return bits.join(" · ");
 }
 

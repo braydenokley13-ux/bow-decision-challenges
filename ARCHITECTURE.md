@@ -152,14 +152,27 @@ and scores `null`.
 
 ### The teacher's loop
 
-Four screens, and they are the first thing in this product a teacher can use end to end:
+Three screens, and they are the first thing in this product a teacher can use end to end:
 
 | Route | What it answers |
 | --- | --- |
-| `/educator/map` | "Where do I stand across the whole requirement?" — all 23 in five topic bands, two views, and the choice remembered. |
 | `/educator/objectives` | "What can I assess?" — all 23, searchable, with the ones a built world can actually assess told apart from the ones that are only mapped. |
 | `/educator/objectives/:frameworkId/:code` | "What is this, and what did my class do?" — the framework's exact wording, its attribution, the skills behind it, and one result block per class that was set it. |
 | `/educator/assign` | "Give me a code." — §17.2's four steps with the two that have one answer collapsed to a line each. |
+
+**This table had four rows until the code stopped agreeing with it, and the fourth is worth
+recording rather than deleting.** It read `/educator/map` — *"Where do I stand across the
+whole requirement?" — all 23 in five topic bands, two views, and the choice remembered* — and
+that screen was real: a nine-value status filter, a class filter, a topic filter, a Map/Table
+toggle and a teacher-maintained *MARKED TAUGHT* flag, over two assessable objectives and
+twenty-one rows reading *coming*. It was deleted, because asking a teacher to keep a record
+inside BOW about instruction BOW did not deliver is a planbook, and a planbook is the LMS this
+product has a rule against becoming. `/educator/map` is now
+`<Navigate to="/educator/objectives" replace />` in `src/App.tsx` and nothing else — kept so an
+old link lands somewhere, not because there is a screen behind it. The question the map existed
+to answer, *which of these can BOW actually assess and which can it not*, did not need a route
+of its own: it is a column on the list, and `ObjectivePages.tsx` opens with the same account in
+its own words.
 
 **Every teacher-facing word that names a framework or one of its parts is composed from
 `FrameworkLabels`.** `frameworkNaming.test.ts` scans every surface source and fails on a
@@ -167,11 +180,13 @@ literal, so a New Jersey deployment reads New Jersey's nouns without a component
 Students see none of it: nothing under `/educator` is on a student route, and no student
 screen mentions a standard.
 
-**The Objective Map has five states** — `not-assessed`, `too-few-assessed`,
+**A class's standing on an objective has five states** — `not-assessed`, `too-few-assessed`,
 `needs-attention`, `developing`, `strong` — and they live in `objectiveState.ts` beside the
-thresholds they read. The order they are decided in is the correctness: the empty
-denominator, then `MINIMUM_ASSESSED_FOR_A_STATE`, then the two thresholds, so a share is
-never worked out from a number of students too small to carry it.
+thresholds they read. They are read one class at a time, in a result block on that objective's
+own page; the screen that showed all 23 of them at once was the map, and it is gone. The order
+they are decided in is the correctness: the empty denominator, then
+`MINIMUM_ASSESSED_FOR_A_STATE`, then the two thresholds, so a share is never worked out from a
+number of students too small to carry it.
 
 Two questions are settled before any of the five, and the reason none of them is a state is
 that neither answer is a claim about how a class did. Whether BOW can assess the objective
@@ -184,19 +199,23 @@ not at the bottom of it. `CLASS_STATE_LABELS` and `CLASS_STATE_DESCRIPTIONS` are
 `Record<ObjectiveResultState, …>`, so a sixth state is a compiler error at every teacher-facing
 word for it.
 
-State is never carried by colour alone — every objective shows a mark whose geometry differs
-and its word beside it, so the table survives a greyscale printout and a colour vision
-difference identically. The table prints as a document: shell, filters and controls drop
-away and the framework's exact sentence stays in the row.
+State is never carried by colour alone — the block that carries a class's state prints that
+state's own word beside it, so it survives a greyscale printout and a colour vision difference
+identically. The page prints as a document: the topbar and every button drop away and the
+framework's exact sentence stays.
 
-*Taught* is a teacher's own record. It is stored on the class rather than in the browser that
-ticked it, it is true across several classes only when it is true of all of them, and it is
-never inferred from anything a student did — a lesson is not something BOW can see.
-
-Marking period and the district-required subset are driven by a `DistrictProfile`. None ships,
-so those two filters are tested and not rendered: a filter with nothing behind it is a dead
-end, and inventing a district's sequence would put an ordering in front of a teacher that
-nobody at their district agreed to.
+**Three more paragraphs stood here, and all three described the map's own furniture.** They
+said that *Taught* was a teacher's own record, stored on the class rather than in the browser
+that ticked it and never inferred from anything a student did; and that marking period and the
+district-required subset were two filters driven by a `DistrictProfile`, "tested and not
+rendered" because none ships. None of that is true now. There is no `taught` flag anywhere in
+`src/domain` or `server/` — BOW cannot see a lesson, and it should not have been asking a
+teacher to tell it about one — and no test in the repository names `districtProfile`. What
+survives is the function itself in `src/domain/standards/index.ts`, returning `undefined` and
+saying why: inventing a district's sequence would put an ordering in front of a teacher that
+nobody at their district agreed to. The deleted screen's stylesheet has not gone with it —
+`.map-table`, `.map-controls`, `.view-switch` and `.taught-toggle` are still in
+`src/design/app.css` with nothing rendering them.
 
 **What the results may say** is the same set of rules everywhere: never a percentage without
 its denominator, *not yet assessed* rather than 0% when nobody has submitted, the count and

@@ -1,0 +1,224 @@
+[
+  {
+    "step": 1,
+    "title": "teacher sign in",
+    "file": "step-01-teacher-sign-in.png",
+    "url": "http://127.0.0.1:4361/educator/sign-in"
+  },
+  {
+    "step": 2,
+    "title": "my classes",
+    "file": "step-02-my-classes.png",
+    "url": "http://127.0.0.1:4361/educator/classes"
+  },
+  {
+    "step": 3,
+    "title": "class overview",
+    "file": "step-03-class-overview.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM"
+  },
+  {
+    "step": 4,
+    "title": "what should i teach next",
+    "file": "step-04-what-should-i-teach-next.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM"
+  },
+  {
+    "step": 5,
+    "title": "roster",
+    "file": "step-05-roster.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/roster"
+  },
+  {
+    "step": 6,
+    "title": "the list and its controls",
+    "file": "step-06-the-list-and-its-controls.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/roster"
+  },
+  {
+    "step": 7,
+    "title": "the assignment builder",
+    "file": "step-07-the-assignment-builder.png",
+    "url": "http://127.0.0.1:4361/educator/assignments/new?classCode=PFDEM"
+  },
+  {
+    "step": 8,
+    "title": "old card refused",
+    "file": "step-08-old-card-refused.png",
+    "url": "http://127.0.0.1:4361/join"
+  },
+  {
+    "step": 9,
+    "title": "new card works",
+    "file": "step-09-new-card-works.png",
+    "url": "http://127.0.0.1:4361/home"
+  },
+  {
+    "step": 10,
+    "title": "student home",
+    "file": "step-10-student-home.png",
+    "url": "http://127.0.0.1:4361/home"
+  },
+  {
+    "step": 11,
+    "title": "the challenge front page",
+    "file": "step-11-the-challenge-front-page.png",
+    "url": "http://127.0.0.1:4361/challenges/plan-under-pressure?class=PFDEM"
+  },
+  {
+    "step": 12,
+    "title": "choose a world",
+    "file": "step-12-choose-a-world.png",
+    "url": "http://127.0.0.1:4361/challenges/plan-under-pressure?class=PFDEM"
+  },
+  {
+    "step": 13,
+    "title": "the run begins",
+    "file": "step-13-the-run-begins.png",
+    "url": "http://127.0.0.1:4361/challenges/plan-under-pressure?class=PFDEM"
+  },
+  {
+    "step": 14,
+    "title": "mid run on the first machine",
+    "file": "step-14-mid-run-on-the-first-machine.png",
+    "url": "http://127.0.0.1:4361/challenges/plan-under-pressure?class=PFDEM"
+  },
+  {
+    "step": 15,
+    "title": "second machine picks it up",
+    "file": "step-15-second-machine-picks-it-up.png",
+    "url": "http://127.0.0.1:4361/home"
+  },
+  {
+    "step": 16,
+    "title": "resumed where they left off",
+    "file": "step-16-resumed-where-they-left-off.png",
+    "url": "http://127.0.0.1:4361/challenges/plan-under-pressure?class=PFDEM"
+  },
+  {
+    "step": 17,
+    "title": "the other world opens",
+    "file": "step-17-the-other-world-opens.png",
+    "url": "http://127.0.0.1:4361/challenges/plan-under-pressure?class=PFDEM"
+  },
+  {
+    "step": 18,
+    "title": "the board moved",
+    "file": "step-18-the-board-moved.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM?t=1787251070381"
+  },
+  {
+    "step": 19,
+    "title": "the reading queue",
+    "file": "step-19-the-reading-queue.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/reading"
+  },
+  {
+    "step": 20,
+    "title": "the queue moves on",
+    "file": "step-20-the-queue-moves-on.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/reading"
+  },
+  {
+    "step": 21,
+    "title": "a person marks the writing",
+    "file": "step-21-a-person-marks-the-writing.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/reading"
+  },
+  {
+    "step": 22,
+    "title": "aster the evidence",
+    "file": "step-22-aster-the-evidence.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/1"
+  },
+  {
+    "step": 23,
+    "title": "aster how the season ended",
+    "file": "step-23-aster-how-the-season-ended.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/1"
+  },
+  {
+    "step": 24,
+    "title": "aster ten out of ten",
+    "file": "step-24-aster-ten-out-of-ten.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/1"
+  },
+  {
+    "step": 25,
+    "title": "cormac the evidence",
+    "file": "step-25-cormac-the-evidence.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/2"
+  },
+  {
+    "step": 26,
+    "title": "cormac how the season ended",
+    "file": "step-26-cormac-how-the-season-ended.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/2"
+  },
+  {
+    "step": 27,
+    "title": "a teacher overruled bow",
+    "file": "step-27-a-teacher-overruled-bow.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/3"
+  },
+  {
+    "step": 28,
+    "title": "recording a different judgement",
+    "file": "step-28-recording-a-different-judgement.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/1"
+  },
+  {
+    "step": 29,
+    "title": "both readings on the record",
+    "file": "step-29-both-readings-on-the-record.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/1"
+  },
+  {
+    "step": 30,
+    "title": "writing back to a student",
+    "file": "step-30-writing-back-to-a-student.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/4"
+  },
+  {
+    "step": 31,
+    "title": "the note is sent",
+    "file": "step-31-the-note-is-sent.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/4"
+  },
+  {
+    "step": 32,
+    "title": "the student reads it",
+    "file": "step-32-the-student-reads-it.png",
+    "url": "http://127.0.0.1:4361/home"
+  },
+  {
+    "step": 33,
+    "title": "the teachers own question",
+    "file": "step-33-the-teachers-own-question.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/students/7"
+  },
+  {
+    "step": 34,
+    "title": "the debrief",
+    "file": "step-34-the-debrief.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/debrief"
+  },
+  {
+    "step": 35,
+    "title": "revocation controls",
+    "file": "step-35-revocation-controls.png",
+    "url": "http://127.0.0.1:4361/educator/class/PFDEM/roster"
+  },
+  {
+    "step": 36,
+    "title": "data protection",
+    "file": "step-36-data-protection.png",
+    "url": "http://127.0.0.1:4361/privacy"
+  },
+  {
+    "step": 37,
+    "title": "standards coverage",
+    "file": "step-37-standards-coverage.png",
+    "url": "http://127.0.0.1:4361/educator/objectives"
+  }
+]

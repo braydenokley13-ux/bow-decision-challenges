@@ -201,13 +201,24 @@ describe("the run the guide says a student can come back to is one the service h
     expect(gate, "and asks the service for that class's attempt").toMatch(/readMyAttempt\(classCode\)/);
 
     const home = withoutComments(readFileSync("src/student/Home.tsx", "utf8"));
-    const carryOn = home.split("\n").find((line) => line.includes("Carry on"));
+    const carryOn = home.split("\n").find((line) => line.includes("Carry on —"));
     expect(carryOn, "the student's own way back into an unfinished run").toBeDefined();
+    // The URL is built in one place now — `workRoute` — because the link also has to carry
+    // **which** piece of work it opens (`DEFECTS.md` D22), and two cards building two query
+    // strings by hand is how one of them lost the class code. So the claim is made against
+    // the builder, and the link is checked to be using it.
+    expect(carryOn, "Carry on has to go through the one place that builds this URL").toMatch(/workRoute\(/);
+    const builder = home.slice(home.indexOf("function workRoute"), home.indexOf("function WorkCard"));
+    expect(builder, "the builder must exist for the assertion above to mean anything").not.toBe("");
     expect(
-      carryOn,
+      builder,
       "Carry on has stopped carrying the class code, so it hands the student whatever is in "
       + "this machine's storage — which on any other machine is a blank board",
-    ).toMatch(/class=/);
+    ).toMatch(/class=\$\{classCode\}/);
+    expect(
+      builder,
+      "and it has to say which assignment, or a class with two of them opens the first one twice",
+    ).toMatch(/assignment=/);
   });
 });
 

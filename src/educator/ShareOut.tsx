@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
-import { EducatorShell } from "./EducatorShell";
+import { ClassUnreachable, EducatorShell } from "./EducatorShell";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import type { ShareOutItem, ShareOutSelection } from "../platform/identity/types";
 import { useClassEvidence } from "./useClassEvidence";
@@ -42,7 +42,7 @@ const PRESENT_BUTTON_ID = "share-out-present";
 
 export function ShareOut() {
   const { code } = useParams();
-  const { state, teacherKey } = useClassEvidence(code);
+  const { state, teacherKey, reload } = useClassEvidence(code);
   const [selection, setSelection] = useState<ShareOutSelection | null>(null);
   const [presenting, setPresenting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -94,6 +94,7 @@ export function ShareOut() {
   if (state.status === "loading") {
     return <EducatorShell><p className="class-state" aria-live="polite">Opening the class…</p></EducatorShell>;
   }
+  if (state.status === "offline") return <ClassUnreachable where="Share-out" onRetry={reload} />;
   if (state.status === "error") {
     return (
       <EducatorShell>

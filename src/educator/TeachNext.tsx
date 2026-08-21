@@ -27,6 +27,17 @@ import { disclosureEscape } from "../components/primitives/disclosureEscape";
  * should I teach next?" for the same class.
  */
 
+/**
+ * Which heading level this card's own headings sit at.
+ *
+ * The card renders on two pages at two depths. On the objective page it is inside one
+ * class's block, under that class's `<h3>`; on the class overview it is a section of the
+ * page, under an `<h2>`. A card that hard-coded one of those made the other skip a level,
+ * and heading order is part of the accessibility contract rather than a detail — so the
+ * page that owns the depth is the page that states it.
+ */
+export type TeachNextHeading = 3 | 4;
+
 /** Nothing happened here: nobody fell short of it, and nobody went unasked. */
 function nothingHappened(gap: RequirementGap): boolean {
   return gap.struggled === 0 && gap.notObserved === 0;
@@ -76,14 +87,17 @@ function GapTable({ gaps, assessed }: { gaps: readonly RequirementGap[]; assesse
               {gap.label}
               <small>{gap.observableRule}</small>
             </th>
-            {/* The denominator travels with the count, everywhere, always. */}
-            <td>
+            {/* The denominator travels with the count, everywhere, always. `data-label` is
+                what the cell is called once the table reflows to definition rows on a narrow
+                screen — the header row is off-screen there, and a bare "3 of 13" under a
+                heading nobody can see is a number with its denominator and no subject. */}
+            <td data-label={LEVEL_BUCKET_LABELS.short}>
               {gap.struggled} of {assessed}
               {gap.percentOfAssessed !== null && <small>{gap.percentOfAssessed}%</small>}
             </td>
             {/* An opportunity the run never presented is an absence. It is reported in its
                 own column so it can never be read as a student who got it wrong. */}
-            <td>{gap.notObserved === 0 ? "—" : `${gap.notObserved} of ${assessed}`}</td>
+            <td data-label={levelLabel(null)}>{gap.notObserved === 0 ? "—" : `${gap.notObserved} of ${assessed}`}</td>
           </tr>
         ))}
         {/* One row for every row that had nothing in it, in the same three columns and with
@@ -97,11 +111,11 @@ function GapTable({ gaps, assessed }: { gaps: readonly RequirementGap[]; assesse
               {rows.length === 0 ? "All" : "The other"} {quiet.length} things the work had to show
               <small>{quiet.map((gap) => gap.label).join(" · ")}</small>
             </th>
-            <td>
+            <td data-label={LEVEL_BUCKET_LABELS.short}>
               0 of {assessed}
               {quiet.some((gap) => gap.percentOfAssessed !== null) && <small>0%</small>}
             </td>
-            <td>—</td>
+            <td data-label={levelLabel(null)}>—</td>
           </tr>
         )}
       </tbody>
@@ -116,7 +130,8 @@ function GapTable({ gaps, assessed }: { gaps: readonly RequirementGap[]; assesse
  * evidence; students the run never asked, or whose writing nobody has read, are an absence.
  * A spotlight that added them together would report a marking backlog as a misconception.
  */
-function Spotlight({ spotlight, classCode, teacherKey }: { spotlight: MisconceptionSpotlight; classCode: string; teacherKey: string }) {
+function Spotlight({ spotlight, classCode, teacherKey, level }: { spotlight: MisconceptionSpotlight; classCode: string; teacherKey: string; level: TeachNextHeading }) {
+  const H = level === 3 ? "h3" : "h4";
   // The teacher's own label for the seat, where the class has one. This block and the pull-out
   // group under it were the only two on the class page written in seat numbers, directly above
   // a list of real names — nine children a teacher had to look up to form a group tomorrow, off
@@ -129,8 +144,8 @@ function Spotlight({ spotlight, classCode, teacherKey }: { spotlight: Misconcept
     <section className="spotlight">
       <p className="eyebrow">What appears misunderstood</p>
       {spotlight.misconception
-        ? <h4>{spotlight.misconception}</h4>
-        : <h4>No named misconception sits behind this one.</h4>}
+        ? <H>{spotlight.misconception}</H>
+        : <H>No named misconception sits behind this one.</H>}
       <p className="spotlight__rule">{spotlight.observableRule}</p>
 
       {shown.length > 0 ? (
@@ -178,12 +193,14 @@ function Spotlight({ spotlight, classCode, teacherKey }: { spotlight: Misconcept
 }
 
 /** §18.1 items 4 and 5: the action, why this class, and who needs support. */
-function Action({ reading, spotlight, classCode, teacherKey }: {
+function Action({ reading, spotlight, classCode, teacherKey, level }: {
   reading: TeachNextReading;
   spotlight: MisconceptionSpotlight | null;
   classCode: string;
   teacherKey: string;
+  level: TeachNextHeading;
 }) {
+  const H = level === 3 ? "h3" : "h4";
   const label = useSeatLabel();
   const top = reading.top;
   if (!top) return null;
@@ -194,7 +211,7 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
         <p className="eyebrow">Teach next</p>
         {reading.reteach ? (
           <>
-            <h4>{reading.reteach.title}</h4>
+            <H>{reading.reteach.title}</H>
             <p className="next-lesson__focus">{reading.reteach.focus}</p>
             <ol className="next-lesson__moves">
               {reading.reteach.moves.map((move) => <li key={move}>{move}</li>)}
@@ -205,7 +222,7 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
           <>
             {/* No named misconception means no authored lesson, and BOW says so rather than
                 inventing one. The requirement's own rule is what a teacher has to work from. */}
-            <h4>{top.label}</h4>
+            <H>{top.label}</H>
             <p className="next-lesson__focus">
               BOW has no reteach topic for this one, because the model names no misconception behind it.
               {TERMS.Requirement} is: {top.observableRule.charAt(0).toLowerCase()}{top.observableRule.slice(1)}.
@@ -239,11 +256,12 @@ function Action({ reading, spotlight, classCode, teacherKey }: {
   );
 }
 
-export function TeachNext({ reading, spotlight, classCode, teacherKey }: {
+export function TeachNext({ reading, spotlight, classCode, teacherKey, level = 4 }: {
   reading: TeachNextReading;
   spotlight: MisconceptionSpotlight | null;
   classCode: string;
   teacherKey: string;
+  level?: TeachNextHeading;
 }) {
   // Nothing to read. The headline above already said whether anybody has turned work in,
   // and repeating it here as a second empty state would be the page saying it twice.
@@ -280,8 +298,8 @@ export function TeachNext({ reading, spotlight, classCode, teacherKey }: {
   return (
     <section className="next-lesson" data-state={reading.state}>
       <p className="eyebrow">What should I teach next?</p>
-      {spotlight && <Spotlight spotlight={spotlight} classCode={classCode} teacherKey={teacherKey} />}
-      <Action reading={reading} spotlight={spotlight} classCode={classCode} teacherKey={teacherKey} />
+      {spotlight && <Spotlight spotlight={spotlight} classCode={classCode} teacherKey={teacherKey} level={level} />}
+      <Action reading={reading} spotlight={spotlight} classCode={classCode} teacherKey={teacherKey} level={level} />
       <details className="next-lesson__working" onKeyDown={disclosureEscape()}>
         {/* Named in plain English rather than in the vocabulary the table below exists to
             explain. A teacher clicking into an audit trail should not have to already know

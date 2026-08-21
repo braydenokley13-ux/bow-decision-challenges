@@ -1,0 +1,177 @@
+<title>F2 — anatomy-first redraw, test sheet</title>
+<style>
+  :root {
+    --sky: #2a3446;
+    --ink-1: #f4ead8;
+    --ink-4: #b9a98c;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: #100c08;
+    color: var(--ink-1);
+    font: 14px/1.4 -apple-system, "Segoe UI", sans-serif;
+  }
+  body { padding: 28px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.lede { color: var(--ink-4); max-width: 74ch; margin: 0 0 22px; }
+  p.lede code { color: var(--ink-1); }
+
+  /* ---------------------------------------------------------------------------------------
+     Below is worlds.css's own `.pass-hatch` / `.pass-hatch__plate` / `.pass-customer` block,
+     reproduced verbatim (selectors renamed `.f2-*` to avoid collision with anything else on
+     this page) so the figure is judged at the real hatch geometry rather than a guess at it:
+     same background-size/position, same bullnose fraction, same customer box sizing.
+     --------------------------------------------------------------------------------------- */
+  .f2-hatch {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--sky);
+  }
+  .f2-hatch__plate {
+    position: absolute;
+    inset: 0;
+    background-color: var(--sky);
+    background-repeat: no-repeat;
+    background-position: center 64%;
+    background-size: cover;
+    background-image: url("../../../../v5/art/pass/lane-peak.webp");
+  }
+  .f2-customer {
+    --bullnose: 90.2%;
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% - var(--bullnose));
+    translate: -50% 0;
+    width: min(46%, 420px);
+    height: clamp(150px, 62%, 300px);
+    pointer-events: none;
+  }
+  .f2-customer svg { display: block; width: 100%; height: 100%; overflow: hidden; }
+  .f2-customer[data-pose="no-hands"] { left: 33%; }
+
+  /* ------------------------------------------------------------------- the sheet's own chrome */
+  .grid { display: flex; flex-wrap: wrap; gap: 18px 16px; }
+  .cell {
+    width: 420px;
+    flex: 0 0 auto;
+  }
+  .cell--wide { width: 860px; }
+  .cell__frame {
+    height: 260px;
+    border: 1px solid #3a2c1c;
+  }
+  .cell__label {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--ink-4);
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .cell__label b { color: var(--ink-1); font-weight: 600; }
+  .section {
+    margin: 34px 0 14px;
+    padding-top: 18px;
+    border-top: 1px solid #3a2c1c;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+
+  /* --------------------------------------------------------- the plate's own near passers-by,
+     lifted verbatim from lane-master.html so the comparison cell can show them at a size a
+     screenshot actually resolves, next to — not just somewhere inside — the customer figure. */
+  .f2-passerby { position: absolute; inset: 0; pointer-events: none; }
+</style>
+
+<h1>F2 — anatomy-first redraw</h1>
+<p class="lede">
+  <code>figure.tsx</code> rendered live over the real plate (<code>gauntlet/v5/art/pass/lane-peak.webp</code>), inside a
+  reproduction of <code>worlds.css</code>'s own <code>.pass-hatch</code> / <code>.pass-customer</code> geometry — same
+  <code>background-size: cover; background-position: center 64%</code>, same 90.2% bullnose, same
+  <code>width: min(46%, 420px)</code> customer box. Every cell below is <code>PassCustomer</code> mounted with a real
+  ticket number, so <code>personFor(ticket)</code> picks the same silhouette it would in the product.
+</p>
+
+<div class="section">tickets 1 / 5 / 11 / 19 / 23 — across the four outcomes</div>
+<div class="grid" id="outcome-grid"></div>
+
+<div class="section">groups — a lead figure plus companions, never a row of equals</div>
+<div class="grid" id="group-grid"></div>
+
+<div class="section">before the press, and beside the plate's own near passers-by</div>
+<div class="grid" id="compare-grid"></div>
+
+<script src="sheet.bundle.js"></script>
+<script>
+  const OUTCOMES = ["served", "short", "no-stock", "no-hands"];
+  const TICKETS = [1, 5, 11, 19, 23];
+
+  function cell(parent, id, wide) {
+    const wrap = document.createElement("div");
+    wrap.className = "cell" + (wide ? " cell--wide" : "");
+    const frame = document.createElement("div");
+    frame.className = "cell__frame f2-hatch";
+    frame.innerHTML = '<div class="f2-hatch__plate"></div><div class="f2-customer" id="' + id + '"></div>';
+    wrap.appendChild(frame);
+    const label = document.createElement("div");
+    label.className = "cell__label";
+    wrap.appendChild(label);
+    parent.appendChild(wrap);
+    return { root: frame.querySelector(".f2-customer"), label };
+  }
+
+  const outcomeGrid = document.getElementById("outcome-grid");
+  for (const ticket of TICKETS) {
+    for (const outcome of OUTCOMES) {
+      const id = "cell-" + ticket + "-" + outcome;
+      const wanted = outcome === "short" ? 2 : 1;
+      const { label } = cell(outcomeGrid, id);
+      label.innerHTML = "<span>#" + ticket + "</span><b>" + outcome + "</b>";
+      window.F2.mount(id, { ticket, wanted, outcome }, true);
+    }
+  }
+
+  const groupGrid = document.getElementById("group-grid");
+  const groups = [
+    { ticket: 7, wanted: 2, outcome: "served", note: "2 up, served" },
+    { ticket: 13, wanted: 3, outcome: "served", note: "3 up, served" },
+    { ticket: 21, wanted: 2, outcome: "short", note: "2 up, short" },
+    { ticket: 9, wanted: 3, outcome: "no-hands", note: "3 up, no-hands" },
+  ];
+  for (const g of groups) {
+    const id = "cell-group-" + g.ticket;
+    const { label } = cell(groupGrid, id);
+    label.innerHTML = "<span>#" + g.ticket + "</span><b>" + g.note + "</b>";
+    window.F2.mount(id, { ticket: g.ticket, wanted: g.wanted, outcome: g.outcome }, true);
+  }
+
+  const compareGrid = document.getElementById("compare-grid");
+  {
+    const { root, label } = cell(compareGrid, "cell-waiting", true);
+    label.innerHTML = "<span>#3</span><b>waiting, before the press</b>";
+    window.F2.mount("cell-waiting", undefined, false);
+  }
+  {
+    // A second wide cell, cropped so BOTH of the plate's own near passers-by (x 448-508 and
+    // x 1284-1348 of the 1920-wide canvas) stay inside frame beside the customer at the pass —
+    // the comparison the standard names directly.
+    const wrap = document.createElement("div");
+    wrap.className = "cell cell--wide";
+    const frame = document.createElement("div");
+    frame.className = "cell__frame f2-hatch";
+    frame.style.backgroundPosition = "center 60%";
+    frame.innerHTML =
+      '<div class="f2-hatch__plate" style="background-position:center 58%"></div>' +
+      '<div class="f2-customer" id="cell-passersby"></div>';
+    wrap.appendChild(frame);
+    const label = document.createElement("div");
+    label.className = "cell__label";
+    label.innerHTML = "<span>#19</span><b>served — beside the plate's own near passers-by (left/right of frame)</b>";
+    wrap.appendChild(label);
+    compareGrid.appendChild(wrap);
+    window.F2.mount("cell-passersby", { ticket: 19, wanted: 1, outcome: "served" }, true);
+  }
+</script>

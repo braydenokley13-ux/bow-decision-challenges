@@ -1,0 +1,586 @@
+/*
+ * The student's own screen, on the student product's ground.
+ *
+ * ## Why this file exists at all
+ *
+ * `app.css` is shared by the teacher product, the run and the door, and this screen needed to
+ * override about thirty of its rules. Moving them out would have changed six other surfaces to
+ * fix one, so nothing is moved: what this screen needs is **copied here and re-stated**, and
+ * `main.tsx` imports this file last so an equal-specificity override wins on order. `app.css`,
+ * `tokens.css`, `brand.css`, `worlds.css`, `scenes.css`, `motion.css`, `reading.css` and
+ * `reset.css` are untouched.
+ *
+ * Almost every rule is scoped under `.student-home--desk`, which only `/home` carries. The two
+ * that are not are the contrast fix at the bottom, which is a defect in a shared rule.
+ *
+ * ## The decisions
+ *
+ * **Dark ground.** The student product is `.ground-dark` (tokens.css). The home is the one
+ * screen a child owns, and putting it on the teacher's light ground would make their page look
+ * like the adult's. Every colour here is a semantic token or the shared violet/navy ramp, so
+ * the two grounds cannot drift into two palettes — and `color-no-hex` is on for this file,
+ * which is the mechanical version of the same rule.
+ *
+ * **Exactly one light element: the teacher's note.** It is the only thing on the page written
+ * by a person, and it should not look like the product. Paper and near-black ink out of the
+ * shared navy ramp, with a violet edge.
+ *
+ * **Status is worded before it is coloured.** Every chip carries a word, a glyph whose *shape*
+ * differs, and a 1px border; the fill is the third carrier and the only one forced-colors takes
+ * away. Nothing that carries a status sentence is allowed `white-space: nowrap`, and no
+ * ancestor of one uses `overflow: hidden` — a chip told not to wrap inside a box that hides its
+ * overflow is what truncated "In progress — stopped at Setting the" at 360px, which is the exact
+ * sentence a resuming student needs.
+ *
+ * **No motion.** No entrance animation is inherited here and none is added. The only movement
+ * is a hover lift on a card, behind `prefers-reduced-motion: no-preference`.
+ *
+ * **Nothing sized in fixed pixels that carries text.** Type is `rem`/`clamp` against the
+ * scale, rows wrap, and the whole page is one column below 52rem — so 400% zoom scales it
+ * instead of fighting it.
+ */
+
+/* ---------------------------------------------------------------------------
+   The page
+   --------------------------------------------------------------------------- */
+
+.student-home--desk {
+  max-width: none;
+  padding: 0;
+  gap: 0;
+  background: var(--canvas);
+  color: var(--ink-1);
+}
+
+.student-home--desk .student-home__inner {
+  display: grid;
+  align-content: start;
+  gap: clamp(1.25rem, 3.5vw, 2.25rem);
+  width: 100%;
+  max-width: 58rem;
+  margin: 0 auto;
+  padding: clamp(0.75rem, 3vw, 1.75rem) clamp(0.75rem, 3vw, 1.5rem) clamp(2rem, 6vw, 3.5rem);
+}
+
+/* ---------------------------------------------------------------------------
+   R1 — the product bar, and R2 — the nameplate under it.
+
+   Both live inside the one `header`, which is also what keeps the student's name inside
+   `.student-home__bar` for everything that has ever looked for it there.
+   --------------------------------------------------------------------------- */
+
+.student-home--desk .student-home__bar {
+  display: grid;
+  gap: clamp(1rem, 3vw, 1.5rem);
+  padding-bottom: clamp(1rem, 3vw, 1.5rem);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.student-home--desk .student-home__product {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+}
+
+.student-home--desk .nameplate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(0.75rem, 2vw, 1.25rem);
+}
+
+/* Decorative, and `aria-hidden` in the markup: a reader saying "M" before "Marisol T." is
+   reading the same name twice. Sized in `em` so 400% zoom takes it with the type. */
+.student-home--desk .nameplate__disc {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface-raised);
+  color: var(--ink-1);
+  font: var(--t-title1);
+  text-transform: uppercase;
+}
+
+.student-home--desk .nameplate__who {
+  /* `display` is stated, not inherited: `app.css` has `.student-home__bar div { display: flex }`
+     at a specificity this file has to beat deliberately, and inheriting it laid the class line
+     out *beside* the name — which at 360px squeezed "Test Student 1" into three lines with the
+     class sitting in the gutter next to it. R2 says directly beneath, in the same block. */
+  display: block;
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.student-home--desk .nameplate__name {
+  margin: 0;
+  color: var(--ink-1);
+  font: var(--t-display3);
+  font-size: clamp(1.6rem, 4.5vw, 2.2rem);
+  letter-spacing: var(--display-tracking-tight);
+  overflow-wrap: anywhere;
+}
+
+/* No focus rule of its own, deliberately. `reset.css` draws one ring for the whole product —
+   3px of `--focus-ring`, which the dark ground re-points to a violet light enough to see on
+   near-black — and `app.css` suppresses it under `html[data-untouched]` so that a plain page
+   load does not paint a keyboard ring nobody asked for. A rule here would out-specify both, and
+   the second one is the whole of `app/arrivalRing.ts`. */
+
+.student-home--desk .nameplate__where {
+  margin: var(--s-2) 0 0;
+  color: var(--ink-3);
+  font: var(--t-ui);
+  overflow-wrap: anywhere;
+}
+
+/* Beside the name it disowns, not at the page's right edge, and never below the tap target. */
+.student-home--desk .nameplate__out {
+  flex: 0 1 auto;
+  min-height: var(--tap);
+  padding: 0 var(--s-5);
+  white-space: normal;
+}
+
+/* ---------------------------------------------------------------------------
+   R3 — the class, and the work header
+   --------------------------------------------------------------------------- */
+
+.student-home--desk .student-class {
+  display: grid;
+  gap: clamp(0.75rem, 2.5vw, 1.25rem);
+}
+
+.student-home--desk .student-class__name {
+  margin: 0;
+  color: var(--ink-1);
+  font: var(--t-title2);
+  overflow-wrap: anywhere;
+}
+
+.student-home--desk .student-class__seat {
+  color: var(--ink-3);
+  font-weight: 500;
+}
+
+.student-home--desk .work-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  align-items: baseline;
+  margin: 0;
+}
+
+.student-home--desk .work-head__what {
+  color: var(--ink-2);
+  font: var(--t-label);
+  letter-spacing: var(--stamp-tracking);
+  text-transform: uppercase;
+}
+
+.student-home--desk .work-head__count {
+  color: var(--ink-3);
+  font: var(--t-sm);
+}
+
+.student-home--desk .work-head__empty {
+  margin: 0;
+  color: var(--ink-2);
+  font: var(--t-body);
+}
+
+.student-home--desk .work-list {
+  display: grid;
+  gap: clamp(0.75rem, 2.5vw, 1rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* ---------------------------------------------------------------------------
+   R4 — one card per assignment, equal affordance
+
+   Weight is driven by `format`, which the schema already carries. A decision challenge wears a
+   thin stripe of its world; a quick check is flat and wears nothing. That difference is what
+   stops a list of work turning into a launcher.
+   --------------------------------------------------------------------------- */
+
+.student-home--desk .work-card {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: var(--s-3);
+  padding: clamp(1rem, 3vw, 1.5rem);
+  overflow: visible;
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.student-home--desk .work-card--quick-check {
+  padding: clamp(0.75rem, 2.5vw, 1rem);
+  border-color: var(--border-subtle);
+  background: var(--surface-sunken);
+}
+
+/* The world, as a stripe and never as a photograph. The element carries `data-world` so it
+   reads that world's own token; nothing else inherits the world's palette, because the theatre
+   belongs inside the run. */
+.student-home--desk .work-card__accent {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: var(--r-md) 0 0 var(--r-md);
+  background: var(--world-hero-second, var(--bow-brand));
+}
+
+.student-home--desk .work-card__title {
+  margin: 0;
+  color: var(--ink-1);
+  font: var(--t-title1);
+  overflow-wrap: anywhere;
+}
+
+.student-home--desk .work-card__state,
+.student-home--desk .work-card__due,
+.student-home--desk .work-card__anywhere {
+  max-width: var(--measure);
+  margin: 0;
+  color: var(--ink-2);
+  font: var(--t-body);
+}
+
+.student-home--desk .work-card__due,
+.student-home--desk .work-card__anywhere {
+  color: var(--ink-3);
+  font: var(--t-sm);
+}
+
+.student-home--desk .work-card__go {
+  margin: var(--s-2) 0 0;
+}
+
+.student-home--desk .work-card__go .button {
+  min-height: var(--tap);
+  white-space: normal;
+}
+
+.student-home--desk .work-card__recap {
+  margin: 0;
+}
+
+.student-home--desk .work-card a:not(.button) {
+  display: inline-block;
+  padding-block: var(--s-2);
+  color: var(--bow-brand-strong);
+  font: var(--t-ui);
+}
+
+/* ---------------------------------------------------------------------------
+   Status — a word, a shape, a border, and only then a colour
+
+   No `white-space` control anywhere in this block: every one of these strings is a status
+   sentence, and clipping one is the defect this whole screen was re-judged against.
+   --------------------------------------------------------------------------- */
+
+.student-home--desk .work-chip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s-2) var(--s-3);
+  max-width: 100%;
+  margin: 0;
+  padding: var(--s-2) var(--s-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface-raised);
+  color: var(--ink-1);
+  font: var(--t-sm);
+  font-weight: 700;
+}
+
+.student-home--desk .work-chip__glyph {
+  flex: none;
+  width: 1em;
+  height: 1em;
+  fill: currentcolor;
+  stroke: currentcolor;
+}
+
+.student-home--desk .work-chip--in-progress {
+  border-color: var(--fin-adjustable);
+  background: var(--fin-adjustable-soft);
+  color: var(--fin-adjustable-ink);
+}
+
+.student-home--desk .work-chip--turned-in {
+  border-color: var(--fin-balanced);
+  background: var(--fin-balanced-soft);
+  color: var(--fin-balanced-ink);
+}
+
+.student-home--desk .work-chip--wrote-back {
+  border-color: var(--bow-brand);
+  background: var(--surface-raised);
+  color: var(--ink-1);
+}
+
+/* ---------------------------------------------------------------------------
+   Progress — chapters in the story's own words, and one honest number
+
+   There is no bar, no ring and no percentage here on purpose: position in a story is not a
+   quantity, and a quantity is a thing a child can be ranked by. The marks are decorative; every
+   chapter's state is also a word, in a `visually-hidden` span next to its label.
+   --------------------------------------------------------------------------- */
+
+.student-home--desk .progress {
+  display: grid;
+  gap: var(--s-3);
+  width: 100%;
+  margin: var(--s-2) 0;
+}
+
+.student-home--desk .progress__chapters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.student-home--desk .progress__chapter {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: var(--s-2);
+  color: var(--ink-3);
+  font: var(--t-sm);
+}
+
+.student-home--desk .progress__mark {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: none;
+  border: 1px solid currentcolor;
+  border-radius: var(--r-pill);
+}
+
+.student-home--desk .progress__chapter--done {
+  color: var(--ink-2);
+}
+
+.student-home--desk .progress__chapter--done .progress__mark {
+  background: currentcolor;
+}
+
+.student-home--desk .progress__chapter--here {
+  color: var(--ink-1);
+  font-weight: 700;
+}
+
+.student-home--desk .progress__chapter--here .progress__mark {
+  width: 0.75rem;
+  height: 0.75rem;
+  background: var(--bow-brand);
+  border-color: var(--bow-brand);
+}
+
+.student-home--desk .progress__step {
+  margin: 0;
+  color: var(--ink-3);
+  font: var(--t-sm);
+}
+
+/* ---------------------------------------------------------------------------
+   R6 — the teacher's note, attached to its own run
+
+   The one light element on the page. Paper and near-black ink out of the shared navy ramp,
+   with the violet edge that says which product it came from. It is not a banner over all the
+   work: with three assignments "above the work" and "attached to the attempt" are different
+   places, and only one of them is the promise the product makes.
+   --------------------------------------------------------------------------- */
+
+.student-home--desk .teacher-note {
+  display: grid;
+  gap: var(--s-2);
+  justify-self: stretch;
+  width: 100%;
+  margin-top: var(--s-2);
+  padding: var(--s-4) var(--s-5);
+  border-left: 4px solid var(--violet-600);
+  border-radius: var(--r-xs);
+  background: var(--navy-50);
+  color: var(--navy-900);
+}
+
+.student-home--desk .teacher-note .field-label {
+  margin: 0;
+  color: var(--violet-800);
+  font: var(--t-label);
+  letter-spacing: var(--stamp-tracking);
+  text-transform: uppercase;
+}
+
+.student-home--desk .teacher-note blockquote {
+  margin: 0;
+  color: var(--navy-900);
+  font: var(--t-body-lg);
+}
+
+.student-home--desk .teacher-note cite {
+  display: block;
+  margin-top: var(--s-3);
+  color: var(--navy-500);
+  font: var(--t-sm);
+  font-style: normal;
+}
+
+.student-home--desk .work-stray {
+  display: grid;
+  gap: var(--s-3);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.student-home--desk .work-stray h3 {
+  margin: 0;
+  color: var(--ink-2);
+  font: var(--t-title3);
+}
+
+/* ---------------------------------------------------------------------------
+   R7 — the offer of another go, and the promise attached to it
+
+   A quiet paragraph under the work. Never a `<details>`: "a new run goes in as well as it, not
+   instead of it" is a truthfulness guarantee about a child's work, and a closed disclosure is
+   not where a guarantee lives.
+   --------------------------------------------------------------------------- */
+
+.student-home--desk .again {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-3);
+  max-width: var(--measure);
+  margin-top: var(--s-2);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.student-home--desk .again p {
+  margin: 0;
+  color: var(--ink-3);
+  font: var(--t-sm);
+}
+
+.student-home--desk .again__offer {
+  color: var(--ink-2);
+  font: var(--t-body);
+}
+
+.student-home--desk .again .button {
+  min-height: var(--tap);
+  margin-top: var(--s-2);
+  white-space: normal;
+}
+
+/* ---------------------------------------------------------------------------
+   R8 — the footer, and R9 — the one state with nothing in it
+   --------------------------------------------------------------------------- */
+
+.student-home--desk .student-home__foot {
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.student-home--desk .student-home__foot a {
+  color: var(--bow-brand-strong);
+  font: var(--t-ui);
+}
+
+.student-home--desk .student-home__empty {
+  display: grid;
+  justify-items: start;
+  gap: var(--s-4);
+  max-width: var(--measure);
+}
+
+.student-home--desk .student-home__empty h1,
+.student-home--desk .student-home__empty h2 {
+  margin: 0;
+  color: var(--ink-1);
+  font: var(--t-title1);
+}
+
+.student-home--desk .student-home__empty p {
+  margin: 0;
+  color: var(--ink-2);
+  font: var(--t-body);
+}
+
+/* Faint, unlabelled, and the only decoration in the product's student half. It names no world
+   and promises no story, because a student with no class has not been offered one. */
+.student-home--desk .empty-linework {
+  width: 100%;
+  height: clamp(4rem, 18vw, 7.5rem);
+  margin-top: var(--s-5);
+
+  /* Faint by colour rather than by `opacity`: fading composites a checked colour into an
+     unchecked one, and `design/textOpacity.test.ts` holds the whole product to picking the
+     quiet colour on purpose. Nothing in here is text, but the rule is better kept than
+     argued with. */
+  color: var(--border-subtle);
+  stroke: currentcolor;
+}
+
+/* ---------------------------------------------------------------------------
+   Motion, forced colors, and the shared-rule defect
+   --------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .student-home--desk .work-card {
+    transition: border-color var(--dur-micro) var(--ease-standard), transform var(--dur-micro) var(--ease-standard);
+  }
+
+  .student-home--desk .work-card:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
+  }
+}
+
+/*
+ * Under forced colors the fills go and the meaning must not go with them. Every status keeps
+ * its word, its glyph and a border; the world stripe and the disc are decoration and are
+ * allowed to disappear.
+ */
+@media (forced-colors: active) {
+  .student-home--desk .work-chip {
+    border: 1px solid currentcolor;
+  }
+
+  .student-home--desk .work-card {
+    border: 1px solid currentcolor;
+  }
+
+  .student-home--desk .progress__chapter--here .progress__mark {
+    forced-color-adjust: none;
+  }
+}
+
+/*
+ * The one defect this design work paid for on the way past, in a rule this file does not own.
+ *
+ * `app.css` sets `.student-feedback cite { color: var(--ink-3) }` on a panel whose background
+ * is `var(--bow-brand-fill)` — dark muted grey on violet, which is illegible and is in every
+ * screenshot of the old screen. `app.css` is not this workstream's to edit, so the fix is
+ * re-stated here at equal specificity and wins on import order. `--bow-brand-ink-muted` is the
+ * token that exists for muted text on exactly that fill.
+ */
+.student-feedback cite {
+  color: var(--bow-brand-ink-muted);
+}

@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Seat 3 — Sample class — BOW</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --violet-600:#6733e8; --violet-700:#5522c4; --violet-100:#ece7ff; --violet-50:#f5f3ff; --violet-line:#d9cfff;
+    --ink-1:#161327; --ink-2:#3d3a52; --ink-3:#6b6884;
+    --canvas:#f6f5fb; --surface:#ffffff; --surface-sunken:#efeef7;
+    --line:#e1ddef; --line-strong:#c9c3e3;
+    --green:#166a3f; --green-bg:#e9f7ef; --green-line:#a9dcc1;
+    --teal:#0b6b7a; --teal-bg:#e6f6f8; --teal-line:#a6dbe3;
+    --amber:#8a5300; --amber-bg:#fdf2e0; --amber-line:#eecb8e;
+    --red:#9c2f22; --red-bg:#fdecea; --red-line:#f0b6ab;
+    --slate:#4b4d63; --slate-bg:#eeedf5; --slate-line:#cfccdf;
+    --blue:#33517e; --blue-bg:#e9f0fb; --blue-line:#b9cdec;
+    --fs-meta:0.8125rem; --fs-ui:1rem; --fs-body:1rem; --fs-body-lg:1.125rem;
+    --fs-h3:1.25rem; --fs-h2:1.625rem; --fs-display: clamp(1.7rem, 1.2rem + 2vw, 2.2rem);
+    --radius:14px; --radius-sm:9px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--canvas); color:var(--ink-1);
+    font: 400 var(--fs-body)/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--violet-700);}
+  .eyebrow{
+    font-size:var(--fs-meta); font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink-3); margin:0 0 .4rem;
+  }
+  h1,h2,h3{margin:0; font-family:inherit; color:var(--ink-1);}
+  h1{font-size:var(--fs-display); font-weight:800; line-height:1.1; letter-spacing:-.01em;}
+  h2{font-size:var(--fs-h2); font-weight:800; line-height:1.15;}
+  h3{font-size:var(--fs-h3); font-weight:700; line-height:1.25;}
+  p{margin:0;}
+
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    padding:.9rem 1.75rem; background:var(--surface); border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex; align-items:baseline; gap:.5rem; font-weight:800; font-size:1.05rem;}
+  .brand small{display:block; font-size:.68rem; letter-spacing:.08em; color:var(--ink-3); font-weight:800;}
+  .brand b{color:var(--violet-700);}
+  .signin{border:1px solid var(--line-strong); border-radius:999px; padding:.5rem 1.1rem; font-weight:700; font-size:var(--fs-meta); background:var(--surface);}
+  .demo-badge{background:var(--slate-bg); color:var(--slate); font-size:var(--fs-meta); font-weight:700; padding:.35rem 1.75rem; border-bottom:1px solid var(--line);}
+
+  /* queue bar — how a teacher moves without going back */
+  .queue-bar{
+    display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;
+    background:var(--violet-700); color:#fff; padding:.7rem 1.75rem;
+  }
+  .queue-bar a{color:#fff; text-decoration:none; font-weight:700; font-size:var(--fs-meta);}
+  .queue-bar .back{opacity:.9;}
+  .queue-bar .pos{font-weight:800; font-size:var(--fs-meta); letter-spacing:.03em;}
+  .queue-bar .nav{display:flex; gap:.5rem;}
+  .queue-bar .nav a, .queue-bar .nav span{
+    border:1px solid rgba(255,255,255,.45); border-radius:8px; padding:.4rem .8rem; font-weight:700; font-size:var(--fs-meta);
+  }
+  .queue-bar .nav span.disabled{opacity:.4;}
+
+  main{max-width:1180px; margin:0 auto; padding:1.75rem 1.75rem 4rem;}
+  @media (max-width: 480px){ main{padding:1.5rem 1rem 3rem;} }
+
+  .student-head{
+    display:flex; justify-content:space-between; gap:2rem; flex-wrap:wrap;
+    padding-bottom:1.35rem; margin-bottom:1.35rem; border-bottom:1px solid var(--line);
+  }
+  .student-head__id{max-width:640px;}
+  .student-head h1{display:flex; align-items:center; gap:.65rem; margin:.3rem 0 .5rem;}
+  .lead-glyph{
+    display:inline-flex; align-items:center; justify-content:center; width:2.1rem; height:2.1rem;
+    border-radius:50%; font-size:1.2rem; font-weight:900; flex:none;
+  }
+  .student-head .why{font-size:var(--fs-body-lg); color:var(--ink-2); max-width:60ch;}
+  .skills-strip{display:flex; flex-direction:column; gap:.5rem; min-width:290px;}
+  .skill-line{
+    display:flex; align-items:center; justify-content:space-between; gap:.75rem;
+    border:1px solid var(--line); border-radius:9px; padding:.5rem .75rem; background:var(--surface);
+    font-size:var(--fs-meta);
+  }
+  .skill-line b{font-weight:600; color:var(--ink-2); font-size:var(--fs-meta); max-width:26ch;}
+
+  .state-tag{
+    display:inline-flex; align-items:center; gap:.3rem; font-size:var(--fs-meta); font-weight:800;
+    padding:.18rem .6rem; border-radius:999px; white-space:nowrap;
+  }
+  .state-tag .g{font-weight:900;}
+  .state--incomplete{ color:var(--blue); background:var(--blue-bg); border:1px dotted var(--blue-line); }
+  .state--not-yet-demonstrated{ color:var(--red); background:var(--red-bg); border:1px dashed var(--red-line); }
+  .state--developing{ color:var(--amber); background:var(--amber-bg); border:1px dashed var(--amber-line); }
+  .state--demonstrated{ color:var(--green); background:var(--green-bg); border:1px solid var(--green-line); }
+  .state--demonstrated-with-support{ color:var(--teal); background:var(--teal-bg); border:1px solid var(--teal-line); }
+  .state--not-observed{ color:var(--slate); background:var(--slate-bg); border:1px dotted var(--slate-line); }
+
+  /* two-column body: decisions+writing left, BOW's reading+judgement right */
+  .evidence-grid{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr); gap:1.25rem; align-items:start; margin-bottom:1.25rem;}
+  @media (max-width:940px){ .evidence-grid{grid-template-columns:1fr;} }
+
+  .panel{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:1.35rem 1.4rem;}
+  .stack > * + *{margin-top:1rem;}
+
+  .decision-spine{list-style:none; margin:.3rem 0 0; padding:0; display:flex; flex-direction:column; gap:.7rem;}
+  .decision-spine li{
+    display:grid; grid-template-columns:6.5rem minmax(0,1fr); gap:.75rem; font-size:var(--fs-body);
+    padding-bottom:.7rem; border-bottom:1px solid var(--surface-sunken);
+  }
+  @media (max-width:420px){ .decision-spine li{grid-template-columns:minmax(0,1fr);} }
+  .decision-spine li:last-child{border-bottom:none; padding-bottom:0;}
+  .decision-spine .step{font-size:var(--fs-meta); font-weight:800; color:var(--violet-700); text-transform:uppercase; letter-spacing:.04em; padding-top:.15rem;}
+  .decision-spine .what{color:var(--ink-1);}
+  .decision-spine .what b{font-weight:700;}
+
+  .writing blockquote{
+    margin:.5rem 0 0; padding:1rem 1.15rem; background:var(--violet-50); border-left:4px solid var(--violet-600);
+    border-radius:0 10px 10px 0; font-size:var(--fs-body-lg); line-height:1.55; color:var(--ink-1); font-style:normal;
+  }
+  .writing .note{display:block; margin-top:.6rem; font-size:var(--fs-meta); color:var(--ink-3);}
+
+  .shortfall-flag{
+    margin-top:.9rem; border:1px dashed var(--red-line); background:var(--red-bg); border-radius:10px; padding:.85rem 1rem;
+  }
+  .shortfall-flag .head{display:flex; justify-content:space-between; gap:.6rem; align-items:baseline; font-weight:800; color:var(--red);}
+  .shortfall-flag p{margin-top:.35rem; font-size:var(--fs-meta); color:var(--ink-2); line-height:1.5;}
+  .shortfall-flag .override-link{display:inline-block; margin-top:.5rem; font-size:var(--fs-meta); font-weight:700; color:var(--violet-700); text-decoration:none;}
+
+  .absence-note{
+    margin-top:.7rem; font-size:var(--fs-meta); color:var(--ink-3); background:var(--slate-bg); border:1px dotted var(--slate-line);
+    border-radius:10px; padding:.7rem .9rem; line-height:1.5;
+  }
+  .absence-note b{color:var(--ink-2);}
+
+  .rubric{margin-top:1.1rem; padding-top:1.1rem; border-top:1px solid var(--line);}
+  .rubric-note{font-size:var(--fs-meta); color:var(--ink-3); margin-bottom:.75rem;}
+  .rubric-row{display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding:.5rem 0; border-bottom:1px solid var(--surface-sunken);}
+  .rubric-row:last-of-type{border-bottom:none;}
+  .rubric-row .crit b{display:block; font-size:var(--fs-body); font-weight:700;}
+  .rubric-row .crit span{display:block; font-size:var(--fs-meta); color:var(--ink-3);}
+  .segmented{display:flex; gap:.3rem;}
+  .segmented button{
+    width:2.1rem; height:2.1rem; border-radius:7px; border:1.5px solid var(--line-strong); background:var(--surface);
+    font-weight:800; font-size:var(--fs-body); color:var(--ink-2); cursor:default;
+  }
+  .segmented button[aria-pressed="true"]{background:var(--violet-600); border-color:var(--violet-600); color:#fff;}
+  .rubric-total{display:flex; align-items:center; justify-content:space-between; margin-top:.85rem; padding-top:.85rem; border-top:1px solid var(--line);}
+  .rubric-total strong{font-size:1.2rem;}
+  .rubric-total span{font-size:var(--fs-meta); color:var(--ink-3); max-width:26ch; text-align:right;}
+
+  /* the primary surface: write back */
+  .write-back{
+    background:var(--surface); border:2px solid var(--violet-600); border-radius:var(--radius);
+    padding:1.5rem 1.6rem; margin-bottom:1.25rem;
+    box-shadow:0 18px 40px -22px rgba(103,51,232,.45);
+  }
+  .write-back .eyebrow{color:var(--violet-700);}
+  .write-back h2{font-size:var(--fs-h3); margin-bottom:.85rem;}
+  .write-back .empty{font-size:var(--fs-body); color:var(--ink-3); font-style:italic; margin-bottom:.9rem;}
+  .field-label{display:block; font-size:var(--fs-meta); font-weight:700; color:var(--ink-2); margin-bottom:.4rem;}
+  textarea{
+    width:100%; border:1.5px solid var(--line-strong); border-radius:10px; padding:.75rem .9rem;
+    font:400 var(--fs-body-lg)/1.5 inherit; resize:vertical; min-height:5rem; background:var(--surface-sunken);
+  }
+  .checkline{display:flex; align-items:center; gap:.55rem; margin-top:.85rem; font-size:var(--fs-meta); color:var(--ink-2);}
+  .write-actions{display:flex; align-items:center; gap:1rem; margin-top:1rem;}
+  .btn-primary{
+    background:var(--violet-600); color:#fff; border:none; border-radius:10px; padding:.75rem 1.4rem;
+    font-weight:800; font-size:var(--fs-body); cursor:default;
+  }
+  .chars-left{font-size:var(--fs-meta); color:var(--ink-3);}
+
+  details.full-trail{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:1.25rem;}
+  details.full-trail > summary{
+    cursor:pointer; padding:1rem 1.4rem; font-weight:700; color:var(--violet-700); font-size:var(--fs-ui);
+    list-style:none; display:flex; align-items:center; gap:.5rem;
+  }
+  details.full-trail > summary::-webkit-details-marker{display:none;}
+  details.full-trail > summary::before{content:"▸"; font-size:.8em;}
+  details.full-trail[open] > summary::before{content:"▾";}
+  .trail-body{padding:0 1.4rem 1.4rem; border-top:1px solid var(--line); font-size:var(--fs-body);}
+  .trail-body h4{font-size:var(--fs-meta); text-transform:uppercase; letter-spacing:.05em; color:var(--ink-3); margin:1.1rem 0 .5rem;}
+  .gb-counts{display:flex; gap:1.25rem; flex-wrap:wrap; margin-top:.6rem;}
+  .gb-counts div{font-size:var(--fs-meta); color:var(--ink-2);}
+  .gb-counts strong{display:block; font-size:1.05rem; color:var(--ink-1);}
+  .gb-note{font-size:var(--fs-meta); color:var(--ink-3); margin-top:.6rem; line-height:1.5; max-width:70ch;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><b>BOW</b><small>DECISION CHALLENGES</small></div>
+  <div class="signin">SIGN IN</div>
+</header>
+<div class="demo-badge">Sample class — not a real class</div>
+
+<div class="queue-bar">
+  <a class="back" href="class.html">← Class overview</a>
+  <span class="pos">Fell short of something — 1 of 4</span>
+  <div class="nav"><span class="disabled">← Seat 12</span><a href="#">Seat 6 →</a></div>
+</div>
+
+<main>
+
+  <div class="student-head">
+    <div class="student-head__id">
+      <p class="eyebrow">Seat 3 · Eight Weeks to the Showcase · turned in Apr 12, 1:32 PM</p>
+      <h1><span class="lead-glyph" style="background:var(--red-bg); color:var(--red); border:1px solid var(--red-line);">✕</span> Not yet.</h1>
+      <p class="why">Savings is a planned amount — Did not do it. Three other things this run never asked for, so the picture is not complete either way.</p>
+    </div>
+    <div class="skills-strip">
+      <div class="skill-line"><b>Separate needs, wants and goals</b><span class="state-tag state--demonstrated"><span class="g">✓</span> Showed it</span></div>
+      <div class="skill-line"><b>Plan within income</b><span class="state-tag state--not-yet-demonstrated"><span class="g">✕</span> Not yet</span></div>
+      <div class="skill-line"><b>Adapt a plan after a change</b><span class="state-tag state--incomplete"><span class="g">…</span> Evidence not all in</span></div>
+    </div>
+  </div>
+
+  <div class="evidence-grid">
+    <div class="stack">
+      <div class="panel">
+        <p class="eyebrow">What they decided</p>
+        <ol class="decision-spine">
+          <li><span class="step">Setup</span><span class="what">Ranked all three places correctly, then chose <b>Gym District Sublet</b> — $1,800, the most expensive of the three.</span></li>
+          <li><span class="step">Plan</span><span class="what">Goal <b>$1,000</b> · Reserve <b>$1,000</b> · Flexible cash <b>$600</b>. Left the $800 completion income out; counted on the $1,000 outcome bonus.</span></li>
+          <li><span class="step">Fallback</span><span class="what">Saved a leaner version in reserve — Goal <b>$600</b> · Reserve <b>$600</b> · Flexible cash <b>$400</b>.</span></li>
+          <li><span class="step">Mid&#8209;season</span><span class="what">$150 came free. Funded away travel and a sister's gift; left team shoes unfunded.</span></li>
+          <li><span class="step">Week 5</span><span class="what">Lost the outcome bonus and a required cost rose — <b>$1,700</b> to absorb.</span></li>
+          <li><span class="step">Response</span><span class="what">Zeroed goal, reserve and flexible cash to cover it, and turned down the extra work.</span></li>
+        </ol>
+      </div>
+
+      <div class="panel writing">
+        <p class="eyebrow">What they wrote</p>
+        <blockquote>“The sublet costs more, so I protected the reserve first and let the goal line absorb what changed in Week 5.”</blockquote>
+        <span class="note">Nothing about this writing is machine-scored, and it is never sent to a model. You read it and you score it.</span>
+      </div>
+    </div>
+
+    <div class="stack">
+      <div class="panel">
+        <p class="eyebrow">What BOW saw</p>
+        <div class="shortfall-flag">
+          <div class="head"><span>Savings is a planned amount</span><span>Did not do it</span></div>
+          <p>Savings is set to a deliberate figure before discretionary categories are filled, not as the remainder after them.</p>
+          <a class="override-link" href="#">I read this differently →</a>
+        </div>
+        <div class="absence-note">
+          <b>3 things this run never asked</b> — uses only money that can still move, frees enough to cover it, ends with a plan that works or says what's still short. Absences, not zeros: this run stopped before the plan reached a Week&nbsp;5 repair.
+        </div>
+
+        <div class="rubric">
+          <p class="eyebrow" style="margin-bottom:.15rem;">Score the writing</p>
+          <p class="rubric-note">Already read and scored. Your own marks — BOW adds nothing to it.</p>
+          <div class="rubric-row">
+            <div class="crit"><b>Workability</b><span>Explains why the final plan actually holds</span></div>
+            <div class="segmented"><button aria-pressed="true">1</button><button>2</button></div>
+          </div>
+          <div class="rubric-row">
+            <div class="crit"><b>Protected priority</b><span>Names what they chose to keep, and why</span></div>
+            <div class="segmented"><button>1</button><button aria-pressed="true">2</button></div>
+          </div>
+          <div class="rubric-row">
+            <div class="crit"><b>Trade-off</b><span>Names what that choice cost them</span></div>
+            <div class="segmented"><button aria-pressed="true">1</button><button>2</button></div>
+          </div>
+          <div class="rubric-row">
+            <div class="crit"><b>Numerical evidence</b><span>Two accurate, relevant numbers from their own plan</span></div>
+            <div class="segmented"><button>1</button><button aria-pressed="true">2</button><button>3</button><button>4</button></div>
+          </div>
+          <div class="rubric-total">
+            <strong>6 / 10</strong>
+            <span>Nothing about this total leaves BOW's read of the writing — it's yours.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="write-back">
+    <p class="eyebrow">Write back</p>
+    <h2>What they hear from you</h2>
+    <p class="empty">Nothing has been written back about this run yet.</p>
+    <label class="field-label" for="fb">One or two sentences</label>
+    <textarea id="fb" placeholder="Name one thing they did and one thing to try next time.">You compared the three places well and protected your reserve when Week 5 hit — that's exactly the priority call. Now try setting savings as its own number before you fill anything else in, so it's not just whatever is left.</textarea>
+    <label class="checkline"><input type="checkbox"> Worth talking about in person — for your list, not theirs.</label>
+    <div class="write-actions">
+      <button class="btn-primary">Send it</button>
+      <span class="chars-left">976 of 1,200 left</span>
+    </div>
+  </section>
+
+  <details class="full-trail">
+    <summary>See the full evidence trail — everything this run's work asked for</summary>
+    <div class="trail-body">
+      <h4>Gradebook line</h4>
+      <div class="gb-counts">
+        <div><strong>9</strong>Did it</div>
+        <div><strong>1</strong>Part of it, or none of it</div>
+        <div><strong>3</strong>Never came up</div>
+        <div><strong>10</strong>Asked of this run</div>
+      </div>
+      <p class="gb-note">A mark on this attempt is out of 10 — did it, plus part of it or none of it. The 3 this run never asked are not in it: absences, not zeros.</p>
+      <h4>Every requirement, in order</h4>
+      <p class="gb-note">Ten things the work asked of this run, each with the rubric rule BOW applied and the moment in the log it came from — the same chain the class page's per-requirement trail already shows. Kept one disclosure away here rather than open by default, so checking a conclusion is still one click, not the first nine screens of the page.</p>
+    </div>
+  </details>
+
+</main>
+</body>
+</html>

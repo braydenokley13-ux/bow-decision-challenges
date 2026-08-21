@@ -1,0 +1,421 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>F3 — the pass, light first</title>
+<!--
+  Standalone test sheet for gauntlet/v6/popup/figure/F3/figure.tsx.
+
+  This page is a byte-for-byte VANILLA JS MIRROR of figure.tsx's drawing logic — same constants,
+  same control points, same formulas — because figure.tsx is a React/TSX module and this sheet
+  has to run in a bare browser with no bundler. Nothing here is designed independently of the
+  component; every number below is copied from figure.tsx by hand and kept in lock-step with it.
+  If you edit one, edit the other.
+
+  Renders the real plate (gauntlet/v5/art/pass/lane-*.webp) at the real hatch geometry — the same
+  CSS rules `src/design/worlds.css` uses for `.pass-hatch` / `.pass-customer` — so the figure is
+  judged in place, the way DIRECTOR_FINDINGS.md judged the shipped one.
+-->
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px;
+    background: #0e0a08;
+    color: #f0e2cf;
+    font: 15px/1.4 -apple-system, "Segoe UI", sans-serif;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.lede { color: #b9a98c; margin: 0 0 28px; max-width: 74ch; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 22px;
+    max-width: 1320px;
+  }
+  .grid--wide { grid-template-columns: repeat(3, 1fr); }
+  .cell { background: #1a130d; border: 1px solid #3a2a18; border-radius: 6px; overflow: hidden; }
+  .cell__label {
+    margin: 0;
+    padding: 8px 12px;
+    font: 700 12px/1.3 -apple-system, sans-serif;
+    letter-spacing: 0.02em;
+    color: #ffcf8a;
+    background: #241a10;
+    border-bottom: 1px solid #3a2a18;
+  }
+  .cell__label small { display: block; font-weight: 400; color: #9c8b6e; margin-top: 2px; }
+
+  /* ---- the real hatch geometry, lifted from src/design/worlds.css ---- */
+  .pass-hatch {
+    position: relative;
+    height: 260px;
+    overflow: hidden;
+    background-color: #1a2740;
+  }
+  .pass-hatch__plate {
+    position: absolute;
+    inset: 0;
+    background-repeat: no-repeat;
+    background-position: center 64%;
+    background-size: cover;
+  }
+  .pass-hatch[data-grade="early"] .pass-hatch__plate { background-image: url("../../../../v5/art/pass/lane-early.webp"); }
+  .pass-hatch[data-grade="peak"] .pass-hatch__plate { background-image: url("../../../../v5/art/pass/lane-peak.webp"); }
+  .pass-hatch[data-grade="late"] .pass-hatch__plate { background-image: url("../../../../v5/art/pass/lane-late.webp"); }
+
+  .pass-customer {
+    --bullnose: 90.2%;
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% - var(--bullnose));
+    translate: -50% 0;
+    width: min(46%, 420px);
+    height: clamp(150px, 62%, 300px);
+    pointer-events: none;
+  }
+  .pass-customer svg { display: block; width: 100%; height: 100%; overflow: hidden; }
+
+  /* the comparison cell needs the plate's own near-passer scale, not the hatch crop */
+  .compare-stage { position: relative; height: 300px; overflow: hidden; background: #17233d; }
+  .compare-stage svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .detail-target { outline: 2px dashed #ff6a3d55; }
+</style>
+
+<h1>F3 — the person at the pass, redrawn light first</h1>
+<p class="lede">
+  Every figure below is drawn by the same code as <code>figure.tsx</code> (a vanilla-JS mirror of
+  it, since this page has no bundler). Ticket 1 / 5 / 11 / 19 / 23, across the four outcomes, a
+  two-person and a three-person group, the same ticket across all three grades, and — bottom of
+  the page — our figure standing next to the plate's own near passers-by at the same scale, so the
+  standard ("a district visitor should not be able to tell the pass figure was drawn by a
+  different hand") can actually be checked.
+</p>
+
+<div class="grid" id="grid"></div>
+
+<h1 style="margin-top:40px;">Same ticket, all three grades</h1>
+<p class="lede">The figure's own light never changes with the grade — only the plate behind it does.</p>
+<div class="grid grid--wide" id="grades"></div>
+
+<h1 style="margin-top:40px;">Against the plate's own hand</h1>
+<p class="lede">
+  The left figure is copied verbatim from <code>lane-master.html</code>'s NEAR PASSERS-BY block
+  (the woman with the low bun), scaled up by the same factor the customer's own anatomy is
+  authored at, so the two sit at a comparable size. The right figure is F3's customer, waiting,
+  at the pass. Same fills, same rim palette, same construction: neck rect, sloped shoulders,
+  pinched waist, near arm with its shadow edge, head ellipse.
+</p>
+<div id="compare"></div>
+
+<script>
+/* =============================================================================================
+   VANILLA MIRROR OF figure.tsx — see the header comment above.
+   ============================================================================================= */
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const BUILDS = [
+  { shoulder: 80, waist: 44 },
+  { shoulder: 90, waist: 51 },
+  { shoulder: 100, waist: 59 },
+];
+const HEADWEAR = ["bare", "bun", "cap", "hood", "beanie"];
+const HEIGHTS = [0.94, 1, 1.06];
+const LEANS = [-4, 0, 4];
+const COATS = ["#130d08", "#14100c", "#17100a"];
+
+function personFor(ticket) {
+  const rand = mulberry32(ticket);
+  rand();
+  rand();
+  const headwear = HEADWEAR[Math.floor(rand() * HEADWEAR.length)] ?? "bare";
+  const build = BUILDS[Math.floor(rand() * BUILDS.length)] ?? BUILDS[1];
+  const height = HEIGHTS[Math.floor(rand() * HEIGHTS.length)] ?? 1;
+  const lean = LEANS[Math.floor(rand() * LEANS.length)] ?? 0;
+  const coat = COATS[Math.floor(rand() * COATS.length)] ?? COATS[0];
+  const tilt = (lean >= 0 ? 1 : -1) * (3 + rand() * 3);
+  return { headwear, build, height, lean, coat, tilt };
+}
+
+const HEAD_RX = 40, HEAD_RY = 46, HEAD_CY = 55;
+const JAW_Y = HEAD_CY + HEAD_RY - 5;
+const NECK_W = 19;
+const NECK_TOP = JAW_Y - 6;
+const COLLAR_Y = 132, SHOULDER_Y = 178, PINCH_Y = 255, HEM_Y = 340, CROP_Y = 300, FLOOR_Y = 640;
+
+function torsoEdge(build, side) {
+  const s = build.shoulder, w = build.waist;
+  const drop = side === -1 ? 4 : 0;
+  return [
+    `M${25 * side},${COLLAR_Y - (side === 1 ? 3 : 0)}`,
+    `C${(s * 0.45 * side).toFixed(1)},${COLLAR_Y + 3} ${(s - 6) * side},${SHOULDER_Y - 24} ${s * side},${SHOULDER_Y + drop}`,
+    `C${(s - 10) * side},${SHOULDER_Y + drop + 40} ${(w + 6) * side},${PINCH_Y - 30} ${w * side},${PINCH_Y}`,
+  ].join(" ");
+}
+
+function coatPath(build, full) {
+  const s = build.shoulder, w = build.waist;
+  const flare = full ? s * 0.12 : s * 0.22;
+  const hemY = full ? 470 : HEM_Y;
+  const hemW = w + flare;
+  return [
+    `M${-s},${SHOULDER_Y + 4}`,
+    `C${-(s - 6)},${SHOULDER_Y - 20} ${-(s * 0.45)},${COLLAR_Y + 6} -25,${COLLAR_Y}`,
+    `L25,${COLLAR_Y - 3}`,
+    `C${s * 0.45},${COLLAR_Y + 3} ${s - 6},${SHOULDER_Y - 24} ${s},${SHOULDER_Y}`,
+    `C${s - 10},${SHOULDER_Y + 40} ${w + 6},${PINCH_Y - 30} ${w},${PINCH_Y}`,
+    `C${w + 4},${PINCH_Y + 34} ${hemW - 4},${hemY - 30} ${hemW},${hemY}`,
+    `L${-hemW},${hemY}`,
+    `C${-(hemW - 4)},${hemY - 30} ${-(w + 4)},${PINCH_Y + 34} ${-w},${PINCH_Y}`,
+    `C${-(w + 6)},${PINCH_Y - 30} ${-(s - 10)},${SHOULDER_Y + 40} ${-s},${SHOULDER_Y + 4}`,
+    "Z",
+  ].join(" ");
+}
+
+function headRim(side) {
+  const sweep = side === -1 ? 1 : 0;
+  return `M0,${HEAD_CY - HEAD_RY + 2} A${HEAD_RX},${HEAD_RY} 0 0 ${sweep} ${side * HEAD_RX * 0.94},${HEAD_CY + HEAD_RY * 0.5}`;
+}
+
+function armJoints(build, pose, side) {
+  const s = build.shoulder, w = build.waist;
+  const shoulder = [(s - 12) * side, SHOULDER_Y + 18];
+  if (side === 1) return [shoulder, [(s - 8) * side, SHOULDER_Y + 86], [(w - 2) * side, CROP_Y - 30]];
+  switch (pose) {
+    case "served":
+      return [shoulder, [-(s + 44), SHOULDER_Y + 60], [-(w * 0.3), CROP_Y - 122]];
+    case "short":
+      return [shoulder, [-(s + 30), SHOULDER_Y + 96], [-(w + 20), CROP_Y - 10]];
+    case "no-stock":
+    case "no-hands":
+      return [shoulder, [-(s + 16), SHOULDER_Y + 108], [-(w + 22), CROP_Y + 14]];
+    default:
+      return [shoulder, [-(s + 42), SHOULDER_Y + 82], [-(w + 8), CROP_Y - 16]];
+  }
+}
+
+// Straight segments through shoulder → elbow → hand, not one bowed quadratic: a quadratic using
+// the elbow as a CONTROL point only reaches its midpoint, undercutting the swing-out by ~40% and
+// re-fusing the arm with the coat. Passing through the elbow keeps the negative-space gap honest.
+function armPath(j) {
+  const [a, b, c] = j;
+  return `M${a[0]},${a[1]} L${b[0]},${b[1]} L${c[0]},${c[1]}`;
+}
+function armShadow(j) {
+  const [a, b, c] = j;
+  const pull = (p) => [p[0] * 0.93, p[1]];
+  const [pa, pb, pc] = [pull(a), pull(b), pull(c)];
+  return `M${pa[0]},${pa[1]} L${pb[0]},${pb[1]} L${pc[0]},${pc[1]}`;
+}
+
+function headgearSVG(kind, fill) {
+  switch (kind) {
+    case "bun":
+      return `<path d="M-38,54 C-42,20 -24,-6 1,-6 C26,-6 43,17 38,52 C32,24 18,14 -3,18 C-18,21 -30,33 -38,54 Z" fill="${fill}"/>
+        <circle cx="-45" cy="40" r="15" fill="${fill}"/>`;
+    case "cap":
+      return `<path d="M-42,52 C-45,17 -24,-4 1,-4 C26,-4 44,16 42,50 L38,56 C27,42 -27,42 -38,58 Z" fill="${fill}"/>
+        <path d="M13,36 C-11,27 -43,30 -60,44 L-57,54 C-40,44 -11,44 13,47 Z" fill="#0c0805"/>`;
+    case "hood":
+      return `<path d="M-51,${JAW_Y + 18} C-70,74 -59,2 0,2 C59,2 70,74 51,${JAW_Y + 18} C35,${JAW_Y + 2} 19,${JAW_Y - 6} 0,${JAW_Y - 6} C-19,${JAW_Y - 6} -35,${JAW_Y + 2} -51,${JAW_Y + 18} Z" fill="${fill}"/>`;
+    case "beanie":
+      return `<path d="M-41,48 C-45,13 -23,-8 1,-8 C27,-8 46,13 41,48 C27,34 -26,34 -41,48 Z" fill="${fill}"/>
+        <path d="M-43,46 C-26,33 27,33 43,46 L41,59 C26,47 -26,47 -41,59 Z" fill="#0e0a06"/>`;
+    default:
+      return `<path d="M-38,44 C-42,15 -24,-6 1,-6 C25,-6 42,14 38,42 C32,20 19,11 -3,15 C-17,18 -29,27 -38,44 Z" fill="${fill}"/>`;
+  }
+}
+
+function figureSVG({ person, pose, x, scale, keyLight, cool, legs, crop }) {
+  const s = scale * person.height;
+  const build = person.build;
+  const fill = person.coat;
+  const cropAt = legs ? FLOOR_Y : crop;
+  const top = (legs ? 300 : CROP_Y) - cropAt * s;
+  const turn = pose === "no-stock" ? -9 + person.lean * 0.3 : pose === "no-hands" ? -13 + person.lean * 0.3 : person.lean;
+  const headShift = pose === "no-stock" ? -9 : pose === "no-hands" ? -13 : 0;
+  const headDrop = pose === "no-stock" ? 9 : pose === "no-hands" ? 12 : 0;
+  const shoulderDrop = pose === "short" ? 4 : 0;
+  const coat = coatPath(build, legs);
+  const rim = Math.min(1, keyLight + 0.3);
+  const headXf = `translate(${headShift} ${headDrop}) rotate(${person.tilt} 0 ${HEAD_CY})`;
+  const near = armJoints(build, pose, -1);
+  const far = armJoints(build, pose, 1);
+  const armW = build.shoulder * 0.34;
+  const shadowW = build.shoulder * 0.13;
+
+  const legsSVG = !legs ? "" : `
+    <path d="M${-build.waist * 0.55},470 C${-build.waist * 1.3},540 ${-build.waist * 2.1},600 ${-build.waist * 2.6},${FLOOR_Y - 16}" stroke="#17100a" stroke-width="${build.shoulder * 0.5}" stroke-linecap="round" fill="none"/>
+    <path d="M${build.waist * 0.55},470 C${build.waist * 1.05},535 ${build.waist * 1.3},600 ${build.waist * 1.35},${FLOOR_Y - 16}" stroke="#17100a" stroke-width="${build.shoulder * 0.5}" stroke-linecap="round" fill="none"/>
+    <ellipse cx="0" cy="${FLOOR_Y - 6}" rx="${build.shoulder * 1.05}" ry="13" fill="#8a5630" opacity="0.3" filter="url(#f3b4)"/>`;
+
+  return `
+  <g transform="translate(${x} ${top.toFixed(2)}) scale(${s.toFixed(3)})">
+    ${legsSVG}
+    <g transform="rotate(${turn.toFixed(1)} 0 ${CROP_Y}) translate(0 ${shoulderDrop})">
+      <path d="${armPath(far)}" stroke="#100b07" stroke-width="${armW * 0.86}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <rect x="${-NECK_W}" y="${NECK_TOP}" width="${NECK_W * 2}" height="${COLLAR_Y - NECK_TOP + 6}" fill="#120d09"/>
+      <g transform="${headXf}">
+        <ellipse cx="0" cy="${HEAD_CY}" rx="${HEAD_RX}" ry="${HEAD_RY}" fill="#151009"/>
+        ${headgearSVG(person.headwear, fill)}
+      </g>
+      <path d="${coat}" fill="${fill}"/>
+      <path d="M-25,${COLLAR_Y - 4} C-13,${COLLAR_Y + 22} 13,${COLLAR_Y + 22} 25,${COLLAR_Y - 6} C15,${COLLAR_Y + 6} -15,${COLLAR_Y + 8} -25,${COLLAR_Y - 4} Z" fill="#0c0806"/>
+      <path d="${armShadow(near)}" stroke="#0c0805" stroke-width="${shadowW}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <path d="${armPath(near)}" stroke="#181009" stroke-width="${armW}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <path d="${coat}" fill="url(#f3key)" fill-opacity="${keyLight}"/>
+      <g transform="${headXf}">
+        <ellipse cx="0" cy="${HEAD_CY}" rx="${HEAD_RX}" ry="${HEAD_RY}" fill="url(#f3head)" fill-opacity="${keyLight * 0.4}"/>
+      </g>
+      <ellipse cx="${headShift * 0.6}" cy="${JAW_Y + 4 + headDrop}" rx="18" ry="8" fill="#060403" opacity="0.85" filter="url(#f3b1)"/>
+      <g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#f3b1)">
+        <path d="${headRim(-1)}" stroke="#ffbe74" stroke-width="4.6" opacity="${0.55 * rim}" transform="${headXf}"/>
+        <path d="M${-NECK_W - 1},${JAW_Y + 2} L${-NECK_W - 3},${COLLAR_Y - 2}" stroke="#e8a052" stroke-width="3.4" opacity="${0.32 * rim}"/>
+        <path d="${torsoEdge(build, -1)}" stroke="#ffb864" stroke-width="5" opacity="${0.5 * rim}"/>
+        <path d="${armPath(near)}" stroke="#e8a052" stroke-width="4" opacity="${0.5 * rim}" transform="translate(-11 0)"/>
+      </g>
+      <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke="#7d9cc4" filter="url(#f3b1)">
+        <path d="${torsoEdge(build, 1)}" stroke-width="4.4" opacity="${cool}"/>
+        <path d="${headRim(1)}" stroke-width="3.8" opacity="${cool * 0.85}" transform="${headXf}"/>
+        <path d="${armPath(far)}" stroke-width="3" opacity="${cool * 0.7}" transform="translate(6 0)"/>
+      </g>
+    </g>
+  </g>`;
+}
+
+const DEFS = `
+  <filter id="f3b1" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="1.8"/></filter>
+  <filter id="f3b4" x="-120%" y="-120%" width="340%" height="340%"><feGaussianBlur stdDeviation="15"/></filter>
+  <radialGradient id="f3key" cx="42%" cy="16%" r="34%">
+    <stop offset="0%" stop-color="#ffbe74" stop-opacity="0.34"/>
+    <stop offset="32%" stop-color="#ffbe74" stop-opacity="0.12"/>
+    <stop offset="68%" stop-color="#ffbe74" stop-opacity="0.03"/>
+    <stop offset="100%" stop-color="#ffbe74" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="f3head" cx="22%" cy="24%" r="46%">
+    <stop offset="0%" stop-color="#ffbe74" stop-opacity="0.14"/>
+    <stop offset="45%" stop-color="#ffbe74" stop-opacity="0.03"/>
+    <stop offset="100%" stop-color="#ffbe74" stop-opacity="0"/>
+  </radialGradient>`;
+
+const COMPANION_CROP = 226, LEAD_X = 168;
+
+function passCustomerSVG({ ticket, pose, wanted }) {
+  const lead = personFor(ticket);
+  const away = pose === "no-hands";
+  const companions = Math.max(0, Math.min(wanted ?? 1, 3) - 1);
+  const half = lead.build.shoulder;
+  const offsets = [-1.5 * half, 1.6 * half];
+  const scales = [0.82, 0.74];
+  const keys = [0.42, 0.3];
+  const leadKey = pose === "no-stock" ? 0.55 : away ? 0.2 : 1;
+  const leadCool = pose === "no-stock" ? 0.5 : away ? 0.62 : 0.34;
+  const leadScale = away ? 0.34 : 1;
+
+  let companionsSVG = "";
+  for (let i = 0; i < companions; i += 1) {
+    companionsSVG += figureSVG({
+      person: personFor(ticket * 31 + i),
+      pose: away ? "no-hands" : "waiting",
+      x: LEAD_X + (away ? [-58, 54][i] ?? 0 : offsets[i] ?? 0),
+      scale: (away ? 0.9 : scales[i] ?? 0.78) * leadScale,
+      keyLight: (keys[i] ?? 0.3) * (away ? 0.4 : 1),
+      cool: away ? 0.3 : 0,
+      legs: away,
+      crop: COMPANION_CROP,
+    });
+  }
+  const leadSVG = figureSVG({ person: lead, pose, x: LEAD_X, scale: leadScale, keyLight: leadKey, cool: leadCool, legs: away, crop: CROP_Y });
+
+  return `<svg viewBox="0 0 360 300" preserveAspectRatio="xMidYMax meet"><defs>${DEFS}</defs>${companionsSVG}${leadSVG}</svg>`;
+}
+
+/* =============================================================================================
+   The sheet itself.
+   ============================================================================================= */
+
+const cells = [
+  { ticket: 1, pose: "waiting", wanted: 1, note: "arriving, hands resting on the counter" },
+  { ticket: 1, pose: "served", wanted: 1, note: "square to the window, taking the plate" },
+  { ticket: 5, pose: "short", wanted: 2, note: "shoulders dropped a little — got some" },
+  { ticket: 11, pose: "no-stock", wanted: 1, note: "turning away, we ran out" },
+  { ticket: 19, pose: "no-hands", wanted: 1, note: "never reached the window at all" },
+  { ticket: 23, pose: "served", wanted: 1, note: "a different build/headwear at the same pose" },
+  { ticket: 23, pose: "no-stock", wanted: 2, note: "same ticket, the other loss" },
+  { ticket: 7, pose: "served", wanted: 2, note: "two-person group, lead + one companion" },
+  { ticket: 14, pose: "short", wanted: 3, note: "three-person group, lead + two companions" },
+  { ticket: 30, pose: "no-hands", wanted: 2, note: "a no-hands GROUP: full-body, at the light's edge" },
+  { ticket: 5, pose: "waiting", wanted: 3, note: "a three-person group, waiting" },
+  { ticket: 41, pose: "served", wanted: 1, note: "spot check: a headwear/lean combo not seen above" },
+];
+
+const grid = document.getElementById("grid");
+for (const c of cells) {
+  const cell = document.createElement("div");
+  cell.className = "cell";
+  cell.innerHTML = `
+    <p class="cell__label">#${c.ticket} · ${c.pose} · wanted ${c.wanted}<small>${c.note}</small></p>
+    <div class="pass-hatch" data-grade="peak">
+      <div class="pass-hatch__plate"></div>
+      <div class="pass-customer">${passCustomerSVG(c)}</div>
+    </div>`;
+  grid.appendChild(cell);
+}
+
+const gradesEl = document.getElementById("grades");
+for (const grade of ["early", "peak", "late"]) {
+  const cell = document.createElement("div");
+  cell.className = "cell";
+  cell.innerHTML = `
+    <p class="cell__label">ticket #5 · served · ${grade}<small>the figure's own light is constant; only the plate changes</small></p>
+    <div class="pass-hatch" data-grade="${grade}">
+      <div class="pass-hatch__plate"></div>
+      <div class="pass-customer">${passCustomerSVG({ ticket: 5, pose: "served", wanted: 1 })}</div>
+    </div>`;
+  gradesEl.appendChild(cell);
+}
+
+/* ---- comparison: the plate's own near-passer, lifted verbatim from lane-master.html,
+   scaled up beside F3's customer at the pass. The passer-by is copied byte-for-byte from the
+   NEAR PASSERS-BY block (the woman with the low bun); only a <g transform> wraps it to bring her
+   to a comparable scale — nothing inside her own <g> is redrawn or adjusted. ---- */
+const PASSERBY_SVG = `
+  <path d="M466,470 C464,456 465,446 469,434" stroke="#17100a" stroke-width="14" stroke-linecap="round" fill="none"/>
+  <path d="M500,470 C501,456 501,446 497,432" stroke="#17100a" stroke-width="14" stroke-linecap="round" fill="none"/>
+  <path d="M457,350 C452,366 455,382 453,396 C451,414 448,428 450,438 L456,443 C470,448 487,448 496,440 L502,434 C501,422 503,408 505,396 C506,378 504,362 499,351 C486,340 468,340 457,350 Z" fill="#130d08"/>
+  <path d="M491,358 C497,376 499,394 495,412" stroke="#0c0805" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M495,360 C501,378 502,396 498,412" stroke="#181009" stroke-width="11" stroke-linecap="round" fill="none"/>
+  <rect x="472" y="330" width="12" height="12" fill="#14100c"/>
+  <ellipse cx="478" cy="320" rx="13" ry="14.6" fill="#14100c" transform="rotate(-4 478 320)"/>
+  <circle cx="465" cy="326" r="5.5" fill="#14100c"/>
+  <path d="M488,308 C492,314 493,322 490,330" stroke="#ffbe74" stroke-width="2" opacity=".6" fill="none" filter="url(#f3b1)"/>
+  <path d="M497,350 C502,356 505,363 506,371" stroke="#ffb864" stroke-width="2" opacity=".55" fill="none" filter="url(#f3b1)"/>
+  <path d="M501,368 C505,384 505,398 501,412" stroke="#e8a052" stroke-width="1.8" opacity=".45" fill="none" filter="url(#f3b1)"/>
+  <path d="M498,432 C494,440 486,444 476,445" stroke="#8a5630" stroke-width="2" opacity=".3" fill="none" filter="url(#f3b1)"/>`;
+
+const compare = document.getElementById("compare");
+compare.innerHTML = `
+  <div class="cell">
+    <p class="cell__label">left: the plate's own hand (lane-master.html, verbatim) · right: F3's customer, waiting<small>same fills, same rim palette, same anatomy — neck rect, sloped shoulders, pinched waist, near-arm shadow edge, head ellipse</small></p>
+    <div class="compare-stage">
+      <svg viewBox="0 0 720 300" preserveAspectRatio="xMidYMax meet">
+        <defs>${DEFS}</defs>
+        <rect width="720" height="300" fill="#17233d"/>
+        <!-- the passer-by's own feet sit at world (479,470); scale her ×1.8 and translate so
+             those feet land at canvas (180,300) — the same crop-line height our customer is cut
+             at, so the two silhouettes read at a comparable size side by side -->
+        <g transform="translate(-682.2,-546) scale(1.8)">${PASSERBY_SVG}</g>
+        <g transform="translate(360,0)">${passCustomerSVG({ ticket: 1, pose: "waiting", wanted: 1 })}</g>
+      </svg>
+    </div>
+  </div>`;
+</script>

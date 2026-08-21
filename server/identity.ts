@@ -1,4 +1,5 @@
 import { CODE_ALPHABET, generateTeacherKey, isWellFormedClassCode, isWellFormedSeatCode, normaliseClassCode, normaliseSeatCode } from "../src/platform/classes/codes";
+import { assignmentIdFor, assignmentsForClass } from "../src/platform/classes/assignments";
 import { asRunCopy, copyToKeep } from "../src/platform/identity/runCopies";
 import {
   IDENTITY_ERROR_MESSAGES,
@@ -745,6 +746,17 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
   },
 
   // -- GET /me/classes — a student's own home: every seat they hold, and what is in it. --
+  //
+  // The response carries the student **before** it carries their classes, and that ordering is
+  // the fix for a real hole rather than a tidy-up. `signedInAs` on the student's own screen used
+  // to be `classes[0]?.displayName`, so a signed-in student whose only roster row had been
+  // removed — or whose class had closed — lost their name and kept a sign-out button: a page
+  // that could not say whose it was, on a cart Chromebook, which is the one machine where that
+  // question has to be answerable. `session.ts` deliberately does not cache the name (a teacher
+  // who corrects a spelling on Monday must not leave the old one on a device for a term), and
+  // that reasoning stands. The token resolves to exactly one student, so the service can simply
+  // answer: the name is a fact about the student, and it survives every class they are in
+  // closing. `classes: []` then means *no roster row*, never *nobody signed in*.
   {
     method: "GET",
     path: "me/classes",
@@ -753,13 +765,23 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
       const { store, now } = context;
       const id = caller.id;
       const seats = await store.listSeatsForStudent(id);
-      const rows = await Promise.all(seats.map(async (seat) => {
+      // Resolved in seat order rather than in whichever order the reads happened to settle, so
+      // the name a student is greeted by is the same one on every load.
+      const held = await Promise.all(seats.map(async (seat) => {
         const record = await store.getClass(seat.classCode);
-        if (!record || record.expiresAt <= now) return null;
-        const roster = await store.listRoster(seat.classCode);
+        const roster = record ? await store.listRoster(seat.classCode) : [];
         const mine = roster.find((entry) => entry.seatCode === seat.seatCode);
+        return { seat, record, mine: mine?.studentId === id ? mine : undefined };
+      }));
+      // A live row first, because that is the name their teacher is looking at today. A removed
+      // or closed one only if there is nothing else — it is still this student's own name, and
+      // the alternative is a page addressed to nobody.
+      const named = held.find((entry) => entry.mine && !entry.mine.removedAt && entry.record && entry.record.expiresAt > now)
+        ?? held.find((entry) => entry.mine);
+      const rows = await Promise.all(held.map(async ({ seat, record, mine }) => {
+        if (!record || record.expiresAt <= now) return null;
         // A student removed from a class does not see it. Their work stays for the teacher.
-        if (mine?.removedAt || mine?.studentId !== id) return null;
+        if (!mine || mine.removedAt) return null;
         const checkpoints = await store.listCheckpoints(seat.classCode);
         const submissions = await store.listSubmissions(seat.classCode);
         const mySubmissions = submissions.filter((entry) => entry.seatCode === seat.seatCode);
@@ -772,22 +794,57 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
           .filter((entry) => entry.seatCode === seat.seatCode && !entry.deletedAt)
           .sort((a, b) => a.at - b.at);
         const checkpoint = checkpoints.find((entry) => entry.seatCode === seat.seatCode);
+        const stored = await store.listAssignments(seat.classCode);
+        // Work set for particular seats is work for those seats. `assignedStudentIds` holds
+        // seat codes (see `Assignment`), and `null` means the whole room.
+        const mineToDo = [...stored]
+          .filter((entry) => entry.assignedStudentIds === null || entry.assignedStudentIds.includes(seat.seatCode))
+          .sort((a, b) => a.createdAt - b.createdAt);
+        // The list a *submission* is attributed against is the wider one, including the
+        // assignment a pre-assignment class was implicitly set — the same function and the same
+        // answer the educator's own room uses, so a student and their teacher never see one run
+        // filed under two different things.
+        const all = assignmentsForClass(record, stored);
         return {
           classCode: record.code,
           label: record.label,
           seatCode: seat.seatCode,
           displayName: mine.displayName,
-          assignments: await store.listAssignments(seat.classCode),
+          // Which of the two ways this name reached BOW. The run's confirm card says one
+          // sentence or the other rather than both, because both is false for whichever child
+          // is reading it.
+          selfNamed: mine.selfNamed === true,
+          assignments: mineToDo,
+          // Whether the class holds *nothing at all*, which is a different fact from "nothing
+          // for this seat" and has to be drawn differently. It is deliberately not answered by
+          // synthesising the legacy assignment into the list above: the run itself treats a
+          // class with no assignment as "every world, student chooses" (`StudentChallenge.tsx`
+          // and `WorldChoice.tsx`), and a student's own screen that quietly claimed otherwise
+          // would be a card promising one story over a button that opens a choice of two.
+          nothingSetYet: stored.length === 0,
           // Only the position, never the payload: a home screen does not need an attempt, it
-          // needs to know there is one.
+          // needs to know there is one. `assignmentId` travels with it because a class can hold
+          // more than one piece of work, and "in progress" belongs to one of them.
           inProgress: checkpoint && !checkpoint.submittedAt
-            ? { worldId: checkpoint.worldId, stage: checkpoint.stage, updatedAt: checkpoint.updatedAt }
+            ? {
+              worldId: checkpoint.worldId,
+              stage: checkpoint.stage,
+              updatedAt: checkpoint.updatedAt,
+              ...(checkpoint.assignmentId ? { assignmentId: checkpoint.assignmentId } : {}),
+            }
             : null,
-          completed: mySubmissions.map((entry) => ({
-            sessionId: entry.sessionId,
-            submittedAt: entry.submittedAt,
-            worldId: entry.log[0]?.worldId ?? null,
-          })),
+          // Attributed the same way the educator's room attributes it — same function, same
+          // fallback to the oldest assignment for a submission that named none — so a student
+          // and their teacher are looking at the same run filed under the same thing.
+          completed: mySubmissions.map((entry) => {
+            const assignmentId = assignmentIdFor(entry, all);
+            return {
+              sessionId: entry.sessionId,
+              submittedAt: entry.submittedAt,
+              worldId: entry.log[0]?.worldId ?? null,
+              ...(assignmentId ? { assignmentId } : {}),
+            };
+          }),
           feedback: feedback.map((entry) => ({
             id: entry.id,
             body: entry.body,
@@ -797,7 +854,13 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
           })),
         };
       }));
-      return { status: 200, body: { classes: rows.filter((row) => row !== null) } };
+      return {
+        status: 200,
+        body: {
+          student: { displayName: named?.mine?.displayName ?? null },
+          classes: rows.filter((row) => row !== null),
+        },
+      };
     },
   },
 

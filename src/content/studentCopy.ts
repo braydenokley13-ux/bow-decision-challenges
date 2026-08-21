@@ -30,9 +30,13 @@ export const STUDENT_COPY = {
     chooseKicker: "Before you start",
     chooseHeadline: "Two ways in. You pick one.",
     chooseLede: "Either way, the money is yours to handle.",
-    /* What BOW holds about this student, for the screen that shows them a name. Both ways a
-       name can reach this screen are named, in order, because a student reading a sentence
-       about their own name has to be able to tell which one happened to them. */
+    /* What BOW holds about this student, for the screen that shows them a name.
+       Three sentences, because the service knows which of the two ways this name arrived and
+       there is no reason to make a child work it out. The two-branch version below is what a
+       service too old to answer still gets: it names both, in order, rather than picking one
+       and being wrong about half of them. */
+    privacyFromTeacher: "Your teacher put this name on the class list. Your teacher can see it next to your work. BOW never asks for your email, your birthday, or anything about your real money.",
+    privacySelfNamed: "You typed this name yourself when you joined. Your teacher can see it next to your work. BOW never asks for your email, your birthday, or anything about your real money.",
     privacy: "This name came from one of two places. Your teacher put it on the class list. Or you typed it yourself when you joined. Your teacher can see your name next to your work. BOW never asks for your email, your birthday, or anything about your real money.",
     /* A student who arrived without a code used to meet a form they could not fill in and no
        way forward. One line, stated as a fact rather than an apology. */

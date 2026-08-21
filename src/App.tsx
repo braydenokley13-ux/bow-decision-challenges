@@ -70,9 +70,9 @@ function Home() {
             front door speaking a schema nothing else uses is where a vocabulary starts
             coming apart. */}
         <p className="home__deck">
-          Pick a world and you are the one handling the money in it. Every call you make
-          changes what happens next — and you find out what it cost the way you would in
-          life, weeks later, when it is too late to take it back.
+          You are the one handling the money in it. Every call you make changes what happens
+          next — and you find out what it cost the way you would in life, weeks later, when it
+          is too late to take it back.
         </p>
         <div className="home__actions">
           <Link className="button button--primary" to="/join">I have a class code</Link>
@@ -80,8 +80,15 @@ function Home() {
         </div>
       </section>
 
+      {/* Two worlds, described. **Not** a chooser: the choice is real and it happens inside a
+          class, after signing in, because it is the teacher's to allow (`worldOffer.ts`). This
+          section was headed *"Choose your world"* over two cards with no link, no button and no
+          handler on them, under a hero reading *"Pick a world"* and over a note reading *"the
+          choice is yours to make"* — three invitations to act on the first screen a district
+          evaluator meets, and no way to act on any of them (`DEFECTS.md` D26). It says what
+          these are and where the choice actually happens. */}
       <section className="home__worlds-section" aria-labelledby="home-worlds">
-        <h2 className="stamp" id="home-worlds">Choose your world</h2>
+        <h2 className="stamp" id="home-worlds">The two worlds</h2>
         <ul className="home__worlds">
           {PLAYABLE_WORLDS.map((world) => (
             <li key={world.id} className="world-card" data-world={world.id}>
@@ -102,8 +109,9 @@ function Home() {
             evaluator meets first. Both worlds are judged against the same named parts of the
             work, which is what makes the choice above safe to offer. */}
         <p className="home__worlds-note">
-          Different worlds, the same job. Whichever you pick, your teacher gets the same set
-          of skills back — so the choice is yours to make on what you find interesting.
+          Different worlds, the same job: whichever one you are in, your teacher gets the same
+          set of skills back. Which one you do is set inside your class — sign in with your
+          class code and you will either be given one or asked to pick.
         </p>
       </section>
 

@@ -403,7 +403,14 @@ describe("Ladder 2 and Ladder 3 agree by construction", () => {
 
 describe("the cap sentence — the densest teacher string in the product", () => {
   const trail = readFileSync("src/educator/EvidenceTrailPanel.tsx", "utf8");
-  const cap = trail.slice(trail.indexOf("judgement.cappedBySupport &&"), trail.indexOf("judgement__verdicts"));
+  // The end marker is the line under the cap sentence. It used to be `judgement__verdicts`,
+  // the block that printed BOW's level and the teacher's as a pair of stacked labels beside
+  // the row; both readings are still on the row and still both shown, in the line itself and
+  // in the `judgement__override` sentence under it, which is where the slice now stops. A
+  // marker that has moved has to be moved rather than removed: `indexOf` returns -1 for a
+  // missing one and the slice quietly becomes the whole file, which is how this assertion
+  // came to be counting nine level words instead of two.
+  const cap = trail.slice(trail.indexOf("judgement.cappedBySupport &&"), trail.indexOf("judgement__override"));
 
   it("names the cap once, not twice", () => {
     // It used to read "BOW saw Independently, held to After a hint: a hint that named the

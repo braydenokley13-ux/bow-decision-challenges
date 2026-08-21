@@ -3,6 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { DEMO_CLASS_CODE, demoClassBundle } from "../src/fixtures/demoClass";
 import { FRAMEWORKS, standardsIn } from "../src/domain/standards";
 import { CONCEPTS } from "../src/domain/blueprint/concepts";
+import { createClass, gotoFreshChallenge, seatOnRoster, signIn } from "./flow";
 
 /**
  * The two things that make this one product rather than several sharing a palette.
@@ -58,11 +59,23 @@ function contrast(front: string, behind: string): number {
   return Number(((high + 0.05) / (low + 0.05)).toFixed(2));
 }
 
-/** The mark as it computes on whatever page is open: its own colours, and the ground under it. */
-async function markOn(page: Page): Promise<{ glyph: string; plate: string; ground: string; wordmark: string; note: string }> {
+/**
+ * The mark as it computes on whatever page is open: the colours it paints for itself, and
+ * the ground it is painted on.
+ *
+ * There is no monogram any more and this helper used to require one. `AppMark.tsx` was
+ * redesigned into a wordmark — a heavy `<b>BOW</b>` with a four-point star lifted off its
+ * top right, and a subtitle under it — with no letter-on-a-plate at all, so the assertion
+ * that guarded the mark had been waiting on `.app-mark__monogram` and failing on the first
+ * surface it looked at since the day the redesign landed. What is read now is what the
+ * lockup is actually made of: the three colours it paints, and the ground under them.
+ */
+async function markOn(page: Page): Promise<{ word: string; star: string; note: string | null; letters: string; ground: string }> {
   return page.locator(".app-mark").first().evaluate((mark) => {
-    const monogram = mark.querySelector(".app-mark__monogram");
-    if (!monogram) throw new Error("The mark has no monogram.");
+    const word = mark.querySelector("b");
+    const star = mark.querySelector(".app-mark__star");
+    if (!word || !star) throw new Error(`The mark has no ${word ? "star" : "wordmark"}: ${mark.outerHTML.slice(0, 200)}`);
+    const note = mark.querySelector("small");
     const opaqueGroundOf = (start: Element | null): string => {
       for (let node = start; node; node = node.parentElement) {
         const paint = getComputedStyle(node).backgroundColor;
@@ -71,13 +84,28 @@ async function markOn(page: Page): Promise<{ glyph: string; plate: string; groun
       return "rgb(255, 255, 255)";
     };
     return {
-      glyph: getComputedStyle(monogram).color,
-      plate: getComputedStyle(monogram).backgroundColor,
+      word: getComputedStyle(word).color,
+      // The star is painted with `fill`, not `color`, and it is the one part of the lockup
+      // that is the same colour on every ground — so it is the part a stray bar rule shows
+      // up on most plainly.
+      star: getComputedStyle(star).fill,
+      note: note ? getComputedStyle(note).color : null,
+      letters: (word.textContent ?? "").trim(),
       ground: opaqueGroundOf(mark.parentElement),
-      wordmark: getComputedStyle(mark.querySelector("b")!).color,
-      note: getComputedStyle(mark.querySelector("small")!).color,
     };
   });
+}
+
+/**
+ * Light ground or dark ground, off the ground's own luminance rather than off a list of
+ * page names.
+ *
+ * This is the one thing the mark is allowed to answer to. Everything else about a surface —
+ * which bar wraps it, which stylesheet the bar lives in, what that bar does to its own
+ * spans — it must ignore.
+ */
+function toneOf(ground: string): "light" | "dark" {
+  return relativeLuminance(rgb(ground)) >= 0.5 ? "light" : "dark";
 }
 
 /**
@@ -91,6 +119,14 @@ async function markOn(page: Page): Promise<{ glyph: string; plate: string; groun
  * it does it through a shared rule. The one thing this list cannot catch is a new bar with a
  * `.new-bar span` rule of its own, which is why the mark's colours are now declared at a
  * specificity a bar cannot reach.
+ *
+ * `/home` is on this list and for a long time was not testing what it says. Without a student
+ * session it redirects to `/join`, so the sweep loaded the class-code door twice and never
+ * once looked at the student's own screen — one of the two student bars the comment above
+ * claims to cover. The test seats a student before it walks, so the entry is the page it
+ * names. That is the honest fix rather than dropping the row: the student's own screen has
+ * its own bar, that bar carries the mark, and nothing else on this list would notice if it
+ * started painting it differently.
  */
 const SURFACES_WITH_THE_MARK: readonly { name: string; path: string }[] = [
   { name: "the front door", path: "/" },
@@ -105,52 +141,118 @@ const SURFACES_WITH_THE_MARK: readonly { name: string; path: string }[] = [
 ];
 
 test.describe("one mark", () => {
-  test("renders one way on every surface that carries it, and the letter is there", async ({ page }) => {
+  /**
+   * One rule paints the mark, and the only thing that rule reads is the ground.
+   *
+   * The finding this test was written for is still the finding it is for: the mark rendered
+   * three ways, one of them at 1.05:1, because its colours came from custom properties it
+   * inherited from whatever bar happened to wrap it, and two bar rules of the form
+   * `.some-bar span` out-specified the mark's own. A source scan can prove there is one rule
+   * for the mark; only a computed value proves that rule wins on every page.
+   *
+   * What has changed is the mark, so what has changed here is the fingerprint. The lockup is
+   * a wordmark, a star and a subtitle, and it paints itself out of `--ink-1` and the violet
+   * ramp — which means it renders **once per ground**, deliberately: near-black on the
+   * teacher's white and white on the student's near-black. That is not the old defect wearing
+   * new clothes, it is the fix for it. A navy wordmark on the near-black front door would be
+   * the 1.05:1 rendering again, and asserting one identical rendering across all nine surfaces
+   * would be asserting exactly that.
+   *
+   * So the rule the assertions state is the one that is actually true of a coherent mark:
+   *
+   * - the mark's rendering is a **function of its ground** — every surface standing on the
+   *   same tone computes byte-identically, so eight light chromes cannot be seven and a
+   *   repaint;
+   * - the **star is invariant**, on every ground, because it is the one part of the lockup
+   *   that never reads an ink token and so the one part no ground can excuse;
+   * - and the **wordmark clears AA against the ground it is standing on**, everywhere, which
+   *   is what the 1.05:1 rendering failed and what a child on a school Chromebook needs.
+   *
+   * A logotype is exempt from SC 1.4.3, so none of this is a conformance gate. It is the
+   * requirement that the product's own name is legible on its own pages.
+   */
+  test("renders one way per ground on every surface that carries it, and the wordmark is legible on it", async ({ page, request }) => {
     // Nine full page loads in one test, against Playwright's thirty-second default. These
     // sweeps are the one shape in the suite that pays a navigation per assertion rather than
     // asserting several times on one screen, and they run beside another browser on four
     // cores — which is measuring the machine, exactly what the raised `expect` timeout in
     // `playwright.config.ts` exists to stop doing.
     test.setTimeout(120_000);
-    const seen: { name: string; ground: string; mark: Awaited<ReturnType<typeof markOn>> }[] = [];
+
+    // `/home` is a real surface only for a student who is signed in; without a session it is
+    // a redirect to `/join`. So one is seated, through the door a student actually uses.
+    const created = await createClass(request, "One mark");
+    const card = await seatOnRoster(page, created.code, "1");
+    await gotoFreshChallenge(page);
+    await signIn(page, { ...card, classCode: created.code });
+
+    const seen: { name: string; path: string; mark: Awaited<ReturnType<typeof markOn>> }[] = [];
 
     for (const surface of SURFACES_WITH_THE_MARK) {
       await page.goto(surface.path);
-      await expect(page.locator(".app-mark__monogram")).toBeVisible();
+      await expect(page.locator(".app-mark__word")).toBeVisible();
+      await expect(page.locator(".app-mark__star")).toBeVisible();
       const mark = await markOn(page);
 
-      // The letter, on its own plate. This is the assertion that fails when a bar rule
-      // repaints it — the exact shape of the bug, and one that changes nothing else.
+      // The surface is the one the row names, rather than wherever a redirect landed. This
+      // is the assertion that would have caught `/home` quietly testing `/join` for a second
+      // time — nine rows, eight surfaces, and nobody the wiser.
       expect(
-        contrast(mark.glyph, mark.plate),
-        `${surface.name} (${surface.path}): the "B" is ${mark.glyph} on a ${mark.plate} plate`,
+        new URL(page.url()).pathname,
+        `${surface.name} (${surface.path}): the sweep ended up somewhere else, so this row is not testing the surface it names`,
+      ).toBe(surface.path);
+
+      // The name is on the screen, in the mark. A lockup that renders its star and loses its
+      // word is a mark nobody can read, and every colour assertion below would still pass.
+      expect(mark.letters, `${surface.name} (${surface.path}): the wordmark reads "${mark.letters}"`).toBe("BOW");
+
+      // The word, on the ground it is standing on. This is the assertion that fails when a
+      // bar rule repaints it — the exact shape of the bug, and one that changes nothing else.
+      expect(
+        contrast(mark.word, mark.ground),
+        `${surface.name} (${surface.path}): "BOW" is ${mark.word} on a ${mark.ground} ground`,
       ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT);
 
-      seen.push({ name: surface.name, ground: mark.ground, mark });
+      seen.push({ name: surface.name, path: surface.path, mark });
     }
 
-    // One rendering. Not "similar" — the same four computed colours, everywhere. Two marks on
-    // the same cream ground, one an outlined cream plate with a navy letter and the other a
-    // solid navy plate with a white one, is the finding this test exists to keep closed, and
-    // no contrast threshold catches it: both of them cleared 4.5:1.
-    // The four colours the mark paints for itself, and deliberately not `ground`. `ground` is
-    // the page showing through behind the mark; it is *meant* to differ from surface to
-    // surface, and the assertion at the foot of this test requires that it does. Comparing it
-    // here made the two mutually exclusive, so the test could not pass on any product: it read
-    // three renderings across nine surfaces whose glyph, plate, wordmark and note were byte
-    // for byte identical, and reported a mark that computes three ways because the front door,
-    // the educator pages and the student screens have three different backgrounds.
-    const renderings = new Set(seen.map(({ mark }) => JSON.stringify({
-      glyph: mark.glyph, plate: mark.plate, wordmark: mark.wordmark, note: mark.note,
-    })));
+    const fingerprint = (mark: Awaited<ReturnType<typeof markOn>>) =>
+      JSON.stringify({ word: mark.word, star: mark.star, note: mark.note });
+    const said = (entry: typeof seen[number]) =>
+      `${entry.name} (${entry.path}) → ${entry.mark.word} + ${entry.mark.star} + ${entry.mark.note} on ${entry.mark.ground}`;
+
+    // One rendering per ground. Not "similar" — the same three computed colours on every
+    // surface that stands on the same tone. Two marks on the same cream ground, one painted
+    // in body ink by a bar rule and the other in the mark's own, is the finding this test
+    // exists to keep closed, and no contrast threshold catches it: both of them cleared 4.5:1.
+    for (const tone of ["light", "dark"] as const) {
+      const onThisGround = seen.filter((entry) => toneOf(entry.mark.ground) === tone);
+      if (onThisGround.length === 0) continue;
+      const renderings = new Set(onThisGround.map((entry) => fingerprint(entry.mark)));
+      expect(
+        [...renderings],
+        `the mark computes ${renderings.size} ways across the ${onThisGround.length} ${tone} surfaces: `
+          + onThisGround.map(said).join("; "),
+      ).toHaveLength(1);
+    }
+
+    // The star reads no ink token, so no ground excuses a second one. It is the part of the
+    // lockup that has to be identical on all nine.
+    const stars = new Set(seen.map((entry) => entry.mark.star));
     expect(
-      [...renderings],
-      `the mark computes ${renderings.size} ways across ${seen.length} surfaces: ` +
-        seen.map((entry) => `${entry.name} → ${entry.mark.glyph} on ${entry.mark.plate}`).join("; "),
+      [...stars],
+      `the star computes ${stars.size} ways across ${seen.length} surfaces: ` + seen.map(said).join("; "),
     ).toHaveLength(1);
 
-    // And it is worth having covered more than one ground, or the test above is vacuous.
-    expect(new Set(seen.map((entry) => entry.ground)).size).toBeGreaterThan(1);
+    // And it is worth having covered more than one ground, or the loop above is vacuous: it
+    // would pass on nine copies of one page, and it would pass on a product whose light
+    // surfaces were never compared with each other.
+    const tones = new Set(seen.map((entry) => toneOf(entry.mark.ground)));
+    expect(tones.size, `every surface in the sweep stands on ${[...tones][0]} ground: ` + seen.map(said).join("; ")).toBe(2);
+    expect(
+      new Set(seen.map((entry) => entry.mark.ground)).size,
+      "the sweep never compared two surfaces standing on the same ground: " + seen.map(said).join("; "),
+    ).toBeLessThan(seen.length);
   });
 });
 

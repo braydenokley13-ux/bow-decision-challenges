@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sample class — BOW</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --violet-600:#6733e8; --violet-700:#5522c4; --violet-100:#ece7ff; --violet-50:#f5f3ff;
+    --ink-1:#161327; --ink-2:#3d3a52; --ink-3:#6b6884;
+    --canvas:#f6f5fb; --surface:#ffffff; --surface-sunken:#efeef7; --line:#dedae f2;
+    --line:#e1ddef; --line-strong:#c9c3e3;
+    --green:#166a3f; --green-bg:#e9f7ef; --green-line:#a9dcc1;
+    --teal:#0b6b7a; --teal-bg:#e6f6f8; --teal-line:#a6dbe3;
+    --amber:#8a5300; --amber-bg:#fdf2e0; --amber-line:#eecb8e;
+    --red:#9c2f22; --red-bg:#fdecea; --red-line:#f0b6ab;
+    --slate:#4b4d63; --slate-bg:#eeedf5; --slate-line:#cfccdf;
+    --blue:#33517e; --blue-bg:#e9f0fb; --blue-line:#b9cdec;
+    --fs-meta:0.8125rem;   /* 13px — the one small size on the page */
+    --fs-ui:1rem;          /* 16px — controls, secondary body */
+    --fs-body:1rem;        /* 16px */
+    --fs-body-lg:1.125rem; /* 18px — the reading text: decisions, writing */
+    --fs-h3:1.25rem;       /* 20px */
+    --fs-h2:1.625rem;      /* 26px */
+    --fs-display: clamp(1.8rem, 1.2rem + 2.4vw, 2.4rem); /* 34–38px */
+    --radius:14px; --radius-sm:9px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--canvas); color:var(--ink-1);
+    font: 400 var(--fs-body)/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--violet-700);}
+  .eyebrow{
+    font-size:var(--fs-meta); font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--ink-3); margin:0 0 .4rem;
+  }
+  h1,h2,h3{margin:0; font-family:inherit; color:var(--ink-1);}
+  h1{font-size:var(--fs-display); font-weight:800; line-height:1.08; letter-spacing:-.01em;}
+  h2{font-size:var(--fs-h2); font-weight:800; line-height:1.15;}
+  h3{font-size:var(--fs-h3); font-weight:700; line-height:1.25;}
+  p{margin:0;}
+
+  /* ---- top bar ---- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between; gap:.75rem 1rem; flex-wrap:wrap;
+    padding:.9rem 1.25rem; background:var(--surface); border-bottom:1px solid var(--line);
+  }
+  @media (max-width: 480px){
+    .topbar{justify-content:center; text-align:center;}
+    .topnav{order:3; width:100%; justify-content:center; gap:1rem; flex-wrap:wrap;}
+  }
+  .brand{display:flex; align-items:baseline; gap:.5rem; font-weight:800; font-size:1.05rem;}
+  .brand small{display:block; font-size:.68rem; letter-spacing:.08em; color:var(--ink-3); font-weight:800;}
+  .brand b{color:var(--violet-700);}
+  .topnav{display:flex; gap:1.5rem; font-size:var(--fs-ui); font-weight:600; color:var(--ink-2);}
+  .topnav a{color:inherit; text-decoration:none;}
+  .topnav a:hover{color:var(--violet-700);}
+  .signin{border:1px solid var(--line-strong); border-radius:999px; padding:.5rem 1.1rem; font-weight:700; font-size:var(--fs-meta); background:var(--surface); letter-spacing:.03em;}
+  .demo-badge{
+    background:var(--slate-bg); color:var(--slate); font-size:var(--fs-meta); font-weight:700;
+    padding:.35rem 1.75rem; border-bottom:1px solid var(--line);
+  }
+
+  main{max-width:1180px; margin:0 auto; padding:1.75rem 1.75rem 4rem;}
+  @media (max-width: 480px){ main{padding:1.5rem 1rem 3rem;} }
+
+  /* ---- class head ---- */
+  .class-head{
+    display:flex; justify-content:space-between; align-items:flex-start; gap:2rem; flex-wrap:wrap;
+    padding-bottom:1.5rem; margin-bottom:1.5rem; border-bottom:1px solid var(--line);
+  }
+  .class-head__id{max-width:760px;}
+  .class-head h1{margin:.35rem 0 .55rem;}
+  .class-head .detail{font-size:var(--fs-body-lg); color:var(--ink-2);}
+  .class-head__meta{
+    text-align:right; font-size:var(--fs-meta); color:var(--ink-3); font-weight:700;
+    display:flex; flex-direction:column; gap:.35rem; padding-top:.35rem;
+  }
+  .btn-primary{
+    display:inline-flex; align-items:center; gap:.5rem;
+    background:var(--violet-600); color:#fff; border:none; border-radius:11px;
+    padding:.85rem 1.35rem; font-weight:800; font-size:var(--fs-body); text-decoration:none;
+    margin-top:1.1rem; box-shadow:0 6px 18px -8px rgba(103,51,232,.55);
+  }
+  .btn-primary:hover{background:var(--violet-700);}
+
+  /* ---- triage ---- */
+  .triage-lead{font-size:var(--fs-meta); font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--violet-700); margin-bottom:.6rem;}
+  .triage{display:grid; grid-template-columns:minmax(0,1.15fr) minmax(0,1fr); gap:1.25rem; margin-bottom:1.5rem;}
+  @media (max-width: 900px){ .triage{grid-template-columns:1fr;} }
+
+  .panel{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:1.35rem 1.4rem;
+  }
+  .panel--raised{
+    box-shadow:0 14px 34px -20px rgba(22,19,39,.28), 0 2px 8px -4px rgba(22,19,39,.08);
+    border-color:var(--line-strong);
+  }
+  .panel .section-heading{display:flex; align-items:baseline; justify-content:space-between; gap:.75rem; margin-bottom:.85rem;}
+  .count-pill{
+    font-size:var(--fs-meta); font-weight:800; background:var(--violet-100); color:var(--violet-700);
+    border-radius:999px; padding:.2rem .65rem;
+  }
+
+  .queue-link{
+    display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    background:var(--violet-50); border:1px solid var(--violet-line, #d9cfff); border-radius:var(--radius-sm);
+    padding:.75rem 1rem; text-decoration:none; color:var(--ink-1); font-weight:700; margin-bottom:1rem;
+  }
+  .queue-link:hover{background:var(--violet-100);}
+  .queue-link span.arrow{color:var(--violet-700); font-weight:900;}
+
+  .triage-list{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:.55rem;}
+  .triage-row{
+    display:block; text-decoration:none; color:inherit;
+    border:1px solid var(--line); border-left-width:4px; border-radius:var(--radius-sm);
+    padding:.65rem .85rem;
+  }
+  .triage-row:hover{border-color:var(--line-strong); background:var(--surface-sunken);}
+  .triage-row .row-top{display:flex; align-items:center; justify-content:space-between; gap:.6rem; font-weight:700;}
+  .triage-row .row-reason{font-size:var(--fs-meta); color:var(--ink-2); margin-top:.25rem; line-height:1.4;}
+  .triage-row .also{font-size:var(--fs-meta); color:var(--amber); margin-top:.2rem; font-weight:700;}
+
+  .state-tag{
+    display:inline-flex; align-items:center; gap:.3rem; font-size:var(--fs-meta); font-weight:800;
+    padding:.15rem .55rem; border-radius:999px; white-space:nowrap;
+  }
+  .state-tag .g{font-weight:900;}
+  .state--incomplete{ color:var(--blue); background:var(--blue-bg); border:1px dotted var(--blue-line); }
+  .state--not-yet-demonstrated{ color:var(--red); background:var(--red-bg); border:1px dashed var(--red-line); }
+  .state--developing{ color:var(--amber); background:var(--amber-bg); border:1px dashed var(--amber-line); }
+  .state--demonstrated{ color:var(--green); background:var(--green-bg); border:1px solid var(--green-line); }
+  .state--demonstrated-with-support{ color:var(--teal); background:var(--teal-bg); border:1px solid var(--teal-line); }
+  .state--not-observed{ color:var(--slate); background:var(--slate-bg); border:1px dotted var(--slate-line); }
+
+  .triage-row.short-row{border-left-color:var(--red);}
+  .triage-row.read-row{border-left-color:var(--blue);}
+
+  /* ---- steady disclosure ---- */
+  .steady{margin-bottom:1.5rem;}
+  .steady-summary{
+    display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:1rem 1.25rem;
+  }
+  .steady-summary p{font-size:var(--fs-body); color:var(--ink-2);}
+  .steady-summary strong{color:var(--ink-1);}
+  details.steady-details{margin-top:.65rem;}
+  details.steady-details > summary{
+    cursor:pointer; font-weight:700; color:var(--violet-700); font-size:var(--fs-ui);
+    list-style:none; display:inline-flex; align-items:center; gap:.35rem;
+  }
+  details.steady-details > summary::-webkit-details-marker{display:none;}
+  details.steady-details > summary::before{content:"▸"; font-size:.8em;}
+  details.steady-details[open] > summary::before{content:"▾";}
+  .steady-grid{
+    margin-top:.85rem; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.5rem .9rem;
+  }
+  @media (max-width:760px){ .steady-grid{grid-template-columns:repeat(2,minmax(0,1fr));} }
+  @media (max-width:420px){ .steady-grid{grid-template-columns:minmax(0,1fr);} }
+  .steady-item{
+    display:flex; align-items:center; justify-content:space-between; gap:.5rem; flex-wrap:wrap;
+    font-size:var(--fs-meta); border:1px solid var(--line); border-radius:8px; padding:.4rem .6rem;
+    background:var(--surface-sunken); font-weight:600; min-width:0;
+  }
+
+  /* ---- room state strip ---- */
+  .room-strip{
+    display:flex; flex-wrap:wrap; gap:1.75rem; align-items:baseline;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:.9rem 1.25rem; margin-bottom:1.5rem; font-size:var(--fs-meta); color:var(--ink-3); font-weight:700;
+  }
+  .room-strip .figure{color:var(--ink-1); font-weight:800; font-size:var(--fs-body);}
+  .room-strip .lbl{display:block; font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-3); font-weight:800; margin-bottom:.1rem;}
+  .room-strip .note{font-weight:500; color:var(--ink-3); max-width:30ch;}
+
+  /* ---- skills table ---- */
+  .skills-panel{margin-bottom:1.5rem;}
+  .skills-table{width:100%; border-collapse:collapse; margin-top:.5rem;}
+  .skills-table th{
+    text-align:left; font-size:var(--fs-meta); text-transform:uppercase; letter-spacing:.04em;
+    color:var(--ink-3); font-weight:800; padding:.4rem .5rem; border-bottom:1px solid var(--line);
+  }
+  .skills-table td{padding:.75rem .5rem; border-bottom:1px solid var(--line); font-size:var(--fs-body); vertical-align:top;}
+  .skills-table td.counts{display:flex; flex-wrap:wrap; gap:.4rem .5rem;}
+  .skills-table tr:last-child td{border-bottom:none;}
+  .skills-caption{font-size:var(--fs-meta); color:var(--ink-3); margin-top:.85rem; line-height:1.5; max-width:70ch;}
+
+  .foot-links{display:flex; gap:1rem; flex-wrap:wrap;}
+  .foot-card{
+    flex:1; min-width:240px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:1.1rem 1.25rem;
+  }
+  .foot-card span.k{font-size:var(--fs-meta); font-weight:800; color:var(--ink-3); text-transform:uppercase; letter-spacing:.05em;}
+  .foot-card h3{margin:.35rem 0 .4rem;}
+  .foot-card p{color:var(--ink-2); font-size:var(--fs-body); margin-bottom:.85rem;}
+  .btn-secondary{
+    display:inline-block; border:1px solid var(--line-strong); border-radius:9px; padding:.55rem 1rem;
+    font-weight:700; font-size:var(--fs-meta); color:var(--ink-1); text-decoration:none; margin-right:.5rem;
+  }
+  .btn-secondary:hover{background:var(--surface-sunken);}
+
+  .overflow-x{overflow-x:auto;}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><b>BOW</b><small>DECISION CHALLENGES</small></div>
+  <nav class="topnav"><a href="#">My classes</a><a href="#">Objectives</a><a href="#">Guide</a></nav>
+  <div class="signin">SIGN IN</div>
+</header>
+<div class="demo-badge">Sample class — not a real class</div>
+
+<main>
+
+  <div class="class-head">
+    <div class="class-head__id">
+      <p class="eyebrow">Sample class · Plan Under Pressure · Objective 1.3</p>
+      <h1>18 of the 18 students BOW has seen turned in.<br>5 of 18 still to read.</h1>
+      <p class="detail">69% of the 13 with a usable result so far showed everything 1.3 asks for — 9 of 13.</p>
+      <a class="btn-primary" href="#reading">Read the 5 explanations →</a>
+    </div>
+    <div class="class-head__meta">
+      <span>18 students · 18 attempts</span>
+      <span>Eight Weeks to the Showcase · Run the Pop-Up</span>
+    </div>
+  </div>
+
+  <p class="triage-lead">Who needs you</p>
+
+  <div class="triage">
+    <div class="panel panel--raised" id="reading">
+      <div class="section-heading">
+        <h2 style="font-size:var(--fs-h3)">Waiting on your reading</h2>
+        <span class="count-pill">5</span>
+      </div>
+      <a class="queue-link" href="#">
+        Open the reading queue — starts at Seat 4 <span class="arrow">→</span>
+      </a>
+      <ul class="triage-list">
+        <li class="triage-row read-row">
+          <div class="row-top"><span>Seat 4</span><span class="state-tag state--incomplete"><span class="g">…</span> Evidence not all in</span></div>
+          <div class="row-reason">2 things this run never asked; the rest is unread.</div>
+        </li>
+        <li class="triage-row read-row">
+          <div class="row-top"><span>Seat 9</span><span class="state-tag state--incomplete"><span class="g">…</span> Evidence not all in</span></div>
+          <div class="row-reason">Already short on “Savings is a planned amount” — Did not do it.</div>
+          <div class="also">Worth reading first — a gap is already showing.</div>
+        </li>
+        <li class="triage-row read-row">
+          <div class="row-top"><span>Seat 13</span><span class="state-tag state--incomplete"><span class="g">…</span> Evidence not all in</span></div>
+          <div class="row-reason">2 things this run never asked; the rest is unread.</div>
+        </li>
+        <li class="triage-row read-row">
+          <div class="row-top"><span>Seat 16</span><span class="state-tag state--incomplete"><span class="g">…</span> Evidence not all in</span></div>
+          <div class="row-reason">Already short on “Savings is a planned amount” — Did not do it.</div>
+          <div class="also">Worth reading first — a gap is already showing.</div>
+        </li>
+        <li class="triage-row read-row">
+          <div class="row-top"><span>Seat 18</span><span class="state-tag state--incomplete"><span class="g">…</span> Evidence not all in</span></div>
+          <div class="row-reason">2 things this run never asked; the rest is unread.</div>
+        </li>
+      </ul>
+    </div>
+
+    <div class="panel panel--raised">
+      <div class="section-heading">
+        <h2 style="font-size:var(--fs-h3)">Fell short of something</h2>
+        <span class="count-pill">4</span>
+      </div>
+      <p style="font-size:var(--fs-meta); color:var(--ink-3); margin-bottom:.85rem;">Already read. Open one to write back.</p>
+      <ul class="triage-list">
+        <li><a class="triage-row short-row" href="student.html">
+          <div class="row-top"><span>Seat 3</span><span class="state-tag state--not-yet-demonstrated"><span class="g">✕</span> Not yet</span></div>
+          <div class="row-reason">Savings is a planned amount — Did not do it.</div>
+        </a></li>
+        <li><a class="triage-row short-row" href="#">
+          <div class="row-top"><span>Seat 6</span><span class="state-tag state--not-yet-demonstrated"><span class="g">✕</span> Not yet</span></div>
+          <div class="row-reason">Savings is a planned amount — Did not do it.</div>
+        </a></li>
+        <li><a class="triage-row short-row" href="#">
+          <div class="row-top"><span>Seat 12</span><span class="state-tag state--not-yet-demonstrated"><span class="g">✕</span> Not yet</span></div>
+          <div class="row-reason">Savings is a planned amount — Did not do it.</div>
+        </a></li>
+        <li><a class="triage-row short-row" href="#">
+          <div class="row-top"><span>Seat 14</span><span class="state-tag state--not-yet-demonstrated"><span class="g">✕</span> Not yet</span></div>
+          <div class="row-reason">Explains the trade-off made — Part of it · 1 more</div>
+        </a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="steady">
+    <div class="steady-summary">
+      <p><strong>9 more</strong> are steady right now — 8 showed it outright, 1 after a hint. Nothing to do yet; open any of them when you have a minute.</p>
+    </div>
+    <details class="steady-details">
+      <summary>See all 9</summary>
+      <div class="steady-grid">
+        <a class="steady-item" href="#">Seat 1 <span class="state-tag state--demonstrated" style="padding:.05rem .4rem;">✓ Showed it</span></a>
+        <a class="steady-item" href="#">Seat 2 <span class="state-tag state--demonstrated" style="padding:.05rem .4rem;">✓ Showed it</span></a>
+        <a class="steady-item" href="#">Seat 5 <span class="state-tag state--demonstrated" style="padding:.05rem .4rem;">✓ Showed it</span></a>
+        <a class="steady-item" href="#">Seat 7 <span class="state-tag state--demonstrated" style="padding:.05rem .4rem;">✓ Showed it</span></a>
+        <a class="steady-item" href="#">Seat 8 <span class="state-tag state--demonstrated" style="padding:.05rem .4rem;">✓ Showed it</span></a>
+        <a class="steady-item" href="#">Seat 10 <span class="state-tag state--demonstrated" style="padding:.05rem .4rem;">✓ Showed it</span></a>
+        <a class="steady-item" href="#">Seat 11 <span class="state-tag state--demonstrated" style="padding:.05rem .4rem;">✓ Showed it</span></a>
+        <a class="steady-item" href="#">Seat 17 <span class="state-tag state--demonstrated" style="padding:.05rem .4rem;">✓ Showed it</span></a>
+        <a class="steady-item" href="#">Seat 15 <span class="state-tag state--demonstrated-with-support" style="padding:.05rem .4rem;">✓ Showed it after a hint</span></a>
+      </div>
+    </details>
+  </div>
+
+  <div class="room-strip">
+    <div><span class="lbl">Turned in</span><span class="figure">18 of 18</span></div>
+    <div><span class="lbl">Still working</span><span class="figure">0</span></div>
+    <div><span class="lbl">Not started</span><span class="figure">—</span></div>
+    <div class="note">This class has no student list, so BOW can say who has turned in but not who hasn't started.</div>
+  </div>
+
+  <div class="panel skills-panel">
+    <div class="section-heading">
+      <p class="eyebrow" style="margin:0;">What the evidence shows</p>
+    </div>
+    <h2 style="font-size:var(--fs-h3); margin-bottom:.25rem;">Where the class is on each skill</h2>
+    <div class="overflow-x">
+    <table class="skills-table">
+      <thead><tr><th scope="col">Skill</th><th scope="col">Where the class is</th></tr></thead>
+      <tbody>
+        <tr>
+          <th scope="row" style="font-weight:600; max-width:340px;">Build a plan that fits the money available and gives savings a planned amount</th>
+          <td class="counts">
+            <span class="state-tag state--demonstrated">9 showed it</span>
+            <span class="state-tag state--developing">1 part way</span>
+            <span class="state-tag state--not-yet-demonstrated">3 not yet</span>
+            <span class="state-tag state--incomplete">5 evidence not all in</span>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row" style="font-weight:600;">Separate needs, wants and goals to make a spending decision</th>
+          <td class="counts">
+            <span class="state-tag state--demonstrated">13 showed it</span>
+            <span class="state-tag state--incomplete">5 evidence not all in</span>
+          </td>
+        </tr>
+        <tr>
+          <th scope="row" style="font-weight:600;">Repair a plan after income or costs change</th>
+          <td class="counts">
+            <span class="state-tag state--demonstrated">15 showed it</span>
+            <span class="state-tag state--demonstrated-with-support">1 after a hint</span>
+            <span class="state-tag state--not-yet-demonstrated">1 not yet</span>
+            <span class="state-tag state--incomplete">1 evidence not all in</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="skills-caption">Counts across all 18 who turned in. 13 of them have a usable result — nothing the work had to show is missing from their run. The rest are still short of something, most often an unread explanation.</p>
+  </div>
+
+  <div class="foot-links">
+    <div class="foot-card">
+      <span class="k">Next</span>
+      <h3>Run the debrief</h3>
+      <p>Two real plans, what changed after Week 5, and what to review — from this class's evidence.</p>
+      <a class="btn-secondary" href="#">Open the debrief</a>
+      <a class="btn-secondary" href="#">Pick what the room sees</a>
+    </div>
+    <div class="foot-card">
+      <span class="k">This class</span>
+      <h3>Who is in this class</h3>
+      <p>Names, join cards, a card reissued for a student who lost theirs, and taking somebody off the list.</p>
+      <a class="btn-secondary" href="#">Class list</a>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>

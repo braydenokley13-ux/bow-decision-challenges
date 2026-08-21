@@ -8,7 +8,7 @@ import { durationLabel, PLAN_UNDER_PRESSURE } from "../platform/challenges/regis
 import { PLAYABLE_WORLDS } from "../domain/scenario/registry";
 import { CLOSING_QUESTION_MAX } from "../platform/classes/assignments";
 import type { WorldId } from "../domain/core/ids";
-import { assessableStandards, FRAMEWORKS, labelsFor, standardByRef } from "../domain/standards";
+import { assessableStandards, FRAMEWORKS, labelsFor } from "../domain/standards";
 import type { FrameworkId } from "../domain/standards";
 import { forgetEveryClass, rememberClass } from "./classMemory";
 import { useRememberedClasses } from "./useRememberedClasses";
@@ -25,9 +25,12 @@ import { TERMS } from "./labels";
  * and creating one is the block underneath — unless there are none, in which case creating
  * one is the page.
  *
- * There is also exactly one path to assigning work now. A class is created *with* the
- * objective it is for, and an existing class is set one from the same screen. The separate
- * assign flow was a third of this page on its own page, and it could create classes too.
+ * There is one path to assigning work, and it is the assignment builder. This page creates a
+ * class and can set it an objective as it does; it no longer offers to set an objective on a
+ * class that already exists, because that was the second door to one act — and two primary
+ * surfaces for one job is the same defect as two cards on a screen where only one thing
+ * matters. `/educator/assign` redirects to the builder, so a link already in a teacher's
+ * history still lands somewhere that works.
  *
  * The setup step is deliberately the whole setup step: a teacher names the class, gets a code
  * to read out and a private link to keep, and pastes their class list on the next screen to
@@ -70,7 +73,7 @@ export function MyClasses() {
   const [working, setWorking] = useState(false);
   // The account first where there is one, this browser otherwise. A list that was only ever
   // this browser's is a wiped laptop away from a term of assessed work.
-  const { classes: known, syncing, reload: reloadKnown } = useRememberedClasses();
+  const { classes: known, syncing, unreachable, reload: reloadKnown } = useRememberedClasses();
   // Only objectives a story can actually produce evidence for. An objective BOW has a
   // mapping for and no story would produce a class code, thirty submissions and no result — which is
   // the one thing §5.6 says the product may never let a teacher believe.
@@ -95,8 +98,6 @@ export function MyClasses() {
   const [closing, setClosing] = useState("");
   const [closingRequired, setClosingRequired] = useState(false);
   const studentPicks = story === STUDENTS_PICK;
-  const [assigning, setAssigning] = useState<string | null>(null);
-  const [assigned, setAssigned] = useState<string | null>(null);
   // Whether "Forget these classes" has been asked and is one press from happening. Same shape
   // as the roster's erase confirmation, for the same reason: it is the one control on this page
   // that destroys something, and it sat unguarded next to "Start another class".
@@ -113,7 +114,6 @@ export function MyClasses() {
   const framework = FRAMEWORKS[FRAMEWORK_ID];
   const labels = labelsFor(FRAMEWORK_ID);
   const unit = labels?.unitNounShort ?? "Objective";
-  const arriving = requested ? standardByRef({ frameworkId: FRAMEWORK_ID, code: requested }) : undefined;
 
   /**
    * What the assignment says about the story. Both calls below send it, and both used to
@@ -193,31 +193,6 @@ export function MyClasses() {
       setProblem(educatorClassError("unavailable"));
     } finally {
       setWorking(false);
-    }
-  };
-
-  /** Setting an existing class the objective a teacher arrived holding. */
-  const assignTo = async (record: { code: string; teacherKey: string }) => {
-    if (assigning || objectiveCode === NO_OBJECTIVE) return;
-    setAssigning(record.code);
-    setAssigned(null);
-    setProblem(null);
-    try {
-      const response = await fetch(`${CLASS_API_BASE}/classes/${record.code}/assignments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": record.teacherKey },
-        body: JSON.stringify({ objectiveRef: { frameworkId: FRAMEWORK_ID, code: objectiveCode }, ...storySetting(), ...closingSetting() }),
-      });
-      if (!response.ok) {
-        const body: unknown = await response.json();
-        setProblem(isClassError(body) ? educatorClassError(body.error) : educatorClassError("unavailable"));
-        return;
-      }
-      setAssigned(record.code);
-    } catch {
-      setProblem(educatorClassError("unavailable"));
-    } finally {
-      setAssigning(null);
     }
   };
 
@@ -462,6 +437,30 @@ export function MyClasses() {
     return <EducatorShell><p className="class-state" aria-live="polite">Getting your classes…</p></EducatorShell>;
   }
 
+  // A read that never got an HTTP answer is the network, not an empty account. Rendering it
+  // as the first-run state told a teacher who had lost wifi that her term of assessed work did
+  // not exist, and handed her a form to create a new class over the top of it. The signed-in
+  // bar stays, nothing is offered that would overwrite anything, and the only control is the
+  // one that asks again (`DEFECTS.md` D21).
+  if (known.length === 0 && unreachable) {
+    return (
+      <EducatorShell>
+        <header className="page-header">
+          <p className="eyebrow">My classes</p>
+          <h1>BOW cannot reach the class service.</h1>
+          <p>
+            Your classes are on the service, not in this page, so nothing here can list them until it
+            answers. Nothing has been lost and nothing has changed — this is the network, and it is not
+            a statement about your classes.
+          </p>
+          <p aria-live="polite">
+            <Button onClick={reloadKnown}>Try again</Button>
+          </p>
+        </header>
+      </EducatorShell>
+    );
+  }
+
   if (known.length === 0) {
     return (
       <EducatorShell>
@@ -498,6 +497,17 @@ export function MyClasses() {
           {!teacherToken() && <Link to="/educator/sign-in">Make an account</Link>}
           {!teacherToken() && " and they follow you to any computer — a wiped laptop takes them otherwise."}
         </p>
+        {/* This list is what this browser already knows. When the account read got no answer at
+            all it may not be all of them, and the page says so rather than presenting a partial
+            list as the whole one — the same distinction the class pages draw between a refusal
+            and the network (`DEFECTS.md` D21). */}
+        {unreachable && (
+          <p className="class-state" role="status">
+            BOW could not reach the class service, so this is what this browser already knows and may
+            not be all of your classes. Nothing has been lost.{" "}
+            <Button variant="quiet" onClick={reloadKnown}>Try again</Button>
+          </p>
+        )}
       </header>
 
       <section className="dashboard-section">
@@ -518,36 +528,9 @@ export function MyClasses() {
         </div>
       </section>
 
-      {/* The old assign flow, where a teacher already is. Only shown when they arrived
-          holding an objective, because otherwise there is nothing to set. */}
-      {arriving && (
-        <section className="dashboard-section">
-          <div className="section-head">
-            <h2>Set {arriving.code} {arriving.shortLabel} for a class you already have</h2>
-            <p>{framework?.labels.attribution}</p>
-          </div>
-          <ul className="assign-list">
-            {known.map((record) => (
-              <li key={record.code}>
-                <span>{record.label} · {record.code}</span>
-                <Button
-                  variant="secondary"
-                  aria-disabled={assigning === record.code}
-                  onClick={() => void assignTo(record)}
-                >
-                  {assigning === record.code ? "Setting…" : "Set it"}
-                </Button>
-                {assigned === record.code && <span className="assign-list__done">Set. Students use code {record.code}.</span>}
-              </li>
-            ))}
-          </ul>
-          <p className="class-form__status" aria-live="polite">{problem ?? ""}</p>
-        </section>
-      )}
-
       <section className="dashboard-section">
         <div className="section-head">
-          <h2>{arriving ? "Or start a new class" : "Start another class"}</h2>
+          <h2>Start another class</h2>
         </div>
         {createBlock}
         {/* This fired on one press, with no confirmation and nothing to undo it from.

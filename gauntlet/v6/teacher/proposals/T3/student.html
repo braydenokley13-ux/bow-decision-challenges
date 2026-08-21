@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seat 3 — BOW (T3 mock)</title>
+<style>
+/* T3 — MATERIAL AND HIERARCHY. Same vocabulary as class.html:
+   .s1 instrument (one per screen) · .s2 record · .s3 margin · .inset sunken.
+   Teacher scale: display 32 · title 20 · body 16 · meta 14. Floor is 14px. */
+:root{
+  --canvas:#f5f5fa; --surface:#fff; --surface-sunken:#efeff7; --surface-inset:#e6e6f1;
+  --ink-1:#14142b; --ink-2:#3d3d5c; --ink-3:#5a5a78; --ink-4:#616180;
+  --border-subtle:#ebebf4; --border-default:#ddddec; --border-strong:#b4b4cd;
+  --violet-600:#6733e8; --violet-700:#5522c4; --violet-800:#451d9c; --violet-100:#ece7ff; --violet-50:#f5f3ff;
+  --ok:#15704a; --ok-soft:#dcefe5; --warn:#a8720c; --warn-soft:#fbf0d9; --short:#b3301f; --short-soft:#fbe4e0;
+  --shadow-lift:0 2px 4px rgb(20 20 43 / 5%), 0 20px 40px -20px rgb(20 20 43 / 22%);
+  --shadow-violet:0 1px 2px rgb(46 20 112 / 16%), 0 12px 28px -14px rgb(103 51 232 / 45%);
+  --font-ui:system-ui,-apple-system,"Segoe UI Variable Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --tt-display:700 2rem/1.15 var(--font-ui);
+  --tt-title:700 1.25rem/1.25 var(--font-ui);
+  --tt-body:400 1rem/1.55 var(--font-ui);
+  --tt-meta:500 0.875rem/1.5 var(--font-ui);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--canvas);color:var(--ink-1);font:var(--tt-body);-webkit-font-smoothing:antialiased}
+a{color:var(--violet-700)}
+a:focus-visible,button:focus-visible,summary:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid var(--violet-600);outline-offset:2px;border-radius:4px}
+.shell{max-width:1180px;margin:0 auto;padding:0 24px 72px}
+.topbar{display:flex;align-items:center;gap:16px;height:52px;border-bottom:1px solid var(--border-subtle);background:var(--surface);padding:0 24px;position:sticky;top:0;z-index:5}
+.topbar .brand{font:800 1.0625rem/1 var(--font-ui);letter-spacing:.02em}
+.topbar .brand span{color:var(--violet-600)}
+.topbar nav{margin-left:auto;display:flex;gap:20px;font:var(--tt-meta);font-weight:600}
+.topbar nav a{color:var(--ink-2);text-decoration:none}
+.badge-sample{font:var(--tt-meta);font-weight:600;color:var(--violet-800);background:var(--violet-100);border-radius:999px;padding:3px 12px;white-space:nowrap}
+.pagehead{padding:18px 0 16px}
+.pagehead .back{font:var(--tt-meta);font-weight:600;text-decoration:none}
+.pagehead .row{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 20px;margin-top:6px}
+h1{font:var(--tt-display);letter-spacing:-.01em;margin:0}
+h2{font:var(--tt-title);margin:0 0 4px}
+h3{font:600 1rem/1.4 var(--font-ui);margin:0 0 6px}
+p{margin:0 0 10px}
+.meta{font:var(--tt-meta);color:var(--ink-3)}
+.eyebrow{font:600 .875rem/1.3 var(--font-ui);letter-spacing:.05em;text-transform:uppercase;color:var(--ink-4)}
+.num{font-variant-numeric:tabular-nums lining-nums}
+.s1{background:var(--surface);border:1px solid var(--border-subtle);border-radius:16px;padding:28px 32px;box-shadow:var(--shadow-lift)}
+.s2{background:var(--surface);border:1px solid var(--border-default);border-radius:12px;padding:22px 24px}
+.s3{padding:0}
+.inset{background:var(--surface-sunken);border-radius:8px;padding:14px 18px}
+section{margin:0 0 32px}
+.btn{display:inline-flex;align-items:center;gap:8px;font:600 1rem/1 var(--font-ui);border-radius:10px;padding:13px 22px;text-decoration:none;cursor:pointer;border:1px solid transparent;min-height:44px}
+.btn-primary{background:var(--violet-600);color:#fff;box-shadow:var(--shadow-violet)}
+.btn-secondary{background:var(--surface);border-color:var(--border-strong);color:var(--ink-1)}
+.quiet{background:none;border:0;padding:0;font:var(--tt-meta);font-weight:600;color:var(--violet-700);text-decoration:underline;cursor:pointer}
+.state{display:inline-flex;align-items:center;gap:7px;font:var(--tt-meta);font-weight:700;white-space:nowrap}
+.state::before{font-weight:400;font-size:.8125rem;line-height:1}
+.state[data-s="demonstrated"]{color:var(--ok)} .state[data-s="demonstrated"]::before{content:"●"}
+.state[data-s="with-support"]{color:var(--ok)} .state[data-s="with-support"]::before{content:"◐"}
+.state[data-s="developing"]{color:var(--warn)} .state[data-s="developing"]::before{content:"◔"}
+.state[data-s="not-yet"]{color:var(--short)} .state[data-s="not-yet"]::before{content:"○"}
+.state[data-s="incomplete"]{color:var(--ink-2)} .state[data-s="incomplete"]::before{content:"…"}
+.state[data-s="never"]{color:var(--ink-3)} .state[data-s="never"]::before{content:"—"}
+.state-lg{font:700 1.5rem/1.1 var(--font-ui)}
+.state-lg::before{font-size:1.25rem}
+
+/* verdict */
+.verdict-grid{display:grid;grid-template-columns:5fr 6fr;gap:32px}
+.verdict .flag{display:flex;align-items:baseline;gap:10px;background:var(--short-soft);border-radius:8px;padding:10px 14px;margin:14px 0 0;font:600 1rem/1.4 var(--font-ui)}
+.verdict .flag .state{margin-left:auto}
+.skills{list-style:none;margin:0;padding:0}
+.skills li{display:flex;gap:16px;align-items:baseline;border-top:1px solid var(--border-subtle);padding:9px 0}
+.skills li:first-child{border-top:0;padding-top:0}
+.skills .st{font:var(--tt-meta);color:var(--ink-2);flex:1}
+.skills .state{margin-left:auto}
+.objective{border-top:1px solid var(--border-subtle);margin-top:12px;padding-top:12px}
+
+/* writing + write back */
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+blockquote.said{margin:8px 0 12px;border-left:3px solid var(--violet-600);padding:4px 0 4px 16px;font:400 1.0625rem/1.6 var(--font-ui);color:var(--ink-1)}
+.scores{display:grid;grid-template-columns:1fr max-content;gap:5px 18px;margin:8px 0 4px}
+.scores dt{font:var(--tt-meta);color:var(--ink-2)}
+.scores dd{margin:0;font:600 .875rem/1.5 var(--font-ui);text-align:right}
+textarea{width:100%;min-height:96px;border:1px solid var(--border-strong);border-radius:8px;padding:12px 14px;font:var(--tt-body);color:var(--ink-1);resize:vertical;background:var(--surface)}
+.checkline{display:flex;gap:10px;align-items:flex-start;margin:10px 0;font:var(--tt-meta);color:var(--ink-2)}
+.checkline input{width:16px;height:16px;margin-top:2px;accent-color:var(--violet-600)}
+.send-row{display:flex;align-items:center;gap:14px}
+
+/* evidence rows */
+.ev-group{border-top:1px solid var(--border-default);padding:16px 0 8px}
+.ev-group:first-of-type{border-top:0;padding-top:4px}
+.ev-group>h3{display:flex;gap:14px;align-items:baseline}
+.ev-group>h3 .state{margin-left:auto}
+.ev{list-style:none;margin:6px 0 0;padding:0}
+.ev>li{border-top:1px solid var(--border-subtle)}
+.ev .row{display:flex;align-items:baseline;gap:14px;padding:8px 0 2px}
+.ev .row .lbl{font:500 1rem/1.45 var(--font-ui)}
+.ev .row .state{margin-left:auto}
+details.demote>summary{cursor:pointer;font:var(--tt-meta);font-weight:600;color:var(--violet-700);list-style:none;display:inline-flex;gap:6px;align-items:center;min-height:30px}
+details.demote>summary::before{content:"▸";transition:transform .12s}
+details.demote[open]>summary::before{transform:rotate(90deg)}
+details.demote>summary::-webkit-details-marker{display:none}
+.ev details.demote{margin:0 0 6px}
+.ev .rule{font:var(--tt-meta);color:var(--ink-3);margin:4px 0 8px}
+
+/* key + gradebook (margin) */
+.key dl{margin:8px 0 0;display:grid;grid-template-columns:max-content 1fr;gap:4px 18px}
+.key dt{font:var(--tt-meta);font-weight:700}
+.key dd{margin:0;font:var(--tt-meta);color:var(--ink-3)}
+.gb{display:flex;flex-wrap:wrap;gap:8px 28px;align-items:baseline}
+.gb b{font:700 1.25rem/1.2 var(--font-ui)}
+.gb span{font:var(--tt-meta);color:var(--ink-2)}
+.plan-line{display:flex;flex-wrap:wrap;gap:6px 24px}
+.plan-line span{font:var(--tt-meta);color:var(--ink-2)}
+.plan-line b{color:var(--ink-1)}
+
+@media (max-width:1080px){
+  .verdict-grid{grid-template-columns:1fr;gap:20px}
+  .pair{grid-template-columns:1fr}
+}
+@media (max-width:620px){
+  .shell{padding:0 14px 56px}
+  .s1{padding:20px 16px}.s2{padding:16px 14px}
+  h1{font-size:1.625rem}
+  .topbar{padding:0 14px}
+  .topbar nav{display:none}
+  .badge-sample{white-space:normal;line-height:1.3}
+  .ev .row{flex-wrap:wrap}
+  .ev .row .state,.skills .state,.ev-group>h3 .state{margin-left:0}
+  .skills li{flex-wrap:wrap}
+  .verdict .flag{flex-wrap:wrap}
+  .verdict .flag .state{margin-left:0}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <span class="brand">BOW<span>◆</span> <span style="font:600 .875rem/1 var(--font-ui);color:var(--ink-3);letter-spacing:.06em">DECISION CHALLENGES</span></span>
+  <span class="badge-sample">Sample class — not a real class</span>
+  <nav><a href="#">My classes</a><a href="#">Objectives</a><a href="#">Guide</a><a href="#">Sign in</a></nav>
+</header>
+
+<div class="shell">
+
+  <div class="pagehead s3">
+    <a class="back" href="#class">← Class evidence</a>
+    <div class="row">
+      <h1>Seat 3</h1>
+      <span class="meta num">Turned in 4/12/2026, 1:32 PM · Eight Weeks to the Showcase</span>
+    </div>
+    <p class="meta" style="margin-top:4px">Gym District Sublet · waited on the course · kept the Saturdays</p>
+  </div>
+
+  <!-- ══════════ THE INSTRUMENT — the verdict, and the gap that is the reason to be here ══════════ -->
+  <section class="s1 verdict" aria-label="What the evidence shows">
+    <div class="verdict-grid">
+      <div>
+        <p class="eyebrow">What the evidence shows</p>
+        <p style="margin:6px 0 0"><span class="state state-lg" data-s="not-yet">Not yet</span></p>
+        <p class="flag"><span>Savings is a planned amount</span>
+          <span class="state" data-s="not-yet">Did not do it</span></p>
+        <p class="meta" style="margin-top:12px">3 things the work had to show were never asked in
+          this run. Absences, not zeros.</p>
+      </div>
+      <div>
+        <ul class="skills">
+          <li><span class="st">Build a plan that fits the money actually available, covers required costs, and gives savings a planned amount rather than whatever is left over.</span>
+            <span class="state" data-s="not-yet">Not yet</span></li>
+          <li><span class="st">Repair a plan after income or costs change, using only the money that can still move, and protect what was already committed.</span>
+            <span class="state" data-s="incomplete">Evidence not all in</span></li>
+          <li><span class="st">Separate what a person needs, wants, values and is saving toward, and use that separation to make a spending decision when there is not enough money for everything.</span>
+            <span class="state" data-s="demonstrated">Showed it</span></li>
+        </ul>
+        <p class="meta objective num"><b>Set for 1.3</b> — Create a budget for a hypothetical income
+          that includes planned expenses and savings. Nothing in this attempt counts toward it yet.
+          <a href="#objective">What this objective asks for →</a></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ THE RECORD — the writing, and what you say back ══════════ -->
+  <section class="pair" aria-label="Their writing, and your reply">
+    <div class="s2">
+      <p class="eyebrow">What they wrote</p>
+      <blockquote class="said">“The sublet costs more, so I protected the reserve first and let the
+        goal line absorb what changed in Week 5.”</blockquote>
+      <p class="meta">Nothing about this writing is machine-scored, and it is never sent to a model.
+        You read it and you score it — which is what the student was told would happen.</p>
+      <div class="inset">
+        <p class="meta" style="margin:0 0 4px"><b style="color:var(--ink-1)">Your reading — 6 of 10.</b> Your own marks, criterion by criterion. BOW adds nothing to it.</p>
+        <dl class="scores num">
+          <dt>Workability</dt><dd>1 / 2</dd>
+          <dt>Protected priority</dt><dd>2 / 2</dd>
+          <dt>Trade-off</dt><dd>1 / 2</dd>
+          <dt>Numerical evidence</dt><dd>2 / 4</dd>
+        </dl>
+        <button class="quiet" type="button">Change your reading</button>
+      </div>
+    </div>
+
+    <div class="s2" id="write-back">
+      <p class="eyebrow">Write back</p>
+      <h2>What they hear from you</h2>
+      <p class="meta">Nothing has been written back about this run yet.</p>
+      <label for="feedback-3">
+        <span class="meta" style="display:block;margin-bottom:6px;font-weight:600;color:var(--ink-2)">One or two sentences</span>
+        <textarea id="feedback-3" maxlength="1200" placeholder="Name one thing they did and one thing to try next time."></textarea>
+      </label>
+      <label class="checkline">
+        <input type="checkbox">
+        <span>Worth talking about in person — for your list, not theirs.</span>
+      </label>
+      <div class="send-row">
+        <button class="btn btn-primary" type="button">Send it</button>
+        <span class="meta num">1200 left</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="s2" aria-label="Every judgement on this attempt">
+    <h2>Every judgement on this attempt</h2>
+    <p class="meta">Ten things the work had to show, each judged against the common rubric — the
+      ones that fell short first. Read one differently? Every row can be overruled, and your
+      reading stands everywhere this judgement appears.</p>
+
+    <div class="ev-group">
+      <h3><span>Build a plan that fits the money actually available, covers required costs, and
+        gives savings a planned amount rather than whatever is left over.</span>
+        <span class="state" data-s="not-yet">Not yet</span></h3>
+      <ul class="ev">
+        <li>
+          <div class="row"><span class="lbl">Savings is a planned amount</span><span class="state" data-s="not-yet">Did not do it</span></div>
+          <details class="demote" open>
+            <summary>Why, and what BOW watched for</summary>
+            <p class="rule">Savings is set to a deliberate figure before discretionary categories are
+              filled, not as the remainder after them. In this run the course fund took what the
+              opening plan left over: goal and reserve were filled first and savings was never set
+              to a figure of its own. <button class="quiet" type="button">I read this differently</button></p>
+          </details>
+        </li>
+        <li>
+          <div class="row"><span class="lbl">Knows what money is actually available</span><span class="state" data-s="demonstrated">Right first time</span></div>
+          <details class="demote"><summary>The rule, and your overrule</summary>
+            <p class="rule">Totals available money correctly before allocating, and does not include
+              money that has a condition attached without marking it as conditional.
+              <button class="quiet" type="button">I read this differently</button></p></details>
+        </li>
+        <li>
+          <div class="row"><span class="lbl">Covers what is required first</span><span class="state" data-s="demonstrated">Right first time</span></div>
+          <details class="demote"><summary>The rule, and your overrule</summary>
+            <p class="rule">Every required cost is included in the plan exactly once, at the right
+              amount. <button class="quiet" type="button">I read this differently</button></p></details>
+        </li>
+        <li>
+          <div class="row"><span class="lbl">The plan actually balances</span><span class="state" data-s="demonstrated">Right first time</span></div>
+          <details class="demote"><summary>The rule, and your overrule</summary>
+            <p class="rule">The saved plan does not exceed available money and leaves nothing
+              unassigned. <button class="quiet" type="button">I read this differently</button></p></details>
+        </li>
+        <li>
+          <div class="row"><span class="lbl">Explains the trade-off made</span><span class="state" data-s="demonstrated">Fixed it themselves</span></div>
+          <details class="demote"><summary>The rule, and your overrule</summary>
+            <p class="rule">Names something given up, says what it was given up for, and refers to at
+              least one of their own numbers. <button class="quiet" type="button">I read this differently</button></p></details>
+        </li>
+      </ul>
+    </div>
+
+    <div class="ev-group">
+      <h3><span>Repair a plan after income or costs change, using only the money that can still
+        move, and protect what was already committed.</span>
+        <span class="state" data-s="incomplete">Evidence not all in</span></h3>
+      <ul class="ev">
+        <li>
+          <div class="row"><span class="lbl">Works out the size of the change</span><span class="state" data-s="demonstrated">Right first time</span></div>
+          <details class="demote"><summary>The rule, and your overrule</summary>
+            <p class="rule">Correctly totals what was lost and what is newly required.
+              <button class="quiet" type="button">I read this differently</button></p></details>
+        </li>
+        <li>
+          <div class="row"><span class="lbl">Uses only money that can still move</span><span class="state" data-s="never">Never came up</span></div>
+          <details class="demote"><summary>Why there is no judgement</summary>
+            <p class="rule">This run never asked it of them — the repair board was never settled, so
+              there is nothing here to judge. An absence, not a zero.</p></details>
+        </li>
+        <li>
+          <div class="row"><span class="lbl">Frees enough to cover it</span><span class="state" data-s="never">Never came up</span></div>
+          <details class="demote"><summary>Why there is no judgement</summary>
+            <p class="rule">This run never asked it of them. An absence, not a zero.</p></details>
+        </li>
+        <li>
+          <div class="row"><span class="lbl">Ends with a plan that works, or says what is still short</span><span class="state" data-s="never">Never came up</span></div>
+          <details class="demote"><summary>Why there is no judgement</summary>
+            <p class="rule">This run never asked it of them. An absence, not a zero.</p></details>
+        </li>
+      </ul>
+    </div>
+
+    <div class="ev-group">
+      <h3><span>Separate what a person needs, wants, values and is saving toward, and use that
+        separation to make a spending decision when there is not enough money for everything.</span>
+        <span class="state" data-s="demonstrated">Showed it</span></h3>
+      <ul class="ev">
+        <li>
+          <div class="row"><span class="lbl">Fits the choice to the money there is</span><span class="state" data-s="demonstrated">Right first time</span></div>
+          <details class="demote"><summary>The rule, and your overrule</summary>
+            <p class="rule">Pays for as much as the money in hand can actually reach, and commits no
+              more than there is. <button class="quiet" type="button">I read this differently</button></p></details>
+        </li>
+        <li>
+          <div class="row"><span class="lbl">Chooses on what the claim is, not what it costs</span><span class="state" data-s="demonstrated">Right first time</span></div>
+          <details class="demote"><summary>The rule, and your overrule</summary>
+            <p class="rule">Says what the unpaid claim was to them — something needed, something
+              promised, or something only wanted — rather than that it was the cheapest one to drop.
+              <button class="quiet" type="button">I read this differently</button></p></details>
+        </li>
+        <li>
+          <div class="row"><span class="lbl">The reason holds up against what they did</span><span class="state" data-s="demonstrated">Right first time</span></div>
+          <details class="demote"><summary>The rule, and your overrule</summary>
+            <p class="rule">The reason given is true of something they left unpaid and not of what
+              they paid for, so it accounts for this choice rather than any choice.
+              <button class="quiet" type="button">I read this differently</button></p></details>
+        </li>
+        <li>
+          <div class="row"><span class="lbl">Says what made one claim matter more</span><span class="state" data-s="demonstrated">Right first time</span></div>
+          <details class="demote"><summary>The rule, and your overrule</summary>
+            <p class="rule">Names what made one claim matter more than another — something needed, a
+              promise to somebody, or something they were saving toward — rather than what it cost.
+              <button class="quiet" type="button">I read this differently</button></p></details>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="s2" aria-label="The plan">
+    <p class="eyebrow">The plan</p>
+    <h2>What this student planned</h2>
+    <div class="plan-line num">
+      <span>Course goal <b>$1,000</b></span>
+      <span>Reserve <b>$1,000</b></span>
+      <span>Flexible cash <b>$600</b></span>
+    </div>
+    <p class="meta" style="margin-top:8px">The opening plan. The run stopped before a final board was
+      saved, so there is no after — which is why three judgements above never came up.</p>
+    <details class="demote">
+      <summary>In the order it happened — the full trail, 34 events</summary>
+      <p class="meta" style="margin-top:8px">The first plan · Weeks 1–4 · Week 5, the news ·
+        Explaining the plan — every step this page's judgements were read from, each traceable to
+        the moment it came from. (Full transcript renders here; demoted, never deleted.)</p>
+    </details>
+  </section>
+
+  <!-- ══════════ THE MARGIN ══════════ -->
+
+  <section class="s3 key">
+    <details class="demote">
+      <summary>What these words mean — the key for every word on this page</summary>
+      <dl>
+        <dt><span class="state" data-s="not-yet">Not yet</span></dt><dd>At least one part was not shown.</dd>
+        <dt><span class="state" data-s="incomplete">Evidence not all in</span></dt><dd>Some of it has no judgement yet — usually because nobody has read the writing.</dd>
+        <dt><span class="state" data-s="demonstrated">Showed it</span></dt><dd>Showed every part the work had to show, with no hint.</dd>
+        <dt>Right first time</dt><dd>Did it unaided, the first time it mattered.</dd>
+        <dt>Fixed it themselves</dt><dd>Got it wrong, saw what that cost, and put it right — with no hint.</dd>
+        <dt>Did not do it</dt><dd>None of it — or BOW supplied the answer, which shows nothing about the student.</dd>
+        <dt><span class="state" data-s="never">Never came up</span></dt><dd>This run never asked it of them.</dd>
+      </dl>
+    </details>
+  </section>
+
+  <section class="s3" style="margin-top:24px;border-top:1px solid var(--border-default);padding-top:20px" aria-label="Gradebook line">
+    <p class="eyebrow">Gradebook line · what the work had to show</p>
+    <div class="gb num" style="margin-top:8px">
+      <span><b>9</b> did it</span>
+      <span><b>1</b> part of it, or none of it</span>
+      <span><b>3</b> never came up</span>
+      <span><b>10</b> asked of this run</span>
+      <span><b>6/10</b> reasoning — your own marks. BOW adds nothing to it.</span>
+    </div>
+    <p class="meta num" style="margin-top:8px">A mark on this attempt is out of 10 — did it plus
+      part of it, or none of it. The 3 this run never asked are not in it: absences, not zeros.</p>
+  </section>
+
+</div>
+</body>
+</html>

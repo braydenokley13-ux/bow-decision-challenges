@@ -309,7 +309,10 @@ export async function enterChallenge(page: Page, options: { classCode: string; s
  * every student journey in the suite on one line, for a reason none of them was checking.
  */
 export async function startIfConfirmAsked(page: Page) {
-  const confirm = page.getByRole("button", { name: /^(Start the eight weeks|Go in)$/ });
+  // Three names, and the third arrived with the fix for `DEFECTS.md` D23: the confirm button is
+  // drawn from the offer the class actually made rather than from the number of worlds compiled
+  // in, so a class pinned to something other than Basketball reads a plain `Start`.
+  const confirm = page.getByRole("button", { name: /^(Start the eight weeks|Start|Go in)$/ });
   const picker = page.getByRole("heading", { name: STUDENT_COPY.choose.title });
   const contract = page.getByRole("button", { name: "Find Avery a place" });
   const ranking = page.getByRole("heading", { name: /Which place costs the least/i });
@@ -485,6 +488,12 @@ export async function completeWorkingCalcs(page: Page, opts: { attendance?: bool
   await page.getByRole("button", { name: PLAN_STEP.toCommitted }).click();
   await page.getByLabel(PLAN_STEP.committed).fill(String(N.essentialsTotal));
   await page.locator(".calculation").getByRole("button", { name: "Check" }).click();
+  // The four questions of this screen live under one stage id and change the headline, so
+  // each answer starts the same arrival scroll a stage change does — and this last press is
+  // the one that walks off the screen. Caught doing it in `bow.spec.ts:1384`, where Playwright
+  // reported *element is not stable* and then *element was detached from the DOM*, which is
+  // the same race saying the same thing in Playwright's own words.
+  await theScreenHasStoppedMoving(page);
   await page.getByRole("button", { name: PLAN_STEP.toPlan }).click();
 }
 
@@ -542,9 +551,77 @@ export async function decideOpportunity(page: Page, opts: { clinics: boolean; co
   await page.getByRole("button", { name: opts.countBonus ? COUNT_BONUS_BUTTON : PLAN_STEP.leaveBonus }).click();
 }
 
+/**
+ * Waits until the screen has stopped moving under its own steam.
+ *
+ * **A press that begins on a control and ends 40px above it is not a press.** `StageShell`
+ * scrolls every new screen — and every new question inside one — back to the top, smoothly,
+ * from wherever the last one ended: `app/useStageArrival.ts`, which says of that scroll that
+ * it "has to be the last scroll of the transition". A helper that presses the way on the
+ * instant the new heading exists is pressing into that scroll, and on a loaded machine the
+ * two CDP messages that make up a click land either side of a frame.
+ *
+ * Caught in the act, twice, with a listener on the button — at 1366×768 and again at
+ * 1024×600, in `bow.spec.ts:912` and `bow.spec.ts:1509`:
+ *
+ * ```
+ * 7949 pointerdown  BUTTON "Explain my plan"  scrollY=861  button 659-703, cursor 681
+ * 7957 mouseup      MAIN.stage-main           scrollY=818  button 702-746, cursor 681
+ * 7957 click        MAIN.stage-main
+ * ```
+ *
+ * One frame of the arrival scroll moved the page 43px, the button moved 43px with it, the
+ * cursor was left above its top edge, and the browser did what the spec says: `mousedown` and
+ * `mouseup` on different elements means the `click` goes to their common ancestor. `main`
+ * has no handler, so the button was left focused and never activated, the stage never
+ * changed, and the next helper waited five minutes for a screen nothing had asked for.
+ *
+ * The button travels *downwards* while the page scrolls up because the way on is
+ * `position: sticky; bottom: 0` and the arrival leaves the page at its own bottom, where a
+ * sticky box sits at its natural position and moves with the document rather than with the
+ * window. Nothing is wrong with the control: a press that starts and ends on it works every
+ * time, which is why this is rare and why it is load-dependent — it needs a frame long enough
+ * to move the page further than half the button's height.
+ *
+ * **And it is the one shape Playwright's own stability check cannot see.** That check waits
+ * for the element's client rect to agree across two animation frames, and while the bar is
+ * pinned its rect *is* constant — the trace above shows it at 539-583 through five frames of
+ * a scroll that moved the page 100px. It passes honestly. Playwright then scrolls the
+ * document to reveal the element's *layout* box, which for a sticky box is its natural
+ * position at the foot of the page; that scroll un-pins the bar, and from that moment it is
+ * moving, with no stability check left to run. An ordinary control that moves during the
+ * arrival fails the check instead and is merely retried — which is what `bow.spec.ts:1384`
+ * was reporting as *element is not stable*, then *element was detached from the DOM*.
+ *
+ * So the helpers wait for the transition the product owns to finish, rather than racing it.
+ * `polling: "raf"` is what makes the wait honest on a slow machine: it samples once per
+ * animation frame, so "unchanged" means two consecutive frames agreed, and a smooth scroll
+ * that is still running moves on every one of them.
+ */
+export async function theScreenHasStoppedMoving(page: Page, still = 150) {
+  await page.waitForFunction(
+    (quiet: number) => {
+      const held = window as unknown as { __bowStill?: { y: number; since: number } };
+      const now = performance.now();
+      const seen = held.__bowStill;
+      if (!seen || seen.y !== window.scrollY) {
+        held.__bowStill = { y: window.scrollY, since: now };
+        return false;
+      }
+      return now - seen.since >= quiet;
+    },
+    still,
+    { polling: "raf" },
+  );
+}
+
 /** Week 8 resolves the season before the student explains it. */
 export async function readWeek8Resolution(page: Page) {
   await expect(page.getByRole("heading", { name: "The season ends." })).toBeVisible();
+  // The heading existing is not the screen having arrived: this is the longest arrival scroll
+  // in the run — the final plan board leaves the page nine hundred pixels down — and pressing
+  // into it is what hung this helper for five minutes. See `theScreenHasStoppedMoving`.
+  await theScreenHasStoppedMoving(page);
   await page.getByRole("button", { name: "Explain my plan" }).click();
 }
 

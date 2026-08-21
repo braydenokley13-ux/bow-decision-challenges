@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import type { CategoryId } from "../../domain/core/ids";
 import { dollars, formatDollars } from "../../domain/core/money";
 import { SCENARIO_NUMBERS } from "../../domain/scenario/numbers";
@@ -13,6 +13,35 @@ import { WeekMeter } from "./WeekMeter";
 import { CHOICE_LABELS, CHOICE_ORDER } from "./choices";
 
 const { balance: BALANCE_COPY } = STUDENT_COPY.plan;
+
+/**
+ * The column the commit bar is allowed to travel in.
+ *
+ * `.plan-commit` is `position: sticky; bottom: 0`, and a sticky box can only travel inside
+ * its containing block. While the bar was the last child of `<section className="adjust">`
+ * that containing block was the panel card — and on the one screen where the panel is not
+ * the first thing in the column, the card starts most of the way down the window and the bar
+ * has nowhere to rise to.
+ *
+ * Measured on the safety check at 1024×600, the size of the older school Chromebook: the
+ * deck and the two struck-through bonus cards stand 344px tall above the panel, so
+ * `.adjust` began at `top: 532`, the bar clamped to the top of its own card at `536–612`,
+ * and *Check this plan* sat **12px below the fold on arrival** — a student looking at a
+ * screen with no next step on it. It is not a near miss that a shorter sentence would fix:
+ * the bar cannot rise past its card whatever is above it, and at 1366×768 the same screen
+ * clears the fold by nothing at all (`692–768`).
+ *
+ * So the panel and its bar are two children of one column now, and the bar's containing
+ * block is the whole column — including whatever the screen puts above the card. This is the
+ * same shape `.plan-board` already uses in `app.css` for the same reason, and its comment
+ * makes the same point: "a column of flex items ... gives the last one the whole column to
+ * travel in."
+ *
+ * It is written here rather than in a stylesheet because `src/design/*.css` is owned
+ * elsewhere in this change; `gauntlet/v6/HANDOFF_CSS.md` carries the rule to lift it into
+ * `scenes.css` as `.adjust-scene`, at which point this object and the `style` below go.
+ */
+const AS_A_COLUMN: CSSProperties = { display: "flex", flexDirection: "column", gap: "var(--s-5)" };
 
 /** One line of the strip above the rows: money that left the plan, or money that joined it. */
 export interface SupplyChange {
@@ -35,6 +64,14 @@ interface AdjustPanelProps {
   notes: Record<CategoryId, string>;
   commitLabel: string;
   attempts: number;
+  /**
+   * Whatever the screen says before the panel: the deck, and the cards naming what moved.
+   *
+   * It is a slot rather than a sibling because the commit bar's containing block is this
+   * component's own column, and anything the screen puts above the panel outside that column
+   * is height the bar cannot travel over. See `AS_A_COLUMN`.
+   */
+  scene?: ReactNode;
   onAmountChange: (category: CategoryId, amount: ReturnType<typeof dollars>) => void;
   onCommit: (acknowledgedResidual?: ReturnType<typeof dollars>) => void;
   onRestore: () => void;
@@ -62,7 +99,7 @@ interface AdjustPanelProps {
  * five.
  */
 export function AdjustPanel({
-  input, baseline, changes, eyebrow, headline, lead, notes, commitLabel, attempts,
+  input, baseline, changes, eyebrow, headline, lead, notes, commitLabel, attempts, scene,
   onAmountChange, onCommit, onRestore, onScaffold, onShowAndContinue,
 }: AdjustPanelProps) {
   const [showHelp, setShowHelp] = useState(false);
@@ -126,69 +163,75 @@ export function AdjustPanel({
   ) > 0;
 
   return (
-    <section className="adjust" data-state={state} aria-labelledby="adjust-title">
-      <header className="adjust__head">
-        <p className="eyebrow">{eyebrow}</p>
-        <h2 id="adjust-title">{headline}</h2>
-        <p className="adjust__lead">{lead}</p>
-      </header>
+    <div className="adjust-scene" style={AS_A_COLUMN}>
+      {scene}
+      <section className="adjust" data-state={state} aria-labelledby="adjust-title">
+        <header className="adjust__head">
+          <p className="eyebrow">{eyebrow}</p>
+          <h2 id="adjust-title">{headline}</h2>
+          <p className="adjust__lead">{lead}</p>
+        </header>
 
-      {changes.length > 0 && (
-        <ul className="supply-change" aria-label="What changed">
-          {changes.map((change) => (
-            <li key={change.id} data-direction={change.direction}>
-              <span className="supply-change__sign" aria-hidden="true">{change.direction === "out" ? "−" : "+"}</span>
-              <span className="supply-change__label">{change.label}</span>
-              <strong className="money">{formatDollars(change.amount)}</strong>
-            </li>
+        {changes.length > 0 && (
+          <ul className="supply-change" aria-label="What changed">
+            {changes.map((change) => (
+              <li key={change.id} data-direction={change.direction}>
+                <span className="supply-change__sign" aria-hidden="true">{change.direction === "out" ? "−" : "+"}</span>
+                <span className="supply-change__label">{change.label}</span>
+                <strong className="money">{formatDollars(change.amount)}</strong>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <div className="adjust__rows">
+          {CHOICE_ORDER.map((category) => (
+            <AllocationControl
+              key={category}
+              id={category}
+              label={CHOICE_LABELS[category]}
+              description={notes[category]}
+              value={input.amounts[category]}
+              step={step}
+              max={category === "goal" ? courseCap : ceiling}
+              originalValue={baseline[category]}
+              action={actionFor(category)}
+              {...(category === "goal" && input.depositTaken
+                ? { lockedNote: `Seat reserved for ${formatDollars(SCENARIO_NUMBERS.course.depositPrice)}. That money is already committed.` }
+                : {})}
+              onChange={(amount) => onAmountChange(category, amount)}
+            />
           ))}
-        </ul>
-      )}
+        </div>
 
-      <div className="adjust__rows">
-        {CHOICE_ORDER.map((category) => (
-          <AllocationControl
-            key={category}
-            id={category}
-            label={CHOICE_LABELS[category]}
-            description={notes[category]}
-            value={input.amounts[category]}
-            step={step}
-            max={category === "goal" ? courseCap : ceiling}
-            originalValue={baseline[category]}
-            action={actionFor(category)}
-            {...(category === "goal" && input.depositTaken
-              ? { lockedNote: `Seat reserved for ${formatDollars(SCENARIO_NUMBERS.course.depositPrice)}. That money is already committed.` }
-              : {})}
-            onChange={(amount) => onAmountChange(category, amount)}
+        {showMeter && (
+          <WeekMeter
+            load={load}
+            parts={loadParts}
+            rate={SCENARIO_NUMBERS.load.blockBuybackCost}
+            headroom={Math.max(0, balance)}
+            atStake={input.includeCompletion ? `the ${formatDollars(SCENARIO_NUMBERS.completionIncome)} attendance bonus` : null}
           />
-        ))}
-      </div>
+        )}
 
-      {showMeter && (
-        <WeekMeter
-          load={load}
-          parts={loadParts}
-          rate={SCENARIO_NUMBERS.load.blockBuybackCost}
-          headroom={Math.max(0, balance)}
-          atStake={input.includeCompletion ? `the ${formatDollars(SCENARIO_NUMBERS.completionIncome)} attendance bonus` : null}
-        />
-      )}
+        {attempts >= 2 && balance !== 0 && (
+          <section className="plan-help" aria-label="Step-by-step help">
+            {!showHelp
+              ? <Button type="button" variant="quiet" onClick={() => { setShowHelp(true); onScaffold?.(); }}>Show me how this works</Button>
+              : <div role="note"><strong>One step at a time:</strong><ol><li>Read the number at the bottom of Avery’s money.</li><li>Press the button on whichever row you are willing to move.</li><li>Repeat until that number reaches <b>$0</b>.</li></ol></div>}
+            {attempts >= 3 && (
+              <div className="plan-help__supply">
+                <Button type="button" variant="quiet" onClick={onShowAndContinue}>Fill in one plan that balances</Button>
+                <small>This spreads the money evenly. It is one plan that works, not the right answer.</small>
+              </div>
+            )}
+          </section>
+        )}
+      </section>
 
-      {attempts >= 2 && balance !== 0 && (
-        <section className="plan-help" aria-label="Step-by-step help">
-          {!showHelp
-            ? <Button type="button" variant="quiet" onClick={() => { setShowHelp(true); onScaffold?.(); }}>Show me how this works</Button>
-            : <div role="note"><strong>One step at a time:</strong><ol><li>Read the number at the bottom of Avery’s money.</li><li>Press the button on whichever row you are willing to move.</li><li>Repeat until that number reaches <b>$0</b>.</li></ol></div>}
-          {attempts >= 3 && (
-            <div className="plan-help__supply">
-              <Button type="button" variant="quiet" onClick={onShowAndContinue}>Fill in one plan that balances</Button>
-              <small>This spreads the money evenly. It is one plan that works, not the right answer.</small>
-            </div>
-          )}
-        </section>
-      )}
-
+      {/* Outside the card, and that is the whole of the fix described at `AS_A_COLUMN`: as a
+          child of this column rather than of the panel, the bar can rise to the fold from
+          wherever the card happens to start. */}
       <footer className={`plan-commit plan-commit--${state}`}>
         {/* The figure is its own element so the narrow layout can drop it: down there the
             money strip is pinned to the bottom of the screen holding the same number. */}
@@ -208,6 +251,6 @@ export function AdjustPanel({
           <Button type="button" onClick={() => onCommit()}>{balance === 0 ? commitLabel : "Check this plan"}</Button>
         </div>
       </footer>
-    </section>
+    </div>
   );
 }

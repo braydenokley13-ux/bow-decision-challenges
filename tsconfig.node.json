@@ -31,8 +31,21 @@
   // rewritten for happened to stop matching, and there is no way to tell which kind you have
   // written except by reading the string from the place that renders it.
   //
+  // `chapters.ts` and the two files it reaches are the newest members, and they join for the
+  // reason the paragraph above gives. The golden-journey spec asserts that a student who stops
+  // mid-run comes back to the place they stopped, and the words for that place are computed by
+  // `chapters.ts` — `stepPosition` and `stoppedAt`. A browser test that spelled the resume
+  // label itself would be asserting its own copy of a sentence the product owns, which is the
+  // exact failure mode `studentCopy.ts` was added here to close.
+  //
+  // Three names rather than `src/student/**/*.ts`, and the difference is not style. The glob
+  // drags in `reading/index.ts`, which re-exports a `.tsx` this project has no `--jsx` for, and
+  // `homeModel.ts`, which reaches back out into `src/stages/`. A browser project that compiles
+  // the student view layer is a browser project that fails for reasons that have nothing to do
+  // with the browser.
+  //
   // `visual/**` is the craft suite: a second browser project that asks what is painted on top of
   // what. It reads `e2e/flow.ts` and the scenario numbers like the assertion suite does, so it
   // belongs to the same project rather than to a tsconfig of its own.
-  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "visual/**/*.ts", "eslint.config.js", "e2e/**/*.ts", "server/**/*.ts", "api/**/*.ts", "src/domain/**/*.ts", "src/platform/**/*.ts", "src/test/**/*.ts", "src/components/financial/choices.ts", "src/content/studentCopy.ts", "src/educator/labels.ts", "src/fixtures/demoClass.ts"]
+  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "visual/**/*.ts", "eslint.config.js", "e2e/**/*.ts", "server/**/*.ts", "api/**/*.ts", "src/domain/**/*.ts", "src/platform/**/*.ts", "src/test/**/*.ts", "src/components/financial/choices.ts", "src/content/studentCopy.ts", "src/educator/labels.ts", "src/fixtures/demoClass.ts", "src/student/chapters.ts", "src/student/completedRun.ts", "src/student/session.ts"]
 }

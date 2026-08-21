@@ -215,3 +215,74 @@ describe("the write-back panel shows every note the student can see", () => {
     expect(within(panel()).getByText(/Nothing has been written back/i)).toBeInTheDocument();
   });
 });
+
+/**
+ * D13 — the panel that said the note had not been sent, directly above "Sent."
+ *
+ * Walking the demonstration runbook found the write-back panel rendering *"Nothing has been
+ * written back about this run yet."* above *"Sent. They will see it next time they open BOW."*
+ * The note had reached the child — her own screen carried it — and the teacher's screen said it
+ * had not. Measured on the seeded class before the fix: the two lines were on screen together
+ * for 215 ms beside the service, and 2.7 s with the class read throttled to a school network.
+ *
+ * The cause was ordering, not data. `sendFeedback` posted the note, asked for a fresh reading of
+ * the class and returned **without waiting for it**, so the panel's confirmation was drawn
+ * against the reading from before the note existed. The fix is that the mutation resolves only
+ * once the class has been read back, which is asserted here by holding the re-read open: while it
+ * is open there is no confirmation on screen, and by the time there is one the note is in the
+ * sequence. No optimistic second copy of a teacher's sentence is kept anywhere.
+ */
+describe("a note that has been sent is never described as unsent", () => {
+  /** The service, with the re-read after a write held open until the test lets it through. */
+  function deferredService(notes: TeacherFeedback[]) {
+    let release: (() => void) | null = null;
+    let held = 0;
+    const fetcher = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      const method = init?.method ?? "GET";
+      if (method === "POST" && url.endsWith("/feedback")) {
+        const sent = JSON.parse(typeof init?.body === "string" ? init.body : "{}") as { body: string };
+        notes.push({ id: `f_${notes.length}`, classCode: CODE, seatCode: SEAT, sessionId: SUBMISSION.sessionId, body: sent.body, at: 1_776_000_240_000, flagged: false });
+        return Promise.resolve({ ok: true, status: 201, json: () => Promise.resolve({ id: `f_${notes.length}` }), text: () => Promise.resolve("{}") } as Response);
+      }
+      const body = {
+        class: { code: CODE, label: "Period 3", challengeId: SUBMISSION.challengeId, createdAt: 1, expiresAt: 2 },
+        assignments: [],
+        submissions: [{ ...SUBMISSION, displayName: "Sofia Nguyen" }],
+        roster: [{ seatCode: SEAT, displayName: "Sofia Nguyen", claimed: true, claimedAt: 1, removedAt: null }],
+        progress: [],
+        feedback: notes.map((note) => ({ ...note })),
+      };
+      const response = { ok: true, status: 200, json: () => Promise.resolve(body), text: () => Promise.resolve(JSON.stringify(body)) } as Response;
+      // Only the reading that follows a write is held; the first one has to land or there is
+      // no page to press a button on.
+      if (notes.length === 0) return Promise.resolve(response);
+      held += 1;
+      return new Promise<Response>((resolve) => { release = () => resolve(response); });
+    });
+    return { fetcher, letTheReadThrough: () => { release?.(); }, heldReads: () => held };
+  }
+
+  it("holds the confirmation until the class has been read back", async () => {
+    const notes: TeacherFeedback[] = [];
+    const { fetcher, letTheReadThrough } = deferredService(notes);
+    vi.stubGlobal("fetch", fetcher);
+    openEvidence();
+    await screen.findByRole("heading", { name: /What they hear from you/i });
+    expect(within(panel()).getByText(/Nothing has been written back/i)).toBeInTheDocument();
+
+    await userEvent.type(within(panel()).getByRole("textbox"), "You caught the shortfall late, and you caught it. Say which number you checked first.");
+    void userEvent.click(within(panel()).getByRole("button", { name: /send it/i }));
+
+    // The re-read is open. There is no confirmation yet, so the refusal above the box is not
+    // standing next to one — which is the whole of D13.
+    await waitFor(() => expect(within(panel()).getByRole("button", { name: /sending/i })).toBeInTheDocument());
+    expect(panel().textContent).not.toContain("Sent. They will see it");
+
+    letTheReadThrough();
+
+    await waitFor(() => expect(panel().textContent).toContain("Sent. They will see it"));
+    expect(within(panel()).queryByText(/Nothing has been written back/i)).not.toBeInTheDocument();
+    expect(presentedAsHeard().join(" ")).toContain("You caught the shortfall late");
+  });
+});

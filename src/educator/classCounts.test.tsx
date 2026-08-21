@@ -120,7 +120,7 @@ async function openTheClassPage() {
       <Routes><Route path="/educator/class/:code" element={<RealClassOverview />} /></Routes>
     </MemoryRouter>,
   );
-  await waitFor(() => expect(view.container.querySelector(".live-state")).not.toBeNull());
+  await waitFor(() => expect(view.container.querySelector(".surface-instrument")).not.toBeNull());
   return { view, restore: () => { globalThis.fetch = original; }, copy: () => copied };
 }
 
@@ -133,14 +133,20 @@ async function openTheClassPage() {
  * this parses the pair, and the assertions below check both halves — the count, and that every
  * tile is counted against the same class.
  */
-function tileCounts(container: HTMLElement): { label: string; count: number; of: number | null }[] {
-  return [...container.querySelectorAll(".live-state__counts > div")].map((node) => {
+function tileCounts(container: HTMLElement): { label: string; count: number; of: number | null; names: string }[] {
+  // The room-state counts moved from a section of their own onto the foot of the instrument
+  // — they are context for the ranked triage above them rather than a question of their own.
+  // What they say is unchanged and is what this file is about: every one of them names the
+  // class it is a count of, on its own face.
+  return [...container.querySelectorAll(".instrument__foot > div")].map((node) => {
     const label = node.querySelector("dt")?.textContent ?? "";
     const value = node.querySelector("dd")?.textContent ?? "";
-    const pair = /(\d+) of (\d+)/.exec(value);
+    // The third group is whatever the tile calls the set it is counting, where that set is
+    // not simply the class — "0 of 13 read".
+    const pair = /(\d+) of (\d+)\s*(\S*)/.exec(value);
     return pair
-      ? { label, count: Number(pair[1]), of: Number(pair[2]) }
-      : { label, count: Number(value), of: null };
+      ? { label, count: Number(pair[1]), of: Number(pair[2]), names: pair[3] ?? "" }
+      : { label, count: Number(value), of: null, names: "" };
   });
 }
 
@@ -176,8 +182,8 @@ function countsOnScreen(container: HTMLElement) {
   const caption = only(container, ".micro-table caption").textContent ?? "";
   return {
     tiles,
-    /** "6 of 9 turned in" in the headline. */
-    header: count(only(container, ".page-header"), /(\d+) of \d+ turned in/, "\"N of M turned in\" in the page header"),
+    /** "6 of 9 turned in" in the lead. */
+    header: count(only(container, ".instrument__lead"), /(\d+) of \d+ turned in/, "\"N of M turned in\" in the instrument's lead"),
     /** The same claim in the sentence under the headline, or in the headline itself. */
     lead: Number(/(\d+) of \d+ turned in/.exec(text)?.[1]),
     turnedIn: tile("Turned in")?.count ?? NaN,
@@ -202,7 +208,11 @@ function countsOnScreen(container: HTMLElement) {
      */
     captionOf: count(caption, /across all (\d+) who turned in/, "a denominator in the skill table's caption"),
     captionAssessed: count(caption, /(\d+) of them have a usable result/, "an assessed count in the skill table's caption"),
-    students: container.querySelectorAll(".row-list > a").length,
+    // The class list is the triage inside the instrument now: one link per seat that turned
+    // in, ranked by what their evidence shows rather than listed flat. `data-seat` is what a
+    // seat with work carries; a seat that has turned nothing in carries `data-seat-waiting`
+    // and is deliberately not one of these.
+    students: container.querySelectorAll(".triage [data-seat]").length,
   };
 }
 
@@ -220,7 +230,7 @@ describe("no two counts of one class can disagree", () => {
     } finally { restore(); }
   });
 
-  it("counts every tile against the same class, on the face of the tile", async () => {
+  it("counts every tile against a set it names, on the face of the tile", async () => {
     const { view, restore } = await openTheClassPage();
     try {
       const roll = rollOfTheClass();
@@ -228,8 +238,19 @@ describe("no two counts of one class can disagree", () => {
       expect(tiles.length).toBeGreaterThanOrEqual(3);
       for (const tile of tiles) {
         // No tile is a bare number. Each says what it is a count of, in the tile itself.
-        expect(tile.of, `"${tile.label}" reads "${tile.count}" with no denominator`).toBe(roll.seats.length);
-        expect(tile.count).toBeLessThanOrEqual(roll.seats.length);
+        expect(tile.of, `"${tile.label}" reads "${tile.count}" with no denominator`).not.toBeNull();
+        expect(tile.count).toBeLessThanOrEqual(tile.of!);
+        // Four of the five count the class. **Written back** counts the students a teacher has
+        // already read — "0 of 13 read" — which is a smaller set on purpose, and the reason it
+        // may be is the reason `denominatorsAgree.test.tsx` states: a page may count more than
+        // one set of children, and any count over a set nobody else on the page counts has to
+        // name that set in the same phrase. This one does, in the word after its denominator,
+        // so a teacher never has to work out which of two rooms a number is about. A tile that
+        // silently counted a different set with no word for it would fail here.
+        if (tile.of !== roll.seats.length) {
+          expect(tile.of, `"${tile.label}" counts more children than are in the class`).toBeLessThan(roll.seats.length);
+          expect(tile.names, `"${tile.label}" counts ${tile.of} of something and does not say what`).not.toBe("");
+        }
       }
     } finally { restore(); }
   });
@@ -263,7 +284,7 @@ describe("no two counts of one class can disagree", () => {
       for (const row of working) expect(row.toLowerCase()).not.toContain("turned in");
       // And the two panels on this screen describe two disjoint sets of children, because the
       // seat is in exactly one state.
-      const turnedIn = [...view.container.querySelectorAll(".row-list > a small:first-child")].map((node) => node.textContent ?? "");
+      const turnedIn = [...view.container.querySelectorAll(".triage [data-seat]")].map((node) => node.textContent ?? "");
       const stillGoing = [...view.container.querySelectorAll(".live-state__list li a")].map((node) => node.textContent ?? "");
       for (const name of stillGoing) expect(turnedIn.some((entry) => entry.startsWith(name))).toBe(false);
       // The one row that needs a teacher to walk over says so in words rather than in a stage
@@ -277,7 +298,9 @@ describe("no two counts of one class can disagree", () => {
     try {
       const counts = countsOnScreen(view.container);
       expect(counts.students).toBe(counts.turnedIn);
-      const names = [...view.container.querySelectorAll(".row-list > a small:first-child")].map((node) => node.textContent);
+      const names = [...view.container.querySelectorAll(".triage [data-seat] > b, .triage [data-seat]")]
+        .filter((node) => node.hasAttribute("data-seat") ? node.querySelector("b") === null : true)
+        .map((node) => (node.querySelector("b") ?? node).textContent);
       expect(new Set(names).size).toBe(names.length);
       // A seat the teacher removed is not a student in this class, named or unnamed.
       expect(names).not.toContain("Seat 2");

@@ -1,0 +1,306 @@
+# Run the Pop-Up — the service screen must become one room
+
+**Brief for the V6 gauntlet. Written from rendered evidence, not from JSX.**
+
+## The failure, as it ships today
+
+`gauntlet/v5/shots/31-service-open.png` is the screen a District 26 visitor meets. Top to bottom:
+
+1. `popup-topbar` — BOW mark, world identity, four HUD tiles, three controls.
+2. `popup-heading` — eyebrow `SATURDAY 1` + `h1` **YOUR WINDOW IS OPEN** at display size.
+3. `service__bar` — `h2` **You are serving customers.** + a clock pill.
+4. `service__note` — a paragraph of scene-setting prose.
+5. `service__floor` — three panels of identical material: *Waiting to order*, *Plates on the
+   counter*, *Tonight so far*.
+6. `service__controls` — two buttons and a progress line.
+7. ~180px of dead ground.
+
+Three stacked chrome bands before anything happens, two headlines that say the same thing, and
+the business itself rendered as three equal rectangles. There is **no place** and there are **no
+people**. The customer is a ticket number.
+
+`gauntlet/v5/QUALITY_VERDICT.md` ruled this *Insufficient* on visual composition, world
+immersion, interaction presentation and consumer-product quality. That ruling stands.
+
+## What already exists and is NOT being used
+
+`gauntlet/v5/art/pass/` holds an **accepted, judged environment plate** — three time-of-evening
+grades of one master drawing, 89 kB for the whole set. It was baked at `624b1a7` and **never
+reached the running React product**: `grep -rn "lane-" src/` returns nothing and there is no
+`public/`. The product ships zero images.
+
+The plates have already been copied to `src/assets/world/food-truck/lane-{early,peak,late}.webp`
+so an implementer can reference them directly.
+
+**Read `gauntlet/v5/art/pass/PLATE.md` before touching the plate.** It carries the exact crop
+geometry in 1920x520 canvas coordinates, the safe zone, the constancy rules, and five honest
+weaknesses. `gauntlet/v5/art/pass/insitu.html` is a judging harness that shows the plate inside a
+mock chassis; `gauntlet/v5/art/pass/shots/insitu-peak-1366x768.png` is what that looks like.
+
+The in-situ harness is **better than what ships and still short of the bar**: it keeps the three
+stacked bands, and its "customer" is a paper chit on the sill. Do not treat it as the target.
+
+## The fiction that must hold
+
+The student is **behind their own serving window, looking out**. The bottom band of the plate is
+the far edge of their own foreshortened counter; the DOM sill is its near lip. The dominant light
+is their own hatch light falling onto the wet lane from behind the camera. Everything on screen
+belongs to one room.
+
+## The requirement that is missing entirely: a live customer at the pass
+
+The person being served, kept short, or turned away **is live application state**, not scenery.
+
+`src/domain/scenario/worlds/food-truck/service.ts` already computes everything needed. Each
+`ServiceOrder` carries:
+
+| field | meaning |
+| --- | --- |
+| `ticket` | 1-based ticket number — stable identity for a returning face |
+| `minute` | minutes after 17:00; `marketClock(minute)` renders the clock |
+| `wanted` | how many plates this group came for (1-3) |
+| `reachable` | how many of them one pair of hands could physically get to |
+| `served` | how many left with a plate |
+| `outcome` | `"served" \| "short" \| "no-stock" \| "no-hands"` |
+| `takings`, `platesLeft`, `tillAfter` | the till after this order |
+
+So the person at the pass, what they asked for, and what happened to them are all derivable and
+deterministic. **`outcome` is the causal payload**: `no-stock` is the tray decision arriving;
+`no-hands` is the serve cap arriving. Those are two different lessons and must never collapse
+into one "8 walked away".
+
+Requirements for the live layer:
+
+- The customer must **visually dominate** the tickets, readouts and chrome around them.
+- They must belong to the same lighting and environment as the plate — warm hatch light from
+  behind the camera, cool market behind them.
+- Recurring customers should read as **participants with continuity**, not disposable counters.
+  Ticket number is a deterministic seed; the same seed must produce the same person on a replay.
+- Age-appropriate for Grades 6-8. **Nothing that shames, guilts or emotionally manipulates.** A
+  person who did not get a plate is disappointed, not devastated; the product never implies the
+  student is a bad person.
+- The technique is challengeable. Baked sprites, inline SVG, canvas, CSS — argue for one on
+  measured grounds. Whatever is chosen must not be countable answer-key information and must not
+  break the constancy rule below.
+
+## Answer-key safety — non-negotiable
+
+- The **background plate never varies with world state.** Only the clock (public, 17:00-22:00)
+  selects a grade. Same figures, same places, in all three grades.
+- Nothing countable may be added to the background: no plates, no trays, no dish stacks, no
+  queue of figures that could be counted, no person facing the hatch who becomes a permanent
+  queue.
+- The live foreground layer may show only what the student can already read on screen: the
+  current order's size, and — after they act — its outcome.
+
+## Assessment integrity — non-negotiable
+
+- Adds **no** decision, sum, money or state. `PARITY_BANDS.arithmeticOperations` is `{ kind:
+  "equal" }` across worlds and `balance.ts` sweeps a fixed strategy space.
+- Evidence must not depend on how fast a student taps. `determinism.test.ts` and
+  `service.test.ts` hold the fold of every beat to `playSaturday` exactly. Both must still pass.
+- No projection, no target, no "you could have made" on this screen. The settle screen owns the
+  comparison, afterwards.
+
+## Interaction
+
+- One press per **order**, not per person. `Serve automatically` hands the pressing over.
+- No clock running against the student. Nothing expires. Walking away costs nothing.
+- The exact number of manual orders is challengeable; argue it from pacing, not from habit.
+
+## Accessibility — WCAG 2.2 AA target
+
+- Full keyboard operation; visible focus; logical order.
+- **Art is never the only carrier of essential information.** Every fact the scene shows must
+  also be available as text to a screen reader. The plate is `role="img"` with a qualitative alt,
+  or `aria-hidden` with the same facts in text beside it — decide and justify.
+- `prefers-reduced-motion`: honoured. Today auto-serve is a plain interval and nothing moves but
+  numbers; anything new must degrade the same way.
+- `forced-colors`: the scene must remain operable and readable.
+- Reflow at 320px CSS width (the `chromium-360` @reflow project) and 400% zoom (`chromium-zoom`
+  @zoom project) without horizontal scroll.
+- Contrast: text over artwork must clear AA. Do not put live text directly on the busiest region
+  of the plate without a carrier.
+
+## Performance — Chromebook is a requirement, not a philosophy
+
+From `gauntlet/v5/ART_DOCTRINE.md` §3/§3b, measured at 4x CPU throttle, 1366x768:
+
+| budget | value |
+| --- | --- |
+| cold start (front door) | 276 kB gz today; **ceiling 300 kB gz** |
+| world-entry art | **250 kB** for the set; 150 kB per grade |
+| worst main-thread task, whole evening | 141 ms today; **must not double** |
+| worst layout shift | 0.015 today; **ceiling 0.02** |
+| peak heap | 7.7 MB today |
+
+**World art must be fetched at world entry and never bundled into the initial chunk.** There is
+one JS chunk today, so anything that arrives as a JS-imported `data:` URI is paid for by every
+route including the front door. `scripts/asset-budget.mjs` gates this — `npm run budget` must
+pass. Art ships as asset URLs.
+
+## Names the browser suite depends on — do not rename without updating the specs
+
+- button `Serve automatically` — `e2e/flow.ts:380,383`, `e2e/v5service.spec.ts:81`,
+  `e2e/chromebook.spec.ts:251`
+- button matching `/serve the next order/i` — `e2e/v5service.spec.ts`
+- button `Close up and see how the night went` — `e2e/v5service.spec.ts`
+- `h1` **Your window is open** — `src/stages/popup/PopUpScreens.tsx:715,919`; `e2e/popup.spec.ts`
+  finds the stage h1 by role and name. It may be **demoted visually**, but it must stay in the
+  DOM with that accessible name. `PopUpShell` already has a `headingVariant="order"` precedent
+  for exactly this.
+
+## The economy is closed
+
+No menu, no per-item prices, no reputation, no weather, no tips, no dynamic pricing. One good — a
+plate, $12, ten to a tray. Every figure in `economy.ts`, every verdict in `resolution.ts` and
+174,339 states of the balance sweep rest on it. A visual criticism may not be answered by
+inventing economy.
+
+## The bar
+
+A student should feel they are standing behind their own window in a night market, serving
+people, and should understand without being told why the counter went bare and who that cost.
+A District 26 visitor should see a product, not a form.
+
+---
+
+# Director's note, added after seeing the first mocks rendered
+
+Two directions came back and both made the same mistake, so it is being ruled on here rather than
+left to be discovered again: **the customer was drawn in a different art language from the plate.**
+
+One rendered a large green cloaked figure with a pale featureless face standing in the hatch-light
+pool; the other rendered a flat cartoon avatar with visible eyes and a mouth, over a plate faded
+almost to nothing. Neither belongs to the picture behind it, and "belongs visually to the same
+lighting and environment as the plate" is a stated requirement of this brief, not a preference.
+
+## The plate already specifies how a person is drawn
+
+`gauntlet/v5/art/pass/lane-master.html` carries the recipe in its own words, at the head of the
+`<defs>` figure block:
+
+> Origin at the feet, adults ~140 tall before scaling. Every figure: **neck under the head, ears
+> implied by the skull ellipse, sloping shoulders, jacket hem, weight-bearing leg, one warm rim
+> stroke. Colors live in the #12–#1f range — never pure black.**
+
+Read the six symbols there — `fig-wait`, `fig-hood`, `fig-lean`, `fig-walk`, `fig-kid`,
+`fig-vendor` — before drawing anything. They are near-silhouettes: dark shapes against a lit
+ground, with a single `#ffb864` rim stroke at 0.5–0.6 opacity down the lamp-side edge and a soft
+contact shadow under the feet. **No faces. No local colour. No skin tone reading as a highlight.**
+
+That is not a stylistic accident; it is what makes the lane read as a lane at night, and it is why
+a figure with a lit face and a saturated coat looks pasted on.
+
+## What that means for the customer at the pass
+
+1. **Same language, nearer.** The customer is drawn to the same rules, larger, because they are
+   three feet away rather than thirty. The master file records that the mid-distance symbols do
+   **not** survive being scaled up — *"the mid-distance figure symbols do NOT survive"* — which is
+   why the plate's own near passers-by were authored at final size. The customer must be authored
+   at final size too. Scaling `fig-wait` up is the failure this note exists to prevent.
+2. **Cropped by the counter.** The plate's near figures are cut at the shin by the drawn counter.
+   The customer at the pass is cut at the chest or waist by the counter's near lip, which is what
+   puts the student behind their own window rather than across from it.
+3. **Lit from behind the camera.** The hatch lamp is the dominant source and it is on the student's
+   side, so the customer's key is on their front and the market behind them is the cool fill. The
+   rim stroke runs down the lamp side. Get this backwards and the figure reads as a cut-out.
+4. **Faces stay out of it, and that is also a child-safety decision.** These people have no
+   features to make expressions with, so the product cannot manipulate a student through a
+   disappointed face. What happened to somebody is carried by **posture and words** — a turn of the
+   shoulders, a head angle, and a sentence — never by an expression, and never by anything a
+   student could read as "you upset this person."
+5. **Outcome must be visible as posture, not only as text.** `served`, `short`, `no-stock` and
+   `no-hands` are four different things happening to a person. Stock loss and capacity loss must
+   be tellable apart without reading the sentence, because a screen where prose is the only
+   difference has not made the causal model visible — it has described it.
+
+## The technique this points at
+
+Inline SVG in a React component, authored in the plate's own vocabulary, seeded deterministically
+by ticket number so a returning customer is the same person on a replay. That keeps the figure out
+of the raster pipeline, keeps it crisp at 400% zoom, adds no fetch, and — most importantly — lets
+it be drawn by the same hand as the plate.
+
+Baked sprites are not forbidden. If a direction argues for them, it must argue on measured grounds
+and it must still meet rules 1–5 above.
+
+## The composition ruling that comes with it
+
+Of the compositions rendered, the one that put the chrome **into the room** — a single shallow
+awning strip carrying the demoted `h1`, a full-bleed hatch with the status and clock hung as tags
+in the sky, and the counter below carrying the ticket, the plates board, the till and the controls
+— is the correct architecture, and the one that kept three stacked bands over a faded plate inside
+a bordered box is not. A bordered box under a heading band is a picture on a page. The brief asked
+for a room.
+
+**Whichever direction wins, the customer figure is the gating risk.** It is the hero object on the
+most important screen in the product, and a weak figure will sink a correct composition. Budget
+the iterations there.
+
+---
+
+# The geometry to lift, and the one thing the plate says about our job
+
+Read `gauntlet/v5/art/pass/lane-master.html` at the block commented **NEAR PASSERS-BY** (around
+line 758). It contains two figures authored at final size for exactly the distance the customer at
+the pass stands at, and its comment anticipates this build:
+
+> DELIBERATE: nobody in the near field faces our window. They are passing through, sides and
+> backs to us, so the plate can never read as a queue at our pass (**the queue is the DOM's job,
+> and it is real**).
+
+The plate was drawn expecting the customer to arrive from the application. Do not redraw what is
+already there — lift it.
+
+## What the two near figures actually are, structurally
+
+Both are a handful of primitives, at ~150 units from shin to crown:
+
+| part | how it is drawn |
+| --- | --- |
+| legs | two strokes, `stroke-width="14"`, `stroke-linecap="round"`, one trailing and one reaching |
+| coat | **one closed path**: sloped shoulders, pinched waist, hem flaring with the stride |
+| near arm | a `#181009` stroke at width 11, separated from the coat by a `#0c0805` shadow edge at width 4 |
+| neck | a 12×12 `<rect>` |
+| head | `<ellipse rx="13" ry="14.6">`, rotated a few degrees off vertical |
+| hair / cap | a small `<circle>` or a shape in the same fill |
+| light | three or four thin strokes — `#ffbe74`, `#ffb864`, `#e8a052` — at widths 1.8–2 and opacity .45–.6, through `filter="url(#b1)"`, along the jaw, the shoulder, the near arm's edge |
+| ground | one soft `#8a5630` scuff at opacity .3 |
+
+Fills are `#130d08`, `#14100c`, `#17100a`. **No blur on the bodies** — the master notes that
+near-field softness reads as smearing at this scale.
+
+## The two ways the customer differs from a passer-by
+
+1. **They face us.** The passers-by are sides and backs on purpose. The customer is front-on,
+   because they came to the window. That is the whole difference between a lane and a pass.
+2. **They are cropped higher.** The master crops the passers-by at the **shin** and says why —
+   *"a waist crop reads as someone leaning over our counter; a shin crop reads as someone passing
+   beyond it."* For the customer, leaning over our counter is precisely the reading we want. Crop
+   them at the waist or lower chest on the counter's near lip.
+
+## The lighting argument for dominance, which is better than a size argument
+
+A passer-by gets a *graze* from the hatch lamp because they are turned away from it. **A customer
+facing the window is facing our lamp**, so their front is the brightest thing in the frame — warm
+key across the chest and face-mass, cool market rim down the outside edges from behind.
+
+That is why the customer dominates: not because they are drawn big, but because they are the only
+thing in the picture standing in our own light. Get the lighting right and the dominance is free.
+Get it backwards and no amount of size will stop them reading as a sticker.
+
+## The four outcomes, as posture
+
+The figure has no face, so `outcome` is carried by the silhouette and by the sentence beside it:
+
+| outcome | what the body does |
+| --- | --- |
+| `served` | square to the window, weight even, near arm rising to take the plate |
+| `short` | still square, but the arm lowered and the shoulders dropped a little — they got some |
+| `no-stock` | shoulders turned a few degrees away, head angled down; they are beginning to leave |
+| `no-hands` | **never reaches the light.** Drawn smaller and further back at the edge of the hatch-light pool, already turning. This is the serve-cap loss and it must be visibly a different event from an empty counter — a person who never got to the window, not a person who got there and found nothing. |
+
+A group of two or three is the main figure plus one or two companions a step behind and a step out
+of the light, drawn at the same rules. Never a row of equal figures — that is a queue, and the
+plate spent its own care making sure the picture could not read as one.

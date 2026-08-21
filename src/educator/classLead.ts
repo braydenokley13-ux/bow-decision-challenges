@@ -180,10 +180,20 @@ export function classLeadFor(input: ClassLeadInput): ClassLeadReading {
   if (input.awaitingReading > 0) {
     const evidence = evidenceLine(input, true);
     return {
-      // "5 of 22 still to read" rather than "5 to read": the pile has a denominator too, and a
-      // teacher half-way through a class wants to know which half they are in.
-      headline: `${against(input.turnedIn, input)} turned in. ${input.awaitingReading} of ${input.turnedIn} still to read.`,
-      detail: evidence.detail,
+      // The pile leads, on its own, and the turned-in count moves under it.
+      //
+      // This is the rule three paragraphs up finally applied rather than an exception to it:
+      // *"Work arriving: how much of it there is to read, and the way into the queue."* The
+      // headline used to open with the turned-in count and put the pile second, so the largest
+      // sentence on the page led with the one number a teacher can do nothing about — and the
+      // test pinning that string named its own case "leads with the reading once work arrives".
+      //
+      // "5 of 18 explanations" rather than "5 explanations": the pile has a denominator too,
+      // and a teacher half-way through a class wants to know which half they are in. That is
+      // the invariant this module exists for, and it is untouched — the count and what it is a
+      // count of are still in the same sentence, in the largest type on the page.
+      headline: `${input.awaitingReading} of ${input.turnedIn} ${input.turnedIn === 1 ? "explanation" : "explanations"} still to read.`,
+      detail: `${against(input.turnedIn, input)} turned in. ${evidence.detail}`,
       note: evidence.note,
       action: {
         label: input.awaitingReading === 1 ? "Read the 1 explanation" : `Read the ${input.awaitingReading} explanations`,

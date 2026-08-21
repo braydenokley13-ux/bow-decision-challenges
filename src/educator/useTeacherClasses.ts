@@ -30,7 +30,22 @@ export interface OpenedClass {
 
 export type TeacherClassesState =
   | { status: "loading" }
-  | { status: "ready"; classes: readonly OpenedClass[]; unreadable: number };
+  | {
+      status: "ready";
+      classes: readonly OpenedClass[];
+      /** Reads the service answered and refused: an expired class, a key this browser lost. */
+      unreadable: number;
+      /**
+       * Reads that never got an HTTP answer at all.
+       *
+       * Separated from `unreadable` because the two mean opposite things to a teacher. A
+       * refusal is the service telling her something about her class; this is the service
+       * telling her nothing, and a screen that renders it as *"Create your first class."* has
+       * told a teacher whose wifi dropped that a term of assessed work does not exist
+       * (`DEFECTS.md` D21).
+       */
+      unreachable: number;
+    };
 
 export function useTeacherClasses(): {
   state: TeacherClassesState;
@@ -52,8 +67,11 @@ export function useTeacherClasses(): {
       // they already work on keeps everything rather than starting a second collection. A class
       // somebody else owns is refused and left alone; two teachers on one staffroom machine is
       // the normal case, not an error.
+      let accountUnreachable = false;
+      let classesUnreachable = 0;
       if (teacherToken()) {
         const owned = await myTeaching();
+        if (!owned.ok && owned.offline) accountUnreachable = true;
         if (owned.ok) {
           for (const entry of owned.body.classes) {
             rememberClass({ code: entry.code, label: entry.label, teacherKey: entry.teacherKey, createdAt: entry.createdAt });
@@ -71,14 +89,20 @@ export function useTeacherClasses(): {
           const body = (await response.json()) as { class: ClassRecord; assignments: Assignment[]; submissions: AttributedSubmission[] };
           return { record: body.class, teacherKey: remembered.teacherKey, assignments: body.assignments, submissions: body.submissions };
         } catch {
-          // An expired class, a key this browser no longer holds, or a service having a bad
-          // moment. Counted and reported; never rendered as a class with nothing in it.
+          // No HTTP answer came back at all. That is the network, not the class, and it is
+          // counted apart from the refusals so no screen can render it as one.
+          classesUnreachable += 1;
           return null;
         }
       }));
       if (cancelled) return;
       const readable = opened.filter((entry): entry is OpenedClass => entry !== null);
-      setState({ status: "ready", classes: readable, unreadable: opened.length - readable.length });
+      setState({
+        status: "ready",
+        classes: readable,
+        unreadable: opened.length - readable.length - classesUnreachable,
+        unreachable: classesUnreachable + (accountUnreachable ? 1 : 0),
+      });
     })();
     return () => { cancelled = true; };
   }, [nonce]);

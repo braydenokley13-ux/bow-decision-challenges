@@ -52,6 +52,10 @@ import type { PopUpSeed } from "./PopUpContext";
 export function useSessionSeat(fromRun: PopUpSeed): PopUpSeed | null {
   const [params] = useSearchParams();
   const named = (params.get("class") ?? "").toUpperCase();
+  // Which piece of work, off the link the student pressed. Filing every run under
+  // `assignments[0]` meant a class with two assignments filed the second one's evidence under
+  // the first one's id (`DEFECTS.md` D22).
+  const namedAssignment = params.get("assignment") ?? "";
   // A run that can already say which class and which seat it belongs to, *and* says the class
   // this arrival named. Nothing to ask, and asking anyway would put a request between a
   // student and a screen they are already on. A seat filed under some other class is not an
@@ -75,12 +79,14 @@ export function useSessionSeat(fromRun: PopUpSeed): PopUpSeed | null {
         ? {
           classCode: picked.classCode,
           seatCode: picked.seatCode,
-          assignmentId: picked.assignments[0]?.id ?? "",
+          assignmentId: (namedAssignment
+            ? picked.assignments.find((entry) => entry.id === namedAssignment)?.id
+            : undefined) ?? picked.assignments[0]?.id ?? "",
         }
         : { classCode: "", seatCode: "", assignmentId: "" });
     })();
     return () => { cancelled = true; };
-  }, [known, nothingToAsk, named]);
+  }, [known, nothingToAsk, named, namedAssignment]);
 
   return useMemo(() => {
     if (known) return fromRun;

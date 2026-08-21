@@ -4,6 +4,7 @@ import { formatDollars } from "../../domain/core/money";
 import { POP_UP_NUMBERS as N } from "../../domain/scenario/worlds/food-truck/numbers";
 import { marketClock, serviceRun, type ServiceOrder } from "../../domain/scenario/worlds/food-truck/service";
 import type { SaturdayNumber, SpotId } from "../../domain/scenario/worlds/food-truck/types";
+import { PassCustomer } from "./PassCustomer";
 
 /**
  * The window, open.
@@ -13,46 +14,121 @@ import type { SaturdayNumber, SpotId } from "../../domain/scenario/worlds/food-t
  * arithmetic feels like from behind the counter.
  *
  * That is the point rather than a shortfall. The tray order two screens back was a number in a
- * box; here it is a counter that empties while people are still in the lane, at 20:40, with the
+ * box; here it is a counter that empties while people are still in the lane, at 21:09, with the
  * till stopping dead. `serviceRun` guarantees the evening adds up to `playSaturday` exactly, so
  * nothing here is a second account of the night — it is the same night, at human speed.
+ *
+ * ## One room, not three bands over three panels
+ *
+ * The screen this replaced was `popup-topbar` over `popup-heading` over `service__bar` over a
+ * paragraph over three equal rectangles, with 180px of dead ground under it. There was no place
+ * and there were no people; the customer was a ticket number. `gauntlet/v6/popup/RULING.md` is
+ * the rebuild, and its architecture is three regions of one object:
+ *
+ *   1. the **awning underside**, 52px, carrying the demoted `h1` — the shell draws it when it is
+ *      passed `chrome="awning"`, which no other screen in the world passes;
+ *   2. the **hatch**, full bleed, edge to edge, no border and no box, showing the lane plate with
+ *      the status and the clock hung as tags in its sky and a live person at the pass;
+ *   3. the **counter**, which is the near lip of the same object whose far lip is drawn at the
+ *      bottom of the plate, carrying the ticket, the plates board, the till and the controls.
+ *
+ * The counter's top edge is a shadow seam and nothing else. `gauntlet/v5/art/pass/PLATE.md`
+ * honest-weakness #1 is two lit counter edges in situ; the drawn bullnose keeps its specular and
+ * the DOM lip gives up its own, so there is one object with one lit edge.
+ *
+ * ## Where every number lives, and which ones are not here
+ *
+ * Clock and lane in the hatch; ticket, board, till, alerts and progress on the counter. **Cash on
+ * hand, stock, projections and targets are nowhere on this screen** — none of them can be spent
+ * from behind the window, and the comparison between what happened and what could have happened
+ * belongs to the settle screen, after the decision can no longer be changed.
+ *
+ * The HUD is gone from this stage for the same reason its `live` form existed in the first
+ * place: instrumentation that disagrees with the screen under it is worse than none. `SOLD` was
+ * a duplicate of the till box 400px below it, and `CASH` and `STOCK` were unspendable here.
  *
  * ## Why the student presses, and why they may stop pressing
  *
  * A night that plays itself is a cutscene, and a night that needs sixty taps is a chore. So
- * serving is one press per *order* — groups of one to three, roughly half as many taps as
- * there are people — and `Run it` hands the pressing over whenever the student has seen enough.
- * Either way the pace is theirs: there is no clock running against them, nothing expires, and
+ * serving is one press per *order* — groups of one to three, roughly half as many taps as there
+ * are people — and `Serve automatically` hands the pressing over whenever the student has seen
+ * enough. Either way the pace is theirs: no clock runs against them, nothing expires, and
  * nothing is lost by walking away. A market that punished a slow reader would be measuring
- * reading speed.
- *
- * ## What this deliberately does not show
- *
- * No projection, no target, no "you could have made". The one number a student must not be
- * handed here is how the night *would* have gone with a different order, because that is the
- * decision the world is assessing — the settle screen makes that comparison later, once the
- * decision can no longer be changed.
+ * reading speed. The only nudge on the screen is one plain sentence beside `Stop` once the
+ * counter is bare and people are still in the lane, because those last few orders are the tray
+ * decision arriving and they are the only ones worth pressing one at a time.
  */
 
 const AUTO_MS = 420;
+
+/**
+ * Which of the three baked grades the lane is in.
+ *
+ * `PLATE.md` rule 3: the grade reads the clock and nothing else. The clock is public — 17:00 to
+ * 22:00, `service.ts:185` — so a student can learn everything the picture knows by looking at a
+ * watch. No stock, no crowd, no takings and no outcome reaches this line, which is what keeps the
+ * background out of the answer key.
+ */
+function gradeFor(minute: number): "early" | "peak" | "late" {
+  if (minute < 90) return "early";
+  if (minute < 210) return "peak";
+  return "late";
+}
+
+/** What the group said at the window. Three fixed lines, keyed to the size of the order. */
+function spokenFor(wanted: number): string {
+  if (wanted === 1) return "“Just the one, please.”";
+  if (wanted === 2) return "“Two, if you have them.”";
+  return "“Three for us, please.”";
+}
+
+function plateWord(count: number): string {
+  return count === 1 ? "plate" : "plates";
+}
+
+/**
+ * What happened to the group that just left the window, in the model's own words.
+ *
+ * The two losses never merge. `no-stock` is the tray decision arriving and `no-hands` is the
+ * serve cap arriving, and a student who is handed one number for both cannot tell which
+ * correction to make — which is the decision they are being assessed on.
+ */
+function outcomeSentence(order: ServiceOrder): string {
+  const head = `Ticket ${order.ticket} wanted ${order.wanted} ${plateWord(order.wanted)}.`;
+  switch (order.outcome) {
+    case "served":
+      return `${head} They got ${order.wanted === 1 ? "it" : "them"}.`;
+    case "short":
+      return `${head} ${order.served} of them got one.`;
+    case "no-stock":
+      return `${head} There were no plates left.`;
+    default:
+      return `${head} Nobody could get to them before they left.`;
+  }
+}
+
+/** The stamp on the ticket. Two different losses, two different stamps, never one. */
+function stampFor(order: ServiceOrder): string | null {
+  if (order.served >= order.wanted) return null;
+  if (order.outcome === "no-stock") return "NO PLATES LEFT";
+  if (order.outcome === "no-hands") return "COULDN’T GET TO THEM";
+  return `${order.served} OF ${order.wanted}`;
+}
 
 interface RunSaturdayProps {
   saturday: SaturdayNumber;
   spotId: SpotId;
   trays: number;
   helper: boolean;
-  /** What the window is trading under tonight, in the world's own words. */
+  /** What the window is trading under tonight, in the world's own words. Now read out as part
+   *  of the plate's own alt text rather than as a paragraph over the picture. */
   note?: string | undefined;
   /** Pressed once the student has closed up. This is where the reducer finally hears about it. */
   onClose: () => void;
   closeLabel: string;
   /**
-   * How many orders have been dealt with, held by the stage rather than here.
-   *
-   * The top bar's HUD is the instrumentation of this world, and instrumentation that disagrees
-   * with the screen under it is worse than none: the till read $156 while the bar still said
-   * `SOLD 0`, because the bar reads the committed ledger and the night has not been committed
-   * yet. Lifting the position one level lets the bar show what is true right now.
+   * How many orders have been dealt with, held by the stage rather than here, because the stage
+   * is what the shell reads to keep the rest of the world honest about a night in progress.
    */
   dealt: number;
   onDealt: (dealt: number) => void;
@@ -74,11 +150,46 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
   // The two ceilings, kept apart the way the model keeps them apart.
   const noStock = dealtOrders.reduce((total, order) => total + Math.max(0, order.reachable - order.served), 0);
   const noHands = dealtOrders.reduce((total, order) => total + Math.max(0, order.wanted - order.reachable), 0);
+  /*
+   * How much of the window's own reach is still unspent.
+   *
+   * `order.reachable` is the model's count of the people one pair of hands could physically get
+   * to, so the sum of it is how far the hands have got tonight and `cap - reached` is the
+   * headroom under the serve cap — the same subtraction the chalkboard already does for the
+   * trays, on the model's other ceiling. No new figure is invented: `run.cap` is `serveCap`,
+   * which the standing-order screen prints before the student orders and the close alert names
+   * afterwards, and `reachable` is on every order this component is already reading.
+   *
+   * It is deliberately *not* `sold`. On a night where both ceilings bite — the bridge gate on
+   * three trays is 30 cooked against a crowd of 54, so 15 people find a bare counter and 9 more
+   * are never reached — `sold` is 30 against a cap of 45 and a board counting sales would sit
+   * quiet through the exact night the hands ran out. What is spent against the hands is
+   * everybody they got to, plate or no plate.
+   */
+  const reached = dealtOrders.reduce((total, order) => total + order.reachable, 0);
+  const handsLeft = Math.max(0, run.cap - reached);
+  const hands = run.cap > N.soloServeCap ? "two pairs of hands" : "one pair of hands";
   const stillWaiting = run.orders.slice(dealt).reduce((total, order) => total + order.wanted, 0);
   const minute = last ? last.minute : 0;
 
-  // Auto-serve. A plain interval rather than an animation, so `prefers-reduced-motion` needs no
-  // special case — nothing moves except numbers, and the student can stop it at any point.
+  /*
+   * Who is at the window right now. Before the first press it is order #1, waiting, with their
+   * ticket on the counter unstamped. After every press it is the group that was just dealt with,
+   * standing in their outcome. The outcome is never drawn before the press: a pre-revealed fate
+   * makes the button decorative and hands the student the model's answer ahead of their own
+   * action. There is no timer and no beat machinery anywhere — the whole picture is a pure
+   * function of `dealt`.
+   *
+   * `focus` never clears, and it must not: the ticket, the stamp and the sentence under it all
+   * go on describing the last group after the night is over, which is right — that is the
+   * record of what happened. What clears is the *person at the window*, and that is decided at
+   * the element below, not here. See the note beside `<PassCustomer>`.
+   */
+  const focus: ServiceOrder | undefined = run.orders[Math.max(0, dealt - 1)];
+  const resolved = dealt > 0;
+
+  // Auto-serve. A plain timeout rather than an animation, so `prefers-reduced-motion` needs no
+  // special case — nothing moves except numbers and one 250ms cross-fade the media query owns.
   useEffect(() => {
     if (!auto || done) return undefined;
     const timer = window.setTimeout(() => onDealt(Math.min(dealt + 1, run.orders.length)), AUTO_MS);
@@ -93,93 +204,36 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
   // added up at the end. Both are read off the run; neither is a judgement.
   const bare = platesLeft === 0 && stillWaiting > 0;
   const quiet = done && platesLeft > 0;
+  const stamp = resolved && focus ? stampFor(focus) : null;
 
-  const upcoming = run.orders.slice(dealt, dealt + 4);
+  /*
+   * The plate's alt text. It is constant — it carries no state at all, because the plate itself
+   * carries no state — and it absorbs the scene-setting paragraph this screen used to print over
+   * the top of the picture. A screen-reader user gets the place, which is otherwise the one thing
+   * on this screen they would never be given.
+   */
+  const plateAlt = `The market lane at night: stalls trading across the wet lane, string lights overhead, your own counter at the window.${note ? ` ${note}` : ""}`;
 
-  return (
-    <section className="service" aria-labelledby="service-heading">
-      <header className="service__bar">
-        <div>
-          <h2 id="service-heading" ref={headline} tabIndex={-1}>
-            {done ? "You are closed for the night." : "You are serving customers."}
-          </h2>
-        </div>
-        <p className="service__clock" aria-label="Time at the market">{marketClock(minute)}</p>
-      </header>
-
-      {note && <p className="service__note">{note}</p>}
-
-      <div className="service__floor">
-        {/* The lane. What is still out there, and nothing about what it is worth. */}
-        <div className="service__queue" aria-live="off">
-          <h3>Waiting to order</h3>
-          {stillWaiting > 0 ? (
-            <>
-              <p className="service__waiting"><strong>{stillWaiting}</strong> {stillWaiting === 1 ? "person is waiting" : "people are waiting"}</p>
-              {/* Keyed by *slot*, not by ticket.
-                  Keying by ticket makes each order its own DOM node, so when the front of the
-                  lane is served every node behind it moves up a row — thirty of those in an
-                  auto-served night, and the browser scores every one of them as a layout shift
-                  because nothing the student did caused it. Four fixed slots whose text changes
-                  say exactly the same thing to a reader and move nothing. */}
-              <ul>
-                {upcoming.map((order, slot) => (
-                  <li key={slot}>
-                    <span className="service__ticket">#{order.ticket}</span>
-                    <span>{order.wanted} {order.wanted === 1 ? "plate" : "plates"}</span>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : (
-            <p className="service__waiting service__waiting--empty">Nobody is waiting.</p>
-          )}
-        </div>
-
-        {/* The counter. The one number that decides the evening, at the size it deserves. */}
-        <div className="service__counter">
-          <h3>Plates on the counter</h3>
-          <p className="service__plates" data-bare={platesLeft === 0}>
-            <strong>{platesLeft}</strong>
-            <span>{platesLeft === 1 ? "plate left" : "plates left"}</span>
-          </p>
-          <div className="service__plate-grid" aria-hidden="true">
-            {Array.from({ length: Math.min(run.cooked, 60) }, (_, index) => (
-              <i key={index} data-gone={index >= platesLeft} />
-            ))}
-          </div>
-          {run.cooked > 60 && <p className="service__overflow">You cooked {run.cooked} plates in all</p>}
-        </div>
-
-        {/* The till. Money the student has actually taken, never money they might take. */}
-        <div className="service__till">
-          <h3>Tonight so far</h3>
-          <dl>
-            <div><dt>Money taken</dt><dd className="money">{formatDollars(till)}</dd></div>
-            <div><dt>Plates sold</dt><dd>{sold}</dd></div>
-            <div><dt>Left without buying</dt><dd data-loss={turnedAway > 0}>{turnedAway}</dd></div>
-          </dl>
-        </div>
-      </div>
-
+  const alerts = (
+    <>
       {/* Both of these are facts about the counter, said the moment they become true. Neither
           says what should have been done, because that is the question the student is being
           assessed on and the settle screen asks it properly, afterwards. */}
       {bare && (
-        <p className="service__alert" role="status">
+        <p className="pass-alert" role="status">
           You have no plates left. <strong>{stillWaiting}</strong> {stillWaiting === 1 ? "person is" : "people are"} still waiting.
         </p>
       )}
       {quiet && (
-        <p className="service__alert service__alert--quiet" role="status">
-          Nobody is waiting any more. You still have <strong>{platesLeft}</strong> {platesLeft === 1 ? "plate" : "plates"}.
+        <p className="pass-alert pass-alert--quiet" role="status">
+          Nobody is waiting any more. You still have <strong>{platesLeft}</strong> {plateWord(platesLeft)}.
         </p>
       )}
       {/* Why the people who left, left. Two different sentences because they are two different
           decisions — the trays, or the pair of hands — and a single "8 walked away" hands the
           student a number to explain without the fact they would need to explain it. */}
       {done && turnedAway > 0 && (
-        <p className="service__alert" role="status">
+        <p className="pass-alert" role="status">
           {noHands > 0 && noStock > 0 && (
             <><strong>{noStock}</strong> {noStock === 1 ? "person" : "people"} wanted a plate after you ran out. Another <strong>{noHands}</strong> waited too long and left.</>
           )}
@@ -191,26 +245,135 @@ export function RunSaturday({ saturday, spotId, trays, helper, note, onClose, cl
           )}
         </p>
       )}
+    </>
+  );
 
-      <div className="service__controls">
-        {!done && (
-          <>
-            <Button type="button" onClick={() => setDealt(dealt + 1)}>
-              Serve the next order
-            </Button>
-            <button type="button" className="service__auto" aria-pressed={auto} onClick={() => setAuto((on) => !on)}>
-              {auto ? "Stop" : "Serve automatically"}
-            </button>
-          </>
-        )}
-        {done && (
-          <Button type="button" onClick={onClose}>{closeLabel}</Button>
-        )}
-        <p className="service__progress" aria-live="polite">
-          {done
-            ? `You are closed. You sold ${sold} ${sold === 1 ? "plate" : "plates"}.`
-            : `Order ${dealt} of ${run.orders.length}.`}
+  return (
+    <section className="pass" aria-labelledby="service-heading">
+      {/* ------------------------------------------------------------------ the hatch, full bleed */}
+      <div className="pass-hatch" data-grade={gradeFor(minute)}>
+        <div className="pass-hatch__plate" role="img" aria-label={plateAlt} />
+        {/*
+          The pass is empty when the lane is empty, and it is empty at close.
+
+          It used to draw unconditionally, so the last group stood full-height in the hatch light
+          under a pill reading "Nobody is waiting." and a line reading "You are closed." The
+          scene contradicted the text on the same screen, which is worse than a missing picture:
+          the whole demonstration rests on the student believing what the window shows them.
+
+          The gate is on the element and not on its props on purpose. `poseFor` answers
+          "waiting" for an undefined order — an unknown person is somebody who has not been
+          served yet — so `order={undefined}` would still put a figure at the window. The only
+          way to have nobody there is to draw nobody.
+
+          Every beat: before the first press, order #1 is waiting and the lane count says so;
+          between presses, the group just dealt with is standing in its outcome and there are
+          more people behind them; at the last press `done` goes true, the lane count becomes
+          "Nobody is waiting." and the window goes empty in the same render.
+        */}
+        {!done && <PassCustomer order={focus} resolved={resolved} />}
+        <div className="pass-valance" aria-hidden="true" />
+
+        <h2 id="service-heading" ref={headline} tabIndex={-1} className="pass-tag pass-tag--status">
+          {done ? "You are closed for the night." : "You are serving customers."}
+        </h2>
+        <p className="pass-tag pass-tag--clock" aria-label="Time at the market">{marketClock(minute)}</p>
+        <p className="pass-lane">
+          {stillWaiting > 0
+            ? <><strong>{stillWaiting}</strong> more {stillWaiting === 1 ? "person" : "people"} in the lane</>
+            : "Nobody is waiting."}
         </p>
+      </div>
+
+      {/* ------------------------------------------------- the counter: the near lip of that object */}
+      <div className="pass-counter">
+        <div className="pass-counter__grid">
+          {/* 1. THE TICKET — who is at the window, what they came for, and what happened to them.
+                 At close it gives its column over to the alerts rather than leaving a hole. */}
+          <div className="pass-slot">
+            {!done && focus && (
+              <>
+                <article className="pass-ticket" data-stamped={stamp !== null}>
+                  <header>
+                    <span className="pass-ticket__no">#{focus.ticket}</span>
+                    <span className="pass-ticket__when">ARRIVED {marketClock(focus.minute)}</span>
+                  </header>
+                  <p className="pass-ticket__want">
+                    <strong>{focus.wanted}</strong> <span>{focus.wanted === 1 ? "PLATE" : "PLATES"}</span>
+                  </p>
+                  <p className="pass-ticket__said">{spokenFor(focus.wanted)}</p>
+                  {stamp && <p className="pass-ticket__stamp" data-kind={focus.outcome}>{stamp}</p>}
+                </article>
+                <p className="pass-said" role="status">{resolved && focus ? outcomeSentence(focus) : ""}</p>
+              </>
+            )}
+            {alerts}
+          </div>
+
+          {/* 2. THE CHALKBOARDS — one board per ceiling, in the same hand, side by side.
+                 There used to be one. The trays got an instrument that rings when it binds and
+                 the hands got a sentence, so an evening where nine people left because one pair
+                 of hands could not reach them was, in greyscale with the prose covered, the same
+                 screen as an evening where nothing went wrong. Both ceilings now count down to
+                 zero in the same 52px chalk and both ring at zero, so which one bound is a
+                 reading rather than an inference. Neither board is a judgement and neither says
+                 what should have been ordered: they report a ceiling and where the night got to
+                 against it. */}
+          <div className="pass-boards">
+            <div className="pass-board" data-bare={platesLeft === 0}>
+              <p className="pass-board__label">PLATES LEFT</p>
+              <p className="pass-board__count">{platesLeft}</p>
+              <p className="pass-board__of">of the {run.cooked} you cooked</p>
+            </div>
+            {/* The serve cap, read the way the trays are read. `data-bare` is the plates board's
+                own attribute on purpose: the two boards are one instrument twice, so they ring
+                on one rule and nothing about the ring has to be kept in step by hand. */}
+            <div className="pass-board" data-bare={handsLeft === 0}>
+              <p className="pass-board__label">HANDS LEFT</p>
+              <p className="pass-board__count">{handsLeft}</p>
+              <p className="pass-board__of">of the {run.cap} {hands} can serve</p>
+            </div>
+          </div>
+
+          {/* 3. THE TILL — money the student has actually taken, never money they might take. */}
+          <div className="pass-till">
+            <dl>
+              <div><dt>Money taken</dt><dd className="money">{formatDollars(till)}</dd></div>
+              <div><dt>Plates sold</dt><dd>{sold}</dd></div>
+              {/* `data-loss` used to change the ink and nothing else, so the one figure on the
+                  counter that says people went home empty-handed survived a greyscale print as
+                  an ordinary numeral. It now takes a ring as well — the same ring the boards
+                  take when a ceiling binds — so the state has a carrier that is not a colour. */}
+              <div><dt>Left without buying</dt><dd data-loss={turnedAway > 0}>{turnedAway}</dd></div>
+            </dl>
+          </div>
+
+          {/* 4. THE CONTROLS — always at the same height, all night. */}
+          <div className="pass-controls">
+            {!done && (
+              <>
+                <Button type="button" onClick={() => setDealt(dealt + 1)}>
+                  Serve the next order
+                </Button>
+                <button type="button" className="pass-auto" aria-pressed={auto} onClick={() => setAuto((on) => !on)}>
+                  {auto ? "Stop" : "Serve automatically"}
+                </button>
+                {/* The whole of the pacing mechanism. No gate, no timer, no counter — one plain
+                    line, offered exactly once the last few orders stop being more of the same
+                    and start being the tray decision arriving. */}
+                {bare && auto && <p className="pass-nudge">You can take these last few one at a time.</p>}
+              </>
+            )}
+            {done && (
+              <Button type="button" onClick={onClose}>{closeLabel}</Button>
+            )}
+            <p className="pass-progress" aria-live="polite">
+              {done
+                ? `You are closed. You sold ${sold} ${plateWord(sold)}.`
+                : `Order ${dealt} of ${run.orders.length}.`}
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );

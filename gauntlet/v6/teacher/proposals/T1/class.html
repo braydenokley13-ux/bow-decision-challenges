@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>T1 — Class evidence (worklist) — Sample class</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --violet-600: #6733e8;
+    --violet-700: #5522c4;
+    --violet-100: #ece7ff;
+    --violet-50: #f5f3ff;
+    --ink-1: #14142b;
+    --ink-2: #3d3d5c;
+    --ink-3: #5a5a78;
+    --ink-4: #6b6b8c;
+    --canvas: #f5f5fa;
+    --surface: #ffffff;
+    --surface-sunken: #efeff7;
+    --surface-inset: #e6e6f1;
+    --border-subtle: #ebebf4;
+    --border-default: #dddcec;
+    --border-strong: #c3c2da;
+    --balanced: #15704a;
+    --balanced-soft: #dcefe5;
+    --balanced-ink: #0e5335;
+    --conditional: #a8720c;
+    --conditional-soft: #fbf0d9;
+    --conditional-ink: #6b4703;
+    --over: #b3301f;
+    --over-soft: #fbe4e0;
+    --over-ink: #832014;
+    --shadow-card: 0 1px 2px rgb(20 20 43 / 6%), 0 8px 20px -12px rgb(20 20 43 / 16%);
+    --shadow-lift: 0 2px 6px rgb(20 20 43 / 7%), 0 24px 48px -24px rgb(20 20 43 / 26%);
+    --fs-micro: 0.8125rem;   /* 13px — timestamps only, never a status word */
+    --fs-sm: 0.90625rem;     /* 14.5px */
+    --fs-body: 1rem;         /* 16px */
+    --fs-md: 1.0625rem;      /* 17px — the WHY sentence, the thing that matters most in a row */
+    --fs-lg: 1.1875rem;      /* 19px */
+    --fs-title: 1.375rem;    /* 22px */
+    --fs-headline: 1.875rem; /* 30px */
+    --fs-display: 2.125rem;  /* 34px */
+    --fs-stat: 1.625rem;     /* 26px */
+    --radius-lg: 18px;
+    --radius-md: 12px;
+    --radius-sm: 8px;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--canvas);
+    color: var(--ink-1);
+    font: 400 var(--fs-body)/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--violet-700); }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 32px 64px; }
+
+  /* ---------- header ---------- */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 10px 32px; border-bottom: 1px solid var(--border-subtle); background: var(--surface);
+    font-size: var(--fs-sm); color: var(--ink-3);
+  }
+  .topbar b { color: var(--ink-1); }
+  .badge-sample {
+    display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+    background: var(--violet-50); color: var(--violet-700); font-weight: 700; font-size: var(--fs-micro);
+    border: 1px solid var(--violet-100);
+  }
+
+  header.page-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 20px; flex-wrap: wrap; }
+  .page-head__id { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 0.06em; font-size: var(--fs-micro); font-weight: 700; color: var(--ink-4); margin: 0 0 6px; }
+  h1.class-name { font-size: var(--fs-display); font-weight: 800; margin: 0; letter-spacing: -0.01em; }
+  .code-chip {
+    font: 700 var(--fs-sm)/1 ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: 0.04em;
+    background: var(--surface-inset); color: var(--ink-2); padding: 6px 10px; border-radius: var(--radius-sm);
+  }
+  .page-head__meta { text-align: right; font-size: var(--fs-sm); color: var(--ink-3); }
+  .page-head__meta strong { color: var(--ink-1); }
+
+  /* ---------- stat strip (secondary surface — flat) ---------- */
+  .stat-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 0;
+    background: var(--surface-sunken); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+    margin-bottom: 22px; overflow: hidden;
+  }
+  .stat {
+    padding: 12px 18px; border-right: 1px solid var(--border-subtle);
+  }
+  .stat:last-of-type { border-right: none; }
+  .stat dt { font-size: var(--fs-micro); font-weight: 700; color: var(--ink-4); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 3px; }
+  .stat dd { margin: 0; font-size: var(--fs-stat); font-weight: 800; color: var(--ink-1); line-height: 1.1; }
+  .stat dd small { font-size: var(--fs-sm); font-weight: 600; color: var(--ink-3); }
+  .stat.stat--unknown dd { color: var(--ink-4); font-weight: 700; }
+  .stat-strip__check {
+    display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 4px;
+    padding: 12px 18px; font-size: var(--fs-micro); color: var(--ink-4); white-space: nowrap;
+  }
+  .stat-strip__check button {
+    font: inherit; font-weight: 700; color: var(--violet-700); background: none; border: none; padding: 0; cursor: pointer;
+  }
+
+  /* ---------- the queue: the one primary, raised surface ---------- */
+  .queue {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lift);
+    border: 1px solid var(--border-subtle);
+    padding: 26px 28px 22px;
+    margin-bottom: 22px;
+  }
+  .queue__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 4px; flex-wrap: wrap; }
+  .queue__head h1 {
+    font-size: var(--fs-headline); font-weight: 800; margin: 0 0 4px; letter-spacing: -0.01em;
+  }
+  .queue__head p { margin: 0; color: var(--ink-3); font-size: var(--fs-md); }
+  .queue__head p b { color: var(--ink-1); }
+
+  .tier { margin-top: 22px; }
+  .tier__head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .tier__head h2 { font-size: var(--fs-lg); font-weight: 800; margin: 0; }
+  .tier__count {
+    font-size: var(--fs-sm); font-weight: 700; color: var(--surface); background: var(--ink-2);
+    padding: 2px 9px; border-radius: 999px;
+  }
+  .tier--decide .tier__count { background: var(--over); }
+  .tier--reading .tier__count { background: var(--conditional-ink); background: var(--conditional); }
+  .tier__sub { margin: 0 0 12px; font-size: var(--fs-sm); color: var(--ink-3); }
+
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+  .row {
+    display: grid;
+    grid-template-columns: 26px 1fr auto auto;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+  }
+  .row:hover { border-color: var(--border-strong); }
+  .mark { width: 15px; height: 15px; border-radius: 50%; flex: none; }
+  .mark--shortfall { background: var(--over-soft); border: 2.5px solid var(--over); }
+  .mark--reading { background: var(--conditional-soft); border: 2.5px dashed var(--conditional); border-radius: 3px; }
+  .mark--hint { background: var(--balanced-soft); border: 2.5px solid var(--balanced); border-radius: 3px; }
+  .mark--clean { background: var(--balanced); border: 2.5px solid var(--balanced); }
+  .mark--missing { background: var(--surface); border: 2.5px dashed var(--ink-4); }
+
+  .row__who { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+  .row__seat { font-weight: 700; font-size: var(--fs-sm); color: var(--ink-2); }
+  .row__why { font-size: var(--fs-md); color: var(--ink-1); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row__meta { font-size: var(--fs-micro); color: var(--ink-4); white-space: nowrap; text-align: right; }
+  .row__meta .world { font-weight: 700; color: var(--ink-3); }
+
+  .btn {
+    font: 700 var(--fs-sm)/1 inherit; padding: 8px 14px; border-radius: 999px; border: 1px solid transparent;
+    cursor: pointer; text-decoration: none; white-space: nowrap; display: inline-block;
+  }
+  .btn--primary { background: var(--violet-600); color: #fff; }
+  .btn--primary:hover { background: var(--violet-700); }
+  .btn--ghost { background: var(--surface); color: var(--ink-2); border-color: var(--border-default); }
+  .btn--ghost:hover { border-color: var(--border-strong); }
+  .btn--quiet { background: none; color: var(--violet-700); border: none; padding: 8px 4px; }
+  .btn--sm { padding: 5px 12px; font-size: var(--fs-micro); }
+
+  /* clustered group — the B-fix: identical rows become one group */
+  .cluster {
+    border: 1px solid var(--over-soft); background: linear-gradient(180deg, #fff 0%, var(--over-soft) 480%);
+    background: #fff; border-radius: var(--radius-sm); padding: 12px 16px 14px; margin-bottom: 8px;
+  }
+  .cluster__top { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .cluster__label { display: flex; align-items: center; gap: 10px; }
+  .cluster__label .mark { }
+  .cluster__label b { font-size: var(--fs-md); }
+  .cluster__label span { display: block; font-size: var(--fs-sm); color: var(--ink-3); }
+  .cluster__seats { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .seat-chip {
+    display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); font-weight: 700;
+    background: var(--surface-inset); color: var(--ink-2); padding: 5px 12px 5px 8px; border-radius: 999px;
+    text-decoration: none;
+  }
+  .seat-chip:hover { background: var(--over-soft); color: var(--over-ink); }
+  .cluster__reteach {
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border-default);
+    display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .cluster__reteach p { margin: 0; font-size: var(--fs-sm); color: var(--ink-3); }
+
+  .tier--empty-note { font-size: var(--fs-sm); color: var(--ink-4); padding: 8px 4px; }
+
+  /* ---------- reference — tertiary, barely a surface ---------- */
+  .reference-group { margin-bottom: 14px; }
+  .reference-group__label { font-size: var(--fs-sm); font-weight: 700; color: var(--ink-4); margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  details.ref {
+    border: 1px solid var(--border-subtle); border-radius: var(--radius-md); background: transparent;
+    margin-bottom: 10px;
+  }
+  details.ref[open] { background: var(--surface); }
+  details.ref > summary {
+    list-style: none; cursor: pointer; padding: 13px 18px; display: flex; align-items: center; justify-content: space-between;
+    font-weight: 700; font-size: var(--fs-md); color: var(--ink-2);
+  }
+  details.ref > summary::-webkit-details-marker { display: none; }
+  details.ref > summary .chev { font-size: var(--fs-sm); color: var(--ink-4); transition: transform .15s; }
+  details.ref[open] > summary .chev { transform: rotate(90deg); }
+  details.ref > summary .n { font-weight: 400; color: var(--ink-4); font-size: var(--fs-sm); margin-left: 8px; }
+  .ref__body { padding: 0 18px 18px; }
+
+  table.skill-table { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+  table.skill-table caption { text-align: left; color: var(--ink-3); font-size: var(--fs-sm); margin-bottom: 10px; font-weight: 400; }
+  table.skill-table th, table.skill-table td { text-align: left; padding: 9px 10px; border-top: 1px solid var(--border-subtle); vertical-align: top; }
+  table.skill-table th[scope="row"] { font-weight: 600; color: var(--ink-1); width: 46%; font-size: var(--fs-sm); }
+  table.skill-table td { color: var(--ink-2); }
+
+  .reteach-card {
+    background: var(--violet-50); border: 1px solid var(--violet-100); border-radius: var(--radius-md);
+    padding: 16px 18px; margin-bottom: 4px;
+  }
+  .reteach-card__head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .reteach-card__head h3 { margin: 0; font-size: var(--fs-lg); }
+  .reteach-card__head span { font-size: var(--fs-sm); color: var(--violet-700); font-weight: 700; }
+  .reteach-card p { font-size: var(--fs-sm); color: var(--ink-2); margin: 8px 0; }
+  .reteach-card ol { margin: 6px 0 0; padding-left: 20px; font-size: var(--fs-sm); color: var(--ink-2); }
+  .reteach-card li { margin-bottom: 4px; }
+  .quote-row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .quote {
+    flex: 1 1 220px; background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);
+    padding: 10px 12px; font-size: var(--fs-sm); color: var(--ink-2);
+  }
+  .quote b { display: block; font-size: var(--fs-micro); color: var(--ink-4); margin-bottom: 4px; }
+
+  .keyline { display: flex; flex-wrap: wrap; gap: 14px 22px; font-size: var(--fs-sm); color: var(--ink-3); margin: 4px 0 2px; }
+  .keyline div { display: flex; align-items: center; gap: 7px; }
+
+  /* ---------- footer actions ---------- */
+  .foot-actions { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+  .foot-actions a.btn--ghost { }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+  :focus-visible { outline: 3px solid var(--violet-600); outline-offset: 2px; }
+
+  /* ---------- reflow: 1024 down to 320. No shrinking type, no 2D scroll — rows stack. ---------- */
+  @media (max-width: 700px) {
+    .wrap { padding: 20px 16px 48px; }
+    .topbar { padding: 10px 16px; flex-wrap: wrap; gap: 8px; }
+    header.page-head { flex-direction: column; align-items: flex-start; }
+    .page-head__meta { text-align: left; }
+    .stat-strip { grid-template-columns: 1fr 1fr; }
+    .stat { border-right: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle); }
+    .stat:nth-child(2n) { border-right: none; }
+    .stat-strip__check { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
+    .queue { padding: 20px 16px 18px; }
+    .queue__head { flex-direction: column; }
+    .row {
+      grid-template-columns: 22px 1fr;
+      grid-template-areas: "mark who" ". meta" ". act";
+      row-gap: 6px;
+    }
+    .row .mark { grid-area: mark; }
+    .row__who { grid-area: who; }
+    .row__meta { grid-area: meta; text-align: left; white-space: normal; }
+    .row .btn { grid-area: act; justify-self: start; }
+    .row__why { white-space: normal; overflow: visible; }
+    .cluster__top { flex-direction: column; align-items: flex-start; }
+    table.skill-table, table.skill-table tbody, table.skill-table tr, table.skill-table td, table.skill-table th { display: block; width: 100%; }
+    table.skill-table th[scope="row"] { border-top: 1px solid var(--border-subtle); padding-bottom: 2px; }
+    table.skill-table td { padding-top: 2px; border-top: none; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <span>BOW <b>Educator</b> · Plan Under Pressure</span>
+    <span class="badge-sample">Sample class — not a real one</span>
+  </div>
+
+  <div class="wrap">
+
+    <header class="page-head">
+      <div>
+        <p class="eyebrow">Class evidence · Direction T1 — triage first</p>
+        <div class="page-head__id">
+          <h1 class="class-name">Sample class</h1>
+          <span class="code-chip">DEMO</span>
+        </div>
+      </div>
+      <div class="page-head__meta">
+        <div><strong>18</strong> students BOW has seen · <strong>18</strong> attempts</div>
+        <div>Basketball (10) · Pop&#8209;Up (8) · set to <b>1.3 Plan within income</b></div>
+      </div>
+    </header>
+
+    <!-- REGION 2 — room state, quiet strip, secondary surface -->
+    <dl class="stat-strip" aria-label="Where the room is, as of 3:10 PM">
+      <div class="stat">
+        <dt>Turned in</dt>
+        <dd>18 <small>of 18 seen</small></dd>
+      </div>
+      <div class="stat">
+        <dt>Working now</dt>
+        <dd>0 <small>of 18</small></dd>
+      </div>
+      <div class="stat stat--unknown">
+        <dt>Not started</dt>
+        <dd>&mdash; <small>no class list</small></dd>
+      </div>
+      <div class="stat">
+        <dt>Awaiting your reading</dt>
+        <dd>5 <small>of 18</small></dd>
+      </div>
+      <div class="stat-strip__check">
+        <span>As at 3:10&nbsp;PM</span>
+        <button type="button">Check again</button>
+      </div>
+    </dl>
+
+    <!-- REGION 3 — THE QUEUE. The one primary, raised surface. -->
+    <section class="queue" aria-labelledby="queue-h">
+      <div class="queue__head">
+        <div>
+          <h1 id="queue-h">9 students need something from you.</h1>
+          <p><b>4</b> show a gap worth a look, <b>5</b> are waiting on your reading. The other <b>9</b> are finished clean — see them below.</p>
+        </div>
+        <a class="btn btn--primary" href="#">Read the 5 explanations &rarr;</a>
+      </div>
+
+      <!-- Tier 1 — a decision to make -->
+      <div class="tier tier--decide">
+        <div class="tier__head">
+          <span class="mark mark--shortfall" aria-hidden="true"></span>
+          <h2>Shows a gap</h2>
+          <span class="tier__count">4</span>
+        </div>
+        <p class="tier__sub">Already read. BOW's judgement, not yet yours — open one to agree, override, or write back.</p>
+
+        <!-- clustered: three students hit the identical gap, so they read as one thing to teach, not three rows to click -->
+        <div class="cluster">
+          <div class="cluster__top">
+            <div class="cluster__label">
+              <span class="mark mark--shortfall" aria-hidden="true"></span>
+              <div>
+                <b>Savings is a planned amount &mdash; did not do it</b>
+                <span>Same gap, 3 students. Set the course figure first; they let it take whatever the rest of the plan left over.</span>
+              </div>
+            </div>
+            <a class="btn btn--ghost btn--sm" href="#reteach-savings">See the 12&#8209;minute reteach &rarr;</a>
+          </div>
+          <div class="cluster__seats">
+            <a class="seat-chip" href="student.html">Seat 3 <span aria-hidden="true">&rarr;</span></a>
+            <a class="seat-chip" href="#">Seat 6 <span aria-hidden="true">&rarr;</span></a>
+            <a class="seat-chip" href="#">Seat 12 <span aria-hidden="true">&rarr;</span></a>
+          </div>
+        </div>
+
+        <div class="rows">
+          <div class="row">
+            <span class="mark mark--shortfall" aria-hidden="true"></span>
+            <div class="row__who">
+              <span class="row__seat">Seat 14</span>
+              <span class="row__why">Explains the trade&#8209;off made &mdash; part of it &middot; 1 more</span>
+            </div>
+            <span class="row__meta"><span class="world">Pop&#8209;Up</span> &middot; turned in 2:38&nbsp;PM &middot; 32 min ago</span>
+            <a class="btn btn--ghost btn--sm" href="#">Open evidence &rarr;</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tier 2 — waiting on your reading -->
+      <div class="tier tier--reading">
+        <div class="tier__head">
+          <span class="mark mark--reading" aria-hidden="true"></span>
+          <h2>Waiting on your reading</h2>
+          <span class="tier__count">5</span>
+        </div>
+        <p class="tier__sub">Their explanation hasn't been read, so their skills aren't all in yet &mdash; unread is not zero.</p>
+        <div class="rows">
+          <div class="row">
+            <span class="mark mark--reading" aria-hidden="true"></span>
+            <div class="row__who"><span class="row__seat">Seat 4</span><span class="row__why">Written explanation still to read</span></div>
+            <span class="row__meta"><span class="world">Basketball</span> &middot; turned in 1:38&nbsp;PM &middot; 2&nbsp;h ago</span>
+            <a class="btn btn--ghost btn--sm" href="#">Read &rarr;</a>
+          </div>
+          <div class="row">
+            <span class="mark mark--reading" aria-hidden="true"></span>
+            <div class="row__who"><span class="row__seat">Seat 9</span><span class="row__why">Written explanation still to read</span></div>
+            <span class="row__meta"><span class="world">Basketball</span> &middot; turned in 2:08&nbsp;PM &middot; 62 min ago</span>
+            <a class="btn btn--ghost btn--sm" href="#">Read &rarr;</a>
+          </div>
+          <div class="row">
+            <span class="mark mark--reading" aria-hidden="true"></span>
+            <div class="row__who"><span class="row__seat">Seat 13</span><span class="row__why">Written explanation still to read</span></div>
+            <span class="row__meta"><span class="world">Pop&#8209;Up</span> &middot; turned in 2:32&nbsp;PM &middot; 38 min ago</span>
+            <a class="btn btn--ghost btn--sm" href="#">Read &rarr;</a>
+          </div>
+          <div class="row">
+            <span class="mark mark--reading" aria-hidden="true"></span>
+            <div class="row__who"><span class="row__seat">Seat 16</span><span class="row__why">Written explanation still to read</span></div>
+            <span class="row__meta"><span class="world">Pop&#8209;Up</span> &middot; turned in 2:50&nbsp;PM &middot; 20 min ago</span>
+            <a class="btn btn--ghost btn--sm" href="#">Read &rarr;</a>
+          </div>
+          <div class="row">
+            <span class="mark mark--reading" aria-hidden="true"></span>
+            <div class="row__who"><span class="row__seat">Seat 18</span><span class="row__why">Written explanation still to read</span></div>
+            <span class="row__meta"><span class="world">Pop&#8209;Up</span> &middot; turned in 3:02&nbsp;PM &middot; 8 min ago</span>
+            <a class="btn btn--ghost btn--sm" href="#">Read &rarr;</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REGION 4 — reference. Tertiary. Barely a surface. Collapsed by default. -->
+    <div class="reference-group">
+      <p class="reference-group__label">Reference &mdash; everything analytical, one click away</p>
+
+      <details class="ref">
+        <summary>
+          <span>Finished clean <span class="n">&mdash; 9 students, nothing pending</span></span>
+          <span class="chev" aria-hidden="true">&rsaquo;</span>
+        </summary>
+        <div class="ref__body">
+          <div class="keyline">
+            <div><span class="mark mark--clean" aria-hidden="true"></span> Showed it &mdash; 8 students</div>
+            <div><span class="mark mark--hint" aria-hidden="true"></span> Showed it after a hint &mdash; 1 student</div>
+          </div>
+          <div class="rows">
+            <div class="row"><span class="mark mark--clean" aria-hidden="true"></span><div class="row__who"><span class="row__seat">Seat 1</span><span class="row__why">Showed it &mdash; everything the work had to show</span></div><span class="row__meta"><span class="world">Basketball</span></span><a class="btn btn--ghost btn--sm" href="#">Open &rarr;</a></div>
+            <div class="row"><span class="mark mark--clean" aria-hidden="true"></span><div class="row__who"><span class="row__seat">Seat 2</span><span class="row__why">Showed it &mdash; everything the work had to show</span></div><span class="row__meta"><span class="world">Basketball</span></span><a class="btn btn--ghost btn--sm" href="#">Open &rarr;</a></div>
+            <div class="row"><span class="mark mark--clean" aria-hidden="true"></span><div class="row__who"><span class="row__seat">Seat 5</span><span class="row__why">Showed it &mdash; everything the work had to show</span></div><span class="row__meta"><span class="world">Basketball</span></span><a class="btn btn--ghost btn--sm" href="#">Open &rarr;</a></div>
+            <div class="row"><span class="mark mark--clean" aria-hidden="true"></span><div class="row__who"><span class="row__seat">Seat 7</span><span class="row__why">Showed it &mdash; everything the work had to show</span></div><span class="row__meta"><span class="world">Basketball</span></span><a class="btn btn--ghost btn--sm" href="#">Open &rarr;</a></div>
+            <div class="row"><span class="mark mark--clean" aria-hidden="true"></span><div class="row__who"><span class="row__seat">Seat 8</span><span class="row__why">Showed it &mdash; everything the work had to show</span></div><span class="row__meta"><span class="world">Basketball</span></span><a class="btn btn--ghost btn--sm" href="#">Open &rarr;</a></div>
+            <div class="row"><span class="mark mark--clean" aria-hidden="true"></span><div class="row__who"><span class="row__seat">Seat 10</span><span class="row__why">Showed it &mdash; everything the work had to show</span></div><span class="row__meta"><span class="world">Basketball</span></span><a class="btn btn--ghost btn--sm" href="#">Open &rarr;</a></div>
+            <div class="row"><span class="mark mark--clean" aria-hidden="true"></span><div class="row__who"><span class="row__seat">Seat 11</span><span class="row__why">Showed it &mdash; everything the work had to show</span></div><span class="row__meta"><span class="world">Pop&#8209;Up</span></span><a class="btn btn--ghost btn--sm" href="#">Open &rarr;</a></div>
+            <div class="row"><span class="mark mark--clean" aria-hidden="true"></span><div class="row__who"><span class="row__seat">Seat 17</span><span class="row__why">Showed it &mdash; everything the work had to show</span></div><span class="row__meta"><span class="world">Pop&#8209;Up</span></span><a class="btn btn--ghost btn--sm" href="#">Open &rarr;</a></div>
+            <div class="row"><span class="mark mark--hint" aria-hidden="true"></span><div class="row__who"><span class="row__seat">Seat 15</span><span class="row__why">Showed it after a hint</span></div><span class="row__meta"><span class="world">Pop&#8209;Up</span></span><a class="btn btn--ghost btn--sm" href="#">Open &rarr;</a></div>
+          </div>
+        </div>
+      </details>
+
+      <details class="ref" id="reteach-savings">
+        <summary>
+          <span>What the evidence shows, and what to teach next <span class="n">&mdash; where the class is on each skill</span></span>
+          <span class="chev" aria-hidden="true">&rsaquo;</span>
+        </summary>
+        <div class="ref__body">
+          <div class="reteach-card">
+            <div class="reteach-card__head">
+              <h3>Set the savings figure before anything else</h3>
+              <span>12 min &middot; struggled by 3 of 13 assessed (23%)</span>
+            </div>
+            <p><b>The misconception:</b> savings is leftover money &mdash; a student writes it down last, after everything discretionary is filled, instead of setting it first and building around it.</p>
+            <ol>
+              <li>Show two plans that balance at the same total &mdash; one where savings was set first, one where it took what was left. Ask which student is more likely to hit the goal.</li>
+              <li>Give one income and one list of costs. Everyone writes the savings line before touching any other line.</li>
+              <li>Change one cost by a small amount and ask what has to move. The savings line is the one that must not.</li>
+            </ol>
+            <div class="quote-row">
+              <div class="quote"><b>Seat 3 wrote</b>&ldquo;The sublet costs more, so I protected the reserve first and let the goal line absorb what changed in Week 5.&rdquo;</div>
+              <div class="quote"><b>Seat 6 wrote</b>&ldquo;Kept the seat undecided and put the difference toward the goal, since that was the number I could still move.&rdquo;</div>
+              <div class="quote"><b>Seat 12 wrote</b>&ldquo;Only the guaranteed cash went into the plan, so the generator bill came out of my own cut instead of the stock.&rdquo;</div>
+            </div>
+          </div>
+          <table class="skill-table">
+            <caption>Counts across all 18 who turned in. 13 of them have a usable result &mdash; nothing the work had to show is missing from their run. The rest are still short of something; incomplete names that as an absence, not a zero.</caption>
+            <thead><tr><th scope="col">Skill</th><th scope="col">Where the class is</th></tr></thead>
+            <tbody>
+              <tr>
+                <th scope="row">Separate needs, wants, values and goals to make a spending decision</th>
+                <td>13 showed it &middot; 5 evidence not all in</td>
+              </tr>
+              <tr>
+                <th scope="row">Plan within income &mdash; covers required costs, plans savings deliberately</th>
+                <td>9 showed it &middot; 1 part way &middot; 3 not yet &middot; 5 evidence not all in</td>
+              </tr>
+              <tr>
+                <th scope="row">Adapt a plan after income or costs change</th>
+                <td>15 showed it &middot; 1 showed it after a hint &middot; 1 not yet &middot; 1 evidence not all in</td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="keyline">
+            <div><span class="mark mark--clean" aria-hidden="true"></span> Showed it</div>
+            <div><span class="mark mark--hint" aria-hidden="true"></span> Showed it after a hint</div>
+            <div><span class="mark mark--shortfall" aria-hidden="true"></span> Not yet</div>
+            <div><span class="mark mark--reading" aria-hidden="true"></span> Evidence not all in &mdash; usually unread writing</div>
+          </div>
+        </div>
+      </details>
+
+      <details class="ref">
+        <summary>
+          <span>What they decided <span class="n">&mdash; Basketball (10) and Pop&#8209;Up (8), each in their own numbers</span></span>
+          <span class="chev" aria-hidden="true">&rsaquo;</span>
+        </summary>
+        <div class="ref__body">
+          <p style="font-size:var(--fs-sm);color:var(--ink-3);margin:0 0 10px;">The choice distributions, the Week&nbsp;5 adaptation split, and the two contrasting plans this class produced &mdash; the material the debrief is built from. Unchanged from today's page; it belongs here because it's what a class discussion draws on, not what the first ten seconds needs.</p>
+          <a class="btn btn--ghost btn--sm" href="#">Open the debrief with this evidence loaded &rarr;</a>
+        </div>
+      </details>
+    </div>
+
+    <div class="foot-actions">
+      <a class="btn btn--primary" href="#">Run the debrief &rarr;</a>
+      <a class="btn btn--ghost" href="#">Pick what the room sees</a>
+      <a class="btn btn--ghost" href="#">Copy for a gradebook</a>
+      <a class="btn btn--ghost" href="#">Class list</a>
+    </div>
+
+  </div>
+</body>
+</html>

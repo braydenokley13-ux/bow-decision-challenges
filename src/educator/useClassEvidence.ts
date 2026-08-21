@@ -6,6 +6,7 @@ import type { EvidenceRequirementId, RubricLevel } from "../domain/competency/ty
 import { analyseClass, type ClassAnalysis } from "./analysis";
 import { rememberClass } from "./classMemory";
 import { useTeacherKey } from "./teacherKeyUrl";
+import { myTeaching, teacherToken } from "./teacherSession";
 import type { RosterRow } from "./names";
 import type { ProgressRow, TeacherFeedback } from "../platform/identity/types";
 import { DEMO_CLASS_CODE, demoClassBundle } from "../fixtures/demoClass";
@@ -37,6 +38,17 @@ export interface OverrideRequest {
 export type ClassEvidenceState =
   | { status: "loading" }
   | { status: "error"; message: string }
+  /**
+   * The service never answered — no HTTP response at all.
+   *
+   * Deliberately not an `error`, because the two say opposite things to a teacher. An error is
+   * the service telling her something about this class; this is the network, and the class is
+   * exactly where she left it. Collapsing them rendered *"This link does not open that class.
+   * Use the link you were given when you created it."* to a signed-in teacher holding a
+   * correct link to an intact class (`DEFECTS.md` D21) — the same failure family the student
+   * door was fixed for, on the surfaces that never got it.
+   */
+  | { status: "offline" }
   | {
       status: "ready";
       record: ClassRecord;
@@ -95,7 +107,7 @@ export function useClassEvidence(code: string | undefined): {
   // opened the class here before. It is never derivable from the class code, and it does not
   // stay in the address bar: `useTeacherKey` files it here and rewrites the URL without it,
   // because these are the pages with the children's names and the children's writing on them.
-  const teacherKey = useTeacherKey(code);
+  const heldKey = useTeacherKey(code);
   const [fetched, setFetched] = useState<ClassEvidenceState>({ status: "loading" });
   const [nonce, setNonce] = useState(0);
 
@@ -104,62 +116,138 @@ export function useClassEvidence(code: string | undefined): {
   // challenge runs on every keystroke in a reasoning rubric would be its own kind of bug.
   const demo = useMemo(() => (isDemo ? demoReady() : null), [isDemo]);
 
+  /**
+   * The key this browser does not hold, asked for from the account that owns the class.
+   *
+   * A signed-in teacher who opens a class on a machine that has never seen its link used to
+   * be told *"This link does not open that class"* — which is false twice over: the link is
+   * right, and the service will hand her the key for the asking. `GET /me/teaching` is the
+   * same call `/educator/classes` already makes, and this is the same recovery, on the page
+   * she actually landed on.
+   *
+   * When that call gets no answer at all, the result is the network state and never a claim
+   * about her link.
+   */
+  const [recovery, setRecovery] = useState<{ code: string; key: string | null; offline: boolean } | null>(null);
+  // Whether the account is still being asked, derived rather than stored: there is exactly one
+  // write here, after the answer, so the render never cascades.
+  const asking = !isDemo && Boolean(code) && !heldKey && Boolean(teacherToken());
+  const recovering = asking && recovery?.code !== code;
+  const accountOffline = asking && recovery !== null && recovery.code === code && recovery.offline;
+  useEffect(() => {
+    if (!asking || !code) return;
+    let cancelled = false;
+    void (async () => {
+      const owned = await myTeaching();
+      if (cancelled) return;
+      if (owned.ok) {
+        for (const entry of owned.body.classes) {
+          rememberClass({ code: entry.code, label: entry.label, teacherKey: entry.teacherKey, createdAt: entry.createdAt });
+        }
+        const mine = owned.body.classes.find((entry) => entry.code === code);
+        setRecovery({ code, key: mine?.teacherKey ?? null, offline: false });
+        return;
+      }
+      setRecovery({ code, key: null, offline: owned.offline === true });
+    })();
+    return () => { cancelled = true; };
+  }, [asking, code, nonce]);
+
+  const teacherKey = heldKey ?? (recovery && recovery.code === code ? recovery.key : null);
+
   // A missing code or a missing key are facts about this render, not things to discover
-  // asynchronously — there is nothing to ask the service about. The demo never reaches this:
-  // it has no teacher key and needs none, because nothing about it is gated on one.
+  // asynchronously — except that a key can now arrive from the account, so a browser without
+  // one is *asking* rather than refused until that answer comes back. The demo never reaches
+  // this: it has no teacher key and needs none, because nothing about it is gated on one.
   const blocked: ClassEvidenceState | null = isDemo
     ? null
     : !code
       ? { status: "error", message: educatorClassError("class_not_found") }
       : !teacherKey
-        ? { status: "error", message: educatorClassError("not_authorised") }
+        ? recovering
+          ? { status: "loading" }
+          : accountOffline
+            ? { status: "offline" }
+            : { status: "error", message: educatorClassError("not_authorised") }
         : null;
 
-  useEffect(() => {
+  /**
+   * One reading of the class, as a promise.
+   *
+   * It is a function rather than only an effect body because **a mutation has to be able to
+   * wait for it**. A teacher who sends a note used to get the confirmation and the refusal on
+   * screen together — *"Sent."* under the button, *"Nothing has been written back about this
+   * run yet."* above the box — for as long as the refetch took: measured at 215 ms on a
+   * laptop beside the service and 2.7 s with the class read throttled to a school network.
+   * The note really had reached the child; the screen said it had not (`DEFECTS.md` D13).
+   *
+   * The cure is not a second copy of the note held optimistically in this hook. It is that
+   * `sendFeedback` and its neighbours do not resolve until the class they changed has been
+   * read back, so every caller's `await` already means "the screen agrees with the service".
+   */
+  const readClass = useCallback(async (): Promise<ClassEvidenceState | null> => {
     // The one line that keeps the promise in the comment above true at runtime: this branch
     // returns before the fetch is even constructed, so the demo's code and key are never
     // formatted into a URL and `fetch` is never called with them. Nothing about a class
     // opened this way touches the network, in either direction.
+    if (isDemo || !code || !teacherKey) return null;
+    try {
+      const response = await fetch(`${CLASS_API_BASE}/classes/${code}/submissions`, {
+        headers: { "X-BOW-Teacher-Key": teacherKey },
+      });
+      const body: unknown = await response.json();
+      if (!response.ok) {
+        return { status: "error", message: isClassError(body) ? educatorClassError(body.error) : educatorClassError("unavailable") };
+      }
+      const payload = body as {
+        class: ClassRecord;
+        assignments: Assignment[];
+        submissions: AttributedSubmission[];
+        roster?: RosterRow[];
+        progress?: ProgressRow[];
+        feedback?: TeacherFeedback[];
+      };
+      // Opening a class from a link is how a teacher on a second device gets it back.
+      rememberClass({ code: payload.class.code, label: payload.class.label, teacherKey, createdAt: payload.class.createdAt });
+      return {
+        status: "ready",
+        record: payload.class,
+        assignments: payload.assignments,
+        submissions: payload.submissions,
+        analysis: analyseClass(payload.submissions),
+        roster: payload.roster ?? [],
+        progress: payload.progress ?? [],
+        feedback: payload.feedback ?? [],
+        loadedAt: Date.now(),
+      };
+    } catch {
+      // No HTTP answer. The class is intact and this browser cannot see it, which is a
+      // different sentence from any of the service's own refusals.
+      return { status: "offline" };
+    }
+  }, [code, teacherKey, isDemo]);
+
+  useEffect(() => {
     if (isDemo || !code || !teacherKey) return;
     let cancelled = false;
     void (async () => {
-      try {
-        const response = await fetch(`${CLASS_API_BASE}/classes/${code}/submissions`, {
-          headers: { "X-BOW-Teacher-Key": teacherKey },
-        });
-        const body: unknown = await response.json();
-        if (cancelled) return;
-        if (!response.ok) {
-          setFetched({ status: "error", message: isClassError(body) ? educatorClassError(body.error) : educatorClassError("unavailable") });
-          return;
-        }
-        const payload = body as {
-          class: ClassRecord;
-          assignments: Assignment[];
-          submissions: AttributedSubmission[];
-          roster?: RosterRow[];
-          progress?: ProgressRow[];
-          feedback?: TeacherFeedback[];
-        };
-        // Opening a class from a link is how a teacher on a second device gets it back.
-        rememberClass({ code: payload.class.code, label: payload.class.label, teacherKey, createdAt: payload.class.createdAt });
-        setFetched({
-          status: "ready",
-          record: payload.class,
-          assignments: payload.assignments,
-          submissions: payload.submissions,
-          analysis: analyseClass(payload.submissions),
-          roster: payload.roster ?? [],
-          progress: payload.progress ?? [],
-          feedback: payload.feedback ?? [],
-          loadedAt: Date.now(),
-        });
-      } catch {
-        if (!cancelled) setFetched({ status: "error", message: educatorClassError("unavailable") });
-      }
+      const next = await readClass();
+      if (!cancelled && next) setFetched(next);
     })();
     return () => { cancelled = true; };
-  }, [code, teacherKey, nonce, isDemo]);
+  }, [readClass, isDemo, code, teacherKey, nonce]);
+
+  /**
+   * Read the class again and wait for it. What every mutation below returns through.
+   *
+   * A failed read after a successful write lands the page on its error state, which is the
+   * same thing the nonce path did and is the honest answer: the write went in and this
+   * browser can no longer see the class, so it must not go on drawing a class it cannot read.
+   */
+  const refresh = useCallback(async (): Promise<void> => {
+    const next = await readClass();
+    if (next) setFetched(next);
+  }, [readClass]);
 
   const reload = useCallback(() => setNonce((value) => value + 1), []);
 
@@ -175,13 +263,13 @@ export function useClassEvidence(code: string | undefined): {
           headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
           body: JSON.stringify({ reasoningPoints: scores ? reasoningTotal(scores) : null, reasoningCriteria: scores, sessionId }),
         });
-        if (response.ok) reload();
+        if (response.ok) await refresh();
         return response.ok;
       } catch {
         return false;
       }
     },
-    [code, teacherKey, reload],
+    [code, teacherKey, refresh],
   );
 
   /**
@@ -206,13 +294,13 @@ export function useClassEvidence(code: string | undefined): {
           headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
           body: JSON.stringify({ seatCode, sessionId, body, flagged }),
         });
-        if (response.ok) reload();
+        if (response.ok) await refresh();
         return response.ok;
       } catch {
         return false;
       }
     },
-    [code, teacherKey, reload],
+    [code, teacherKey, refresh],
   );
 
   /**
@@ -231,13 +319,13 @@ export function useClassEvidence(code: string | undefined): {
           headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
           body: JSON.stringify({ ...override, sessionId }),
         });
-        if (response.ok) reload();
+        if (response.ok) await refresh();
         return response.ok;
       } catch {
         return false;
       }
     },
-    [code, teacherKey, reload],
+    [code, teacherKey, refresh],
   );
 
   /**
@@ -258,13 +346,13 @@ export function useClassEvidence(code: string | undefined): {
           headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey },
           body: JSON.stringify({ body, flagged }),
         });
-        if (response.ok) reload();
+        if (response.ok) await refresh();
         return response.ok;
       } catch {
         return false;
       }
     },
-    [code, teacherKey, reload],
+    [code, teacherKey, refresh],
   );
 
   const withdrawFeedback = useCallback(
@@ -275,13 +363,13 @@ export function useClassEvidence(code: string | undefined): {
           method: "DELETE",
           headers: { "X-BOW-Teacher-Key": teacherKey },
         });
-        if (response.ok) reload();
+        if (response.ok) await refresh();
         return response.ok;
       } catch {
         return false;
       }
     },
-    [code, teacherKey, reload],
+    [code, teacherKey, refresh],
   );
 
   return { state: demo ?? blocked ?? fetched, teacherKey, reload, scoreReasoning, recordOverride, sendFeedback, reviseFeedback, withdrawFeedback };

@@ -1,4 +1,4 @@
-import type { CompetencyResultState, SupportLevel } from "../domain/competency/types";
+import type { CompetencyResultState, EvidenceKind, RubricLevel, SupportLevel } from "../domain/competency/types";
 import {
   DEVELOPING_THRESHOLD_PERCENT,
   MINIMUM_ASSESSED_FOR_A_STATE,
@@ -167,14 +167,106 @@ export const LEVEL_DESCRIPTIONS: Record<0 | 2 | 3 | 4 | 5 | "null", string> = {
   null: "This run never asked it of them.",
 };
 
+/**
+ * The mark that travels with every level word. Never instead of it.
+ *
+ * State is never carried by colour alone and never by a glyph alone: every place a
+ * level or a state is shown, a teacher reads *word + mark + colour*, and the word is
+ * the accessible name. The marks are text rather than shapes drawn in CSS so they
+ * survive greyscale, a forced-colours mode and being read aloud as part of the row.
+ *
+ * The ramp is a fill fraction, so the order is legible without the table: full,
+ * nearly full, half, a quarter, empty — and the absence is an em dash, which is not on
+ * the ramp at all, because a run that never asked is not a low score.
+ */
+export const LEVEL_MARKS: Record<0 | 2 | 3 | 4 | 5 | "null", string> = {
+  5: "\u25cf",
+  4: "\u25d5",
+  3: "\u25d0",
+  2: "\u25d4",
+  0: "\u25cb",
+  null: "\u2014",
+};
+
 /** Strongest first. The order every level list in the product is offered in. */
 export const LEVEL_ORDER: readonly (0 | 2 | 3 | 4 | 5 | "null")[] = [5, 4, 3, 2, 0, "null"];
 
-export function levelLabel(level: 0 | 2 | 3 | 4 | 5 | null): string {
+// ---------------------------------------------------------------------------
+// Ladder 2's seventh word — the state a rubric level cannot carry
+// ---------------------------------------------------------------------------
+
+/**
+ * *Waiting to be read* — a child wrote it, and nobody has read it yet.
+ *
+ * `explanationObservation` (`basketball/observer.ts`, `food-truck/observer.ts`) sets
+ * `level: scored ?? null`, and that one `null` is emitted for two different facts about a
+ * child: **nothing was written**, and **something was written and no person has read it
+ * yet**. Rendered through Ladder 2 both arrive as *Never came up*, with the glossary line
+ * *"This run never asked it of them."* — so on the seeded class the row for *Explains the
+ * trade-off made* printed `Never came up` directly above its own reason text, which reads
+ * *"The defense was submitted and is waiting for a person to read it."* A child who wrote an
+ * answer was shown to their teacher as a child who was never asked (`DEFECTS.md` D11).
+ *
+ * The observers are the domain's and are not edited for this. They do not have to be: the
+ * distinction is already at the row. Every observation cites its evidence, and a world that
+ * never presented the opportunity cites the `not-observed:` sentinel instead of an event —
+ * which is the same fact `evidenceTrail` already splits its `notObserved` list on. So a
+ * `null` explanation whose evidence anchors a real moment in the student's own log is a
+ * piece of writing that exists and is unread, and it is named as one.
+ *
+ * It is a seventh word rather than a level because it is not a point on the ramp — the same
+ * argument Ladder 3 makes for *Evidence not all in* one level up, and it carries Ladder 3's
+ * ellipsis for the same reason: a judgement that has not arrived, not a low one. It is
+ * deliberately narrower than Ladder 3's phrase, because at the row there is no ambiguity
+ * about *why* the evidence is not in. Somebody has to read it.
+ */
+export const AWAITING_READING = {
+  label: "Waiting to be read",
+  description: "They wrote it and turned it in. Nobody has read it yet — BOW does not score student writing.",
+  mark: "\u2026",
+} as const;
+
+/**
+ * A level as a page reads it: the six rubric levels, the absence, and the unread writing.
+ *
+ * Every function below takes this rather than `RubricLevel | null`, so a screen that has a
+ * judgement in its hand cannot render the absence word over a child's unread paragraph
+ * without going out of its way to.
+ */
+export type LevelReading = 0 | 2 | 3 | 4 | 5 | null | "awaiting-reading";
+
+/** The `evidenceRefs` sentinel a world writes when it never presented the opportunity. */
+const NOT_OBSERVED_REF = "not-observed:";
+
+/**
+ * How to read one judgement's level — the row's own evidence deciding between two `null`s.
+ *
+ * Only an explanation can be waiting on a person: BOW does not score student writing and
+ * scores everything else, so a `decision` with no level is a decision the run never asked
+ * for. Nothing here guesses; both inputs are on the row already.
+ */
+export function levelReading(judgement: {
+  kind: EvidenceKind;
+  level: RubricLevel | null;
+  evidenceRefs: readonly string[];
+}): LevelReading {
+  if (judgement.level !== null) return judgement.level;
+  if (judgement.kind !== "explanation") return null;
+  return judgement.evidenceRefs.some((ref) => !ref.startsWith(NOT_OBSERVED_REF)) ? "awaiting-reading" : null;
+}
+
+export function levelMark(level: LevelReading): string {
+  if (level === "awaiting-reading") return AWAITING_READING.mark;
+  return level === null ? LEVEL_MARKS.null : LEVEL_MARKS[level];
+}
+
+export function levelLabel(level: LevelReading): string {
+  if (level === "awaiting-reading") return AWAITING_READING.label;
   return level === null ? LEVEL_LABELS.null : LEVEL_LABELS[level];
 }
 
-export function levelDescription(level: 0 | 2 | 3 | 4 | 5 | null): string {
+export function levelDescription(level: LevelReading): string {
+  if (level === "awaiting-reading") return AWAITING_READING.description;
   return level === null ? LEVEL_DESCRIPTIONS.null : LEVEL_DESCRIPTIONS[level];
 }
 
@@ -267,6 +359,23 @@ export const SKILL_STATE_DESCRIPTIONS: Record<CompetencyResultState, string> = {
   incomplete: "Some of it has no judgement yet — usually because nobody has read the writing.",
 };
 
+/**
+ * Ladder 3's marks. The same rule as Ladder 2's: word, mark and colour, always three.
+ *
+ * *Evidence not all in* is an ellipsis rather than a circle on purpose — it is not a
+ * point on the ramp, it is a judgement that has not arrived — and *Never came up* keeps
+ * the em dash it has everywhere else. Four different things (missing, supplied,
+ * incomplete, shown) stay four different things with the colour taken away.
+ */
+export const SKILL_STATE_MARKS: Record<CompetencyResultState, string> = {
+  demonstrated: "\u25cf",
+  "demonstrated-with-support": "\u25d0",
+  developing: "\u25d4",
+  "not-yet-demonstrated": "\u25cb",
+  "not-observed": "\u2014",
+  incomplete: "\u2026",
+};
+
 /** Strongest first, so every distribution of these reads the same way in the product. */
 export const SKILL_STATE_ORDER: readonly CompetencyResultState[] = [
   "demonstrated", "demonstrated-with-support", "developing", "not-yet-demonstrated", "not-observed", "incomplete",
@@ -296,26 +405,34 @@ export function skillStateInSentence(state: CompetencyResultState): string {
  * any, which makes the two impossible to confuse even read out of context.
  *
  * The bands come from `objectiveState.ts` and the words are true across the whole of each
- * one, which is why the middle state is *Half the class or more* rather than the shorter and
+ * one, which is why the middle state ends *or more* rather than reading as the shorter and
  * punchier *About half*: this band runs from 50% to 79%, and "about half" is a false report
  * of 79%. A label a teacher has to correct against the count beside it is a label doing harm.
  *
- * They are subjects rather than sentences — *Most of the class* and not *Most of the class
- * showed it* — because of where they have to fit. The Objective Map's status column is
- * `white-space: nowrap` and this table also supplies the map's filter options; a sentence
- * there squeezed the objective column to one word per line on the one page the product tells
- * a teacher to print and hand to somebody. The verb is not lost: it is in the sentence beside
- * each one, and the count and denominator travel with every use. The side effect is worth
- * having on its own — these five now share no word with Ladder 3 but the adverb *yet*.
+ * The subject these three name is **the assessed students**, and it says so, because the three
+ * of them used to say *the class*. On a class of sixteen where ten turned in and eight have a
+ * usable result, the pill read *Half the class or more · 5 of 8* — and five of sixteen is 31%.
+ * The glossary sentence beneath was already exact ("of the assessed students"), but a glossary
+ * is a disclosure and a pill is a claim, and both denominators were on the same screen for a
+ * district evaluator to do out loud (`DEFECTS.md` D28). The clause this paragraph opens with
+ * applies to the subject as much as to the threshold.
+ *
+ * They are subjects rather than sentences — *Most of the assessed students* and not *Most of
+ * the assessed students showed it* — because of where they have to fit: a status cell beside
+ * an objective, where a sentence squeezes the objective column to one word per line on the one
+ * page the product tells a teacher to print and hand to somebody. The verb is not lost: it is
+ * in the sentence beside each one, and the count and denominator travel with every use. The
+ * side effect is worth having on its own — these five now share no word with Ladder 3 but the
+ * adverb *yet*.
  *
  * The two refusals are refusals, not low states. *Too few assessed* is a fact about a
  * denominator and *Nobody assessed yet* is a fact about a marking pile; neither is a result
  * and neither may be read as one.
  */
 export const CLASS_STATE_LABELS: Record<ObjectiveResultState, string> = {
-  strong: "Most of the class",
-  developing: "Half the class or more",
-  "needs-attention": "Fewer than half",
+  strong: "Most of the assessed students",
+  developing: "Half the assessed students or more",
+  "needs-attention": "Fewer than half the assessed students",
   "too-few-assessed": "Too few assessed",
   "not-assessed": "Nobody assessed yet",
 };
@@ -334,7 +451,7 @@ export const CLASS_STATE_DESCRIPTIONS: Record<ObjectiveResultState, string> = {
 // ---------------------------------------------------------------------------
 
 /** One line of a key: the word as it appears on the page, and the sentence behind it. */
-export interface KeyEntry { label: string; description: string }
+export interface KeyEntry { label: string; description: string; mark?: string }
 
 /**
  * The words on this page, each with its sentence, once.
@@ -349,16 +466,24 @@ export interface KeyEntry { label: string; description: string }
  * They are here rather than in a component so that no screen can build a key out of words
  * it invented.
  */
-export function levelKey(levels: Iterable<0 | 2 | 3 | 4 | 5 | null>): KeyEntry[] {
-  const present = new Set<0 | 2 | 3 | 4 | 5 | "null">([...levels].map((level) => (level === null ? "null" : level)));
-  return LEVEL_ORDER.filter((level) => present.has(level))
-    .map((level) => ({ label: LEVEL_LABELS[level], description: LEVEL_DESCRIPTIONS[level] }));
+export function levelKey(levels: Iterable<LevelReading>): KeyEntry[] {
+  const read = [...levels];
+  const present = new Set<0 | 2 | 3 | 4 | 5 | "null">(
+    read.filter((level): level is 0 | 2 | 3 | 4 | 5 | null => level !== "awaiting-reading")
+      .map((level) => (level === null ? "null" : level)),
+  );
+  const entries: KeyEntry[] = LEVEL_ORDER.filter((level) => present.has(level))
+    .map((level) => ({ label: LEVEL_LABELS[level], description: LEVEL_DESCRIPTIONS[level], mark: LEVEL_MARKS[level] }));
+  // Last, the way Ladder 3 puts *Evidence not all in* after *Never came up*: a judgement that
+  // has not arrived is not a point on the ramp, so it does not sit inside it.
+  if (read.includes("awaiting-reading")) entries.push({ ...AWAITING_READING });
+  return entries;
 }
 
 export function skillStateKey(states: Iterable<CompetencyResultState>): KeyEntry[] {
   const present = new Set(states);
   return SKILL_STATE_ORDER.filter((state) => present.has(state))
-    .map((state) => ({ label: SKILL_STATE_LABELS[state], description: SKILL_STATE_DESCRIPTIONS[state] }));
+    .map((state) => ({ label: SKILL_STATE_LABELS[state], description: SKILL_STATE_DESCRIPTIONS[state], mark: SKILL_STATE_MARKS[state] }));
 }
 
 export function classStateKey(states: Iterable<ObjectiveResultState>): KeyEntry[] {

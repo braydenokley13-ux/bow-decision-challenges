@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Direction A — the window is the screen</title>
+<!--
+  DIRECTION A static mock — "THE WINDOW IS THE SCREEN".
+  One scene, four moments of the same real evening (Middle Row, Saturday 1, 3 trays, solo):
+    ?moment=open    17:00 — order 1 of 24, 30 plates, 37 more in the lane   (early grade)
+    ?moment=midway  19:59 — order 14 of 24, 9 plates left, 15 more coming   (peak grade)
+    ?moment=out     21:24 — order 19, counter bare, first no-stock customer (late grade)
+    ?moment=close   22:00 — closed, $360, 30 sold, 8 turned away            (late grade)
+  Every number is read from serviceRun(N,'middle-row',1,3,false) — nothing invented.
+  Everything here is plain DOM + CSS + inline SVG over the baked plate; nothing a React
+  component could not render inside the existing budgets.
+-->
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+:root{
+  --ink-1:#f5ead8; --ink-2:#dcc9b0; --ink-3:#c3ab95; --ink-4:#a98f78;
+  --amber:#f0a94a; --amber-ink:#ffcf8a; --flare:#f0b352;
+  --wood-hi:#8a6a48; --wood:#5c4229; --wood-lo:#2e2015;
+  --paper:#e8dcc0; --paper-ink:#2a2118;
+  --board:#20241f; --chalk:#eee9d6;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono","Roboto Mono",Consolas,monospace;
+}
+body{background:#120b08;color:var(--ink-1);font-family:var(--sans)}
+
+.room{position:relative;display:flex;flex-direction:column;min-height:100vh;overflow:hidden;background:#1a110b}
+
+/* ============ 1. THE AWNING — the only strip of chrome, and it is the underside of our own
+   awning: BOW stamp burned into the frame, the stage name stencilled on the header board,
+   the three account controls tucked against the far batten. No HUD tiles. ============ */
+.awning{position:relative;z-index:30;display:flex;align-items:center;gap:22px;
+  min-height:52px;padding:6px 20px 10px;white-space:nowrap;
+  background:linear-gradient(180deg,#2b1d14 0%,#241811 55%,#1a1009 100%);
+  box-shadow:inset 0 -1px 0 rgb(255 214 150/.14)}
+.bow{font:800 17px/1 var(--mono);color:var(--ink-1);letter-spacing:.02em}
+.bow i{font-style:normal;color:#9678ff;font-size:10px;vertical-align:top}
+.signboard{display:flex;align-items:baseline;gap:12px;min-width:0}
+.signboard .sat{color:var(--amber-ink);font:800 11px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase}
+.signboard h1{margin:0;color:#d9c6a4;font:800 11px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase}
+.signboard .place{color:var(--ink-4);font:600 11px/1 var(--sans);letter-spacing:.06em}
+.awning__end{display:flex;gap:8px;margin-left:auto}
+.awning__end .pill{color:var(--ink-2);font:600 11.5px/1 var(--sans);letter-spacing:.04em;
+  padding:7px 11px;background:rgb(0 0 0/.32);border:1px solid #4a382a;border-radius:999px;cursor:pointer}
+.awning__end .pill--seat{font-family:var(--mono);letter-spacing:.1em}
+
+/* ============ 2. THE HATCH — the plate, full bleed, edge to edge. ============ */
+.hatch{position:relative;z-index:10;flex:none;height:clamp(190px,56vh,460px);overflow:hidden;background:#160d12}
+.plate{position:absolute;inset:0;background-color:#160d12;
+  background-size:cover;background-position:center 64%;background-repeat:no-repeat}
+[data-moment="open"]   .plate{background-image:url("../../../../v5/art/pass/lane-early.webp")}
+[data-moment="midway"] .plate{background-image:url("../../../../v5/art/pass/lane-peak.webp")}
+[data-moment="out"]    .plate{background-image:url("../../../../v5/art/pass/lane-late.webp")}
+[data-moment="close"]  .plate{background-image:url("../../../../v5/art/pass/lane-late.webp")}
+/* our own frame's shadow closing over the corners — the room, not a vignette on a picture */
+.hatch::after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  box-shadow:inset 0 30px 38px -20px rgb(6 3 1/.95),inset 26px 0 36px -26px rgb(6 3 1/.8),
+    inset -26px 0 36px -26px rgb(6 3 1/.8)}
+.valance{position:absolute;z-index:6;left:0;right:0;top:0;height:17px;
+  background:repeating-linear-gradient(90deg,#8a3324 0 46px,#7a2c1f 46px 52px,#e8d3ae 52px 98px,#d4bd94 98px 104px);
+  -webkit-mask-image:linear-gradient(#000,#000),radial-gradient(26px 8px at 26px 8px,#000 98%,transparent 100%);
+  -webkit-mask-size:100% 9px,52px 17px;-webkit-mask-repeat:repeat-x;
+  mask-image:linear-gradient(#000,#000),radial-gradient(26px 8px at 26px 8px,#000 98%,transparent 100%);
+  mask-size:100% 9px,52px 17px;mask-repeat:repeat-x;
+  filter:drop-shadow(0 5px 5px rgb(6 3 1/.6))}
+
+/* two tags hung from the frame, in the sky — the flattest region of the plate */
+.tag{position:absolute;z-index:5;top:26px;margin:0;padding:7px 12px 8px;
+  background:#0f0805;border-radius:0 0 7px 7px;
+  box-shadow:inset 0 1px 4px rgb(0 0 0/.9),0 2px 4px rgb(0 0 0/.5),0 1px 0 rgb(255 214 150/.1)}
+.tag::before{content:"";position:absolute;left:50%;top:-9px;width:10px;height:10px;margin-left:-5px;
+  background:linear-gradient(180deg,#6b5136,#3a2a1a);clip-path:polygon(20% 0,80% 0,100% 100%,0 100%)}
+.tag--status{left:22px;color:var(--ink-1);font:700 13px/1.2 var(--sans);letter-spacing:.05em}
+.tag--status h2{display:inline;margin:0;font:inherit;color:inherit}
+.tag--clock{right:22px;color:var(--flare);font:700 15px/1.2 var(--mono);
+  font-variant-numeric:tabular-nums;letter-spacing:.08em;text-shadow:0 0 10px rgb(240 179 82/.45)}
+
+/* the lane, counted once, as text, over the dark right mid-ground */
+.lanepill{position:absolute;z-index:5;right:2.2%;bottom:13%;margin:0;padding:8px 13px;
+  background:rgb(13 7 4/.88);color:var(--ink-2);font:600 12.5px/1.2 var(--sans);border-radius:7px;
+  box-shadow:inset 0 1px 3px rgb(0 0 0/.8),0 1px 0 rgb(255 214 150/.12)}
+.lanepill strong{color:var(--amber-ink);font:800 16px/1 var(--mono);margin-right:3px}
+
+/* ============ THE CUSTOMER AT THE PASS — live state, drawn in the plate's own hand,
+   standing in our hatch light. Bottom-clipped at the drawn bullnose so they stand
+   BEHIND the far edge of our own counter. ============ */
+.pass-figure{position:absolute;z-index:3;left:0;right:0;top:0;bottom:9.4%;overflow:hidden;pointer-events:none;display:none}
+[data-moment="open"]   .pass-figure--open,
+[data-moment="midway"] .pass-figure--midway,
+[data-moment="out"]    .pass-figure--out{display:block}
+.pass-figure svg{position:absolute;left:50%;bottom:-4px;height:87%;transform:translateX(-47%)}
+/* our lamp catching them — foreground light, carries no information beyond "someone is at
+   the pass", which the ticket says in words */
+.pass-glow{position:absolute;left:50%;bottom:0;width:46%;height:64%;transform:translateX(-50%);
+  background:radial-gradient(50% 62% at 50% 88%,rgb(255 178 92/.20),rgb(255 178 92/.07) 55%,transparent 75%)}
+@media (forced-colors:active){
+  .pass-figure svg{forced-color-adjust:none}  /* the figure is art; its facts live on the ticket */
+  .pass-glow{display:none}
+}
+
+/* ============ 3. THE COUNTER — the near lip of the same counter the plate draws the far
+   edge of. Everything on it is an object: ticket, chalkboard, till, and the two buttons. ============ */
+.counter{position:relative;z-index:20;flex:1;display:flex;flex-direction:column;
+  background:
+    radial-gradient(64% 150px at 50% 0%,rgb(255 176 88/.20),transparent 74%),
+    linear-gradient(180deg,#6d4f32 0%,#553d26 34px,#3a2a19 46%,#241a10 100%)}
+.counter::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;
+  background:linear-gradient(90deg,rgb(255 218 158/.25),rgb(255 218 158/.85) 46%,rgb(255 218 158/.85) 54%,rgb(255 218 158/.25));
+  box-shadow:0 1px 3px rgb(0 0 0/.6)}
+/* faint plank seams so it reads as wood, not as a panel */
+.counter::after{content:"";position:absolute;inset:3px 0 0;pointer-events:none;opacity:.5;
+  background:repeating-linear-gradient(90deg,transparent 0 220px,rgb(0 0 0/.18) 220px 222px)}
+
+.deck{position:relative;flex:1;display:grid;
+  grid-template-columns:minmax(300px,392px) minmax(230px,1fr) minmax(252px,300px);
+  grid-template-areas:"pass board till" "controls controls controls";
+  grid-template-rows:1fr auto;
+  gap:6px 30px;padding:20px 34px 14px;max-width:1600px;margin:0 auto;width:100%}
+
+/* the pass: the order in hand */
+.pass{grid-area:pass}
+.ticket{position:relative;width:100%;max-width:392px;padding:13px 20px 12px;color:var(--paper-ink);
+  background:linear-gradient(160deg,#f4e8cc 0%,var(--paper) 52%,#d9c9a6 100%);
+  transform:rotate(-1.2deg);
+  clip-path:polygon(0 10px,3% 4px,7% 9px,12% 3px,18% 8px,25% 2px,33% 7px,42% 3px,52% 8px,61% 2px,70% 7px,78% 3px,86% 8px,93% 3px,97% 7px,100% 4px,100% 100%,0 100%);
+  box-shadow:0 2px 3px rgb(10 5 2/.55),0 22px 34px -20px rgb(0 0 0/.9)}
+.ticket__row{display:flex;justify-content:space-between;align-items:baseline}
+.ticket__row b{font:800 24px/1 var(--mono)}
+.ticket__row small{font:700 11px/1.4 var(--sans);letter-spacing:.12em;color:#5c4a2e}
+.ticket__want{margin:2px 0 0;font:700 13px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase}
+.ticket__want .n{font:800 40px/1 var(--mono);margin-right:4px;vertical-align:-4px}
+.ticket__say{margin:7px 0 0;padding-top:7px;border-top:1.5px dashed #b9a678;
+  font:italic 600 14px/1.35 var(--sans);color:#4d3c22}
+.ticket--stamped::after{content:"OUT OF PLATES";position:absolute;right:16px;top:42%;
+  padding:3px 8px;transform:rotate(-8deg);color:#8c2f1e;border:2.5px solid #8c2f1e;border-radius:4px;
+  font:800 13px/1 var(--mono);letter-spacing:.14em;opacity:.85}
+
+/* the chalkboard: the one number that decides the evening */
+.board{grid-area:board;justify-self:center;align-self:start;width:min(100%,300px);
+  padding:12px 18px 13px;text-align:center;transform:rotate(.7deg);
+  background:
+    radial-gradient(120% 90% at 30% 20%,rgb(255 255 255/.045),transparent 60%),
+    var(--board);
+  border:7px solid var(--wood);border-radius:4px;
+  box-shadow:inset 0 1px 0 rgb(255 218 158/.25),inset 0 0 30px rgb(0 0 0/.55),0 14px 26px -14px rgb(0 0 0/.9)}
+.board h3{margin:0 0 2px;color:#b9b39c;font:700 10.5px/1.4 var(--sans);letter-spacing:.2em;text-transform:uppercase}
+.board .n{display:block;color:var(--chalk);font:800 52px/1 var(--mono);font-variant-numeric:tabular-nums;
+  text-shadow:0 0 1px rgb(238 233 214/.6)}
+.board .n[data-bare]{color:#e9a08d}
+.board small{display:block;margin-top:3px;color:#8f8a74;font:600 11.5px/1.3 var(--sans)}
+
+/* the till: money actually taken, nothing it might take */
+.till{grid-area:till;align-self:start;background:linear-gradient(180deg,#191009,#120b06);
+  border-radius:9px;padding:12px 16px 13px;
+  box-shadow:inset 0 1px 5px rgb(0 0 0/.85),inset 0 -1px 0 rgb(255 214 150/.07),0 12px 22px -14px rgb(0 0 0/.9)}
+.till h3{margin:0 0 7px;color:var(--ink-4);font:700 10.5px/1.4 var(--sans);letter-spacing:.18em;text-transform:uppercase}
+.till dl{display:grid;grid-template-columns:1fr auto;gap:5px 12px;margin:0;
+  font:600 13px/1.45 var(--sans);color:var(--ink-3)}
+.till dt{margin:0}
+.till dd{margin:0;font:700 14.5px/1.45 var(--mono);font-variant-numeric:tabular-nums;color:var(--ink-1);text-align:right}
+.till .money{color:var(--amber-ink)}
+.till dd[data-loss]{color:#f0a08d}
+
+/* what the counter says when it goes bare, or the night ends */
+.alert{grid-area:pass;align-self:end;margin:10px 0 0;padding:11px 16px;
+  background:#2a130d;border-left:4px solid #c4532f;border-radius:6px;
+  color:#f2d9c9;font:600 13.5px/1.45 var(--sans)}
+.alert strong{color:#ffb28f;font-family:var(--mono)}
+[data-moment="close"] .alert{align-self:start;margin:0}
+
+.controls{grid-area:controls;display:flex;gap:14px;align-items:center;padding-top:10px;flex-wrap:wrap}
+button{font:700 15px/1 var(--sans);padding:14px 22px;border-radius:8px;cursor:pointer}
+.primary{color:#241403;border:0;
+  background:linear-gradient(180deg,#ffc46e 0%,var(--amber) 48%,#d98a2e 100%);
+  box-shadow:0 1px 0 rgb(255 230 180/.7) inset,0 3px 6px rgb(0 0 0/.5),0 0 24px rgb(240 169 74/.25)}
+.ghost{color:var(--ink-1);background:rgb(0 0 0/.25);border:1.5px solid #4d372b}
+.progress{margin:0 0 0 auto;color:var(--ink-3);font:600 13px/1.3 var(--sans)}
+
+/* which blocks each moment shows */
+.only{display:none}
+[data-moment="open"] .only-open,[data-moment="midway"] .only-midway,
+[data-moment="out"] .only-out,[data-moment="close"] .only-close{display:revert}
+[data-moment="open"] .not-close,[data-moment="midway"] .not-close,[data-moment="out"] .not-close{display:revert}
+.not-close{display:none}
+
+/* ============ small screens: the room narrows, nothing scrolls sideways ============ */
+@media (max-width:900px){
+  .deck{grid-template-columns:1fr 1fr;grid-template-areas:"pass till" "board till" "controls controls";gap:12px 18px;padding:16px 18px 12px}
+  .board{justify-self:start;width:100%}
+}
+@media (max-width:680px){
+  .awning{gap:12px;padding:6px 12px 8px;flex-wrap:wrap;min-height:44px}
+  .signboard{gap:8px}
+  .signboard .place{display:none}
+  .signboard .sat,.signboard h1{font-size:10px;letter-spacing:.13em}
+  .awning__end .pill{padding:6px 9px;font-size:10.5px}
+  .hatch{height:clamp(150px,30vh,240px)}
+  .pass-figure svg{height:88%}
+  .tag{top:22px;padding:6px 9px 7px}
+  .tag--status{left:10px;font-size:11.5px}
+  .tag--clock{right:10px;font-size:13px}
+  .lanepill{right:8px;bottom:10%;padding:6px 10px;font-size:11.5px}
+  .deck{grid-template-columns:1fr;grid-template-areas:"pass" "controls" "board" "till";gap:12px;padding:14px 14px 12px}
+  .ticket{max-width:none;transform:none}
+  .board{transform:none;width:100%;padding:9px 12px;border-width:5px}
+  .board .n{font-size:40px}
+  .controls{flex-direction:column;align-items:stretch;gap:10px}
+  .progress{margin:2px 0 0;text-align:center}
+  .alert{margin-top:0}
+}
+
+@media (prefers-reduced-motion:no-preference){
+  .pass-figure svg{transition:transform .25s ease}
+}
+@media (forced-colors:active){
+  .ticket,.board,.till,.tag,.lanepill,.alert,.pill{border:1px solid CanvasText}
+  .counter::before{background:CanvasText}
+}
+</style>
+</head>
+<body>
+<div class="room" data-moment="open" id="room">
+
+  <!-- 1. the awning underside: identity + the demoted h1 + the two account controls -->
+  <header class="awning">
+    <span class="bow">BOW<i>&#9670;</i></span>
+    <div class="signboard">
+      <span class="sat" id="sat">Saturday 1</span>
+      <h1>Your window is open</h1>
+      <span class="place">&mdash; Riverside Night Market</span>
+    </div>
+    <div class="awning__end">
+      <button class="pill" type="button">The market</button>
+      <button class="pill" type="button">Reading help</button>
+      <button class="pill pill--seat" type="button">47CYW &middot; SEAT 4</button>
+    </div>
+  </header>
+
+  <!-- 2. the hatch: plate, tags, the person being served -->
+  <div class="hatch">
+    <div class="plate" role="img"
+      aria-label="The market lane at night, seen from behind your own serving window: stalls trading across the wet lane, string lights overhead, your hatch light falling onto the lane."></div>
+
+    <!-- the customer: identity seeded by ticket number, standing in our light -->
+    <div class="pass-figure pass-figure--open" aria-hidden="true">
+      <div class="pass-glow"></div>
+      <!-- ticket #1: short dark hair, olive coat, alone -->
+      <svg viewBox="0 0 300 360">
+        <defs>
+          <radialGradient id="skin1" cx="46%" cy="40%" r="75%">
+            <stop offset="0%" stop-color="#c69468"/>
+            <stop offset="60%" stop-color="#9c6f47"/><stop offset="100%" stop-color="#5c3e27"/>
+          </radialGradient>
+          <radialGradient id="coat1" cx="50%" cy="26%" r="90%">
+            <stop offset="0%" stop-color="#575f36"/><stop offset="52%" stop-color="#3a4224"/>
+            <stop offset="100%" stop-color="#191e0d"/>
+          </radialGradient>
+        <linearGradient id="dip1" x1="0" y1="0" x2="0" y2="1"><stop offset="72%" stop-color="rgb(24 12 6)" stop-opacity="0"/><stop offset="100%" stop-color="rgb(24 12 6)" stop-opacity=".62"/></linearGradient></defs>
+        <path d="M92 360 Q84 300 87 246 Q88 192 99 168 Q105 149 127 143 L139 140 Q150 137 161 140 L173 143 Q195 149 201 168 Q212 192 213 246 Q216 300 208 360 Z" fill="url(#coat1)"/>
+        <path d="M110 168 Q96 220 96 282 Q96 326 100 354" stroke="rgb(10 12 4/.34)" stroke-width="9" stroke-linecap="round" fill="none"/>
+        <path d="M190 168 Q204 220 204 282 Q204 326 200 354" stroke="rgb(10 12 4/.34)" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M150 170 Q147 260 148 354" stroke="rgb(0 0 0/.30)" stroke-width="3.4" fill="none"/><path d="M141 146 Q144 168 150 176 M159 146 Q156 168 150 176" stroke="rgb(0 0 0/.22)" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M140 146 L150 166 L160 146 Q150 141 140 146 Z" fill="#7a6c48"/>
+        <rect x="139" y="112" width="22" height="34" rx="9" fill="#83593a"/>
+        <ellipse cx="150" cy="86" rx="29" ry="32" fill="url(#skin1)"/>
+        <path d="M121 84 Q120 48 150 46 Q180 48 179 84 Q175 62 150 59 Q125 62 121 84 Z" fill="#1e1611"/>
+        <path d="M139 88 h7 M154 88 h7" stroke="#3a2417" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+        <path d="M143 103 Q150 107 157 103" stroke="#6b452a" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+        <path d="M213 246 Q216 300 208 356" stroke="#7d9cc4" stroke-width="3" stroke-linecap="round" fill="none" opacity=".35"/>
+        <path d="M174 60 Q181 72 179 86" stroke="#7d9cc4" stroke-width="2.4" stroke-linecap="round" fill="none" opacity=".3"/>
+      <path d="M92 360 Q84 300 87 246 Q88 192 99 168 Q105 149 127 143 L139 140 Q150 137 161 140 L173 143 Q195 149 201 168 Q212 192 213 246 Q216 300 208 360 Z" fill="url(#dip1)"/><path d="M92 360 Q84 300 87 246 Q88 192 99 168 Q105 149 127 143 L139 140 Q150 137 161 140 L173 143 Q195 149 201 168 Q212 192 213 246 Q216 300 208 360 Z" fill="url(#dip2)"/><path d="M92 360 Q84 300 87 246 Q88 192 99 168 Q105 149 127 143 L139 140 Q150 137 161 140 L173 143 Q195 149 201 168 Q212 192 213 246 Q216 300 208 360 Z" fill="url(#dip3)" transform="rotate(5 150 360)"/></svg>
+    </div>
+
+    <div class="pass-figure pass-figure--midway" aria-hidden="true">
+      <div class="pass-glow"></div>
+      <!-- ticket #14: teal beanie, rust coat, one companion a step behind — a group of two -->
+      <svg viewBox="0 0 300 360">
+        <defs>
+          <radialGradient id="skin14" cx="46%" cy="40%" r="75%">
+            <stop offset="0%" stop-color="#b98a5e"/><stop offset="60%" stop-color="#8f6440"/>
+            <stop offset="100%" stop-color="#553823"/>
+          </radialGradient>
+          <radialGradient id="coat14" cx="50%" cy="26%" r="90%">
+            <stop offset="0%" stop-color="#75452a"/><stop offset="52%" stop-color="#50301c"/>
+            <stop offset="100%" stop-color="#24140b"/>
+          </radialGradient>
+        <linearGradient id="dip2" x1="0" y1="0" x2="0" y2="1"><stop offset="72%" stop-color="rgb(24 12 6)" stop-opacity="0"/><stop offset="100%" stop-color="rgb(24 12 6)" stop-opacity=".62"/></linearGradient></defs>
+        <!-- the companion: same lane, one step out of our light -->
+        <g transform="translate(-118 20) scale(.92)">
+          <path d="M92 380 Q84 310 87 252 Q88 196 99 172 Q105 153 127 147 L139 144 Q150 141 161 144 L173 147 Q195 153 201 172 Q212 196 213 252 Q216 310 208 380 Z" fill="#2b1f18"/>
+          <rect x="139" y="118" width="22" height="34" rx="9" fill="#4d3520"/>
+          <ellipse cx="150" cy="92" rx="29" ry="32" fill="#6e4b2c"/>
+          <path d="M119 94 Q115 50 150 50 Q185 50 181 94 Q179 66 150 62 Q121 66 119 94 Z" fill="#171009"/>
+          <path d="M96 250 Q92 310 98 372" stroke="#8a5c38" stroke-width="2.6" stroke-linecap="round" fill="none" opacity=".5"/>
+        </g>
+        <path d="M92 360 Q84 300 87 246 Q88 192 99 168 Q105 149 127 143 L139 140 Q150 137 161 140 L173 143 Q195 149 201 168 Q212 192 213 246 Q216 300 208 360 Z" fill="url(#coat14)"/>
+        <path d="M110 168 Q96 220 96 282 Q96 326 100 354" stroke="rgb(14 7 2/.36)" stroke-width="9" stroke-linecap="round" fill="none"/>
+        <path d="M190 168 Q204 220 204 282 Q204 326 200 354" stroke="rgb(14 7 2/.36)" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M150 170 Q147 260 148 354" stroke="rgb(0 0 0/.30)" stroke-width="3.4" fill="none"/><path d="M141 146 Q144 168 150 176 M159 146 Q156 168 150 176" stroke="rgb(0 0 0/.22)" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M140 146 L150 166 L160 146 Q150 141 140 146 Z" fill="#83704a"/>
+        <rect x="139" y="112" width="22" height="34" rx="9" fill="#75502f"/>
+        <ellipse cx="150" cy="88" rx="29" ry="31" fill="url(#skin14)"/>
+        <path d="M122 80 Q122 48 150 46 Q178 48 178 80 L178 72 Q178 62 150 62 Q122 62 122 72 Z" fill="#a5936e"/>
+        <path d="M122 80 Q122 68 150 68 Q178 68 178 80 L178 86 Q150 78 122 86 Z" fill="#c2ae83"/>
+        <path d="M139 96 h7 M154 96 h7" stroke="#33200f" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+        <path d="M143 110 Q150 114 157 110" stroke="#553823" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+        <path d="M213 246 Q216 300 208 356" stroke="#7d9cc4" stroke-width="3" stroke-linecap="round" fill="none" opacity=".35"/>
+      </svg>
+    </div>
+
+    <div class="pass-figure pass-figure--out" aria-hidden="true">
+      <div class="pass-glow"></div>
+      <!-- ticket #19: slate coat, half turned to go, head dipped — disappointed, nothing worse -->
+      <svg viewBox="0 0 300 360">
+        <defs>
+          <radialGradient id="skin19" cx="46%" cy="40%" r="75%">
+            <stop offset="0%" stop-color="#b08a64"/><stop offset="60%" stop-color="#876848"/>
+            <stop offset="100%" stop-color="#54402c"/>
+          </radialGradient>
+          <radialGradient id="coat19" cx="50%" cy="26%" r="90%">
+            <stop offset="0%" stop-color="#565c72"/><stop offset="52%" stop-color="#3b4153"/>
+            <stop offset="100%" stop-color="#1c202b"/>
+          </radialGradient>
+        <linearGradient id="dip3" x1="0" y1="0" x2="0" y2="1"><stop offset="72%" stop-color="rgb(24 12 6)" stop-opacity="0"/><stop offset="100%" stop-color="rgb(24 12 6)" stop-opacity=".62"/></linearGradient></defs>
+        <g transform="rotate(5 150 360)">
+          <path d="M92 360 Q84 300 87 246 Q88 192 99 168 Q105 149 127 143 L139 140 Q150 137 161 140 L173 143 Q195 149 201 168 Q212 192 213 246 Q216 300 208 360 Z" fill="url(#coat19)"/>
+          <path d="M110 170 Q96 222 96 284 Q96 326 100 354" stroke="rgb(6 8 12/.36)" stroke-width="9" stroke-linecap="round" fill="none"/>
+          <path d="M190 170 Q204 222 204 284 Q204 326 200 354" stroke="rgb(6 8 12/.36)" stroke-width="9" stroke-linecap="round" fill="none"/><path d="M150 170 Q147 260 148 354" stroke="rgb(0 0 0/.30)" stroke-width="3.4" fill="none"/><path d="M141 146 Q144 168 150 176 M159 146 Q156 168 150 176" stroke="rgb(0 0 0/.22)" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <rect x="139" y="116" width="22" height="34" rx="9" fill="#6e5136"/>
+          <g transform="translate(4 8) rotate(6 150 92)">
+            <ellipse cx="150" cy="90" rx="28" ry="31" fill="url(#skin19)"/>
+            <path d="M123 88 Q121 52 150 50 Q179 52 177 88 Q173 66 150 63 Q127 66 123 88 Z" fill="#332c2a"/>
+            <ellipse cx="179" cy="62" rx="9" ry="11" fill="#332c2a"/>
+            <path d="M139 92 q3.5 2.5 7 0 M154 92 q3.5 2.5 7 0" stroke="#33200f" stroke-width="3" stroke-linecap="round" fill="none"/>
+            <path d="M145 105 h10" stroke="#54402c" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+          </g>
+          <path d="M213 246 Q216 300 208 356" stroke="#7d9cc4" stroke-width="3" stroke-linecap="round" fill="none" opacity=".35"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="valance"></div>
+    <h2 class="tag tag--status" id="status">You are serving customers.</h2>
+    <p class="tag tag--clock" id="clock">17:00</p>
+    <p class="lanepill"><strong id="lane">37</strong> <span id="laneword">more people in the lane</span></p>
+  </div>
+
+  <!-- 3. the counter: near lip of the same object, carrying the instruments -->
+  <div class="counter">
+    <div class="deck">
+
+      <div class="pass">
+        <div class="ticket not-close" id="ticket">
+          <div class="ticket__row"><b id="tnum">#1</b><small id="tarr">ARRIVED 17:00</small></div>
+          <p class="ticket__want"><span class="n" id="twant">1</span><span id="twantword">plate</span></p>
+          <p class="ticket__say" id="tsay">&ldquo;One plate, please.&rdquo;</p>
+        </div>
+        <p class="alert only only-out" role="status">
+          You have no plates left. <strong>7</strong> people are still waiting.
+        </p>
+        <p class="alert only only-close" role="status">
+          <strong>8</strong> people wanted a plate after you ran out.
+        </p>
+      </div>
+
+      <div class="board">
+        <h3>Plates left</h3>
+        <span class="n" id="plates">30</span>
+        <small id="cooked">of the 30 you cooked</small>
+      </div>
+
+      <div class="till">
+        <h3>Tonight so far</h3>
+        <dl>
+          <dt>Money taken</dt><dd class="money" id="till">$0</dd>
+          <dt>Plates sold</dt><dd id="sold">0</dd>
+          <dt>Left without buying</dt><dd id="away">0</dd>
+        </dl>
+      </div>
+
+      <div class="controls">
+        <button class="primary not-close" type="button">Serve the next order</button>
+        <button class="ghost not-close" type="button" aria-pressed="false">Serve automatically</button>
+        <button class="primary only only-close" type="button">Close up and see how the night went</button>
+        <p class="progress" id="progress">Order 0 of 24.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* All values from serviceRun(POP_UP_NUMBERS,'middle-row',1,3,false) — see DIRECTION.md */
+var M = {
+  open:  { clock:"17:00", status:"You are serving customers.",
+           tnum:"#1", tarr:"ARRIVED 17:00", twant:"1", twantword:"plate",
+           tsay:"“One plate, please.”",
+           lane:"37", laneword:"more people in the lane",
+           plates:"30", till:"$0", sold:"0", away:"0", progress:"Order 0 of 24." },
+  midway:{ clock:"19:59", status:"You are serving customers.",
+           tnum:"#14", tarr:"ARRIVED 19:59", twant:"2", twantword:"plates",
+           tsay:"“Two plates, please.”",
+           lane:"15", laneword:"more people in the lane",
+           plates:"9", till:"$252", sold:"21", away:"0", progress:"Order 13 of 24." },
+  out:   { clock:"21:24", status:"You are serving customers.",
+           tnum:"#19", tarr:"ARRIVED 21:24", twant:"1", twantword:"plate",
+           tsay:"“Oh — next Saturday, then.”",
+           lane:"7", laneword:"more people in the lane",
+           plates:"0", till:"$360", sold:"30", away:"1", progress:"Order 19 of 24.",
+           stamped:true, bare:true },
+  close: { clock:"22:00", status:"You are closed for the night.",
+           lane:"0", laneword:"Nobody is waiting.",
+           plates:"0", till:"$360", sold:"30", away:"8",
+           progress:"You are closed. You sold 30 plates.", bare:true }
+};
+var m = new URLSearchParams(location.search).get("moment");
+if (!(m in M)) m = "open";
+var s = M[m], room = document.getElementById("room");
+room.setAttribute("data-moment", m);
+["clock","status","lane","laneword","plates","till","sold","away","progress"].forEach(function(id){
+  document.getElementById(id).textContent = s[id];
+});
+if (m !== "close") ["tnum","tarr","twant","twantword","tsay"].forEach(function(id){
+  document.getElementById(id).textContent = s[id];
+});
+if (s.stamped) document.getElementById("ticket").classList.add("ticket--stamped");
+if (s.bare) document.getElementById("plates").setAttribute("data-bare","");
+if (m === "close") document.getElementById("lane").style.display = "none";
+if (s.away !== "0") document.getElementById("away").setAttribute("data-loss","");
+if (m === "close") document.getElementById("cooked").textContent = "of the 30 you cooked";
+</script>
+</body>
+</html>
