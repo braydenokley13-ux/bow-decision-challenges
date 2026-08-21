@@ -1066,6 +1066,7 @@
 
 .pass-board__label { margin: 0; color: #b9c0ae; font: var(--t-label); letter-spacing: var(--stamp-tracking); }
 .pass-board__count { margin: var(--s-2) 0 0; color: var(--chalk); font: 800 3.25rem/1 var(--font-ui); font-feature-settings: var(--num); }
+
 /* The caption under the numeral. It is tight against the count and set a little tighter than
    `--t-sm` leads it, because at 1024 the hands board's caption is three lines and the pair has
    to stay inside the ticket slot's 168px — the moment the boards are the tallest thing in the
