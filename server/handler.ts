@@ -10,7 +10,8 @@ import { hasWrittenAnswer } from "../src/domain/evidence/writtenAnswer";
 import { clampCriterion, REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../src/domain/blueprint/reasoning";
 import { challengeById, PLAN_UNDER_PRESSURE } from "../src/platform/challenges/registry";
 import { contractFor } from "../src/domain/scenario/contracts";
-import { DEFAULT_WORLD_ID } from "../src/domain/scenario/registry";
+import { DEFAULT_WORLD_ID, stagesFor } from "../src/domain/scenario/registry";
+import { isKnownWorld } from "../src/domain/core/ids";
 import type { ClassStore, KeyCheck, StoredClass } from "./store";
 import { cryptoRandom } from "./crypto";
 import { callerOf, cleanDisplayName, handleIdentityRequest, opensClass, seatOf, spendRate, underRate, withinRate } from "./identity";
@@ -212,6 +213,10 @@ function readSubmission(body: unknown): EvidenceSubmission | null {
     if (!event || typeof event !== "object") return null;
     const type = (event as { type?: unknown }).type;
     if (typeof type !== "string" || !known.has(type)) return null;
+    const envelope = event as unknown as Record<string, unknown>;
+    if (envelope.sessionId !== candidate.sessionId || envelope.challengeId !== candidate.challengeId || envelope.challengeVersion !== candidate.challengeVersion) return null;
+    if (typeof envelope.sequence !== "number" || !Number.isInteger(envelope.sequence) || envelope.sequence < 1) return null;
+    if (typeof envelope.worldId !== "string" || !isKnownWorld(envelope.worldId) || !stagesFor(envelope.worldId).includes(envelope.stage as never)) return null;
   }
   // The teacher's own closing question, answered. It is read here and kept out of `log`, which
   // is the whole point of it having a field: nothing in `observe.ts` can reach it, so no
@@ -611,6 +616,10 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
     if (submission.challengeId !== record.challengeId) {
       return fail(409, "challenge_mismatch", "That class is running a different challenge.");
     }
+    const challenge = challengeById(submission.challengeId);
+    if (!challenge || submission.challengeVersion !== challenge.version) {
+      return fail(409, "challenge_mismatch", "That class is running a different challenge version.");
+    }
     // A named assignment must belong to **this class**, and that is the whole of the check.
     //
     // It used to be checked against the assignments the class currently holds, and answered
@@ -626,6 +635,13 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
     // handed out, including the one it has stopped handing out.
     if (submission.assignmentId !== undefined && !assignmentBelongsToClass(submission.assignmentId, record.code)) {
       return fail(404, "assignment_not_found", "That class was not set that work.");
+    }
+    const assignments = await assignmentsOn(store, record);
+    const assignment = submission.assignmentId ? assignments.find((entry) => entry.id === submission.assignmentId) : undefined;
+    if (submission.assignmentId && !assignment) return fail(404, "assignment_not_found", "That class was not set that work.");
+    const allowedWorlds: readonly string[] = assignment?.allowedWorldIds ?? ["basketball", "food-truck"];
+    if (submission.log.some((event) => !allowedWorlds.includes(event.worldId))) {
+      return fail(400, "bad_request", "That attempt uses a world this assignment did not offer.");
     }
     const stored: SubmissionRecord = {
       ...submission,
@@ -717,8 +733,9 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
     // The key is not echoed back. It is the credential this request was authorised with, and
     // a response body is the easiest place for a credential to end up somewhere it should not
     // be — a screenshot, a copied JSON blob, a browser cache.
-    const classForRead: Omit<StoredClass, "teacherKey"> & { teacherKey?: string } = { ...record };
+    const classForRead: Omit<StoredClass, "teacherKey"> & { teacherKey?: string; keyHandover?: boolean } = { ...record };
     delete classForRead.teacherKey;
+    delete classForRead.keyHandover;
     return {
       status: 200,
       body: {

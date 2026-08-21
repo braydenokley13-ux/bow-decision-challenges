@@ -79,19 +79,19 @@ async function classroom() {
 describe("one seat, two devices", () => {
   it("keeps a copy that is genuinely ahead of the one it holds", async () => {
     const { checkpoint, held } = await classroom();
-    await checkpoint(copy("one-run", ["start", "q1"]));
+    await checkpoint(copy("one-run-aaaaaaaa", ["start", "q1"]));
     // The benign case the old rule was written for, and it must go on working: a device whose
     // last checkpoint did not send has work the service has never seen.
-    await checkpoint(copy("one-run", ["start", "q1", "in"]));
+    await checkpoint(copy("one-run-aaaaaaaa", ["start", "q1", "in"]));
     expect(await held()).toBe("start,q1,in");
   });
 
   it("does not let a device that is behind pull the run backwards", async () => {
     const { checkpoint, held } = await classroom();
-    await checkpoint(copy("one-run", ["start", "q1", "in"]));
+    await checkpoint(copy("one-run-aaaaaaaa", ["start", "q1", "in"]));
     // A second device that has just picked the run up and has not caught up yet. Under
     // last-writer-wins this erased a decision the child had already made.
-    await checkpoint(copy("one-run", ["start", "q1"]));
+    await checkpoint(copy("one-run-aaaaaaaa", ["start", "q1"]));
     expect(await held()).toBe("start,q1,in");
   });
 
@@ -103,8 +103,8 @@ describe("one seat, two devices", () => {
    * answered on the school machine first and on the home machine second.
    */
   it("holds the same copy whichever device checkpointed last", async () => {
-    const school = copy("one-run", ["start", "q1", "in"]);
-    const home = copy("one-run", ["start", "q1", "out"]);
+    const school = copy("one-run-aaaaaaaa", ["start", "q1", "in"]);
+    const home = copy("one-run-aaaaaaaa", ["start", "q1", "out"]);
     // The premise, asserted rather than assumed: same run, same length, different answers.
     expect(school.log.length).toBe(home.log.length);
     expect(school.meta.sessionId).toBe(home.meta.sessionId);
@@ -126,13 +126,13 @@ describe("one seat, two devices", () => {
 
   it("gives the run back to the machine the child is actually sitting at", async () => {
     const { checkpoint, held } = await classroom();
-    await checkpoint(copy("one-run", ["start", "q1", "in"]));
-    await checkpoint(copy("one-run", ["start", "q1", "out"]));
+    await checkpoint(copy("one-run-aaaaaaaa", ["start", "q1", "in"]));
+    await checkpoint(copy("one-run-aaaaaaaa", ["start", "q1", "out"]));
     // The child goes back to the school machine and carries on. Its next decision is the most
     // recent one there is, so its copy takes the run back — which is the property this has to
     // have. A rule that could strand a child working on a machine that no longer counts would
     // be worse than the defect it replaced.
-    const carriedOn = copy("one-run", ["start", "q1", "in"]);
+    const carriedOn = copy("one-run-aaaaaaaa", ["start", "q1", "in"]);
     carriedOn.log.push({ ...carriedOn.log[2]!, id: "event-4", sequence: 4, timestamp: NOW + 9_000, payload: { mark: "later" } });
     await checkpoint(carriedOn);
     expect(await held()).toBe("start,q1,in,later");

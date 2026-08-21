@@ -62,6 +62,8 @@ export interface JoinedStudent {
   label: string;
   /** Handed back once on an open join, so a student who loses their session can get back in. */
   joinCode?: string;
+  /** Shown once when a brand-new student account is created. Keep it off local storage. */
+  recoveryKey?: string;
 }
 
 export function claimSeat(input: {
@@ -71,6 +73,8 @@ export function claimSeat(input: {
   /** Only for an open class, and only for somebody who has never been in it before. */
   displayName?: string;
   device: DeviceClass;
+  /** Required alongside a new class card when linking an existing BOW account. */
+  bowRecoveryKey?: string;
 }) {
   return call<JoinedStudent>(`/classes/${input.classCode.toUpperCase()}/join`, {
     method: "POST",

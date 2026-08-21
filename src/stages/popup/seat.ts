@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { readMyClasses, studentToken } from "../../student/session";
 import type { PopUpSeed } from "./PopUpContext";
+import { selectedAssignment } from "../../student/assignmentSelection";
 
 /**
  * Who is sitting here — asked of the student's session, not of another world's reducer.
@@ -75,15 +76,14 @@ export function useSessionSeat(fromRun: PopUpSeed): PopUpSeed | null {
       // A class this student is not in, or a service that cannot be reached: the market opens
       // the way it opens for anybody without a class, which is what it did before this existed.
       // It does not guess a seat, because a guessed seat files one child's work under another.
-      setFound(picked
+      const assignment = picked ? selectedAssignment(picked.assignments, namedAssignment) : null;
+      setFound(picked && assignment
         ? {
           classCode: picked.classCode,
           seatCode: picked.seatCode,
-          assignmentId: (namedAssignment
-            ? picked.assignments.find((entry) => entry.id === namedAssignment)?.id
-            : undefined) ?? picked.assignments[0]?.id ?? "",
+          assignmentId: assignment.id,
         }
-        : { classCode: "", seatCode: "", assignmentId: "" });
+        : picked ? null : { classCode: "", seatCode: "", assignmentId: "" });
     })();
     return () => { cancelled = true; };
   }, [known, nothingToAsk, named, namedAssignment]);

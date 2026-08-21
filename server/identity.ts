@@ -1,5 +1,7 @@
 import { CODE_ALPHABET, generateTeacherKey, isWellFormedClassCode, isWellFormedSeatCode, normaliseClassCode, normaliseSeatCode } from "../src/platform/classes/codes";
 import { assignmentIdFor, assignmentsForClass } from "../src/platform/classes/assignments";
+import { isKnownWorld } from "../src/domain/core/ids";
+import { stagesFor } from "../src/domain/scenario/registry";
 import { asRunCopy, copyToKeep } from "../src/platform/identity/runCopies";
 import {
   IDENTITY_ERROR_MESSAGES,
@@ -19,8 +21,8 @@ import {
   type ShareOutItem,
   type ShareOutSelection,
 } from "../src/platform/identity/types";
-import { burnSecretCheck, hashSecret, lookupIndex, newId, newRecoveryCode, readToken, signToken, verifySecret } from "./crypto";
-import { emailKey, type ClassStore, type StoredClass, type StoredRosterEntry, type StoredTeacher } from "./store";
+import { burnSecretCheck, hashSecret, isWellFormedRecoveryCode, lookupIndex, newId, newRecoveryCode, readToken, signToken, verifySecret } from "./crypto";
+import { emailKey, studentRecoveryIndex, type ClassStore, type StoredClass, type StoredRosterEntry, type StoredStudent, type StoredTeacher } from "./store";
 
 /**
  * Accounts, rosters, sessions, checkpoints, feedback and share-outs.
@@ -132,6 +134,9 @@ export function chargeCodeMiss(clientId: string, now: number): boolean {
 
 /** Ten minutes, named because the message a locked-out student reads has to say the same thing. */
 export const JOIN_WINDOW_MS = 10 * 60 * 1000;
+/** Wrong recovery proofs are expensive and must not become a student-account oracle. */
+export const STUDENT_RECOVERY_LIMIT = 20;
+export const STUDENT_RECOVERY_WINDOW_MS = 15 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
 // Sessions
@@ -140,6 +145,14 @@ export const JOIN_WINDOW_MS = 10 * 60 * 1000;
 export interface Caller {
   kind: "student" | "teacher";
   id: string;
+}
+
+/** Durable, opaque student recovery material; it is never a name, email, or school id. */
+const STUDENT_KEY_RE = isWellFormedRecoveryCode;
+
+/** One representation for lookup and slow verification; never put the raw key in a URL or log. */
+function normaliseStudentRecoveryKey(value: string): string {
+  return value.normalize("NFKC").trim().toUpperCase();
 }
 
 /**
@@ -195,8 +208,13 @@ async function issue(
  * claimed by that account. Neither is derivable from the class code.
  */
 export function opensClass(record: StoredClass, key: string | undefined, caller: Caller | null): boolean {
-  if (key && key === record.teacherKey) return true;
-  return caller?.kind === "teacher" && Boolean(record.teacherId) && caller.id === record.teacherId;
+  if (caller?.kind === "teacher" && Boolean(record.teacherId) && caller.id === record.teacherId) return true;
+  // A key is a legacy/handover capability only. Once an account claims a class, every
+  // teacher surface uses that account's bearer token; the old key cannot keep opening it.
+  // A freshly rotated key is an explicit handover credential, and is the only key exception
+  // retained for an account-owned class.
+  if (key && (!record.teacherId || (record as StoredClass & { keyHandover?: boolean }).keyHandover === true) && key === record.teacherKey) return true;
+  return false;
 }
 
 // ---------------------------------------------------------------------------
@@ -632,10 +650,45 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
         status: 200,
         body: {
           signedOut: true,
+          clearLocalCapabilities: true,
+          capabilities: [],
           at: now,
           message: "Every device signed in to this account has been signed out. Sign in again to carry on.",
         },
       };
+    },
+  },
+
+  // -- DELETE /auth/teacher/account — permanently close the teacher account. --
+  // Classes remain intact for handover, but the account, password, recovery code and ownership
+  // indexes are erased. Existing bearer tokens fail because callerOf can no longer resolve the
+  // account, and the detached classes intentionally fall back to their legacy class key.
+  {
+    method: "DELETE",
+    path: "auth/teacher/account",
+    auth: "teacher",
+    run: async ({ caller, context }) => {
+      const teacher = await context.store.getTeacher(caller.id);
+      if (!teacher) return identityFail(401, "no_session");
+      await context.store.deleteTeacher(caller.id);
+      return {
+        status: 200,
+        body: {
+          closed: true,
+          message: "Your account is closed. Its classes remain available through their handover keys, but this account and every session have been removed.",
+        },
+      };
+    },
+  },
+  {
+    method: "DELETE",
+    path: "auth/teacher",
+    auth: "teacher",
+    run: async ({ caller, context }) => {
+      const teacher = await context.store.getTeacher(caller.id);
+      if (!teacher) return identityFail(401, "no_session");
+      await context.store.deleteTeacher(caller.id);
+      return { status: 200, body: { closed: true, message: "Your account is closed and every session has been removed." } };
     },
   },
 
@@ -791,9 +844,12 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
         // a student who has already read the first two should find the new one where new things
         // go. It used to be one note: the newest, because the store only ever kept one.
         const feedback = (await store.listFeedback(seat.classCode))
-          .filter((entry) => entry.seatCode === seat.seatCode && !entry.deletedAt)
+          .filter((entry) => {
+            const owner = (entry as typeof entry & { studentId?: string }).studentId;
+            return entry.seatCode === seat.seatCode && !entry.deletedAt && (owner === undefined || owner === id);
+          })
           .sort((a, b) => a.at - b.at);
-        const checkpoint = checkpoints.find((entry) => entry.seatCode === seat.seatCode);
+        const checkpoint = checkpoints.find((entry) => entry.seatCode === seat.seatCode && entry.studentId === id);
         const stored = await store.listAssignments(seat.classCode);
         // Work set for particular seats is work for those seats. `assignedStudentIds` holds
         // seat codes (see `Assignment`), and `null` means the whole room.
@@ -921,6 +977,8 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
       const classCode = typeof request.body.classCode === "string" ? request.body.classCode.toUpperCase() : "";
       const seat = await seatOf(store, studentId, classCode);
       if (!seat) return identityFail(403, "no_session");
+      const classRecord = await store.getClass(classCode);
+      if (!classRecord) return identityFail(404, "seat_not_found");
       // Counted per student and charged on every write, accepted or refused — see
       // `CHECKPOINT_LIMIT`. It is charged before the payload is weighed and long before the two
       // copies are read against each other, so a caller sending refusable requests spends their
@@ -947,8 +1005,23 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
       const worldId = typeof request.body.worldId === "string" ? request.body.worldId : "";
       const stage = typeof request.body.stage === "string" ? request.body.stage.slice(0, 60) : "";
       if (!worldId || !stage) return { status: 400, body: { error: "bad_request", message: "A checkpoint needs a world and a stage." } };
-      const existing = (await store.listCheckpoints(classCode)).find((entry) => entry.seatCode === seat.seatCode);
+      if (!isKnownWorld(worldId) || !stagesFor(worldId).includes(stage as never)) {
+        return { status: 400, body: { error: "bad_request", message: "That world or stage is not part of this challenge." } };
+      }
+      const assignmentId = typeof request.body.assignmentId === "string" ? request.body.assignmentId.slice(0, 64) : "";
+      const assignments = assignmentsForClass(classRecord, await store.listAssignments(classCode));
+      const assignment = assignmentId ? assignments.find((entry) => entry.id === assignmentId) : undefined;
+      if (assignmentId && !assignment) return { status: 404, body: { error: "assignment_not_found", message: "That assignment is not in this class." } };
+      if (assignment && !assignment.allowedWorldIds.includes(worldId)) {
+        return { status: 400, body: { error: "bad_request", message: "That world is not part of this assignment." } };
+      }
       const sessionId = typeof request.body.sessionId === "string" ? request.body.sessionId.slice(0, 64) : "";
+      if (sessionId && !/^[A-Za-z0-9._-]{8,64}$/.test(sessionId)) return { status: 400, body: { error: "bad_request", message: "That attempt id is not valid." } };
+      const existing = (await store.listCheckpoints(classCode)).find((entry) =>
+        entry.seatCode === seat.seatCode
+        && entry.studentId === studentId
+        && (entry.assignmentId || "") === assignmentId
+        && (!sessionId || !entry.sessionId || entry.sessionId === sessionId));
       // A checkpoint never outranks a submission — the type has said so since it was written,
       // and this rebuild dropped `submittedAt` on the floor, so the last checkpoint a student's
       // browser sent on its way out of the turn-in screen brought a finished run back to life.
@@ -989,8 +1062,8 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
         classCode,
         seatCode: seat.seatCode,
         studentId,
-        assignmentId: typeof request.body.assignmentId === "string" ? request.body.assignmentId.slice(0, 64) : "",
-        worldId: worldId as AttemptCheckpoint["worldId"],
+        assignmentId,
+        worldId,
         stage,
         startedAt: sameAttempt ? existing?.startedAt ?? now : now,
         updatedAt: now,
@@ -1014,7 +1087,7 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
       if (!classCode) return { status: 400, body: { error: "bad_request", message: "Say which class." } };
       const seat = await seatOf(store, caller.id, classCode);
       if (!seat) return identityFail(403, "no_session");
-      const checkpoint = (await store.listCheckpoints(classCode)).find((entry) => entry.seatCode === seat.seatCode);
+      const checkpoint = (await store.listCheckpoints(classCode)).find((entry) => entry.seatCode === seat.seatCode && entry.studentId === caller.id);
       return { status: 200, body: { attempt: checkpoint && !checkpoint.submittedAt ? checkpoint : null, seatCode: seat.seatCode } };
     },
   },
@@ -1065,7 +1138,7 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
     path: "classes/:code/roster",
     auth: "classOwner",
     run: async ({ request, context, record, code }) => {
-      const { store, now, random } = context;
+      const { store, now, random, clientId } = context;
       const names = Array.isArray(request.body.names) ? request.body.names : [];
       const cleaned = names.map(cleanDisplayName).filter((name): name is string => name !== null);
       if (cleaned.length === 0) return { status: 400, body: { error: "bad_request", message: "Give at least one name." } };
@@ -1114,7 +1187,18 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
       const joinCode = generateJoinCode(random);
       // The seat is released as well as re-coded. A reissue is what a teacher does when a
       // student cannot get in, and half of those are a seat somebody else claimed by mistake.
-      if (entry.studentId) await store.unlinkSeatFromStudent(entry.studentId, { classCode: code, seatCode });
+      if (entry.studentId) {
+        // Feedback historically had no account owner. Stamp those notes before releasing the
+        // seat so a clean replacement cannot read them, while the original bearer + BOW proof
+        // can reclaim the seat and continue to see its own history.
+        for (const note of await store.listFeedback(code)) {
+          const owner = (note as typeof note & { studentId?: string }).studentId;
+          if (note.seatCode === seatCode && owner === undefined) {
+            await store.putFeedback({ ...note, ...({ studentId: entry.studentId } as object) });
+          }
+        }
+        await store.unlinkSeatFromStudent(entry.studentId, { classCode: code, seatCode });
+      }
       // The claim timestamp goes with the code it belonged to: a reissued card is a fresh
       // seat, and a claimedAt from the student who lost it would read as this one signing in.
       const rest = { ...entry };
@@ -1181,7 +1265,7 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
     method: "POST",
     path: "classes/:code/join",
     auth: "classDoor",
-    run: async ({ request, context, record, code }) => {
+    run: async ({ request, context, record, code, caller }) => {
       const { store, now, random, clientId } = context;
       // Only wrong answers are counted.
       //
@@ -1215,7 +1299,15 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
           spendRate(attempts, JOIN_WINDOW_MS, now);
           return removed ? identityFail(403, "seat_removed") : identityFail(401, "bad_credentials");
         }
-        const claimed = await claim(store, entry, now);
+        const linkId = caller?.kind === "student" && typeof request.body.bowRecoveryKey === "string" ? caller.id : undefined;
+        const recoveryKey = typeof request.body.bowRecoveryKey === "string"
+          ? normaliseStudentRecoveryKey(request.body.bowRecoveryKey)
+          : undefined;
+        if (recoveryKey !== undefined && !underRate(`student-recovery:${clientId}`, STUDENT_RECOVERY_LIMIT, STUDENT_RECOVERY_WINDOW_MS, now)) {
+          return identityFail(429, "too_many_attempts");
+        }
+        const claimed = await claimWithProof(store, entry, now, linkId, recoveryKey, clientId);
+        if (!claimed) return identityFail(403, "bad_credentials");
         return {
           status: 200,
           body: {
@@ -1256,7 +1348,15 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
         selfNamed: true,
       };
       await store.putRosterEntry(entry);
-      const claimed = await claim(store, entry, now);
+      const linkId = caller?.kind === "student" && typeof request.body.bowRecoveryKey === "string" ? caller.id : undefined;
+      const recoveryKey = typeof request.body.bowRecoveryKey === "string"
+        ? normaliseStudentRecoveryKey(request.body.bowRecoveryKey)
+        : undefined;
+      if (recoveryKey !== undefined && !underRate(`student-recovery:${clientId}`, STUDENT_RECOVERY_LIMIT, STUDENT_RECOVERY_WINDOW_MS, now)) {
+        return identityFail(429, "too_many_attempts");
+      }
+      const claimed = await claimWithProof(store, entry, now, linkId, recoveryKey, clientId);
+      if (!claimed) return identityFail(403, "bad_credentials");
       return {
         status: 201,
         body: {
@@ -1340,7 +1440,7 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
         return identityFail(429, "too_many_attempts");
       }
       const teacherKey = generateTeacherKey(random);
-      await store.putClass({ ...record, teacherKey });
+      await store.putClass({ ...record, teacherKey, ...({ keyHandover: true } as object) });
       return {
         status: 200,
         body: {
@@ -1387,7 +1487,11 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
           },
         };
       }
-      const note = { id: newId("f"), classCode: code, seatCode, sessionId, body, at: now, flagged: request.body.flagged === true };
+      const rosterEntry = (await store.listRoster(code)).find((entry) => entry.seatCode === seatCode);
+      const note = {
+        id: newId("f"), classCode: code, seatCode, sessionId, body, at: now, flagged: request.body.flagged === true,
+        ...((rosterEntry?.studentId) ? { studentId: rosterEntry.studentId } : {}),
+      };
       await store.putFeedback(note);
       return { status: 201, body: { id: note.id, seatCode, sessionId, at: now } };
     },
@@ -1451,11 +1555,15 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
     run: async ({ request, context, code }) => {
       const { store, now } = context;
       const raw = Array.isArray(request.body.items) ? request.body.items : [];
+      const roster = await store.listRoster(code);
+      const submissions = await store.listSubmissions(code);
       const items: ShareOutItem[] = raw.slice(0, 8).flatMap((value, index) => {
         const entry = value as Record<string, unknown>;
         const sessionId = typeof entry.sessionId === "string" ? entry.sessionId.slice(0, 64) : "";
         const seatCode = normaliseSeatCode(typeof entry.seatCode === "string" ? entry.seatCode : "");
         if (!sessionId || !isWellFormedSeatCode(seatCode)) return [];
+        if (!roster.some((entry) => entry.seatCode === seatCode && !entry.removedAt)) return [];
+        if (!submissions.some((entry) => entry.seatCode === seatCode && entry.sessionId === sessionId)) return [];
         return [{ sessionId, seatCode, note: typeof entry.note === "string" ? entry.note.trim().slice(0, 200) : "", order: index }];
       });
       const selection: ShareOutSelection = { classCode: code, items, named: request.body.named === true, updatedAt: now };
@@ -1634,20 +1742,70 @@ async function claim(
   store: ClassStore,
   entry: StoredRosterEntry,
   now: number,
-): Promise<{ studentId: string; seatCode: string; displayName: string; generation: number }> {
-  let id = entry.studentId;
+  accountId?: string,
+  bowRecoveryKey?: string,
+): Promise<{ studentId: string; seatCode: string; displayName: string; generation: number; recoveryKey?: string }> {
+  let id = entry.studentId ?? accountId;
   let generation = 0;
-  const account = id ? await store.getStudent(id) : null;
+  let recoveryKey: string | undefined;
+  let account = id ? await store.getStudent(id) : null;
+
+  // A fresh browser has no bearer token, so the card can only be linked to an existing
+  // account through the deliberately supplied BOW key. The blind index narrows this to one
+  // candidate; the slow scrypt hash below is still the authorization decision. Missing or
+  // legacy indexes fail closed rather than silently creating a second identity.
+  if (!id && bowRecoveryKey !== undefined) {
+    if (!STUDENT_KEY_RE(bowRecoveryKey)) throw new Error("student_recovery_required");
+    const index = studentRecoveryIndex(await store.sessionSecret(), bowRecoveryKey);
+    const candidate = await store.getStudentByRecoveryIndex(index) as StoredStudent | null;
+    if (!candidate || candidate.recoveryIndex !== index || !candidate.recoveryHash || !await verifySecret(bowRecoveryKey, candidate.recoveryHash)) {
+      throw new Error("student_recovery_required");
+    }
+    id = candidate.id;
+    account = candidate;
+  }
+
   // A seat pointing at an account that no longer exists is a seat with nobody in it.
   if (!id || !account) {
+    if (bowRecoveryKey !== undefined) throw new Error("student_recovery_required");
     id = newId("s");
-    await store.putStudent({ id, createdAt: now });
+    recoveryKey = newRecoveryCode();
+    const index = studentRecoveryIndex(await store.sessionSecret(), recoveryKey);
+    await store.putStudent({ id, createdAt: now, ...({ recoveryHash: await hashSecret(recoveryKey), recoveryIndex: index } as object) });
   } else {
+    if (accountId && accountId === id) {
+      if (!bowRecoveryKey || !STUDENT_KEY_RE(bowRecoveryKey) || !account.recoveryHash || !await verifySecret(bowRecoveryKey, account.recoveryHash)) {
+        throw new Error("student_recovery_required");
+      }
+    }
+    if (!account.recoveryHash) {
+      recoveryKey = newRecoveryCode();
+      await store.putStudent({ ...account, ...({ recoveryHash: await hashSecret(recoveryKey) } as object) });
+    }
     generation = account.sessionGeneration ?? 0;
   }
   await store.putRosterEntry({ ...entry, studentId: id, claimedAt: entry.claimedAt ?? now });
   await store.linkSeatToStudent(id, { classCode: entry.classCode, seatCode: entry.seatCode });
-  return { studentId: id, seatCode: entry.seatCode, displayName: entry.displayName, generation };
+  return { studentId: id, seatCode: entry.seatCode, displayName: entry.displayName, generation, ...(recoveryKey ? { recoveryKey } : {}) };
+}
+
+async function claimWithProof(
+  store: ClassStore,
+  entry: StoredRosterEntry,
+  now: number,
+  accountId: string | undefined,
+  recoveryKey: string | undefined,
+  clientId: string,
+) {
+  try {
+    return await claim(store, entry, now, accountId, recoveryKey);
+  } catch (error) {
+    if (error instanceof Error && error.message === "student_recovery_required") {
+      if (recoveryKey !== undefined) spendRate(`student-recovery:${clientId}`, STUDENT_RECOVERY_WINDOW_MS, now);
+      return null;
+    }
+    throw error;
+  }
 }
 
 /**

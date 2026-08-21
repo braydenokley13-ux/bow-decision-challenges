@@ -142,7 +142,7 @@ describe("who may replace a class's key", () => {
     const withKeyOnly = await call("POST", `/classes/${created.code}/key`, {}, { "x-bow-teacher-key": created.teacherKey });
     expect(withKeyOnly.status).toBe(401);
     // And it did not quietly work anyway.
-    expect((await call("GET", `/classes/${created.code}/submissions`, undefined, { "x-bow-teacher-key": created.teacherKey })).status).toBe(200);
+    expect((await call("GET", `/classes/${created.code}/submissions`, undefined, { "x-bow-teacher-key": created.teacherKey })).status).toBe(403);
   });
 
   it("refuses another teacher's account, with the answer every other class route gives", async () => {

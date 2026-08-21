@@ -24,6 +24,7 @@ import { forgetStudent, joinCodeHeld, rememberStudentId, studentIdHeld, studentT
  */
 
 const CLASS = "P6MKT";
+const RECOVERY_KEY = "BOWRECOVERY1";
 
 /** A fetch response built the way `session.ts`'s `call` expects to read it. */
 function respond(body: unknown, status = 200): Promise<Response> {
@@ -64,7 +65,7 @@ function openClassService() {
       codeToStudent[joinCode] = studentId;
       return respond({
         studentId, seatCode, displayName: body.displayName, token: `token-${studentId}`,
-        classCode: CLASS, label: "Room 9", joinCode,
+        classCode: CLASS, label: "Room 9", joinCode, recoveryKey: RECOVERY_KEY,
       }, 201);
     }
     return respond({ error: "not_found", message: "not found" }, 404);
@@ -139,6 +140,8 @@ describe("an open-class student is shown their code and can use it to get back i
     await userEvent.click(screen.getByRole("button", { name: "Yes — that was me" }));
     const codeField = await screen.findByLabelText("Your code");
     expect(codeField).toHaveValue("JOINCODE1");
+
+    await userEvent.type(screen.getByLabelText(/BOW recovery key/), RECOVERY_KEY);
 
     await userEvent.click(screen.getByRole("button", { name: "Go in" }));
     await waitFor(() => expect(screen.getByText("home")).toBeInTheDocument());

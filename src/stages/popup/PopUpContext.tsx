@@ -1,11 +1,14 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type Dispatch, type PropsWithChildren } from "react";
-import { clearAttemptFor, clearEveryAttempt, loadAttemptFor } from "../../domain/io/persistence";
+import { clearAttemptFor, clearEveryAttempt, loadAttemptFor, saveAttempt } from "../../domain/io/persistence";
 import { useAttemptAutosave, useSingleFireDispatch } from "../../app/attemptStore";
 import { useAttemptCheckpoint } from "../../student/useAttemptCheckpoint";
 import { readMyAttempt, studentToken } from "../../student/session";
 import { createPopUpState, popUpReducer, type PopUpAction, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
 import { deliverWithRetry, type DeliveryState, type EvidenceTransport } from "../../platform/evidence/transport";
+import { asRunCopy, runToCarryOn } from "../../platform/identity/runCopies";
+import { closingAnswerFor, forgetClosingDraft } from "../../student/closingQuestion";
+import type { EvidenceSubmission } from "../../platform/classes/types";
 
 /**
  * Run the Pop-Up's own provider, holding Run the Pop-Up's own machine.
@@ -37,6 +40,21 @@ export interface PopUpSeed {
   classCode: string;
   seatCode: string;
   assignmentId: string;
+}
+
+/** Build the market submission, including the assignment's optional closing answer. */
+export function popUpSubmission(state: PopUpState): EvidenceSubmission {
+  const answer = closingAnswerFor(state.meta.sessionId);
+  return {
+    classCode: state.meta.classCode,
+    seatCode: state.meta.seatCode,
+    sessionId: state.meta.sessionId,
+    challengeId: state.meta.challengeId,
+    challengeVersion: state.meta.challengeVersion,
+    ...(state.meta.assignmentId ? { assignmentId: state.meta.assignmentId } : {}),
+    ...(answer ? { closingAnswer: answer } : {}),
+    log: state.log,
+  };
 }
 
 /**
@@ -84,7 +102,8 @@ function belongsToSeat(state: PopUpState, seed: PopUpSeed): boolean {
 export function PopUpProvider({ children, seed, transport, sample = false }: PropsWithChildren<{ seed: PopUpSeed; transport: EvidenceTransport; sample?: boolean }>) {
   const here = loadAttemptFor<PopUpState>("food-truck");
   const nothingToAsk = !seed.classCode || !studentToken();
-  const [resolved, setResolved] = useState<{ state?: PopUpState } | null>(() => (nothingToAsk ? {} : null));
+  const [resolved, setResolved] = useState<{ state?: PopUpState; setAside?: boolean } | null>(() => (nothingToAsk ? {} : null));
+  const [told, setTold] = useState(false);
 
   useEffect(() => {
     if (nothingToAsk) return;
@@ -94,10 +113,12 @@ export function PopUpProvider({ children, seed, transport, sample = false }: Pro
       if (cancelled) return;
       const attempt = result.ok ? result.body.attempt : null;
       const there = attempt?.worldId === "food-truck" ? (attempt.payload as PopUpState | null) : null;
-      const usable = there?.meta?.sessionId && there.stage !== "popup-submitted" && there.log.length > 0
-        && belongsToSeat(there, seed);
-      const mineIsNewer = here && there && here.meta.sessionId === there.meta.sessionId && here.log.length >= there.log.length;
-      setResolved(usable && !mineIsNewer && there ? { state: there } : {});
+      const usable = there?.meta?.sessionId && there.stage !== "popup-submitted" && there.log.length > 0 && belongsToSeat(there, seed);
+      if (!usable || !there) { setResolved({}); return; }
+      const answer = runToCarryOn(asRunCopy(here), asRunCopy(there));
+      if (answer.take === "here") { setResolved({}); return; }
+      saveAttempt(there);
+      setResolved({ state: there, ...(answer.forked ? { setAside: true } : {}) });
     })();
     return () => { cancelled = true; };
     // `here` is read once at mount on purpose: it is the comparison this fetch is against, and
@@ -106,7 +127,12 @@ export function PopUpProvider({ children, seed, transport, sample = false }: Pro
   }, [seed, nothingToAsk]);
 
   if (!resolved) return <div className="popup-shell" data-world="food-truck" />;
+  if (resolved.setAside && !told) return <PopUpCopySetAside onCarryOn={() => setTold(true)} />;
   return <PopUpRun seed={seed} transport={transport} sample={sample} {...(resolved.state ? { initial: resolved.state } : {})}>{children}</PopUpRun>;
+}
+
+function PopUpCopySetAside({ onCarryOn }: { onCarryOn: () => void }) {
+  return <div className="run-elsewhere"><main><p className="eyebrow">You worked on this run in two places</p><h1>Carry on where you left off?</h1><button className="button button--primary" type="button" onClick={onCarryOn}>Carry on</button><p>This run was open on another computer as well as this one, and the two stopped matching. BOW keeps the copy you worked on most recently.</p></main></div>;
 }
 
 function PopUpRun({ children, seed, transport, sample = false, initial }: PropsWithChildren<{ seed: PopUpSeed; transport: EvidenceTransport; sample?: boolean; initial?: PopUpState }>) {
@@ -181,15 +207,7 @@ function PopUpRun({ children, seed, transport, sample = false, initial }: PropsW
   const deliver = useCallback(async () => {
     await deliverWithRetry(
       transport,
-      {
-        classCode: state.meta.classCode,
-        seatCode: state.meta.seatCode,
-        sessionId: state.meta.sessionId,
-        challengeId: state.meta.challengeId,
-        challengeVersion: state.meta.challengeVersion,
-        ...(state.meta.assignmentId ? { assignmentId: state.meta.assignmentId } : {}),
-        log: state.log,
-      },
+      popUpSubmission(state),
       setDelivery,
     );
   }, [transport, state.meta, state.log]);
@@ -198,8 +216,9 @@ function PopUpRun({ children, seed, transport, sample = false, initial }: PropsW
     // Every key this world's attempt can be restored from, plus the drafts its screens were
     // holding. A student who asks to run the market again must not be handed the last one.
     clearAttemptFor("food-truck");
+    if (state.meta.sessionId) forgetClosingDraft(state.meta.sessionId);
     window.location.assign("/");
-  }, []);
+  }, [state.meta.sessionId]);
 
   const handOver = useCallback(() => {
     clearEveryAttempt();

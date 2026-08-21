@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { EducatorShell } from "./EducatorShell";
 import { CLASS_RETENTION_DAYS } from "../platform/classes/types";
-import { rememberedClasses } from "./classMemory";
+import { forgetEveryClass, rememberedClasses } from "./classMemory";
 import { changePassword, claimRememberedClasses, createAccount, forgetTeacher, myTeaching, recoverTeacher, rememberTeacher, signInTeacher, signOutEverywhere, teacherToken, whoAmI } from "./teacherSession";
 
 /**
@@ -87,6 +87,7 @@ function TeacherAccount({ onSignedOut }: { onSignedOut: (how: "everywhere" | "he
     setEnding(true);
     const result = await signOutEverywhere();
     forgetTeacher();
+    forgetEveryClass();
     onSignedOut(result.ok ? "everywhere" : "here");
   };
 

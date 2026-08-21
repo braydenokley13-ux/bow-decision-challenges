@@ -430,6 +430,10 @@ const PLAIN_ENOUGH = new Set<string>([
   // working in a second language does not stop at it, and defining it in a money glossary
   // would be the panel explaining English rather than explaining the market.
   "shut",
+  // The assignment picker names the work a student can return to: an ordinary "piece" of
+  // work, and the ordinary verbs "return" and "longer" in the stale-work message. These are
+  // navigation copy, not money or scenario vocabulary, so they belong in the plain register.
+  "longer", "piece", "return",
   // The possessive of a word already on this list, arriving with the teacher’s own closing
   // question. A Grade 5 reader who reads "teacher" does not stop at "teacher’s". The
   // apostrophe is the typographic one every other possessive in the student copy uses.

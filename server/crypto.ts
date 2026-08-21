@@ -173,9 +173,25 @@ export function cryptoRandom(): number {
   return randomBytes(6).readUIntBE(0, 6) / 2 ** 48;
 }
 
-/** A teacher's recovery code. Long, printed once, never shown again. */
+/**
+ * Recovery material is printed on a card and typed by a student, so it uses the same
+ * confusable-free alphabet as the validator.  In particular, `0`, `1`, `I`, `O` and `L`
+ * are deliberately absent.  Keeping this alphabet here, beside the generator, prevents a
+ * future generator change from issuing values the identity boundary rejects.
+ */
+export const RECOVERY_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const RECOVERY_CODE_LENGTH = 20;
+
+/** True for the opaque student/teacher recovery material BOW accepts. */
+export function isWellFormedRecoveryCode(value: string): boolean {
+  return value.length >= 8 && value.length <= 64 && [...value].every((character) => RECOVERY_CODE_ALPHABET.includes(character));
+}
+
+/** A recovery code. Long, printed once, never shown again. */
 export function newRecoveryCode(): string {
-  return randomBytes(15).toString("base64url").replace(/[-_]/g, "").slice(0, 20).toUpperCase();
+  // The alphabet has 32 characters, so every byte maps uniformly with `% 32`.
+  const bytes = randomBytes(RECOVERY_CODE_LENGTH);
+  return Array.from(bytes, (byte) => RECOVERY_CODE_ALPHABET[byte % RECOVERY_CODE_ALPHABET.length]!).join("");
 }
 
 /**

@@ -158,9 +158,9 @@ describe("the run the guide says a student can come back to is one the service h
 
     // Tuesday, in class. One device checkpoints mid-run, exactly as `useAttemptCheckpoint` does.
     const inClass = ((await signIn(NOW)).body as { token: string }).token;
-    const plan = { meta: { sessionId: "run-1" }, stage: "working-plan", log: [{ id: "e1", sequence: 1, type: "HOUSING_RANKED", sessionId: "run-1", timestamp: NOW, payload: { setupId: "teammate-share" } }] };
+    const plan = { meta: { sessionId: "run-1-aaaa" }, stage: "working-plan", log: [{ id: "e1", sequence: 1, type: "HOUSING_RANKED", sessionId: "run-1-aaaa", timestamp: NOW, payload: { setupId: "teammate-share" } }] };
     const saved = await call("PUT", "/me/attempt", {
-      classCode: created.code, worldId: "basketball", stage: plan.stage, sessionId: "run-1", payload: plan,
+      classCode: created.code, worldId: "basketball", stage: plan.stage, sessionId: "run-1-aaaa", payload: plan,
     }, { authorization: `Bearer ${inClass}` });
     expect(saved.status).toBe(200);
 

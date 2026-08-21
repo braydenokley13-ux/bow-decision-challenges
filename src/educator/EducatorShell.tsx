@@ -8,6 +8,7 @@ import { NAV_LABELS, type KeyEntry } from "./labels";
 // Sets the flag `design/app.css` reads to keep the arrival ring off a page nobody has touched.
 import "../app/arrivalRing";
 import { disclosureEscape } from "../components/primitives/disclosureEscape";
+import { forgetEveryClass } from "./classMemory";
 
 /**
  * The measure a page is set to. It is how wide the page's blocks are, and nothing else — every
@@ -70,6 +71,9 @@ export function EducatorShell({ children, measure = "evidence", scale = "default
     setEnding(true);
     const result = await signOutEverywhere();
     forgetTeacher();
+    // A signed-out browser must not retain class keys, which are independent capabilities.
+    // Key-only access remains available through an explicit handover link on another device.
+    forgetEveryClass();
     window.location.assign(`/educator/sign-in?ended=${result.ok ? "everywhere" : "here"}`);
   };
   /**
@@ -145,6 +149,9 @@ export function EducatorShell({ children, measure = "evidence", scale = "default
           )
           : <NavLink className="educator-topbar__session" to="/educator/sign-in">Sign in</NavLink>}
         {isSampleClassRoute(pathname) && <span className="demo-pill">Sample class — not a real class</span>}
+        {!teacherToken() && pathname.startsWith("/educator/class/") && !isSampleClassRoute(pathname) && (
+          <span className="demo-pill">Legacy class-key access — sign in to claim this class</span>
+        )}
       </header>
       <main className={scale === "teacher" ? "educator-main teacher-page" : "educator-main"} ref={main} tabIndex={-1} data-measure={measure}>{children}</main>
     </div>

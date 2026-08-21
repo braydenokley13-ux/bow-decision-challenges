@@ -61,7 +61,16 @@ async function seatToken(store: ClassStore, created: ClassCreation, seatCode = "
 async function turnIn(store: ClassStore, created: ClassCreation, over: Record<string, unknown> = {}, now = NOW) {
   const seatCode = typeof over.seatCode === "string" ? over.seatCode : submission.seatCode;
   const token = await seatToken(store, created, seatCode, now);
-  return api(store, now)("POST", `/classes/${created.code}/submissions`, { ...submission, classCode: created.code, ...over }, undefined, token);
+  const sessionId = typeof over.sessionId === "string" ? over.sessionId : submission.sessionId;
+  const evidence = sessionId === submission.sessionId
+    ? log
+    : log.map((event) => ({ ...event, sessionId }));
+  return api(store, now)("POST", `/classes/${created.code}/submissions`, {
+    ...submission,
+    classCode: created.code,
+    log: evidence,
+    ...over,
+  }, undefined, token);
 }
 
 /**

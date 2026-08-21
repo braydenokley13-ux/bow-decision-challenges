@@ -10,6 +10,7 @@ import { sellCap, sellCapTold } from "../../domain/scenario/worlds/food-truck/ec
 import { createPopUpState, popUpReducer, type PopUpAction, type PopUpState } from "../../domain/scenario/worlds/food-truck/machine";
 import { POP_UP_NUMBERS as N } from "../../domain/scenario/worlds/food-truck/numbers";
 import { POP_UP_SCENARIO } from "../../domain/scenario/worlds/food-truck/scenario";
+import { serviceRun } from "../../domain/scenario/worlds/food-truck/service";
 import type { EvidenceTransport } from "../../platform/evidence/transport";
 
 /**
@@ -90,12 +91,25 @@ const STRANDED: PopUpAction[] = [
   { type: "POPUP_PLAN_SAVE_REQUESTED", board: "repair" },
 ];
 
-function mount(state: PopUpState, screenNode: () => React.ReactElement, dispatch: (action: PopUpAction) => void = () => {}) {
+function Interactive({ initial, screenNode, onAction }: {
+  initial: PopUpState;
+  screenNode: () => React.ReactElement;
+  onAction: (action: PopUpAction) => void;
+}) {
+  const [state, setState] = useState(initial);
+  const dispatch = (action: PopUpAction) => {
+    onAction(action);
+    setState((current) => popUpReducer(current, { ...action, at: 1 }));
+  };
   shell.popUp = {
     state, dispatch, transport: TRANSPORT,
     delivery: { status: "idle" }, deliver: async () => {}, reset: () => {}, handOver: () => {},
   };
-  return render(<MemoryRouter>{screenNode()}</MemoryRouter>);
+  return <MemoryRouter>{screenNode()}</MemoryRouter>;
+}
+
+function mount(state: PopUpState, screenNode: () => React.ReactElement, dispatch: (action: PopUpAction) => void = () => {}) {
+  return render(<Interactive initial={state} screenNode={screenNode} onAction={dispatch} />);
 }
 
 afterEach(() => {
@@ -171,10 +185,12 @@ describe("the last Saturday offers a way out of a stock line that will not stret
     // the reducer is told when they shut up shop. Same event, same payload, later.
     // Served by hand rather than with `Run it`: the auto-run is paced for a person watching a
     // counter empty, and a unit test asserting a payload should not wait out an evening.
-    for (let order = 0; order < 120; order += 1) {
+    // Complete the generated service run, whatever its current order count is. A fixed press
+    // cap made this fixture silently depend on the market model's historical order count.
+    const generatedOrders = serviceRun(N, "bridge-gate", 4, 4, true).orders.length;
+    for (let order = 0; order < generatedOrders; order += 1) {
       const serve = screen.queryByRole("button", { name: "Serve the next order" });
-      if (!serve) break;
-      await user.click(serve);
+      await user.click(serve!);
     }
     await user.click(screen.getByRole("button", { name: "See how the four Saturdays went" }));
     // Four trays is where the stepper already stood: naming a line lifts the ceiling and the

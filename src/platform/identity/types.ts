@@ -96,6 +96,8 @@ export interface StudentAccount {
   createdAt: number;
   /** Raised to sign this student out of every device at once. Absent means zero. */
   sessionGeneration?: number;
+  /** One-way hash of the one-time recovery key, never sent back to the client. */
+  recoveryHash?: string;
 }
 
 /**
