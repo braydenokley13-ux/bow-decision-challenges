@@ -57,6 +57,7 @@ export const PAGE_TITLES: readonly PageTitle[] = [
   { path: "/educator/objectives/:frameworkId/:code", say: (p) => `Objective ${short(p.code, "detail")} — ${SUFFIX}` },
   { path: "/educator/assign", say: () => `Assign this work — ${SUFFIX}` },
   { path: "/educator/class/:code", say: (p) => `Class ${short(p.code, "")} — ${SUFFIX}` },
+  { path: "/educator/class/:code/assignments/:assignmentId", say: (p) => `Assignment · ${short(p.code, "")} — ${SUFFIX}` },
   { path: "/educator/class/:code/students/:seatCode", say: (p) => `Seat ${short(p.seatCode, "")} · ${short(p.code, "")} — ${SUFFIX}` },
   { path: "/educator/class/:code/reading", say: (p) => `Reading queue · ${short(p.code, "")} — ${SUFFIX}` },
   { path: "/educator/class/:code/debrief", say: (p) => `Debrief · ${short(p.code, "")} — ${SUFFIX}` },

@@ -27,10 +27,20 @@ function storyCard(container: HTMLElement, worldId: string): HTMLElement | null 
   return container.querySelector(`.builder-story-card[data-world="${worldId}"]`);
 }
 
-function serviceRecording(): { body: () => Record<string, unknown> | null; headers: () => Record<string, string> | null } {
+function serviceRecording(roster: { seatCode: string; displayName: string; removedAt: number | null }[] = []): {
+  body: () => Record<string, unknown> | null;
+  headers: () => Record<string, string> | null;
+} {
   let body: Record<string, unknown> | null = null;
   let headers: Record<string, string> | null = null;
-  vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => {
+  vi.stubGlobal("fetch", vi.fn((url: string, init?: RequestInit) => {
+    if (url.endsWith("/roster") && !init?.method) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ roster }),
+      } as unknown as Response);
+    }
     body = JSON.parse(typeof init?.body === "string" ? init.body : "{}") as Record<string, unknown>;
     headers = init?.headers as Record<string, string>;
     return Promise.resolve({
@@ -40,6 +50,10 @@ function serviceRecording(): { body: () => Record<string, unknown> | null; heade
     } as unknown as Response);
   }));
   return { body: () => body, headers: () => headers };
+}
+
+async function openOptionalDetails() {
+  await userEvent.click(screen.getByText(/optional teaching details/i, { selector: "summary" }));
 }
 
 describe("the learning goal step", () => {
@@ -126,6 +140,7 @@ describe("publishing a real assignment", () => {
     const service = serviceRecording();
     open("/educator/assignments/new?classCode=UXQCP");
 
+    await openOptionalDetails();
     await userEvent.type(screen.getByLabelText(/your question/i), "What would you change?");
     await userEvent.click(screen.getByLabelText(/have to answer it/i));
     await userEvent.click(screen.getByRole("button", { name: /publish assignment/i }));
@@ -150,6 +165,7 @@ describe("publishing a real assignment", () => {
     const service = serviceRecording();
     open("/educator/assignments/new?classCode=UXQCP");
 
+    await openOptionalDetails();
     const due = screen.getByLabelText(/due date/i);
     fireEvent.change(due, { target: { value: "2026-10-01T15:30" } });
     await userEvent.click(screen.getByRole("button", { name: /publish assignment/i }));
@@ -159,6 +175,66 @@ describe("publishing a real assignment", () => {
     expect(typeof sentDueAt).toBe("number");
     expect(new Date(sentDueAt as number).getFullYear()).toBe(2026);
     expect(new Date(sentDueAt as number).getMonth()).toBe(9); // October, zero-indexed
+  });
+
+  it("persists an optional short title and never sends a teacher note", async () => {
+    rememberClass(CLASS);
+    const service = serviceRecording();
+    open("/educator/assignments/new?classCode=UXQCP");
+
+    await openOptionalDetails();
+    await userEvent.type(screen.getByLabelText(/^title \(optional\)$/i), "Demand lab");
+    await userEvent.click(screen.getByRole("button", { name: /publish assignment/i }));
+    await waitFor(() => expect(service.body()).not.toBeNull());
+
+    expect(service.body()?.title).toBe("Demand lab");
+    expect(service.body()).not.toHaveProperty("teacherNote");
+  });
+
+  it("defaults to everyone and sends a null seat list", async () => {
+    rememberClass(CLASS);
+    const service = serviceRecording([
+      { seatCode: "1", displayName: "Ana", removedAt: null },
+      { seatCode: "2", displayName: "Dev", removedAt: null },
+    ]);
+    open("/educator/assignments/new?classCode=UXQCP");
+
+    expect(screen.getByRole("radio", { name: /everyone in period 3/i })).toBeChecked();
+    await userEvent.click(screen.getByRole("button", { name: /publish assignment/i }));
+    await waitFor(() => expect(service.body()).not.toBeNull());
+
+    expect(service.body()?.assignedStudentIds).toBeNull();
+  });
+
+  it("loads the live roster and sends each selected seat exactly once", async () => {
+    rememberClass(CLASS);
+    const service = serviceRecording([
+      { seatCode: "1", displayName: "Ana", removedAt: null },
+      { seatCode: "2", displayName: "Dev", removedAt: null },
+      // A defensive client filter too: the server is still authoritative if this appears.
+      { seatCode: "3", displayName: "Removed", removedAt: 1 },
+    ]);
+    open("/educator/assignments/new?classCode=UXQCP");
+
+    await waitFor(() => expect(screen.getByRole("radio", { name: /selected students/i })).toBeEnabled());
+    await userEvent.click(screen.getByRole("radio", { name: /selected students/i }));
+    expect(screen.queryByText("Removed")).not.toBeInTheDocument();
+    expect(await screen.findByText("0 selected", { selector: "strong" })).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText(/search students/i), "Ana");
+    expect(screen.queryByRole("checkbox", { name: /Dev/i })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /select all/i }));
+    expect(screen.getByText("2 selected", { selector: "strong" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /^clear$/i }));
+    expect(screen.getByText("0 selected", { selector: "strong" })).toBeInTheDocument();
+    await userEvent.clear(screen.getByLabelText(/search students/i));
+    await userEvent.click(await screen.findByRole("checkbox", { name: /Ana/i }));
+    await userEvent.click(screen.getByRole("checkbox", { name: /Dev/i }));
+    await userEvent.click(screen.getByRole("checkbox", { name: /Ana/i }));
+    await userEvent.click(screen.getByRole("checkbox", { name: /Ana/i }));
+    await userEvent.click(screen.getByRole("button", { name: /publish assignment/i }));
+    await waitFor(() => expect(service.body()).not.toBeNull());
+
+    expect(service.body()?.assignedStudentIds).toEqual(["2", "1"]);
   });
 });
 

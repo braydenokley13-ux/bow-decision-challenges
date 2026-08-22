@@ -364,6 +364,12 @@ describe("a class holds the work it was set", () => {
   it("holds several, oldest first", async () => {
     const store = memoryStore();
     const created = await makeClass(store);
+    await api(store)(
+      "POST",
+      `/classes/${created.code}/roster`,
+      { names: Array.from({ length: 14 }, (_, index) => `Student ${index + 1}`) },
+      created.teacherKey,
+    );
     const first = (await setWork(store, created)).body as Assignment;
     const second = (await api(store, NOW + 60_000)(
       "POST", `/classes/${created.code}/assignments`,
@@ -374,6 +380,191 @@ describe("a class holds the work it was set", () => {
     expect(second.attemptOf).toBe(first.id);
     expect(second.assignedStudentIds).toEqual(["7", "14"]);
     expect((await assignmentsOf(store, created.code)).map((entry) => entry.id)).toEqual([first.id, second.id]);
+  });
+
+  it("persists an optional title and refuses one over the service cap", async () => {
+    const store = memoryStore();
+    const created = await makeClass(store);
+
+    const titled = await setWork(store, created, { objectiveRef: BUDGET_OBJECTIVE, title: "  Demand day  " });
+    expect(titled.status).toBe(201);
+    expect((titled.body as Assignment).title).toBe("Demand day");
+
+    expect((await setWork(store, created, { objectiveRef: BUDGET_OBJECTIVE, title: "x".repeat(81) })).status)
+      .toBe(400);
+  });
+
+  it("accepts only live seats from this class and stores each selected seat once", async () => {
+    const store = memoryStore();
+    const created = await makeClass(store);
+    const made = await api(store)(
+      "POST",
+      `/classes/${created.code}/roster`,
+      { names: ["Ana", "Dev", "Leila"] },
+      created.teacherKey,
+    );
+    const seats = (made.body as { cards: { seatCode: string }[] }).cards.map((card) => card.seatCode);
+    await api(store)("DELETE", `/classes/${created.code}/roster/${seats[2]}`, undefined, created.teacherKey);
+
+    const selected = await setWork(store, created, {
+      objectiveRef: BUDGET_OBJECTIVE,
+      assignedStudentIds: [seats[1], seats[0], seats[1]],
+    });
+    expect(selected.status).toBe(201);
+    expect((selected.body as Assignment).assignedStudentIds).toEqual([seats[1], seats[0]]);
+
+    expect((await setWork(store, created, {
+      objectiveRef: BUDGET_OBJECTIVE,
+      assignedStudentIds: [seats[2]],
+    })).status, "a removed seat must not receive new work").toBe(400);
+    expect((await setWork(store, created, {
+      objectiveRef: BUDGET_OBJECTIVE,
+      assignedStudentIds: ["99"],
+    })).status, "a seat from nowhere or another class must not receive this work").toBe(400);
+  });
+
+  it("lets only a selected authenticated seat checkpoint and submit the assignment", async () => {
+    const store = memoryStore();
+    const call = api(store);
+    const created = await makeClass(store);
+    const made = await call(
+      "POST",
+      `/classes/${created.code}/roster`,
+      { names: ["Selected student", "Excluded student"] },
+      created.teacherKey,
+    );
+    const cards = (made.body as { cards: { seatCode: string; joinCode: string }[] }).cards;
+    const selectedCard = cards[0]!;
+    const excludedCard = cards[1]!;
+    const selectedToken = (await call("POST", `/classes/${created.code}/join`, {
+      joinCode: selectedCard.joinCode,
+      device: "shared",
+    })).body as { token: string };
+    const excludedToken = (await call("POST", `/classes/${created.code}/join`, {
+      joinCode: excludedCard.joinCode,
+      device: "shared",
+    })).body as { token: string };
+    const assignment = (await setWork(store, created, {
+      objectiveRef: BUDGET_OBJECTIVE,
+      assignedStudentIds: [selectedCard.seatCode],
+    })).body as Assignment;
+
+    const checkpointBody = (sessionId: string) => ({
+      classCode: created.code,
+      assignmentId: assignment.id,
+      worldId: "basketball",
+      stage: "entry",
+      sessionId,
+      payload: null,
+    });
+    expect((await call("PUT", "/me/attempt", checkpointBody("session-selected"), undefined, selectedToken.token)).status)
+      .toBe(200);
+    expect((await call("PUT", "/me/attempt", checkpointBody("session-excluded"), undefined, excludedToken.token)).status)
+      .toBe(403);
+
+    const submissionBody = (seatCode: string, sessionId: string) => ({
+      ...submission,
+      classCode: created.code,
+      seatCode,
+      sessionId,
+      assignmentId: assignment.id,
+      log: log.map((event) => ({ ...event, sessionId })),
+    });
+    expect((await call(
+      "POST",
+      `/classes/${created.code}/submissions`,
+      submissionBody(selectedCard.seatCode, "session-selected"),
+      undefined,
+      selectedToken.token,
+    )).status).toBe(202);
+    expect((await call(
+      "POST",
+      `/classes/${created.code}/submissions`,
+      submissionBody(excludedCard.seatCode, "session-excluded"),
+      undefined,
+      excludedToken.token,
+    )).status).toBe(403);
+
+    expect((await store.listSubmissions(created.code)).map((entry) => entry.seatCode))
+      .toEqual([selectedCard.seatCode]);
+    expect((await store.listCheckpoints(created.code).filter((entry) => entry.seatCode === excludedCard.seatCode)))
+      .toHaveLength(0);
+  });
+
+  it("requires a required closing answer and stamps the assignment's canonical question", async () => {
+    const store = memoryStore();
+    const created = await makeClass(store);
+    const canonical = "Why did you change or keep your price?";
+    const assignment = (await setWork(store, created, {
+      objectiveRef: BUDGET_OBJECTIVE,
+      closingQuestion: { text: canonical, required: true },
+    })).body as Assignment;
+
+    const missing = await turnIn(store, created, { assignmentId: assignment.id });
+    expect(missing.status).toBe(400);
+    expect((missing.body as { message: string }).message).toMatch(/answer the closing question/i);
+    expect(await store.listSubmissions(created.code)).toHaveLength(0);
+
+    const answered = await turnIn(store, created, {
+      assignmentId: assignment.id,
+      closingAnswer: {
+        questionText: "A client-invented question",
+        answer: "Demand changed, so I lowered the price.",
+        at: NOW - 1,
+      },
+    });
+    expect(answered.status).toBe(202);
+    expect((await store.listSubmissions(created.code))[0]?.closingAnswer).toEqual({
+      questionText: canonical,
+      answer: "Demand changed, so I lowered the price.",
+      at: NOW - 1,
+    });
+  });
+
+  it("rejects an answer when the assignment has no closing question", async () => {
+    const store = memoryStore();
+    const created = await makeClass(store);
+    const assignment = (await setWork(store, created)).body as Assignment;
+
+    const result = await turnIn(store, created, {
+      assignmentId: assignment.id,
+      closingAnswer: { questionText: "Who asked this?", answer: "Nobody.", at: NOW },
+    });
+    expect(result.status).toBe(400);
+    expect((result.body as { message: string }).message).toMatch(/no closing question/i);
+    expect(await store.listSubmissions(created.code)).toHaveLength(0);
+  });
+
+  it("preserves an unanswered optional closing question", async () => {
+    const store = memoryStore();
+    const created = await makeClass(store);
+    const assignment = (await setWork(store, created, {
+      objectiveRef: BUDGET_OBJECTIVE,
+      closingQuestion: { text: "What would you change?", required: false },
+    })).body as Assignment;
+
+    expect((await turnIn(store, created, { assignmentId: assignment.id })).status).toBe(202);
+    expect((await store.listSubmissions(created.code))[0]).not.toHaveProperty("closingAnswer");
+  });
+
+  it("includes the assignment on unfinished progress returned to the teacher", async () => {
+    const store = memoryStore();
+    const created = await makeClass(store);
+    const assignment = (await setWork(store, created)).body as Assignment;
+    await store.putCheckpoint({
+      classCode: created.code,
+      seatCode: "1",
+      studentId: "student-1",
+      assignmentId: assignment.id,
+      worldId: "basketball",
+      stage: "working-plan",
+      startedAt: NOW,
+      updatedAt: NOW + 1,
+      payload: {},
+    });
+
+    const room = await api(store)("GET", `/classes/${created.code}/submissions`, undefined, created.teacherKey);
+    expect((room.body as { progress: { assignmentId?: string }[] }).progress[0]?.assignmentId).toBe(assignment.id);
   });
 
   it("refuses an objective, a world, a format or a reassessment target that is not real", async () => {

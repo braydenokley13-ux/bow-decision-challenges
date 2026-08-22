@@ -23,6 +23,7 @@ const SAMPLE: Record<string, string> = {
   seatCode: "14",
   sessionId: "session-1",
   frameworkId: "nysed-pf-2026",
+  assignmentId: "assignment-HEMWK-1",
 };
 
 function concrete(path: string): string {
@@ -72,6 +73,12 @@ describe("what the tab says", () => {
   it("tells two classes apart, and two seats in one class", () => {
     expect(titleFor("/educator/class/HEMWK")).not.toBe(titleFor("/educator/class/CCGMU"));
     expect(titleFor("/educator/class/HEMWK/students/12")).not.toBe(titleFor("/educator/class/HEMWK/students/14"));
+  });
+
+  it("names an assignment monitor as part of its class", () => {
+    const title = titleFor("/educator/class/HEMWK/assignments/assignment-HEMWK-1");
+    expect(title).toContain("Assignment");
+    expect(title).toContain("HEMWK");
   });
 
   it("says an address that is not a page is not a page", () => {

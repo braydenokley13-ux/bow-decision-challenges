@@ -114,6 +114,12 @@ export interface Assignment {
   /** The class it belongs to. A class is its code in V1; it has no other identity. */
   classId: string;
   /**
+   * The teacher's short name for this piece of work. Absent means the challenge title is the
+   * name students and teachers see, which keeps every assignment written before titles existed
+   * readable without inventing one after the fact.
+   */
+  title?: string;
+  /**
    * What the teacher chose. `null` for a class created before there was an objective to
    * choose — writing a code in there would record a selection nobody made.
    */

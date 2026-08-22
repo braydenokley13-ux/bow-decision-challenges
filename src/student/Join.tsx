@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppMark } from "../components/primitives/AppMark";
 import { Button } from "../components/primitives/Button";
 import { CODE_LENGTH, isWellFormedClassCode, normaliseClassCode } from "../platform/classes/codes";
@@ -54,7 +54,7 @@ import { clearEveryAttempt } from "../domain/io/persistence";
  */
 
 type Step = "code" | "card" | "name" | "recognized" | "issued";
-type AccountMode = "new" | "existing";
+type AccountMode = "new" | "link-existing" | "returning-class";
 
 /** One id, because one step is on screen at a time and each step has one field. */
 const PROBLEM_ID = "join-problem";
@@ -73,13 +73,16 @@ function Problem({ children }: { children: string }) {
 
 export function StudentJoin() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const addingClass = searchParams.get("intent") === "add-class";
+  const defaultAccountMode: AccountMode = addingClass ? "link-existing" : "new";
   const [step, setStep] = useState<Step>("code");
   const [classCode, setClassCode] = useState("");
   const [door, setDoor] = useState<ClassDoor | null>(null);
   const [typedName, setTypedName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [bowRecoveryKey, setBowRecoveryKey] = useState("");
-  const [accountMode, setAccountMode] = useState<AccountMode>("new");
+  const [accountMode, setAccountMode] = useState<AccountMode>(() => defaultAccountMode);
   const [device, setDevice] = useState<DeviceClass>("shared");
   const [problem, setProblem] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -103,6 +106,8 @@ export function StudentJoin() {
    * not say it again — this is the one render that gets to. */
   const [issuedCode, setIssuedCode] = useState("");
   const [issuedRecoveryKey, setIssuedRecoveryKey] = useState("");
+  const [issuedSaved, setIssuedSaved] = useState(false);
+  const [copyStatus, setCopyStatus] = useState("");
   /**
    * The box the message is about, and where the message and the focus both go.
    *
@@ -192,8 +197,10 @@ export function StudentJoin() {
 
   const finish = async (over: { joinCode?: string; displayName?: string }) => {
     if (busy) return;
-    if (over.joinCode && accountMode === "existing" && bowRecoveryKey.trim().length === 0) {
-      setProblem("Type your BOW recovery key as well as the new class-card code.");
+    if (accountMode === "link-existing" && bowRecoveryKey.trim().length === 0) {
+      setProblem(over.joinCode
+        ? "Type your BOW Key as well as the code on your new class card."
+        : "Type your BOW Key to link this class to your existing BOW account.");
       return;
     }
     setBusy(true);
@@ -204,7 +211,7 @@ export function StudentJoin() {
       device,
       ...(over.joinCode ? { joinCode: over.joinCode } : {}),
       ...(over.displayName !== undefined ? { displayName: over.displayName } : {}),
-      ...(accountMode === "existing" && bowRecoveryKey ? { bowRecoveryKey: bowRecoveryKey.trim() } : {}),
+      ...(accountMode === "link-existing" && bowRecoveryKey ? { bowRecoveryKey: bowRecoveryKey.trim() } : {}),
     });
     setBusy(false);
     if (!result.ok) {
@@ -233,8 +240,16 @@ export function StudentJoin() {
       // browser can offer it straight back (`findClass`, above) instead of making them retype
       // it from paper the next time their session dies.
       rememberJoinCode(normalised, result.body.joinCode, result.body.studentId);
-      setIssuedCode(result.body.joinCode);
+    }
+    // Both credentials are one-time service responses, but they are independent. A rostered
+    // student's first join returns a recovery key and no new class sign-in code (the code is
+    // already printed on their card). Keying this pause off `joinCode` skipped that student
+    // straight to Home and threw away the only copy of their BOW Key.
+    if (result.body.joinCode || result.body.recoveryKey) {
+      setIssuedCode(result.body.joinCode ?? "");
       setIssuedRecoveryKey(result.body.recoveryKey ?? "");
+      setIssuedSaved(false);
+      setCopyStatus("");
       setStep("issued");
       return;
     }
@@ -242,7 +257,7 @@ export function StudentJoin() {
   };
 
   return (
-    <main className="join-shell">
+    <main className="join-shell ground-dark" data-step={step}>
       {/* The door's own bar, and the room it keeps for the reading control. A class code, a
           card code and a name are the three things on this screen a child can get wrong, and
           the help that reads them out loud used to sit in the bottom corner on top of whatever
@@ -263,6 +278,9 @@ export function StudentJoin() {
       {step === "code" && (
         <Step key="code" heading="What is your class code?">
           <p>Your teacher has it on the board.</p>
+          {addingClass && (
+            <p className="join-intent">You are adding this class to the BOW account you already use. Keep your BOW Key ready for the next step.</p>
+          )}
           <label className="field" htmlFor="class-code">
             <span className="field-label">Class code</span>
             <input
@@ -316,13 +334,13 @@ export function StudentJoin() {
           {problem && <Problem>{problem}</Problem>}
           <Button
             variant="primary"
-            onClick={() => { setJoinCode(pendingRecognition?.joinCode ?? ""); setAccountMode("existing"); setRecognized(true); setProblem(null); setStep("card"); }}
+            onClick={() => { setJoinCode(pendingRecognition?.joinCode ?? ""); setAccountMode("returning-class"); setRecognized(true); setProblem(null); setStep("card"); }}
           >
             Yes — that was me
           </Button>
           <Button
             variant="quiet"
-            onClick={() => { setPendingRecognition(null); setRecognized(false); setProblem(null); setStep("name"); }}
+            onClick={() => { setPendingRecognition(null); setRecognized(false); setAccountMode("new"); setProblem(null); setStep("name"); }}
           >
             No — I am new here
           </Button>
@@ -332,7 +350,7 @@ export function StudentJoin() {
       {step === "card" && (
         <Step
           key="card"
-          heading={recognized ? "Is this still you?" : door?.joinMode === "open" ? "Type the code you were given." : "Type the code on your card."}
+          heading={recognized ? "Is this still you?" : door?.joinMode === "open" ? "Type your class sign-in code." : "Type the code on your class card."}
         >
           <p>{door?.label}</p>
           {/* This is the one difference between a code the student typed and a code the browser
@@ -344,7 +362,7 @@ export function StudentJoin() {
             <p className="join-step__note">You said this was you, so the code you were given is already here.</p>
           )}
           <label className="field" htmlFor="join-code">
-            <span className="field-label">Your code</span>
+            <span className="field-label">Class sign-in code</span>
             <input
               id="join-code"
               className="join-code-input"
@@ -360,22 +378,22 @@ export function StudentJoin() {
             />
           </label>
           {problem && <Problem>{problem}</Problem>}
-          {!recognized && (
+          {!recognized && accountMode !== "returning-class" && (
             <fieldset className="device-choice">
-              <legend>Have you used BOW before?</legend>
-              <label><input type="radio" name="account-mode" checked={accountMode === "new"} onChange={() => { setAccountMode("new"); setBowRecoveryKey(""); }} /> <span>This is my first BOW class</span></label>
-              <label><input type="radio" name="account-mode" checked={accountMode === "existing"} onChange={() => setAccountMode("existing")} /> <span>I already have a BOW account</span></label>
+              <legend>What should this class card do?</legend>
+              <label><input type="radio" name="account-mode" checked={accountMode === "new"} onChange={() => { setAccountMode("new"); setBowRecoveryKey(""); }} /> <span>Start a new BOW account with this class card</span></label>
+              <label><input type="radio" name="account-mode" checked={accountMode === "link-existing"} onChange={() => setAccountMode("link-existing")} /> <span>Link this new class to my BOW account</span></label>
             </fieldset>
           )}
-          {accountMode === "existing" && (
+          {accountMode === "link-existing" && (
             <label className="field" htmlFor="bow-recovery-key">
-              <span className="field-label">Your BOW recovery key</span>
+              <span className="field-label">Your BOW Key</span>
               <input id="bow-recovery-key" value={bowRecoveryKey} onChange={(event) => { setBowRecoveryKey(event.target.value.toUpperCase()); setProblem(null); }} autoComplete="off" />
-              <span className="join-step__note">You need this and the new class-card code. BOW uses both to link this class to your existing account.</span>
+              <span className="join-step__note">This is not the code on your class card. BOW uses your private BOW Key with the new card to keep both classes under the same account.</span>
             </label>
           )}
           <DeviceChoice device={device} onChange={setDevice} />
-          <Button variant="primary" aria-disabled={joinCode.length < 4 || busy || (accountMode === "existing" && bowRecoveryKey.trim().length === 0)} onClick={() => void finish({ joinCode })}>
+          <Button variant="primary" aria-disabled={joinCode.length < 4 || busy || (accountMode === "link-existing" && bowRecoveryKey.trim().length === 0)} onClick={() => void finish({ joinCode })}>
             {busy ? "Going in…" : "Go in"}
           </Button>
           {recognized ? (
@@ -384,12 +402,12 @@ export function StudentJoin() {
             // retype a code that was never wrong.
             <Button
               variant="quiet"
-              onClick={() => { setRecognized(false); setPendingRecognition(null); setJoinCode(""); setProblem(null); setStep("name"); }}
+              onClick={() => { setRecognized(false); setPendingRecognition(null); setAccountMode("new"); setJoinCode(""); setProblem(null); setStep("name"); }}
             >
               Not you? Start fresh
             </Button>
           ) : (
-            <Button variant="quiet" onClick={() => { setStep("code"); setJoinCode(""); setProblem(null); }}>Different class</Button>
+            <Button variant="quiet" onClick={() => { setStep("code"); setAccountMode(defaultAccountMode); setJoinCode(""); setProblem(null); }}>Different class</Button>
           )}
           <p className="join-step__note">
             {door?.joinMode === "open"
@@ -400,11 +418,11 @@ export function StudentJoin() {
       )}
 
       {step === "name" && (
-        <Step key="name" heading="What should your teacher see?">
+        <Step key="name" heading={addingClass ? "Link this open class." : "What should your teacher see?"}>
           {/* Their teacher's list, in their teacher's words, is the better route — this is the
               one for a teacher who had four minutes and no list. It still makes a real account
               and a real session, so no work in this product is ever unattributed. */}
-          <p>Your first name is enough.</p>
+          <p>{addingClass ? "Use the same first name your teachers already see." : "Your first name is enough."}</p>
           <label className="field" htmlFor="display-name">
             <span className="field-label">Name</span>
             <input
@@ -418,40 +436,99 @@ export function StudentJoin() {
             />
           </label>
           {problem && <Problem>{problem}</Problem>}
+          {accountMode === "link-existing" && (
+            <label className="field" htmlFor="open-bow-recovery-key">
+              <span className="field-label">Your BOW Key</span>
+              <input
+                id="open-bow-recovery-key"
+                value={bowRecoveryKey}
+                onChange={(event) => { setBowRecoveryKey(event.target.value.toUpperCase()); setProblem(null); }}
+                autoComplete="off"
+              />
+              <span className="join-step__note">This keeps the new class with the BOW account you already use. It is not a class code.</span>
+            </label>
+          )}
           <DeviceChoice device={device} onChange={setDevice} />
-          <Button variant="primary" aria-disabled={typedName.trim().length === 0 || busy} onClick={() => void finish({ displayName: typedName.trim() })}>
+          <Button variant="primary" aria-disabled={typedName.trim().length === 0 || busy || (accountMode === "link-existing" && bowRecoveryKey.trim().length === 0)} onClick={() => void finish({ displayName: typedName.trim() })}>
             {busy ? "Going in…" : "Go in"}
           </Button>
           {/* Typing the name again would make a second student with the same name and none of
               the first one's work. The code they were given the first time is the way back. */}
-          <Button variant="quiet" onClick={() => { setRecognized(false); setJoinCode(""); setStep("card"); setProblem(null); }}>
+          <Button variant="quiet" onClick={() => { setRecognized(false); setAccountMode("returning-class"); setJoinCode(""); setStep("card"); setProblem(null); }}>
             I have been here before
           </Button>
         </Step>
       )}
 
       {step === "issued" && (
-        <Step key="issued" heading="Write this code down.">
+        <Step key="issued" heading="Save these sign-in details.">
           {/* The bug this screen exists to close: the service handed this code back exactly
               once, `Join.tsx` threw it away, and a student whose shared-device session expired
               overnight had no way back in but retyping their name — a second seat, a second
               account, an empty board under it, while the very next screen this student would
               meet warned them "I have been here before" and pointed at a code nobody had shown
               them. See `RULING.md` §5 and `identity.ts`'s join route. */}
-          <p>BOW will not show you this again. It is how you get back to <strong>this</strong> board — not a new one — if you are signed out.</p>
-          <div className="class-created__code">
-            <p className="field-label">Your code</p>
-            <strong>{issuedCode}</strong>
-            <p>Not case sensitive.</p>
-          </div>
-          <p className="join-step__note">
-            This browser will offer it back to you next time. Writing it down also gets you in from a different one.
-          </p>
-          {issuedRecoveryKey && <div className="class-created__code"><p className="field-label">Your BOW recovery key</p><strong>{issuedRecoveryKey}</strong><p>Keep it somewhere private. BOW will not show it again.</p></div>}
-          <Button variant="primary" onClick={() => void navigate("/home", { replace: true })}>I&rsquo;ve written it down</Button>
+          <p>BOW shows each of these only this one time. Save what is shown before you continue.</p>
+          {issuedCode && (
+            <IssuedCredential
+              kind="class"
+              label="Class sign-in code"
+              value={issuedCode}
+              copyLabel="Copy class sign-in code"
+              onCopied={setCopyStatus}
+            >
+              This signs you back into {door?.label ?? "this class"}. It is not your BOW Key.
+            </IssuedCredential>
+          )}
+          {issuedRecoveryKey && (
+            <IssuedCredential
+              kind="key"
+              label="Your BOW Key"
+              value={issuedRecoveryKey}
+              copyLabel="Copy BOW Key"
+              onCopied={setCopyStatus}
+            >
+              This is not the code on a class card. Use it with a new class card to keep another class under this same BOW account. Keep it private.
+            </IssuedCredential>
+          )}
+          <p className="visually-hidden" aria-live="polite">{copyStatus}</p>
+          <label className="issued-save-check">
+            <input type="checkbox" checked={issuedSaved} onChange={(event) => setIssuedSaved(event.target.checked)} />
+            <span>I saved it somewhere private.</span>
+          </label>
+          <Button variant="primary" disabled={!issuedSaved} onClick={() => void navigate("/home", { replace: true })}>Continue to my work</Button>
         </Step>
       )}
     </main>
+  );
+}
+
+/** A one-time credential stays in component memory only; copying is offered only where the
+ * browser supplies the secure Clipboard API. No document fallback gets to select or retain it. */
+function IssuedCredential({ kind, label, value, copyLabel, onCopied, children }: {
+  kind: "class" | "key";
+  label: string;
+  value: string;
+  copyLabel: string;
+  onCopied: (message: string) => void;
+  children: React.ReactNode;
+}) {
+  const canCopy = typeof navigator !== "undefined" && typeof navigator.clipboard?.writeText === "function";
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(value);
+      onCopied(`${label} copied.`);
+    } catch {
+      onCopied(`BOW could not copy the ${label.toLowerCase()}. Select it and copy it instead.`);
+    }
+  };
+  return (
+    <div className={`class-created__code issued-credential issued-credential--${kind}`}>
+      <p className="field-label">{label}</p>
+      <strong>{value}</strong>
+      <p>{children}</p>
+      {canCopy && <Button type="button" variant="secondary" onClick={() => void copy()}>{copyLabel}</Button>}
+    </div>
   );
 }
 

@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { WorldArt } from "../components/primitives/WorldArt";
 import { EducatorShell } from "./EducatorShell";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import { educatorClassError, isClassError, type Assignment } from "../platform/classes/types";
-import { compatibleWorldsFor, CLOSING_QUESTION_MAX } from "../platform/classes/assignments";
+import { ASSIGNMENT_TITLE_MAX, compatibleWorldsFor, CLOSING_QUESTION_MAX } from "../platform/classes/assignments";
 import { PLAYABLE_WORLDS } from "../domain/scenario/registry";
 import type { WorldId } from "../domain/core/ids";
 import { isAssessable, labelsFor, standardByRef, standardsIn, type FrameworkId, type StandardRef } from "../domain/standards";
@@ -13,7 +13,9 @@ import { Attribution, matches, objectivePath, refOf, waitingCompetenciesFor } fr
 import { evidencePreviewFor } from "./evidencePreview";
 import { SUGGESTED_CLOSING } from "./MyClasses";
 import { useRememberedClasses } from "./useRememberedClasses";
+import { teacherToken } from "./teacherSession";
 import { TERMS } from "./labels";
+import "./assignment-shell.css";
 
 /**
  * The assignment builder — a real route, built to the reference's six sections, with the
@@ -45,6 +47,18 @@ const FRAMEWORK_ID: FrameworkId = "nysed-pf-2026";
 const CHOOSE = "choose" as const;
 const ONE = "one" as const;
 type Mode = typeof CHOOSE | typeof ONE;
+type TargetMode = "everyone" | "selected";
+
+interface BuilderRosterRow {
+  seatCode: string;
+  displayName: string;
+  removedAt: number | null;
+}
+
+type RosterState =
+  | { status: "idle" | "loading" }
+  | { status: "ready"; rows: BuilderRosterRow[] }
+  | { status: "error"; message: string };
 
 /** "1 October 2026, 3:30 pm" from a `datetime-local` input's own value, read back for the summary line. */
 function dueDateSummary(local: string): string {
@@ -90,7 +104,7 @@ export function AssignmentBuilder() {
   const standard = objectiveRef ? standardByRef(objectiveRef) : undefined;
   const assessable = objectiveRef ? isAssessable(objectiveRef) : false;
   const waiting = objectiveRef && !assessable ? waitingCompetenciesFor(objectiveRef) : [];
-  const compatible = assessable && objectiveRef ? compatibleWorldsFor(objectiveRef) : [];
+  const compatible = objectiveRef === null ? compatibleWorldsFor(null) : assessable ? compatibleWorldsFor(objectiveRef) : [];
 
   /**
    * Which stories are offered, and how — reset only when the chosen objective itself changes.
@@ -126,8 +140,68 @@ export function AssignmentBuilder() {
   }
 
   const [dueLocal, setDueLocal] = useState("");
+  const [title, setTitle] = useState("");
   const [closingText, setClosingText] = useState("");
   const [closingRequired, setClosingRequired] = useState(false);
+  const [targetMode, setTargetMode] = useState<TargetMode>("everyone");
+  const [selectedSeats, setSelectedSeats] = useState<readonly string[]>([]);
+  const [studentQuery, setStudentQuery] = useState("");
+  const [rosterState, setRosterState] = useState<RosterState>({ status: "idle" });
+
+  /**
+   * The seat picker is a view of the live roster, not of names remembered by this page.
+   * Changing classes starts a fresh read, and a row removed while the builder was open is
+   * dropped from the selection as soon as the service answers.
+   */
+  useEffect(() => {
+    if (!selectedClass) { setRosterState({ status: "idle" }); return; }
+    let cancelled = false;
+    setRosterState({ status: "loading" });
+    void (async () => {
+      try {
+        const token = teacherToken();
+        const response = await fetch(`${CLASS_API_BASE}/classes/${selectedClass.code}/roster`, {
+          headers: {
+            "X-BOW-Teacher-Key": selectedClass.teacherKey,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        const payload: unknown = await response.json();
+        if (!response.ok) throw new Error(isClassError(payload) ? educatorClassError(payload.error) : educatorClassError("unavailable"));
+        const rows = Array.isArray((payload as { roster?: unknown })?.roster)
+          ? ((payload as { roster: BuilderRosterRow[] }).roster).filter((row) => !row.removedAt)
+          : [];
+        if (cancelled) return;
+        const active = new Set(rows.map((row) => row.seatCode));
+        setSelectedSeats((current) => current.filter((seat) => active.has(seat)));
+        setRosterState({ status: "ready", rows });
+      } catch (error) {
+        if (!cancelled) setRosterState({
+          status: "error",
+          message: error instanceof Error ? error.message : educatorClassError("unavailable"),
+        });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedClass?.code, selectedClass?.teacherKey]);
+
+  function chooseClass(nextCode: string) {
+    setClassCode(nextCode);
+    setTargetMode("everyone");
+    setSelectedSeats([]);
+    setStudentQuery("");
+  }
+
+  function toggleSeat(seatCode: string) {
+    setSelectedSeats((current) => current.includes(seatCode)
+      ? current.filter((seat) => seat !== seatCode)
+      : [...current, seatCode]);
+  }
+
+  function selectAllSeats() {
+    if (rosterState.status !== "ready") return;
+    setSelectedSeats(rosterState.rows.map((row) => row.seatCode));
+  }
 
   const [publishing, setPublishing] = useState(false);
   const [problem, setProblem] = useState<string | null>(null);
@@ -135,19 +209,23 @@ export function AssignmentBuilder() {
 
   const blockedReason = !selectedClass
     ? (classes.length === 0 ? `You need a class first.` : `Choose a class.`)
-    : !objectiveRef
-      ? `Choose a learning goal.`
-      : !assessable
+    : objectiveRef && !assessable
         ? `BOW cannot assess ${standard?.code ?? "this"} yet, so there is nothing to publish.`
         : compatible.length === 0
           ? `No ${TERMS.story} can prove it produces every part ${standard?.code ?? "this"} needs, so this cannot be published.`
           : selectedWorlds.length === 0
             ? `Keep at least one ${TERMS.story} checked.`
+            : targetMode === "selected" && rosterState.status === "loading"
+              ? "Getting the class list…"
+              : targetMode === "selected" && rosterState.status === "error"
+                ? "The class list did not load. Choose everyone or try again."
+                : targetMode === "selected" && selectedSeats.length === 0
+                  ? "Choose at least one student, or assign it to everyone."
             : null;
   const canPublish = blockedReason === null;
 
   async function publish() {
-    if (!canPublish || publishing || !selectedClass || !objectiveRef) return;
+    if (!canPublish || publishing || !selectedClass) return;
     setPublishing(true);
     setProblem(null);
     try {
@@ -155,12 +233,19 @@ export function AssignmentBuilder() {
         objectiveRef,
         allowedWorldIds: selectedWorlds,
         studentChoosesWorld: mode === CHOOSE,
+        assignedStudentIds: targetMode === "everyone" ? null : [...new Set(selectedSeats)],
+        ...(title.trim().length > 0 ? { title: title.trim() } : {}),
         ...(dueLocal && !Number.isNaN(new Date(dueLocal).getTime()) ? { dueAt: new Date(dueLocal).getTime() } : {}),
         ...(closingText.trim().length > 0 ? { closingQuestion: { text: closingText.trim(), required: closingRequired } } : {}),
       };
+      const token = teacherToken();
       const response = await fetch(`${CLASS_API_BASE}/classes/${selectedClass.code}/assignments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": selectedClass.teacherKey },
+        headers: {
+          "Content-Type": "application/json",
+          "X-BOW-Teacher-Key": selectedClass.teacherKey,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify(body),
       });
       const payload: unknown = await response.json();
@@ -204,152 +289,94 @@ export function AssignmentBuilder() {
   const found = standards.filter((entry) => matches(entry, goalQuery));
   const shownStandards = [...found.filter((entry) => isAssessable(refOf(entry))), ...found.filter((entry) => !isAssessable(refOf(entry)))];
   const preview = objectiveRef && assessable ? evidencePreviewFor(objectiveRef, compatible) : [];
+  const worldSummary = selectedWorlds
+    .map((worldId) => PLAYABLE_WORLDS.find((entry) => entry.id === worldId)?.title ?? worldId)
+    .join(", ");
+  const targetSummary = targetMode === "everyone"
+    ? "Everyone"
+    : `${selectedSeats.length} selected ${selectedSeats.length === 1 ? "student" : "students"}`;
+  const visibleRoster = rosterState.status === "ready"
+    ? rosterState.rows.filter((row) => {
+      const query = studentQuery.trim().toLowerCase();
+      return query.length === 0 || row.displayName.toLowerCase().includes(query) || row.seatCode.includes(query);
+    })
+    : [];
 
   return (
     <EducatorShell>
       <header className="page-header">
         <p className="eyebrow">New assignment</p>
-        <h1>Build an assignment.</h1>
-        <p>Pick a learning goal, and BOW shows only the {TERMS.stories} that can actually prove it.</p>
+        <h1>Choose the experience. Set the work.</h1>
+        <p>The challenge comes first. Pick the class and students next; add teaching details only when they help.</p>
       </header>
+
+      <ol className="builder-flow" aria-label="Assignment builder steps">
+        <li><span>1</span><b>Challenge</b><small>Choose the experience</small></li>
+        <li><span>2</span><b>Students</b><small>Choose the class and audience</small></li>
+        <li><span>3</span><b>Teaching details</b><small>Add only what helps</small></li>
+        <li><span>4</span><b>Review</b><small>Check and publish</small></li>
+      </ol>
 
       <div className="builder-layout">
         <div className="builder-main">
-          {/* 1. Learning goal */}
-          <fieldset className="builder-section builder-goal">
-            <legend>1. Learning goal</legend>
-            {standard ? (
-              <div className="builder-goal__selected">
-                <span className="coverage-chip" data-coverage={assessable ? "full" : "none"}>{standard.code}</span>
-                <p className="builder-goal__text">{standard.text}</p>
-                <div className="builder-goal__meta">
-                  <Attribution frameworkId={FRAMEWORK_ID} />
-                  <Link to={objectivePath(refOf(standard))}>View this {unit} →</Link>
-                </div>
-                {!assessable && (
-                  <p className="builder-goal__warn">
-                    BOW cannot assess this {unit} yet.
-                    {waiting.length > 0 && (
-                      <> It rests on {waiting.length === 1 ? "a skill" : "skills"} no {TERMS.story} produces yet:
-                        {" "}{waiting.map((competency) => competency.statement).join("; ")}.
-                      </>
-                    )}
-                  </p>
-                )}
-              </div>
-            ) : <p className="builder-goal__empty">Choose a {unit} below.</p>}
-
-            <label htmlFor="builder-goal-search">Search {unit}s</label>
-            <input
-              id="builder-goal-search"
-              type="search"
-              value={goalQuery}
-              onChange={(event) => setGoalQuery(event.target.value)}
-              placeholder="budget, credit, insurance…"
-            />
-            <div className="builder-goal__list" role="radiogroup" aria-label={`Choose a ${unit}`}>
-              {shownStandards.map((entry) => {
-                const ok = isAssessable(refOf(entry));
-                return (
-                  <label key={entry.code} className="builder-goal__row" data-unavailable={!ok}>
-                    <input
-                      type="radio"
-                      name="builder-goal"
-                      value={entry.code}
-                      checked={objectiveCode === entry.code}
-                      onChange={() => setObjectiveCode(entry.code)}
-                    />
-                    <span>
-                      <b>{entry.code} · {entry.shortLabel}</b>
-                      {!ok && <em>Coming</em>}
-                    </span>
-                  </label>
-                );
-              })}
-              {shownStandards.length === 0 && <p className="class-state">No {unit} matches “{goalQuery}”.</p>}
-            </div>
-          </fieldset>
-
-          {/* 2. Which story */}
-          {objectiveRef && assessable && (
-            <fieldset className="builder-section builder-mode">
-              <legend>2. Which {TERMS.story}</legend>
-              {compatible.length > 1 ? (
-                <>
-                  <label className="builder-mode__card" data-selected={mode === CHOOSE}>
-                    <input type="radio" name="builder-mode" checked={mode === CHOOSE} onChange={() => setModeAndAdjust(CHOOSE)} />
-                    <span>
-                      <b>Let students choose</b>
-                      Students pick from the {TERMS.stories} you keep checked below. Whichever one they pick, the
-                      same skills come back to you.
-                    </span>
-                  </label>
-                  <label className="builder-mode__card" data-selected={mode === ONE}>
-                    <input type="radio" name="builder-mode" checked={mode === ONE} onChange={() => setModeAndAdjust(ONE)} />
-                    <span>
-                      <b>Assign one {TERMS.story}</b>
-                      Every student plays the same one.
-                    </span>
-                  </label>
-                </>
-              ) : (
-                <p>
-                  Only one {TERMS.story} can prove it produces {standard?.code}'s evidence today, so every student
-                  plays it.
-                </p>
-              )}
-            </fieldset>
-          )}
-
-          {/* 3. Stories */}
-          {objectiveRef && assessable && (
-            <fieldset className="builder-section builder-stories">
-              <legend>3. Stories</legend>
-              {compatible.length === 0 ? (
-                <p className="builder-stories__empty">
-                  No {TERMS.story} in BOW can prove it produces every part {standard?.code} needs. This {unit}
-                  cannot be published as an assignment yet.
-                </p>
-              ) : (
-                <>
-                  <div className="builder-stories__grid">
-                    {compatible.map((worldId) => {
-                      const entry = PLAYABLE_WORLDS.find((row) => row.id === worldId);
-                      const checked = selectedWorlds.includes(worldId);
-                      return (
-                        <label key={worldId} className="builder-story-card" data-world={worldId} data-selected={checked}>
-                          <input
-                            type={mode === ONE ? "radio" : "checkbox"}
-                            name={mode === ONE ? "builder-story" : undefined}
-                            checked={checked}
-                            onChange={() => toggleWorld(worldId)}
-                          />
-                          <span className="world-card">
-                            <span className="world-card__art"><WorldArt world={worldId} variant="tile" /></span>
-                            <span className="world-card__body">
-                              <b>{entry?.title ?? worldId}</b>
-                              <small>{entry?.role}</small>
-                              <span className="builder-story-card__length">
-                                {entry?.durationMinutes.min}–{entry?.durationMinutes.max} minutes
-                              </span>
+          <fieldset className="builder-section builder-challenge">
+            <legend>1. Challenge</legend>
+            <p>Choose what students will enter. Start with one shared experience, or let them choose between compatible stories.</p>
+            {compatible.length === 0 ? (
+              <p className="builder-stories__empty">
+                No {TERMS.story} in BOW can produce every part {standard?.code ?? "this learning goal"} needs.
+                Choose another learning goal below, or set no learning goal.
+              </p>
+            ) : (
+              <>
+                <div className="builder-stories__grid">
+                  {compatible.map((worldId) => {
+                    const entry = PLAYABLE_WORLDS.find((row) => row.id === worldId);
+                    const checked = selectedWorlds.includes(worldId);
+                    return (
+                      <label key={worldId} className="builder-story-card" data-world={worldId} data-selected={checked}>
+                        <input
+                          type={mode === ONE ? "radio" : "checkbox"}
+                          name={mode === ONE ? "builder-story" : undefined}
+                          checked={checked}
+                          onChange={() => toggleWorld(worldId)}
+                        />
+                        <span className="world-card">
+                          <span className="world-card__art"><WorldArt world={worldId} variant="tile" /></span>
+                          <span className="world-card__body">
+                            <b>{entry?.title ?? worldId}</b>
+                            <small>{entry?.role}</small>
+                            <span className="builder-story-card__length">
+                              {entry?.durationMinutes.min}–{entry?.durationMinutes.max} minutes
                             </span>
                           </span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                  <p className="builder-stories__note">
-                    Every {TERMS.story} shown here is proven, in code, to produce every part {standard?.code} needs
-                    on its own.
-                  </p>
-                </>
-              )}
-            </fieldset>
-          )}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <div className="builder-mode">
+                  {compatible.length > 1 ? (
+                    <>
+                      <label className="builder-mode__card" data-selected={mode === ONE}>
+                        <input type="radio" name="builder-mode" checked={mode === ONE} onChange={() => setModeAndAdjust(ONE)} />
+                        <span><b>Assign one {TERMS.story}</b>Every student plays the same one.</span>
+                      </label>
+                      <label className="builder-mode__card" data-selected={mode === CHOOSE}>
+                        <input type="radio" name="builder-mode" checked={mode === CHOOSE} onChange={() => setModeAndAdjust(CHOOSE)} />
+                        <span><b>Let students choose</b>Students choose from the {TERMS.stories} checked above.</span>
+                      </label>
+                    </>
+                  ) : (
+                    <p>Only this {TERMS.story} matches the selected learning goal, so everyone plays it.</p>
+                  )}
+                </div>
+              </>
+            )}
+          </fieldset>
 
-          {/* 4. Class & due date */}
-          <fieldset className="builder-section builder-class">
-            <legend>4. Class & due date</legend>
+          <fieldset className="builder-section builder-class builder-targets">
+            <legend>2. Class and students</legend>
             {classes.length === 0 ? (
               <p>
                 {syncing ? "Getting your classes…" : (
@@ -359,143 +386,257 @@ export function AssignmentBuilder() {
             ) : (
               <>
                 <label htmlFor="builder-class-select">Class</label>
-                <select id="builder-class-select" value={selectedClass?.code ?? ""} onChange={(event) => setClassCode(event.target.value)}>
+                <select id="builder-class-select" value={selectedClass?.code ?? ""} onChange={(event) => chooseClass(event.target.value)}>
                   {classes.map((entry) => <option key={entry.code} value={entry.code}>{entry.label} · {entry.code}</option>)}
                 </select>
-                <label htmlFor="builder-due">Due date (optional)</label>
-                <input id="builder-due" type="datetime-local" value={dueLocal} onChange={(event) => setDueLocal(event.target.value)} />
-                <p className="builder-class__note">
-                  {dueLocal && dueDateSummary(dueLocal)
-                    ? `Shown to you as due ${dueDateSummary(dueLocal)}. BOW does not lock the assignment at this time.`
-                    : "Leave this empty for no due date."}
-                </p>
+                <div className="builder-targets__choices" role="radiogroup" aria-label="Who gets this assignment">
+                  <label className="builder-mode__card" data-selected={targetMode === "everyone"}>
+                    <input type="radio" name="builder-target" checked={targetMode === "everyone"} onChange={() => setTargetMode("everyone")} />
+                    <span><b>Everyone in {selectedClass?.label ?? "this class"}</b>New and existing students in this class get the assignment.</span>
+                  </label>
+                  <label className="builder-mode__card" data-selected={targetMode === "selected"}>
+                    <input
+                      type="radio"
+                      name="builder-target"
+                      checked={targetMode === "selected"}
+                      disabled={rosterState.status === "ready" && rosterState.rows.length === 0}
+                      onChange={() => setTargetMode("selected")}
+                    />
+                    <span><b>Selected students</b>Use the live class list to choose particular seats.</span>
+                  </label>
+                </div>
+                {rosterState.status === "loading" && <p className="class-state" aria-live="polite">Getting the class list…</p>}
+                {rosterState.status === "error" && <p className="builder-goal__warn">{rosterState.message}</p>}
+                {rosterState.status === "ready" && rosterState.rows.length === 0 && (
+                  <p className="class-state">This class has no active roster yet. Everyone still works; add a class list before targeting individual students.</p>
+                )}
+                {targetMode === "selected" && rosterState.status === "ready" && rosterState.rows.length > 0 && (
+                  <div className="builder-targets__picker">
+                    <div className="builder-targets__toolbar">
+                      <label htmlFor="builder-student-search">Search students</label>
+                      <input
+                        id="builder-student-search"
+                        type="search"
+                        value={studentQuery}
+                        placeholder="Name or seat"
+                        onChange={(event) => setStudentQuery(event.target.value)}
+                      />
+                      <div className="builder-targets__bulk">
+                        <Button type="button" variant="quiet" onClick={selectAllSeats}>Select all</Button>
+                        <Button type="button" variant="quiet" onClick={() => setSelectedSeats([])}>Clear</Button>
+                        <strong aria-live="polite">{selectedSeats.length} selected</strong>
+                      </div>
+                    </div>
+                    <div className="builder-targets__roster" role="group" aria-label="Choose students">
+                      {visibleRoster.map((row) => (
+                        <label key={row.seatCode}>
+                          <input
+                            type="checkbox"
+                            checked={selectedSeats.includes(row.seatCode)}
+                            onChange={() => toggleSeat(row.seatCode)}
+                          />
+                          <span><b>{row.displayName}</b><small>Seat {row.seatCode}</small></span>
+                        </label>
+                      ))}
+                      {visibleRoster.length === 0 && <p className="class-state">No student matches “{studentQuery}”.</p>}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </fieldset>
 
-          {/* 5. Closing question. The reference's own §5, "Required checkpoints", sits between
-              this and the class picker and is not built — see the file-level comment for why —
-              so the numbering here runs 1–5 rather than skipping a gap a teacher would have no
-              way to explain. */}
-          <fieldset className="builder-section builder-closing">
-            <legend>5. Closing question</legend>
-            <p>
-              Asked once, after the {TERMS.story} is finished. It is your question — BOW stores the answer beside
-              their work and never marks it, and it changes nothing about the skills reported.
-            </p>
-            <label htmlFor="builder-closing-text">Your question</label>
-            <textarea
-              id="builder-closing-text"
-              value={closingText}
-              maxLength={CLOSING_QUESTION_MAX}
-              rows={3}
-              placeholder="Leave this empty to ask nothing."
-              aria-describedby="builder-closing-count"
-              onChange={(event) => setClosingText(event.target.value)}
-            />
-            <p id="builder-closing-count" className="builder-closing__count" aria-live="polite">
-              {closingText.length} / {CLOSING_QUESTION_MAX}
-            </p>
-            <p className="builder-closing__suggest">
-              <span id="builder-closing-suggestions">Or take one of these and change it:</span>
-              {SUGGESTED_CLOSING.map((suggestion) => (
-                <Button
-                  key={suggestion}
-                  type="button"
-                  variant="quiet"
-                  aria-describedby="builder-closing-suggestions"
-                  onClick={() => setClosingText(suggestion)}
-                >
-                  {suggestion}
-                </Button>
-              ))}
-            </p>
-            <label className="builder-closing__required">
+          <details className="builder-options">
+            <summary>3. Optional teaching details</summary>
+            <p>Add a title, connect a learning goal, set a due date, or ask one closing question.</p>
+
+            <fieldset className="builder-section builder-title">
+              <legend>Assignment title</legend>
+              <label htmlFor="builder-title">Title (optional)</label>
               <input
-                type="checkbox"
-                checked={closingRequired}
-                disabled={closingText.trim().length === 0}
-                onChange={(event) => setClosingRequired(event.target.checked)}
+                id="builder-title"
+                type="text"
+                value={title}
+                maxLength={ASSIGNMENT_TITLE_MAX}
+                placeholder={worldSummary || "Decision challenge"}
+                aria-describedby="builder-title-count"
+                onChange={(event) => setTitle(event.target.value)}
               />
-              <span>They have to answer it before they can turn in</span>
-            </label>
-          </fieldset>
+              <p id="builder-title-count" className="builder-closing__count" aria-live="polite">
+                {title.length} / {ASSIGNMENT_TITLE_MAX}
+              </p>
+            </fieldset>
+
+            <fieldset className="builder-section builder-goal">
+              <legend>Learning goal</legend>
+              <p>Optional. Without one, students still play and you still receive their decision evidence.</p>
+              {standard ? (
+                <div className="builder-goal__selected">
+                  <span className="coverage-chip" data-coverage={assessable ? "full" : "none"}>{standard.code}</span>
+                  <p className="builder-goal__text">{standard.text}</p>
+                  <div className="builder-goal__meta">
+                    <Attribution frameworkId={FRAMEWORK_ID} />
+                    <Link to={objectivePath(refOf(standard))}>View this {unit} →</Link>
+                  </div>
+                  {!assessable && (
+                    <p className="builder-goal__warn">
+                      BOW cannot assess this {unit} yet.
+                      {waiting.length > 0 && (
+                        <> It rests on {waiting.length === 1 ? "a skill" : "skills"} no {TERMS.story} produces yet:
+                          {" "}{waiting.map((competency) => competency.statement).join("; ")}.
+                        </>
+                      )}
+                    </p>
+                  )}
+                </div>
+              ) : <p className="builder-goal__empty">No learning goal. Decision evidence still comes back.</p>}
+              <label htmlFor="builder-goal-search">Search {unit}s</label>
+              <input
+                id="builder-goal-search"
+                type="search"
+                value={goalQuery}
+                onChange={(event) => setGoalQuery(event.target.value)}
+                placeholder="budget, credit, insurance…"
+              />
+              <div className="builder-goal__list" role="radiogroup" aria-label={`Choose a ${unit}`}>
+                <label className="builder-goal__row">
+                  <input type="radio" name="builder-goal" value="" checked={objectiveCode === ""} onChange={() => setObjectiveCode("")} />
+                  <span><b>No learning goal</b><small>Keep the assignment focused on the challenge.</small></span>
+                </label>
+                {shownStandards.map((entry) => {
+                  const ok = isAssessable(refOf(entry));
+                  return (
+                    <label key={entry.code} className="builder-goal__row" data-unavailable={!ok}>
+                      <input
+                        type="radio"
+                        name="builder-goal"
+                        value={entry.code}
+                        checked={objectiveCode === entry.code}
+                        onChange={() => setObjectiveCode(entry.code)}
+                      />
+                      <span><b>{entry.code} · {entry.shortLabel}</b>{!ok && <em>Coming</em>}</span>
+                    </label>
+                  );
+                })}
+                {shownStandards.length === 0 && <p className="class-state">No {unit} matches “{goalQuery}”.</p>}
+              </div>
+            </fieldset>
+
+            <fieldset className="builder-section builder-class builder-due">
+              <legend>Due date</legend>
+              <label htmlFor="builder-due">Due date (optional)</label>
+              <input id="builder-due" type="datetime-local" value={dueLocal} onChange={(event) => setDueLocal(event.target.value)} />
+              <p className="builder-class__note">
+                {dueLocal && dueDateSummary(dueLocal)
+                  ? `Shown to you as due ${dueDateSummary(dueLocal)}. BOW does not lock the assignment at this time.`
+                  : "Leave this empty for no due date."}
+              </p>
+            </fieldset>
+
+            <fieldset className="builder-section builder-closing">
+              <legend>Closing question</legend>
+              <p>Optional. BOW stores the answer beside the work and never marks it.</p>
+              <label htmlFor="builder-closing-text">Your question</label>
+              <textarea
+                id="builder-closing-text"
+                value={closingText}
+                maxLength={CLOSING_QUESTION_MAX}
+                rows={3}
+                placeholder="Leave this empty to ask nothing."
+                aria-describedby="builder-closing-count"
+                onChange={(event) => setClosingText(event.target.value)}
+              />
+              <p id="builder-closing-count" className="builder-closing__count" aria-live="polite">
+                {closingText.length} / {CLOSING_QUESTION_MAX}
+              </p>
+              <p className="builder-closing__suggest">
+                <span id="builder-closing-suggestions">Or take one of these and change it:</span>
+                {SUGGESTED_CLOSING.map((suggestion) => (
+                  <Button key={suggestion} type="button" variant="quiet" aria-describedby="builder-closing-suggestions" onClick={() => setClosingText(suggestion)}>
+                    {suggestion}
+                  </Button>
+                ))}
+              </p>
+              <label className="builder-closing__required">
+                <input
+                  type="checkbox"
+                  checked={closingRequired}
+                  disabled={closingText.trim().length === 0}
+                  onChange={(event) => setClosingRequired(event.target.checked)}
+                />
+                <span>They have to answer it before they can turn in</span>
+              </label>
+            </fieldset>
+          </details>
 
           <div className="builder-actions">
             <Button type="button" aria-disabled={!canPublish || publishing} onClick={() => void publish()}>
               {publishing ? "Publishing…" : "Publish assignment"}
             </Button>
             <p className={`builder-actions__status${problem ? " builder-actions__status--problem" : ""}`} aria-live="polite">
-              {problem ?? blockedReason ?? "Ready to publish."}
+              {problem ?? blockedReason ?? "Ready to assign."}
             </p>
           </div>
         </div>
 
-        {/* The evidence preview. Generated from `evidencePreview.ts` alone — the objective's
-            own skills, their own required parts, and a real coverage row for every "Yes" a
-            teacher sees here. Nothing below this line is a sample. */}
-        <aside className="builder-preview" aria-label="Evidence preview">
-          <h2>What this will produce</h2>
-          {!objectiveRef && <p>Choose a learning goal to see what BOW will measure.</p>}
-          {objectiveRef && !assessable && <p>BOW cannot assess {standard?.code ?? "this"} yet, so there is nothing to preview.</p>}
-          {objectiveRef && assessable && compatible.length === 0 && <p>No {TERMS.story} produces this, so there is nothing to preview.</p>}
-          {objectiveRef && assessable && compatible.length > 0 && (
-            <>
-              {/* A list, not a matrix.
-                  It was a table with one column per offered story, and in a 320px rail that
-                  set "Run the Pop-Up" over three lines and pushed the answers off the right
-                  edge — so the one thing the panel exists to say was the thing you had to
-                  scroll to find. It was also the least informative shape available: with the
-                  stories BOW ships today every cell reads "Yes", and a wall of Yes teaches a
-                  teacher to stop reading it.
-                  So the common case is stated once, in a sentence, and the table's job is
-                  taken over by an exception list. A story that does NOT raise a row is the
-                  only thing a teacher has to act on, and it is now the only thing marked. */}
-              <ul className="builder-preview__skills">
-                {preview.map((skill) => (
-                  <li key={skill.competencyId}>
-                    <h3>{skill.statement}</h3>
-                    <ul className="builder-preview__rows">
-                      {skill.requirements.map((row) => {
-                        const offeredMissing = selectedWorlds.filter((worldId) => !row.producedBy.includes(worldId));
-                        return (
-                          <li key={row.requirement.id} data-gap={offeredMissing.length > 0}>
-                            <span className="builder-preview__row">
-                              {row.requirement.label}
-                              <small> · {row.requirement.kind === "decision" ? "from what they did" : "from what they wrote"}</small>
-                            </span>
-                            {offeredMissing.length > 0 && (
-                              <span className="builder-preview__gap">
-                                Not raised by {offeredMissing
-                                  .map((worldId) => PLAYABLE_WORLDS.find((entry) => entry.id === worldId)?.title ?? worldId)
-                                  .join(", ")}
+        <aside className="builder-preview" aria-label="Evidence preview and assignment review">
+          <p className="eyebrow">4. Review</p>
+          <h2>{title.trim() || worldSummary || "Assignment"}</h2>
+          <dl className="builder-review">
+            <div><dt>Challenge</dt><dd>{worldSummary || "Choose a challenge"}{mode === CHOOSE && selectedWorlds.length > 1 ? " · students choose" : ""}</dd></div>
+            <div><dt>Class</dt><dd>{selectedClass?.label ?? "Choose a class"}</dd></div>
+            <div><dt>Students</dt><dd>{targetSummary}</dd></div>
+            <div><dt>Learning goal</dt><dd>{standard ? `${standard.code} · ${standard.shortLabel}` : "None"}</dd></div>
+            <div><dt>Due</dt><dd>{dueLocal && dueDateSummary(dueLocal) ? dueDateSummary(dueLocal) : "No due date"}</dd></div>
+            <div><dt>Closing question</dt><dd>{closingText.trim() || "None"}</dd></div>
+          </dl>
+          <details className="builder-evidence">
+            <summary>Evidence preview</summary>
+            {!objectiveRef && <p>No learning goal selected. BOW still returns the decisions and explanations from the challenge.</p>}
+            {objectiveRef && !assessable && <p>BOW cannot assess {standard?.code ?? "this"} yet, so there is nothing to preview.</p>}
+            {objectiveRef && assessable && compatible.length === 0 && <p>No {TERMS.story} produces this, so there is nothing to preview.</p>}
+            {objectiveRef && assessable && compatible.length > 0 && (
+              <>
+                <ul className="builder-preview__skills">
+                  {preview.map((skill) => (
+                    <li key={skill.competencyId}>
+                      <h3>{skill.statement}</h3>
+                      <ul className="builder-preview__rows">
+                        {skill.requirements.map((row) => {
+                          const offeredMissing = selectedWorlds.filter((worldId) => !row.producedBy.includes(worldId));
+                          return (
+                            <li key={row.requirement.id} data-gap={offeredMissing.length > 0}>
+                              <span className="builder-preview__row">
+                                {row.requirement.label}
+                                <small> · {row.requirement.kind === "decision" ? "from what they did" : "from what they wrote"}</small>
                               </span>
-                            )}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </li>
-                ))}
-              </ul>
-              {/* The sentence the table used to make a teacher derive from a grid of "Yes" —
-                  and it is only printed when it is true. A gap above is marked on its own row,
-                  and claiming parity underneath it would be the whole panel lying. */}
-              {preview.every((skill) => skill.requirements.every(
-                (row) => selectedWorlds.every((worldId) => row.producedBy.includes(worldId)),
-              )) && (
-                <p className="builder-preview__every">
-                  {selectedWorlds.length === 1
-                    ? `The ${TERMS.story} you are offering raises every part above.`
-                    : `${selectedWorlds.length === 2 ? "Both" : `All ${selectedWorlds.length}`} ${TERMS.stories} you are offering raise every part above, so a class that splits still comes back as one set of skills.`}
-                </p>
-              )}
-              <p className="builder-preview__note">
-                Every row above is {TERMS.requirement} of {standard?.code}, and only that. BOW never combines them
-                into one score — each is reported to you on its own.
-              </p>
-            </>
-          )}
+                              {offeredMissing.length > 0 && (
+                                <span className="builder-preview__gap">
+                                  Not raised by {offeredMissing
+                                    .map((worldId) => PLAYABLE_WORLDS.find((entry) => entry.id === worldId)?.title ?? worldId)
+                                    .join(", ")}
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </li>
+                  ))}
+                </ul>
+                {preview.every((skill) => skill.requirements.every(
+                  (row) => selectedWorlds.every((worldId) => row.producedBy.includes(worldId)),
+                )) && (
+                  <p className="builder-preview__every">
+                    {selectedWorlds.length === 1
+                      ? `The ${TERMS.story} you are offering raises every part above.`
+                      : `${selectedWorlds.length === 2 ? "Both" : `All ${selectedWorlds.length}`} ${TERMS.stories} raise every part above.`}
+                  </p>
+                )}
+                <p className="builder-preview__note">BOW reports each named requirement on its own; it never combines them into one score.</p>
+              </>
+            )}
+          </details>
         </aside>
       </div>
     </EducatorShell>

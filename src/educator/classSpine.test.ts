@@ -196,3 +196,38 @@ describe("the minimum denominator", () => {
     expect(spine.reading!.teachNext.state).toBe("not-assessed");
   });
 });
+
+describe("an assignment is one evidence boundary", () => {
+  const SECOND: Assignment = {
+    ...ASSIGNMENT,
+    id: "assignment-H4KVW-DDDDDEEEEE",
+    createdAt: NOW + 1,
+  };
+
+  it("defaults the class center to the newest assignment and counts only its runs", () => {
+    const submissions = [
+      ...classOf(5),
+      seat("20", { assignment: SECOND }),
+      seat("21", { assignment: SECOND }),
+    ];
+    const spine = classSpineFrom({ record: CLASS, assignments: [ASSIGNMENT, SECOND], submissions });
+    expect(spine.assignment?.id).toBe(SECOND.id);
+    expect(spine.submitted).toBe(2);
+  });
+
+  it("can read an older assignment without borrowing a newer assignment's runs", () => {
+    const submissions = [
+      ...classOf(3),
+      seat("20", { assignment: SECOND }),
+      seat("21", { assignment: SECOND }),
+    ];
+    const spine = classSpineFrom({
+      record: CLASS,
+      assignments: [ASSIGNMENT, SECOND],
+      submissions,
+      assignmentId: ASSIGNMENT.id,
+    });
+    expect(spine.assignment?.id).toBe(ASSIGNMENT.id);
+    expect(spine.submitted).toBe(3);
+  });
+});

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compatibleWorldsFor, readAssignmentRequest } from "./assignments";
+import { ASSIGNMENT_TITLE_MAX, compatibleWorldsFor, readAssignmentRequest } from "./assignments";
 
 /**
  * The builder's central promise, held at the write path: an objective with no compatible
@@ -71,5 +71,41 @@ describe("a due date is honest: real, optional, and never invented", () => {
     expect(readAssignmentRequest({ objectiveRef: null, dueAt: Number.NaN }, [])).toBeNull();
     expect(readAssignmentRequest({ objectiveRef: null, dueAt: -1 }, [])).toBeNull();
     expect(readAssignmentRequest({ objectiveRef: null, dueAt: 0 }, [])).toBeNull();
+  });
+});
+
+describe("an assignment title stays a small optional label", () => {
+  it("trims and stores a teacher's title", () => {
+    expect(readAssignmentRequest({ objectiveRef: null, title: "  Demand lesson  " }, [])?.title)
+      .toBe("Demand lesson");
+  });
+
+  it("stores no title when the field is blank", () => {
+    expect(readAssignmentRequest({ objectiveRef: null, title: "   " }, []))
+      .not.toHaveProperty("title");
+  });
+
+  it("refuses a title over the cap rather than cutting off the teacher's words", () => {
+    expect(readAssignmentRequest({ objectiveRef: null, title: "x".repeat(ASSIGNMENT_TITLE_MAX + 1) }, []))
+      .toBeNull();
+  });
+});
+
+describe("selected seats are validated against the live class list", () => {
+  it("deduplicates active seats and keeps exactly those seats", () => {
+    const request = readAssignmentRequest(
+      { objectiveRef: null, assignedStudentIds: ["2", "1", "2"] },
+      [],
+      ["1", "2"],
+    );
+    expect(request?.assignedStudentIds).toEqual(["2", "1"]);
+  });
+
+  it("refuses a removed or foreign seat", () => {
+    expect(readAssignmentRequest(
+      { objectiveRef: null, assignedStudentIds: ["1", "3"] },
+      [],
+      ["1", "2"],
+    )).toBeNull();
   });
 });

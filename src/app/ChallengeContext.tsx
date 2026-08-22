@@ -4,16 +4,16 @@ import { challengeReducer } from "../domain/machine/reducer";
 import { createInitialState, type ChallengeState } from "../domain/machine/state";
 import type { ChallengeAction } from "../domain/machine/actions";
 import type { WorldId } from "../domain/core/ids";
-import { clearAttemptFor, clearEveryAttempt, lastWorldPlayed, loadAttemptFor } from "../domain/io/persistence";
+import { clearAttemptFor, lastWorldPlayed, loadAttemptFor } from "../domain/io/persistence";
 import { useAttemptAutosave, useRunLock, useSingleFireDispatch } from "./attemptStore";
-import { forgetStudent } from "../platform/identity/token";
 import { Button } from "../components/primitives/Button";
 import { DEFAULT_WORLD_ID } from "../domain/scenario/registry";
 import { deliverWithRetry, type DeliveryState, type EvidenceTransport } from "../platform/evidence/transport";
 import { transportFromEnvironment } from "../platform/evidence/transports";
 import type { WorldOffer } from "../stages/worldOffer";
 import { useAttemptCheckpoint } from "../student/useAttemptCheckpoint";
-import { closingAnswerFor, forgetEveryClosingDraft } from "../student/closingQuestion";
+import { closingAnswerFor } from "../student/closingQuestion";
+import { handOverStudentDevice } from "../student/handOver";
 
 interface ChallengeContextValue {
   state: ChallengeState;
@@ -156,19 +156,7 @@ export function ChallengeProvider({ children, transport = DEFAULT_TRANSPORT, ini
   }, [activeWorldId, run]);
 
   const handOver = useCallback(() => {
-    clearEveryAttempt();
-    // A child's own sentences, which is exactly what the next student at this machine must
-    // not find. The attempt clear does not reach them: they are not in the attempt.
-    forgetEveryClosingDraft();
-    run.release();
-    // The session goes with the attempt. Clearing one and keeping the other is the shared-cart
-    // failure with an extra step: the next student would sit down to a cleared board that was
-    // still signed in as the last one, and every decision they made would be filed under a
-    // name that is not theirs.
-    forgetStudent();
-    // Straight to the sign-in rather than the front door: the next person is here to do the
-    // work, and the one screen they need is the one that asks who they are.
-    window.location.assign("/join");
+    handOverStudentDevice({ release: run.release });
   }, [run]);
 
   const enterWorld = useCallback((worldId: WorldId) => setActiveWorldId(worldId), []);

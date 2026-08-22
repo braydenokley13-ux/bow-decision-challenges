@@ -73,9 +73,9 @@ function openClassService() {
   return fetchMock;
 }
 
-function door() {
+function door(initialEntry = "/join") {
   render(
-    <MemoryRouter initialEntries={["/join"]}>
+    <MemoryRouter initialEntries={[initialEntry]}>
       <Routes>
         <Route path="/join" element={<StudentJoin />} />
         <Route path="/home" element={<p>home</p>} />
@@ -96,19 +96,36 @@ async function signUpFresh(name: string) {
   await userEvent.click(screen.getByRole("button", { name: "Go in" }));
 }
 
-afterEach(() => { cleanup(); vi.restoreAllMocks(); window.localStorage.clear(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); window.localStorage.clear(); });
+
+async function confirmCredentialsSaved() {
+  const continueButton = screen.getByRole("button", { name: "Continue to my work" });
+  expect(continueButton).toBeDisabled();
+  await userEvent.click(screen.getByRole("checkbox", { name: "I saved it somewhere private." }));
+  expect(continueButton).toBeEnabled();
+  await userEvent.click(continueButton);
+}
 
 describe("an open-class student is shown their code and can use it to get back in", () => {
+  it("keeps an ordinary first open-class join in new-account mode", async () => {
+    vi.stubGlobal("fetch", openClassService());
+    door();
+    await enterClassCode();
+    expect(await screen.findByLabelText("Name")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Your BOW Key")).not.toBeInTheDocument();
+  });
+
   it("shows the code the moment it is issued, before the run, and keeps it for this browser", async () => {
     vi.stubGlobal("fetch", openClassService());
     await signUpFresh("Ana");
 
     // Not home yet — the code has to be read first.
     expect(screen.queryByText("home")).not.toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "Write this code down." })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Save these sign-in details." })).toBeInTheDocument();
     expect(screen.getByText("JOINCODE1")).toBeInTheDocument();
+    expect(screen.getAllByText(RECOVERY_KEY)).toHaveLength(1);
 
-    await userEvent.click(screen.getByRole("button", { name: "I’ve written it down" }));
+    await confirmCredentialsSaved();
     await waitFor(() => expect(screen.getByText("home")).toBeInTheDocument());
 
     // Persisted for the account it belongs to, not just displayed once and forgotten.
@@ -119,7 +136,8 @@ describe("an open-class student is shown their code and can use it to get back i
   it("recognises the same browser, asks first, and gets back in on one honest yes", async () => {
     vi.stubGlobal("fetch", openClassService());
     await signUpFresh("Ana");
-    await userEvent.click(await screen.findByRole("button", { name: "I’ve written it down" }));
+    await screen.findByRole("heading", { name: "Save these sign-in details." });
+    await confirmCredentialsSaved();
     await waitFor(() => expect(screen.getByText("home")).toBeInTheDocument());
 
     // A shared-device session dying overnight, with nothing else about this browser touched:
@@ -135,13 +153,14 @@ describe("an open-class student is shown their code and can use it to get back i
     // Recognised, but not handed the code without asking — see `token.ts`'s note on why a
     // recognised browser is not a recognised child.
     expect(await screen.findByRole("heading", { name: "Have you signed in here before?" })).toBeInTheDocument();
-    expect(screen.queryByLabelText("Your code")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Class sign-in code")).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Yes — that was me" }));
-    const codeField = await screen.findByLabelText("Your code");
+    const codeField = await screen.findByLabelText("Class sign-in code");
     expect(codeField).toHaveValue("JOINCODE1");
-
-    await userEvent.type(screen.getByLabelText(/BOW recovery key/), RECOVERY_KEY);
+    // This is a return to the same class with the code this browser remembered. A BOW Key is
+    // for linking a *new* class card; requiring it here defeats the same-device return path.
+    expect(screen.queryByLabelText("Your BOW Key")).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Go in" }));
     await waitFor(() => expect(screen.getByText("home")).toBeInTheDocument());
@@ -155,7 +174,8 @@ describe("an open-class student is shown their code and can use it to get back i
   it("answering the recognition question honestly starts a fresh account rather than revealing the old code", async () => {
     vi.stubGlobal("fetch", openClassService());
     await signUpFresh("Ana");
-    await userEvent.click(await screen.findByRole("button", { name: "I’ve written it down" }));
+    await screen.findByRole("heading", { name: "Save these sign-in details." });
+    await confirmCredentialsSaved();
     await waitFor(() => expect(screen.getByText("home")).toBeInTheDocument());
     forgetStudent();
 
@@ -177,7 +197,7 @@ describe("an open-class student is shown their code and can use it to get back i
     // never Ana's.
     expect(await screen.findByText("JOINCODE2")).toBeInTheDocument();
     expect(screen.queryByText("JOINCODE1")).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "I’ve written it down" }));
+    await confirmCredentialsSaved();
     await waitFor(() => expect(screen.getByText("home")).toBeInTheDocument());
     expect(studentIdHeld()).toBe("s2");
   });
@@ -185,7 +205,8 @@ describe("an open-class student is shown their code and can use it to get back i
   it("a browser that has since signed somebody else in never offers the recognition question", async () => {
     vi.stubGlobal("fetch", openClassService());
     await signUpFresh("Ana");
-    await userEvent.click(await screen.findByRole("button", { name: "I’ve written it down" }));
+    await screen.findByRole("heading", { name: "Save these sign-in details." });
+    await confirmCredentialsSaved();
     await waitFor(() => expect(screen.getByText("home")).toBeInTheDocument());
     forgetStudent();
 
@@ -201,5 +222,110 @@ describe("an open-class student is shown their code and can use it to get back i
     const nameField = await screen.findByLabelText("Name");
     expect(nameField).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Have you signed in here before?" })).not.toBeInTheDocument();
+  });
+
+  it("shows a recovery-key-only response once before Home, can copy it, and never stores it", async () => {
+    const writeText = vi.fn(() => Promise.resolve());
+    vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+    vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url.endsWith("/roster") && (init?.method ?? "GET") === "GET") {
+        return respond({ label: "Period 3", joinMode: "roster" });
+      }
+      if (url.endsWith("/join") && init?.method === "POST") {
+        return respond({
+          studentId: "roster-student", seatCode: "7", displayName: "Ana",
+          token: "roster-token", classCode: CLASS, label: "Period 3", recoveryKey: RECOVERY_KEY,
+        });
+      }
+      return respond({ error: "not_found", message: "not found" }, 404);
+    }));
+
+    door();
+    await enterClassCode();
+    await userEvent.type(await screen.findByLabelText("Class sign-in code"), "CARD7");
+    await userEvent.click(screen.getByRole("button", { name: "Go in" }));
+
+    expect(await screen.findByRole("heading", { name: "Save these sign-in details." })).toBeInTheDocument();
+    expect(screen.queryByText("home")).not.toBeInTheDocument();
+    expect(screen.getAllByText(RECOVERY_KEY)).toHaveLength(1);
+    expect(screen.queryByText("JOINCODE1")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Copy BOW Key" }));
+    await waitFor(() => expect(writeText).toHaveBeenCalledWith(RECOVERY_KEY));
+
+    const stored = Array.from({ length: window.localStorage.length }, (_, index) => {
+      const key = window.localStorage.key(index)!;
+      return `${key}:${window.localStorage.getItem(key)}`;
+    }).join("\n");
+    expect(stored).not.toContain(RECOVERY_KEY);
+
+    await confirmCredentialsSaved();
+    await waitFor(() => expect(screen.getByText("home")).toBeInTheDocument());
+    expect(screen.queryByText(RECOVERY_KEY)).not.toBeInTheDocument();
+  });
+
+  it("still requires the BOW Key when a new class card is linked to an existing account", async () => {
+    const joins: Array<Record<string, string>> = [];
+    vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url.endsWith("/roster") && (init?.method ?? "GET") === "GET") {
+        return respond({ label: "Period 3", joinMode: "roster" });
+      }
+      if (url.endsWith("/join") && init?.method === "POST") {
+        joins.push(JSON.parse((init.body as string) ?? "{}") as Record<string, string>);
+        return respond({
+          studentId: "same-account", seatCode: "7", displayName: "Ana",
+          token: "linked-token", classCode: CLASS, label: "Period 3",
+        });
+      }
+      return respond({ error: "not_found", message: "not found" }, 404);
+    }));
+
+    door("/join?intent=add-class");
+    await enterClassCode();
+    await userEvent.type(await screen.findByLabelText("Class sign-in code"), "NEWCARD7");
+    expect(screen.getByLabelText("Link this new class to my BOW account")).toBeChecked();
+    await userEvent.click(screen.getByRole("button", { name: "Go in" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/BOW Key.*new class card/i);
+    expect(joins).toHaveLength(0);
+
+    await userEvent.type(screen.getByLabelText("Your BOW Key"), RECOVERY_KEY);
+    await userEvent.click(screen.getByRole("button", { name: "Go in" }));
+    await waitFor(() => expect(screen.getByText("home")).toBeInTheDocument());
+    expect(joins).toEqual([expect.objectContaining({ joinCode: "NEWCARD7", bowRecoveryKey: RECOVERY_KEY })]);
+  });
+
+  it("links an open class by name when Home carries add-class intent", async () => {
+    const joins: Array<Record<string, string>> = [];
+    vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+      if (url.endsWith("/roster") && (init?.method ?? "GET") === "GET") {
+        return respond({ label: "Open Studio", joinMode: "open" });
+      }
+      if (url.endsWith("/join") && init?.method === "POST") {
+        joins.push(JSON.parse((init.body as string) ?? "{}") as Record<string, string>);
+        return respond({
+          studentId: "same-account", seatCode: "12", displayName: "Ana",
+          token: "linked-open-token", classCode: CLASS, label: "Open Studio",
+        });
+      }
+      return respond({ error: "not_found", message: "not found" }, 404);
+    }));
+
+    door("/join?intent=add-class");
+    await enterClassCode();
+    await userEvent.type(await screen.findByLabelText("Name"), "Ana");
+    expect(screen.getByLabelText("Your BOW Key")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Go in" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/BOW Key.*link this class/i);
+    expect(joins).toHaveLength(0);
+
+    await userEvent.type(screen.getByLabelText("Your BOW Key"), RECOVERY_KEY);
+    await userEvent.click(screen.getByRole("button", { name: "Go in" }));
+    await waitFor(() => expect(screen.getByText("home")).toBeInTheDocument());
+    expect(joins).toEqual([expect.objectContaining({ displayName: "Ana", bowRecoveryKey: RECOVERY_KEY })]);
   });
 });

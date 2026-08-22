@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { StudentJoin } from "./Join";
 import { attemptKeyForWorld } from "../domain/io/persistence";
 import { studentIdHeld, studentToken } from "./session";
+import { readClosingDraft, rememberClosingQuestion, writeClosingAnswer } from "./closingQuestion";
+import { handOverStudentDevice } from "./handOver";
 
 /**
  * The cart Chromebook, and the thing that must never survive a new person sitting down.
@@ -51,7 +53,7 @@ async function signIn(joinCode: string) {
   );
   await userEvent.type(screen.getByLabelText("Class code"), CLASS);
   await userEvent.click(screen.getByRole("button", { name: "Next" }));
-  await userEvent.type(await screen.findByLabelText("Your code"), joinCode);
+  await userEvent.type(await screen.findByLabelText("Class sign-in code"), joinCode);
   await userEvent.click(screen.getByRole("button", { name: "Go in" }));
   await waitFor(() => expect(screen.getByText("home")).toBeInTheDocument());
   cleanup();
@@ -120,5 +122,25 @@ describe("a shared machine belongs to whoever is signed in now", () => {
     await signIn("BBBBB");
     expect(whatIsLeft()).not.toContain("the-first-student-run");
     expect(studentIdHeld()).toBe("s_second");
+  });
+
+  it("uses the same full hand-over for both worlds", async () => {
+    vi.stubGlobal("fetch", door("s_first"));
+    await signIn("AAAAA");
+    leaveARunBehind("the-first-student-run");
+    rememberClosingQuestion("handover-run", { text: "Why?", required: false });
+    writeClosingAnswer("handover-run", "Because this was my plan.");
+    expect(readClosingDraft("handover-run")?.answer).toContain("my plan");
+
+    const release = vi.fn();
+    const redirects: string[] = [];
+    handOverStudentDevice({ release, redirect: (path) => redirects.push(path) });
+
+    expect(whatIsLeft()).toBe("");
+    expect(readClosingDraft("handover-run")).toBeNull();
+    expect(studentToken()).toBeNull();
+    expect(studentIdHeld()).toBe("s_first");
+    expect(release).toHaveBeenCalledOnce();
+    expect(redirects).toEqual(["/join"]);
   });
 });

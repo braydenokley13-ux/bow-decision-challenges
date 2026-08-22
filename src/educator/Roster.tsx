@@ -8,6 +8,7 @@ import { useTeacherKey } from "./teacherKeyUrl";
 import { replaceClassKey, teacherToken } from "./teacherSession";
 import { MAX_ROSTER_SIZE, type ClassJoinMode, type JoinCard } from "../platform/identity/types";
 import { DEMO_CLASS_CODE } from "../fixtures/demoClass";
+import "./roster-shell.css";
 
 /**
  * The class list, and the cards that come off it.
@@ -88,6 +89,7 @@ export function Roster() {
   /** Whether replacing the class's key is one press from happening, and what happened after. */
   const [replacing, setReplacing] = useState(false);
   const [rekeySaid, setRekeySaid] = useState<string | null>(null);
+  const [privateAccessLink, setPrivateAccessLink] = useState<string | null>(null);
   /** The safe button, held by identity — the reasoning is written out in full over `keepIt`. */
   const keepTheLink = useRef<HTMLButtonElement>(null);
   // A paste that is mostly names already on the list, held back with the question asked rather
@@ -124,9 +126,15 @@ export function Roster() {
   }, [replacing]);
 
   const call = useCallback(async (path: string, init: RequestInit = {}) => {
+    const token = teacherToken();
     const response = await fetch(`${CLASS_API_BASE}${path}`, {
       ...init,
-      headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": teacherKey ?? "", ...(init.headers ?? {}) },
+      headers: {
+        "Content-Type": "application/json",
+        "X-BOW-Teacher-Key": teacherKey ?? "",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(init.headers ?? {}),
+      },
     });
     const text = await response.text();
     const body: unknown = text ? JSON.parse(text) : null;
@@ -299,6 +307,7 @@ export function Roster() {
     setReplacing(false);
     if (!result.ok) { setProblem(result.message); return; }
     rememberKey(code, result.body.teacherKey);
+    setPrivateAccessLink(`${window.location.origin}/educator/class/${code}?key=${result.body.teacherKey}`);
     setRekeySaid(result.body.message);
   };
 
@@ -353,6 +362,55 @@ export function Roster() {
 
   const live = state.rows.filter((row) => !row.removedAt);
   const room = MAX_ROSTER_SIZE - live.length;
+  const privateLinkSection = (
+    <section className="dashboard-section roster-private-link">
+      <div className="section-heading">
+        <p className="eyebrow">Private teacher access</p>
+        <h2>Make a new private link</h2>
+      </div>
+      <p>
+        A private access link lets another teacher open this class. It grants access; it does
+        not transfer ownership away from your account. Making one replaces the previous link,
+        so every old private link stops working. Student work and the class code do not change.
+      </p>
+      {!teacherToken() ? (
+        <p className="class-state">
+          Replacing a key needs an account, because the key is the thing being replaced — a
+          stranger who read the old one off a screen must not be able to use it to lock you out.
+          {" "}<Link to="/educator/sign-in">Sign in</Link> on this computer and this class becomes
+          yours; then you can make a new link.
+        </p>
+      ) : replacing ? (
+        <div className="classes-forget">
+          <p className="classes-forget__warn" id="roster-rekey-warn">
+            Make a new private access link? Any old private link saved in a bookmark, email, or
+            another computer stops working. Your account remains the owner and still opens the class.
+          </p>
+          <Button variant="primary" aria-describedby="roster-rekey-warn" aria-disabled={busy} onClick={() => void replaceTheKey()}>
+            Make a new link
+          </Button>
+          <button type="button" className="button button--quiet" ref={keepTheLink} aria-describedby="roster-rekey-warn" onClick={() => setReplacing(false)}>
+            Keep the one I have
+          </button>
+        </div>
+      ) : (
+        <Button variant="secondary" aria-disabled={busy} onClick={() => { setReplacing(true); setSaid(null); setPrivateAccessLink(null); }}>
+          Make a new private link
+        </Button>
+      )}
+      {privateAccessLink && (
+        <div className="class-created__key" aria-live="polite">
+          <p className="field-label">New private access link</p>
+          <code>{privateAccessLink}</code>
+          <p>
+            This grants access to the class; it does not give away ownership. Every old private
+            link has stopped working, so replace any bookmark or message that carried one.
+          </p>
+        </div>
+      )}
+      <p className="class-state" role="status">{rekeySaid ?? ""}</p>
+    </section>
+  );
 
   return (
     <EducatorShell>
@@ -428,6 +486,8 @@ export function Roster() {
           </p>
         )}
       </section>
+
+      {privateLinkSection}
 
       <section className="dashboard-section">
         <div className="section-heading">
@@ -508,60 +568,6 @@ export function Roster() {
           {" "}is the other one: it deletes the name and everything that student did, for a family who has
           asked you to. Nobody else in the class is affected, and it cannot be undone.
         </p>
-      </section>
-
-      <section className="dashboard-section">
-        <div className="section-heading">
-          <p className="eyebrow">If the link got out</p>
-          <h2>Make a new private link</h2>
-        </div>
-        {/* The control there was no route for.
-            The teacher key opens every child's name and every child's written explanation in
-            this class for its whole retention window, and a security review found it in the
-            address bar of a projected screen. Until `POST /classes/:code/key` existed the only
-            remedy for a leaked key was deleting the class, which destroys the children's work —
-            a control whose price is the evidence it protects is a control nobody uses.
-
-            It is authenticated by the account that owns the class rather than by the key, which
-            is the route's own decision and the right one: the key is the thing being replaced,
-            so a stranger who read it off a projector could otherwise use it to lock the teacher
-            out permanently. That is why an unclaimed class is told to claim it rather than
-            refused. */}
-        <p>
-          Replacing this class&rsquo;s key stops every old link and bookmark opening it, on every
-          device including yours. Nothing your students have done changes: the class code, the
-          list, their work and everything you wrote back stay exactly as they are.
-        </p>
-        {/* The route is authenticated by the account, deliberately, so this says what to do
-            rather than offering a button that answers 401. A class made without signing in is
-            claimed by signing in on the browser that holds its key, which this one does. */}
-        {!teacherToken() ? (
-          <p className="class-state">
-            Replacing a key needs an account, because the key is the thing being replaced — a
-            stranger who read the old one off a screen must not be able to use it to lock you out.
-            {" "}<Link to="/educator/sign-in">Sign in</Link> on this computer and this class becomes
-            yours; then you can make a new link.
-          </p>
-        ) : replacing ? (
-          <div className="classes-forget">
-            <p className="classes-forget__warn" id="roster-rekey-warn">
-              Make a new link for this class? Any link you have saved elsewhere — a bookmark, an
-              email to yourself, another computer — stops working, and you open the class from My
-              classes afterwards.
-            </p>
-            <Button variant="primary" aria-describedby="roster-rekey-warn" aria-disabled={busy} onClick={() => void replaceTheKey()}>
-              Make a new link
-            </Button>
-            <button type="button" className="button button--quiet" ref={keepTheLink} aria-describedby="roster-rekey-warn" onClick={() => setReplacing(false)}>
-              Keep the one I have
-            </button>
-          </div>
-        ) : (
-          <Button variant="secondary" aria-disabled={busy} onClick={() => { setReplacing(true); setSaid(null); }}>
-            Make a new private link
-          </Button>
-        )}
-        <p className="class-state" role="status">{rekeySaid ?? ""}</p>
       </section>
 
       <section className="dashboard-section">

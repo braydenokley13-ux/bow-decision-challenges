@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type Dispatch, type PropsWithChildren } from "react";
-import { clearAttemptFor, clearEveryAttempt, loadAttemptFor, saveAttempt } from "../../domain/io/persistence";
+import { clearAttemptFor, loadAttemptFor, saveAttempt } from "../../domain/io/persistence";
 import { useAttemptAutosave, useSingleFireDispatch } from "../../app/attemptStore";
 import { useAttemptCheckpoint } from "../../student/useAttemptCheckpoint";
 import { readMyAttempt, studentToken } from "../../student/session";
@@ -8,6 +8,7 @@ import { createPopUpState, popUpReducer, type PopUpAction, type PopUpState } fro
 import { deliverWithRetry, type DeliveryState, type EvidenceTransport } from "../../platform/evidence/transport";
 import { asRunCopy, runToCarryOn } from "../../platform/identity/runCopies";
 import { closingAnswerFor, forgetClosingDraft } from "../../student/closingQuestion";
+import { handOverStudentDevice } from "../../student/handOver";
 import type { EvidenceSubmission } from "../../platform/classes/types";
 
 /**
@@ -221,10 +222,7 @@ function PopUpRun({ children, seed, transport, sample = false, initial }: PropsW
   }, [state.meta.sessionId]);
 
   const handOver = useCallback(() => {
-    clearEveryAttempt();
-    // Same door as the other world's, for the same reason: the next person at this machine
-    // has to be able to say who they are before anything else happens.
-    window.location.assign("/");
+    handOverStudentDevice();
   }, []);
 
   const value = useMemo(

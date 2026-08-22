@@ -51,7 +51,7 @@ function service(state: PopUpState, options: { inProgress?: unknown; chooses?: b
           format: "decision-challenge", assignedStudentIds: null, createdAt: 1,
         }],
         inProgress: options.inProgress ?? null,
-        completed: [{ sessionId: state.meta.sessionId, submittedAt: 1_780_000_100_000, worldId: "food-truck" }],
+        completed: [{ sessionId: state.meta.sessionId, submittedAt: 1_780_000_100_000, worldId: "food-truck", assignmentId: "a1" }],
         feedback: [],
       }],
   });
@@ -88,7 +88,7 @@ describe("a student who finished can go again, and is offered it", () => {
     vi.stubGlobal("fetch", service(state));
     openHome();
     const again = await screen.findByRole("link", { name: "Play it again" });
-    expect(again).toHaveAttribute("href", `/challenges/plan-under-pressure?class=${CLASS_CODE}`);
+    expect(again).toHaveAttribute("href", `/challenges/plan-under-pressure?class=${CLASS_CODE}&assignment=a1`);
   });
 
   it("says plainly that the run already turned in is not taken back", async () => {
@@ -134,6 +134,48 @@ describe("a student who finished can go again, and is offered it", () => {
     expect(loadAttemptFor("food-truck")).not.toBeNull();
     await userEvent.click(again);
     expect(loadAttemptFor("food-truck")).toBeNull();
+  });
+
+  it("offers replay on each completed assignment card, including an earlier completion", async () => {
+    const body = {
+      classes: [{
+        classCode: CLASS_CODE,
+        label: "Period 3 · Grade 7",
+        seatCode: "7",
+        displayName: "Robin",
+        assignments: [
+          {
+            id: "a-old", classId: CLASS_CODE, title: "First Market", objectiveRef: null, competencyIds: [],
+            allowedWorldIds: ["food-truck"], studentChoosesWorld: false,
+            format: "decision-challenge", assignedStudentIds: null, createdAt: 1,
+          },
+          {
+            id: "a-new", classId: CLASS_CODE, title: "Showcase Plan", objectiveRef: null, competencyIds: [],
+            allowedWorldIds: ["basketball"], studentChoosesWorld: false,
+            format: "decision-challenge", assignedStudentIds: null, createdAt: 2,
+          },
+        ],
+        inProgress: null,
+        completed: [
+          { sessionId: "old-run", submittedAt: 10, worldId: "food-truck", assignmentId: "a-old" },
+          { sessionId: "new-run", submittedAt: 20, worldId: "basketball", assignmentId: "a-new" },
+        ],
+        feedback: [],
+      }],
+    };
+    vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve(JSON.stringify(body)),
+    } as Response)));
+    openHome();
+
+    expect(await screen.findByRole("link", { name: "Play it again — First Market" })).toHaveAttribute(
+      "href", `/challenges/plan-under-pressure?class=${CLASS_CODE}&assignment=a-old`,
+    );
+    expect(screen.getByRole("link", { name: "Play it again — Showcase Plan" })).toHaveAttribute(
+      "href", `/challenges/plan-under-pressure?class=${CLASS_CODE}&assignment=a-new`,
+    );
   });
 });
 

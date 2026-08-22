@@ -1012,6 +1012,11 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
       const assignments = assignmentsForClass(classRecord, await store.listAssignments(classCode));
       const assignment = assignmentId ? assignments.find((entry) => entry.id === assignmentId) : undefined;
       if (assignmentId && !assignment) return { status: 404, body: { error: "assignment_not_found", message: "That assignment is not in this class." } };
+      // Seeing an assignment in the class's public list is not authority to start it. The token
+      // above resolved to one seat; selected work belongs only to the seats the teacher named.
+      if (assignment && assignment.assignedStudentIds !== null && !assignment.assignedStudentIds.includes(seat.seatCode)) {
+        return { status: 403, body: { error: "not_authorised", message: "That assignment was set for different students in this class." } };
+      }
       if (assignment && !assignment.allowedWorldIds.includes(worldId)) {
         return { status: 400, body: { error: "bad_request", message: "That world is not part of this assignment." } };
       }
@@ -1447,7 +1452,7 @@ export const IDENTITY_ROUTES: readonly IdentityRoute[] = [
           code: record.code,
           teacherKey,
           replacedAt: now,
-          message: "This class has a new key. Any link or bookmark carrying the old one has stopped working, on every device including yours — open the class from My Classes to get the new link. Nothing your students have done has changed.",
+          message: "The private access link is ready. It grants access to this class; it does not transfer ownership away from your account. Every old private link has stopped working. Nothing your students have done has changed.",
         },
       };
     },

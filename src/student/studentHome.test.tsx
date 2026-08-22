@@ -67,6 +67,17 @@ function home(entry: ClassShape = {}, student: { displayName: string | null } | 
   return render(<MemoryRouter initialEntries={["/home"]}><StudentHome /></MemoryRouter>);
 }
 
+function homeAcross(classes: unknown[]) {
+  const body = { student: { displayName: "Marisol T." }, classes };
+  vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({
+    ok: true,
+    status: 200,
+    text: () => Promise.resolve(JSON.stringify(body)),
+  } as Response)));
+  window.localStorage.setItem("bow.student.v1.token", "a-session");
+  return render(<MemoryRouter initialEntries={["/home"]}><StudentHome /></MemoryRouter>);
+}
+
 describe("whose screen this is", () => {
   it("leads with the student's own name, as the page's heading", async () => {
     home();
@@ -82,6 +93,7 @@ describe("whose screen this is", () => {
     // Not a bare "Not you?", which is a question with no verb in it. The door already
     // established the pattern: a kid-voice question and the thing that happens.
     expect(await screen.findByRole("button", { name: "Not you? Sign out" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Join another class" })).toHaveAttribute("href", "/join?intent=add-class");
   });
 
   it("still names a student who is signed in and in no class, and still offers sign-out", async () => {
@@ -109,6 +121,12 @@ describe("a class that was set more than one thing", () => {
     // named "Start" is a list of identical destinations to anybody not looking at the screen.
     expect(screen.getByRole("link", { name: "Start — Eight Weeks to the Showcase" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Start — Run the Pop-Up" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Start — Eight Weeks to the Showcase" })).toHaveAttribute(
+      "href", `/challenges/plan-under-pressure?class=${CLASS_CODE}&assignment=a1`,
+    );
+    expect(screen.getByRole("link", { name: "Start — Run the Pop-Up" })).toHaveAttribute(
+      "href", `/challenges/plan-under-pressure?class=${CLASS_CODE}&assignment=a2`,
+    );
   });
 
   it("keeps the verb alone when there is only one thing it could open", async () => {
@@ -122,6 +140,12 @@ describe("a class that was set more than one thing", () => {
       inProgress: { worldId: "food-truck", stage: "popup-standing-order", updatedAt: 5, assignmentId: "a2" },
     });
     await screen.findByRole("link", { name: /Carry on/ });
+    expect(screen.getByRole("link", { name: "Carry on — Run the Pop-Up" })).toHaveAttribute(
+      "href", `/challenges/plan-under-pressure?class=${CLASS_CODE}&assignment=a2`,
+    );
+    expect(screen.queryByRole("link", { name: "Start — Eight Weeks to the Showcase" })).not.toBeInTheDocument();
+    expect(screen.getByText(/Finish the run already in progress for this class/)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Play it again/ })).not.toBeInTheDocument();
     const titles = screen.getAllByRole("heading", { level: 3 }).map((node) => node.textContent);
     expect(titles).toEqual(["Run the Pop-Up", "Eight Weeks to the Showcase"]);
   });
@@ -147,6 +171,11 @@ describe("a class that was set more than one thing", () => {
   it("says which world a second attempt is a second attempt of", async () => {
     home({ assignments: [assignment({ id: "a3", attemptOf: "a1" })] });
     expect(await screen.findByRole("heading", { name: "Eight Weeks to the Showcase — second attempt", level: 3 })).toBeInTheDocument();
+  });
+
+  it("uses the teacher's trimmed title and keeps the second-attempt suffix", async () => {
+    home({ assignments: [assignment({ id: "a3", title: "  Lunch Rush Choices  ", attemptOf: "a1" })] });
+    expect(await screen.findByRole("heading", { name: "Lunch Rush Choices — second attempt", level: 3 })).toBeInTheDocument();
   });
 
   it("does not offer to open a quick check, because nothing in BOW opens one", async () => {
@@ -247,5 +276,58 @@ describe("nothing on this screen is a score", () => {
     });
     await screen.findByRole("link", { name: /Carry on/ });
     expect(document.body.textContent).not.toMatch(/streak|badge|points|level \d|% |\d+ of \d+ done/i);
+  });
+});
+
+describe("one continue-first home across classes", () => {
+  it("chooses one global next move, then responses, up next, past runs, and memberships", async () => {
+    const first = {
+      classCode: CLASS_CODE,
+      label: "Ms. Alvarez · Period 3",
+      seatCode: "4",
+      displayName: "Marisol T.",
+      assignments: [
+        assignment({ id: "a-live", allowedWorldIds: ["basketball"], createdAt: 1 }),
+        assignment({ id: "a-past", allowedWorldIds: ["food-truck"], attemptOf: "a-live", createdAt: 2 }),
+      ],
+      inProgress: { worldId: "basketball", stage: "week5-event", updatedAt: 100, assignmentId: "a-live" },
+      completed: [{ sessionId: "past-a", submittedAt: 80, worldId: "food-truck", assignmentId: "a-past" }],
+      feedback: [],
+    };
+    const secondCode = "P6MKT";
+    const second = {
+      classCode: secondCode,
+      label: "Mr. Chen · Period 5",
+      seatCode: "9",
+      displayName: "Marisol T.",
+      assignments: [
+        assignment({ id: "b-response", classId: secondCode, allowedWorldIds: ["basketball"], attemptOf: "older-b", createdAt: 1 }),
+        assignment({ id: "b-next", classId: secondCode, allowedWorldIds: ["food-truck"], createdAt: 2 }),
+      ],
+      inProgress: null,
+      completed: [{ sessionId: "response-b", submittedAt: 70, worldId: "basketball", assignmentId: "b-response" }],
+      feedback: [{ id: "f-b", body: "Tell me more about the backup money.", at: 90, sessionId: "response-b" }],
+    };
+    homeAcross([first, second]);
+
+    const next = (await screen.findByRole("heading", { name: "Your next move", level: 2 })).closest("section")!;
+    expect(within(next).getByRole("heading", { name: "Eight Weeks to the Showcase", level: 3 })).toBeInTheDocument();
+    expect(within(next).getAllByRole("article")).toHaveLength(1);
+    expect(within(next).getByText(/Ms\. Alvarez · Period 3 · Seat 4/)).toBeInTheDocument();
+
+    const responses = screen.getByRole("heading", { name: "Teacher responses", level: 2 }).closest("section")!;
+    expect(within(responses).getByText("Tell me more about the backup money.")).toBeInTheDocument();
+    expect(within(responses).getByText(/Mr\. Chen · Period 5 · Seat 9/)).toBeInTheDocument();
+    expect(within(responses).queryByText(/unread/i)).not.toBeInTheDocument();
+
+    const upNext = screen.getByRole("heading", { name: "Up next", level: 2 }).closest("section")!;
+    expect(within(upNext).getByRole("heading", { name: "Run the Pop-Up", level: 3 })).toBeInTheDocument();
+
+    const past = screen.getByRole("heading", { name: "Past runs", level: 2 }).closest("section")!;
+    expect(within(past).getByRole("heading", { name: "Run the Pop-Up — second attempt", level: 3 })).toBeInTheDocument();
+
+    const memberships = screen.getByRole("heading", { name: "Classes", level: 2 }).closest("section")!;
+    expect(within(memberships).getByText("Ms. Alvarez · Period 3")).toBeInTheDocument();
+    expect(within(memberships).getByText("Mr. Chen · Period 5")).toBeInTheDocument();
   });
 });

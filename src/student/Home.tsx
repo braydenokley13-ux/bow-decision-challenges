@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode, type RefObject } from "rea
 import { Link, useNavigate } from "react-router-dom";
 import { AppMark } from "../components/primitives/AppMark";
 import { Button } from "../components/primitives/Button";
+import { WorldArt } from "../components/primitives/WorldArt";
 import { PLAN_UNDER_PRESSURE } from "../platform/challenges/registry";
 import { WORLD_REGISTRY } from "../domain/scenario/registry";
 import { forgetStudent, studentToken, type StudentClass } from "./session";
@@ -11,7 +12,7 @@ import { clearAttemptFor } from "../domain/io/persistence";
 import { worldOffer } from "../stages/worldOffer";
 import { ReadingTools } from "./reading";
 import { chaptersFor, stepPosition, stoppedAt } from "./chapters";
-import { homeWork, liveRun, workCount, type HomeCard, type HomeNote, type TurnedInRun } from "./homeModel";
+import { liveRun, studentHomeSections, workCount, type HomeCard, type HomeItem, type HomeNote, type StudentHomeSections, type TurnedInRun } from "./homeModel";
 import type { WorldId } from "../domain/core/ids";
 
 /**
@@ -139,6 +140,8 @@ function Ready({ classes, name, onSignOut }: {
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => { title.current?.focus(); }, []);
   const only = classes.length === 1 ? classes[0]! : null;
+  const sections = studentHomeSections(classes);
+  const cardCount = sections.classes.reduce((sum, group) => sum + group.work.cards.length, 0);
 
   return (
     <main className="student-home student-home--desk ground-dark">
@@ -186,18 +189,16 @@ function Ready({ classes, name, onSignOut }: {
               you turned in is still theirs to read.
             </p>
             <p>With a new card, type it here.</p>
-            <Link className="button button--primary" to="/join">Type a class code</Link>
+            <Link className="button button--primary" to="/join?intent=add-class">Type a class code</Link>
             {!name && <Button variant="secondary" onClick={onSignOut}>Not you? Sign out</Button>}
             {/* The one state with nothing to push down, and the only decoration on this page. */}
             <WorldLinework />
           </section>
-        ) : (
-          classes.map((entry) => <ClassBlock key={entry.classCode} entry={entry} several={classes.length > 1} />)
-        )}
+        ) : <HomeSections sections={sections} severalClasses={classes.length > 1} cardCount={cardCount} />}
 
         {classes.length > 0 && (
           <footer className="student-home__foot">
-            <Link to="/join">Join another class</Link>
+            <Link to="/join?intent=add-class">Join another class</Link>
           </footer>
         )}
       </div>
@@ -236,61 +237,142 @@ function Nameplate({ name, where, titleRef, onSignOut }: {
 }
 
 /**
- * One class: what it is called, what it set, and what came back.
+ * One page-wide sequence, across every class.
  *
- * The `h2` is the class, always — the heading order on this page is the student, then their
- * class, then each piece of work, and a page whose structure changes with how many classes a
- * student is in is a page nobody can learn. What changes is whether it is *drawn*: a student in
- * one class already has that class and their seat in the nameplate two lines above, and
- * printing it again immediately underneath is the same sentence twice. A reader still gets the
- * structure; a looker does not get the repetition.
+ * The old screen repeated "Your work" once per class. That made the first class win by its
+ * position in the service response, even when a later class held the run the student had just
+ * left. `studentHomeSections` chooses one next move globally. Everything here merely draws
+ * that decision, and every card still carries its real class and assignment id into the run.
  */
-function ClassBlock({ entry, several }: { entry: StudentClass; several: boolean }) {
-  const work = homeWork(entry);
+function HomeSections({ sections, severalClasses, cardCount }: {
+  sections: StudentHomeSections;
+  severalClasses: boolean;
+  cardCount: number;
+}) {
+  const looseResponses = sections.classes.filter((group) => group.work.strayNotes.length > 0);
+  const loosePast = sections.classes.filter((group) => group.work.strayRuns.length > 0);
   return (
-    <section className="student-class">
-      <h2 className={several ? "student-class__name" : "student-class__name visually-hidden"}>
-        {entry.label}
-        <span className="student-class__seat"> · Seat {entry.seatCode}</span>
-      </h2>
-
-      {work.cards.length === 0 ? (
-        <p className="work-head__empty">Nothing is set for you in this class yet. Your teacher will put it here.</p>
-      ) : (
-        <>
-          {/* Whether to scroll, before scrolling. A plain count and no progress in it: how many
-              of them are done is not a score, and this is not the place to imply one. */}
-          <p className="work-head">
-            <span className="work-head__what">Your work</span>
-            <span className="work-head__count">{workCount(work.cards.length)}</span>
-          </p>
-          <ol className="work-list">
-            {work.cards.map((card) => (
-              <li key={card.assignmentId}>
-                <WorkCard card={card} entry={entry} nameActions={work.cards.length > 1} />
-              </li>
-            ))}
-          </ol>
-        </>
+    <>
+      {sections.next && (
+        <WorkSection
+          className="home-next"
+          title="Your next move"
+          lead={nextLead(sections.next.card)}
+          items={[sections.next]}
+          severalClasses={severalClasses}
+          nameActions={cardCount > 1}
+          featured
+        />
       )}
 
-      {(work.strayRuns.length > 0 || work.strayNotes.length > 0) && (
-        <section className="work-stray">
-          {/* Work this class is no longer set, and words about it. A child's finished run does
-              not stop existing because their teacher re-set the class, and a note about it is
-              still the only thing on this page a person wrote. */}
-          <h3>Work from earlier in this class</h3>
-          {work.strayRuns.map((run) => (
-            <TurnedInLine key={run.sessionId} run={run} classCode={entry.classCode} named={work.strayRuns.length > 1} />
+      {(sections.responses.length > 0 || looseResponses.length > 0) && (
+        <section className="home-section home-responses" aria-labelledby="home-responses-title">
+          <div className="home-section__head">
+            <h2 id="home-responses-title">Teacher responses</h2>
+            <p>Your teacher wrote about these runs. BOW does not guess whether you have read a response.</p>
+          </div>
+          <WorkList items={sections.responses} severalClasses={severalClasses} nameActions={cardCount > 1} />
+          {looseResponses.map(({ entry, work }) => (
+            <article className="work-stray" key={`response-${entry.classCode}`}>
+              <h3>Earlier work · {entry.label}</h3>
+              {work.strayNotes.map((note) => <TeacherNote key={note.id} note={note} />)}
+            </article>
           ))}
-          {work.strayNotes.map((note) => <TeacherNote key={note.id} note={note} />)}
         </section>
       )}
 
-      {/* Under the work rather than over it: the offer of another go is the answer to
-          "what now", and "what now" comes after "what happened". */}
-      {entry.completed.length > 0 && liveRun(entry) === null && <PlayAgain entry={entry} />}
+      {sections.upNext.length > 0 && (
+        <WorkSection
+          className="home-up-next"
+          title="Up next"
+          lead="Other work that is ready when you are."
+          items={sections.upNext}
+          severalClasses={severalClasses}
+          nameActions={cardCount > 1}
+        />
+      )}
+
+      {(sections.past.length > 0 || loosePast.length > 0) && (
+        <section className="home-section home-past" aria-labelledby="home-past-title">
+          <div className="home-section__head">
+            <h2 id="home-past-title">Past runs</h2>
+            <p>What you turned in stays here. It is not a score.</p>
+          </div>
+          <WorkList items={sections.past} severalClasses={severalClasses} nameActions={cardCount > 1} />
+          {loosePast.map(({ entry, work }) => (
+            <article className="work-stray" key={`past-${entry.classCode}`}>
+              <h3>Earlier work · {entry.label}</h3>
+              {work.strayRuns.map((run) => (
+                <TurnedInLine key={run.sessionId} run={run} classCode={entry.classCode} named={work.strayRuns.length > 1} />
+              ))}
+            </article>
+          ))}
+        </section>
+      )}
+
+      <section className="home-section home-classes" aria-labelledby="home-classes-title">
+        <div className="home-section__head">
+          <h2 id="home-classes-title">Classes</h2>
+          <p>These are the class cards connected to this BOW account.</p>
+        </div>
+        <ul className="class-list">
+          {sections.classes.map(({ entry, work }) => (
+            <li className="class-membership" key={entry.classCode}>
+              <div>
+                <p className="class-membership__name">{entry.label}</p>
+                <p>Seat {entry.seatCode} · {workCount(work.cards.length)}</p>
+                {work.cards.length === 0 && <p>Nothing is set for you in this class yet. Your teacher will put it here.</p>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </>
+  );
+}
+
+function nextLead(card: HomeCard): string {
+  if (card.status === "in-progress") return "Carry on from the exact place you stopped.";
+  if (card.wroteBack) return "Your teacher answered one of your runs.";
+  return "This is the first assignment to open.";
+}
+
+function WorkSection({ className, title, lead, items, severalClasses, nameActions, featured = false }: {
+  className: string;
+  title: string;
+  lead: string;
+  items: HomeItem[];
+  severalClasses: boolean;
+  nameActions: boolean;
+  featured?: boolean;
+}) {
+  const id = `home-${className.replace("home-", "")}-title`;
+  return (
+    <section className={`home-section ${className}`} aria-labelledby={id}>
+      <div className="home-section__head">
+        <h2 id={id}>{title}</h2>
+        <p>{lead}</p>
+      </div>
+      <WorkList items={items} severalClasses={severalClasses} nameActions={nameActions} featured={featured} />
     </section>
+  );
+}
+
+function WorkList({ items, severalClasses, nameActions, featured = false }: {
+  items: HomeItem[];
+  severalClasses: boolean;
+  nameActions: boolean;
+  featured?: boolean;
+}) {
+  if (items.length === 0) return null;
+  return (
+    <ol className="work-list">
+      {items.map(({ entry, card }) => (
+        <li key={`${entry.classCode}-${card.assignmentId}`}>
+          <WorkCard card={card} entry={entry} nameActions={nameActions} showClass={severalClasses} featured={featured} />
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -323,15 +405,30 @@ function workRoute(classCode: string, assignmentId: string): string {
   return `${PLAN_UNDER_PRESSURE.route}${query}`;
 }
 
-function WorkCard({ card, entry, nameActions }: { card: HomeCard; entry: StudentClass; nameActions: boolean }) {
+function WorkCard({ card, entry, nameActions, showClass, featured = false }: {
+  card: HomeCard;
+  entry: StudentClass;
+  nameActions: boolean;
+  showClass: boolean;
+  featured?: boolean;
+}) {
   const accent = card.accentWorldId;
+  const anotherRunOpen = liveRun(entry) !== null && card.run === null;
   return (
-    <article className={`work-card work-card--${card.format} work-card--${card.status}`}>
+    <article className={`work-card work-card--${card.format} work-card--${card.status}${featured ? " work-card--featured" : ""}`}>
       {/* The world, as a accent and nothing else. `data-world` sits on the accent rather than
           on the card so the world's palette themes four pixels and not a room: a world block in
           `worlds.css` re-points `--canvas`, `--surface` and the brand, which is right inside a
           run and would be a scene band out here. */}
       {accent && <span className="work-card__accent" data-world={accent} aria-hidden="true" />}
+
+      {featured && accent && (
+        <div className="work-card__art" data-world={accent}>
+          <WorldArt world={accent} variant="cover" />
+        </div>
+      )}
+
+      {showClass && <p className="work-card__class">{entry.label} · Seat {entry.seatCode}</p>}
 
       <h3 className="work-card__title">{card.title}</h3>
 
@@ -355,7 +452,7 @@ function WorkCard({ card, entry, nameActions }: { card: HomeCard; entry: Student
 
           The verbs are "Carry on" and "Start" rather than "Continue" and "Resume", which read
           as near-synonyms of each other and of nothing a student does. */}
-      {card.format === "decision-challenge" && (card.run || card.status === "not-started") && (
+      {card.format === "decision-challenge" && (card.run || (card.status === "not-started" && !anotherRunOpen)) && (
         <p className="work-card__go">
           {/* The class code goes with them, on both branches. It is what lets the run be fetched
               from the service rather than from this machine's storage, which is the whole of
@@ -366,6 +463,10 @@ function WorkCard({ card, entry, nameActions }: { card: HomeCard; entry: Student
             ? <Link className="button button--primary" to={workRoute(entry.classCode, card.assignmentId)}>{nameActions ? `Carry on — ${card.title}` : "Carry on"}</Link>
             : <Link className="button button--primary" to={workRoute(entry.classCode, card.assignmentId)}>{nameActions ? `Start — ${card.title}` : "Start"}</Link>}
         </p>
+      )}
+
+      {card.status === "not-started" && anotherRunOpen && (
+        <p className="work-card__blocked">Finish the run already in progress for this class before you start this assignment.</p>
       )}
 
       {card.run && (
@@ -381,6 +482,10 @@ function WorkCard({ card, entry, nameActions }: { card: HomeCard; entry: Student
       ))}
 
       {card.notes.map((note) => <TeacherNote key={note.id} note={note} />)}
+
+      {card.turnedIn.length > 0 && liveRun(entry) === null && (
+        <PlayAgain entry={entry} card={card} nameAction={nameActions} />
+      )}
     </article>
   );
 }
@@ -550,11 +655,9 @@ function onDate(at: number): string {
  *
  * Three rulings are baked into what this says, and each is a decision rather than a default.
  *
- * **It offers whatever the class was set, not "the same one again."** If the teacher enabled
- * choice, this lands on the picker, because the most useful second run is usually the other
- * story: the same money problem with different constraints is the whole reason two worlds
- * exist. If the class was set one world, it opens that world, because offering a choice the
- * teacher switched off would be the student screen overruling them.
+ * **It belongs to one completed assignment.** A class can contain several completed pieces of
+ * work. Each card owns its replay link and carries that card's assignment id, so an earlier
+ * completion is selectable and replay cannot silently become the newest assignment.
  *
  * **It says what happens to the first run, in the same words the turn-in screen used.** A
  * second run is turned in *as well as*, never *instead of*. A student who thinks they can
@@ -571,15 +674,18 @@ function onDate(at: number): string {
  * what the run itself says at Week 8. Whether a second attempt counts is a teacher's
  * judgement, and the teacher can now see both.
  */
-function PlayAgain({ entry }: { entry: StudentClass }) {
+function PlayAgain({ entry, card, nameAction }: { entry: StudentClass; card: HomeCard; nameAction: boolean }) {
+  const replayAssignment = entry.assignments.find((assignment) => assignment.id === card.assignmentId);
+  const replayAssignments = replayAssignment ? [replayAssignment] : entry.assignments;
   const offer = worldOffer({
-    allowedWorldIds: entry.assignments.flatMap((assignment) => assignment.allowedWorldIds ?? []),
-    assignmentAllowsChoice: entry.assignments.some((assignment) => assignment.studentChoosesWorld),
+    allowedWorldIds: replayAssignments.flatMap((assignment) => assignment.allowedWorldIds ?? []),
+    assignmentAllowsChoice: replayAssignment?.studentChoosesWorld
+      ?? (entry.assignments.length === 0 || replayAssignments.some((assignment) => assignment.studentChoosesWorld)),
     playableWorldIds: PLAYABLE_WORLDS.map((world) => world.id),
     pickerReady: true,
     defaultWorldId: DEFAULT_WORLD_ID,
   });
-  const played = new Set(entry.completed.map((done) => done.worldId).filter((id): id is WorldId => id !== null));
+  const played = new Set(card.turnedIn.map((done) => done.worldId).filter((id): id is WorldId => id !== null));
   const other = offer.worldIds.filter((id) => !played.has(id));
 
   // Nothing is offered while this machine is holding a run nobody has turned in, because
@@ -600,7 +706,7 @@ function PlayAgain({ entry }: { entry: StudentClass }) {
       <p>Starting again does not take the last one back. What you turned in stays with your teacher, and a new run is turned in as well as it, not instead of it — your teacher sees both.</p>
       <a
         className="button button--secondary"
-        href={`${PLAN_UNDER_PRESSURE.route}?class=${entry.classCode}`}
+        href={workRoute(entry.classCode, card.assignmentId)}
         onClick={() => {
           // Cleared here rather than by the run itself, because a restored attempt is what
           // "again" has to mean the opposite of. Only the worlds this class was set: an
@@ -608,7 +714,7 @@ function PlayAgain({ entry }: { entry: StudentClass }) {
           for (const worldId of offer.worldIds) clearAttemptFor(worldId);
         }}
       >
-        Play it again
+        {nameAction ? `Play it again — ${card.title}` : "Play it again"}
       </a>
     </div>
   );
