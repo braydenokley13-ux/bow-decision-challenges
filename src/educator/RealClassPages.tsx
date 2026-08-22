@@ -4,8 +4,8 @@ import { Button } from "../components/primitives/Button";
 import { ClassUnreachable, EducatorShell, StateKey, WordKey } from "./EducatorShell";
 import { useClassEvidence, type ClassEvidenceState, type OverrideRequest } from "./useClassEvidence";
 import { JudgementRecord, TrailRecord } from "./EvidenceTrailPanel";
-import type { AttributedSubmission } from "../platform/classes/types";
-import { attemptsFor, classRoll, worldSections, type ChoiceDistribution, type ClassAnalysis, type ClassRoll, type ClassSeat, type StudentRow } from "./analysis";
+import type { Assignment, AttributedSubmission } from "../platform/classes/types";
+import { analyseClass, attemptsFor, classRoll, worldSections, type ChoiceDistribution, type ClassAnalysis, type ClassRoll, type ClassSeat, type StudentRow } from "./analysis";
 import { SeatNamesContext, endSentence, seatLabels, seatNames, useSeatLabel, useSeatNames, type RosterRow } from "./names";
 import { gradebookLineFor, gradebookRows, gradebookTsv } from "./gradebook";
 import { MAX_FEEDBACK_LENGTH, type TeacherFeedback } from "../platform/identity/types";
@@ -25,7 +25,7 @@ import { levelBucketKey, levelLabel, levelMark, skillStateKey, skillStateInSente
 import { REASONING_MAXIMUM } from "../domain/evidence/grade";
 import { REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 import { MINIMUM_RESULTS_FOR_CLASS_NARRATION } from "../domain/competency/objectiveState";
-import { classSpineFrom, type ClassSpine } from "./classSpine";
+import { classSpineFrom, currentAssignment, type ClassSpine } from "./classSpine";
 import { CLASS_API_BASE } from "../platform/evidence/transports";
 import { keyForClass, rememberClass, rememberedClasses } from "./classMemory";
 import { classLeadFor, classStateLabel, type ClassLeadReading } from "./classLead";
@@ -39,6 +39,7 @@ import type { StandardRef } from "../domain/standards/types";
 import { TeachNext } from "./TeachNext";
 import { decisionStepsFor } from "./decisionSteps";
 import { disclosureEscape } from "../components/primitives/disclosureEscape";
+import { assignmentTitleForTeacher, progressForAssignment, rosterForAssignment } from "./AssignmentMonitor";
 
 /**
  * The educator's view of a real class.
@@ -58,6 +59,120 @@ import { disclosureEscape } from "../components/primitives/disclosureEscape";
  */
 
 type ReadyClass = Extract<ClassEvidenceState, { status: "ready" }>;
+
+/** The three short ways into the work a teacher does from a class center. */
+function ClassCenterActions({ code }: { code: string }) {
+  return (
+    <nav className="class-center-actions" aria-label="Class center actions">
+      {code !== DEMO_CLASS_CODE && (
+        <Link className="button button--primary" to={`/educator/assignments/new?classCode=${encodeURIComponent(code)}`}>
+          Assign a challenge
+        </Link>
+      )}
+      <a className="button button--secondary" href="#class-assignments">Assignments</a>
+      {code !== DEMO_CLASS_CODE && (
+        <Link className="button button--secondary" to={`/educator/class/${code}/roster`}>Students</Link>
+      )}
+    </nav>
+  );
+}
+
+function assignmentAudience(assignment: Assignment, roster: readonly RosterRow[]): string {
+  if (assignment.assignedStudentIds === null) {
+    const active = roster.filter((row) => !row.removedAt).length;
+    return active > 0 ? `All ${active} students` : "Everyone in class";
+  }
+  return `${assignment.assignedStudentIds.length} ${assignment.assignedStudentIds.length === 1 ? "student" : "students"}`;
+}
+
+/** One world may tint the assignment frame; a choice between worlds stays BOW-neutral. */
+function assignmentAccent(assignment: Assignment | null | undefined) {
+  return assignment?.allowedWorldIds.length === 1 ? assignment.allowedWorldIds[0] : undefined;
+}
+
+/**
+ * The assignment a teacher is running, kept on the class center's first screen.
+ *
+ * This is a name, an audience, and a way into the monitor — never a second dashboard and
+ * never a fabricated completion percentage. Its accent comes from the world only when the
+ * assignment names exactly one; student choice remains visually neutral until a run exists.
+ */
+function CurrentAssignmentStrip({ code, assignment, roster }: {
+  code: string;
+  assignment: Assignment;
+  roster: readonly RosterRow[];
+}) {
+  const objective = assignment.objectiveRef ? standardByRef(assignment.objectiveRef) : undefined;
+  return (
+    <section className="class-current-strip" data-world={assignmentAccent(assignment)} aria-label="Current assignment">
+      <div>
+        <span>Current assignment</span>
+        <strong>{assignmentTitleForTeacher(assignment)}</strong>
+        {objective && <small>{objective.code} · {objective.shortLabel}</small>}
+      </div>
+      <p>{assignmentAudience(assignment, roster)}</p>
+      <Link to={`/educator/class/${code}/assignments/${assignment.id}`}>Open monitor →</Link>
+    </section>
+  );
+}
+
+/** A visible history, with every count derived inside the assignment's own boundary. */
+function AssignmentHistory({ code, assignments, submissions, progress, roster, loadedAt }: {
+  code: string;
+  assignments: readonly Assignment[];
+  submissions: readonly AttributedSubmission[];
+  progress: readonly ProgressRow[];
+  roster: readonly RosterRow[];
+  loadedAt: number;
+}) {
+  const ordered = [...assignments].sort((a, b) => b.createdAt - a.createdAt);
+  return (
+    <section className="surface-record class-assignment-history" id="class-assignments" aria-labelledby="class-assignments-title">
+      <div className="record__head">
+        <h2 id="class-assignments-title">Assignments</h2>
+        <p>{ordered.length} in this class · newest first</p>
+      </div>
+      {ordered.length === 0
+        ? <p className="class-state">No assignment has been set for this class yet.</p>
+        : (
+          <ol>
+            {ordered.map((assignment) => {
+              const assignmentSubmissions = submissions.filter((entry) => entry.assignmentId === assignment.id);
+              const assignmentProgress = progressForAssignment(progress, assignment.id, assignments.length);
+              const assignmentRoster = rosterForAssignment(assignment, roster);
+              const roll = classRoll({
+                rows: analyseClass(assignmentSubmissions).rows,
+                roster: assignmentRoster,
+                progress: assignmentProgress,
+                at: loadedAt,
+              });
+              const objective = assignment.objectiveRef ? standardByRef(assignment.objectiveRef) : undefined;
+              return (
+                <li key={assignment.id}>
+                  <div>
+                    <h3>{assignmentTitleForTeacher(assignment)}</h3>
+                    <p>
+                      Set {new Date(assignment.createdAt).toLocaleDateString()}
+                      {assignment.dueAt ? ` · due ${new Date(assignment.dueAt).toLocaleDateString()}` : " · no due date"}
+                      {` · ${assignmentAudience(assignment, assignmentRoster)}`}
+                    </p>
+                    {objective && <p>{objective.code} · {objective.shortLabel}</p>}
+                  </div>
+                  <p className="class-assignment-history__status" data-count="">
+                    <strong>{roll.turnedIn} of {roll.seats.length}</strong>
+                    <span>turned in{assignmentProgress.length > 0 ? ` · ${assignmentProgress.length} working` : ""}</span>
+                  </p>
+                  <Link className="button button--secondary" to={`/educator/class/${code}/assignments/${assignment.id}`}>
+                    Open monitor
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+    </section>
+  );
+}
 
 function ClassFrame({ state, children, title, onRetry }: {
   state: ClassEvidenceState;
@@ -126,6 +241,8 @@ function NothingYet({ code, label, teacherKey, hasRoster, roll, roster, progress
               across the room and fix. It used to read "Nothing turned in yet · 0 turned in":
               a count of nobody, against nothing. */}
           <ClassLead spine={spine} roll={roll} code={code} />
+          <ClassCenterActions code={code} />
+          {spine.assignment && <CurrentAssignmentStrip code={code} assignment={spine.assignment} roster={roster} />}
         </div>
         <div className="page-header__meta">
           <span>{roll.seats.length} {roll.seats.length === 1 ? "student" : "students"} · 0 attempts</span>
@@ -425,7 +542,10 @@ function ClassLead({ spine, roll, code }: {
       {lead.note && <p className="class-state">{lead.note}</p>}
       {lead.action && (
         <p>
-          <Link className="button button--primary" to={`/educator/class/${code}/${lead.action.route}`}>
+          <Link
+            className="button button--primary"
+            to={`/educator/class/${code}/${lead.action.route}${spine.assignment ? `?assignmentId=${encodeURIComponent(spine.assignment.id)}` : ""}`}
+          >
             {lead.action.label} →
           </Link>
         </p>
@@ -856,38 +976,60 @@ export function RealClassOverview() {
     <ClassFrame state={state} onRetry={reload}>
       {(ready) => {
         const { analysis, record, assignments, submissions } = ready;
-        const names = seatNames(ready.roster);
+        const assignment = currentAssignment(assignments);
+        const accentWorld = assignmentAccent(assignment);
+        const scopedSubmissions = assignment
+          ? submissions.filter((entry) => entry.assignmentId === assignment.id)
+          : submissions;
+        const scopedProgress = assignment
+          ? progressForAssignment(ready.progress, assignment.id, assignments.length)
+          : ready.progress;
+        const scopedRoster = assignment ? rosterForAssignment(assignment, ready.roster) : ready.roster;
+        const scopedAnalysis = assignment ? analyseClass(scopedSubmissions) : analysis;
+        const names = seatNames(scopedRoster);
         // One reading of who is in this class and what each of them turned in. Every count
         // below is taken from it — the headline, the foot, the table's denominator, the
         // triage and the export — so two of them cannot disagree about the same room.
         // They used to be computed five ways and three of them were on screen at once.
         // `at` is when the page was read, so "still working" is a claim about now rather than
         // about whenever a browser last said anything.
-        const roll = classRoll({ rows: analysis.rows, roster: ready.roster, progress: ready.progress, at: ready.loadedAt });
+        const roll = classRoll({ rows: scopedAnalysis.rows, roster: scopedRoster, progress: scopedProgress, at: ready.loadedAt });
         // The reading is against the same class: one attempt per student still in the room,
         // so "turned in" in the headline is the same number as "turned in" on the foot.
-        const counted = roll.rows.flatMap((row) => submissions.filter((entry) => entry.sessionId === row.sessionId));
+        const counted = roll.rows.flatMap((row) => scopedSubmissions.filter((entry) => entry.sessionId === row.sessionId));
         const spine = classSpineFrom({ record, assignments, submissions: counted });
         if (roll.rows.length === 0) {
           return (
-            <NothingYet
-              code={record.code}
-              label={record.label}
-              teacherKey={teacherKey ?? ""}
-              hasRoster={roll.hasRoster}
-              roll={roll}
-              roster={ready.roster}
-              progress={ready.progress}
-              loadedAt={ready.loadedAt}
-              spine={spine}
-              onCheckAgain={reload}
-            />
+            <>
+              <NothingYet
+                code={record.code}
+                label={record.label}
+                teacherKey={teacherKey ?? ""}
+                hasRoster={roll.hasRoster}
+                roll={roll}
+                roster={scopedRoster}
+                progress={scopedProgress}
+                loadedAt={ready.loadedAt}
+                spine={spine}
+                onCheckAgain={reload}
+              />
+              <AssignmentHistory
+                code={record.code}
+                assignments={assignments}
+                submissions={submissions}
+                progress={ready.progress}
+                roster={ready.roster}
+                loadedAt={ready.loadedAt}
+              />
+            </>
           );
         }
         const total = roll.turnedIn;
         const lead = classLeadReading(spine, roll);
         const stateWord = classStateLabel(spine.reading?.result.state ?? null);
-        const groups = triageFor({ seats: roll.seats, submissions, feedback: ready.feedback });
+        const scopedSessions = new Set(scopedSubmissions.map((entry) => entry.sessionId));
+        const scopedFeedback = ready.feedback.filter((entry) => scopedSessions.has(entry.sessionId));
+        const groups = triageFor({ seats: roll.seats, submissions: scopedSubmissions, feedback: scopedFeedback });
         const answered = writtenBackCount(groups);
         const size = roll.seats.length;
         const words = new Set(groups.flatMap((group) => (group.state ? [group.state] : [])));
@@ -915,11 +1057,13 @@ export function RealClassOverview() {
                 <span>As at {new Date(ready.loadedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
                 <Button variant="quiet" onClick={reload}>Check again</Button>
               </p>
+              <ClassCenterActions code={record.code} />
+              {assignment && <CurrentAssignmentStrip code={record.code} assignment={assignment} roster={scopedRoster} />}
             </header>
 
             {/* R2 · THE INSTRUMENT. The one raised surface on this page, and the only one
                 there may ever be — `oneInstrument.test.tsx` fails the build on a second. */}
-            <section className="surface-instrument instrument" aria-labelledby="class-lead">
+            <section className="surface-instrument instrument" data-world={accentWorld} aria-labelledby="class-lead">
               <div className="instrument__grid">
                 <div className="instrument__lead">
                   <h1 id="class-lead">{lead.headline}</h1>
@@ -931,7 +1075,10 @@ export function RealClassOverview() {
                   )}
                   <div className="instrument__actions">
                     {lead.action && (
-                      <Link className="button button--primary" to={`/educator/class/${record.code}/${lead.action.route}`}>
+                      <Link
+                        className="button button--primary"
+                        to={`/educator/class/${record.code}/${lead.action.route}${spine.assignment ? `?assignmentId=${encodeURIComponent(spine.assignment.id)}` : ""}`}
+                      >
                         {lead.action.label} →
                       </Link>
                     )}
@@ -971,11 +1118,20 @@ export function RealClassOverview() {
             <LiveState
               compact
               roll={roll}
-              roster={ready.roster}
-              progress={ready.progress}
+              roster={scopedRoster}
+              progress={scopedProgress}
               code={record.code}
               loadedAt={ready.loadedAt}
               onCheckAgain={reload}
+            />
+
+            <AssignmentHistory
+              code={record.code}
+              assignments={assignments}
+              submissions={submissions}
+              progress={ready.progress}
+              roster={ready.roster}
+              loadedAt={ready.loadedAt}
             />
 
             {!spine.narratable && (
@@ -1028,7 +1184,7 @@ export function RealClassOverview() {
                   <tbody>
                     {weakestFirst(spine.reading.competencies).map((row) => (
                       <tr key={row.competencyId}>
-                        <th scope="row">{competencyStatement(row.competencyId, submissions)}</th>
+                        <th scope="row">{competencyStatement(row.competencyId, scopedSubmissions)}</th>
                         {/* Counts of students, so the words are Ladder 3 — one claim about
                             one child, added up. The bar beside them is decoration and says
                             so: it is `aria-hidden`, and every number it draws is in the
@@ -1120,7 +1276,7 @@ export function RealClassOverview() {
             <div className="surface-margin">
               <WordKey title="What these words mean" entries={skillStateKey(words)} />
               <div className="teacher-foot">
-                <ExportClass roll={roll} submissions={submissions} roster={ready.roster} label={record.label} />
+                <ExportClass roll={roll} submissions={scopedSubmissions} roster={scopedRoster} label={record.label} />
                 <Link className="button button--secondary" to={`/educator/class/${record.code}/share-out`}>Pick what the room sees</Link>
                 {/* The class list, except on a class that structurally cannot have one.
                     `/educator/class/DEMO/roster` renders "This class did not open." — a link
@@ -1326,8 +1482,16 @@ export function RealStudentEvidence() {
         // holds rather than from the roll, so a seat taken off the roster is still reachable
         // from a link somebody already has — it is simply not listed anywhere.
         const attempts = attemptsFor(ready.analysis.rows, seatCode ?? "");
+        const requestedSession = params.get("session");
+        const requestedSessionIndex = requestedSession
+          ? attempts.findIndex((attempt) => attempt.sessionId === requestedSession)
+          : -1;
         const asked = Number(params.get("attempt"));
-        const index = Number.isInteger(asked) && asked >= 1 && asked <= attempts.length ? asked - 1 : attempts.length - 1;
+        const index = requestedSessionIndex >= 0
+          ? requestedSessionIndex
+          : Number.isInteger(asked) && asked >= 1 && asked <= attempts.length
+            ? asked - 1
+            : attempts.length - 1;
         const row = attempts[index] ?? null;
         // Read once, before the branch, because a seat with nothing turned in is still a
         // child if the roll knows about them — and the page that linked here named them.
@@ -1425,7 +1589,7 @@ function NotTurnedIn({ seat, seatCode, code, progress, loadedAt, queue }: {
   return (
     <>
       {queue && <QueueBar queue={queue} code={code} />}
-      <header className="student-identity surface-margin">
+      <header className="student-identity surface-margin" data-world={row.worldId}>
         {!queue && <p className="student-identity__facts"><Link to={`/educator/class/${code}`}>← Class evidence</Link></p>}
         <h1>{label(seatCode)}</h1>
         <span className="student-identity__facts">
@@ -1606,7 +1770,7 @@ function StudentPanel({ row, code, objectiveRef, onScore, submission, onOverride
           are at the foot of the page with a sentence saying what they count. */}
       {spine
         ? (
-          <section className="surface-instrument" aria-labelledby="verdict">
+          <section className="surface-instrument evidence-verdict" data-world={row.worldId} aria-labelledby="verdict">
             <div className="verdict__grid">
               <div className="verdict__lead">
                 <h2 id="verdict">What the evidence shows</h2>
@@ -1717,7 +1881,9 @@ function StudentPanel({ row, code, objectiveRef, onScore, submission, onOverride
             and you score it — which is what the student was told would happen.
           </p>
           <p className="written__promise">
-            <Link to={`/educator/class/${code}/reading`}>Read the whole class in one queue →</Link>
+            <Link to={`/educator/class/${code}/reading${submission ? `?assignmentId=${encodeURIComponent(submission.assignmentId)}` : ""}`}>
+              Read this assignment in one queue →
+            </Link>
           </p>
 
           {/* The teacher's own marks, on the writing they are marks about, as the control a
@@ -1789,7 +1955,7 @@ function StudentPanel({ row, code, objectiveRef, onScore, submission, onOverride
       {/* R4 · record. What the child actually did, in six steps, from their own events. It
           is set at the reading size because it is prose a teacher reads aloud, and it is only
           an honest compression because R6 below keeps every moment of the run. */}
-      <section className="surface-record" aria-labelledby="decided">
+      <section className="surface-record decision-story" data-world={row.worldId} aria-labelledby="decided">
         <div className="record__head">
           <h2 id="decided">What they decided</h2>
           <p>Read from their own run, step by step</p>

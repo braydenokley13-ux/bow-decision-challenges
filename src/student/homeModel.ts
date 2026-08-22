@@ -18,11 +18,9 @@ import type { StudentClass } from "./session";
  *
  * Three rules run through it.
  *
- * **Nothing is invented.** `Assignment` has no title field (see `platform/classes/types.ts`),
- * so a title is *derived* from what the record really holds — the world it opens, the objective
- * it names, whether it is a reassessment — and where that is not enough to tell two assignments
- * apart, they stay ambiguous and the limitation is documented. A number where a name belongs
- * ("Assignment 1", "Assignment 2") would hide the gap rather than close it.
+ * **Nothing is invented.** A teacher's non-blank assignment title is used exactly as their
+ * name for the work. Older assignments derive a title from facts they really hold — the world,
+ * objective, and reassessment link — rather than receiving a made-up number.
  *
  * **Order ranks the work, never the student.** See `rankOf`.
  *
@@ -59,7 +57,7 @@ export interface HomeCard {
   wroteBack: boolean;
   dueAt: number | null;
   /** The run this student has open on this card, if any. */
-  run: { worldId: WorldId; stage: string } | null;
+  run: { worldId: WorldId; stage: string; updatedAt: number } | null;
   /** Everything turned in against this card, newest first. */
   turnedIn: TurnedInRun[];
   /** Every note about this card's runs, oldest first. */
@@ -75,6 +73,35 @@ export interface HomeWork {
    */
   strayRuns: TurnedInRun[];
   strayNotes: HomeNote[];
+}
+
+export interface HomeItem {
+  entry: StudentClass;
+  card: HomeCard;
+}
+
+export interface HomeClassGroup {
+  entry: StudentClass;
+  work: HomeWork;
+}
+
+/**
+ * The page-wide order of work. A student can belong to several classes, so ranking inside
+ * each class still makes Home class-first by accident: the first class wins even when the
+ * second class contains the run the student was just doing. These sections decide once,
+ * across every class, what deserves the one strongest position.
+ */
+export interface StudentHomeSections {
+  /** Exactly one dominant action, when any action exists. */
+  next: HomeItem | null;
+  /** Teacher words not already visible inside the dominant card. No unread claim is made. */
+  responses: HomeItem[];
+  /** Other unfinished or unopened work, after the dominant action. */
+  upNext: HomeItem[];
+  /** Turned-in work with no teacher response attached. */
+  past: HomeItem[];
+  /** Membership and loose historical records, kept in service order. */
+  classes: HomeClassGroup[];
 }
 
 /**
@@ -104,12 +131,10 @@ function worldTitle(worldId: WorldId): string {
 }
 
 /**
- * What to call a piece of work a teacher never got to name.
+ * What to call a piece of work.
  *
- * **This is a derivation, and it is an open dependency rather than a solved problem.**
- * `Assignment` carries an objective, competencies, worlds, a format, a due date and a
- * reassessment link — and no title. So the name comes off whichever of those actually
- * identifies the work:
+ * A teacher's non-blank title wins. Assignments written before titles existed still derive a
+ * stable name from the facts they do carry:
  *
  * - a decision challenge pinned to one world is that world's story, by name;
  * - one that lets the student pick names both stories, resolved through the same `worldOffer`
@@ -118,17 +143,17 @@ function worldTitle(worldId: WorldId): string {
  * - a reassessment says which it is, because `attemptOf` is a real field and "again" is the
  *   single most useful thing to know about a second copy of the same work.
  *
- * What it cannot do is tell apart two decision challenges set in the same world with no due
- * date and no `attemptOf` between them. That is a schema gap, it is named in the runbook, and
- * it is deliberately not papered over with a number.
+ * Blank titles are treated as absent rather than drawing a nameless card. The reassessment
+ * suffix remains even on a teacher title, because it is the fact that distinguishes attempts.
  */
 export function assignmentTitle(assignment: Assignment, settledWorld: WorldId | null = null): string {
   // `settledWorld` is the story every run on this card is actually in — see `homeWork`. It
   // replaces the *body* of the title and never the reassessment suffix, because "— second
   // attempt" is one of only two honest ways to tell two assignments apart at all.
-  const base = settledWorld && assignment.format === "decision-challenge"
+  const named = assignment.title?.trim();
+  const base = named || (settledWorld && assignment.format === "decision-challenge"
     ? worldTitle(settledWorld)
-    : titleBody(assignment);
+    : titleBody(assignment));
   return assignment.attemptOf ? `${base} — second attempt` : base;
 }
 
@@ -235,7 +260,9 @@ export function homeWork(entry: StudentClass): HomeWork {
   const cards: HomeCard[] = assignments.map((assignment) => {
     const turnedIn = runsByAssignment.get(assignment.id) ?? [];
     const notes = notesByAssignment.get(assignment.id) ?? [];
-    const run = liveId === assignment.id && live ? { worldId: live.worldId, stage: live.stage } : null;
+    const run = liveId === assignment.id && live
+      ? { worldId: live.worldId, stage: live.stage, updatedAt: live.updatedAt }
+      : null;
     const status: CardStatus = run ? "in-progress" : turnedIn.length > 0 ? "turned-in" : "not-started";
     // A card offering a choice of two stories stops offering one the moment the student has
     // answered it. "Eight Weeks to the Showcase or Run the Pop-Up" over a button that carries on
@@ -272,6 +299,59 @@ export function homeWork(entry: StudentClass): HomeWork {
   });
 
   return { cards, strayRuns, strayNotes };
+}
+
+/**
+ * One continue-first home, rather than one little home per class.
+ *
+ * The dominant action is the most recently touched live run. With none, a teacher response
+ * comes before unopened work because a person has written to the student; with neither, the
+ * first due/unopened card becomes the action. Remaining live work stays ahead of remaining
+ * unopened work. Stable source indexes break ties, so a refresh never shuffles equal cards.
+ */
+export function studentHomeSections(classes: readonly StudentClass[]): StudentHomeSections {
+  const groups = classes.map((entry) => ({ entry, work: homeWork(entry) }));
+  const indexed = groups.flatMap((group, classIndex) => group.work.cards.map((card, cardIndex) => ({
+    entry: group.entry,
+    card,
+    source: classIndex * 10_000 + cardIndex,
+  })));
+
+  const live = indexed
+    .filter((item) => item.card.status === "in-progress")
+    .sort((a, b) => (b.card.run?.updatedAt ?? 0) - (a.card.run?.updatedAt ?? 0) || a.source - b.source);
+  const responses = indexed
+    // A response about an earlier attempt can share a card with a new run in progress. That
+    // card stays in the continue lane, once, with the response still visibly attached to it.
+    .filter((item) => item.card.wroteBack && item.card.status !== "in-progress")
+    .sort((a, b) => (b.card.notes.at(-1)?.at ?? 0) - (a.card.notes.at(-1)?.at ?? 0) || a.source - b.source);
+  const unopened = indexed
+    .filter((item) => item.card.status === "not-started")
+    .sort((a, b) => {
+      if (a.card.dueAt !== null && b.card.dueAt !== null && a.card.dueAt !== b.card.dueAt) return a.card.dueAt - b.card.dueAt;
+      if (a.card.dueAt !== null) return -1;
+      if (b.card.dueAt !== null) return 1;
+      return a.source - b.source;
+    });
+
+  const chosen = live[0] ?? responses[0] ?? unopened[0] ?? null;
+  const isChosen = (item: { entry: StudentClass; card: HomeCard }) => (
+    chosen !== null
+    && item.entry.classCode === chosen.entry.classCode
+    && item.card.assignmentId === chosen.card.assignmentId
+  );
+  const asItems = (items: typeof indexed): HomeItem[] => items.map(({ entry, card }) => ({ entry, card }));
+
+  return {
+    next: chosen ? { entry: chosen.entry, card: chosen.card } : null,
+    responses: asItems(responses.filter((item) => !isChosen(item))),
+    upNext: asItems([
+      ...live.filter((item) => !isChosen(item)),
+      ...unopened.filter((item) => !isChosen(item)),
+    ]),
+    past: asItems(indexed.filter((item) => item.card.status === "turned-in" && !item.card.wroteBack)),
+    classes: groups,
+  };
 }
 
 /**

@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "../components/primitives/Button";
 import { ClassUnreachable, EducatorShell } from "./EducatorShell";
 import { SeatNamesContext, seatNames, useSeatLabel } from "./names";
 import { REASONING_CRITERIA, reasoningTotal, type ReasoningScores } from "../domain/blueprint/reasoning";
 import { REASONING_MAXIMUM } from "../domain/evidence/grade";
 import { useClassEvidence } from "./useClassEvidence";
-import { classRoll, type StudentRow } from "./analysis";
+import { analyseClass, classRoll, type StudentRow } from "./analysis";
+import { assignmentTitleForTeacher, progressForAssignment, rosterForAssignment } from "./AssignmentMonitor";
 
 /**
  * Every written explanation in one class, in one place, in an order.
@@ -38,6 +39,7 @@ function queueOrder(rows: readonly StudentRow[]): string[] {
 
 export function ReadingQueue() {
   const { code } = useParams();
+  const [params] = useSearchParams();
   const { state, scoreReasoning, reload } = useClassEvidence(code);
 
   if (state.status === "loading") {
@@ -56,20 +58,51 @@ export function ReadingQueue() {
     );
   }
 
+  const requestedAssignmentId = params.get("assignmentId");
+  const assignment = requestedAssignmentId
+    ? state.assignments.find((entry) => entry.id === requestedAssignmentId) ?? null
+    : null;
+  if (requestedAssignmentId && !assignment) {
+    return (
+      <EducatorShell scale="teacher">
+        <header className="page-header page-header--with-back">
+          <Link to={`/educator/class/${state.record.code}`}>← Class center</Link>
+          <p className="eyebrow">Reading queue</p>
+          <h1>That assignment is not in this class.</h1>
+        </header>
+      </EducatorShell>
+    );
+  }
+
+  const submissions = assignment
+    ? state.submissions.filter((entry) => entry.assignmentId === assignment.id)
+    : state.submissions;
+  const analysis = assignment ? analyseClass(submissions) : state.analysis;
+  const progress = assignment
+    ? progressForAssignment(state.progress, assignment.id, state.assignments.length)
+    : state.progress;
+  const roster = assignment ? rosterForAssignment(assignment, state.roster) : state.roster;
+
   // The class, counted by the one function every other surface counts it with. This read
   // `analysis.rows` — every submission record — so a seat with two attempts was two students
   // and a student the teacher had removed was still one, and the queue told a teacher a
   // different number from the page they had arrived from.
-  const roll = classRoll({ rows: state.analysis.rows, roster: state.roster, progress: state.progress });
+  const roll = classRoll({ rows: analysis.rows, roster, progress });
   const rows = roll.rows;
   const unread = rows.filter((entry) => entry.reasoningPoints === null).length;
 
   return (
     <EducatorShell>
-      <SeatNamesContext.Provider value={seatNames(state.roster)}>
+      <SeatNamesContext.Provider value={seatNames(roster)}>
       <header className="page-header page-header--with-back">
-        <Link to={`/educator/class/${state.record.code}`}>← Class evidence</Link>
-        <p className="eyebrow">{state.record.label} · Reading queue</p>
+        <Link to={assignment
+          ? `/educator/class/${state.record.code}/assignments/${assignment.id}`
+          : `/educator/class/${state.record.code}`}>
+          ← {assignment ? "Assignment monitor" : "Class evidence"}
+        </Link>
+        <p className="eyebrow">
+          {state.record.label} · {assignment ? assignmentTitleForTeacher(assignment) : "Reading queue"}
+        </p>
         <h1>Read and score the explanations.</h1>
         <p>
           {rows.length === 0
@@ -86,7 +119,7 @@ export function ReadingQueue() {
           rows={rows}
           code={state.record.code}
           onScore={scoreReasoning}
-          attempts={new Map(roll.seats.map((seat) => [seat.seatCode, seat.attempts.length]))}
+          attempts={new Map(roll.seats.map((seat) => [seat.seatCode, seat.attempts.map((attempt) => attempt.sessionId)]))}
         />
       )}
       </SeatNamesContext.Provider>
@@ -98,8 +131,8 @@ function Queue({ rows, code, onScore, attempts }: {
   rows: readonly StudentRow[];
   code: string;
   onScore: (seatCode: string, sessionId: string, scores: ReasoningScores | null) => Promise<boolean>;
-  /** How many attempts each seat turned in, so the card can say which one this is. */
-  attempts: ReadonlyMap<string, number>;
+  /** The assignment-scoped attempts each seat turned in, oldest first. */
+  attempts: ReadonlyMap<string, readonly string[]>;
 }) {
   // Taken from the rows this mounted with. A save changes whether a student is unread, and
   // recomputing the sort from that would reorder the queue mid-pass.
@@ -137,7 +170,7 @@ function Queue({ rows, code, onScore, attempts }: {
       code={code}
       headingRef={headingRef}
       onMove={goTo}
-      attempts={attempts.get(row.seatCode) ?? 1}
+      attempts={attempts.get(row.seatCode) ?? [row.sessionId]}
       onScore={(scores) => onScore(row.seatCode, row.sessionId, scores)}
     />
   );
@@ -148,8 +181,8 @@ function ReadingCard({ row, position, count, code, headingRef, onMove, onScore, 
   position: number;
   count: number;
   code: string;
-  /** How many attempts this seat turned in. The queue reads their latest. */
-  attempts: number;
+  /** This assignment's sessions for the seat, oldest first. The queue reads their latest. */
+  attempts: readonly string[];
   headingRef: React.RefObject<HTMLHeadingElement>;
   onMove: (index: number) => void;
   onScore: (scores: ReasoningScores) => Promise<boolean>;
@@ -160,6 +193,7 @@ function ReadingCard({ row, position, count, code, headingRef, onMove, onScore, 
   const complete = REASONING_CRITERIA.every((criterion) => scores[criterion.id] !== undefined);
   const total = reasoningTotal(scores);
   const last = position === count - 1;
+  const attemptNumber = Math.max(0, attempts.indexOf(row.sessionId)) + 1;
 
   const save = async () => {
     if (!complete) return;
@@ -179,7 +213,7 @@ function ReadingCard({ row, position, count, code, headingRef, onMove, onScore, 
             queue now reads one attempt per student — their latest — and says so. */}
         <p aria-live="polite">
           {position + 1} of {count} · {label(row.seatCode)}
-          {attempts > 1 ? ` · attempt ${attempts} of ${attempts}` : ""}
+          {attempts.length > 1 ? ` · attempt ${attemptNumber} of ${attempts.length}` : ""}
           {" · "}{row.reasoningPoints === null ? "still to read" : `scored ${row.reasoningPoints}/${REASONING_MAXIMUM}`}
         </p>
         <Button variant="quiet" aria-disabled={last} onClick={() => !last && onMove(position + 1)}>
@@ -201,7 +235,7 @@ function ReadingCard({ row, position, count, code, headingRef, onMove, onScore, 
                 plan — the same child's other attempt — with nothing on either screen saying so.
                 Scoring "two accurate numbers from their own plan" against that marks a child
                 down for numbers that are nowhere in the plan in front of you. */}
-            <Link to={`/educator/class/${code}/students/${row.seatCode}?attempt=${attempts}`}>
+            <Link to={`/educator/class/${code}/students/${row.seatCode}?session=${encodeURIComponent(row.sessionId)}`}>
               Open this student’s evidence →
             </Link>
           </p>
@@ -211,12 +245,14 @@ function ReadingCard({ row, position, count, code, headingRef, onMove, onScore, 
               teacher-experience review put it plainly: if the better writing was in the first
               run, the queue is a dead end. The earlier attempts are one press away, and each of
               them can be read and scored on its own page. */}
-          {attempts > 1 && (
+          {attempts.length > 1 && (
             <p className="response-note">
-              This student turned in {attempts} times.{" "}
-              {Array.from({ length: attempts - 1 }, (_, index) => index + 1).map((number) => (
-                <Link key={number} to={`/educator/class/${code}/students/${row.seatCode}?attempt=${number}`}>
-                  Read and score attempt {number}
+              This student turned in {attempts.length} times for this assignment.{" "}
+              {attempts.map((sessionId, index) => ({ sessionId, number: index + 1 }))
+                .filter((attempt) => attempt.sessionId !== row.sessionId)
+                .map((attempt) => (
+                <Link key={attempt.sessionId} to={`/educator/class/${code}/students/${row.seatCode}?session=${encodeURIComponent(attempt.sessionId)}`}>
+                  Read and score attempt {attempt.number}
                 </Link>
               ))}
             </p>

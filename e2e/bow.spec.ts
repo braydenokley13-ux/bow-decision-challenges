@@ -122,7 +122,7 @@ test("home page and educator guide load as accessible entry points", async ({ pa
   // to the showcase." — Basketball's own subtitle, which is still in the registry and now sits
   // on that story's card. As an `h1` it was a one-world advertisement over a button that might
   // open the night market, and it was deliberately replaced.
-  await expect(page.getByRole("heading", { name: "Somebody has to decide where the money goes." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Decisions have consequences. You choose what happens next." })).toBeVisible();
   // Both stories are named, and named from the registry rather than spelled here — adding a
   // third story should make this test fail rather than quietly go on describing two.
   for (const world of PLAYABLE_WORLDS) {

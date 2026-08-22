@@ -153,9 +153,13 @@ export function MyClasses() {
     setWorking(true);
     setProblem(null);
     try {
+      const token = teacherToken();
       const response = await fetch(`${CLASS_API_BASE}/classes`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ label: label.trim(), challengeId: PLAN_UNDER_PRESSURE.id }),
       });
       const body: unknown = await response.json();
@@ -179,7 +183,11 @@ export function MyClasses() {
       // objective, which is what `objectiveRef: null` says.
       await fetch(`${CLASS_API_BASE}/classes/${record.code}/assignments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-BOW-Teacher-Key": record.teacherKey },
+        headers: {
+          "Content-Type": "application/json",
+          "X-BOW-Teacher-Key": record.teacherKey,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           objectiveRef: objectiveCode === NO_OBJECTIVE ? null : { frameworkId: FRAMEWORK_ID, code: objectiveCode },
           ...storySetting(),
@@ -393,7 +401,11 @@ export function MyClasses() {
                 address or a password.
               </li>
               <li>Allow about {durationLabel(PLAN_UNDER_PRESSURE)}. Do not coach a financial strategy.</li>
-              <li>Open the evidence with your private link when they are finished.</li>
+              <li>
+                {teacherToken()
+                  ? "Open the evidence from My classes when they are finished. Your account owns this class."
+                  : "Open the evidence with your private link when they are finished."}
+              </li>
             </ol>
             {/* The teacher who has four minutes and no list. Named as the fallback rather than
                 the default, because a class with a list is the one whose evidence has names on
@@ -410,19 +422,27 @@ export function MyClasses() {
                 costs nothing. What is actually true is narrower and more useful: the key is the
                 thing that opens the evidence, it is already filed for you, and whether losing this
                 browser matters depends on whether you signed in. */}
-            <div className="class-created__key">
-              <p className="field-label">Your private link</p>
-              <code>{handoverLink(created)}</code>
-              <p>
-                This link is what opens this class’s evidence — the class code alone will not, which is
-                what stops students reading each other’s work. It is already in your class list, so you do
-                not have to copy it down.{" "}
-                {teacherToken()
-                  ? "It is on your account too, so it is on any computer you sign in on."
-                  : "It is kept in this browser only. With no account, a wiped laptop takes it, " +
-                    "and nothing here can bring it back."}
-              </p>
-            </div>
+            {teacherToken() ? (
+              <div className="class-created__key">
+                <p className="field-label">Access to this class</p>
+                <p>
+                  Your account owns this class, so it opens from My classes on any computer where you sign in.
+                  The class code alone never opens student evidence. If another teacher needs access, make a
+                  private access link from the class list; that grants access and does not transfer ownership.
+                </p>
+              </div>
+            ) : (
+              <div className="class-created__key">
+                <p className="field-label">Your private link</p>
+                <code>{handoverLink(created)}</code>
+                <p>
+                  This link is what opens this class’s evidence — the class code alone will not, which is
+                  what stops students reading each other’s work. It is already in your class list, so you do
+                  not have to copy it down. It is kept in this browser only. With no account, a wiped laptop
+                  takes it, and nothing here can bring it back.
+                </p>
+              </div>
+            )}
             <Link className="button button--primary" to={evidencePath(created)}>Open this class</Link>
           </div>
         </section>
@@ -468,9 +488,9 @@ export function MyClasses() {
           <p className="eyebrow">My classes</p>
           <h1>Create your first class.</h1>
           <p>
-            You get a code to read out and a private link that opens the evidence. Paste your class list and
-            BOW prints one card per student; they sign in with the class code and the code on their card, and
-            never with an email address or a password.
+            You get a code to read out{teacherToken() ? ", and your account keeps the class available on every computer where you sign in" : " and a private link that opens the evidence"}.
+            {" "}Paste your class list and BOW prints one card per student; they sign in with the class code and
+            the code on their card, and never with an email address or a password.
           </p>
         </header>
         {createBlock}

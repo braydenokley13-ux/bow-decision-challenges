@@ -168,6 +168,35 @@
   font-weight: 500;
 }
 
+/* One product-wide order, rather than one competing stack per class. */
+.student-home--desk .home-section {
+  display: grid;
+  gap: clamp(0.75rem, 2.5vw, 1.25rem);
+}
+
+.student-home--desk .home-section + .home-section {
+  padding-top: clamp(1rem, 3vw, 1.5rem);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.student-home--desk .home-section__head {
+  display: grid;
+  gap: var(--s-2);
+  max-width: var(--measure);
+}
+
+.student-home--desk .home-section__head h2 {
+  margin: 0;
+  color: var(--ink-1);
+  font: var(--t-title1);
+}
+
+.student-home--desk .home-section__head p {
+  margin: 0;
+  color: var(--ink-3);
+  font: var(--t-sm);
+}
+
 .student-home--desk .work-head {
   display: flex;
   flex-wrap: wrap;
@@ -244,6 +273,21 @@
   color: var(--ink-1);
   font: var(--t-title1);
   overflow-wrap: anywhere;
+}
+
+.student-home--desk .work-card__class {
+  margin: 0;
+  color: var(--ink-3);
+  font: var(--t-label);
+  letter-spacing: var(--stamp-tracking);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+
+.student-home--desk .work-card--featured {
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border-color: var(--border-strong);
+  background: var(--surface-raised);
 }
 
 .student-home--desk .work-card__state,
@@ -454,6 +498,39 @@
   font: var(--t-title3);
 }
 
+.student-home--desk .class-list {
+  display: grid;
+  gap: var(--s-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.student-home--desk .class-membership {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+}
+
+.student-home--desk .class-membership p {
+  margin: 0;
+}
+
+.student-home--desk .class-membership .class-membership__name {
+  color: var(--ink-1);
+  font: var(--t-title3);
+  overflow-wrap: anywhere;
+}
+
+.student-home--desk .class-membership p {
+  margin-top: var(--s-2);
+  color: var(--ink-3);
+  font: var(--t-sm);
+}
+
 /* ---------------------------------------------------------------------------
    R7 — the offer of another go, and the promise attached to it
 
@@ -583,4 +660,295 @@
  */
 .student-feedback cite {
   color: var(--bow-brand-ink-muted);
+}
+
+/* The one-time sign-in screen belongs to the student flow even though it is not `/home`. */
+.join-shell .issued-credential {
+  width: 100%;
+  min-width: 0;
+}
+
+.join-shell .issued-credential strong {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.join-shell .issued-credential .button {
+  justify-self: start;
+  margin-top: var(--s-2);
+}
+
+.join-shell .issued-save-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s-3);
+  color: var(--ink-1);
+  font: var(--t-body);
+}
+
+.join-shell .issued-save-check input {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--bow-brand);
+}
+
+/* ---------------------------------------------------------------------------
+   Student shell polish — confident hierarchy without turning Home into an LMS
+   --------------------------------------------------------------------------- */
+
+.student-home--desk {
+  background: linear-gradient(150deg, var(--canvas) 0%, var(--surface-sunken) 100%);
+}
+
+.student-home--desk .student-home__inner {
+  max-width: 72rem;
+  gap: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.student-home--desk .student-home__bar {
+  gap: clamp(1rem, 2.5vw, 1.5rem);
+  padding: clamp(1rem, 3vw, 1.75rem);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, var(--surface) 0%, var(--surface-sunken) 100%);
+  box-shadow: var(--shadow-card);
+}
+
+.student-home--desk .nameplate__disc {
+  border-color: var(--bow-brand);
+  background: var(--surface-inset);
+  box-shadow: inset 0 0 0 3px var(--surface);
+}
+
+.student-home--desk .nameplate__out {
+  border-color: var(--border-strong);
+  background: var(--surface-raised);
+}
+
+.student-home--desk .home-next .home-section__head h2 {
+  font: var(--t-display3);
+}
+
+.student-home--desk .home-next .work-card--featured {
+  grid-template-columns: minmax(0, 1.2fr) minmax(15rem, 0.8fr);
+  align-items: center;
+  min-height: 20rem;
+  padding: clamp(1.25rem, 3.5vw, 2.25rem);
+  overflow: hidden;
+  border-color: var(--bow-brand);
+  background: linear-gradient(135deg, var(--surface-raised) 0%, var(--surface) 100%);
+  box-shadow: var(--shadow-lift);
+  isolation: isolate;
+}
+
+.student-home--desk .home-next .work-card--featured > :not(.work-card__accent, .work-card__art) {
+  grid-column: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.student-home--desk .work-card__art {
+  grid-column: 2;
+  grid-row: 1 / span 20;
+  align-self: stretch;
+  min-height: 18rem;
+  margin: calc(0rem - clamp(1.25rem, 3.5vw, 2.25rem));
+  margin-left: var(--s-4);
+  overflow: hidden;
+  border-left: 1px solid var(--border-subtle);
+  background: var(--surface-inset);
+}
+
+.student-home--desk .work-card__art .world-art {
+  width: 100%;
+  height: 100%;
+  min-height: 18rem;
+}
+
+.student-home--desk .home-next .work-card__title {
+  max-width: 18ch;
+  font: var(--t-display3);
+}
+
+.student-home--desk .home-responses .work-card,
+.student-home--desk .home-up-next .work-card,
+.student-home--desk .home-past .work-card {
+  gap: var(--s-2);
+  padding: clamp(0.9rem, 2vw, 1.25rem);
+  background: var(--surface-sunken);
+}
+
+.student-home--desk .home-up-next .work-list,
+.student-home--desk .home-past .work-list,
+.student-home--desk .class-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+}
+
+.student-home--desk .work-card__blocked {
+  max-width: var(--measure);
+  margin: 0;
+  padding: var(--s-3) var(--s-4);
+  border-left: 3px solid var(--fin-conditional);
+  background: var(--surface-inset);
+  color: var(--ink-2);
+  font: var(--t-sm);
+}
+
+.student-home--desk .work-card .again {
+  width: 100%;
+  max-width: none;
+}
+
+.student-home--desk .class-membership {
+  align-content: start;
+  border-color: var(--border-default);
+  background: linear-gradient(135deg, var(--surface-sunken) 0%, var(--surface-inset) 100%);
+}
+
+.student-home--desk .student-home__foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.student-home--desk .student-home__foot a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding: 0 var(--s-5);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface-raised);
+  color: var(--ink-1);
+}
+
+/* Join is the same student product ground, compressed into one calm decision panel. */
+.join-shell.ground-dark {
+  padding: clamp(1rem, 3vw, 2rem);
+  background: linear-gradient(145deg, var(--canvas) 0%, var(--surface-sunken) 60%, var(--surface-inset) 100%);
+  color: var(--ink-1);
+}
+
+.join-shell.ground-dark .join-shell__bar {
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding-bottom: var(--s-4);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.join-shell.ground-dark > .join-step {
+  align-content: start;
+  max-width: 38rem;
+  margin-block: auto;
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-lg);
+  background: linear-gradient(145deg, var(--surface) 0%, var(--surface-sunken) 100%);
+  box-shadow: var(--shadow-overlay);
+}
+
+.join-shell.ground-dark[data-step="issued"] > .join-step {
+  max-width: 48rem;
+}
+
+.join-shell.ground-dark .join-step h1 {
+  max-width: 18ch;
+  color: var(--ink-1);
+  font: var(--t-display2);
+}
+
+.join-shell.ground-dark .join-step .field input {
+  min-height: var(--tap);
+  border-color: var(--border-strong);
+  background: var(--surface-inset);
+  color: var(--ink-1);
+}
+
+.join-shell.ground-dark .join-intent {
+  padding: var(--s-3) var(--s-4);
+  border-left: 3px solid var(--bow-brand);
+  background: var(--surface-raised);
+  color: var(--ink-1);
+  font: var(--t-sm);
+}
+
+.join-shell.ground-dark .device-choice label {
+  padding: var(--s-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  background: var(--surface-inset);
+  color: var(--ink-2);
+}
+
+.join-shell.ground-dark .issued-credential {
+  padding: clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-inset);
+  color: var(--ink-1);
+}
+
+.join-shell.ground-dark .issued-credential--key {
+  border-color: var(--bow-brand);
+  background: linear-gradient(135deg, var(--surface-raised) 0%, var(--surface-inset) 100%);
+  box-shadow: inset 4px 0 0 var(--bow-brand);
+}
+
+.join-shell.ground-dark .issued-credential .field-label,
+.join-shell.ground-dark .issued-credential p {
+  color: var(--ink-2);
+}
+
+.join-shell.ground-dark .issued-credential--key .field-label {
+  color: var(--bow-brand-strong);
+}
+
+.join-shell.ground-dark .issued-credential strong {
+  font-size: clamp(1.65rem, 6vw, 2.8rem);
+  line-height: 1.08;
+}
+
+.join-shell.ground-dark .issued-save-check {
+  width: 100%;
+  padding: var(--s-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-sm);
+  background: var(--surface-raised);
+}
+
+@media (max-width: 48rem) {
+  .student-home--desk .home-next .work-card--featured {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .student-home--desk .home-next .work-card--featured > :not(.work-card__accent, .work-card__art),
+  .student-home--desk .work-card__art {
+    grid-column: 1;
+  }
+
+  .student-home--desk .work-card__art {
+    grid-row: auto;
+    order: -1;
+    min-height: 11rem;
+    margin: calc(0rem - clamp(1.25rem, 3.5vw, 2.25rem));
+    margin-bottom: var(--s-3);
+    border-bottom: 1px solid var(--border-subtle);
+    border-left: 0;
+  }
+
+  .student-home--desk .work-card__art .world-art {
+    min-height: 11rem;
+  }
+}
+
+@media (forced-colors: active) {
+  .student-home--desk .work-card__art {
+    display: none;
+  }
+
+  .join-shell.ground-dark > .join-step,
+  .join-shell.ground-dark .issued-credential {
+    border: 1px solid currentcolor;
+  }
 }

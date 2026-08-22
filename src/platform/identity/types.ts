@@ -206,6 +206,8 @@ export interface AttemptCheckpoint {
 /** What a teacher sees about a seat that has not turned anything in. */
 export interface ProgressRow {
   seatCode: string;
+  /** The assignment this unfinished attempt belongs to. Absent only on a legacy checkpoint. */
+  assignmentId?: string;
   worldId: WorldId;
   stage: string;
   startedAt: number;

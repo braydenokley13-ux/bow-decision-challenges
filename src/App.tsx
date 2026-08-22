@@ -11,9 +11,10 @@ import { TeacherSignIn } from "./educator/SignIn";
 import { AssignFlow, ObjectiveDetail, ObjectiveList } from "./educator/ObjectivePages";
 import { RealClassOverview, RealStudentEvidence } from "./educator/RealClassPages";
 import { ReadingQueue } from "./educator/ReadingQueue";
+import { AssignmentMonitor } from "./educator/AssignmentMonitor";
 import { Debrief } from "./educator/Debrief";
 import { Roster } from "./educator/Roster";
-import { ShareOut } from "./educator/ShareOut";
+import { ShareOut } from "./educator/ShareOutPage";
 import { DataProtection } from "./legal/DataProtection";
 import { PLAN_UNDER_PRESSURE } from "./platform/challenges/registry";
 import { StudentJoin } from "./student/Join";
@@ -52,31 +53,49 @@ function Home() {
      declined, and the two screens were byte-identical. */
   const returning = studentToken();
   return (
-    <main className="home ground-dark">
+    <main className="home home--cinematic ground-dark">
       {/* The light in the room. One violet bloom behind the headline and one warm one under
           the worlds, so the page has a direction to it rather than being flat dark. */}
       <div className="home__aurora" aria-hidden="true" />
 
       <header className="home__bar">
         <AppMark />
-        <Link to="/educator/guide">For educators</Link>
+        <Link className="home__educator-link" to="/educator/classes">Teacher workspace</Link>
       </header>
 
       <section className="home__hero">
-        <p className="home__eyebrow">{PLAN_UNDER_PRESSURE.pillar} · {PLAN_UNDER_PRESSURE.grades}</p>
-        <h1>Somebody has to decide where the money goes.</h1>
-        {/* "Story", not "world", was the old vocabulary here and it has been retired: the
-            educator surface, the registry and the student's own chooser all say world, and a
-            front door speaking a schema nothing else uses is where a vocabulary starts
-            coming apart. */}
-        <p className="home__deck">
-          You are the one handling the money in it. Every call you make changes what happens
-          next — and you find out what it cost the way you would in life, weeks later, when it
-          is too late to take it back.
-        </p>
-        <div className="home__actions">
-          <Link className="button button--primary" to="/join">I have a class code</Link>
-          {returning && <Link className="button button--secondary" to="/home">Come back to my class</Link>}
+        <div className="home__hero-copy">
+          <p className="home__eyebrow">{PLAN_UNDER_PRESSURE.pillar} · {PLAN_UNDER_PRESSURE.grades}</p>
+          <h1>Decisions have consequences. <span>You choose what happens next.</span></h1>
+          {/* "Story", not "world", was the old vocabulary here and it has been retired: the
+              educator surface, the registry and the student's own chooser all say world, and a
+              front door speaking a schema nothing else uses is where a vocabulary starts
+              coming apart. */}
+          <p className="home__deck">
+            Handle the money. Make the tradeoffs. See what follows — then explain the thinking
+            behind your decisions.
+          </p>
+          <div className="home__actions">
+            <Link className="button button--primary" to="/join">Enter with a class code</Link>
+            {returning && <Link className="button button--secondary" to="/home">Continue my work</Link>}
+          </div>
+          <p className="home__continuity">Your work stays connected to your class, even when you change computers.</p>
+        </div>
+
+        {/* The reference art is cinematic, but BOW cannot borrow its invented students or
+            photography. These are the product's own two lightweight scenes, composed as a
+            doorway rather than as a false world picker. The real, accessible descriptions
+            remain directly below. */}
+        <div className="home__hero-art" aria-hidden="true">
+          {PLAYABLE_WORLDS.map((world, index) => (
+            <figure className="home__hero-world" data-world={world.id} data-position={index === 0 ? "front" : "back"} key={world.id}>
+              <WorldArt world={world.id} />
+              <figcaption>
+                <span>{world.title}</span>
+                <small>{world.subtitle}</small>
+              </figcaption>
+            </figure>
+          ))}
         </div>
       </section>
 
@@ -88,13 +107,14 @@ function Home() {
           evaluator meets, and no way to act on any of them (`DEFECTS.md` D26). It says what
           these are and where the choice actually happens. */}
       <section className="home__worlds-section" aria-labelledby="home-worlds">
-        <h2 className="stamp" id="home-worlds">The two worlds</h2>
+        <div className="home__worlds-heading">
+          <p className="stamp">Decision Challenges</p>
+          <h2 id="home-worlds">Two worlds. The same decision skills.</h2>
+        </div>
         <ul className="home__worlds">
           {PLAYABLE_WORLDS.map((world) => (
-            <li key={world.id} className="world-card" data-world={world.id}>
-              <div className="world-card__art">
-                <WorldArt world={world.id} />
-              </div>
+            <li key={world.id} className="world-card world-card--brief" data-world={world.id}>
+              <span className="world-card__accent" aria-hidden="true" />
               <div className="world-card__body">
                 <h3>{world.title}</h3>
                 <p>{world.subtitle}</p>
@@ -109,9 +129,8 @@ function Home() {
             evaluator meets first. Both worlds are judged against the same named parts of the
             work, which is what makes the choice above safe to offer. */}
         <p className="home__worlds-note">
-          Different worlds, the same job: whichever one you are in, your teacher gets the same
-          set of skills back. Which one you do is set inside your class — sign in with your
-          class code and you will either be given one or asked to pick.
+          Your teacher sets which world is available. Both ask you to make a plan, respond when
+          conditions change, and explain why you made your decisions.
         </p>
       </section>
 
@@ -187,6 +206,9 @@ export function App() {
       <Route path="/educator/teaching-companion" element={<Navigate to="/educator/guide" replace />} />
       {/* A real class. Everything under here reads submitted evidence and nothing else. */}
       <Route path="/educator/class/:code" element={<RealClassOverview />} />
+      {/* One assignment, one live room, one evidence boundary. The class center keeps the
+          history; this route opens the work without combining it with earlier assignments. */}
+      <Route path="/educator/class/:code/assignments/:assignmentId" element={<AssignmentMonitor />} />
       <Route path="/educator/class/:code/students/:seatCode" element={<RealStudentEvidence />} />
       <Route path="/educator/class/:code/reading" element={<ReadingQueue />} />
       <Route path="/educator/class/:code/debrief" element={<Debrief />} />

@@ -1,0 +1,87 @@
+/* Roster-only visual hierarchy. Private teacher access stays above the long list and reads as
+   a consequential security control, while the day-to-day list remains compact and quiet. */
+
+.roster-private-link {
+  position: relative;
+  overflow: hidden;
+  color: var(--ink-invert);
+  background: linear-gradient(145deg, var(--navy-900), var(--navy-800));
+  border-color: var(--navy-700);
+  box-shadow: var(--shadow-overlay);
+}
+
+.roster-private-link::after {
+  position: absolute;
+  right: -60px;
+  bottom: -90px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgb(124 82 250 / 28%), transparent 68%);
+  content: "";
+  pointer-events: none;
+}
+
+.roster-private-link > * { position: relative; z-index: 1; }
+.roster-private-link .eyebrow { color: var(--violet-300); }
+.roster-private-link h2 { color: var(--ink-invert); }
+
+.roster-private-link > p:not(.class-state),
+.roster-private-link .class-state {
+  max-width: 68ch;
+  color: var(--ink-muted-invert);
+}
+
+.roster-private-link a { color: var(--violet-200); }
+
+.roster-private-link .classes-forget__warn {
+  padding: var(--s-4);
+  color: var(--ink-invert);
+  background: rgb(255 255 255 / 8%);
+  border: 1px solid var(--navy-500);
+  border-radius: var(--r-sm);
+}
+
+.roster-private-link .class-created__key {
+  margin-top: var(--s-5);
+  background: rgb(255 255 255 / 9%);
+  border-color: var(--violet-400);
+  border-left-color: var(--violet-400);
+  border-radius: var(--r-sm);
+}
+
+.roster-private-link .class-created__key .field-label,
+.roster-private-link .class-created__key p,
+.roster-private-link .class-created__key code { color: var(--ink-invert); }
+
+.roster-private-link .class-created__key code {
+  display: block;
+  padding: var(--s-3);
+  overflow-wrap: anywhere;
+  background: rgb(12 11 31 / 60%);
+  border: 1px solid var(--navy-500);
+}
+
+.roster-add {
+  border-top: 4px solid var(--navy-800);
+  box-shadow: var(--shadow-lift);
+}
+
+.roster-list {
+  overflow: hidden;
+  border: 1px solid var(--navy-200);
+  border-radius: var(--r-md);
+}
+
+.roster-list li:nth-child(even) { background: var(--navy-50); }
+
+.roster-list__state[data-claimed="true"] {
+  padding: var(--s-2) var(--s-3);
+  color: var(--fin-balanced-ink);
+  background: var(--fin-balanced-soft);
+  border-radius: var(--r-pill);
+  font-weight: 700;
+}
+
+@media (max-width: 680px) {
+  .roster-private-link { padding: var(--s-5); }
+}

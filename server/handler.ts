@@ -174,11 +174,10 @@ const CLOSING_ANSWER_MAX = 2000;
  * answer, which is legal — a question the teacher marked optional, or one they left unanswered.
  * The distinction is the same one `readStandardRef` makes and exists for the same reason.
  *
- * **`questionText` is required and comes from the client**, which is worth being explicit
- * about: it is the question as the student was actually shown it, and it is stored so a
- * teacher who later edits the question cannot silently re-label an answer already given. It is
- * bounded and it is treated as text — nothing reads it, nothing routes on it, and it names no
- * competency.
+ * `questionText` is required in the transport for old clients, bounded, and treated as text.
+ * It is not trusted: once the assignment is loaded below, storage stamps the immutable
+ * assignment question over this client copy. That keeps every answer linked to the question
+ * the teacher actually set even when a stale or modified client sends different words.
  */
 function readClosingAnswer(value: unknown): ClosingAnswer | null | undefined {
   if (value === undefined || value === null) return null;
@@ -637,14 +636,38 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
       return fail(404, "assignment_not_found", "That class was not set that work.");
     }
     const assignments = await assignmentsOn(store, record);
-    const assignment = submission.assignmentId ? assignments.find((entry) => entry.id === submission.assignmentId) : undefined;
+    const resolvedAssignmentId = assignmentIdFor(submission, assignments);
+    const assignment = resolvedAssignmentId
+      ? assignments.find((entry) => entry.id === resolvedAssignmentId)
+      : undefined;
     if (submission.assignmentId && !assignment) return fail(404, "assignment_not_found", "That class was not set that work.");
+    // A public assignment list says what this class is doing; it is not permission to do all of
+    // it. The signed token resolves to one seat above, and a selected-seat assignment is writable
+    // only by a seat the teacher actually selected.
+    if (assignment && assignment.assignedStudentIds !== null && !assignment.assignedStudentIds.includes(seat.seatCode)) {
+      return fail(403, "not_authorised", "That assignment was set for different students in this class.");
+    }
     const allowedWorlds: readonly string[] = assignment?.allowedWorldIds ?? ["basketball", "food-truck"];
     if (submission.log.some((event) => !allowedWorlds.includes(event.worldId))) {
       return fail(400, "bad_request", "That attempt uses a world this assignment did not offer.");
     }
+
+    // The assignment is the source of truth for the teacher's question. A client may carry a
+    // stale or invented copy of the words, but it cannot choose what question its answer is
+    // filed under. Required means an answer must be present; absent means no answer is accepted.
+    const question = assignment?.closingQuestion;
+    if (!question && submission.closingAnswer) {
+      return fail(400, "bad_request", "This assignment has no closing question to answer.");
+    }
+    if (question?.required && !submission.closingAnswer) {
+      return fail(400, "bad_request", "Answer the closing question before turning this in.");
+    }
+    const canonicalClosingAnswer = question && submission.closingAnswer
+      ? { ...submission.closingAnswer, questionText: question.text }
+      : undefined;
     const stored: SubmissionRecord = {
       ...submission,
+      ...(canonicalClosingAnswer ? { closingAnswer: canonicalClosingAnswer } : {}),
       classCode: record.code,
       submittedAt: now,
       reasoningPoints: null,
@@ -715,7 +738,10 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
   // POST /classes/:code/assignments — the educator sets this class something.
   if (request.method === "POST" && segments.length === 3 && segments[2] === "assignments") {
     const existing = await store.listAssignments(record.code);
-    const requested = readAssignmentRequest(request.body ?? {}, existing);
+    const activeSeats = (await store.listRoster(record.code))
+      .filter((entry) => !entry.removedAt)
+      .map((entry) => entry.seatCode);
+    const requested = readAssignmentRequest(request.body ?? {}, existing, activeSeats);
     if (!requested) return fail(400, "bad_request", "That assignment could not be read.");
     const assignment: Assignment = {
       id: generateAssignmentId(record.code, random),
@@ -756,6 +782,7 @@ export async function handleApiRequest(request: ApiRequest, options: HandlerOpti
             stage: entry.stage,
             startedAt: entry.startedAt,
             updatedAt: entry.updatedAt,
+            ...(entry.assignmentId ? { assignmentId: entry.assignmentId } : {}),
           })),
         feedback: await store.listFeedback(record.code),
       },

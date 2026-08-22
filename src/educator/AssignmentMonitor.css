@@ -1,0 +1,286 @@
+.assignment-monitor__back {
+  margin: 0;
+}
+
+.class-center-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  width: 100%;
+  margin-top: var(--s-3);
+}
+
+.class-assignment-history > ol {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.class-assignment-history > ol > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--s-5);
+  align-items: center;
+  padding: var(--s-5) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.class-assignment-history > ol > li:last-child {
+  border-bottom: 0;
+}
+
+.class-assignment-history h3,
+.class-assignment-history p {
+  margin: 0;
+}
+
+.class-assignment-history li > div {
+  display: grid;
+  gap: var(--s-1);
+}
+
+.class-assignment-history li > div p {
+  color: var(--ink-3);
+}
+
+.class-assignment-history__status {
+  display: grid;
+  min-width: 7rem;
+}
+
+.class-assignment-history__status strong {
+  font: var(--m-md);
+  font-variant-numeric: tabular-nums;
+}
+
+.class-assignment-history__status span {
+  color: var(--ink-3);
+}
+
+.assignment-monitor__header.surface-margin {
+  display: grid;
+  gap: var(--s-4);
+  padding: var(--s-6) var(--s-7);
+  background: linear-gradient(145deg, var(--surface-raised), var(--surface));
+  border: 1px solid var(--border-default);
+  border-left: 4px solid var(--world-accent, var(--bow-brand));
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.assignment-monitor__header > * {
+  margin: 0;
+}
+
+.assignment-monitor__facts,
+.assignment-monitor__counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-3);
+  margin: 0;
+}
+
+.assignment-monitor__facts div,
+.assignment-monitor__counts div {
+  display: grid;
+  gap: var(--s-1);
+}
+
+.assignment-monitor__facts div {
+  min-width: 0;
+  padding: var(--s-3) var(--s-4);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+}
+
+.assignment-monitor__facts dd { overflow-wrap: anywhere; color: var(--ink-1); font-weight: 650; }
+
+.assignment-monitor__facts dt,
+.assignment-monitor__counts dt {
+  color: var(--ink-3);
+  font: var(--t-label);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.assignment-monitor__facts dd,
+.assignment-monitor__counts dd {
+  margin: 0;
+}
+
+.assignment-monitor__brief {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-5);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--border-default);
+}
+
+.assignment-monitor__brief p,
+.assignment-monitor__brief blockquote {
+  margin: 0;
+}
+
+.assignment-monitor__brief > div {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  background: rgb(255 255 255 / 2%);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+}
+
+.assignment-monitor__question {
+  padding-left: var(--s-4);
+  border-left: 3px solid var(--world-accent, var(--violet-300));
+}
+
+.assignment-monitor__question blockquote {
+  font: var(--t-body-lg);
+}
+
+.assignment-monitor__question > p:last-child {
+  color: var(--ink-3);
+  font: var(--t-sm);
+}
+
+.assignment-monitor__instrument {
+  display: grid;
+  gap: var(--s-6);
+  border-top: 3px solid var(--world-accent, var(--bow-brand));
+}
+
+.assignment-monitor__lead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--s-5);
+}
+
+.assignment-monitor__lead h2,
+.assignment-monitor__lead p {
+  margin: 0;
+}
+
+.assignment-monitor__lead > div {
+  display: grid;
+  gap: var(--s-2);
+}
+
+.assignment-monitor__counts {
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--border-default);
+}
+
+.assignment-monitor__counts dd {
+  font: var(--m-md);
+  font-variant-numeric: tabular-nums;
+}
+
+.assignment-monitor__live ul,
+.assignment-monitor__submissions {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.assignment-monitor__live li,
+.assignment-monitor__submissions li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-3) var(--s-5);
+  padding: var(--s-4) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.assignment-monitor__live li {
+  display: grid;
+  grid-template-columns: minmax(9rem, 0.7fr) minmax(12rem, 1.3fr) auto;
+  align-items: center;
+}
+
+.assignment-monitor__live li:last-child,
+.assignment-monitor__submissions li:last-child {
+  border-bottom: 0;
+}
+
+.assignment-monitor__live li strong {
+  min-width: 10rem;
+}
+
+.assignment-monitor__live li span:last-child {
+  margin-left: auto;
+  color: var(--ink-3);
+}
+
+.assignment-monitor__submissions li[data-reading="unread"] {
+  background: var(--surface-sunken);
+  border-left: 3px solid var(--world-accent, var(--violet-400));
+  padding-left: var(--s-4);
+}
+
+.assignment-monitor__submissions li[data-reading="read"] { opacity: 0.88; }
+
+.assignment-monitor__submissions nav a {
+  min-height: var(--tap);
+  display: inline-flex;
+  align-items: center;
+  padding-inline: var(--s-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-sm);
+  text-decoration: none;
+}
+
+.assignment-monitor__submissions nav a:hover { color: var(--ink-1); border-color: var(--border-strong); }
+
+.assignment-monitor__submissions li > div {
+  display: grid;
+  gap: var(--s-1);
+  min-width: min(100%, 24rem);
+}
+
+.assignment-monitor__submissions li > div span {
+  color: var(--ink-3);
+}
+
+.assignment-monitor__submissions nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-5);
+  margin-left: auto;
+}
+
+@media (max-width: 760px) {
+  .class-assignment-history > ol > li {
+    grid-template-columns: 1fr;
+  }
+
+  .assignment-monitor__brief {
+    grid-template-columns: 1fr;
+  }
+
+  .assignment-monitor__header { padding: var(--s-5); }
+  .assignment-monitor__facts { grid-template-columns: 1fr; }
+
+  .assignment-monitor__question {
+    padding-top: var(--s-4);
+    padding-left: 0;
+    border-top: 3px solid var(--violet-200);
+    border-left: 0;
+  }
+
+  .assignment-monitor__submissions nav,
+  .assignment-monitor__live li span:last-child {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .assignment-monitor__live li { grid-template-columns: 1fr; align-items: start; }
+}

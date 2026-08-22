@@ -107,9 +107,12 @@ export function EducatorShell({ children, measure = "evidence", scale = "default
     landing.focus();
   }, [pathname]);
   return (
-    <div className="educator-shell">
+    <div className="educator-shell ground-dark">
       <header className="educator-topbar">
-        <AppMark />
+        <div className="educator-topbar__brand">
+          <AppMark />
+          <span>Teacher workspace</span>
+        </div>
         {/* Four items, and the first one is the room a teacher is running. */}
         <nav aria-label="Educator navigation">
           <NavLink to="/educator/classes">My classes</NavLink>
@@ -136,22 +139,24 @@ export function EducatorShell({ children, measure = "evidence", scale = "default
             screen it lands on, rather than leaving a teacher pressing it again. The local half
             still runs whatever the service answers, because a teacher walking away from a
             staffroom machine has to stop being signed in on it. */}
-        {teacherToken()
-          ? (
-            <button
-              type="button"
-              className="educator-topbar__session"
-              aria-disabled={ending}
-              onClick={() => { void endEverySession(); }}
-            >
-              {ending ? "Signing out…" : "Sign out"}
-            </button>
-          )
-          : <NavLink className="educator-topbar__session" to="/educator/sign-in">Sign in</NavLink>}
-        {isSampleClassRoute(pathname) && <span className="demo-pill">Sample class — not a real class</span>}
-        {!teacherToken() && pathname.startsWith("/educator/class/") && !isSampleClassRoute(pathname) && (
-          <span className="demo-pill">Legacy class-key access — sign in to claim this class</span>
-        )}
+        <div className="educator-topbar__account">
+          {isSampleClassRoute(pathname) && <span className="demo-pill">Sample class — not a real class</span>}
+          {!teacherToken() && pathname.startsWith("/educator/class/") && !isSampleClassRoute(pathname) && (
+            <span className="demo-pill">Legacy class-key access — sign in to claim this class</span>
+          )}
+          {teacherToken()
+            ? (
+              <button
+                type="button"
+                className="educator-topbar__session"
+                aria-disabled={ending}
+                onClick={() => { void endEverySession(); }}
+              >
+                {ending ? "Signing out…" : "Sign out"}
+              </button>
+            )
+            : <NavLink className="educator-topbar__session" to="/educator/sign-in">Sign in</NavLink>}
+        </div>
       </header>
       <main className={scale === "teacher" ? "educator-main teacher-page" : "educator-main"} ref={main} tabIndex={-1} data-measure={measure}>{children}</main>
     </div>

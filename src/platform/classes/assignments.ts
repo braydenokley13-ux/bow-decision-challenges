@@ -148,6 +148,7 @@ export function competenciesAssessedBy(ref: StandardRef): readonly CompetencyId[
 }
 
 export interface AssignmentRequest {
+  title?: string;
   objectiveRef: StandardRef | null;
   competencyIds: readonly CompetencyId[];
   allowedWorldIds: readonly WorldId[];
@@ -168,6 +169,9 @@ export interface AssignmentRequest {
  * decision would you change if you played again?"* — with room to spare.
  */
 export const CLOSING_QUESTION_MAX = 300;
+
+/** Long enough to distinguish work in a class list, short enough to stay a title rather than directions. */
+export const ASSIGNMENT_TITLE_MAX = 80;
 
 const FORMATS: readonly AssignmentFormat[] = ["quick-check", "decision-challenge"];
 
@@ -193,7 +197,12 @@ export function compatibleWorldsFor(objectiveRef: StandardRef | null): readonly 
  * half of the record that has to still be true in three years, and a client that could
  * assert them could assert an assignment measured something it did not.
  */
-export function readAssignmentRequest(body: unknown, existing: readonly Assignment[]): AssignmentRequest | null {
+export function readAssignmentRequest(
+  body: unknown,
+  existing: readonly Assignment[],
+  /** Active seats in this class. Omitted only by pure callers that are not writing to a class. */
+  activeSeatCodes?: readonly string[],
+): AssignmentRequest | null {
   if (!body || typeof body !== "object") return null;
   const candidate = body as Record<string, unknown>;
 
@@ -221,6 +230,9 @@ export function readAssignmentRequest(body: unknown, existing: readonly Assignme
   const chooses = candidate.studentChoosesWorld;
   if (chooses !== undefined && typeof chooses !== "boolean") return null;
 
+  const title = readTitle(candidate.title);
+  if (title === undefined) return null;
+
   const seats = candidate.assignedStudentIds;
   const assignedStudentIds = seats === undefined || seats === null
     ? null
@@ -228,6 +240,10 @@ export function readAssignmentRequest(body: unknown, existing: readonly Assignme
       ? [...new Set(seats)]
       : undefined;
   if (assignedStudentIds === undefined) return null;
+  if (assignedStudentIds !== null && activeSeatCodes) {
+    const active = new Set(activeSeatCodes);
+    if (assignedStudentIds.some((seat) => !active.has(seat))) return null;
+  }
 
   const attemptOf = candidate.attemptOf;
   if (attemptOf !== undefined && (typeof attemptOf !== "string" || !existing.some((assignment) => assignment.id === attemptOf))) {
@@ -241,6 +257,7 @@ export function readAssignmentRequest(body: unknown, existing: readonly Assignme
   if (dueAt === undefined) return null;
 
   return {
+    ...(title ? { title } : {}),
     objectiveRef,
     competencyIds: objectiveRef ? competenciesAssessedBy(objectiveRef) : competenciesMeasuredBy(DEFAULT_WORLD_ID),
     allowedWorldIds,
@@ -255,6 +272,15 @@ export function readAssignmentRequest(body: unknown, existing: readonly Assignme
     ...(typeof attemptOf === "string" ? { attemptOf } : {}),
     ...(dueAt !== null ? { dueAt } : {}),
   };
+}
+
+/** Blank means no custom title; malformed or over-long input refuses the whole write. */
+function readTitle(value: unknown): string | null | undefined {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (trimmed.length === 0) return null;
+  return trimmed.length <= ASSIGNMENT_TITLE_MAX ? trimmed : undefined;
 }
 
 /**

@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MyClasses } from "./MyClasses";
-import { keyForClass } from "./classMemory";
+import { Roster } from "./Roster";
+import { keyForClass, rememberClass, rememberKey } from "./classMemory";
+import { rememberTeacher } from "./teacherSession";
 
 /**
  * What the class-created screen says about the private link, checked against what the next
@@ -114,5 +116,64 @@ describe("what the created screen says about the private link", () => {
   it("warns a signed-out teacher that a wiped laptop takes it", async () => {
     await createAClass();
     expect(screen.getByText(/wiped laptop takes it/i)).toBeInTheDocument();
+  });
+
+  it("does not advertise the unusable creation key when an account owns the class", async () => {
+    rememberTeacher("teacher-token");
+    // Keep the creation form visible while the account list refreshes in the background.
+    rememberClass({ ...CREATED, code: "H4KVW", label: "Existing class" });
+    const calls: { url: string; headers: Record<string, string> }[] = [];
+    vi.stubGlobal("fetch", vi.fn((url: string, init?: RequestInit) => {
+      calls.push({ url, headers: (init?.headers ?? {}) as Record<string, string> });
+      const payload = url.endsWith("/me/teaching") ? { classes: [] } : CREATED;
+      return Promise.resolve({
+        ok: true,
+        status: url.endsWith("/classes") ? 201 : 200,
+        json: () => Promise.resolve(payload),
+        text: () => Promise.resolve(JSON.stringify(payload)),
+      } as Response);
+    }));
+    render(<MemoryRouter><MyClasses /></MemoryRouter>);
+
+    await userEvent.type(screen.getByLabelText(/name this class/i), "Period 3");
+    await userEvent.click(screen.getByRole("button", { name: /create/i }));
+    expect(await screen.findByText("Access to this class", { selector: "p.field-label" })).toBeInTheDocument();
+    expect(screen.queryByText("Your private link", { selector: "p.field-label" })).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toContain(`?key=${CREATED.teacherKey}`);
+    expect(screen.getAllByText(/account owns this class/i).length).toBeGreaterThan(0);
+    expect(calls.find((call) => call.url.endsWith("/classes"))?.headers.Authorization).toBe("Bearer teacher-token");
+  });
+
+  it("shows a newly made access link immediately and explains its boundary", async () => {
+    rememberTeacher("teacher-token");
+    rememberKey(CREATED.code, CREATED.teacherKey);
+    const newKey = "PPPPQQQQRRRRSSSSTTTTUUUU";
+    vi.stubGlobal("fetch", vi.fn((url: string, init?: RequestInit) => {
+      const payload = url.endsWith(`/classes/${CREATED.code}/key`) && init?.method === "POST"
+        ? { code: CREATED.code, teacherKey: newKey, replacedAt: 2, message: "Private access link ready." }
+        : { roster: [], joinMode: "roster" };
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(payload),
+        text: () => Promise.resolve(JSON.stringify(payload)),
+      } as Response);
+    }));
+    render(
+      <MemoryRouter initialEntries={[`/educator/class/${CREATED.code}/roster`]}>
+        <Routes><Route path="/educator/class/:code/roster" element={<Roster />} /></Routes>
+      </MemoryRouter>,
+    );
+
+    const section = (await screen.findByRole("heading", { name: /make a new private link/i })).closest("section")!;
+    const list = screen.getByRole("heading", { name: /^the list$/i });
+    expect(section.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    await userEvent.click(within(section).getByRole("button", { name: /make a new private link/i }));
+    await userEvent.click(within(section).getByRole("button", { name: /^make a new link$/i }));
+
+    expect(await within(section).findByText(new RegExp(`/educator/class/${CREATED.code}\\?key=${newKey}`)))
+      .toBeInTheDocument();
+    expect(within(section).getByText(/grants access.*does not give away ownership/i)).toBeInTheDocument();
+    expect(within(section).getByText(/every old private link has stopped working/i)).toBeInTheDocument();
   });
 });

@@ -57,14 +57,18 @@ export interface ClassSpine {
 }
 
 /**
- * Which assignment the class page speaks about.
+ * Which assignment the class center speaks about when no assignment was named explicitly.
  *
- * One with an objective wins, because that is the language a teacher chose and the only one
- * reporting may speak to them in. Otherwise the oldest, which for a class nobody set an
- * objective on is the one the service synthesises — the challenge they actually ran.
+ * The newest wins. A class can now hold a history, and leading with the first objective-bearing
+ * assignment would leave the class center describing September in January. The monitor names
+ * its assignment explicitly; this default is only for the class center and older callers.
  */
-function leadAssignment(assignments: readonly Assignment[]): Assignment | null {
-  return assignments.find((entry) => entry.objectiveRef !== null) ?? assignments[0] ?? null;
+export function currentAssignment(assignments: readonly Assignment[]): Assignment | null {
+  let current: Assignment | null = null;
+  for (const assignment of assignments) {
+    if (!current || assignment.createdAt > current.createdAt) current = assignment;
+  }
+  return current;
 }
 
 /**
@@ -83,24 +87,37 @@ export function classSpineFrom(input: {
   record: ClassRecord;
   assignments: readonly Assignment[];
   submissions: readonly AttributedSubmission[];
+  /** Name one assignment when a monitor is reading it. Omit only on the class center. */
+  assignmentId?: string;
 }): ClassSpine {
-  const assignment = leadAssignment(input.assignments);
+  const assignment = input.assignmentId
+    ? input.assignments.find((entry) => entry.id === input.assignmentId) ?? null
+    : currentAssignment(input.assignments);
+  // An attributed submission belongs to exactly one assignment. Filtering here, at the shared
+  // derivation, makes it impossible for a future caller to accidentally report two pieces of
+  // work as one class result. The no-assignment branch is the compatibility path for mocked or
+  // pre-assignment class payloads; the real service synthesises a legacy assignment on read.
+  const submissions = assignment
+    ? input.submissions.filter((submission) => submission.assignmentId === assignment.id)
+    : input.assignmentId
+      ? []
+      : input.submissions;
   if (!assignment) {
     return {
       assignment: null,
       objectiveRef: null,
       reading: null,
-      submitted: input.submissions.length,
-      awaitingReading: input.submissions.filter((submission) => submission.reasoningPoints === null).length,
+      submitted: submissions.length,
+      awaitingReading: submissions.filter((submission) => submission.reasoningPoints === null).length,
       assessed: 0,
-      narratable: input.submissions.length >= MINIMUM_RESULTS_FOR_CLASS_NARRATION,
+      narratable: submissions.length >= MINIMUM_RESULTS_FOR_CLASS_NARRATION,
     };
   }
   const reading = classResultFor({
     record: input.record,
     assignment,
     demand: demandOf(assignment),
-    submissions: input.submissions,
+    submissions,
   });
   return {
     assignment,
